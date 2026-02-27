@@ -1,0 +1,81 @@
+{
+  "name": "git",
+  "description": "The stupid content tracker",
+  "subcommands": [
+    {
+      "name": "clone",
+      "description": "Clone a repository into a new directory",
+      "args": [
+        {
+          "name": "repository",
+          "description": "The repository to clone"
+        }
+      ],
+      "options": [
+        { "name": ["--branch", "-b"], "description": "Checkout this branch instead of HEAD" },
+        { "name": ["--depth"], "description": "Shallow clone with history truncated" },
+        { "name": ["--bare"], "description": "Make a bare Git repository" }
+      ]
+    },
+    {
+      "name": "checkout",
+      "description": "Switch branches or restore working tree files",
+      "args": [
+        {
+          "name": "branch",
+          "generators": [{ "type": "git_branches" }]
+        }
+      ],
+      "options": [
+        { "name": ["-b"], "description": "Create and checkout a new branch" },
+        { "name": ["-B"], "description": "Create/reset and checkout a branch" }
+      ]
+    },
+    {
+      "name": "commit",
+      "description": "Record changes to the repository",
+      "options": [
+        { "name": ["-m", "--message"], "description": "Commit message" },
+        { "name": ["-a", "--all"], "description": "Stage all modified and deleted files" },
+        { "name": ["--amend"], "description": "Amend the previous commit" },
+        { "name": ["--no-edit"], "description": "Use the selected commit message without editing" }
+      ]
+    },
+    {
+      "name": "push",
+      "description": "Update remote refs along with associated objects",
+      "args": [
+        {
+          "name": "remote",
+          "generators": [{ "type": "git_remotes" }]
+        },
+        {
+          "name": "branch",
+          "generators": [{ "type": "git_branches" }]
+        }
+      ],
+      "options": [
+        { "name": ["-f", "--force"], "description": "Force push" },
+        { "name": ["-u", "--set-upstream"], "description": "Set upstream for the current branch" }
+      ]
+    },
+    {
+      "name": "pull",
+      "description": "Fetch from and integrate with another repository or a local branch",
+      "args": [
+        {
+          "name": "remote",
+          "generators": [{ "type": "git_remotes" }]
+        },
+        {
+          "name": "branch",
+          "generators": [{ "type": "git_branches" }]
+        }
+      ],
+      "options": [
+        { "name": ["--rebase"], "description": "Rebase instead of merge" },
+        { "name": ["--no-rebase"], "description": "Merge instead of rebase" }
+      ]
+    }
+  ]
+}

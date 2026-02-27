@@ -1,0 +1,16 @@
+[package]
+name = "ghost-complete"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "ghost-complete"
+path = "src/main.rs"
+
+[dependencies]
+gc-pty = { path = "../gc-pty" }
+tokio = { workspace = true }
+clap = { version = "4", features = ["derive"] }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }

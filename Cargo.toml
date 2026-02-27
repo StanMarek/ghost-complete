@@ -1,0 +1,19 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/ghost-complete",
+    "crates/gc-pty",
+    "crates/gc-parser",
+    "crates/gc-buffer",
+    "crates/gc-suggest",
+    "crates/gc-overlay",
+    "crates/gc-config",
+]
+
+[workspace.dependencies]
+tokio = { version = "1", features = ["full"] }
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+serde = { version = "1", features = ["derive"] }
+crossterm = "0.28"
