@@ -16,3 +16,12 @@ _gc_preexec() {
 
 precmd_functions+=(_gc_precmd)
 preexec_functions+=(_gc_preexec)
+
+# Report current command buffer to the proxy via custom OSC 7770.
+# Fires after every buffer modification (typing, deletion, cursor movement, paste).
+_gc_report_buffer() {
+    printf '\e]7770;%d;%s\a' "$CURSOR" "$BUFFER"
+}
+
+autoload -Uz add-zle-hook-widget
+add-zle-hook-widget line-pre-redraw _gc_report_buffer
