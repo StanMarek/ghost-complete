@@ -1,6 +1,6 @@
-pub const MAX_VISIBLE: usize = 10;
-pub const MIN_POPUP_WIDTH: u16 = 20;
-pub const MAX_POPUP_WIDTH: u16 = 60;
+pub const DEFAULT_MAX_VISIBLE: usize = 10;
+pub const DEFAULT_MIN_POPUP_WIDTH: u16 = 20;
+pub const DEFAULT_MAX_POPUP_WIDTH: u16 = 60;
 
 #[derive(Debug, Clone)]
 pub struct OverlayState {
@@ -25,11 +25,11 @@ impl OverlayState {
         }
     }
 
-    pub fn move_down(&mut self, total_items: usize) {
+    pub fn move_down(&mut self, total_items: usize, max_visible: usize) {
         if self.selected + 1 < total_items {
             self.selected += 1;
-            if self.selected >= self.scroll_offset + MAX_VISIBLE {
-                self.scroll_offset = self.selected - MAX_VISIBLE + 1;
+            if self.selected >= self.scroll_offset + max_visible {
+                self.scroll_offset = self.selected - max_visible + 1;
             }
         }
     }
@@ -62,7 +62,7 @@ mod tests {
     #[test]
     fn test_move_down_increments() {
         let mut state = OverlayState::new();
-        state.move_down(5);
+        state.move_down(5, DEFAULT_MAX_VISIBLE);
         assert_eq!(state.selected, 1);
     }
 
@@ -85,20 +85,19 @@ mod tests {
     fn test_move_down_at_end_stays() {
         let mut state = OverlayState::new();
         state.selected = 4;
-        state.move_down(5);
+        state.move_down(5, DEFAULT_MAX_VISIBLE);
         assert_eq!(state.selected, 4);
     }
 
     #[test]
     fn test_scroll_offset_on_move_down() {
         let mut state = OverlayState::new();
-        // Move down past MAX_VISIBLE
-        for _ in 0..MAX_VISIBLE + 2 {
-            state.move_down(20);
+        for _ in 0..DEFAULT_MAX_VISIBLE + 2 {
+            state.move_down(20, DEFAULT_MAX_VISIBLE);
         }
-        assert_eq!(state.selected, MAX_VISIBLE + 2);
+        assert_eq!(state.selected, DEFAULT_MAX_VISIBLE + 2);
         assert!(state.scroll_offset > 0);
-        assert!(state.selected < state.scroll_offset + MAX_VISIBLE);
+        assert!(state.selected < state.scroll_offset + DEFAULT_MAX_VISIBLE);
     }
 
     #[test]
@@ -119,5 +118,17 @@ mod tests {
         state.reset();
         assert_eq!(state.selected, 0);
         assert_eq!(state.scroll_offset, 0);
+    }
+
+    #[test]
+    fn test_custom_max_visible() {
+        let mut state = OverlayState::new();
+        let custom_max = 3;
+        for _ in 0..5 {
+            state.move_down(20, custom_max);
+        }
+        assert_eq!(state.selected, 5);
+        assert_eq!(state.scroll_offset, 3);
+        assert!(state.selected < state.scroll_offset + custom_max);
     }
 }

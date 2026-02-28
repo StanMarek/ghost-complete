@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 use gc_buffer::parse_command_context;
-use gc_overlay::types::{OverlayState, PopupLayout};
+use gc_overlay::types::{OverlayState, PopupLayout, DEFAULT_MAX_POPUP_WIDTH, DEFAULT_MAX_VISIBLE, DEFAULT_MIN_POPUP_WIDTH};
 use gc_overlay::{clear_popup, render_popup};
 use gc_parser::TerminalParser;
 use gc_suggest::{Suggestion, SuggestionEngine};
@@ -17,6 +17,9 @@ pub struct InputHandler {
     last_layout: Option<PopupLayout>,
     visible: bool,
     trigger_requested: bool,
+    max_visible: usize,
+    min_width: u16,
+    max_width: u16,
 }
 
 impl InputHandler {
@@ -28,7 +31,17 @@ impl InputHandler {
             last_layout: None,
             visible: false,
             trigger_requested: false,
+            max_visible: DEFAULT_MAX_VISIBLE,
+            min_width: DEFAULT_MIN_POPUP_WIDTH,
+            max_width: DEFAULT_MAX_POPUP_WIDTH,
         })
+    }
+
+    pub fn with_popup_config(mut self, max_visible: usize, min_width: u16, max_width: u16) -> Self {
+        self.max_visible = max_visible;
+        self.min_width = min_width;
+        self.max_width = max_width;
+        self
     }
 
     pub fn is_visible(&self) -> bool {
@@ -71,7 +84,7 @@ impl InputHandler {
                 Vec::new()
             }
             KeyEvent::ArrowDown => {
-                self.overlay.move_down(self.suggestions.len());
+                self.overlay.move_down(self.suggestions.len(), self.max_visible);
                 self.render(parser, stdout);
                 Vec::new()
             }
@@ -209,6 +222,9 @@ impl InputHandler {
             cursor_col,
             screen_rows,
             screen_cols,
+            self.max_visible,
+            self.min_width,
+            self.max_width,
         );
         let _ = stdout.write_all(&render_buf);
         let _ = stdout.flush();
@@ -286,6 +302,7 @@ pub fn key_to_bytes(key: &KeyEvent) -> Vec<u8> {
 mod tests {
     use super::*;
     use gc_suggest::{SuggestionKind, SuggestionSource};
+    use gc_overlay::types::{DEFAULT_MAX_VISIBLE, DEFAULT_MIN_POPUP_WIDTH, DEFAULT_MAX_POPUP_WIDTH};
 
     #[test]
     fn test_should_trigger_on_space() {
@@ -376,6 +393,9 @@ mod tests {
             }),
             visible: true,
             trigger_requested: false,
+            max_visible: DEFAULT_MAX_VISIBLE,
+            min_width: DEFAULT_MIN_POPUP_WIDTH,
+            max_width: DEFAULT_MAX_POPUP_WIDTH,
         };
 
         let mut stdout_buf = Vec::new();
@@ -395,6 +415,9 @@ mod tests {
             last_layout: None,
             visible: false,
             trigger_requested: false,
+            max_visible: DEFAULT_MAX_VISIBLE,
+            min_width: DEFAULT_MIN_POPUP_WIDTH,
+            max_width: DEFAULT_MAX_POPUP_WIDTH,
         }
     }
 
@@ -428,14 +451,7 @@ mod tests {
 
     #[test]
     fn test_handler_starts_not_visible() {
-        let handler = InputHandler {
-            engine: SuggestionEngine::new(Path::new(".")).unwrap(),
-            overlay: OverlayState::new(),
-            suggestions: Vec::new(),
-            last_layout: None,
-            visible: false,
-            trigger_requested: false,
-        };
+        let handler = make_handler();
         assert!(!handler.is_visible());
         assert!(!handler.has_pending_trigger());
     }

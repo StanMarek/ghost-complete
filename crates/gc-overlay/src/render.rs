@@ -16,6 +16,9 @@ pub fn render_popup(
     cursor_col: u16,
     screen_rows: u16,
     screen_cols: u16,
+    max_visible: usize,
+    min_width: u16,
+    max_width: u16,
 ) -> PopupLayout {
     let layout = layout::compute_layout(
         suggestions,
@@ -24,6 +27,9 @@ pub fn render_popup(
         cursor_col,
         screen_rows,
         screen_cols,
+        max_visible,
+        min_width,
+        max_width,
     );
 
     if layout.height == 0 {
@@ -134,6 +140,7 @@ fn format_item(buf: &mut Vec<u8>, s: &Suggestion, width: u16, is_selected: bool)
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::types::{DEFAULT_MAX_POPUP_WIDTH, DEFAULT_MAX_VISIBLE, DEFAULT_MIN_POPUP_WIDTH};
     use gc_suggest::SuggestionSource;
 
     fn make(text: &str, desc: Option<&str>, kind: SuggestionKind) -> Suggestion {
@@ -163,7 +170,10 @@ mod tests {
         let mut buf = Vec::new();
         let suggestions = make_suggestions();
         let state = OverlayState::new();
-        render_popup(&mut buf, &suggestions, &state, 5, 0, 24, 80);
+        render_popup(
+            &mut buf, &suggestions, &state, 5, 0, 24, 80,
+            DEFAULT_MAX_VISIBLE, DEFAULT_MIN_POPUP_WIDTH, DEFAULT_MAX_POPUP_WIDTH,
+        );
         let output = String::from_utf8_lossy(&buf);
         assert!(
             output.starts_with("\x1b[?2026h"),
@@ -177,7 +187,10 @@ mod tests {
         let mut buf = Vec::new();
         let suggestions = make_suggestions();
         let state = OverlayState::new();
-        render_popup(&mut buf, &suggestions, &state, 5, 0, 24, 80);
+        render_popup(
+            &mut buf, &suggestions, &state, 5, 0, 24, 80,
+            DEFAULT_MAX_VISIBLE, DEFAULT_MIN_POPUP_WIDTH, DEFAULT_MAX_POPUP_WIDTH,
+        );
         let output = String::from_utf8_lossy(&buf);
         assert!(output.contains("\x1b7"), "should contain save cursor");
         assert!(output.contains("\x1b8"), "should contain restore cursor");
@@ -188,7 +201,10 @@ mod tests {
         let mut buf = Vec::new();
         let suggestions = make_suggestions();
         let state = OverlayState::new();
-        render_popup(&mut buf, &suggestions, &state, 5, 0, 24, 80);
+        render_popup(
+            &mut buf, &suggestions, &state, 5, 0, 24, 80,
+            DEFAULT_MAX_VISIBLE, DEFAULT_MIN_POPUP_WIDTH, DEFAULT_MAX_POPUP_WIDTH,
+        );
         let output = String::from_utf8_lossy(&buf);
         // Popup below cursor at row 5 → starts at row 6 (1-indexed: 7)
         assert!(
@@ -202,7 +218,10 @@ mod tests {
         let mut buf = Vec::new();
         let suggestions = make_suggestions();
         let state = OverlayState::new(); // selected = 0
-        render_popup(&mut buf, &suggestions, &state, 5, 0, 24, 80);
+        render_popup(
+            &mut buf, &suggestions, &state, 5, 0, 24, 80,
+            DEFAULT_MAX_VISIBLE, DEFAULT_MIN_POPUP_WIDTH, DEFAULT_MAX_POPUP_WIDTH,
+        );
         let output = String::from_utf8_lossy(&buf);
         assert!(
             output.contains("\x1b[7m"),
@@ -229,7 +248,6 @@ mod tests {
         let s = make("cmd", Some(&long_desc), SuggestionKind::Command);
         format_item(&mut buf, &s, 30, false);
         // Output should not exceed width
-        // (hard to check exact byte count due to ANSI codes, but it shouldn't be huge)
         assert!(buf.len() < 200, "should truncate description");
     }
 
@@ -245,9 +263,7 @@ mod tests {
         };
         clear_popup(&mut buf, &layout);
         let output = String::from_utf8_lossy(&buf);
-        // Should NOT contain erase-to-EOL
         assert!(!output.contains("\x1b[K"), "should not use erase_to_eol");
-        // Should contain lots of spaces
         assert!(
             output.contains("                    "),
             "should write spaces"
@@ -266,7 +282,6 @@ mod tests {
         };
         clear_popup(&mut buf, &layout);
         let output = String::from_utf8_lossy(&buf);
-        // Should have cursor moves to 4 rows
         assert!(output.contains("\x1b[11;6H"), "row 10 -> ANSI row 11");
         assert!(output.contains("\x1b[12;6H"), "row 11 -> ANSI row 12");
         assert!(output.contains("\x1b[13;6H"), "row 12 -> ANSI row 13");
@@ -282,9 +297,11 @@ mod tests {
         let mut state = OverlayState::new();
         state.scroll_offset = 5;
         state.selected = 5;
-        let layout = render_popup(&mut buf, &suggestions, &state, 5, 0, 24, 80);
+        let layout = render_popup(
+            &mut buf, &suggestions, &state, 5, 0, 24, 80,
+            DEFAULT_MAX_VISIBLE, DEFAULT_MIN_POPUP_WIDTH, DEFAULT_MAX_POPUP_WIDTH,
+        );
         let output = String::from_utf8_lossy(&buf);
-        // Should show item5 (first visible after offset), not item0
         assert!(
             output.contains("item5"),
             "should show item5 at scroll_offset=5"
@@ -293,7 +310,7 @@ mod tests {
             !output.contains("item0"),
             "should not show item0 when scrolled"
         );
-        assert_eq!(layout.height, 10); // MAX_VISIBLE
+        assert_eq!(layout.height, 10); // DEFAULT_MAX_VISIBLE
     }
 
     #[test]
@@ -301,7 +318,10 @@ mod tests {
         let mut buf = Vec::new();
         let suggestions: Vec<Suggestion> = vec![];
         let state = OverlayState::new();
-        let layout = render_popup(&mut buf, &suggestions, &state, 5, 0, 24, 80);
+        let layout = render_popup(
+            &mut buf, &suggestions, &state, 5, 0, 24, 80,
+            DEFAULT_MAX_VISIBLE, DEFAULT_MIN_POPUP_WIDTH, DEFAULT_MAX_POPUP_WIDTH,
+        );
         assert_eq!(layout.height, 0);
         assert!(
             buf.is_empty(),

@@ -1,6 +1,6 @@
 use gc_suggest::Suggestion;
 
-use crate::types::{PopupLayout, MAX_POPUP_WIDTH, MAX_VISIBLE, MIN_POPUP_WIDTH};
+use crate::types::PopupLayout;
 
 pub fn compute_layout(
     suggestions: &[Suggestion],
@@ -9,19 +9,22 @@ pub fn compute_layout(
     cursor_col: u16,
     screen_rows: u16,
     screen_cols: u16,
+    max_visible: usize,
+    min_width: u16,
+    max_width: u16,
 ) -> PopupLayout {
-    let visible_count = suggestions.len().min(MAX_VISIBLE);
+    let visible_count = suggestions.len().min(max_visible);
     let height = visible_count as u16;
 
     // Compute width from visible suggestions
     let content_width = suggestions
         .iter()
         .skip(scroll_offset)
-        .take(MAX_VISIBLE)
+        .take(max_visible)
         .map(item_display_width)
         .max()
-        .unwrap_or(MIN_POPUP_WIDTH as usize);
-    let width = (content_width as u16).clamp(MIN_POPUP_WIDTH, MAX_POPUP_WIDTH.min(screen_cols));
+        .unwrap_or(min_width as usize);
+    let width = (content_width as u16).clamp(min_width, max_width.min(screen_cols));
 
     // Vertical: prefer below cursor, above if not enough space
     let space_below = screen_rows.saturating_sub(cursor_row + 1);
@@ -64,6 +67,7 @@ fn item_display_width(suggestion: &Suggestion) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::types::{DEFAULT_MAX_POPUP_WIDTH, DEFAULT_MAX_VISIBLE, DEFAULT_MIN_POPUP_WIDTH};
     use gc_suggest::{SuggestionKind, SuggestionSource};
 
     fn make(text: &str, desc: Option<&str>) -> Suggestion {
@@ -79,7 +83,10 @@ mod tests {
     #[test]
     fn test_popup_below_cursor() {
         let suggestions = vec![make("checkout", None), make("commit", None)];
-        let layout = compute_layout(&suggestions, 0, 5, 0, 24, 80);
+        let layout = compute_layout(
+            &suggestions, 0, 5, 0, 24, 80,
+            DEFAULT_MAX_VISIBLE, DEFAULT_MIN_POPUP_WIDTH, DEFAULT_MAX_POPUP_WIDTH,
+        );
         assert!(!layout.renders_above);
         assert_eq!(layout.start_row, 6);
     }
@@ -88,7 +95,10 @@ mod tests {
     fn test_popup_above_cursor() {
         let suggestions: Vec<Suggestion> =
             (0..5).map(|i| make(&format!("item{i}"), None)).collect();
-        let layout = compute_layout(&suggestions, 0, 22, 0, 24, 80);
+        let layout = compute_layout(
+            &suggestions, 0, 22, 0, 24, 80,
+            DEFAULT_MAX_VISIBLE, DEFAULT_MIN_POPUP_WIDTH, DEFAULT_MAX_POPUP_WIDTH,
+        );
         assert!(layout.renders_above);
         assert!(layout.start_row < 22);
     }
@@ -96,14 +106,20 @@ mod tests {
     #[test]
     fn test_popup_shifts_left() {
         let suggestions = vec![make("a-long-suggestion-name", None)];
-        let layout = compute_layout(&suggestions, 0, 5, 70, 24, 80);
+        let layout = compute_layout(
+            &suggestions, 0, 5, 70, 24, 80,
+            DEFAULT_MAX_VISIBLE, DEFAULT_MIN_POPUP_WIDTH, DEFAULT_MAX_POPUP_WIDTH,
+        );
         assert!(layout.start_col + layout.width <= 80);
     }
 
     #[test]
     fn test_popup_at_top_left() {
         let suggestions = vec![make("ls", None)];
-        let layout = compute_layout(&suggestions, 0, 0, 0, 24, 80);
+        let layout = compute_layout(
+            &suggestions, 0, 0, 0, 24, 80,
+            DEFAULT_MAX_VISIBLE, DEFAULT_MIN_POPUP_WIDTH, DEFAULT_MAX_POPUP_WIDTH,
+        );
         assert_eq!(layout.start_row, 1);
         assert_eq!(layout.start_col, 0);
     }
@@ -111,23 +127,43 @@ mod tests {
     #[test]
     fn test_width_clamped_min() {
         let suggestions = vec![make("x", None)];
-        let layout = compute_layout(&suggestions, 0, 0, 0, 24, 80);
-        assert!(layout.width >= MIN_POPUP_WIDTH);
+        let layout = compute_layout(
+            &suggestions, 0, 0, 0, 24, 80,
+            DEFAULT_MAX_VISIBLE, DEFAULT_MIN_POPUP_WIDTH, DEFAULT_MAX_POPUP_WIDTH,
+        );
+        assert!(layout.width >= DEFAULT_MIN_POPUP_WIDTH);
     }
 
     #[test]
     fn test_width_clamped_max() {
         let long_desc = "a".repeat(200);
         let suggestions = vec![make("cmd", Some(&long_desc))];
-        let layout = compute_layout(&suggestions, 0, 0, 0, 24, 80);
-        assert!(layout.width <= MAX_POPUP_WIDTH);
+        let layout = compute_layout(
+            &suggestions, 0, 0, 0, 24, 80,
+            DEFAULT_MAX_VISIBLE, DEFAULT_MIN_POPUP_WIDTH, DEFAULT_MAX_POPUP_WIDTH,
+        );
+        assert!(layout.width <= DEFAULT_MAX_POPUP_WIDTH);
     }
 
     #[test]
     fn test_height_capped_at_max_visible() {
         let suggestions: Vec<Suggestion> =
             (0..50).map(|i| make(&format!("item{i}"), None)).collect();
-        let layout = compute_layout(&suggestions, 0, 0, 0, 24, 80);
-        assert_eq!(layout.height, MAX_VISIBLE as u16);
+        let layout = compute_layout(
+            &suggestions, 0, 0, 0, 24, 80,
+            DEFAULT_MAX_VISIBLE, DEFAULT_MIN_POPUP_WIDTH, DEFAULT_MAX_POPUP_WIDTH,
+        );
+        assert_eq!(layout.height, DEFAULT_MAX_VISIBLE as u16);
+    }
+
+    #[test]
+    fn test_custom_max_visible() {
+        let suggestions: Vec<Suggestion> =
+            (0..50).map(|i| make(&format!("item{i}"), None)).collect();
+        let layout = compute_layout(
+            &suggestions, 0, 0, 0, 24, 80,
+            5, DEFAULT_MIN_POPUP_WIDTH, DEFAULT_MAX_POPUP_WIDTH,
+        );
+        assert_eq!(layout.height, 5);
     }
 }
