@@ -184,6 +184,26 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                     let _ = stdout.flush();
                 }
             }
+
+            // CD chaining: auto-trigger suggestions when CWD changes (OSC 7).
+            // No has_pending_trigger() gate — CWD change is unconditional.
+            let cwd_dirty = {
+                let mut p = parser_for_stdout.lock().unwrap();
+                p.state_mut().take_cwd_dirty()
+            };
+
+            if cwd_dirty {
+                let mut render_buf = Vec::new();
+                {
+                    let mut h = handler_for_stdout.lock().unwrap();
+                    h.trigger(&parser_for_stdout, &mut render_buf);
+                }
+                if !render_buf.is_empty() {
+                    let mut stdout = std::io::stdout().lock();
+                    let _ = stdout.write_all(&render_buf);
+                    let _ = stdout.flush();
+                }
+            }
         }
         let _ = pty_shutdown.try_send(());
     });
