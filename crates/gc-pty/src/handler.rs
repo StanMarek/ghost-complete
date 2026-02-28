@@ -16,6 +16,7 @@ pub struct InputHandler {
     suggestions: Vec<Suggestion>,
     last_layout: Option<PopupLayout>,
     visible: bool,
+    trigger_requested: bool,
 }
 
 impl InputHandler {
@@ -26,11 +27,20 @@ impl InputHandler {
             suggestions: Vec::new(),
             last_layout: None,
             visible: false,
+            trigger_requested: false,
         })
     }
 
     pub fn is_visible(&self) -> bool {
         self.visible
+    }
+
+    pub fn has_pending_trigger(&self) -> bool {
+        self.trigger_requested
+    }
+
+    pub fn clear_trigger_request(&mut self) {
+        self.trigger_requested = false;
     }
 
     /// Process a single key event. Returns the raw bytes to forward to the PTY,
@@ -86,7 +96,8 @@ impl InputHandler {
             }
             KeyEvent::Printable(_) | KeyEvent::Backspace => {
                 let forward = key_to_bytes(key);
-                self.trigger(parser, stdout);
+                // Defer re-trigger to Task B after shell updates buffer
+                self.trigger_requested = true;
                 forward
             }
             _ => {
@@ -104,13 +115,15 @@ impl InputHandler {
     ) -> Vec<u8> {
         match key {
             KeyEvent::CtrlSpace => {
+                // Manual trigger — fire immediately (no PTY roundtrip needed)
                 self.trigger(parser, stdout);
                 Vec::new()
             }
             KeyEvent::Printable(c) => {
                 let forward = vec![*c as u8];
                 if should_trigger_on_char(*c) {
-                    self.trigger(parser, stdout);
+                    // Defer trigger to Task B after shell processes the keystroke
+                    self.trigger_requested = true;
                 }
                 forward
             }
@@ -118,7 +131,7 @@ impl InputHandler {
         }
     }
 
-    fn trigger(&mut self, parser: &Arc<Mutex<TerminalParser>>, stdout: &mut dyn Write) {
+    pub fn trigger(&mut self, parser: &Arc<Mutex<TerminalParser>>, stdout: &mut dyn Write) {
         let (buffer, cursor, cwd, cursor_row, cursor_col, screen_rows, screen_cols) = {
             let p = parser.lock().unwrap();
             let state = p.state();
@@ -362,6 +375,7 @@ mod tests {
                 renders_above: false,
             }),
             visible: true,
+            trigger_requested: false,
         };
 
         let mut stdout_buf = Vec::new();
@@ -373,6 +387,45 @@ mod tests {
         assert!(!stdout_buf.is_empty());
     }
 
+    fn make_handler() -> InputHandler {
+        InputHandler {
+            engine: SuggestionEngine::new(Path::new(".")).unwrap(),
+            overlay: OverlayState::new(),
+            suggestions: Vec::new(),
+            last_layout: None,
+            visible: false,
+            trigger_requested: false,
+        }
+    }
+
+    #[test]
+    fn test_trigger_requested_on_space() {
+        let mut handler = make_handler();
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        handler.process_key(&KeyEvent::Printable(' '), &parser, &mut buf);
+        assert!(handler.has_pending_trigger());
+    }
+
+    #[test]
+    fn test_trigger_not_requested_on_alpha() {
+        let mut handler = make_handler();
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        handler.process_key(&KeyEvent::Printable('a'), &parser, &mut buf);
+        assert!(!handler.has_pending_trigger());
+    }
+
+    #[test]
+    fn test_ctrl_space_triggers_immediately() {
+        let mut handler = make_handler();
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        handler.process_key(&KeyEvent::CtrlSpace, &parser, &mut buf);
+        // CtrlSpace triggers immediately — does NOT set trigger_requested
+        assert!(!handler.has_pending_trigger());
+    }
+
     #[test]
     fn test_handler_starts_not_visible() {
         let handler = InputHandler {
@@ -381,7 +434,9 @@ mod tests {
             suggestions: Vec::new(),
             last_layout: None,
             visible: false,
+            trigger_requested: false,
         };
         assert!(!handler.is_visible());
+        assert!(!handler.has_pending_trigger());
     }
 }
