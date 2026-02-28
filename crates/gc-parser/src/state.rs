@@ -17,6 +17,7 @@ pub struct TerminalState {
     in_prompt: bool,
     command_buffer: Option<String>,
     buffer_cursor: usize,
+    buffer_dirty: bool,
 }
 
 impl TerminalState {
@@ -32,6 +33,7 @@ impl TerminalState {
             in_prompt: false,
             command_buffer: None,
             buffer_cursor: 0,
+            buffer_dirty: false,
         }
     }
 
@@ -67,6 +69,14 @@ impl TerminalState {
 
     pub fn buffer_cursor(&self) -> usize {
         self.buffer_cursor
+    }
+
+    /// Returns true if the command buffer was updated since the last check,
+    /// and clears the flag atomically.
+    pub fn take_buffer_dirty(&mut self) -> bool {
+        let dirty = self.buffer_dirty;
+        self.buffer_dirty = false;
+        dirty
     }
 
     // -- mutation helpers used by Perform impl --
@@ -162,6 +172,7 @@ impl TerminalState {
     pub(crate) fn set_command_buffer(&mut self, buffer: String, cursor: usize) {
         self.command_buffer = Some(buffer);
         self.buffer_cursor = cursor;
+        self.buffer_dirty = true;
     }
 
     pub(crate) fn clear_command_buffer(&mut self) {

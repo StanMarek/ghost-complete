@@ -497,6 +497,22 @@ mod tests {
     }
 
     #[test]
+    fn test_osc7770_sets_buffer_dirty() {
+        let mut p = make_parser();
+        assert!(!p.state_mut().take_buffer_dirty());
+        p.process_bytes(b"\x1b]7770;3;git\x07");
+        assert!(p.state_mut().take_buffer_dirty());
+    }
+
+    #[test]
+    fn test_take_buffer_dirty_clears_flag() {
+        let mut p = make_parser();
+        p.process_bytes(b"\x1b]7770;3;git\x07");
+        assert!(p.state_mut().take_buffer_dirty());
+        assert!(!p.state_mut().take_buffer_dirty());
+    }
+
+    #[test]
     fn test_percent_decode() {
         assert_eq!(percent_decode("/hello%20world"), "/hello world");
         assert_eq!(percent_decode("/no/encoding"), "/no/encoding");
