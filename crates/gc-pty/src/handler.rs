@@ -124,13 +124,63 @@ impl InputHandler {
                 Vec::new()
             }
             KeyEvent::Tab => {
-                let is_dir = !self.suggestions.is_empty()
-                    && self.suggestions[self.overlay.selected].text.ends_with('/');
-                let forward = self.accept_suggestion(parser);
-                self.dismiss(stdout);
-                if is_dir {
-                    self.trigger_requested = true;
+                if self.suggestions.is_empty() {
+                    self.dismiss(stdout);
+                    return Vec::new();
                 }
+
+                let selected_text = self.suggestions[self.overlay.selected].text.clone();
+                let is_dir = selected_text.ends_with('/');
+                let forward = self.accept_suggestion(parser);
+
+                if is_dir {
+                    // CD chaining: predict the buffer after acceptance and
+                    // immediately show next-level suggestions. Avoids timing
+                    // issues with the shell's OSC 7770 roundtrip.
+                    let (cwd, predicted_ctx, cr, cc, sr, sc) = {
+                        let mut p = parser.lock().unwrap();
+                        let state = p.state();
+                        let buffer = state.command_buffer().unwrap_or("").to_string();
+                        let cursor = state.buffer_cursor();
+                        let old_ctx = parse_command_context(&buffer, cursor);
+                        let word_start = cursor - old_ctx.current_word.len();
+
+                        let mut predicted =
+                            String::with_capacity(buffer.len() + selected_text.len());
+                        predicted.push_str(&buffer[..word_start]);
+                        predicted.push_str(&selected_text);
+                        if cursor < buffer.len() {
+                            predicted.push_str(&buffer[cursor..]);
+                        }
+                        let new_cursor = word_start + selected_text.len();
+
+                        let cwd = state.cwd().cloned().unwrap_or_else(|| PathBuf::from("."));
+                        let ctx = parse_command_context(&predicted, new_cursor);
+                        let (cr, cc) = state.cursor_position();
+                        let (sr, sc) = state.screen_dimensions();
+
+                        // Update parser with predicted buffer so subsequent
+                        // Tab/Enter computes correct current_word
+                        p.state_mut().predict_command_buffer(predicted, new_cursor);
+
+                        (cwd, ctx, cr, cc, sr, sc)
+                    };
+
+                    match self.engine.suggest_sync(&predicted_ctx, &cwd) {
+                        Ok(suggestions) if !suggestions.is_empty() => {
+                            self.suggestions = suggestions;
+                            self.overlay.reset();
+                            self.visible = true;
+                            self.render_at(stdout, cr, cc, sr, sc);
+                        }
+                        _ => {
+                            self.dismiss(stdout);
+                        }
+                    }
+                } else {
+                    self.dismiss(stdout);
+                }
+
                 forward
             }
             KeyEvent::Enter => {
@@ -504,7 +554,7 @@ mod tests {
     }
 
     #[test]
-    fn test_tab_accept_directory_sets_trigger() {
+    fn test_tab_accept_directory_predicts_buffer() {
         let mut handler = InputHandler {
             engine: SuggestionEngine::new(Path::new(".")).unwrap(),
             overlay: OverlayState::new(),
@@ -530,17 +580,31 @@ mod tests {
             trigger_chars: DEFAULT_TRIGGER_CHARS.iter().copied().collect(),
         };
 
+        // Simulate buffer "cd " with cursor at 3
         let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        {
+            let mut p = parser.lock().unwrap();
+            p.state_mut().predict_command_buffer("cd ".to_string(), 3);
+        }
+
         let mut buf = Vec::new();
         handler.process_key(&KeyEvent::Tab, &parser, &mut buf);
+
+        // Should NOT use deferred trigger — triggers immediately
         assert!(
-            handler.has_pending_trigger(),
-            "Tab on a directory suggestion should request re-trigger for cd chaining"
+            !handler.has_pending_trigger(),
+            "directory Tab should trigger immediately, not defer"
         );
+        // Parser buffer should be updated to predicted state
+        {
+            let p = parser.lock().unwrap();
+            assert_eq!(p.state().command_buffer(), Some("cd Desktop/"));
+            assert_eq!(p.state().buffer_cursor(), 11);
+        }
     }
 
     #[test]
-    fn test_tab_accept_file_no_trigger() {
+    fn test_tab_accept_file_dismisses() {
         let mut handler = InputHandler {
             engine: SuggestionEngine::new(Path::new(".")).unwrap(),
             overlay: OverlayState::new(),
@@ -570,8 +634,8 @@ mod tests {
         let mut buf = Vec::new();
         handler.process_key(&KeyEvent::Tab, &parser, &mut buf);
         assert!(
-            !handler.has_pending_trigger(),
-            "Tab on a file suggestion should NOT request re-trigger"
+            !handler.visible,
+            "popup should dismiss after accepting a file"
         );
     }
 

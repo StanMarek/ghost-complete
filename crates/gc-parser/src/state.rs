@@ -89,6 +89,14 @@ impl TerminalState {
         dirty
     }
 
+    /// Override the command buffer with a predicted value (e.g., after Tab
+    /// acceptance in directory chaining). Does NOT set `buffer_dirty` since
+    /// this is a local prediction, not a shell-reported update via OSC 7770.
+    pub fn predict_command_buffer(&mut self, buffer: String, cursor: usize) {
+        self.command_buffer = Some(buffer);
+        self.buffer_cursor = cursor;
+    }
+
     // -- mutation helpers used by Perform impl --
 
     pub(crate) fn set_cursor(&mut self, row: u16, col: u16) {
