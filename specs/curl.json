@@ -8,173 +8,322 @@
   ],
   "options": [
     {
-      "name": ["-X", "--request"],
+      "name": [
+        "-X",
+        "--request"
+      ],
       "description": "HTTP method to use (GET, POST, PUT, DELETE, PATCH, etc.)",
-      "args": [{ "name": "method" }]
+      "args": {
+        "name": "method"
+      }
     },
     {
-      "name": ["-H", "--header"],
+      "name": [
+        "-H",
+        "--header"
+      ],
       "description": "Pass custom header to server",
-      "args": [{ "name": "header" }]
+      "args": {
+        "name": "header"
+      }
     },
     {
-      "name": ["-d", "--data"],
+      "name": [
+        "-d",
+        "--data"
+      ],
       "description": "Send specified data in a POST request",
-      "args": [{ "name": "data" }]
+      "args": {
+        "name": "data"
+      }
     },
     {
-      "name": ["--data-binary"],
+      "name": [
+        "--data-binary"
+      ],
       "description": "Send data exactly as specified, preserving newlines and carriage returns",
-      "args": [{ "name": "data" }]
+      "args": {
+        "name": "data"
+      }
     },
     {
-      "name": ["--data-raw"],
+      "name": [
+        "--data-raw"
+      ],
       "description": "Send data as-is without special interpretation of @ prefix",
-      "args": [{ "name": "data" }]
+      "args": {
+        "name": "data"
+      }
     },
     {
-      "name": ["--data-urlencode"],
+      "name": [
+        "--data-urlencode"
+      ],
       "description": "URL-encode the data before sending",
-      "args": [{ "name": "data" }]
+      "args": {
+        "name": "data"
+      }
     },
     {
-      "name": ["-F", "--form"],
+      "name": [
+        "-F",
+        "--form"
+      ],
       "description": "Specify multipart form data",
-      "args": [{ "name": "name=content" }]
+      "args": {
+        "name": "name=content"
+      }
     },
     {
-      "name": ["-G", "--get"],
+      "name": [
+        "-G",
+        "--get"
+      ],
       "description": "Put the post data in the URL and use GET"
     },
     {
-      "name": ["-o", "--output"],
+      "name": [
+        "-o",
+        "--output"
+      ],
       "description": "Write output to file instead of stdout",
-      "args": [{ "name": "file", "template": "filepaths" }]
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      }
     },
     {
-      "name": ["-O", "--remote-name"],
+      "name": [
+        "-O",
+        "--remote-name"
+      ],
       "description": "Write output to file named like the remote file"
     },
     {
-      "name": ["-T", "--upload-file"],
+      "name": [
+        "-T",
+        "--upload-file"
+      ],
       "description": "Transfer local file to destination URL",
-      "args": [{ "name": "file", "template": "filepaths" }]
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      }
     },
     {
-      "name": ["-L", "--location"],
+      "name": [
+        "-L",
+        "--location"
+      ],
       "description": "Follow redirects"
     },
     {
-      "name": ["-v", "--verbose"],
+      "name": [
+        "-v",
+        "--verbose"
+      ],
       "description": "Make the operation more talkative"
     },
     {
-      "name": ["-s", "--silent"],
-      "description": "Silent mode — no progress meter or error messages"
+      "name": [
+        "-s",
+        "--silent"
+      ],
+      "description": "Silent mode \u2014 no progress meter or error messages"
     },
     {
-      "name": ["-S", "--show-error"],
+      "name": [
+        "-S",
+        "--show-error"
+      ],
       "description": "Show error even when -s is used"
     },
     {
-      "name": ["-f", "--fail"],
+      "name": [
+        "-f",
+        "--fail"
+      ],
       "description": "Fail silently on HTTP errors (no output on server errors)"
     },
     {
-      "name": ["-I", "--head"],
+      "name": [
+        "-I",
+        "--head"
+      ],
       "description": "Fetch headers only"
     },
     {
-      "name": ["-k", "--insecure"],
+      "name": [
+        "-k",
+        "--insecure"
+      ],
       "description": "Allow insecure server connections when using SSL"
     },
     {
-      "name": ["-u", "--user"],
+      "name": [
+        "-u",
+        "--user"
+      ],
       "description": "Server user and password (user:password)",
-      "args": [{ "name": "user:password" }]
+      "args": {
+        "name": "user:password"
+      }
     },
     {
-      "name": ["-b", "--cookie"],
+      "name": [
+        "-b",
+        "--cookie"
+      ],
       "description": "Send cookies from string or file",
-      "args": [{ "name": "cookie" }]
+      "args": {
+        "name": "cookie"
+      }
     },
     {
-      "name": ["-c", "--cookie-jar"],
+      "name": [
+        "-c",
+        "--cookie-jar"
+      ],
       "description": "Write cookies to file after operation",
-      "args": [{ "name": "file", "template": "filepaths" }]
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      }
     },
     {
-      "name": ["-A", "--user-agent"],
+      "name": [
+        "-A",
+        "--user-agent"
+      ],
       "description": "Send User-Agent header",
-      "args": [{ "name": "name" }]
+      "args": {
+        "name": "name"
+      }
     },
     {
-      "name": ["-e", "--referer"],
+      "name": [
+        "-e",
+        "--referer"
+      ],
       "description": "Send Referer URL header",
-      "args": [{ "name": "url" }]
+      "args": {
+        "name": "url"
+      }
     },
     {
-      "name": ["-w", "--write-out"],
+      "name": [
+        "-w",
+        "--write-out"
+      ],
       "description": "Output format after transfer completes",
-      "args": [{ "name": "format" }]
+      "args": {
+        "name": "format"
+      }
     },
     {
-      "name": ["--compressed"],
+      "name": [
+        "--compressed"
+      ],
       "description": "Request compressed response and decompress it"
     },
     {
-      "name": ["--connect-timeout"],
+      "name": [
+        "--connect-timeout"
+      ],
       "description": "Maximum time allowed for connection phase in seconds",
-      "args": [{ "name": "seconds" }]
+      "args": {
+        "name": "seconds"
+      }
     },
     {
-      "name": ["-m", "--max-time"],
+      "name": [
+        "-m",
+        "--max-time"
+      ],
       "description": "Maximum time allowed for the transfer in seconds",
-      "args": [{ "name": "seconds" }]
+      "args": {
+        "name": "seconds"
+      }
     },
     {
-      "name": ["--retry"],
+      "name": [
+        "--retry"
+      ],
       "description": "Retry request if transient problems occur",
-      "args": [{ "name": "num" }]
+      "args": {
+        "name": "num"
+      }
     },
     {
-      "name": ["-x", "--proxy"],
+      "name": [
+        "-x",
+        "--proxy"
+      ],
       "description": "Use specified proxy",
-      "args": [{ "name": "url" }]
+      "args": {
+        "name": "url"
+      }
     },
     {
-      "name": ["--cert"],
+      "name": [
+        "--cert"
+      ],
       "description": "Client certificate file and password",
-      "args": [{ "name": "file", "template": "filepaths" }]
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      }
     },
     {
-      "name": ["--key"],
+      "name": [
+        "--key"
+      ],
       "description": "Private key file name",
-      "args": [{ "name": "file", "template": "filepaths" }]
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      }
     },
     {
-      "name": ["--cacert"],
+      "name": [
+        "--cacert"
+      ],
       "description": "CA certificate file to verify peer against",
-      "args": [{ "name": "file", "template": "filepaths" }]
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      }
     },
     {
-      "name": ["--http1.1"],
+      "name": [
+        "--http1.1"
+      ],
       "description": "Use HTTP 1.1"
     },
     {
-      "name": ["--http2"],
+      "name": [
+        "--http2"
+      ],
       "description": "Use HTTP/2"
     },
     {
-      "name": ["--http3"],
+      "name": [
+        "--http3"
+      ],
       "description": "Use HTTP/3"
     },
     {
-      "name": ["-4", "--ipv4"],
+      "name": [
+        "-4",
+        "--ipv4"
+      ],
       "description": "Resolve names to IPv4 addresses only"
     },
     {
-      "name": ["-6", "--ipv6"],
+      "name": [
+        "-6",
+        "--ipv6"
+      ],
       "description": "Resolve names to IPv6 addresses only"
     }
   ]

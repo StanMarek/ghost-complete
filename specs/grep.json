@@ -13,34 +13,235 @@
     }
   ],
   "options": [
-    { "name": ["-r", "--recursive"], "description": "Read all files under each directory, recursively" },
-    { "name": ["-l", "--files-with-matches"], "description": "Print only names of files with matching lines" },
-    { "name": ["-L", "--files-without-match"], "description": "Print only names of files with no matching lines" },
-    { "name": ["-n", "--line-number"], "description": "Print line number with output lines" },
-    { "name": ["-c", "--count"], "description": "Print only a count of matching lines per file" },
-    { "name": ["-i", "--ignore-case"], "description": "Ignore case distinctions in patterns and data" },
-    { "name": ["-v", "--invert-match"], "description": "Select non-matching lines" },
-    { "name": ["-w", "--word-regexp"], "description": "Match only whole words" },
-    { "name": ["-x", "--line-regexp"], "description": "Match only whole lines" },
-    { "name": ["-E", "--extended-regexp"], "description": "Use extended regular expressions" },
-    { "name": ["-P", "--perl-regexp"], "description": "Use Perl-compatible regular expressions" },
-    { "name": ["-F", "--fixed-strings"], "description": "Interpret patterns as fixed strings, not regular expressions" },
-    { "name": ["-A", "--after-context"], "description": "Print NUM lines of trailing context after matching lines", "args": [{ "name": "num" }] },
-    { "name": ["-B", "--before-context"], "description": "Print NUM lines of leading context before matching lines", "args": [{ "name": "num" }] },
-    { "name": ["-C", "--context"], "description": "Print NUM lines of output context", "args": [{ "name": "num" }] },
-    { "name": ["-m", "--max-count"], "description": "Stop after NUM selected lines", "args": [{ "name": "num" }] },
-    { "name": ["-H", "--with-filename"], "description": "Print file name with output lines" },
-    { "name": ["-h", "--no-filename"], "description": "Suppress the file name prefix on output" },
-    { "name": ["--include"], "description": "Search only files whose name matches the given glob pattern", "args": [{ "name": "glob" }] },
-    { "name": ["--exclude"], "description": "Skip files whose name matches the given glob pattern", "args": [{ "name": "glob" }] },
-    { "name": ["--exclude-dir"], "description": "Skip directories whose name matches the given pattern", "args": [{ "name": "dir" }] },
-    { "name": ["-o", "--only-matching"], "description": "Print only the matched parts of a matching line" },
-    { "name": ["-q", "--quiet"], "description": "Suppress all normal output" },
-    { "name": ["-s", "--no-messages"], "description": "Suppress error messages about nonexistent or unreadable files" },
-    { "name": ["--color"], "description": "Use markers to highlight the matching strings", "args": [{ "name": "when" }] },
-    { "name": ["-e", "--regexp"], "description": "Use PATTERN for matching", "args": [{ "name": "pattern" }] },
-    { "name": ["-f", "--file"], "description": "Obtain patterns from FILE", "args": [{ "name": "file", "template": "filepaths" }] },
-    { "name": ["-R", "--dereference-recursive"], "description": "Read all files recursively, following all symlinks" },
-    { "name": ["-Z", "--null"], "description": "Print a zero byte after the file name" }
+    {
+      "name": [
+        "-r",
+        "--recursive"
+      ],
+      "description": "Read all files under each directory, recursively"
+    },
+    {
+      "name": [
+        "-l",
+        "--files-with-matches"
+      ],
+      "description": "Print only names of files with matching lines"
+    },
+    {
+      "name": [
+        "-L",
+        "--files-without-match"
+      ],
+      "description": "Print only names of files with no matching lines"
+    },
+    {
+      "name": [
+        "-n",
+        "--line-number"
+      ],
+      "description": "Print line number with output lines"
+    },
+    {
+      "name": [
+        "-c",
+        "--count"
+      ],
+      "description": "Print only a count of matching lines per file"
+    },
+    {
+      "name": [
+        "-i",
+        "--ignore-case"
+      ],
+      "description": "Ignore case distinctions in patterns and data"
+    },
+    {
+      "name": [
+        "-v",
+        "--invert-match"
+      ],
+      "description": "Select non-matching lines"
+    },
+    {
+      "name": [
+        "-w",
+        "--word-regexp"
+      ],
+      "description": "Match only whole words"
+    },
+    {
+      "name": [
+        "-x",
+        "--line-regexp"
+      ],
+      "description": "Match only whole lines"
+    },
+    {
+      "name": [
+        "-E",
+        "--extended-regexp"
+      ],
+      "description": "Use extended regular expressions"
+    },
+    {
+      "name": [
+        "-P",
+        "--perl-regexp"
+      ],
+      "description": "Use Perl-compatible regular expressions"
+    },
+    {
+      "name": [
+        "-F",
+        "--fixed-strings"
+      ],
+      "description": "Interpret patterns as fixed strings, not regular expressions"
+    },
+    {
+      "name": [
+        "-A",
+        "--after-context"
+      ],
+      "description": "Print NUM lines of trailing context after matching lines",
+      "args": {
+        "name": "num"
+      }
+    },
+    {
+      "name": [
+        "-B",
+        "--before-context"
+      ],
+      "description": "Print NUM lines of leading context before matching lines",
+      "args": {
+        "name": "num"
+      }
+    },
+    {
+      "name": [
+        "-C",
+        "--context"
+      ],
+      "description": "Print NUM lines of output context",
+      "args": {
+        "name": "num"
+      }
+    },
+    {
+      "name": [
+        "-m",
+        "--max-count"
+      ],
+      "description": "Stop after NUM selected lines",
+      "args": {
+        "name": "num"
+      }
+    },
+    {
+      "name": [
+        "-H",
+        "--with-filename"
+      ],
+      "description": "Print file name with output lines"
+    },
+    {
+      "name": [
+        "-h",
+        "--no-filename"
+      ],
+      "description": "Suppress the file name prefix on output"
+    },
+    {
+      "name": [
+        "--include"
+      ],
+      "description": "Search only files whose name matches the given glob pattern",
+      "args": {
+        "name": "glob"
+      }
+    },
+    {
+      "name": [
+        "--exclude"
+      ],
+      "description": "Skip files whose name matches the given glob pattern",
+      "args": {
+        "name": "glob"
+      }
+    },
+    {
+      "name": [
+        "--exclude-dir"
+      ],
+      "description": "Skip directories whose name matches the given pattern",
+      "args": {
+        "name": "dir"
+      }
+    },
+    {
+      "name": [
+        "-o",
+        "--only-matching"
+      ],
+      "description": "Print only the matched parts of a matching line"
+    },
+    {
+      "name": [
+        "-q",
+        "--quiet"
+      ],
+      "description": "Suppress all normal output"
+    },
+    {
+      "name": [
+        "-s",
+        "--no-messages"
+      ],
+      "description": "Suppress error messages about nonexistent or unreadable files"
+    },
+    {
+      "name": [
+        "--color"
+      ],
+      "description": "Use markers to highlight the matching strings",
+      "args": {
+        "name": "when"
+      }
+    },
+    {
+      "name": [
+        "-e",
+        "--regexp"
+      ],
+      "description": "Use PATTERN for matching",
+      "args": {
+        "name": "pattern"
+      }
+    },
+    {
+      "name": [
+        "-f",
+        "--file"
+      ],
+      "description": "Obtain patterns from FILE",
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "-R",
+        "--dereference-recursive"
+      ],
+      "description": "Read all files recursively, following all symlinks"
+    },
+    {
+      "name": [
+        "-Z",
+        "--null"
+      ],
+      "description": "Print a zero byte after the file name"
+    }
   ]
 }

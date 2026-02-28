@@ -6,51 +6,132 @@
       "name": "install",
       "description": "Install packages",
       "args": [
-        { "name": "package", "description": "Package(s) to install" }
+        {
+          "name": "package",
+          "description": "Package(s) to install"
+        }
       ],
       "options": [
-        { "name": ["-U", "--upgrade"], "description": "Upgrade all specified packages to the newest available version" },
-        { "name": ["--user"], "description": "Install to the Python user install directory" },
-        { "name": ["--force-reinstall"], "description": "Reinstall all packages even if already up-to-date" },
-        { "name": ["--no-deps"], "description": "Do not install package dependencies" },
         {
-          "name": ["-r", "--requirement"],
+          "name": [
+            "-U",
+            "--upgrade"
+          ],
+          "description": "Upgrade all specified packages to the newest available version"
+        },
+        {
+          "name": [
+            "--user"
+          ],
+          "description": "Install to the Python user install directory"
+        },
+        {
+          "name": [
+            "--force-reinstall"
+          ],
+          "description": "Reinstall all packages even if already up-to-date"
+        },
+        {
+          "name": [
+            "--no-deps"
+          ],
+          "description": "Do not install package dependencies"
+        },
+        {
+          "name": [
+            "-r",
+            "--requirement"
+          ],
           "description": "Install from the given requirements file",
-          "args": [{ "name": "file", "template": "filepaths" }]
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          }
         },
-        { "name": ["-e", "--editable"], "description": "Install a project in editable mode from a local path or VCS URL" },
-        { "name": ["--pre"], "description": "Include pre-release and development versions" },
-        { "name": ["--no-cache-dir"], "description": "Disable the cache" },
         {
-          "name": ["-t", "--target"],
+          "name": [
+            "-e",
+            "--editable"
+          ],
+          "description": "Install a project in editable mode from a local path or VCS URL"
+        },
+        {
+          "name": [
+            "--pre"
+          ],
+          "description": "Include pre-release and development versions"
+        },
+        {
+          "name": [
+            "--no-cache-dir"
+          ],
+          "description": "Disable the cache"
+        },
+        {
+          "name": [
+            "-t",
+            "--target"
+          ],
           "description": "Install packages into this directory",
-          "args": [{ "name": "dir", "template": "folders" }]
+          "args": {
+            "name": "dir",
+            "template": "folders"
+          }
         },
         {
-          "name": ["--prefix"],
+          "name": [
+            "--prefix"
+          ],
           "description": "Installation prefix where lib, bin and other top-level folders are placed",
-          "args": [{ "name": "dir", "template": "folders" }]
+          "args": {
+            "name": "dir",
+            "template": "folders"
+          }
         },
         {
-          "name": ["--index-url"],
+          "name": [
+            "--index-url"
+          ],
           "description": "Base URL of the Python Package Index",
-          "args": [{ "name": "url" }]
+          "args": {
+            "name": "url"
+          }
         },
         {
-          "name": ["--extra-index-url"],
+          "name": [
+            "--extra-index-url"
+          ],
           "description": "Extra URLs of package indexes to use in addition to the index URL",
-          "args": [{ "name": "url" }]
+          "args": {
+            "name": "url"
+          }
         },
-        { "name": ["--no-index"], "description": "Ignore package index (only looking at --find-links URLs)" },
         {
-          "name": ["--find-links"],
+          "name": [
+            "--no-index"
+          ],
+          "description": "Ignore package index (only looking at --find-links URLs)"
+        },
+        {
+          "name": [
+            "--find-links"
+          ],
           "description": "Look for archives in this directory or on this HTML page",
-          "args": [{ "name": "path", "template": "folders" }]
+          "args": {
+            "name": "path",
+            "template": "folders"
+          }
         },
         {
-          "name": ["-c", "--constraint"],
+          "name": [
+            "-c",
+            "--constraint"
+          ],
           "description": "Constrain versions using the given constraints file",
-          "args": [{ "name": "file", "template": "filepaths" }]
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          }
         }
       ]
     },
@@ -58,14 +139,29 @@
       "name": "uninstall",
       "description": "Uninstall packages",
       "args": [
-        { "name": "package", "description": "Package(s) to uninstall" }
+        {
+          "name": "package",
+          "description": "Package(s) to uninstall"
+        }
       ],
       "options": [
-        { "name": ["-y", "--yes"], "description": "Do not ask for confirmation of uninstall deletions" },
         {
-          "name": ["-r", "--requirement"],
+          "name": [
+            "-y",
+            "--yes"
+          ],
+          "description": "Do not ask for confirmation of uninstall deletions"
+        },
+        {
+          "name": [
+            "-r",
+            "--requirement"
+          ],
           "description": "Uninstall all the packages listed in the given requirements file",
-          "args": [{ "name": "file", "template": "filepaths" }]
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          }
         }
       ]
     },
@@ -74,18 +170,49 @@
       "description": "Output installed packages in requirements format",
       "options": [
         {
-          "name": ["-r", "--requirement"],
+          "name": [
+            "-r",
+            "--requirement"
+          ],
           "description": "Use the order in the given requirements file and its comments when generating output",
-          "args": [{ "name": "file", "template": "filepaths" }]
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          }
         },
-        { "name": ["-l", "--local"], "description": "If in a virtualenv that has global access, do not list globally-installed packages" },
-        { "name": ["--user"], "description": "Only output packages installed in user-site" },
-        { "name": ["--all"], "description": "Do not skip these packages in the output: setuptools, distribute, pip, wheel" },
-        { "name": ["--exclude-editable"], "description": "Exclude editable package from output" },
         {
-          "name": ["--exclude"],
+          "name": [
+            "-l",
+            "--local"
+          ],
+          "description": "If in a virtualenv that has global access, do not list globally-installed packages"
+        },
+        {
+          "name": [
+            "--user"
+          ],
+          "description": "Only output packages installed in user-site"
+        },
+        {
+          "name": [
+            "--all"
+          ],
+          "description": "Do not skip these packages in the output: setuptools, distribute, pip, wheel"
+        },
+        {
+          "name": [
+            "--exclude-editable"
+          ],
+          "description": "Exclude editable package from output"
+        },
+        {
+          "name": [
+            "--exclude"
+          ],
           "description": "Exclude specified package from the output",
-          "args": [{ "name": "package" }]
+          "args": {
+            "name": "package"
+          }
         }
       ]
     },
@@ -93,23 +220,74 @@
       "name": "list",
       "description": "List installed packages",
       "options": [
-        { "name": ["-o", "--outdated"], "description": "List outdated packages" },
-        { "name": ["-u", "--uptodate"], "description": "List up-to-date packages" },
-        { "name": ["-l", "--local"], "description": "If in a virtualenv with global access, do not list globally-installed packages" },
-        { "name": ["--user"], "description": "Only output packages installed in user-site" },
-        { "name": ["--pre"], "description": "Include pre-release and development versions" },
         {
-          "name": ["--format"],
-          "description": "Select the output format (columns, freeze, json)",
-          "args": [{ "name": "format" }]
+          "name": [
+            "-o",
+            "--outdated"
+          ],
+          "description": "List outdated packages"
         },
-        { "name": ["--not-required"], "description": "List packages that are not dependencies of installed packages" },
-        { "name": ["--exclude-editable"], "description": "Exclude editable package from output" },
-        { "name": ["--include-editable"], "description": "Include editable package from output" },
         {
-          "name": ["--exclude"],
+          "name": [
+            "-u",
+            "--uptodate"
+          ],
+          "description": "List up-to-date packages"
+        },
+        {
+          "name": [
+            "-l",
+            "--local"
+          ],
+          "description": "If in a virtualenv with global access, do not list globally-installed packages"
+        },
+        {
+          "name": [
+            "--user"
+          ],
+          "description": "Only output packages installed in user-site"
+        },
+        {
+          "name": [
+            "--pre"
+          ],
+          "description": "Include pre-release and development versions"
+        },
+        {
+          "name": [
+            "--format"
+          ],
+          "description": "Select the output format (columns, freeze, json)",
+          "args": {
+            "name": "format"
+          }
+        },
+        {
+          "name": [
+            "--not-required"
+          ],
+          "description": "List packages that are not dependencies of installed packages"
+        },
+        {
+          "name": [
+            "--exclude-editable"
+          ],
+          "description": "Exclude editable package from output"
+        },
+        {
+          "name": [
+            "--include-editable"
+          ],
+          "description": "Include editable package from output"
+        },
+        {
+          "name": [
+            "--exclude"
+          ],
           "description": "Exclude specified package from the output",
-          "args": [{ "name": "package" }]
+          "args": {
+            "name": "package"
+          }
         }
       ]
     },
@@ -117,47 +295,87 @@
       "name": "show",
       "description": "Show information about installed packages",
       "args": [
-        { "name": "package", "description": "Package(s) to show information about" }
+        {
+          "name": "package",
+          "description": "Package(s) to show information about"
+        }
       ],
       "options": [
-        { "name": ["-f", "--files"], "description": "Show the full list of installed files for each package" }
+        {
+          "name": [
+            "-f",
+            "--files"
+          ],
+          "description": "Show the full list of installed files for each package"
+        }
       ]
     },
     {
       "name": "download",
       "description": "Download packages",
       "args": [
-        { "name": "package", "description": "Package(s) to download" }
+        {
+          "name": "package",
+          "description": "Package(s) to download"
+        }
       ],
       "options": [
         {
-          "name": ["-d", "--dest"],
+          "name": [
+            "-d",
+            "--dest"
+          ],
           "description": "Download packages into this directory",
-          "args": [{ "name": "dir", "template": "folders" }]
+          "args": {
+            "name": "dir",
+            "template": "folders"
+          }
         },
         {
-          "name": ["-r", "--requirement"],
+          "name": [
+            "-r",
+            "--requirement"
+          ],
           "description": "Download packages from the given requirements file",
-          "args": [{ "name": "file", "template": "filepaths" }]
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          }
         },
         {
-          "name": ["--platform"],
+          "name": [
+            "--platform"
+          ],
           "description": "Only download wheels compatible with the platform",
-          "args": [{ "name": "platform" }]
+          "args": {
+            "name": "platform"
+          }
         },
         {
-          "name": ["--python-version"],
+          "name": [
+            "--python-version"
+          ],
           "description": "Only download wheels compatible with the Python interpreter version",
-          "args": [{ "name": "version" }]
+          "args": {
+            "name": "version"
+          }
         },
-        { "name": ["--no-deps"], "description": "Do not download package dependencies" }
+        {
+          "name": [
+            "--no-deps"
+          ],
+          "description": "Do not download package dependencies"
+        }
       ]
     },
     {
       "name": "search",
       "description": "Search PyPI for packages (deprecated)",
       "args": [
-        { "name": "query", "description": "Search query" }
+        {
+          "name": "query",
+          "description": "Search query"
+        }
       ]
     },
     {
@@ -168,19 +386,39 @@
       "name": "wheel",
       "description": "Build wheels from your requirements",
       "args": [
-        { "name": "package", "description": "Package(s) to build wheels for" }
+        {
+          "name": "package",
+          "description": "Package(s) to build wheels for"
+        }
       ],
       "options": [
         {
-          "name": ["-w", "--wheel-dir"],
+          "name": [
+            "-w",
+            "--wheel-dir"
+          ],
           "description": "Build wheels into this directory, where the default is the current working directory",
-          "args": [{ "name": "dir", "template": "folders" }]
+          "args": {
+            "name": "dir",
+            "template": "folders"
+          }
         },
-        { "name": ["--no-deps"], "description": "Do not build wheels for dependencies" },
         {
-          "name": ["-r", "--requirement"],
+          "name": [
+            "--no-deps"
+          ],
+          "description": "Do not build wheels for dependencies"
+        },
+        {
+          "name": [
+            "-r",
+            "--requirement"
+          ],
           "description": "Build wheels from the given requirements file",
-          "args": [{ "name": "file", "template": "filepaths" }]
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          }
         }
       ]
     },
@@ -188,13 +426,21 @@
       "name": "hash",
       "description": "Compute hashes of package archives",
       "args": [
-        { "name": "file", "template": "filepaths" }
+        {
+          "name": "file",
+          "template": "filepaths"
+        }
       ],
       "options": [
         {
-          "name": ["-a", "--algorithm"],
+          "name": [
+            "-a",
+            "--algorithm"
+          ],
           "description": "The hash algorithm to use: sha256, sha384, sha512",
-          "args": [{ "name": "algorithm" }]
+          "args": {
+            "name": "algorithm"
+          }
         }
       ]
     },
@@ -202,35 +448,108 @@
       "name": "config",
       "description": "Manage local and global configuration",
       "subcommands": [
-        { "name": "list", "description": "List the active configuration (or from the file specified in --file)" },
-        { "name": "get", "description": "Get the value associated with the name", "args": [{ "name": "name" }] },
-        { "name": "set", "description": "Set the name=value", "args": [{ "name": "name=value" }] },
-        { "name": "unset", "description": "Unset the value associated with the name", "args": [{ "name": "name" }] },
-        { "name": "edit", "description": "Open the configuration file in an editor" },
-        { "name": "debug", "description": "List the configuration files and their contents" }
+        {
+          "name": "list",
+          "description": "List the active configuration (or from the file specified in --file)"
+        },
+        {
+          "name": "get",
+          "description": "Get the value associated with the name",
+          "args": [
+            {
+              "name": "name"
+            }
+          ]
+        },
+        {
+          "name": "set",
+          "description": "Set the name=value",
+          "args": [
+            {
+              "name": "name=value"
+            }
+          ]
+        },
+        {
+          "name": "unset",
+          "description": "Unset the value associated with the name",
+          "args": [
+            {
+              "name": "name"
+            }
+          ]
+        },
+        {
+          "name": "edit",
+          "description": "Open the configuration file in an editor"
+        },
+        {
+          "name": "debug",
+          "description": "List the configuration files and their contents"
+        }
       ]
     },
     {
       "name": "cache",
       "description": "Inspect and manage pip's wheel cache",
       "subcommands": [
-        { "name": "dir", "description": "Show the cache directory" },
-        { "name": "info", "description": "Show information about the cache" },
-        { "name": "list", "description": "List filenames of packages stored in the cache", "args": [{ "name": "pattern" }] },
-        { "name": "remove", "description": "Remove one or more package from the cache", "args": [{ "name": "pattern" }] },
-        { "name": "purge", "description": "Remove all items from the cache" }
+        {
+          "name": "dir",
+          "description": "Show the cache directory"
+        },
+        {
+          "name": "info",
+          "description": "Show information about the cache"
+        },
+        {
+          "name": "list",
+          "description": "List filenames of packages stored in the cache",
+          "args": [
+            {
+              "name": "pattern"
+            }
+          ]
+        },
+        {
+          "name": "remove",
+          "description": "Remove one or more package from the cache",
+          "args": [
+            {
+              "name": "pattern"
+            }
+          ]
+        },
+        {
+          "name": "purge",
+          "description": "Remove all items from the cache"
+        }
       ]
     },
     {
       "name": "inspect",
       "description": "Inspect the python environment and print the results as JSON",
       "options": [
-        { "name": ["--local"], "description": "If in a virtualenv with global access, do not list globally-installed packages" },
-        { "name": ["--user"], "description": "Only output packages installed in user-site" },
         {
-          "name": ["--path"],
+          "name": [
+            "--local"
+          ],
+          "description": "If in a virtualenv with global access, do not list globally-installed packages"
+        },
+        {
+          "name": [
+            "--user"
+          ],
+          "description": "Only output packages installed in user-site"
+        },
+        {
+          "name": [
+            "--path"
+          ],
           "description": "Restrict to the specified installation path for listing packages",
-          "args": [{ "name": "path", "template": "folders" }]
+          "args": {
+            "name": "path",
+            "template": "folders"
+          }
         }
       ]
     },
@@ -239,14 +558,22 @@
       "description": "Display debug information",
       "options": [
         {
-          "name": ["--platform"],
+          "name": [
+            "--platform"
+          ],
           "description": "Only use wheels compatible with the platform",
-          "args": [{ "name": "platform" }]
+          "args": {
+            "name": "platform"
+          }
         },
         {
-          "name": ["--python-version"],
+          "name": [
+            "--python-version"
+          ],
           "description": "Only use wheels compatible with the Python interpreter version",
-          "args": [{ "name": "version" }]
+          "args": {
+            "name": "version"
+          }
         }
       ]
     }
