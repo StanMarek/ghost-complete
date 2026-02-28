@@ -7,6 +7,8 @@ use gc_parser::TerminalParser;
 use tokio::signal::unix::{signal, SignalKind};
 use tokio::sync::mpsc;
 
+use gc_config::GhostConfig;
+
 use crate::handler::InputHandler;
 use crate::input::parse_keys;
 use crate::resize::{get_terminal_size, resize_pty};
@@ -35,7 +37,7 @@ impl Drop for RawModeGuard {
 /// through the InputHandler for suggestion popup interception.
 ///
 /// Returns the shell's exit code.
-pub async fn run_proxy(shell: &str, args: &[String]) -> Result<i32> {
+pub async fn run_proxy(shell: &str, args: &[String], _config: &GhostConfig) -> Result<i32> {
     let SpawnedShell { master, mut child } = spawn_shell(shell, args)?;
 
     let mut reader = master
