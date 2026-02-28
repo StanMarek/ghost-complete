@@ -124,8 +124,13 @@ impl InputHandler {
                 Vec::new()
             }
             KeyEvent::Tab => {
+                let is_dir = !self.suggestions.is_empty()
+                    && self.suggestions[self.overlay.selected].text.ends_with('/');
                 let forward = self.accept_suggestion(parser);
                 self.dismiss(stdout);
+                if is_dir {
+                    self.trigger_requested = true;
+                }
                 forward
             }
             KeyEvent::Enter => {
@@ -496,6 +501,78 @@ mod tests {
         let handler = make_handler();
         assert!(!handler.is_visible());
         assert!(!handler.has_pending_trigger());
+    }
+
+    #[test]
+    fn test_tab_accept_directory_sets_trigger() {
+        let mut handler = InputHandler {
+            engine: SuggestionEngine::new(Path::new(".")).unwrap(),
+            overlay: OverlayState::new(),
+            suggestions: vec![Suggestion {
+                text: "Desktop/".to_string(),
+                description: None,
+                kind: SuggestionKind::Directory,
+                source: SuggestionSource::Filesystem,
+                score: 0,
+            }],
+            last_layout: Some(PopupLayout {
+                start_row: 5,
+                start_col: 0,
+                width: 20,
+                height: 1,
+                renders_above: false,
+            }),
+            visible: true,
+            trigger_requested: false,
+            max_visible: DEFAULT_MAX_VISIBLE,
+            min_width: DEFAULT_MIN_POPUP_WIDTH,
+            max_width: DEFAULT_MAX_POPUP_WIDTH,
+            trigger_chars: DEFAULT_TRIGGER_CHARS.iter().copied().collect(),
+        };
+
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        handler.process_key(&KeyEvent::Tab, &parser, &mut buf);
+        assert!(
+            handler.has_pending_trigger(),
+            "Tab on a directory suggestion should request re-trigger for cd chaining"
+        );
+    }
+
+    #[test]
+    fn test_tab_accept_file_no_trigger() {
+        let mut handler = InputHandler {
+            engine: SuggestionEngine::new(Path::new(".")).unwrap(),
+            overlay: OverlayState::new(),
+            suggestions: vec![Suggestion {
+                text: "README.md".to_string(),
+                description: None,
+                kind: SuggestionKind::FilePath,
+                source: SuggestionSource::Filesystem,
+                score: 0,
+            }],
+            last_layout: Some(PopupLayout {
+                start_row: 5,
+                start_col: 0,
+                width: 20,
+                height: 1,
+                renders_above: false,
+            }),
+            visible: true,
+            trigger_requested: false,
+            max_visible: DEFAULT_MAX_VISIBLE,
+            min_width: DEFAULT_MIN_POPUP_WIDTH,
+            max_width: DEFAULT_MAX_POPUP_WIDTH,
+            trigger_chars: DEFAULT_TRIGGER_CHARS.iter().copied().collect(),
+        };
+
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        handler.process_key(&KeyEvent::Tab, &parser, &mut buf);
+        assert!(
+            !handler.has_pending_trigger(),
+            "Tab on a file suggestion should NOT request re-trigger"
+        );
     }
 
     #[test]
