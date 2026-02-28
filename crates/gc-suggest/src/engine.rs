@@ -10,7 +10,7 @@ use crate::git;
 use crate::history::HistoryProvider;
 use crate::provider::Provider;
 use crate::specs::{self, SpecStore};
-use crate::types::Suggestion;
+use crate::types::{Suggestion, SuggestionKind};
 
 pub struct SuggestionEngine {
     spec_store: SpecStore,
@@ -141,8 +141,15 @@ impl SuggestionEngine {
                         }
                     }
 
-                    // Add filesystem if spec wants filepaths
-                    if resolution.wants_filepaths && self.providers_filesystem {
+                    // Add filesystem: folders-only or all filepaths
+                    if resolution.wants_folders_only && self.providers_filesystem {
+                        if let Ok(fs) = self.filesystem_provider.provide(ctx, cwd) {
+                            candidates.extend(
+                                fs.into_iter()
+                                    .filter(|s| s.kind == SuggestionKind::Directory),
+                            );
+                        }
+                    } else if resolution.wants_filepaths && self.providers_filesystem {
                         if let Ok(fs) = self.filesystem_provider.provide(ctx, cwd) {
                             candidates.extend(fs);
                         }
@@ -294,6 +301,24 @@ mod tests {
         let ctx = make_ctx(Some("git"), vec![], "zzzzzzz_no_match", 1);
         let results = engine.suggest_sync(&ctx, tmp.path()).unwrap();
         assert!(results.is_empty());
+    }
+
+    #[test]
+    fn test_cd_only_shows_directories() {
+        let engine = make_engine();
+        let tmp = tempfile::TempDir::new().unwrap();
+        std::fs::create_dir(tmp.path().join("mydir")).unwrap();
+        std::fs::write(tmp.path().join("myfile.txt"), "").unwrap();
+        let ctx = make_ctx(Some("cd"), vec![], "", 1);
+        let results = engine.suggest_sync(&ctx, tmp.path()).unwrap();
+        assert!(
+            results.iter().any(|s| s.text.contains("mydir")),
+            "cd should show directories: {results:?}"
+        );
+        assert!(
+            !results.iter().any(|s| s.text.contains("myfile")),
+            "cd should NOT show files: {results:?}"
+        );
     }
 
     #[test]

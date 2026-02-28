@@ -108,6 +108,7 @@ pub struct SpecResolution {
     pub options: Vec<Suggestion>,
     pub generators: Vec<String>,
     pub wants_filepaths: bool,
+    pub wants_folders_only: bool,
 }
 
 /// Walk the spec tree using args from the CommandContext to find the deepest
@@ -178,17 +179,16 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
     // Collect generator types from args at the resolved position
     let mut generators = Vec::new();
     let mut wants_filepaths = false;
+    let mut wants_folders_only = false;
 
     for arg_spec in current_args {
         for gen in &arg_spec.generators {
             generators.push(gen.generator_type.clone());
         }
-        if arg_spec
-            .template
-            .as_deref()
-            .is_some_and(|t| t == "filepaths" || t == "folders")
-        {
-            wants_filepaths = true;
+        match arg_spec.template.as_deref() {
+            Some("filepaths") => wants_filepaths = true,
+            Some("folders") => wants_folders_only = true,
+            _ => {}
         }
     }
 
@@ -197,6 +197,7 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
         options: option_suggestions,
         generators,
         wants_filepaths,
+        wants_folders_only,
     }
 }
 
@@ -331,5 +332,59 @@ mod tests {
         // Should not panic — returns top-level completions since "nonexistent"
         // didn't match any subcommand
         assert!(res.subcommands.is_empty() || !res.subcommands.is_empty());
+    }
+
+    #[test]
+    fn test_folders_template_sets_wants_folders_only() {
+        let spec: CompletionSpec = serde_json::from_str(
+            r#"{
+                "name": "cd",
+                "description": "Change directory",
+                "args": [{ "name": "directory", "template": "folders" }]
+            }"#,
+        )
+        .unwrap();
+        let ctx = CommandContext {
+            command: Some("cd".into()),
+            args: vec![],
+            current_word: String::new(),
+            word_index: 1,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: None,
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: gc_buffer::QuoteState::None,
+        };
+        let res = resolve_spec(&spec, &ctx);
+        assert!(res.wants_folders_only, "folders template should set wants_folders_only");
+        assert!(!res.wants_filepaths, "folders template should NOT set wants_filepaths");
+    }
+
+    #[test]
+    fn test_filepaths_template_sets_wants_filepaths() {
+        let spec: CompletionSpec = serde_json::from_str(
+            r#"{
+                "name": "cat",
+                "description": "Concatenate files",
+                "args": [{ "name": "file", "template": "filepaths" }]
+            }"#,
+        )
+        .unwrap();
+        let ctx = CommandContext {
+            command: Some("cat".into()),
+            args: vec![],
+            current_word: String::new(),
+            word_index: 1,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: None,
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: gc_buffer::QuoteState::None,
+        };
+        let res = resolve_spec(&spec, &ctx);
+        assert!(res.wants_filepaths, "filepaths template should set wants_filepaths");
+        assert!(!res.wants_folders_only, "filepaths template should NOT set wants_folders_only");
     }
 }
