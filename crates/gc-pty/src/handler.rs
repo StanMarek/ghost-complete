@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
@@ -20,6 +21,7 @@ pub struct InputHandler {
     max_visible: usize,
     min_width: u16,
     max_width: u16,
+    trigger_chars: HashSet<char>,
 }
 
 impl InputHandler {
@@ -34,6 +36,7 @@ impl InputHandler {
             max_visible: DEFAULT_MAX_VISIBLE,
             min_width: DEFAULT_MIN_POPUP_WIDTH,
             max_width: DEFAULT_MAX_POPUP_WIDTH,
+            trigger_chars: DEFAULT_TRIGGER_CHARS.iter().copied().collect(),
         })
     }
 
@@ -41,6 +44,11 @@ impl InputHandler {
         self.max_visible = max_visible;
         self.min_width = min_width;
         self.max_width = max_width;
+        self
+    }
+
+    pub fn with_trigger_chars(mut self, chars: &[char]) -> Self {
+        self.trigger_chars = chars.iter().copied().collect();
         self
     }
 
@@ -134,7 +142,7 @@ impl InputHandler {
             }
             KeyEvent::Printable(c) => {
                 let forward = vec![*c as u8];
-                if should_trigger_on_char(*c) {
+                if self.trigger_chars.contains(c) {
                     // Defer trigger to Task B after shell processes the keystroke
                     self.trigger_requested = true;
                 }
@@ -276,9 +284,11 @@ impl InputHandler {
     }
 }
 
-/// Check if a printable character should trigger suggestions.
+const DEFAULT_TRIGGER_CHARS: &[char] = &[' ', '/', '-', '.'];
+
+/// Check if a printable character should trigger suggestions (using defaults).
 fn should_trigger_on_char(c: char) -> bool {
-    matches!(c, ' ' | '/' | '-' | '.')
+    DEFAULT_TRIGGER_CHARS.contains(&c)
 }
 
 /// Convert a KeyEvent back to raw bytes for forwarding to PTY.
@@ -396,6 +406,7 @@ mod tests {
             max_visible: DEFAULT_MAX_VISIBLE,
             min_width: DEFAULT_MIN_POPUP_WIDTH,
             max_width: DEFAULT_MAX_POPUP_WIDTH,
+            trigger_chars: DEFAULT_TRIGGER_CHARS.iter().copied().collect(),
         };
 
         let mut stdout_buf = Vec::new();
@@ -418,6 +429,7 @@ mod tests {
             max_visible: DEFAULT_MAX_VISIBLE,
             min_width: DEFAULT_MIN_POPUP_WIDTH,
             max_width: DEFAULT_MAX_POPUP_WIDTH,
+            trigger_chars: DEFAULT_TRIGGER_CHARS.iter().copied().collect(),
         }
     }
 
@@ -453,6 +465,22 @@ mod tests {
     fn test_handler_starts_not_visible() {
         let handler = make_handler();
         assert!(!handler.is_visible());
+        assert!(!handler.has_pending_trigger());
+    }
+
+    #[test]
+    fn test_custom_trigger_chars() {
+        let mut handler = make_handler().with_trigger_chars(&['@', '#']);
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+
+        // '@' should trigger with custom config
+        handler.process_key(&KeyEvent::Printable('@'), &parser, &mut buf);
+        assert!(handler.has_pending_trigger());
+        handler.clear_trigger_request();
+
+        // Space should NOT trigger with custom config (not in set)
+        handler.process_key(&KeyEvent::Printable(' '), &parser, &mut buf);
         assert!(!handler.has_pending_trigger());
     }
 }
