@@ -113,6 +113,7 @@ pub async fn run_proxy(shell: &str, args: &[String]) -> Result<i32> {
     // Task B: PTY → stdout (shell output to terminal)
     let pty_shutdown = shutdown_tx.clone();
     let parser_for_stdout = Arc::clone(&parser);
+    let handler_for_stdout = Arc::clone(&handler);
     let stdout_handle = tokio::task::spawn_blocking(move || {
         let mut buf = [0u8; 8192];
         loop {
@@ -138,6 +139,30 @@ pub async fn run_proxy(shell: &str, args: &[String]) -> Result<i32> {
                 }
                 if stdout.flush().is_err() {
                     break;
+                }
+            }
+
+            // Check if shell reported a buffer update via OSC 7770.
+            // Trigger suggestions here (Task B) instead of Task A to ensure
+            // we have the shell's updated buffer, fixing the stale-buffer bug.
+            let buffer_dirty = {
+                let mut p = parser_for_stdout.lock().unwrap();
+                p.state_mut().take_buffer_dirty()
+            };
+
+            if buffer_dirty {
+                let mut render_buf = Vec::new();
+                {
+                    let mut h = handler_for_stdout.lock().unwrap();
+                    if h.has_pending_trigger() {
+                        h.clear_trigger_request();
+                        h.trigger(&parser_for_stdout, &mut render_buf);
+                    }
+                }
+                if !render_buf.is_empty() {
+                    let mut stdout = std::io::stdout().lock();
+                    let _ = stdout.write_all(&render_buf);
+                    let _ = stdout.flush();
                 }
             }
         }
