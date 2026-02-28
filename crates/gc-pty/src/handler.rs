@@ -52,6 +52,28 @@ impl InputHandler {
         self
     }
 
+    pub fn with_suggest_config(
+        self,
+        max_results: usize,
+        max_history_entries: usize,
+        commands: bool,
+        history: bool,
+        filesystem: bool,
+        specs: bool,
+        git: bool,
+    ) -> Self {
+        let engine = self.engine.with_suggest_config(
+            max_results,
+            max_history_entries,
+            commands,
+            history,
+            filesystem,
+            specs,
+            git,
+        );
+        Self { engine, ..self }
+    }
+
     pub fn is_visible(&self) -> bool {
         self.visible
     }
@@ -286,6 +308,7 @@ impl InputHandler {
 
 const DEFAULT_TRIGGER_CHARS: &[char] = &[' ', '/', '-', '.'];
 
+#[cfg(test)]
 /// Check if a printable character should trigger suggestions (using defaults).
 fn should_trigger_on_char(c: char) -> bool {
     DEFAULT_TRIGGER_CHARS.contains(&c)

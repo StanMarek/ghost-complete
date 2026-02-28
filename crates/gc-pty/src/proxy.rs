@@ -37,7 +37,7 @@ impl Drop for RawModeGuard {
 /// through the InputHandler for suggestion popup interception.
 ///
 /// Returns the shell's exit code.
-pub async fn run_proxy(shell: &str, args: &[String], _config: &GhostConfig) -> Result<i32> {
+pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Result<i32> {
     let SpawnedShell { master, mut child } = spawn_shell(shell, args)?;
 
     let mut reader = master
@@ -52,17 +52,34 @@ pub async fn run_proxy(shell: &str, args: &[String], _config: &GhostConfig) -> R
     let (cols, rows) = crossterm::terminal::size().unwrap_or((80, 24));
     let parser = Arc::new(Mutex::new(TerminalParser::new(rows, cols)));
 
-    // Initialize suggestion handler
-    let spec_dir = spec_directory();
-    let handler = Arc::new(Mutex::new(InputHandler::new(&spec_dir).unwrap_or_else(
-        |e| {
+    // Resolve spec directories from config
+    let spec_dirs = resolve_spec_dirs(&config.paths.spec_dirs);
+
+    // Initialize suggestion handler with config
+    let handler = Arc::new(Mutex::new({
+        let h = InputHandler::new(&spec_dirs[0]).unwrap_or_else(|e| {
             tracing::warn!(
                 "failed to init suggestion engine: {}, suggestions disabled",
                 e
             );
             InputHandler::new(std::path::Path::new(".")).expect("fallback handler")
-        },
-    )));
+        });
+        h.with_popup_config(
+            config.popup.max_visible,
+            config.popup.min_width,
+            config.popup.max_width,
+        )
+        .with_trigger_chars(&config.trigger.auto_chars)
+        .with_suggest_config(
+            config.suggest.max_results,
+            config.suggest.max_history_entries,
+            config.suggest.providers.commands,
+            config.suggest.providers.history,
+            config.suggest.providers.filesystem,
+            config.suggest.providers.specs,
+            config.suggest.providers.git,
+        )
+    }));
 
     // Channel to signal that one of the I/O tasks has finished
     let (shutdown_tx, mut shutdown_rx) = mpsc::channel::<()>(1);
@@ -224,20 +241,47 @@ pub async fn run_proxy(shell: &str, args: &[String], _config: &GhostConfig) -> R
     Ok(exit_code)
 }
 
-/// Find the completion specs directory.
-fn spec_directory() -> PathBuf {
-    // Check for specs/ next to the binary first
-    let exe_dir = std::env::current_exe()
-        .ok()
-        .and_then(|p| p.parent().map(|d| d.to_path_buf()));
+/// Resolve spec directories from config, with tilde expansion.
+/// If config provides directories, use those. Otherwise fall back to auto-detection.
+fn resolve_spec_dirs(configured: &[String]) -> Vec<PathBuf> {
+    if !configured.is_empty() {
+        return configured
+            .iter()
+            .map(|s| expand_tilde(s))
+            .filter(|p| p.is_dir())
+            .collect();
+    }
 
-    if let Some(dir) = exe_dir {
-        let spec_dir = dir.join("specs");
-        if spec_dir.is_dir() {
-            return spec_dir;
+    // Auto-detect: check next to binary, then cwd
+    let mut dirs = Vec::new();
+
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(exe_dir) = exe.parent() {
+            let spec_dir = exe_dir.join("specs");
+            if spec_dir.is_dir() {
+                dirs.push(spec_dir);
+            }
         }
     }
 
     // Fall back to specs/ in the current directory (development)
-    PathBuf::from("specs")
+    let cwd_specs = PathBuf::from("specs");
+    if cwd_specs.is_dir() {
+        dirs.push(cwd_specs);
+    }
+
+    if dirs.is_empty() {
+        dirs.push(PathBuf::from("specs"));
+    }
+
+    dirs
+}
+
+fn expand_tilde(path: &str) -> PathBuf {
+    if let Some(rest) = path.strip_prefix("~/") {
+        if let Some(home) = dirs::home_dir() {
+            return home.join(rest);
+        }
+    }
+    PathBuf::from(path)
 }

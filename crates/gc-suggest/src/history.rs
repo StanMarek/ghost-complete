@@ -7,7 +7,7 @@ use gc_buffer::CommandContext;
 use crate::provider::Provider;
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 
-pub const DEFAULT_MAX_HISTORY_ENTRIES: usize = 10_000;
+pub(crate) const DEFAULT_MAX_HISTORY_ENTRIES: usize = 10_000;
 
 pub struct HistoryProvider {
     entries: Vec<String>,
