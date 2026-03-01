@@ -27,9 +27,7 @@ impl TerminalParser {
 
     /// Feed raw bytes from PTY output through the VT parser.
     pub fn process_bytes(&mut self, bytes: &[u8]) {
-        for &byte in bytes {
-            self.parser.advance(&mut self.state, byte);
-        }
+        self.parser.advance(&mut self.state, bytes);
     }
 
     pub fn state(&self) -> &TerminalState {
