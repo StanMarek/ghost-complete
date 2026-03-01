@@ -1,3 +1,8 @@
+//! ANSI-based popup rendering for terminal autocomplete.
+//!
+//! Renders suggestion popups using cursor save/restore, synchronized output
+//! (DECSET 2026), and intelligent above/below positioning.
+
 pub mod ansi;
 mod layout;
 mod render;

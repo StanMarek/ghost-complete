@@ -8,6 +8,7 @@ use tracing_subscriber::EnvFilter;
 #[derive(Parser)]
 #[command(
     name = "ghost-complete",
+    version,
     about = "Terminal-native autocomplete engine",
     after_help = "COMMANDS:\n  install          Install shell integration (zsh/bash/fish)\n  uninstall        Remove shell integration\n  validate-specs   Validate completion spec files\n\nSHELL SUPPORT:\n  zsh   Full support (auto-installed into ~/.zshrc)\n  bash  Ctrl+Space trigger (source shell script from .bashrc)\n  fish  Ctrl+Space trigger (source shell script from config.fish)"
 )]

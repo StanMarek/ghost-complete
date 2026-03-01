@@ -1,3 +1,8 @@
+//! VT escape sequence parser for terminal state tracking.
+//!
+//! Uses the `vte` crate to parse ANSI/VT sequences and track cursor position,
+//! screen dimensions, prompt boundaries (OSC 133), and CWD (OSC 7).
+
 mod performer;
 mod state;
 

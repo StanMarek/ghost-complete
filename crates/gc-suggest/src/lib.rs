@@ -1,3 +1,8 @@
+//! Suggestion engine with multiple providers and fuzzy ranking.
+//!
+//! Dispatches to providers (filesystem, git, history, `$PATH` commands,
+//! Fig-compatible JSON specs) and fuzzy-ranks results with `nucleo`.
+
 mod commands;
 mod engine;
 mod filesystem;

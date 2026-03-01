@@ -6,6 +6,27 @@ const ZSH_INTEGRATION: &str = include_str!("../../../shell/ghost-complete.zsh");
 const BASH_INTEGRATION: &str = include_str!("../../../shell/ghost-complete.bash");
 const FISH_INTEGRATION: &str = include_str!("../../../shell/ghost-complete.fish");
 
+const EMBEDDED_SPECS: &[(&str, &str)] = &[
+    ("brew.json", include_str!("../../../specs/brew.json")),
+    ("cargo.json", include_str!("../../../specs/cargo.json")),
+    ("cd.json", include_str!("../../../specs/cd.json")),
+    ("curl.json", include_str!("../../../specs/curl.json")),
+    ("docker.json", include_str!("../../../specs/docker.json")),
+    ("gh.json", include_str!("../../../specs/gh.json")),
+    ("git.json", include_str!("../../../specs/git.json")),
+    ("grep.json", include_str!("../../../specs/grep.json")),
+    ("jq.json", include_str!("../../../specs/jq.json")),
+    ("kubectl.json", include_str!("../../../specs/kubectl.json")),
+    ("make.json", include_str!("../../../specs/make.json")),
+    ("npm.json", include_str!("../../../specs/npm.json")),
+    ("pip.json", include_str!("../../../specs/pip.json")),
+    ("pip3.json", include_str!("../../../specs/pip3.json")),
+    ("python.json", include_str!("../../../specs/python.json")),
+    ("python3.json", include_str!("../../../specs/python3.json")),
+    ("ssh.json", include_str!("../../../specs/ssh.json")),
+    ("tar.json", include_str!("../../../specs/tar.json")),
+];
+
 const DEFAULT_CONFIG_TOML: &str = "\
 # Ghost Complete configuration
 # Uncomment and edit values to customize. All values shown are defaults.
@@ -96,60 +117,16 @@ fn remove_block(content: &str, begin: &str, end: &str) -> (String, bool) {
     (result, true)
 }
 
-/// Find the bundled specs/ directory: next to the binary, or in the source tree.
-fn find_bundled_specs() -> Option<std::path::PathBuf> {
-    // Next to the running binary (cargo install layout won't have this, but cargo run will)
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(exe_dir) = exe.parent() {
-            let specs = exe_dir.join("specs");
-            if specs.is_dir() {
-                return Some(specs);
-            }
-        }
-    }
-    // Source tree (development: running from repo root)
-    let cwd_specs = std::path::PathBuf::from("specs");
-    if cwd_specs.is_dir() {
-        return Some(cwd_specs);
-    }
-    None
-}
-
 fn copy_specs(config_dir: &Path) -> Result<()> {
-    let Some(source) = find_bundled_specs() else {
-        println!("  No bundled specs found, skipping spec installation");
-        return Ok(());
-    };
-    copy_specs_from(&source, config_dir)
-}
-
-fn copy_specs_from(source: &Path, config_dir: &Path) -> Result<()> {
     let dest = config_dir.join("specs");
     fs::create_dir_all(&dest).with_context(|| format!("failed to create {}", dest.display()))?;
 
     let mut count = 0;
-    let mut skipped = 0;
-    for entry in fs::read_dir(source)? {
-        let entry = entry?;
-        let path = entry.path();
-        if path.extension().and_then(|e| e.to_str()) == Some("json") {
-            let contents = fs::read_to_string(&path)
-                .with_context(|| format!("failed to read spec: {}", path.display()))?;
-            if let Err(e) = serde_json::from_str::<gc_suggest::CompletionSpec>(&contents) {
-                println!(
-                    "  WARNING: skipping invalid spec {}: {e}",
-                    path.file_name().unwrap_or_default().to_string_lossy()
-                );
-                skipped += 1;
-                continue;
-            }
-            let dest_file = dest.join(entry.file_name());
-            fs::copy(&path, &dest_file)?;
-            count += 1;
-        }
-    }
-    if skipped > 0 {
-        println!("  Skipped {skipped} invalid spec(s)");
+    for (name, contents) in EMBEDDED_SPECS {
+        let dest_file = dest.join(name);
+        fs::write(&dest_file, contents)
+            .with_context(|| format!("failed to write spec: {}", dest_file.display()))?;
+        count += 1;
     }
     println!("  Installed {count} completion specs to {}", dest.display());
     Ok(())
@@ -529,61 +506,25 @@ mod tests {
     }
 
     #[test]
-    fn test_copy_specs_skips_invalid_json() {
-        let source_dir = TempDir::new().unwrap();
+    fn test_copy_embedded_specs() {
         let config_dir = TempDir::new().unwrap();
 
-        // Valid spec
-        fs::write(
-            source_dir.path().join("good.json"),
-            r#"{"name": "good", "args": []}"#,
-        )
-        .unwrap();
-
-        // Invalid JSON
-        fs::write(
-            source_dir.path().join("bad.json"),
-            "{ this is not json at all",
-        )
-        .unwrap();
-
-        // Non-JSON file should be ignored entirely
-        fs::write(source_dir.path().join("readme.txt"), "ignore me").unwrap();
-
-        copy_specs_from(source_dir.path(), config_dir.path()).unwrap();
+        copy_specs(config_dir.path()).unwrap();
 
         let dest = config_dir.path().join("specs");
-        assert!(dest.join("good.json").exists());
-        assert!(!dest.join("bad.json").exists());
-        assert!(!dest.join("readme.txt").exists());
-    }
+        assert!(dest.exists());
 
-    #[test]
-    fn test_copy_specs_skips_valid_json_invalid_schema() {
-        let source_dir = TempDir::new().unwrap();
-        let config_dir = TempDir::new().unwrap();
-
-        // Valid spec
-        fs::write(
-            source_dir.path().join("good.json"),
-            r#"{"name": "good", "args": []}"#,
-        )
-        .unwrap();
-
-        // Valid JSON but does NOT match CompletionSpec schema (missing required "name")
-        fs::write(
-            source_dir.path().join("bad_schema.json"),
-            r#"{"not_a_spec": true}"#,
-        )
-        .unwrap();
-
-        copy_specs_from(source_dir.path(), config_dir.path()).unwrap();
-
-        let dest = config_dir.path().join("specs");
-        assert!(dest.join("good.json").exists());
-        assert!(
-            !dest.join("bad_schema.json").exists(),
-            "valid JSON with invalid schema should be rejected at install time"
+        // All embedded specs should be written
+        for (name, _) in EMBEDDED_SPECS {
+            assert!(
+                dest.join(name).exists(),
+                "expected spec {name} to be installed"
+            );
+        }
+        assert_eq!(
+            fs::read_dir(&dest).unwrap().count(),
+            EMBEDDED_SPECS.len(),
+            "spec count mismatch"
         );
     }
 }

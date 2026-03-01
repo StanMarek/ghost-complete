@@ -149,6 +149,7 @@ impl InputHandler {
         Self { engine, ..self }
     }
 
+    #[allow(dead_code)]
     pub fn is_visible(&self) -> bool {
         self.visible
     }

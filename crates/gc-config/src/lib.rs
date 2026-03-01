@@ -1,3 +1,8 @@
+//! TOML configuration, keybinding definitions, and color themes.
+//!
+//! Reads from `~/.config/ghost-complete/config.toml` with serde deserialization
+//! and sensible defaults for all fields.
+
 use std::path::PathBuf;
 
 use anyhow::{Context, Result};
