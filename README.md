@@ -3,6 +3,7 @@
 **Terminal-native autocomplete engine using PTY proxying, built for Ghostty.**
 
 [![CI](https://github.com/StanMarek/ghost-complete/actions/workflows/ci.yml/badge.svg)](https://github.com/StanMarek/ghost-complete/actions/workflows/ci.yml)
+[![GitHub Release](https://img.shields.io/github/v/release/StanMarek/ghost-complete)](https://github.com/StanMarek/ghost-complete/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 <!-- TODO: add demo GIF -->
@@ -22,14 +23,21 @@ Inspired by [Fig](https://fig.io) (RIP). Built from scratch in Rust.
 
 ## Installation
 
-### Shell installer (recommended)
+### Homebrew (recommended)
+
+```bash
+brew install StanMarek/tap/ghost-complete
+ghost-complete install
+```
+
+### Shell installer
 
 ```bash
 curl --proto '=https' --tlsv1.2 -LsSf https://github.com/StanMarek/ghost-complete/releases/latest/download/ghost-complete-installer.sh | sh
 ghost-complete install
 ```
 
-### From Git
+### Cargo
 
 ```bash
 cargo install --git https://github.com/StanMarek/ghost-complete.git
@@ -46,11 +54,19 @@ cp target/release/ghost-complete ~/.cargo/bin/
 ghost-complete install
 ```
 
-The `install` command sets up:
-- Shell integration in `~/.zshrc` (auto-wraps your shell via PTY proxy)
-- Shell scripts for bash/fish in `~/.config/ghost-complete/shell/`
-- 18 completion specs in `~/.config/ghost-complete/specs/`
-- Default config at `~/.config/ghost-complete/config.toml`
+### What `ghost-complete install` does
+
+- Adds shell integration to `~/.zshrc` (auto-wraps your shell via PTY proxy)
+- Deploys shell scripts for bash/fish to `~/.config/ghost-complete/shell/`
+- Installs 18 completion specs to `~/.config/ghost-complete/specs/`
+- Creates default config at `~/.config/ghost-complete/config.toml` (never overwrites existing)
+
+### Uninstall
+
+```bash
+ghost-complete uninstall
+brew uninstall ghost-complete  # if installed via Homebrew
+```
 
 ## Quick Start
 
