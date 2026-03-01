@@ -22,6 +22,13 @@ Inspired by [Fig](https://fig.io) (RIP). Built from scratch in Rust.
 
 ## Installation
 
+### Shell installer (recommended)
+
+```bash
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/StanMarek/ghost-complete/releases/latest/download/ghost-complete-installer.sh | sh
+ghost-complete install
+```
+
 ### From Git
 
 ```bash
