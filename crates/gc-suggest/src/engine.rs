@@ -169,7 +169,7 @@ impl SuggestionEngine {
                                     resolved == Path::new("/")
                                         || std::env::var("HOME")
                                             .ok()
-                                            .map_or(false, |h| resolved == Path::new(&h))
+                                            .is_some_and(|h| resolved == Path::new(&h))
                                 });
                             if !at_boundary {
                                 candidates.push(Suggestion {
