@@ -1,6 +1,6 @@
 /// Minimal key event parser for raw terminal stdin bytes.
 ///
-/// Parses known sequences (arrows, Tab, Enter, Escape, Ctrl+Space) and
+/// Parses known sequences (arrows, Tab, Enter, Escape, Ctrl+Space, Ctrl+/) and
 /// passes through everything else as Raw bytes.
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -13,6 +13,7 @@ pub enum KeyEvent {
     ArrowLeft,
     ArrowRight,
     CtrlSpace,
+    CtrlSlash,
     Backspace,
     Printable(char),
     /// Cursor Position Report response (CSI row;col R) — 1-indexed.
@@ -33,6 +34,10 @@ pub fn parse_keys(buf: &[u8]) -> Vec<KeyEvent> {
         match buf[i] {
             0x00 => {
                 events.push(KeyEvent::CtrlSpace);
+                i += 1;
+            }
+            0x1F => {
+                events.push(KeyEvent::CtrlSlash);
                 i += 1;
             }
             0x09 => {
@@ -271,6 +276,12 @@ mod tests {
                 KeyEvent::Printable('b'),
             ]
         );
+    }
+
+    #[test]
+    fn test_ctrl_slash() {
+        let events = parse_keys(b"\x1F");
+        assert_eq!(events, vec![KeyEvent::CtrlSlash]);
     }
 
     #[test]

@@ -33,7 +33,7 @@ impl Default for Keybindings {
             dismiss: KeyEvent::Escape,
             navigate_up: KeyEvent::ArrowUp,
             navigate_down: KeyEvent::ArrowDown,
-            trigger: KeyEvent::CtrlSpace,
+            trigger: KeyEvent::CtrlSlash,
         }
     }
 }
@@ -54,7 +54,7 @@ impl Keybindings {
 /// Parse a human-readable key name into a `KeyEvent`.
 ///
 /// Supported names (case-insensitive):
-/// `tab`, `enter`, `escape`, `backspace`, `ctrl+space`,
+/// `tab`, `enter`, `escape`, `backspace`, `ctrl+space`, `ctrl+/`,
 /// `arrow_up`, `arrow_down`, `arrow_left`, `arrow_right`
 pub fn parse_key_name(name: &str) -> anyhow::Result<KeyEvent> {
     match name.trim().to_lowercase().as_str() {
@@ -63,6 +63,7 @@ pub fn parse_key_name(name: &str) -> anyhow::Result<KeyEvent> {
         "escape" => Ok(KeyEvent::Escape),
         "backspace" => Ok(KeyEvent::Backspace),
         "ctrl+space" => Ok(KeyEvent::CtrlSpace),
+        "ctrl+/" => Ok(KeyEvent::CtrlSlash),
         "arrow_up" => Ok(KeyEvent::ArrowUp),
         "arrow_down" => Ok(KeyEvent::ArrowDown),
         "arrow_left" => Ok(KeyEvent::ArrowLeft),
@@ -486,6 +487,7 @@ pub fn key_to_bytes(key: &KeyEvent) -> Vec<u8> {
         KeyEvent::ArrowRight => vec![0x1B, b'[', b'C'],
         KeyEvent::ArrowLeft => vec![0x1B, b'[', b'D'],
         KeyEvent::CtrlSpace => vec![0x00],
+        KeyEvent::CtrlSlash => vec![0x1F],
         KeyEvent::Backspace => vec![0x7F],
         KeyEvent::Printable(c) => vec![*c as u8],
         KeyEvent::CursorPositionReport(_, _) => Vec::new(), // intercepted in proxy
@@ -559,6 +561,7 @@ mod tests {
             KeyEvent::ArrowLeft,
             KeyEvent::ArrowRight,
             KeyEvent::CtrlSpace,
+            KeyEvent::CtrlSlash,
             KeyEvent::Backspace,
             KeyEvent::Printable('a'),
             KeyEvent::Raw(vec![0xFF]),
@@ -644,11 +647,25 @@ mod tests {
 
     #[test]
     fn test_ctrl_space_triggers_immediately() {
-        let mut handler = make_handler();
+        let kb = Keybindings {
+            trigger: KeyEvent::CtrlSpace,
+            ..Keybindings::default()
+        };
+        let mut handler = make_handler().with_keybindings(kb);
         let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
         let mut buf = Vec::new();
         handler.process_key(&KeyEvent::CtrlSpace, &parser, &mut buf);
         // CtrlSpace triggers immediately — does NOT set trigger_requested
+        assert!(!handler.has_pending_trigger());
+    }
+
+    #[test]
+    fn test_ctrl_slash_triggers_immediately() {
+        let mut handler = make_handler();
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        handler.process_key(&KeyEvent::CtrlSlash, &parser, &mut buf);
+        // CtrlSlash is the default trigger — fires immediately
         assert!(!handler.has_pending_trigger());
     }
 
@@ -862,6 +879,7 @@ mod tests {
         assert_eq!(parse_key_name("escape").unwrap(), KeyEvent::Escape);
         assert_eq!(parse_key_name("backspace").unwrap(), KeyEvent::Backspace);
         assert_eq!(parse_key_name("ctrl+space").unwrap(), KeyEvent::CtrlSpace);
+        assert_eq!(parse_key_name("ctrl+/").unwrap(), KeyEvent::CtrlSlash);
         assert_eq!(parse_key_name("arrow_up").unwrap(), KeyEvent::ArrowUp);
         assert_eq!(parse_key_name("arrow_down").unwrap(), KeyEvent::ArrowDown);
         assert_eq!(parse_key_name("arrow_left").unwrap(), KeyEvent::ArrowLeft);
@@ -873,6 +891,7 @@ mod tests {
         assert_eq!(parse_key_name("Tab").unwrap(), KeyEvent::Tab);
         assert_eq!(parse_key_name("TAB").unwrap(), KeyEvent::Tab);
         assert_eq!(parse_key_name("CTRL+SPACE").unwrap(), KeyEvent::CtrlSpace);
+        assert_eq!(parse_key_name("CTRL+/").unwrap(), KeyEvent::CtrlSlash);
         assert_eq!(parse_key_name("Arrow_Up").unwrap(), KeyEvent::ArrowUp);
         assert_eq!(parse_key_name("ESCAPE").unwrap(), KeyEvent::Escape);
     }

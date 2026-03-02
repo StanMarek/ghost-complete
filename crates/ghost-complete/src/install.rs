@@ -57,7 +57,7 @@ const DEFAULT_CONFIG_TOML: &str = "\
 # dismiss = \"escape\"
 # navigate_up = \"arrow_up\"
 # navigate_down = \"arrow_down\"
-# trigger = \"ctrl+space\"
+# trigger = \"ctrl+/\"
 
 [theme]
 selected = \"reverse\"

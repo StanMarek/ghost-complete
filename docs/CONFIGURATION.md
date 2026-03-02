@@ -98,7 +98,7 @@ Customize keyboard shortcuts. Each value is a key name string. Invalid key names
 | `dismiss` | string | `"escape"` | Dismiss the popup |
 | `navigate_up` | string | `"arrow_up"` | Move selection up |
 | `navigate_down` | string | `"arrow_down"` | Move selection down |
-| `trigger` | string | `"ctrl+space"` | Manually trigger completions |
+| `trigger` | string | `"ctrl+/"` | Manually trigger completions |
 
 ```toml
 [keybindings]
@@ -107,7 +107,7 @@ accept_and_enter = "enter"
 dismiss = "escape"
 navigate_up = "arrow_up"
 navigate_down = "arrow_down"
-trigger = "ctrl+space"
+trigger = "ctrl+/"
 ```
 
 #### Key Name Syntax
@@ -115,7 +115,7 @@ trigger = "ctrl+space"
 - Lowercase letters: `a` through `z`
 - Special keys: `tab`, `enter`, `escape`, `backspace`, `space`
 - Arrow keys: `arrow_up`, `arrow_down`, `arrow_left`, `arrow_right`
-- Modifiers: `ctrl+<key>` (e.g., `ctrl+space`, `ctrl+n`)
+- Modifiers: `ctrl+<key>` (e.g., `ctrl+space`, `ctrl+/`)
 
 ### `[theme]`
 
@@ -179,7 +179,7 @@ git = false
 accept = "tab"
 accept_and_enter = "enter"
 dismiss = "escape"
-trigger = "ctrl+space"
+trigger = "ctrl+/"
 
 [theme]
 selected = "fg:255 bg:236"

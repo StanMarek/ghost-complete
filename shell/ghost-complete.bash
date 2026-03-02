@@ -27,5 +27,5 @@ _gc_report_buffer() {
     printf '\e]7770;%d;%s\a' "$READLINE_POINT" "$READLINE_LINE"
 }
 
-# Bind Ctrl+Space as manual trigger
-bind -x '"\C- ": _gc_report_buffer'
+# Bind Ctrl+/ as manual trigger (0x1F)
+bind -x '"\C-_": _gc_report_buffer'

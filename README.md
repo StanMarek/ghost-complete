@@ -26,7 +26,7 @@ Inspired by [Fig](https://fig.io) (RIP). Built from scratch in Rust.
 This is a personal project I built for my own workflow. I'm happy to share it and welcome contributions, but set your expectations accordingly:
 
 - **Ghostty + zsh is the tested path.** That's what I use daily — it's stable and reliable.
-- **Bash and fish support is experimental.** Manual trigger only (Ctrl+Space), no auto-trigger on typing, and not actively tested.
+- **Bash and fish support is experimental.** Manual trigger only (Ctrl+/), no auto-trigger on typing, and not actively tested.
 - **No stability guarantees.** This is v0.1.x — config format, spec format, and behavior may change between releases.
 - **macOS only.** No Linux or Windows support planned at this time.
 
@@ -36,7 +36,7 @@ If you hit a bug, [open an issue](https://github.com/StanMarek/ghost-complete/is
 
 - **Terminal:** [Ghostty](https://ghostty.org)
 - **OS:** macOS
-- **Shell:** zsh (primary), bash and fish (Ctrl+Space trigger only)
+- **Shell:** zsh (primary), bash and fish (Ctrl+/ trigger only)
 - **Rust:** 1.75+ (for building from source)
 
 ## Installation
@@ -95,7 +95,7 @@ After installation, restart your terminal. Ghost Complete activates automaticall
 - **Enter** to accept and execute
 - **Arrow keys** to navigate the popup
 - **Escape** to dismiss
-- **Ctrl+Space** to manually trigger completions
+- **Ctrl+/** to manually trigger completions
 
 ## Configuration
 
@@ -114,7 +114,7 @@ max_width = 60
 [keybindings]
 accept = "tab"
 dismiss = "escape"
-trigger = "ctrl+space"
+trigger = "ctrl+/"
 
 [theme]
 selected = "reverse"
@@ -152,7 +152,7 @@ See [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) for the full desi
 | Feature | zsh | bash | fish |
 |---------|-----|------|------|
 | Auto-trigger on typing | Yes | No | No |
-| Ctrl+Space manual trigger | Yes | Yes | Yes |
+| Ctrl+/ manual trigger | Yes | Yes | Yes |
 | PTY proxy wrapping | Yes | Yes | Yes |
 | OSC 133 prompt markers | Yes | Yes | Yes |
 

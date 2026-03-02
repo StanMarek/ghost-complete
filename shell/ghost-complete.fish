@@ -16,5 +16,5 @@ function _gc_report_buffer
     printf '\e]7770;%d;%s\a' $cursor "$buf"
 end
 
-# Bind Ctrl+Space as manual trigger
-bind \c@ '_gc_report_buffer'
+# Bind Ctrl+/ as manual trigger (0x1F)
+bind \x1f '_gc_report_buffer'

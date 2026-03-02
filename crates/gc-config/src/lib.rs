@@ -43,7 +43,7 @@ impl Default for KeybindingsConfig {
             dismiss: "escape".to_string(),
             navigate_up: "arrow_up".to_string(),
             navigate_down: "arrow_down".to_string(),
-            trigger: "ctrl+space".to_string(),
+            trigger: "ctrl+/".to_string(),
         }
     }
 }
@@ -194,7 +194,7 @@ mod tests {
         assert_eq!(config.keybindings.dismiss, "escape");
         assert_eq!(config.keybindings.navigate_up, "arrow_up");
         assert_eq!(config.keybindings.navigate_down, "arrow_down");
-        assert_eq!(config.keybindings.trigger, "ctrl+space");
+        assert_eq!(config.keybindings.trigger, "ctrl+/");
         assert_eq!(config.theme.selected, "reverse");
         assert_eq!(config.theme.description, "dim");
     }
@@ -242,7 +242,7 @@ navigate_up = "ctrl+space"
         assert_eq!(config.keybindings.accept_and_enter, "enter");
         assert_eq!(config.keybindings.dismiss, "escape");
         assert_eq!(config.keybindings.navigate_down, "arrow_down");
-        assert_eq!(config.keybindings.trigger, "ctrl+space");
+        assert_eq!(config.keybindings.trigger, "ctrl+/");
     }
 
     #[test]
