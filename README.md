@@ -8,7 +8,10 @@
 
 <!-- TODO: add demo GIF -->
 
-https://github.com/user-attachments/assets/c5456045-ce23-435e-a54c-370164a8b6f0
+
+
+https://github.com/user-attachments/assets/3679a74a-731d-468a-bdda-bec926bb2349
+
 
 
 
