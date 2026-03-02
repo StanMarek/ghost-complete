@@ -102,7 +102,7 @@ pub fn render_popup(
 
     for (i, suggestion) in visible.iter().enumerate() {
         let row = layout.start_row + i as u16;
-        let is_selected = state.scroll_offset + i == state.selected;
+        let is_selected = state.selected == Some(state.scroll_offset + i);
 
         ansi::move_to(buf, row, layout.start_col);
 
@@ -308,7 +308,8 @@ mod tests {
     fn test_selected_item_has_reverse_video() {
         let mut buf = Vec::new();
         let suggestions = make_suggestions();
-        let state = OverlayState::new(); // selected = 0
+        let mut state = OverlayState::new();
+        state.selected = Some(0);
         render_popup(
             &mut buf,
             &suggestions,
@@ -396,7 +397,7 @@ mod tests {
             .collect();
         let mut state = OverlayState::new();
         state.scroll_offset = 5;
-        state.selected = 5;
+        state.selected = Some(5);
         let layout = render_popup(
             &mut buf,
             &suggestions,

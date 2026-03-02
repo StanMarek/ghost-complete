@@ -3,7 +3,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
-use gc_buffer::parse_command_context;
+use gc_buffer::{byte_to_char_offset, char_to_byte_offset, parse_command_context};
 use gc_overlay::types::{
     OverlayState, PopupLayout, DEFAULT_MAX_POPUP_WIDTH, DEFAULT_MAX_VISIBLE,
     DEFAULT_MIN_POPUP_WIDTH,
@@ -196,13 +196,22 @@ impl InputHandler {
             return Vec::new();
         }
         if key == &self.keybindings.accept {
+            if self.overlay.selected.is_none() {
+                self.dismiss(stdout);
+                return key_to_bytes(key);
+            }
             return self.accept_with_chaining(parser, stdout);
         }
         if key == &self.keybindings.accept_and_enter {
-            let mut forward = self.accept_suggestion(parser);
-            self.dismiss(stdout);
-            forward.push(0x0D);
-            return forward;
+            if self.overlay.selected.is_some() {
+                let mut forward = self.accept_suggestion(parser);
+                self.dismiss(stdout);
+                forward.push(0x0D);
+                return forward;
+            } else {
+                self.dismiss(stdout);
+                return vec![0x0D];
+            }
         }
         if key == &self.keybindings.dismiss {
             self.dismiss(stdout);
@@ -234,12 +243,15 @@ impl InputHandler {
         parser: &Arc<Mutex<TerminalParser>>,
         stdout: &mut dyn Write,
     ) -> Vec<u8> {
-        if self.suggestions.is_empty() {
-            self.dismiss(stdout);
-            return Vec::new();
-        }
+        let selected_idx = match self.overlay.selected {
+            Some(idx) if idx < self.suggestions.len() => idx,
+            _ => {
+                self.dismiss(stdout);
+                return Vec::new();
+            }
+        };
 
-        let selected_text = self.suggestions[self.overlay.selected].text.clone();
+        let selected_text = self.suggestions[selected_idx].text.clone();
         let is_dir = selected_text.ends_with('/');
         let forward = self.accept_suggestion(parser);
 
@@ -251,17 +263,20 @@ impl InputHandler {
                 let mut p = parser.lock().unwrap();
                 let state = p.state();
                 let buffer = state.command_buffer().unwrap_or("").to_string();
-                let cursor = state.buffer_cursor();
-                let old_ctx = parse_command_context(&buffer, cursor);
-                let word_start = cursor - old_ctx.current_word.len();
+                let char_cursor = state.buffer_cursor(); // character offset
+                let byte_cursor = char_to_byte_offset(&buffer, char_cursor);
+                let old_ctx = parse_command_context(&buffer, char_cursor);
+                let word_start_bytes = byte_cursor - old_ctx.current_word.len();
 
                 let mut predicted = String::with_capacity(buffer.len() + selected_text.len());
-                predicted.push_str(&buffer[..word_start]);
+                predicted.push_str(&buffer[..word_start_bytes]);
                 predicted.push_str(&selected_text);
-                if cursor < buffer.len() {
-                    predicted.push_str(&buffer[cursor..]);
+                if byte_cursor < buffer.len() {
+                    predicted.push_str(&buffer[byte_cursor..]);
                 }
-                let new_cursor = word_start + selected_text.len();
+                // new_cursor is a char offset for predict_command_buffer
+                let word_start_chars = byte_to_char_offset(&buffer, word_start_bytes);
+                let new_cursor = word_start_chars + selected_text.chars().count();
 
                 let cwd = state.cwd().cloned().unwrap_or_else(|| PathBuf::from("."));
                 let ctx = parse_command_context(&predicted, new_cursor);
@@ -419,22 +434,24 @@ impl InputHandler {
     }
 
     fn accept_suggestion(&self, parser: &Arc<Mutex<TerminalParser>>) -> Vec<u8> {
-        if self.suggestions.is_empty() {
-            return Vec::new();
-        }
+        let selected_idx = match self.overlay.selected {
+            Some(idx) if idx < self.suggestions.len() => idx,
+            _ => return Vec::new(),
+        };
 
-        let selected = &self.suggestions[self.overlay.selected];
+        let selected = &self.suggestions[selected_idx];
 
-        let current_word_len = {
+        let current_word_chars = {
             let p = parser.lock().unwrap();
             let state = p.state();
             let buffer = state.command_buffer().unwrap_or("");
             let cursor = state.buffer_cursor();
             let ctx = parse_command_context(buffer, cursor);
-            ctx.current_word.len()
+            ctx.current_word.chars().count()
         };
 
-        let mut bytes = vec![0x7F; current_word_len];
+        // One 0x7F (backspace) per CHARACTER — the shell deletes by character, not byte
+        let mut bytes = vec![0x7F; current_word_chars];
 
         // Type the suggestion text
         bytes.extend_from_slice(selected.text.as_bytes());
@@ -646,7 +663,10 @@ mod tests {
     fn test_tab_accept_directory_predicts_buffer() {
         let mut handler = InputHandler {
             engine: SuggestionEngine::new(Path::new(".")).unwrap(),
-            overlay: OverlayState::new(),
+            overlay: OverlayState {
+                selected: Some(0),
+                scroll_offset: 0,
+            },
             suggestions: vec![Suggestion {
                 text: "Desktop/".to_string(),
                 description: None,
@@ -698,7 +718,10 @@ mod tests {
     fn test_tab_accept_file_dismisses() {
         let mut handler = InputHandler {
             engine: SuggestionEngine::new(Path::new(".")).unwrap(),
-            overlay: OverlayState::new(),
+            overlay: OverlayState {
+                selected: Some(0),
+                scroll_offset: 0,
+            },
             suggestions: vec![Suggestion {
                 text: "README.md".to_string(),
                 description: None,
@@ -746,6 +769,88 @@ mod tests {
         // Space should NOT trigger with custom config (not in set)
         handler.process_key(&KeyEvent::Printable(' '), &parser, &mut buf);
         assert!(!handler.has_pending_trigger());
+    }
+
+    #[test]
+    fn test_enter_no_selection_forwards_enter() {
+        let mut handler = InputHandler {
+            engine: SuggestionEngine::new(Path::new(".")).unwrap(),
+            overlay: OverlayState::new(), // selected: None
+            suggestions: vec![Suggestion {
+                text: "test".to_string(),
+                description: None,
+                kind: SuggestionKind::Command,
+                source: SuggestionSource::Commands,
+                score: 0,
+            }],
+            last_layout: Some(PopupLayout {
+                start_row: 5,
+                start_col: 0,
+                width: 20,
+                height: 1,
+                renders_above: false,
+            }),
+            visible: true,
+            trigger_requested: false,
+            max_visible: DEFAULT_MAX_VISIBLE,
+            min_width: DEFAULT_MIN_POPUP_WIDTH,
+            max_width: DEFAULT_MAX_POPUP_WIDTH,
+            trigger_chars: DEFAULT_TRIGGER_CHARS.iter().copied().collect(),
+            keybindings: Keybindings::default(),
+            theme: PopupTheme::default(),
+        };
+
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        let result = handler.process_key(&KeyEvent::Enter, &parser, &mut buf);
+
+        assert_eq!(
+            result,
+            vec![0x0D],
+            "should forward Enter when nothing selected"
+        );
+        assert!(!handler.visible, "popup should be dismissed");
+    }
+
+    #[test]
+    fn test_tab_no_selection_forwards_tab() {
+        let mut handler = InputHandler {
+            engine: SuggestionEngine::new(Path::new(".")).unwrap(),
+            overlay: OverlayState::new(), // selected: None
+            suggestions: vec![Suggestion {
+                text: "test".to_string(),
+                description: None,
+                kind: SuggestionKind::Command,
+                source: SuggestionSource::Commands,
+                score: 0,
+            }],
+            last_layout: Some(PopupLayout {
+                start_row: 5,
+                start_col: 0,
+                width: 20,
+                height: 1,
+                renders_above: false,
+            }),
+            visible: true,
+            trigger_requested: false,
+            max_visible: DEFAULT_MAX_VISIBLE,
+            min_width: DEFAULT_MIN_POPUP_WIDTH,
+            max_width: DEFAULT_MAX_POPUP_WIDTH,
+            trigger_chars: DEFAULT_TRIGGER_CHARS.iter().copied().collect(),
+            keybindings: Keybindings::default(),
+            theme: PopupTheme::default(),
+        };
+
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        let result = handler.process_key(&KeyEvent::Tab, &parser, &mut buf);
+
+        assert_eq!(
+            result,
+            vec![0x09],
+            "should forward Tab when nothing selected"
+        );
+        assert!(!handler.visible, "popup should be dismissed");
     }
 
     // --- parse_key_name tests ---

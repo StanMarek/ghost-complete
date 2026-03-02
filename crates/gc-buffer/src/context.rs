@@ -31,9 +31,10 @@ pub struct CommandContext {
 /// This is a pure function — takes the raw buffer string and cursor byte offset,
 /// returns structured context for the suggestion engine.
 pub fn parse_command_context(buffer: &str, cursor: usize) -> CommandContext {
-    // Only consider the portion of the buffer up to the cursor
-    let cursor = cursor.min(buffer.len());
-    let before_cursor = &buffer[..cursor];
+    // `cursor` is a character offset (from zsh $CURSOR / fish commandline -C).
+    // Convert to a byte offset for safe string slicing.
+    let byte_cursor = crate::char_to_byte_offset(buffer, cursor);
+    let before_cursor = &buffer[..byte_cursor];
 
     let result = tokenize(before_cursor);
     let tokens = &result.tokens;
@@ -246,5 +247,34 @@ mod tests {
         let ctx = parse_command_context("a | b | c ", 10);
         assert_eq!(ctx.command, Some("c".into()));
         assert!(ctx.in_pipe);
+    }
+
+    #[test]
+    fn test_multibyte_char_does_not_panic() {
+        // 'ą' is 2 bytes in UTF-8. cursor=1 means after the first CHARACTER.
+        let ctx = parse_command_context("ą", 1);
+        assert_eq!(ctx.current_word, "ą");
+        assert_eq!(ctx.word_index, 0);
+    }
+
+    #[test]
+    fn test_multibyte_mid_buffer() {
+        // "echo ąść" — cursor at char 6 (after "echo ą")
+        let ctx = parse_command_context("echo ąść", 6);
+        assert_eq!(ctx.command, Some("echo".into()));
+        assert_eq!(ctx.current_word, "ą");
+    }
+
+    #[test]
+    fn test_multibyte_full_word() {
+        let ctx = parse_command_context("echo ąść", 8);
+        assert_eq!(ctx.command, Some("echo".into()));
+        assert_eq!(ctx.current_word, "ąść");
+    }
+
+    #[test]
+    fn test_cursor_beyond_end_clamps() {
+        let ctx = parse_command_context("git", 999);
+        assert_eq!(ctx.current_word, "git");
     }
 }

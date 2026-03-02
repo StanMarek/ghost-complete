@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-03-02
+
+### Fixed
+
+- **Multi-byte UTF-8 crash** — typing non-ASCII characters (e.g., `ą`, `ś`) no longer panics and kills the terminal session. Tokenizer rewritten to iterate over characters instead of raw bytes; cursor offset conversion from character to byte boundaries added throughout.
+- **History suggestions polluting top results** — history completions now always sort after non-history suggestions, preserving score order within each group
+- **`cd` showing files instead of directories** — spec resolution now takes priority over the `looks_like_path` heuristic, so `cd Desktop/` correctly filters to directories only
+- **Accidental suggestion insertion on fast typing** — popup no longer auto-selects the first item. Tab and Enter with no selection forward the keystroke to the shell instead of inserting the top suggestion.
+
+### Added
+
+- **`../` parent directory shortcut for `cd`** — shown as the first suggestion when the current word is empty, with support for chaining (`../../`). Hidden at `/` and `$HOME` boundaries.
+
 ## [0.1.0] - 2026-03-01
 
 ### Added
@@ -30,4 +43,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Shell integration** for zsh (full), bash (Ctrl+Space), and fish (Ctrl+Space)
 - **`validate-specs` subcommand** with colored output and item counts
 
+[0.1.1]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.1.1
 [0.1.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.1.0

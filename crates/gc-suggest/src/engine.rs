@@ -10,7 +10,7 @@ use crate::git;
 use crate::history::{HistoryProvider, DEFAULT_MAX_HISTORY_ENTRIES};
 use crate::provider::Provider;
 use crate::specs::{self, SpecStore};
-use crate::types::{Suggestion, SuggestionKind};
+use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 
 pub struct SuggestionEngine {
     spec_store: SpecStore,
@@ -119,17 +119,8 @@ impl SuggestionEngine {
             return Ok(fuzzy::rank(&ctx.current_word, candidates, self.max_results));
         }
 
-        // Path-like current_word: filesystem
-        if looks_like_path(&ctx.current_word) {
-            if self.providers_filesystem {
-                if let Ok(fs) = self.filesystem_provider.provide(ctx, cwd) {
-                    candidates.extend(fs);
-                }
-            }
-            return Ok(fuzzy::rank(&ctx.current_word, candidates, self.max_results));
-        }
-
-        // Check for a spec for this command
+        // Check for a spec for this command (before path heuristic — specs
+        // know about folders-only vs all-filepaths and should take priority)
         if self.providers_specs {
             if let Some(command) = &ctx.command {
                 if let Some(spec) = self.spec_store.get(command) {
@@ -163,6 +154,33 @@ impl SuggestionEngine {
 
                     // Add filesystem: folders-only or all filepaths
                     if resolution.wants_folders_only && self.providers_filesystem {
+                        // Offer "../" to navigate up, unless at / or $HOME
+                        let parent_text = if ctx.current_word.is_empty() {
+                            Some("../".to_string())
+                        } else if ctx.current_word.ends_with("../") {
+                            Some(format!("{}../", ctx.current_word))
+                        } else {
+                            None
+                        };
+                        if let Some(text) = parent_text {
+                            let effective = cwd.join(&ctx.current_word);
+                            let at_boundary =
+                                effective.canonicalize().ok().map_or(true, |resolved| {
+                                    resolved == Path::new("/")
+                                        || std::env::var("HOME")
+                                            .ok()
+                                            .map_or(false, |h| resolved == Path::new(&h))
+                                });
+                            if !at_boundary {
+                                candidates.push(Suggestion {
+                                    text,
+                                    description: Some("Parent directory".to_string()),
+                                    kind: SuggestionKind::Directory,
+                                    source: SuggestionSource::Filesystem,
+                                    score: 0,
+                                });
+                            }
+                        }
                         if let Ok(fs) = self.filesystem_provider.provide(ctx, cwd) {
                             candidates.extend(
                                 fs.into_iter()
@@ -180,7 +198,17 @@ impl SuggestionEngine {
             }
         }
 
-        // No spec — fallback to filesystem
+        // Path-like current_word without a spec: filesystem
+        if looks_like_path(&ctx.current_word) {
+            if self.providers_filesystem {
+                if let Ok(fs) = self.filesystem_provider.provide(ctx, cwd) {
+                    candidates.extend(fs);
+                }
+            }
+            return Ok(fuzzy::rank(&ctx.current_word, candidates, self.max_results));
+        }
+
+        // No spec, no path — fallback to filesystem
         if self.providers_filesystem {
             if let Ok(fs) = self.filesystem_provider.provide(ctx, cwd) {
                 candidates.extend(fs);
@@ -442,6 +470,74 @@ mod tests {
         assert!(
             !results.iter().any(|s| s.text.contains("not_a_dir")),
             "pip install -t should NOT show files: {results:?}"
+        );
+    }
+
+    #[test]
+    fn test_cd_first_suggestion_is_parent_dir() {
+        let engine = make_engine();
+        let tmp = tempfile::TempDir::new().unwrap();
+        std::fs::create_dir(tmp.path().join("aaa")).unwrap();
+        std::fs::create_dir(tmp.path().join("bbb")).unwrap();
+        let ctx = make_ctx(Some("cd"), vec![], "", 1);
+        let results = engine.suggest_sync(&ctx, tmp.path()).unwrap();
+        assert!(!results.is_empty(), "cd should return suggestions");
+        assert_eq!(
+            results[0].text, "../",
+            "first cd suggestion should be ../, got: {:?}",
+            results[0].text
+        );
+    }
+
+    #[test]
+    fn test_cd_parent_dir_absent_at_root() {
+        let engine = make_engine();
+        let ctx = make_ctx(Some("cd"), vec![], "", 1);
+        let results = engine.suggest_sync(&ctx, Path::new("/")).unwrap();
+        assert!(
+            !results.iter().any(|s| s.text == "../"),
+            "../ should not appear at root: {results:?}"
+        );
+    }
+
+    #[test]
+    fn test_cd_parent_dir_absent_at_home() {
+        let engine = make_engine();
+        let home = std::env::var("HOME").unwrap();
+        let ctx = make_ctx(Some("cd"), vec![], "", 1);
+        let results = engine.suggest_sync(&ctx, Path::new(&home)).unwrap();
+        assert!(
+            !results.iter().any(|s| s.text == "../"),
+            "../ should not appear at home dir: {results:?}"
+        );
+    }
+
+    #[test]
+    fn test_cd_chaining_offers_double_parent() {
+        let engine = make_engine();
+        let tmp = tempfile::TempDir::new().unwrap();
+        let sub = tmp.path().join("aaa").join("bbb");
+        std::fs::create_dir_all(&sub).unwrap();
+        // Simulate: cd ../<TAB> from inside aaa/bbb
+        let ctx = make_ctx(Some("cd"), vec![], "../", 1);
+        let results = engine.suggest_sync(&ctx, &sub).unwrap();
+        assert!(
+            results.iter().any(|s| s.text == "../../"),
+            "should offer ../../ when current_word is ../: {results:?}"
+        );
+    }
+
+    #[test]
+    fn test_cd_parent_dir_absent_with_query() {
+        let engine = make_engine();
+        let tmp = tempfile::TempDir::new().unwrap();
+        std::fs::create_dir(tmp.path().join("mydir")).unwrap();
+        // current_word = "my" — ../  doesn't match, should be filtered out
+        let ctx = make_ctx(Some("cd"), vec![], "my", 1);
+        let results = engine.suggest_sync(&ctx, tmp.path()).unwrap();
+        assert!(
+            !results.iter().any(|s| s.text == "../"),
+            "../ should be filtered out when current_word doesn't match: {results:?}"
         );
     }
 

@@ -29,102 +29,97 @@ pub fn tokenize(input: &str) -> TokenizeResult {
     let mut tokens = Vec::new();
     let mut current_word = String::new();
     let mut quote_state = QuoteState::None;
-    let bytes = input.as_bytes();
-    let len = bytes.len();
-    let mut i = 0;
+    let mut chars = input.chars().peekable();
 
-    while i < len {
-        let ch = bytes[i] as char;
-
+    while let Some(&ch) = chars.peek() {
         match quote_state {
             QuoteState::SingleQuoted => {
+                chars.next();
                 if ch == '\'' {
                     quote_state = QuoteState::None;
                 } else {
                     current_word.push(ch);
                 }
-                i += 1;
             }
             QuoteState::DoubleQuoted => {
+                chars.next();
                 if ch == '"' {
                     quote_state = QuoteState::None;
-                    i += 1;
-                } else if ch == '\\' && i + 1 < len {
-                    let next = bytes[i + 1] as char;
-                    match next {
-                        '"' | '\\' | '$' | '`' => {
-                            current_word.push(next);
-                            i += 2;
-                        }
-                        _ => {
-                            current_word.push('\\');
-                            current_word.push(next);
-                            i += 2;
-                        }
-                    }
                 } else if ch == '\\' {
-                    // Trailing backslash inside double quotes
-                    current_word.push('\\');
-                    i += 1;
+                    if let Some(&next) = chars.peek() {
+                        match next {
+                            '"' | '\\' | '$' | '`' => {
+                                current_word.push(next);
+                                chars.next();
+                            }
+                            _ => {
+                                current_word.push('\\');
+                                current_word.push(next);
+                                chars.next();
+                            }
+                        }
+                    } else {
+                        // Trailing backslash inside double quotes
+                        current_word.push('\\');
+                    }
                 } else {
                     current_word.push(ch);
-                    i += 1;
                 }
             }
             QuoteState::None => {
                 if ch == '\'' {
+                    chars.next();
                     quote_state = QuoteState::SingleQuoted;
-                    i += 1;
                 } else if ch == '"' {
+                    chars.next();
                     quote_state = QuoteState::DoubleQuoted;
-                    i += 1;
-                } else if ch == '\\' && i + 1 < len {
-                    current_word.push(bytes[i + 1] as char);
-                    i += 2;
                 } else if ch == '\\' {
-                    // Trailing backslash
-                    i += 1;
+                    chars.next();
+                    if let Some(&next) = chars.peek() {
+                        current_word.push(next);
+                        chars.next();
+                    }
                 } else if ch == '|' {
+                    chars.next();
                     flush_word(&mut current_word, &mut tokens);
-                    if i + 1 < len && bytes[i + 1] == b'|' {
+                    if chars.peek() == Some(&'|') {
+                        chars.next();
                         tokens.push(Token::Or);
-                        i += 2;
                     } else {
                         tokens.push(Token::Pipe);
-                        i += 1;
                     }
                 } else if ch == '&' {
+                    chars.next();
                     flush_word(&mut current_word, &mut tokens);
-                    if i + 1 < len && bytes[i + 1] == b'&' {
+                    if chars.peek() == Some(&'&') {
+                        chars.next();
                         tokens.push(Token::And);
-                        i += 2;
                     } else {
                         tokens.push(Token::Background);
-                        i += 1;
                     }
                 } else if ch == ';' {
+                    chars.next();
                     flush_word(&mut current_word, &mut tokens);
                     tokens.push(Token::Semicolon);
-                    i += 1;
                 } else if ch == '>' {
+                    chars.next();
                     flush_word(&mut current_word, &mut tokens);
-                    if i + 1 < len && bytes[i + 1] == b'>' {
+                    if chars.peek() == Some(&'>') {
+                        chars.next();
                         tokens.push(Token::RedirectAppend);
-                        i += 2;
                     } else {
                         tokens.push(Token::RedirectOut);
-                        i += 1;
                     }
                 } else if ch == '<' {
+                    chars.next();
                     flush_word(&mut current_word, &mut tokens);
                     tokens.push(Token::RedirectIn);
-                    i += 1;
                 } else if ch.is_ascii_whitespace() {
+                    chars.next();
                     flush_word(&mut current_word, &mut tokens);
-                    i += 1;
                 } else {
+                    chars.next();
                     current_word.push(ch);
-                    i += 1;
                 }
             }
         }

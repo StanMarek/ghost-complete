@@ -1,7 +1,7 @@
 use nucleo::pattern::{AtomKind, CaseMatching, Normalization, Pattern};
 use nucleo::{Config, Matcher, Utf32String};
 
-use crate::types::Suggestion;
+use crate::types::{Suggestion, SuggestionSource};
 
 pub const DEFAULT_MAX_RESULTS: usize = 50;
 
@@ -30,7 +30,14 @@ pub fn rank(query: &str, mut suggestions: Vec<Suggestion>, max_results: usize) -
         }
     });
 
-    suggestions.sort_by(|a, b| b.score.cmp(&a.score).then_with(|| a.text.cmp(&b.text)));
+    suggestions.sort_by(|a, b| {
+        let a_hist = a.source == SuggestionSource::History;
+        let b_hist = b.source == SuggestionSource::History;
+        a_hist
+            .cmp(&b_hist)
+            .then_with(|| b.score.cmp(&a.score))
+            .then_with(|| a.text.cmp(&b.text))
+    });
     suggestions.truncate(max_results);
     suggestions
 }
@@ -93,6 +100,54 @@ mod tests {
         let items: Vec<Suggestion> = (0..100).map(|i| make(&format!("item{i}"))).collect();
         let result = rank("item", items, 5);
         assert!(result.len() <= 5);
+    }
+
+    #[test]
+    fn test_history_items_sorted_after_non_history() {
+        let items = vec![
+            Suggestion {
+                text: "checkout".to_string(),
+                description: None,
+                kind: SuggestionKind::Command,
+                source: SuggestionSource::History,
+                score: 0,
+            },
+            Suggestion {
+                text: "cherry-pick".to_string(),
+                description: None,
+                kind: SuggestionKind::Command,
+                source: SuggestionSource::Commands,
+                score: 0,
+            },
+            Suggestion {
+                text: "check".to_string(),
+                description: None,
+                kind: SuggestionKind::Command,
+                source: SuggestionSource::History,
+                score: 0,
+            },
+            Suggestion {
+                text: "chmod".to_string(),
+                description: None,
+                kind: SuggestionKind::Command,
+                source: SuggestionSource::Commands,
+                score: 0,
+            },
+        ];
+        let result = rank("ch", items, DEFAULT_MAX_RESULTS);
+        // All non-history items should come before any history item
+        let first_hist = result
+            .iter()
+            .position(|s| s.source == SuggestionSource::History);
+        let last_non_hist = result
+            .iter()
+            .rposition(|s| s.source != SuggestionSource::History);
+        if let (Some(fh), Some(lnh)) = (first_hist, last_non_hist) {
+            assert!(
+                lnh < fh,
+                "non-history items should all precede history items: {result:?}"
+            );
+        }
     }
 
     #[test]

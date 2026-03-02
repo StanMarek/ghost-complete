@@ -14,6 +14,17 @@ Ghost Complete sits inside your terminal's data stream as a PTY proxy, intercept
 
 Inspired by [Fig](https://fig.io) (RIP). Built from scratch in Rust.
 
+## Status
+
+This is a personal project I built for my own workflow. I'm happy to share it and welcome contributions, but set your expectations accordingly:
+
+- **Ghostty + zsh is the tested path.** That's what I use daily — it's stable and reliable.
+- **Bash and fish support is experimental.** Manual trigger only (Ctrl+Space), no auto-trigger on typing, and not actively tested.
+- **No stability guarantees.** This is v0.1.x — config format, spec format, and behavior may change between releases.
+- **macOS only.** No Linux or Windows support planned at this time.
+
+If you hit a bug, [open an issue](https://github.com/StanMarek/ghost-complete/issues). I'll fix what I can.
+
 ## Requirements
 
 - **Terminal:** [Ghostty](https://ghostty.org)
@@ -137,6 +148,26 @@ See [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) for the full desi
 | Ctrl+Space manual trigger | Yes | Yes | Yes |
 | PTY proxy wrapping | Yes | Yes | Yes |
 | OSC 133 prompt markers | Yes | Yes | Yes |
+
+## FAQ
+
+**How is this different from zsh/fish built-in autocomplete?**
+
+Built-in completions work great — Ghost Complete doesn't replace them. It adds a visual popup layer on top, like the difference between typing from memory and having an IDE dropdown. Suggestions are fuzzy-ranked from multiple sources (completion specs, filesystem, git branches, command history) and displayed in a single view. Think of it as complementary, not a replacement.
+
+**Why a PTY proxy instead of a zsh plugin?**
+
+The PTY proxy sits between the terminal and the shell, rendering popups via pure ANSI escape sequences. This means no zle widget conflicts, no plugin manager dependencies, no RPROMPT corruption, and no fragile shell internals to hook into. It's more complex under the hood, but the UX is cleaner — one binary, works immediately after install.
+
+**Why custom JSON specs instead of using the shell's built-in completions?**
+
+Specs are declarative and fast — microsecond loads, no shell execution. They use the same format [Fig](https://fig.io) used, so there's a large existing ecosystem to draw from. The tradeoff is coverage: Ghost Complete ships with 18 specs today. Commands without a spec fall back to filesystem completions. Adding new specs is straightforward — see [docs/COMPLETION_SPEC.md](docs/COMPLETION_SPEC.md), and contributions are welcome.
+
+**Where's the config documentation? I'm having popup alignment issues.**
+
+Full config reference lives at [docs/CONFIGURATION.md](docs/CONFIGURATION.md). Running `ghost-complete install` generates a commented default config at `~/.config/ghost-complete/config.toml` with all available options.
+
+For popup alignment: Ghost Complete uses ANSI cursor positioning within the terminal grid, so popups always track the cursor position directly. This avoids the window-level coordinate issues that plague Accessibility API approaches (the kind of drift reported with tools like Amazon Q / Kiro). If popups are misaligned, it's likely a terminal compatibility issue — please [open an issue](https://github.com/StanMarek/ghost-complete/issues) with your setup details.
 
 ## Contributing
 
