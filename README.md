@@ -8,6 +8,13 @@
 
 <!-- TODO: add demo GIF -->
 
+
+
+https://github.com/user-attachments/assets/3679a74a-731d-468a-bdda-bec926bb2349
+
+
+
+
 ## What is this?
 
 Ghost Complete sits inside your terminal's data stream as a PTY proxy, intercepting I/O between Ghostty and your shell. When you type a command, it renders autocomplete suggestions as native ANSI popups — no macOS Accessibility API, no IME hacks, no Electron overlay. Just your terminal, your shell, and fast completions.
