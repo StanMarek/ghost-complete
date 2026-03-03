@@ -75,7 +75,7 @@ fn init_block() -> String {
     format!(
         "{INIT_BEGIN}\n\
          {MANAGED_WARNING}\n\
-         if [[ -z \"$GHOST_COMPLETE_ACTIVE\" ]]; then\n  \
+         if [[ \"$TERM_PROGRAM\" == \"ghostty\" && -z \"$GHOST_COMPLETE_ACTIVE\" ]]; then\n  \
            export GHOST_COMPLETE_ACTIVE=1\n  \
            exec ghost-complete\n\
          fi\n\
