@@ -94,6 +94,9 @@ fn init_block() -> String {
          if [[ \"$TERM_PROGRAM\" == \"ghostty\" && -z \"$GHOST_COMPLETE_ACTIVE\" ]]; then\n  \
            export GHOST_COMPLETE_ACTIVE=1\n  \
            exec ghost-complete\n\
+         elif [[ -n \"$TMUX\" && -n \"$GHOSTTY_RESOURCES_DIR\" && \\\n    \
+           \"$(ps -o comm= -p $PPID 2>/dev/null)\" != \"ghost-complete\" ]]; then\n  \
+           exec ghost-complete\n\
          fi\n\
          {INIT_END}"
     )
@@ -327,8 +330,15 @@ mod tests {
         assert!(block.contains(INIT_BEGIN));
         assert!(block.contains(INIT_END));
         assert!(block.contains(MANAGED_WARNING));
-        assert!(block.contains("GHOST_COMPLETE_ACTIVE"));
         assert!(block.contains("exec ghost-complete"));
+        // Pure Ghostty: TERM_PROGRAM + GHOST_COMPLETE_ACTIVE guard
+        assert!(block.contains("$TERM_PROGRAM"));
+        assert!(block.contains("GHOST_COMPLETE_ACTIVE"));
+        // tmux-in-Ghostty: TMUX + GHOSTTY_RESOURCES_DIR + PPID guard
+        assert!(block.contains("$TMUX"));
+        assert!(block.contains("$GHOSTTY_RESOURCES_DIR"));
+        assert!(block.contains("$PPID"));
+        assert!(block.contains("ghost-complete\""));
     }
 
     #[test]

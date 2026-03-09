@@ -40,6 +40,15 @@ impl Drop for RawModeGuard {
 ///
 /// Returns the shell's exit code.
 pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Result<i32> {
+    // Log tmux detection for debugging
+    if std::env::var("TMUX").is_ok() {
+        tracing::info!("tmux session detected — running inside tmux pane");
+        if let Ok(output) = std::process::Command::new("tmux").arg("-V").output() {
+            let version = String::from_utf8_lossy(&output.stdout);
+            tracing::info!("tmux version: {}", version.trim());
+        }
+    }
+
     let SpawnedShell { master, mut child } = spawn_shell(shell, args)?;
 
     let mut reader = master

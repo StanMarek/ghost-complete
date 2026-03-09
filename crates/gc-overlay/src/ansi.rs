@@ -1,6 +1,6 @@
 use std::io::Write;
 
-/// Begin synchronized output (Ghostty DECSET 2026).
+/// Begin synchronized output (DECSET 2026).
 /// Terminal buffers all output until end_sync, then draws atomically.
 pub fn begin_sync(buf: &mut Vec<u8>) {
     let _ = buf.write_all(b"\x1b[?2026h");
