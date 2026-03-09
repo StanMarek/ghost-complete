@@ -1,0 +1,432 @@
+{
+  "name": "gradlew",
+  "description": "Gradle wrapper build tool",
+  "subcommands": [
+    {
+      "name": "build",
+      "description": "Assemble and test the project"
+    },
+    {
+      "name": "clean",
+      "description": "Delete the build directory"
+    },
+    {
+      "name": "test",
+      "description": "Run the unit tests"
+    },
+    {
+      "name": "assemble",
+      "description": "Assemble the outputs of the project"
+    },
+    {
+      "name": "check",
+      "description": "Run all checks including tests"
+    },
+    {
+      "name": "jar",
+      "description": "Assemble a JAR archive of the main classes"
+    },
+    {
+      "name": "war",
+      "description": "Assemble a WAR archive of the web application"
+    },
+    {
+      "name": "bootRun",
+      "description": "Run the Spring Boot application"
+    },
+    {
+      "name": "bootJar",
+      "description": "Assemble an executable JAR with Spring Boot"
+    },
+    {
+      "name": "classes",
+      "description": "Assemble main classes"
+    },
+    {
+      "name": "testClasses",
+      "description": "Assemble test classes"
+    },
+    {
+      "name": "javadoc",
+      "description": "Generate Javadoc API documentation"
+    },
+    {
+      "name": "dependencies",
+      "description": "Display all dependencies declared in the project",
+      "options": [
+        {
+          "name": [
+            "--configuration"
+          ],
+          "description": "The dependency configuration to report"
+        }
+      ]
+    },
+    {
+      "name": "dependencyInsight",
+      "description": "Display insight into a specific dependency",
+      "options": [
+        {
+          "name": [
+            "--dependency"
+          ],
+          "description": "The dependency to show insight for"
+        },
+        {
+          "name": [
+            "--configuration"
+          ],
+          "description": "The dependency configuration to resolve"
+        }
+      ]
+    },
+    {
+      "name": "projects",
+      "description": "Display the sub-projects of the project"
+    },
+    {
+      "name": "properties",
+      "description": "Display the properties of the project"
+    },
+    {
+      "name": "tasks",
+      "description": "Display the tasks runnable from the project",
+      "options": [
+        {
+          "name": [
+            "--all"
+          ],
+          "description": "Show additional tasks and detail"
+        },
+        {
+          "name": [
+            "--group"
+          ],
+          "description": "Show tasks for a specific group"
+        }
+      ]
+    },
+    {
+      "name": "components",
+      "description": "Display the components produced by the project"
+    },
+    {
+      "name": "model",
+      "description": "Display the configuration model of the project"
+    },
+    {
+      "name": "buildEnvironment",
+      "description": "Display all buildscript dependencies declared in the project"
+    },
+    {
+      "name": "wrapper",
+      "description": "Generate Gradle wrapper files",
+      "options": [
+        {
+          "name": [
+            "--gradle-version"
+          ],
+          "description": "The Gradle version to use in the wrapper"
+        },
+        {
+          "name": [
+            "--distribution-type"
+          ],
+          "description": "The type of Gradle distribution (bin or all)"
+        }
+      ]
+    },
+    {
+      "name": "init",
+      "description": "Initialize a new Gradle build",
+      "options": [
+        {
+          "name": [
+            "--type"
+          ],
+          "description": "Type of project to generate (java-application, java-library, etc.)"
+        },
+        {
+          "name": [
+            "--dsl"
+          ],
+          "description": "DSL to use for build scripts (groovy or kotlin)"
+        },
+        {
+          "name": [
+            "--test-framework"
+          ],
+          "description": "Test framework to use (junit, testng, spock, etc.)"
+        },
+        {
+          "name": [
+            "--project-name"
+          ],
+          "description": "Name of the generated project"
+        },
+        {
+          "name": [
+            "--package"
+          ],
+          "description": "Package for the generated source"
+        }
+      ]
+    },
+    {
+      "name": "help",
+      "description": "Display help information about a task",
+      "options": [
+        {
+          "name": [
+            "--task"
+          ],
+          "description": "The task to display help for"
+        }
+      ]
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "-b",
+        "--build-file"
+      ],
+      "description": "Specify the build file",
+      "args": {
+        "name": "file",
+        "description": "Path to build file",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "-c",
+        "--settings-file"
+      ],
+      "description": "Specify the settings file",
+      "args": {
+        "name": "file",
+        "description": "Path to settings file",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "-p",
+        "--project-dir"
+      ],
+      "description": "Specify the start directory for Gradle",
+      "args": {
+        "name": "dir",
+        "description": "Path to project directory",
+        "template": "folders"
+      }
+    },
+    {
+      "name": [
+        "-g",
+        "--gradle-user-home"
+      ],
+      "description": "Specify the Gradle user home directory",
+      "args": {
+        "name": "dir",
+        "description": "Path to Gradle user home",
+        "template": "folders"
+      }
+    },
+    {
+      "name": [
+        "-x",
+        "--exclude-task"
+      ],
+      "description": "Specify a task to be excluded from execution"
+    },
+    {
+      "name": [
+        "--parallel"
+      ],
+      "description": "Build projects in parallel"
+    },
+    {
+      "name": [
+        "--no-parallel"
+      ],
+      "description": "Disable parallel project execution"
+    },
+    {
+      "name": [
+        "--daemon"
+      ],
+      "description": "Use the Gradle Daemon to run the build"
+    },
+    {
+      "name": [
+        "--no-daemon"
+      ],
+      "description": "Do not use the Gradle Daemon"
+    },
+    {
+      "name": [
+        "--foreground"
+      ],
+      "description": "Start the Gradle Daemon in the foreground"
+    },
+    {
+      "name": [
+        "-t",
+        "--continuous"
+      ],
+      "description": "Enable continuous build, re-executing on file changes"
+    },
+    {
+      "name": [
+        "--build-cache"
+      ],
+      "description": "Enable the Gradle build cache"
+    },
+    {
+      "name": [
+        "--no-build-cache"
+      ],
+      "description": "Disable the Gradle build cache"
+    },
+    {
+      "name": [
+        "--configure-on-demand"
+      ],
+      "description": "Configure necessary projects only"
+    },
+    {
+      "name": [
+        "--no-configure-on-demand"
+      ],
+      "description": "Disable configure-on-demand"
+    },
+    {
+      "name": [
+        "--console"
+      ],
+      "description": "Specify console output type (auto, plain, rich, verbose)"
+    },
+    {
+      "name": [
+        "-i",
+        "--info"
+      ],
+      "description": "Set log level to info"
+    },
+    {
+      "name": [
+        "-d",
+        "--debug"
+      ],
+      "description": "Log in debug mode (includes normal stacktrace)"
+    },
+    {
+      "name": [
+        "-w",
+        "--warn"
+      ],
+      "description": "Set log level to warn"
+    },
+    {
+      "name": [
+        "-q",
+        "--quiet"
+      ],
+      "description": "Log errors only"
+    },
+    {
+      "name": [
+        "-s",
+        "--stacktrace"
+      ],
+      "description": "Print out the stacktrace for all exceptions"
+    },
+    {
+      "name": [
+        "-S",
+        "--full-stacktrace"
+      ],
+      "description": "Print out the full stacktrace for all exceptions"
+    },
+    {
+      "name": [
+        "--scan"
+      ],
+      "description": "Create a build scan"
+    },
+    {
+      "name": [
+        "--no-scan"
+      ],
+      "description": "Disable creation of a build scan"
+    },
+    {
+      "name": [
+        "--offline"
+      ],
+      "description": "Execute the build without accessing network resources"
+    },
+    {
+      "name": [
+        "--refresh-dependencies"
+      ],
+      "description": "Refresh the state of dependencies"
+    },
+    {
+      "name": [
+        "--rerun-tasks"
+      ],
+      "description": "Ignore previously cached task results"
+    },
+    {
+      "name": [
+        "-m",
+        "--dry-run"
+      ],
+      "description": "Run the builds with all task actions disabled"
+    },
+    {
+      "name": [
+        "--max-workers"
+      ],
+      "description": "Configure the number of concurrent workers"
+    },
+    {
+      "name": [
+        "--profile"
+      ],
+      "description": "Profile build execution time and generate a report"
+    },
+    {
+      "name": [
+        "--init-script"
+      ],
+      "description": "Specify an initialization script",
+      "args": {
+        "name": "script",
+        "description": "Path to init script",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "-D"
+      ],
+      "description": "Set a system property (e.g. -Dproperty=value)"
+    },
+    {
+      "name": [
+        "-P"
+      ],
+      "description": "Set a project property (e.g. -Pproperty=value)"
+    },
+    {
+      "name": [
+        "--warning-mode"
+      ],
+      "description": "Specify warning mode (all, fail, none, summary)"
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "name": "ln",
+  "description": "Make links between files",
+  "args": [
+    {
+      "name": "target",
+      "description": "Target file or directory to link to",
+      "template": "filepaths"
+    },
+    {
+      "name": "link_name",
+      "description": "Name of the link to create",
+      "template": "filepaths"
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "-s",
+        "--symbolic"
+      ],
+      "description": "Create a symbolic link instead of a hard link"
+    },
+    {
+      "name": [
+        "-f",
+        "--force"
+      ],
+      "description": "Remove existing destination files"
+    },
+    {
+      "name": [
+        "-v",
+        "--verbose"
+      ],
+      "description": "Print name of each linked file"
+    },
+    {
+      "name": [
+        "-n",
+        "--no-dereference"
+      ],
+      "description": "Treat symlink destination as a normal file"
+    },
+    {
+      "name": [
+        "-i",
+        "--interactive"
+      ],
+      "description": "Prompt before removing existing files"
+    },
+    {
+      "name": [
+        "-r",
+        "--relative"
+      ],
+      "description": "Create symbolic links relative to link location"
+    },
+    {
+      "name": [
+        "-b",
+        "--backup"
+      ],
+      "description": "Make a backup of each existing destination file"
+    },
+    {
+      "name": [
+        "-t",
+        "--target-directory"
+      ],
+      "description": "Specify the target directory for the links",
+      "args": {
+        "name": "directory",
+        "template": "folders"
+      }
+    },
+    {
+      "name": [
+        "-T",
+        "--no-target-directory"
+      ],
+      "description": "Treat link name as a normal file always"
+    }
+  ]
+}

@@ -1,0 +1,277 @@
+{
+  "name": "rustup",
+  "description": "The Rust toolchain installer",
+  "subcommands": [
+    {
+      "name": "show",
+      "description": "Show the active and installed toolchains or profiles",
+      "subcommands": [
+        { "name": "active-toolchain", "description": "Show the active toolchain" },
+        { "name": "home", "description": "Display the computed value of RUSTUP_HOME" },
+        { "name": "profile", "description": "Show the current profile" }
+      ]
+    },
+    {
+      "name": "update",
+      "description": "Update Rust toolchains and rustup",
+      "options": [
+        { "name": ["--no-self-update"], "description": "Don't perform self update when running the rustup update command" },
+        { "name": ["--force"], "description": "Force an update, even if some components are missing" },
+        { "name": ["--force-non-host"], "description": "Install toolchains that require an emulator" }
+      ],
+      "args": [
+        { "name": "toolchain", "description": "Toolchain name (e.g. stable, nightly, 1.70.0)" }
+      ]
+    },
+    {
+      "name": "default",
+      "description": "Set the default toolchain",
+      "args": [
+        { "name": "toolchain", "description": "Toolchain name (e.g. stable, nightly, 1.70.0)" }
+      ]
+    },
+    {
+      "name": "toolchain",
+      "description": "Modify or query the installed toolchains",
+      "subcommands": [
+        {
+          "name": "install",
+          "description": "Install or update a given toolchain",
+          "options": [
+            { "name": ["--profile"], "description": "Set installation profile", "args": { "name": "profile" } },
+            { "name": ["-c", "--component"], "description": "Add a specific component", "args": { "name": "component" } },
+            { "name": ["-t", "--target"], "description": "Add a specific target", "args": { "name": "target" } },
+            { "name": ["--no-self-update"], "description": "Don't perform self update" },
+            { "name": ["--force"], "description": "Force an update" },
+            { "name": ["--allow-downgrade"], "description": "Allow rustup to downgrade the toolchain to satisfy your component choice" },
+            { "name": ["--force-non-host"], "description": "Install toolchains that require an emulator" }
+          ],
+          "args": [
+            { "name": "toolchain", "description": "Toolchain name" }
+          ]
+        },
+        {
+          "name": "uninstall",
+          "description": "Uninstall a toolchain",
+          "args": [
+            { "name": "toolchain", "description": "Toolchain name" }
+          ]
+        },
+        {
+          "name": "list",
+          "description": "List installed toolchains",
+          "options": [
+            { "name": ["-v", "--verbose"], "description": "Enable verbose output with toolchain information" }
+          ]
+        },
+        {
+          "name": "link",
+          "description": "Create a custom toolchain by symlinking to a directory",
+          "args": [
+            { "name": "toolchain", "description": "Custom toolchain name" },
+            { "name": "path", "description": "Path to the toolchain directory", "template": "folders" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "target",
+      "description": "Modify a toolchain's supported targets",
+      "subcommands": [
+        {
+          "name": "add",
+          "description": "Add a target to a Rust toolchain",
+          "options": [
+            { "name": ["--toolchain"], "description": "Toolchain name", "args": { "name": "toolchain" } }
+          ],
+          "args": [
+            { "name": "target", "description": "Target triple (e.g. x86_64-apple-darwin)" }
+          ]
+        },
+        {
+          "name": "remove",
+          "description": "Remove a target from a Rust toolchain",
+          "options": [
+            { "name": ["--toolchain"], "description": "Toolchain name", "args": { "name": "toolchain" } }
+          ],
+          "args": [
+            { "name": "target", "description": "Target triple" }
+          ]
+        },
+        {
+          "name": "list",
+          "description": "List installed and available targets",
+          "options": [
+            { "name": ["--toolchain"], "description": "Toolchain name", "args": { "name": "toolchain" } },
+            { "name": ["--installed"], "description": "List only installed targets" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "component",
+      "description": "Modify a toolchain's installed components",
+      "subcommands": [
+        {
+          "name": "add",
+          "description": "Add a component to a Rust toolchain",
+          "options": [
+            { "name": ["--toolchain"], "description": "Toolchain name", "args": { "name": "toolchain" } },
+            { "name": ["--target"], "description": "Target triple", "args": { "name": "target" } }
+          ],
+          "args": [
+            { "name": "component", "description": "Component name (e.g. rustfmt, clippy, rust-src)" }
+          ]
+        },
+        {
+          "name": "remove",
+          "description": "Remove a component from a Rust toolchain",
+          "options": [
+            { "name": ["--toolchain"], "description": "Toolchain name", "args": { "name": "toolchain" } },
+            { "name": ["--target"], "description": "Target triple", "args": { "name": "target" } }
+          ],
+          "args": [
+            { "name": "component", "description": "Component name" }
+          ]
+        },
+        {
+          "name": "list",
+          "description": "List installed and available components",
+          "options": [
+            { "name": ["--toolchain"], "description": "Toolchain name", "args": { "name": "toolchain" } },
+            { "name": ["--installed"], "description": "List only installed components" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "override",
+      "description": "Modify directory toolchain overrides",
+      "subcommands": [
+        {
+          "name": "set",
+          "description": "Set the override toolchain for a directory",
+          "options": [
+            { "name": ["--path"], "description": "Path to the directory", "args": { "name": "path", "template": "folders" } }
+          ],
+          "args": [
+            { "name": "toolchain", "description": "Toolchain name" }
+          ]
+        },
+        {
+          "name": "unset",
+          "description": "Remove the override toolchain for a directory",
+          "options": [
+            { "name": ["--path"], "description": "Path to the directory", "args": { "name": "path", "template": "folders" } },
+            { "name": ["--nonexistent"], "description": "Remove override toolchains for all nonexistent directories" }
+          ]
+        },
+        {
+          "name": "list",
+          "description": "List directory toolchain overrides"
+        }
+      ]
+    },
+    {
+      "name": "run",
+      "description": "Run a command with an environment configured for a given toolchain",
+      "options": [
+        { "name": ["--install"], "description": "Install the requested toolchain if needed" }
+      ],
+      "args": [
+        { "name": "toolchain", "description": "Toolchain name" },
+        { "name": "command", "description": "Command to run" }
+      ]
+    },
+    {
+      "name": "which",
+      "description": "Display which binary will be run for a given command",
+      "options": [
+        { "name": ["--toolchain"], "description": "Toolchain name", "args": { "name": "toolchain" } }
+      ],
+      "args": [
+        { "name": "command", "description": "Command name" }
+      ]
+    },
+    {
+      "name": "doc",
+      "description": "Open the documentation for the current toolchain",
+      "options": [
+        { "name": ["--toolchain"], "description": "Toolchain name", "args": { "name": "toolchain" } },
+        { "name": ["--path"], "description": "Only print the path to the documentation" },
+        { "name": ["--alloc"], "description": "The Rust core allocation and collections library" },
+        { "name": ["--book"], "description": "The Rust Programming Language book" },
+        { "name": ["--cargo"], "description": "The Cargo Book" },
+        { "name": ["--core"], "description": "The Rust Core Library" },
+        { "name": ["--edition-guide"], "description": "The Rust Edition Guide" },
+        { "name": ["--nomicon"], "description": "The Dark Arts of Unsafe Rust" },
+        { "name": ["--proc_macro"], "description": "A support library for macro authors" },
+        { "name": ["--reference"], "description": "The Rust Reference" },
+        { "name": ["--rust-by-example"], "description": "A collection of examples" },
+        { "name": ["--rustc"], "description": "The compiler for the Rust programming language" },
+        { "name": ["--rustdoc"], "description": "Documentation generator for Rust projects" },
+        { "name": ["--std"], "description": "Standard library API documentation" },
+        { "name": ["--test"], "description": "Support code for rustc's built-in unit-test and micro-benchmarking framework" },
+        { "name": ["--unstable-book"], "description": "The Unstable Book" }
+      ]
+    },
+    {
+      "name": "self",
+      "description": "Modify the rustup installation",
+      "subcommands": [
+        { "name": "update", "description": "Download and install updates to rustup" },
+        { "name": "uninstall", "description": "Uninstall rustup" },
+        {
+          "name": "upgrade-data",
+          "description": "Upgrade the internal data format"
+        }
+      ]
+    },
+    {
+      "name": "set",
+      "description": "Alter rustup settings",
+      "subcommands": [
+        {
+          "name": "default-host",
+          "description": "The triple used to identify toolchains when not specified",
+          "args": [
+            { "name": "host-triple", "description": "Host triple" }
+          ]
+        },
+        {
+          "name": "profile",
+          "description": "The default components installed with a toolchain",
+          "args": [
+            { "name": "profile", "description": "Profile name (minimal, default, complete)" }
+          ]
+        },
+        {
+          "name": "auto-self-update",
+          "description": "The rustup auto self update mode",
+          "args": [
+            { "name": "mode", "description": "Auto update mode (enable, disable, check-only)" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "completions",
+      "description": "Generate tab-completion scripts for your shell",
+      "args": [
+        { "name": "shell", "description": "Shell type (bash, zsh, fish, powershell, elvish)" },
+        { "name": "command", "description": "Command to generate completions for (rustup, cargo)" }
+      ]
+    },
+    {
+      "name": "check",
+      "description": "Check for updates to Rust toolchains and rustup"
+    }
+  ],
+  "options": [
+    { "name": ["-v", "--verbose"], "description": "Enable verbose output" },
+    { "name": ["-q", "--quiet"], "description": "Disable progress output" },
+    { "name": ["-h", "--help"], "description": "Print help" },
+    { "name": ["-V", "--version"], "description": "Print version" },
+    { "name": ["--toolchain"], "description": "Override the active toolchain", "args": { "name": "toolchain" } }
+  ]
+}
