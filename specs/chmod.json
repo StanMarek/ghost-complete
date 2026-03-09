@@ -1,0 +1,75 @@
+{
+  "name": "chmod",
+  "description": "Change file mode bits",
+  "args": [
+    {
+      "name": "mode",
+      "description": "Permission mode (octal or symbolic, e.g. 755, u+x, go-w)"
+    },
+    {
+      "name": "file",
+      "description": "File(s) to change permissions on",
+      "template": "filepaths"
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "-R",
+        "--recursive"
+      ],
+      "description": "Change files and directories recursively"
+    },
+    {
+      "name": [
+        "-v",
+        "--verbose"
+      ],
+      "description": "Output a diagnostic for every file processed"
+    },
+    {
+      "name": [
+        "-f",
+        "--silent",
+        "--quiet"
+      ],
+      "description": "Suppress most error messages"
+    },
+    {
+      "name": [
+        "-c",
+        "--changes"
+      ],
+      "description": "Report only when a change is made"
+    },
+    {
+      "name": [
+        "--reference"
+      ],
+      "description": "Use RFILE's mode instead of specifying MODE values",
+      "args": {
+        "name": "rfile",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--preserve-root"
+      ],
+      "description": "Fail to operate recursively on '/'"
+    },
+    {
+      "name": [
+        "--no-preserve-root"
+      ],
+      "description": "Do not treat '/' specially (the default)"
+    },
+    {
+      "name": [
+        "-h",
+        "--no-dereference"
+      ],
+      "description": "Affect symbolic links instead of referenced files"
+    }
+  ]
+}

@@ -1,0 +1,573 @@
+{
+  "name": "rsync",
+  "description": "Fast, versatile, remote (and local) file-copying tool",
+  "args": [
+    {
+      "name": "source",
+      "description": "Source file(s) or directory",
+      "template": "filepaths"
+    },
+    {
+      "name": "destination",
+      "description": "Destination file or directory",
+      "template": "filepaths"
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "-a",
+        "--archive"
+      ],
+      "description": "Archive mode; equals -rlptgoD"
+    },
+    {
+      "name": [
+        "-v",
+        "--verbose"
+      ],
+      "description": "Increase verbosity"
+    },
+    {
+      "name": [
+        "-z",
+        "--compress"
+      ],
+      "description": "Compress file data during the transfer"
+    },
+    {
+      "name": [
+        "-r",
+        "--recursive"
+      ],
+      "description": "Recurse into directories"
+    },
+    {
+      "name": [
+        "-P"
+      ],
+      "description": "Same as --partial --progress"
+    },
+    {
+      "name": [
+        "--progress"
+      ],
+      "description": "Show progress during transfer"
+    },
+    {
+      "name": [
+        "--partial"
+      ],
+      "description": "Keep partially transferred files"
+    },
+    {
+      "name": [
+        "--delete"
+      ],
+      "description": "Delete extraneous files from dest dirs"
+    },
+    {
+      "name": [
+        "--delete-before"
+      ],
+      "description": "Receiver deletes before transfer, not during"
+    },
+    {
+      "name": [
+        "--delete-during"
+      ],
+      "description": "Receiver deletes during transfer"
+    },
+    {
+      "name": [
+        "--delete-after"
+      ],
+      "description": "Receiver deletes after transfer, not during"
+    },
+    {
+      "name": [
+        "--delete-excluded"
+      ],
+      "description": "Also delete excluded files from dest dirs"
+    },
+    {
+      "name": [
+        "--exclude"
+      ],
+      "description": "Exclude files matching PATTERN",
+      "args": {
+        "name": "pattern"
+      }
+    },
+    {
+      "name": [
+        "--exclude-from"
+      ],
+      "description": "Read exclude patterns from FILE",
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--include"
+      ],
+      "description": "Include files matching PATTERN",
+      "args": {
+        "name": "pattern"
+      }
+    },
+    {
+      "name": [
+        "--include-from"
+      ],
+      "description": "Read include patterns from FILE",
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "-n",
+        "--dry-run"
+      ],
+      "description": "Perform a trial run with no changes made"
+    },
+    {
+      "name": [
+        "-e",
+        "--rsh"
+      ],
+      "description": "Specify the remote shell to use",
+      "args": {
+        "name": "command"
+      }
+    },
+    {
+      "name": [
+        "-u",
+        "--update"
+      ],
+      "description": "Skip files that are newer on the receiver"
+    },
+    {
+      "name": [
+        "-b",
+        "--backup"
+      ],
+      "description": "Make backups (see --suffix and --backup-dir)"
+    },
+    {
+      "name": [
+        "--backup-dir"
+      ],
+      "description": "Make backups into hierarchy based in DIR",
+      "args": {
+        "name": "dir",
+        "template": "folders"
+      }
+    },
+    {
+      "name": [
+        "--suffix"
+      ],
+      "description": "Backup suffix (default ~)",
+      "args": {
+        "name": "suffix"
+      }
+    },
+    {
+      "name": [
+        "--chmod"
+      ],
+      "description": "Affect file and/or directory permissions",
+      "args": {
+        "name": "mode"
+      }
+    },
+    {
+      "name": [
+        "--chown"
+      ],
+      "description": "Simple username/groupname mapping",
+      "args": {
+        "name": "user:group"
+      }
+    },
+    {
+      "name": [
+        "--bwlimit"
+      ],
+      "description": "Limit socket I/O bandwidth in KBytes per second",
+      "args": {
+        "name": "rate"
+      }
+    },
+    {
+      "name": [
+        "--existing"
+      ],
+      "description": "Skip creating new files on receiver"
+    },
+    {
+      "name": [
+        "--ignore-existing"
+      ],
+      "description": "Skip updating files that exist on receiver"
+    },
+    {
+      "name": [
+        "-c",
+        "--checksum"
+      ],
+      "description": "Skip based on checksum, not mod-time and size"
+    },
+    {
+      "name": [
+        "--link-dest"
+      ],
+      "description": "Hardlink to files in DIR when unchanged",
+      "args": {
+        "name": "dir",
+        "template": "folders"
+      }
+    },
+    {
+      "name": [
+        "--copy-dest"
+      ],
+      "description": "Use local copy of changed file as basis for transfer",
+      "args": {
+        "name": "dir",
+        "template": "folders"
+      }
+    },
+    {
+      "name": [
+        "--compare-dest"
+      ],
+      "description": "Also compare received files relative to DIR",
+      "args": {
+        "name": "dir",
+        "template": "folders"
+      }
+    },
+    {
+      "name": [
+        "-L",
+        "--copy-links"
+      ],
+      "description": "Transform symlinks into referent file/dir"
+    },
+    {
+      "name": [
+        "-l",
+        "--links"
+      ],
+      "description": "Copy symlinks as symlinks"
+    },
+    {
+      "name": [
+        "-H",
+        "--hard-links"
+      ],
+      "description": "Preserve hard links"
+    },
+    {
+      "name": [
+        "-p",
+        "--perms"
+      ],
+      "description": "Preserve permissions"
+    },
+    {
+      "name": [
+        "-o",
+        "--owner"
+      ],
+      "description": "Preserve owner (super-user only)"
+    },
+    {
+      "name": [
+        "-g",
+        "--group"
+      ],
+      "description": "Preserve group"
+    },
+    {
+      "name": [
+        "-t",
+        "--times"
+      ],
+      "description": "Preserve modification times"
+    },
+    {
+      "name": [
+        "-D"
+      ],
+      "description": "Same as --devices --specials"
+    },
+    {
+      "name": [
+        "--devices"
+      ],
+      "description": "Preserve device files (super-user only)"
+    },
+    {
+      "name": [
+        "--specials"
+      ],
+      "description": "Preserve special files"
+    },
+    {
+      "name": [
+        "-S",
+        "--sparse"
+      ],
+      "description": "Turn sequences of nulls into sparse blocks"
+    },
+    {
+      "name": [
+        "-W",
+        "--whole-file"
+      ],
+      "description": "Copy files whole (without delta-transfer algorithm)"
+    },
+    {
+      "name": [
+        "-x",
+        "--one-file-system"
+      ],
+      "description": "Do not cross filesystem boundaries"
+    },
+    {
+      "name": [
+        "--max-size"
+      ],
+      "description": "Do not transfer any file larger than SIZE",
+      "args": {
+        "name": "size"
+      }
+    },
+    {
+      "name": [
+        "--min-size"
+      ],
+      "description": "Do not transfer any file smaller than SIZE",
+      "args": {
+        "name": "size"
+      }
+    },
+    {
+      "name": [
+        "-q",
+        "--quiet"
+      ],
+      "description": "Suppress non-error messages"
+    },
+    {
+      "name": [
+        "--stats"
+      ],
+      "description": "Give some file-transfer stats"
+    },
+    {
+      "name": [
+        "-h",
+        "--human-readable"
+      ],
+      "description": "Output numbers in a human-readable format"
+    },
+    {
+      "name": [
+        "-i",
+        "--itemize-changes"
+      ],
+      "description": "Output a change-summary for all updates"
+    },
+    {
+      "name": [
+        "--log-file"
+      ],
+      "description": "Log what we are doing to the specified FILE",
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--password-file"
+      ],
+      "description": "Read daemon-access password from FILE",
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--files-from"
+      ],
+      "description": "Read list of source-file names from FILE",
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--filter",
+        "-f"
+      ],
+      "description": "Add a file-filtering RULE",
+      "args": {
+        "name": "rule"
+      }
+    },
+    {
+      "name": [
+        "--port"
+      ],
+      "description": "Specify double-colon alternate port number",
+      "args": {
+        "name": "port"
+      }
+    },
+    {
+      "name": [
+        "--timeout"
+      ],
+      "description": "Set I/O timeout in seconds",
+      "args": {
+        "name": "seconds"
+      }
+    },
+    {
+      "name": [
+        "--temp-dir",
+        "-T"
+      ],
+      "description": "Create temporary files in directory DIR",
+      "args": {
+        "name": "dir",
+        "template": "folders"
+      }
+    },
+    {
+      "name": [
+        "--compress-level"
+      ],
+      "description": "Explicitly set compression level",
+      "args": {
+        "name": "num"
+      }
+    },
+    {
+      "name": [
+        "--info"
+      ],
+      "description": "Fine-grained informational verbosity",
+      "args": {
+        "name": "flags"
+      }
+    },
+    {
+      "name": [
+        "--debug"
+      ],
+      "description": "Fine-grained debug verbosity",
+      "args": {
+        "name": "flags"
+      }
+    },
+    {
+      "name": [
+        "--list-only"
+      ],
+      "description": "List the files instead of copying them"
+    },
+    {
+      "name": [
+        "--no-motd"
+      ],
+      "description": "Suppress daemon-mode MOTD"
+    },
+    {
+      "name": [
+        "-0",
+        "--from0"
+      ],
+      "description": "All *-from/filter files are delimited by 0s"
+    },
+    {
+      "name": [
+        "--numeric-ids"
+      ],
+      "description": "Do not map uid/gid values by user/group name"
+    },
+    {
+      "name": [
+        "--rsync-path"
+      ],
+      "description": "Specify the rsync to run on remote machine",
+      "args": {
+        "name": "program"
+      }
+    },
+    {
+      "name": [
+        "--size-only"
+      ],
+      "description": "Skip files that match in size"
+    },
+    {
+      "name": [
+        "--modify-window"
+      ],
+      "description": "Compare mod-times with reduced accuracy",
+      "args": {
+        "name": "num"
+      }
+    },
+    {
+      "name": [
+        "--ignore-errors"
+      ],
+      "description": "Delete even if there are I/O errors"
+    },
+    {
+      "name": [
+        "--force"
+      ],
+      "description": "Force deletion of dirs even if not empty"
+    },
+    {
+      "name": [
+        "--remove-source-files"
+      ],
+      "description": "Sender removes synchronized files (non-dir)"
+    },
+    {
+      "name": [
+        "-K",
+        "--keep-dirlinks"
+      ],
+      "description": "Treat symlinked dir on receiver as dir"
+    },
+    {
+      "name": [
+        "--copy-unsafe-links"
+      ],
+      "description": "Only unsafe symlinks are transformed"
+    },
+    {
+      "name": [
+        "--safe-links"
+      ],
+      "description": "Ignore symlinks that point outside the tree"
+    }
+  ]
+}

@@ -1,0 +1,585 @@
+{
+  "name": "wget",
+  "description": "Non-interactive network downloader",
+  "args": [
+    {
+      "name": "url",
+      "description": "URL to download"
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "-O",
+        "--output-document"
+      ],
+      "description": "Write documents to FILE",
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "-P",
+        "--directory-prefix"
+      ],
+      "description": "Save files to PREFIX/...",
+      "args": {
+        "name": "prefix",
+        "template": "folders"
+      }
+    },
+    {
+      "name": [
+        "-c",
+        "--continue"
+      ],
+      "description": "Resume getting a partially-downloaded file"
+    },
+    {
+      "name": [
+        "-r",
+        "--recursive"
+      ],
+      "description": "Turn on recursive retrieving"
+    },
+    {
+      "name": [
+        "-l",
+        "--level"
+      ],
+      "description": "Maximum recursion depth (0 for infinite)",
+      "args": {
+        "name": "depth"
+      }
+    },
+    {
+      "name": [
+        "--mirror"
+      ],
+      "description": "Shortcut for -N -r -l inf --no-remove-listing"
+    },
+    {
+      "name": [
+        "-np",
+        "--no-parent"
+      ],
+      "description": "Do not ascend to the parent directory when recursing"
+    },
+    {
+      "name": [
+        "-nd",
+        "--no-directories"
+      ],
+      "description": "Do not create a hierarchy of directories"
+    },
+    {
+      "name": [
+        "-q",
+        "--quiet"
+      ],
+      "description": "Turn off output"
+    },
+    {
+      "name": [
+        "-v",
+        "--verbose"
+      ],
+      "description": "Turn on verbose output (default)"
+    },
+    {
+      "name": [
+        "-nv",
+        "--no-verbose"
+      ],
+      "description": "Turn off verbose without being fully quiet"
+    },
+    {
+      "name": [
+        "-U",
+        "--user-agent"
+      ],
+      "description": "Identify as AGENT instead of Wget/VERSION",
+      "args": {
+        "name": "agent"
+      }
+    },
+    {
+      "name": [
+        "--header"
+      ],
+      "description": "Insert STRING among the headers",
+      "args": {
+        "name": "string"
+      }
+    },
+    {
+      "name": [
+        "--post-data"
+      ],
+      "description": "Use POST method and send STRING as the data",
+      "args": {
+        "name": "string"
+      }
+    },
+    {
+      "name": [
+        "--post-file"
+      ],
+      "description": "Use POST method and send contents of FILE",
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--limit-rate"
+      ],
+      "description": "Limit download rate to RATE (e.g. 200k, 2m)",
+      "args": {
+        "name": "rate"
+      }
+    },
+    {
+      "name": [
+        "-t",
+        "--tries"
+      ],
+      "description": "Set number of retries to NUMBER (0 for infinite)",
+      "args": {
+        "name": "number"
+      }
+    },
+    {
+      "name": [
+        "-T",
+        "--timeout"
+      ],
+      "description": "Set all timeout values to SECONDS",
+      "args": {
+        "name": "seconds"
+      }
+    },
+    {
+      "name": [
+        "--connect-timeout"
+      ],
+      "description": "Set the connect timeout to SECONDS",
+      "args": {
+        "name": "seconds"
+      }
+    },
+    {
+      "name": [
+        "--read-timeout"
+      ],
+      "description": "Set the read timeout to SECONDS",
+      "args": {
+        "name": "seconds"
+      }
+    },
+    {
+      "name": [
+        "--dns-timeout"
+      ],
+      "description": "Set the DNS lookup timeout to SECONDS",
+      "args": {
+        "name": "seconds"
+      }
+    },
+    {
+      "name": [
+        "--no-check-certificate"
+      ],
+      "description": "Do not validate the server's certificate"
+    },
+    {
+      "name": [
+        "-k",
+        "--convert-links"
+      ],
+      "description": "Convert links in downloaded files for local viewing"
+    },
+    {
+      "name": [
+        "-p",
+        "--page-requisites"
+      ],
+      "description": "Download all files necessary to properly display a page"
+    },
+    {
+      "name": [
+        "-E",
+        "--adjust-extension"
+      ],
+      "description": "Save HTML/CSS documents with proper extensions"
+    },
+    {
+      "name": [
+        "-H",
+        "--span-hosts"
+      ],
+      "description": "Go to foreign hosts when recursive"
+    },
+    {
+      "name": [
+        "-D",
+        "--domains"
+      ],
+      "description": "Comma-separated list of accepted domains",
+      "args": {
+        "name": "domains"
+      }
+    },
+    {
+      "name": [
+        "-A",
+        "--accept"
+      ],
+      "description": "Comma-separated list of accepted extensions or patterns",
+      "args": {
+        "name": "list"
+      }
+    },
+    {
+      "name": [
+        "-R",
+        "--reject"
+      ],
+      "description": "Comma-separated list of rejected extensions or patterns",
+      "args": {
+        "name": "list"
+      }
+    },
+    {
+      "name": [
+        "-i",
+        "--input-file"
+      ],
+      "description": "Download URLs found in local or external FILE",
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--content-disposition"
+      ],
+      "description": "Honor the Content-Disposition header for file naming"
+    },
+    {
+      "name": [
+        "-N",
+        "--timestamping"
+      ],
+      "description": "Only download files newer than local copies"
+    },
+    {
+      "name": [
+        "-nc",
+        "--no-clobber"
+      ],
+      "description": "Skip downloads that would overwrite existing files"
+    },
+    {
+      "name": [
+        "-b",
+        "--background"
+      ],
+      "description": "Go to background immediately after startup"
+    },
+    {
+      "name": [
+        "-e",
+        "--execute"
+      ],
+      "description": "Execute COMMAND as a .wgetrc command",
+      "args": {
+        "name": "command"
+      }
+    },
+    {
+      "name": [
+        "--user"
+      ],
+      "description": "Set both ftp and http user",
+      "args": {
+        "name": "user"
+      }
+    },
+    {
+      "name": [
+        "--password"
+      ],
+      "description": "Set both ftp and http password",
+      "args": {
+        "name": "password"
+      }
+    },
+    {
+      "name": [
+        "--http-user"
+      ],
+      "description": "Set http user",
+      "args": {
+        "name": "user"
+      }
+    },
+    {
+      "name": [
+        "--http-password"
+      ],
+      "description": "Set http password",
+      "args": {
+        "name": "password"
+      }
+    },
+    {
+      "name": [
+        "--referer"
+      ],
+      "description": "Include Referer: URL header in HTTP request",
+      "args": {
+        "name": "url"
+      }
+    },
+    {
+      "name": [
+        "--no-cookies"
+      ],
+      "description": "Disable the use of cookies"
+    },
+    {
+      "name": [
+        "--load-cookies"
+      ],
+      "description": "Load cookies from FILE before session",
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--save-cookies"
+      ],
+      "description": "Save cookies to FILE after session",
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "-S",
+        "--server-response"
+      ],
+      "description": "Print server response headers"
+    },
+    {
+      "name": [
+        "--spider"
+      ],
+      "description": "Do not download, just check if remote file exists"
+    },
+    {
+      "name": [
+        "-w",
+        "--wait"
+      ],
+      "description": "Wait SECONDS between retrievals",
+      "args": {
+        "name": "seconds"
+      }
+    },
+    {
+      "name": [
+        "--random-wait"
+      ],
+      "description": "Wait randomly between 0.5*WAIT and 1.5*WAIT seconds"
+    },
+    {
+      "name": [
+        "--waitretry"
+      ],
+      "description": "Wait up to SECONDS between retries of a retrieval",
+      "args": {
+        "name": "seconds"
+      }
+    },
+    {
+      "name": [
+        "-x",
+        "--force-directories"
+      ],
+      "description": "Force creation of directories"
+    },
+    {
+      "name": [
+        "--no-host-directories"
+      ],
+      "description": "Do not create host directories"
+    },
+    {
+      "name": [
+        "--cut-dirs"
+      ],
+      "description": "Ignore NUMBER remote directory components",
+      "args": {
+        "name": "number"
+      }
+    },
+    {
+      "name": [
+        "--proxy"
+      ],
+      "description": "Explicitly turn proxies on or off",
+      "args": {
+        "name": "on/off"
+      }
+    },
+    {
+      "name": [
+        "--no-proxy"
+      ],
+      "description": "Do not use proxies"
+    },
+    {
+      "name": [
+        "-4",
+        "--inet4-only"
+      ],
+      "description": "Connect only to IPv4 addresses"
+    },
+    {
+      "name": [
+        "-6",
+        "--inet6-only"
+      ],
+      "description": "Connect only to IPv6 addresses"
+    },
+    {
+      "name": [
+        "--ca-certificate"
+      ],
+      "description": "File with the bundle of CAs",
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--certificate"
+      ],
+      "description": "Client certificate file",
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--private-key"
+      ],
+      "description": "Private key file",
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--secure-protocol"
+      ],
+      "description": "Choose secure protocol (auto, SSLv2, SSLv3, TLSv1, TLSv1_1, TLSv1_2, PFS)",
+      "args": {
+        "name": "protocol"
+      }
+    },
+    {
+      "name": [
+        "-o",
+        "--output-file"
+      ],
+      "description": "Log all messages to FILE",
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "-a",
+        "--append-output"
+      ],
+      "description": "Append messages to FILE",
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "-d",
+        "--debug"
+      ],
+      "description": "Print lots of debugging information"
+    },
+    {
+      "name": [
+        "--max-redirect"
+      ],
+      "description": "Maximum number of redirections allowed per page",
+      "args": {
+        "name": "number"
+      }
+    },
+    {
+      "name": [
+        "-Q",
+        "--quota"
+      ],
+      "description": "Set retrieval quota to NUMBER",
+      "args": {
+        "name": "number"
+      }
+    },
+    {
+      "name": [
+        "--no-dns-cache"
+      ],
+      "description": "Disable caching DNS lookups"
+    },
+    {
+      "name": [
+        "--restrict-file-names"
+      ],
+      "description": "Restrict chars in file names to ones OS allows",
+      "args": {
+        "name": "modes"
+      }
+    },
+    {
+      "name": [
+        "--ignore-length"
+      ],
+      "description": "Ignore Content-Length header field"
+    },
+    {
+      "name": [
+        "--no-http-keep-alive"
+      ],
+      "description": "Disable HTTP keep-alive (persistent connections)"
+    },
+    {
+      "name": [
+        "--no-cache"
+      ],
+      "description": "Do not allow server-cached data"
+    }
+  ]
+}
