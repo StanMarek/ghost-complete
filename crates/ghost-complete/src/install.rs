@@ -79,7 +79,6 @@ const EMBEDDED_SPECS: &[(&str, &str)] = &[
         "aws-vault.json",
         include_str!("../../../specs/aws-vault.json"),
     ),
-    ("aws.json", include_str!("../../../specs/aws.json")),
     ("awsume.json", include_str!("../../../specs/awsume.json")),
     ("babel.json", include_str!("../../../specs/babel.json")),
     ("banner.json", include_str!("../../../specs/banner.json")),
@@ -149,7 +148,6 @@ const EMBEDDED_SPECS: &[(&str, &str)] = &[
         "circleci.json",
         include_str!("../../../specs/circleci.json"),
     ),
-    ("cl.json", include_str!("../../../specs/cl.json")),
     ("clang.json", include_str!("../../../specs/clang.json")),
     ("clang++.json", include_str!("../../../specs/clang++.json")),
     ("clear.json", include_str!("../../../specs/clear.json")),
@@ -176,10 +174,6 @@ const EMBEDDED_SPECS: &[(&str, &str)] = &[
         include_str!("../../../specs/codesign.json"),
     ),
     ("command.json", include_str!("../../../specs/command.json")),
-    (
-        "commercelayer.json",
-        include_str!("../../../specs/commercelayer.json"),
-    ),
     (
         "composer.json",
         include_str!("../../../specs/composer.json"),
@@ -296,7 +290,6 @@ const EMBEDDED_SPECS: &[(&str, &str)] = &[
     ("doctl.json", include_str!("../../../specs/doctl.json")),
     ("dog.json", include_str!("../../../specs/dog.json")),
     ("doggo.json", include_str!("../../../specs/doggo.json")),
-    ("doppler.json", include_str!("../../../specs/doppler.json")),
     (
         "dos2unix.json",
         include_str!("../../../specs/dos2unix.json"),
@@ -386,7 +379,6 @@ const EMBEDDED_SPECS: &[(&str, &str)] = &[
     ("ffmpeg.json", include_str!("../../../specs/ffmpeg.json")),
     ("figterm.json", include_str!("../../../specs/figterm.json")),
     ("file.json", include_str!("../../../specs/file.json")),
-    ("fin.json", include_str!("../../../specs/fin.json")),
     ("find.json", include_str!("../../../specs/find.json")),
     (
         "firebase.json",
@@ -416,7 +408,6 @@ const EMBEDDED_SPECS: &[(&str, &str)] = &[
     ),
     ("gatsby.json", include_str!("../../../specs/gatsby.json")),
     ("gcc.json", include_str!("../../../specs/gcc.json")),
-    ("gcloud.json", include_str!("../../../specs/gcloud.json")),
     ("gem.json", include_str!("../../../specs/gem.json")),
     ("gh.json", include_str!("../../../specs/gh.json")),
     ("ghq.json", include_str!("../../../specs/ghq.json")),
@@ -487,7 +478,6 @@ const EMBEDDED_SPECS: &[(&str, &str)] = &[
     ("http.json", include_str!("../../../specs/http.json")),
     ("https.json", include_str!("../../../specs/https.json")),
     ("httpy.json", include_str!("../../../specs/httpy.json")),
-    ("hub.json", include_str!("../../../specs/hub.json")),
     ("hugo.json", include_str!("../../../specs/hugo.json")),
     ("hx.json", include_str!("../../../specs/hx.json")),
     ("hyper.json", include_str!("../../../specs/hyper.json")),
@@ -606,10 +596,6 @@ const EMBEDDED_SPECS: &[(&str, &str)] = &[
         include_str!("../../../specs/molecule.json"),
     ),
     (
-        "mongocli.json",
-        include_str!("../../../specs/mongocli.json"),
-    ),
-    (
         "mongoimport.json",
         include_str!("../../../specs/mongoimport.json"),
     ),
@@ -667,10 +653,6 @@ const EMBEDDED_SPECS: &[(&str, &str)] = &[
     ),
     ("node.json", include_str!("../../../specs/node.json")),
     ("noglob.json", include_str!("../../../specs/noglob.json")),
-    (
-        "northflank.json",
-        include_str!("../../../specs/northflank.json"),
-    ),
     ("np.json", include_str!("../../../specs/np.json")),
     ("npm.json", include_str!("../../../specs/npm.json")),
     ("npx.json", include_str!("../../../specs/npx.json")),
@@ -875,7 +857,6 @@ const EMBEDDED_SPECS: &[(&str, &str)] = &[
         "serverless.json",
         include_str!("../../../specs/serverless.json"),
     ),
-    ("sfdx.json", include_str!("../../../specs/sfdx.json")),
     ("sftp.json", include_str!("../../../specs/sftp.json")),
     ("sha1sum.json", include_str!("../../../specs/sha1sum.json")),
     (
@@ -1051,7 +1032,6 @@ const EMBEDDED_SPECS: &[(&str, &str)] = &[
     ("tuist.json", include_str!("../../../specs/tuist.json")),
     ("turbo.json", include_str!("../../../specs/turbo.json")),
     ("twiggy.json", include_str!("../../../specs/twiggy.json")),
-    ("twilio.json", include_str!("../../../specs/twilio.json")),
     ("typeorm.json", include_str!("../../../specs/typeorm.json")),
     ("typos.json", include_str!("../../../specs/typos.json")),
     ("typst.json", include_str!("../../../specs/typst.json")),
