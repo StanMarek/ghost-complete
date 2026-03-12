@@ -129,6 +129,9 @@ impl Default for ProvidersConfig {
 pub struct ThemeConfig {
     pub selected: String,
     pub description: String,
+    pub match_highlight: String,
+    pub item_text: String,
+    pub scrollbar: String,
 }
 
 impl Default for ThemeConfig {
@@ -136,6 +139,9 @@ impl Default for ThemeConfig {
         Self {
             selected: "reverse".to_string(),
             description: "dim".to_string(),
+            match_highlight: "bold".to_string(),
+            item_text: "dim".to_string(),
+            scrollbar: "dim".to_string(),
         }
     }
 }
@@ -200,6 +206,9 @@ mod tests {
         assert_eq!(config.keybindings.trigger, "ctrl+/");
         assert_eq!(config.theme.selected, "reverse");
         assert_eq!(config.theme.description, "dim");
+        assert_eq!(config.theme.match_highlight, "bold");
+        assert_eq!(config.theme.item_text, "dim");
+        assert_eq!(config.theme.scrollbar, "dim");
     }
 
     #[test]
@@ -329,5 +338,28 @@ description = "dim underline"
         let config: GhostConfig = toml::from_str(toml_str).unwrap();
         assert_eq!(config.theme.selected, "fg:255 bg:236");
         assert_eq!(config.theme.description, "dim underline");
+    }
+
+    #[test]
+    fn test_theme_new_field_defaults() {
+        let config = GhostConfig::default();
+        assert_eq!(config.theme.match_highlight, "bold");
+        assert_eq!(config.theme.item_text, "dim");
+        assert_eq!(config.theme.scrollbar, "dim");
+    }
+
+    #[test]
+    fn test_partial_theme_new_fields() {
+        let toml_str = r#"
+[theme]
+match_highlight = "underline"
+scrollbar = "fg:#555555"
+"#;
+        let config: GhostConfig = toml::from_str(toml_str).unwrap();
+        assert_eq!(config.theme.match_highlight, "underline");
+        assert_eq!(config.theme.scrollbar, "fg:#555555");
+        assert_eq!(config.theme.selected, "reverse");
+        assert_eq!(config.theme.description, "dim");
+        assert_eq!(config.theme.item_text, "dim");
     }
 }
