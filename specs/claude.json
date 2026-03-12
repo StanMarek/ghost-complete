@@ -1,0 +1,785 @@
+{
+  "name": "claude",
+  "description": "Claude Code - AI coding assistant CLI",
+  "subcommands": [
+    {
+      "name": "agents",
+      "description": "List configured agents",
+      "options": [
+        {
+          "name": ["--setting-sources"],
+          "description": "Comma-separated list of setting sources to load",
+          "args": {
+            "name": "sources"
+          }
+        }
+      ]
+    },
+    {
+      "name": "auth",
+      "description": "Manage authentication",
+      "subcommands": [
+        {
+          "name": "login",
+          "description": "Sign in to your Anthropic account",
+          "options": [
+            {
+              "name": ["--email"],
+              "description": "Pre-populate email address on login page",
+              "args": {
+                "name": "email"
+              }
+            },
+            {
+              "name": ["--sso"],
+              "description": "Force SSO login flow"
+            }
+          ]
+        },
+        {
+          "name": "logout",
+          "description": "Log out from your Anthropic account"
+        },
+        {
+          "name": "status",
+          "description": "Show authentication status",
+          "options": [
+            {
+              "name": ["--json"],
+              "description": "Output as JSON"
+            },
+            {
+              "name": ["--text"],
+              "description": "Output as human-readable text"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "auto-mode",
+      "description": "Inspect auto mode classifier configuration",
+      "subcommands": [
+        {
+          "name": "config",
+          "description": "Print effective auto mode config as JSON"
+        },
+        {
+          "name": "defaults",
+          "description": "Print default auto mode rules as JSON"
+        }
+      ]
+    },
+    {
+      "name": "doctor",
+      "description": "Check health of Claude Code auto-updater"
+    },
+    {
+      "name": "install",
+      "description": "Install Claude Code native build",
+      "options": [
+        {
+          "name": ["--force"],
+          "description": "Force installation even if already installed"
+        }
+      ],
+      "args": {
+        "name": "target",
+        "description": "Version to install",
+        "isOptional": true,
+        "suggestions": [
+          { "name": "stable" },
+          { "name": "latest" }
+        ]
+      }
+    },
+    {
+      "name": "mcp",
+      "description": "Configure and manage MCP servers",
+      "subcommands": [
+        {
+          "name": "add",
+          "description": "Add an MCP server",
+          "options": [
+            {
+              "name": ["--callback-port"],
+              "description": "Fixed port for OAuth callback",
+              "args": {
+                "name": "port"
+              }
+            },
+            {
+              "name": ["--client-id"],
+              "description": "OAuth client ID for HTTP/SSE servers",
+              "args": {
+                "name": "clientId"
+              }
+            },
+            {
+              "name": ["--client-secret"],
+              "description": "Prompt for OAuth client secret"
+            },
+            {
+              "name": ["-e", "--env"],
+              "description": "Set environment variables (KEY=value)",
+              "args": {
+                "name": "env"
+              }
+            },
+            {
+              "name": ["-H", "--header"],
+              "description": "Set WebSocket headers",
+              "args": {
+                "name": "header"
+              }
+            },
+            {
+              "name": ["-s", "--scope"],
+              "description": "Configuration scope",
+              "args": {
+                "name": "scope",
+                "suggestions": [
+                  { "name": "local" },
+                  { "name": "user" },
+                  { "name": "project" }
+                ]
+              }
+            },
+            {
+              "name": ["-t", "--transport"],
+              "description": "Transport type",
+              "args": {
+                "name": "transport",
+                "suggestions": [
+                  { "name": "stdio" },
+                  { "name": "sse" },
+                  { "name": "http" }
+                ]
+              }
+            }
+          ],
+          "args": [
+            {
+              "name": "name",
+              "description": "Server name"
+            },
+            {
+              "name": "commandOrUrl",
+              "description": "Command or URL for the server"
+            }
+          ]
+        },
+        {
+          "name": "add-from-claude-desktop",
+          "description": "Import MCP servers from Claude Desktop",
+          "options": [
+            {
+              "name": ["-s", "--scope"],
+              "description": "Configuration scope",
+              "args": {
+                "name": "scope",
+                "suggestions": [
+                  { "name": "local" },
+                  { "name": "user" },
+                  { "name": "project" }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "add-json",
+          "description": "Add MCP server with a JSON string",
+          "options": [
+            {
+              "name": ["--client-secret"],
+              "description": "Prompt for OAuth client secret"
+            },
+            {
+              "name": ["-s", "--scope"],
+              "description": "Configuration scope",
+              "args": {
+                "name": "scope",
+                "suggestions": [
+                  { "name": "local" },
+                  { "name": "user" },
+                  { "name": "project" }
+                ]
+              }
+            }
+          ],
+          "args": [
+            {
+              "name": "name",
+              "description": "Server name"
+            },
+            {
+              "name": "json",
+              "description": "JSON configuration string"
+            }
+          ]
+        },
+        {
+          "name": "get",
+          "description": "Get details about an MCP server",
+          "args": {
+            "name": "name",
+            "description": "Server name"
+          }
+        },
+        {
+          "name": "list",
+          "description": "List configured MCP servers"
+        },
+        {
+          "name": "remove",
+          "description": "Remove an MCP server",
+          "options": [
+            {
+              "name": ["-s", "--scope"],
+              "description": "Configuration scope",
+              "args": {
+                "name": "scope",
+                "suggestions": [
+                  { "name": "local" },
+                  { "name": "user" },
+                  { "name": "project" }
+                ]
+              }
+            }
+          ],
+          "args": {
+            "name": "name",
+            "description": "Server name"
+          }
+        },
+        {
+          "name": "reset-project-choices",
+          "description": "Reset approved/rejected project-scoped servers"
+        },
+        {
+          "name": "serve",
+          "description": "Start the Claude Code MCP server",
+          "options": [
+            {
+              "name": ["-d", "--debug"],
+              "description": "Enable debug mode"
+            },
+            {
+              "name": ["--verbose"],
+              "description": "Override verbose mode setting"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "plugin",
+      "description": "Manage Claude Code plugins",
+      "subcommands": [
+        {
+          "name": "disable",
+          "description": "Disable an enabled plugin",
+          "options": [
+            {
+              "name": ["-a", "--all"],
+              "description": "Disable all enabled plugins"
+            },
+            {
+              "name": ["-s", "--scope"],
+              "description": "Installation scope",
+              "args": {
+                "name": "scope",
+                "suggestions": [
+                  { "name": "user" },
+                  { "name": "project" },
+                  { "name": "local" }
+                ]
+              }
+            }
+          ],
+          "args": {
+            "name": "plugin",
+            "description": "Plugin to disable",
+            "isOptional": true
+          }
+        },
+        {
+          "name": "enable",
+          "description": "Enable a disabled plugin",
+          "options": [
+            {
+              "name": ["-s", "--scope"],
+              "description": "Installation scope",
+              "args": {
+                "name": "scope",
+                "suggestions": [
+                  { "name": "user" },
+                  { "name": "project" },
+                  { "name": "local" }
+                ]
+              }
+            }
+          ],
+          "args": {
+            "name": "plugin",
+            "description": "Plugin to enable"
+          }
+        },
+        {
+          "name": "install",
+          "description": "Install a plugin from marketplaces",
+          "options": [
+            {
+              "name": ["-s", "--scope"],
+              "description": "Installation scope",
+              "args": {
+                "name": "scope",
+                "suggestions": [
+                  { "name": "user" },
+                  { "name": "project" },
+                  { "name": "local" }
+                ]
+              }
+            }
+          ],
+          "args": {
+            "name": "plugin",
+            "description": "Plugin to install (use plugin@marketplace for specific marketplace)"
+          }
+        },
+        {
+          "name": "list",
+          "description": "List installed plugins",
+          "options": [
+            {
+              "name": ["--available"],
+              "description": "Include available plugins from marketplaces (requires --json)"
+            },
+            {
+              "name": ["--json"],
+              "description": "Output as JSON"
+            }
+          ]
+        },
+        {
+          "name": "marketplace",
+          "description": "Manage Claude Code marketplaces",
+          "subcommands": [
+            {
+              "name": "add",
+              "description": "Add a marketplace from URL, path, or GitHub repo",
+              "options": [
+                {
+                  "name": ["--scope"],
+                  "description": "Where to declare the marketplace",
+                  "args": {
+                    "name": "scope",
+                    "suggestions": [
+                      { "name": "user" },
+                      { "name": "project" },
+                      { "name": "local" }
+                    ]
+                  }
+                },
+                {
+                  "name": ["--sparse"],
+                  "description": "Limit checkout to specific directories",
+                  "args": {
+                    "name": "paths"
+                  }
+                }
+              ],
+              "args": {
+                "name": "source",
+                "description": "Marketplace source URL, path, or GitHub repo"
+              }
+            },
+            {
+              "name": "list",
+              "description": "List all configured marketplaces",
+              "options": [
+                {
+                  "name": ["--json"],
+                  "description": "Output as JSON"
+                }
+              ]
+            },
+            {
+              "name": "remove",
+              "description": "Remove a configured marketplace",
+              "args": {
+                "name": "name",
+                "description": "Marketplace name to remove"
+              }
+            },
+            {
+              "name": "update",
+              "description": "Update marketplace(s) from source",
+              "args": {
+                "name": "name",
+                "description": "Marketplace name (omit to update all)",
+                "isOptional": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "uninstall",
+          "description": "Uninstall an installed plugin",
+          "options": [
+            {
+              "name": ["-s", "--scope"],
+              "description": "Uninstall from scope",
+              "args": {
+                "name": "scope",
+                "suggestions": [
+                  { "name": "user" },
+                  { "name": "project" },
+                  { "name": "local" }
+                ]
+              }
+            }
+          ],
+          "args": {
+            "name": "plugin",
+            "description": "Plugin to uninstall"
+          }
+        },
+        {
+          "name": "update",
+          "description": "Update a plugin to latest version",
+          "options": [
+            {
+              "name": ["-s", "--scope"],
+              "description": "Installation scope",
+              "args": {
+                "name": "scope",
+                "suggestions": [
+                  { "name": "user" },
+                  { "name": "project" },
+                  { "name": "local" },
+                  { "name": "managed" }
+                ]
+              }
+            }
+          ],
+          "args": {
+            "name": "plugin",
+            "description": "Plugin to update"
+          }
+        },
+        {
+          "name": "validate",
+          "description": "Validate a plugin or marketplace manifest",
+          "args": {
+            "name": "path",
+            "description": "Path to plugin or manifest",
+            "template": "filepaths"
+          }
+        }
+      ]
+    },
+    {
+      "name": "setup-token",
+      "description": "Set up a long-lived authentication token"
+    },
+    {
+      "name": "update",
+      "description": "Check for updates and install if available"
+    }
+  ],
+  "options": [
+    {
+      "name": ["--add-dir"],
+      "description": "Additional directories to allow tool access to",
+      "args": {
+        "name": "directories",
+        "template": "folders"
+      }
+    },
+    {
+      "name": ["--agent"],
+      "description": "Agent for the current session",
+      "args": {
+        "name": "agent"
+      }
+    },
+    {
+      "name": ["--agents"],
+      "description": "JSON object defining custom agents",
+      "args": {
+        "name": "json"
+      }
+    },
+    {
+      "name": ["--allow-dangerously-skip-permissions"],
+      "description": "Enable bypassing permission checks as an option"
+    },
+    {
+      "name": ["--allowedTools", "--allowed-tools"],
+      "description": "Tools to allow (e.g. \"Bash(git:*) Edit\")",
+      "args": {
+        "name": "tools"
+      }
+    },
+    {
+      "name": ["--append-system-prompt"],
+      "description": "Append to the default system prompt",
+      "args": {
+        "name": "prompt"
+      }
+    },
+    {
+      "name": ["--brief"],
+      "description": "Enable SendUserMessage tool for agent-to-user communication"
+    },
+    {
+      "name": ["--chrome"],
+      "description": "Enable Claude in Chrome integration"
+    },
+    {
+      "name": ["-c", "--continue"],
+      "description": "Continue most recent conversation in current directory"
+    },
+    {
+      "name": ["--dangerously-skip-permissions"],
+      "description": "Bypass all permission checks"
+    },
+    {
+      "name": ["-d", "--debug"],
+      "description": "Enable debug mode with optional category filtering",
+      "args": {
+        "name": "filter",
+        "isOptional": true
+      }
+    },
+    {
+      "name": ["--debug-file"],
+      "description": "Write debug logs to a file",
+      "args": {
+        "name": "path",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": ["--disable-slash-commands"],
+      "description": "Disable all skills"
+    },
+    {
+      "name": ["--disallowedTools", "--disallowed-tools"],
+      "description": "Tools to deny",
+      "args": {
+        "name": "tools"
+      }
+    },
+    {
+      "name": ["--effort"],
+      "description": "Effort level for the session",
+      "args": {
+        "name": "level",
+        "suggestions": [
+          { "name": "low" },
+          { "name": "medium" },
+          { "name": "high" },
+          { "name": "max" }
+        ]
+      }
+    },
+    {
+      "name": ["--fallback-model"],
+      "description": "Fallback model when default is overloaded (with --print)",
+      "args": {
+        "name": "model"
+      }
+    },
+    {
+      "name": ["--fork-session"],
+      "description": "Create a new session ID when resuming"
+    },
+    {
+      "name": ["--from-pr"],
+      "description": "Resume session linked to a PR by number/URL",
+      "args": {
+        "name": "pr",
+        "isOptional": true
+      }
+    },
+    {
+      "name": ["-h", "--help"],
+      "description": "Display help"
+    },
+    {
+      "name": ["--ide"],
+      "description": "Auto-connect to IDE on startup"
+    },
+    {
+      "name": ["--input-format"],
+      "description": "Input format (with --print)",
+      "args": {
+        "name": "format",
+        "suggestions": [
+          { "name": "text" },
+          { "name": "stream-json" }
+        ]
+      }
+    },
+    {
+      "name": ["--json-schema"],
+      "description": "JSON Schema for structured output validation",
+      "args": {
+        "name": "schema"
+      }
+    },
+    {
+      "name": ["--max-budget-usd"],
+      "description": "Maximum dollar amount for API calls (with --print)",
+      "args": {
+        "name": "amount"
+      }
+    },
+    {
+      "name": ["--mcp-config"],
+      "description": "Load MCP servers from JSON files or strings",
+      "args": {
+        "name": "configs",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": ["--model"],
+      "description": "Model for the session (alias or full name)",
+      "args": {
+        "name": "model",
+        "suggestions": [
+          { "name": "sonnet" },
+          { "name": "opus" },
+          { "name": "haiku" },
+          { "name": "claude-sonnet-4-6" },
+          { "name": "claude-opus-4-6" },
+          { "name": "claude-haiku-4-5-20251001" }
+        ]
+      }
+    },
+    {
+      "name": ["--no-chrome"],
+      "description": "Disable Claude in Chrome integration"
+    },
+    {
+      "name": ["--no-session-persistence"],
+      "description": "Disable session persistence (with --print)"
+    },
+    {
+      "name": ["--output-format"],
+      "description": "Output format (with --print)",
+      "args": {
+        "name": "format",
+        "suggestions": [
+          { "name": "text" },
+          { "name": "json" },
+          { "name": "stream-json" }
+        ]
+      }
+    },
+    {
+      "name": ["--permission-mode"],
+      "description": "Permission mode",
+      "args": {
+        "name": "mode",
+        "suggestions": [
+          { "name": "acceptEdits" },
+          { "name": "bypassPermissions" },
+          { "name": "default" },
+          { "name": "dontAsk" },
+          { "name": "plan" },
+          { "name": "auto" }
+        ]
+      }
+    },
+    {
+      "name": ["--plugin-dir"],
+      "description": "Load plugins from directories for this session",
+      "args": {
+        "name": "paths",
+        "template": "folders"
+      }
+    },
+    {
+      "name": ["-p", "--print"],
+      "description": "Print response and exit (useful for pipes)"
+    },
+    {
+      "name": ["-r", "--resume"],
+      "description": "Resume conversation by session ID or open picker",
+      "args": {
+        "name": "sessionId",
+        "isOptional": true
+      }
+    },
+    {
+      "name": ["--session-id"],
+      "description": "Use a specific session UUID",
+      "args": {
+        "name": "uuid"
+      }
+    },
+    {
+      "name": ["--setting-sources"],
+      "description": "Setting sources to load (user, project, local)",
+      "args": {
+        "name": "sources"
+      }
+    },
+    {
+      "name": ["--settings"],
+      "description": "Path to settings JSON file or JSON string",
+      "args": {
+        "name": "file-or-json",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": ["--strict-mcp-config"],
+      "description": "Only use MCP servers from --mcp-config"
+    },
+    {
+      "name": ["--system-prompt"],
+      "description": "System prompt for the session",
+      "args": {
+        "name": "prompt"
+      }
+    },
+    {
+      "name": ["--tmux"],
+      "description": "Create tmux session for the worktree (requires --worktree)"
+    },
+    {
+      "name": ["--tools"],
+      "description": "Specify available tools",
+      "args": {
+        "name": "tools"
+      }
+    },
+    {
+      "name": ["--verbose"],
+      "description": "Override verbose mode setting"
+    },
+    {
+      "name": ["-v", "--version"],
+      "description": "Output version number"
+    },
+    {
+      "name": ["-w", "--worktree"],
+      "description": "Create a new git worktree for the session",
+      "args": {
+        "name": "name",
+        "isOptional": true
+      }
+    }
+  ],
+  "args": {
+    "name": "prompt",
+    "description": "Prompt text for the session",
+    "isOptional": true
+  }
+}

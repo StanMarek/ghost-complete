@@ -151,6 +151,7 @@ const EMBEDDED_SPECS: &[(&str, &str)] = &[
     ("clang.json", include_str!("../../../specs/clang.json")),
     ("clang++.json", include_str!("../../../specs/clang++.json")),
     ("clear.json", include_str!("../../../specs/clear.json")),
+    ("claude.json", include_str!("../../../specs/claude.json")),
     (
         "cliff-jumper.json",
         include_str!("../../../specs/cliff-jumper.json"),
@@ -173,6 +174,7 @@ const EMBEDDED_SPECS: &[(&str, &str)] = &[
         "codesign.json",
         include_str!("../../../specs/codesign.json"),
     ),
+    ("codex.json", include_str!("../../../specs/codex.json")),
     ("command.json", include_str!("../../../specs/command.json")),
     (
         "composer.json",
