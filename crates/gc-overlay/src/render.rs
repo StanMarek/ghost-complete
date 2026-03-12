@@ -309,27 +309,19 @@ fn format_item(
 
     // For filesystem entries, show just the last path component (the user
     // already typed the prefix, so repeating it wastes popup space).
-    let display_text = match s.kind {
+    // Also compute the prefix char count for offsetting match indices.
+    let (display_text, prefix_char_count) = match s.kind {
         SuggestionKind::FilePath | SuggestionKind::Directory => {
             let trimmed = s.text.trim_end_matches('/');
             match trimmed.rfind('/') {
-                Some(idx) => &s.text[idx + 1..],
-                None => &s.text,
+                Some(byte_idx) => (
+                    &s.text[byte_idx + 1..],
+                    s.text[..byte_idx + 1].chars().count(),
+                ),
+                None => (&s.text[..], 0),
             }
         }
-        _ => &s.text,
-    };
-
-    // Compute prefix offset for filepath basename display
-    let prefix_char_count = match s.kind {
-        SuggestionKind::FilePath | SuggestionKind::Directory => {
-            let trimmed = s.text.trim_end_matches('/');
-            match trimmed.rfind('/') {
-                Some(byte_idx) => s.text[..byte_idx + 1].chars().count(),
-                None => 0,
-            }
-        }
-        _ => 0,
+        _ => (&s.text[..], 0),
     };
 
     // Build display-relative match index set (offset and filtered)

@@ -130,6 +130,9 @@ fn check_theme(config: &gc_config::GhostConfig) -> CheckResult {
     let styles = [
         ("selected", &config.theme.selected),
         ("description", &config.theme.description),
+        ("match_highlight", &config.theme.match_highlight),
+        ("item_text", &config.theme.item_text),
+        ("scrollbar", &config.theme.scrollbar),
     ];
 
     let mut errors = Vec::new();
