@@ -38,11 +38,37 @@ pub fn parse_style(style_str: &str) -> Result<Vec<u8>> {
             "dim" => params.push("2".to_string()),
             "bold" => params.push("1".to_string()),
             "underline" => params.push("4".to_string()),
+            _ if token.starts_with("fg:#") => {
+                let hex = &token[4..];
+                if hex.len() != 6 {
+                    bail!("invalid hex color (need 6 chars): {}", token);
+                }
+                let r = u8::from_str_radix(&hex[0..2], 16)
+                    .map_err(|_| anyhow::anyhow!("invalid hex color: {}", token))?;
+                let g = u8::from_str_radix(&hex[2..4], 16)
+                    .map_err(|_| anyhow::anyhow!("invalid hex color: {}", token))?;
+                let b = u8::from_str_radix(&hex[4..6], 16)
+                    .map_err(|_| anyhow::anyhow!("invalid hex color: {}", token))?;
+                params.push(format!("38;2;{r};{g};{b}"));
+            }
             _ if token.starts_with("fg:") => {
                 let n: u8 = token[3..]
                     .parse()
                     .map_err(|_| anyhow::anyhow!("invalid fg color: {}", token))?;
                 params.push(format!("38;5;{n}"));
+            }
+            _ if token.starts_with("bg:#") => {
+                let hex = &token[4..];
+                if hex.len() != 6 {
+                    bail!("invalid hex color (need 6 chars): {}", token);
+                }
+                let r = u8::from_str_radix(&hex[0..2], 16)
+                    .map_err(|_| anyhow::anyhow!("invalid hex color: {}", token))?;
+                let g = u8::from_str_radix(&hex[2..4], 16)
+                    .map_err(|_| anyhow::anyhow!("invalid hex color: {}", token))?;
+                let b = u8::from_str_radix(&hex[4..6], 16)
+                    .map_err(|_| anyhow::anyhow!("invalid hex color: {}", token))?;
+                params.push(format!("48;2;{r};{g};{b}"));
             }
             _ if token.starts_with("bg:") => {
                 let n: u8 = token[3..]
@@ -881,5 +907,49 @@ mod tests {
         // final_cursor = 0, start_row = 1
         assert_eq!(layout.start_row, 1);
         assert_eq!(layout.scroll_deficit, 2);
+    }
+
+    #[test]
+    fn test_parse_style_hex_fg() {
+        assert_eq!(
+            parse_style("fg:#89b4fa").unwrap(),
+            b"\x1b[38;2;137;180;250m"
+        );
+    }
+
+    #[test]
+    fn test_parse_style_hex_bg() {
+        assert_eq!(parse_style("bg:#1e1e2e").unwrap(), b"\x1b[48;2;30;30;46m");
+    }
+
+    #[test]
+    fn test_parse_style_hex_case_insensitive() {
+        assert_eq!(
+            parse_style("fg:#89B4FA").unwrap(),
+            parse_style("fg:#89b4fa").unwrap()
+        );
+    }
+
+    #[test]
+    fn test_parse_style_hex_mixed_with_256() {
+        assert_eq!(
+            parse_style("fg:#89b4fa bg:236 bold").unwrap(),
+            b"\x1b[38;2;137;180;250;48;5;236;1m"
+        );
+    }
+
+    #[test]
+    fn test_parse_style_hex_too_short() {
+        assert!(parse_style("fg:#89b4").is_err());
+    }
+
+    #[test]
+    fn test_parse_style_hex_invalid_chars() {
+        assert!(parse_style("fg:#gggggg").is_err());
+    }
+
+    #[test]
+    fn test_parse_style_hex_missing_hash() {
+        assert!(parse_style("fg:89b4fa").is_err());
     }
 }
