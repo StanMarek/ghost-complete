@@ -1204,7 +1204,7 @@ const DEFAULT_CONFIG_TOML: &str = "\
 selected = \"reverse\"
 description = \"dim\"
 # match_highlight = \"bold\"
-# item_text = \"dim\"
+# item_text = \"\"
 # scrollbar = \"dim\"
 ";
 

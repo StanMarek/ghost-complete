@@ -23,7 +23,7 @@ impl Default for PopupTheme {
             selected_on: b"\x1b[7m".to_vec(),
             description_on: b"\x1b[2m".to_vec(),
             match_highlight_on: b"\x1b[1m".to_vec(),
-            item_text_on: b"\x1b[2m".to_vec(),
+            item_text_on: vec![],
             scrollbar_on: b"\x1b[2m".to_vec(),
         }
     }
@@ -1067,7 +1067,10 @@ mod tests {
         let suggestions = make_suggestions();
         let mut state = OverlayState::new();
         state.selected = Some(0); // Only first item selected
-        let theme = PopupTheme::default(); // item_text_on = dim = \x1b[2m
+        let theme = PopupTheme {
+            item_text_on: b"\x1b[2m".to_vec(), // explicitly dim for this test
+            ..PopupTheme::default()
+        };
         render_popup(
             &mut buf,
             &suggestions,

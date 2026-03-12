@@ -140,7 +140,7 @@ impl Default for ThemeConfig {
             selected: "reverse".to_string(),
             description: "dim".to_string(),
             match_highlight: "bold".to_string(),
-            item_text: "dim".to_string(),
+            item_text: String::new(),
             scrollbar: "dim".to_string(),
         }
     }
@@ -207,7 +207,7 @@ mod tests {
         assert_eq!(config.theme.selected, "reverse");
         assert_eq!(config.theme.description, "dim");
         assert_eq!(config.theme.match_highlight, "bold");
-        assert_eq!(config.theme.item_text, "dim");
+        assert_eq!(config.theme.item_text, "");
         assert_eq!(config.theme.scrollbar, "dim");
     }
 
@@ -344,7 +344,7 @@ description = "dim underline"
     fn test_theme_new_field_defaults() {
         let config = GhostConfig::default();
         assert_eq!(config.theme.match_highlight, "bold");
-        assert_eq!(config.theme.item_text, "dim");
+        assert_eq!(config.theme.item_text, "");
         assert_eq!(config.theme.scrollbar, "dim");
     }
 
@@ -360,6 +360,6 @@ scrollbar = "fg:#555555"
         assert_eq!(config.theme.scrollbar, "fg:#555555");
         assert_eq!(config.theme.selected, "reverse");
         assert_eq!(config.theme.description, "dim");
-        assert_eq!(config.theme.item_text, "dim");
+        assert_eq!(config.theme.item_text, "");
     }
 }
