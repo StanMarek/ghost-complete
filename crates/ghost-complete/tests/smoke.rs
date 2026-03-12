@@ -105,7 +105,11 @@ fn test_memory_baseline() {
         let rss_str = String::from_utf8_lossy(&output.stdout);
         if let Ok(rss_kb) = rss_str.trim().parse::<u64>() {
             let rss_mb = rss_kb / 1024;
-            assert!(rss_mb < 500, "RSS is {} MB, exceeds 500 MB threshold", rss_mb);
+            assert!(
+                rss_mb < 500,
+                "RSS is {} MB, exceeds 500 MB threshold",
+                rss_mb
+            );
         }
         // If we can't parse RSS (process already exited), that's fine — skip the check.
     }
