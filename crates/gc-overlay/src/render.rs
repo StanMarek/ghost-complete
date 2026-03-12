@@ -390,6 +390,7 @@ fn format_item(
     if !desc.is_empty() && max_desc_len > 2 {
         let _ = buf.write_all(b"  ");
         if !is_selected {
+            ansi::reset(buf);
             buf.extend_from_slice(&theme.description_on);
         }
         let truncated: String = desc.chars().take(max_desc_len).collect();
