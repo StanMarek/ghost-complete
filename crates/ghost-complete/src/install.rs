@@ -1201,8 +1201,9 @@ const DEFAULT_CONFIG_TOML: &str = "\
 # trigger = \"ctrl+/\"
 
 [theme]
-selected = \"reverse\"
-description = \"dim\"
+# preset = \"dark\"
+# selected = \"reverse\"
+# description = \"dim\"
 # match_highlight = \"bold\"
 # item_text = \"\"
 # scrollbar = \"dim\"
@@ -1635,11 +1636,11 @@ mod tests {
         assert!(content.contains("[trigger]"));
         assert!(content.contains("[popup]"));
         assert!(content.contains("[theme]"));
-        // Should parse as valid TOML config with theme defaults active
+        // Should parse as valid TOML config (all theme fields are commented out)
         let parsed: gc_config::GhostConfig = toml::from_str(&content).unwrap();
         assert_eq!(parsed.keybindings.accept, "tab");
-        assert_eq!(parsed.theme.selected, "reverse");
-        assert_eq!(parsed.theme.description, "dim");
+        assert_eq!(parsed.theme.selected, "");
+        assert_eq!(parsed.theme.description, "");
     }
 
     #[test]

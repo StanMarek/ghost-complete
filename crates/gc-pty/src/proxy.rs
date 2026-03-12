@@ -69,16 +69,18 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     // Resolve keybindings from config (fail fast on invalid key names)
     let keybindings = Keybindings::from_config(&config.keybindings)?;
 
-    // Resolve theme from config (fail fast on invalid style strings)
+    // Resolve theme from config (fail fast on invalid preset or style strings)
+    let resolved_theme = config.theme.resolve().context("invalid theme preset")?;
     let theme = PopupTheme {
-        selected_on: parse_style(&config.theme.selected).context("invalid theme.selected style")?,
-        description_on: parse_style(&config.theme.description)
+        selected_on: parse_style(&resolved_theme.selected)
+            .context("invalid theme.selected style")?,
+        description_on: parse_style(&resolved_theme.description)
             .context("invalid theme.description style")?,
-        match_highlight_on: parse_style(&config.theme.match_highlight)
+        match_highlight_on: parse_style(&resolved_theme.match_highlight)
             .context("invalid theme.match_highlight style")?,
-        item_text_on: parse_style(&config.theme.item_text)
+        item_text_on: parse_style(&resolved_theme.item_text)
             .context("invalid theme.item_text style")?,
-        scrollbar_on: parse_style(&config.theme.scrollbar)
+        scrollbar_on: parse_style(&resolved_theme.scrollbar)
             .context("invalid theme.scrollbar style")?,
     };
 

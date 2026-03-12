@@ -127,12 +127,17 @@ fn check_keybindings(config: &gc_config::GhostConfig) -> CheckResult {
 
 /// Check 3: Theme style strings valid
 fn check_theme(config: &gc_config::GhostConfig) -> CheckResult {
+    let resolved = match config.theme.resolve() {
+        Ok(t) => t,
+        Err(e) => return CheckResult::fail(format!("Theme preset: {e}")),
+    };
+
     let styles = [
-        ("selected", &config.theme.selected),
-        ("description", &config.theme.description),
-        ("match_highlight", &config.theme.match_highlight),
-        ("item_text", &config.theme.item_text),
-        ("scrollbar", &config.theme.scrollbar),
+        ("selected", &resolved.selected),
+        ("description", &resolved.description),
+        ("match_highlight", &resolved.match_highlight),
+        ("item_text", &resolved.item_text),
+        ("scrollbar", &resolved.scrollbar),
     ];
 
     let mut errors = Vec::new();
