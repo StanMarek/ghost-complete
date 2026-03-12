@@ -24,8 +24,7 @@ impl CommandsProvider {
         Self { commands }
     }
 
-    /// Test constructor — inject command list directly.
-    #[cfg(test)]
+    /// Test/bench constructor — inject command list directly.
     pub fn from_list(commands: Vec<String>) -> Self {
         Self { commands }
     }

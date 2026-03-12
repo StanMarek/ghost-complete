@@ -82,8 +82,8 @@ impl SuggestionEngine {
         self
     }
 
-    #[cfg(test)]
-    fn with_providers(
+    /// Test/bench constructor — inject providers directly for deterministic setup.
+    pub fn with_providers(
         spec_store: SpecStore,
         history_provider: HistoryProvider,
         commands_provider: CommandsProvider,

@@ -4,12 +4,12 @@
 //! Fig-compatible JSON specs) and fuzzy-ranks results with `nucleo`.
 
 pub mod cache;
-mod commands;
+pub mod commands;
 mod engine;
 mod filesystem;
-mod fuzzy;
+pub mod fuzzy;
 mod git;
-mod history;
+pub mod history;
 mod provider;
 pub mod script;
 pub mod specs;

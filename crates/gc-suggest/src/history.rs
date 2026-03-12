@@ -25,8 +25,7 @@ impl HistoryProvider {
         Self { entries }
     }
 
-    /// Test constructor — inject entries directly.
-    #[cfg(test)]
+    /// Test/bench constructor — inject entries directly.
     pub fn from_entries(entries: Vec<String>) -> Self {
         Self { entries }
     }
