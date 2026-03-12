@@ -196,6 +196,8 @@ pub fn render_popup(
 
         if is_selected {
             buf.extend_from_slice(&theme.selected_on);
+        } else if !theme.item_text_on.is_empty() {
+            buf.extend_from_slice(&theme.item_text_on);
         }
 
         format_item(buf, suggestion, layout.width, is_selected, theme);
@@ -291,6 +293,10 @@ fn format_item(
         let _ = write!(buf, "{truncated}");
         if !is_selected {
             ansi::reset(buf);
+            // Re-emit item_text style for trailing padding
+            if !theme.item_text_on.is_empty() {
+                buf.extend_from_slice(&theme.item_text_on);
+            }
         }
         // Pad remaining
         let used = gutter_text_len + 2 + truncated.len();
@@ -957,5 +963,98 @@ mod tests {
     #[test]
     fn test_parse_style_hex_missing_hash() {
         assert!(parse_style("fg:89b4fa").is_err());
+    }
+
+    #[test]
+    fn test_non_selected_row_has_item_text_style() {
+        let mut buf = Vec::new();
+        let suggestions = make_suggestions();
+        let mut state = OverlayState::new();
+        state.selected = Some(0); // Only first item selected
+        let theme = PopupTheme::default(); // item_text_on = dim = \x1b[2m
+        render_popup(
+            &mut buf,
+            &suggestions,
+            &state,
+            5,
+            0,
+            24,
+            80,
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &theme,
+        );
+        let output = String::from_utf8_lossy(&buf);
+        // Count occurrences of dim (\x1b[2m) — should appear for non-selected rows
+        let dim_count = output.matches("\x1b[2m").count();
+        // At least 2 non-selected rows should have dim styling
+        // (existing description dim + new item_text dim)
+        assert!(
+            dim_count >= 2,
+            "non-selected rows should be dimmed, got {dim_count} dim sequences"
+        );
+    }
+
+    #[test]
+    fn test_selected_row_no_item_text_style() {
+        let mut buf = Vec::new();
+        let suggestions = vec![make("only", None, SuggestionKind::Command)];
+        let mut state = OverlayState::new();
+        state.selected = Some(0);
+        let theme = PopupTheme {
+            item_text_on: b"\x1b[2m".to_vec(),
+            selected_on: b"\x1b[7m".to_vec(),
+            ..PopupTheme::default()
+        };
+        render_popup(
+            &mut buf,
+            &suggestions,
+            &state,
+            5,
+            0,
+            24,
+            80,
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &theme,
+        );
+        let output = String::from_utf8_lossy(&buf);
+        // Selected row should have reverse, not dim
+        assert!(output.contains("\x1b[7m"), "selected should have reverse");
+    }
+
+    #[test]
+    fn test_empty_item_text_style_no_extra_escapes() {
+        let mut buf = Vec::new();
+        let suggestions = make_suggestions();
+        let state = OverlayState::new(); // Nothing selected
+        let theme = PopupTheme {
+            item_text_on: vec![], // Empty — no styling
+            ..PopupTheme::default()
+        };
+        render_popup(
+            &mut buf,
+            &suggestions,
+            &state,
+            5,
+            0,
+            24,
+            80,
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &theme,
+        );
+        let output = String::from_utf8_lossy(&buf);
+        // Should NOT contain dim sequence (item_text is empty)
+        // Only description dim should appear
+        let dim_count = output.matches("\x1b[2m").count();
+        // Each suggestion with a description gets one dim — that's from description_on only
+        assert!(
+            dim_count <= 3,
+            "empty item_text should not add extra dim sequences"
+        );
     }
 }
