@@ -11,6 +11,7 @@ mod git;
 mod history;
 mod provider;
 pub mod specs;
+pub mod transform;
 pub mod types;
 
 pub use engine::SuggestionEngine;

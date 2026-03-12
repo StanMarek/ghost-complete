@@ -134,7 +134,7 @@ impl SuggestionEngine {
                     let in_option_arg = ctx.preceding_flag.is_some()
                         && (resolution.wants_filepaths
                             || resolution.wants_folders_only
-                            || !resolution.generators.is_empty());
+                            || !resolution.native_generators.is_empty());
 
                     if !in_option_arg {
                         candidates.extend(resolution.subcommands);
@@ -143,7 +143,7 @@ impl SuggestionEngine {
 
                     // Handle generators (e.g., git branches/tags/remotes)
                     if self.providers_git {
-                        for gen_type in &resolution.generators {
+                        for gen_type in &resolution.native_generators {
                             if let Some(kind) = git::generator_to_query_kind(gen_type) {
                                 if let Ok(git_suggestions) = git::git_suggestions(cwd, kind) {
                                     candidates.extend(git_suggestions);

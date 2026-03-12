@@ -4,6 +4,7 @@ use std::path::Path;
 use anyhow::{Context, Result};
 use serde::Deserialize;
 
+use crate::transform::Transform;
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 use gc_buffer::CommandContext;
 
@@ -49,9 +50,25 @@ pub struct ArgSpec {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+pub struct CacheConfig {
+    #[serde(default)]
+    pub ttl_seconds: u64,
+    #[serde(default)]
+    pub cache_by_directory: bool,
+}
+
+#[derive(Debug, Clone, Deserialize)]
 pub struct GeneratorSpec {
     #[serde(rename = "type")]
-    pub generator_type: String,
+    pub generator_type: Option<String>,
+    pub script: Option<Vec<String>>,
+    pub script_template: Option<Vec<String>>,
+    #[serde(default)]
+    pub transforms: Vec<Transform>,
+    pub cache: Option<CacheConfig>,
+    #[serde(default)]
+    pub requires_js: bool,
+    pub js_source: Option<String>,
 }
 
 pub struct SpecStore {
@@ -123,7 +140,8 @@ impl SpecStore {
 pub struct SpecResolution {
     pub subcommands: Vec<Suggestion>,
     pub options: Vec<Suggestion>,
-    pub generators: Vec<String>,
+    pub native_generators: Vec<String>,
+    pub script_generators: Vec<GeneratorSpec>,
     pub wants_filepaths: bool,
     pub wants_folders_only: bool,
 }
@@ -194,7 +212,8 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
         .collect();
 
     // Collect generator types from args at the resolved position
-    let mut generators = Vec::new();
+    let mut native_generators = Vec::new();
+    let mut script_generators = Vec::new();
     let mut wants_filepaths = false;
     let mut wants_folders_only = false;
 
@@ -204,9 +223,11 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
     if let Some(flag) = &ctx.preceding_flag {
         if let Some(opt) = find_option(current_options, flag) {
             if let Some(arg_spec) = &opt.args {
-                for gen in &arg_spec.generators {
-                    generators.push(gen.generator_type.clone());
-                }
+                collect_generators(
+                    &arg_spec.generators,
+                    &mut native_generators,
+                    &mut script_generators,
+                );
                 match arg_spec.template.as_deref() {
                     Some("filepaths") => wants_filepaths = true,
                     Some("folders") => wants_folders_only = true,
@@ -218,9 +239,11 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
 
     // Also check positional arg specs at the resolved position
     for arg_spec in current_args {
-        for gen in &arg_spec.generators {
-            generators.push(gen.generator_type.clone());
-        }
+        collect_generators(
+            &arg_spec.generators,
+            &mut native_generators,
+            &mut script_generators,
+        );
         match arg_spec.template.as_deref() {
             Some("filepaths") => wants_filepaths = true,
             Some("folders") => wants_folders_only = true,
@@ -231,9 +254,29 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
     SpecResolution {
         subcommands: subcommand_suggestions,
         options: option_suggestions,
-        generators,
+        native_generators,
+        script_generators,
         wants_filepaths,
         wants_folders_only,
+    }
+}
+
+fn collect_generators(
+    generators: &[GeneratorSpec],
+    native: &mut Vec<String>,
+    script: &mut Vec<GeneratorSpec>,
+) {
+    for gen in generators {
+        if gen.requires_js {
+            tracing::info!("skipping generator requiring JS runtime");
+            continue;
+        }
+        if let Some(ref gen_type) = gen.generator_type {
+            native.push(gen_type.clone());
+        }
+        if gen.script.is_some() || gen.script_template.is_some() {
+            script.push(gen.clone());
+        }
     }
 }
 
@@ -303,7 +346,7 @@ mod tests {
         let res = resolve_spec(&spec, &ctx);
         eprintln!(
             "wants_filepaths={}, wants_folders_only={}, generators={:?}",
-            res.wants_filepaths, res.wants_folders_only, res.generators
+            res.wants_filepaths, res.wants_folders_only, res.native_generators
         );
         assert!(
             res.wants_filepaths,
@@ -380,7 +423,7 @@ mod tests {
             quote_state: gc_buffer::QuoteState::None,
         };
         let res = resolve_spec(&spec, &ctx);
-        assert!(res.generators.contains(&"git_branches".to_string()));
+        assert!(res.native_generators.contains(&"git_branches".to_string()));
     }
 
     #[test]
@@ -582,7 +625,7 @@ mod tests {
         };
         let res = resolve_spec(&spec, &ctx);
         assert!(
-            res.generators.contains(&"git_branches".to_string()),
+            res.native_generators.contains(&"git_branches".to_string()),
             "option arg generators should be collected via preceding_flag"
         );
     }
@@ -671,5 +714,111 @@ mod tests {
         let result = SpecStore::load_from_dir(Path::new("/nonexistent/path/specs")).unwrap();
         assert!(result.errors.is_empty());
         assert!(result.store.get("anything").is_none());
+    }
+
+    #[test]
+    fn test_deserialize_native_generator() {
+        let gen: GeneratorSpec =
+            serde_json::from_str(r#"{"type": "git_branches"}"#).unwrap();
+        assert_eq!(gen.generator_type.as_deref(), Some("git_branches"));
+        assert!(gen.script.is_none());
+        assert!(gen.script_template.is_none());
+        assert!(gen.transforms.is_empty());
+        assert!(gen.cache.is_none());
+        assert!(!gen.requires_js);
+        assert!(gen.js_source.is_none());
+    }
+
+    #[test]
+    fn test_deserialize_script_generator() {
+        let gen: GeneratorSpec = serde_json::from_str(
+            r#"{"script": ["brew", "formulae"], "cache": {"ttl_seconds": 300}}"#,
+        )
+        .unwrap();
+        assert!(gen.generator_type.is_none());
+        assert_eq!(
+            gen.script.as_deref(),
+            Some(&["brew".to_string(), "formulae".to_string()][..])
+        );
+        assert!(gen.script_template.is_none());
+        assert!(gen.transforms.is_empty());
+        let cache = gen.cache.unwrap();
+        assert_eq!(cache.ttl_seconds, 300);
+        assert!(!cache.cache_by_directory);
+    }
+
+    #[test]
+    fn test_deserialize_script_generator_with_transforms() {
+        let gen: GeneratorSpec = serde_json::from_str(
+            r#"{
+                "script": ["brew", "formulae"],
+                "transforms": ["split_lines", "filter_empty", "trim"],
+                "cache": {"ttl_seconds": 300}
+            }"#,
+        )
+        .unwrap();
+        assert_eq!(gen.transforms.len(), 3);
+    }
+
+    #[test]
+    fn test_deserialize_script_template_generator() {
+        let gen: GeneratorSpec = serde_json::from_str(
+            r#"{"script_template": ["cmd", "{prev_token}"], "transforms": ["split_lines"]}"#,
+        )
+        .unwrap();
+        assert!(gen.generator_type.is_none());
+        assert!(gen.script.is_none());
+        assert_eq!(
+            gen.script_template.as_deref(),
+            Some(&["cmd".to_string(), "{prev_token}".to_string()][..])
+        );
+        assert_eq!(gen.transforms.len(), 1);
+    }
+
+    #[test]
+    fn test_deserialize_requires_js_generator() {
+        let gen: GeneratorSpec = serde_json::from_str(
+            r#"{"requires_js": true, "js_source": "module.exports = { ... }"}"#,
+        )
+        .unwrap();
+        assert!(gen.requires_js);
+        assert_eq!(
+            gen.js_source.as_deref(),
+            Some("module.exports = { ... }")
+        );
+    }
+
+    #[test]
+    fn test_resolve_spec_splits_generators() {
+        let spec: CompletionSpec = serde_json::from_str(
+            r#"{
+                "name": "test-mixed",
+                "args": [{
+                    "name": "target",
+                    "generators": [
+                        {"type": "git_branches"},
+                        {"script": ["some-cmd"], "transforms": ["split_lines"]},
+                        {"requires_js": true, "js_source": "..."}
+                    ]
+                }]
+            }"#,
+        )
+        .unwrap();
+        let ctx = CommandContext {
+            command: Some("test-mixed".into()),
+            args: vec![],
+            current_word: String::new(),
+            word_index: 1,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: None,
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: gc_buffer::QuoteState::None,
+        };
+        let res = resolve_spec(&spec, &ctx);
+        assert_eq!(res.native_generators, vec!["git_branches"]);
+        assert_eq!(res.script_generators.len(), 1);
+        assert!(res.script_generators[0].script.is_some());
     }
 }
