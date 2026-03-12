@@ -380,11 +380,7 @@ mod tests {
     #[test]
     fn test_format_item_shows_only_filename_for_file() {
         let mut buf = Vec::new();
-        let s = make(
-            "src/main/java/App.java",
-            None,
-            SuggestionKind::FilePath,
-        );
+        let s = make("src/main/java/App.java", None, SuggestionKind::FilePath);
         format_item(&mut buf, &s, 40, false, &PopupTheme::default());
         let output = String::from_utf8_lossy(&buf);
         assert!(
