@@ -273,11 +273,67 @@ fn format_item(
         _ => &s.text,
     };
 
-    // Text — truncate to fit within popup width
-    let truncated_text: String = display_text.chars().take(max_text_chars).collect();
-    let _ = write!(buf, "{truncated_text}");
+    // Compute prefix offset for filepath basename display
+    let prefix_char_count = match s.kind {
+        SuggestionKind::FilePath | SuggestionKind::Directory => {
+            let trimmed = s.text.trim_end_matches('/');
+            match trimmed.rfind('/') {
+                Some(byte_idx) => s.text[..byte_idx + 1].chars().count(),
+                None => 0,
+            }
+        }
+        _ => 0,
+    };
 
-    let gutter_text_len = 3 + truncated_text.len();
+    // Build display-relative match index set (offset and filtered)
+    let display_indices: Vec<u32> = s
+        .match_indices
+        .iter()
+        .filter_map(|&idx| {
+            if idx >= prefix_char_count as u32 {
+                Some(idx - prefix_char_count as u32)
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    // Write text with highlight transitions
+    let mut in_highlight = false;
+    for (char_idx, ch) in display_text.chars().take(max_text_chars).enumerate() {
+        let should_highlight = !theme.match_highlight_on.is_empty()
+            && display_indices.binary_search(&(char_idx as u32)).is_ok();
+
+        if should_highlight && !in_highlight {
+            // Enter highlight
+            buf.extend_from_slice(&theme.match_highlight_on);
+            in_highlight = true;
+        } else if !should_highlight && in_highlight {
+            // Leave highlight — reset and restore base style
+            ansi::reset(buf);
+            if is_selected {
+                buf.extend_from_slice(&theme.selected_on);
+            } else if !theme.item_text_on.is_empty() {
+                buf.extend_from_slice(&theme.item_text_on);
+            }
+            in_highlight = false;
+        }
+
+        let _ = write!(buf, "{ch}");
+    }
+
+    // Close highlight if still active at end of text
+    if in_highlight {
+        ansi::reset(buf);
+        if is_selected {
+            buf.extend_from_slice(&theme.selected_on);
+        } else if !theme.item_text_on.is_empty() {
+            buf.extend_from_slice(&theme.item_text_on);
+        }
+    }
+
+    let chars_written = display_text.chars().count().min(max_text_chars);
+    let gutter_text_len = 3 + chars_written;
 
     // Description (if room)
     let desc = s.description.as_deref().unwrap_or("");
@@ -1055,6 +1111,137 @@ mod tests {
         assert!(
             dim_count <= 3,
             "empty item_text should not add extra dim sequences"
+        );
+    }
+
+    #[test]
+    fn test_highlight_matched_chars() {
+        let mut buf = Vec::new();
+        let mut s = make(
+            "checkout",
+            Some("Switch branches"),
+            SuggestionKind::Subcommand,
+        );
+        s.match_indices = vec![0, 1, 2]; // "che" matched
+        let theme = PopupTheme::default();
+        format_item(&mut buf, &s, 40, false, &theme);
+        let output = String::from_utf8_lossy(&buf);
+        // Should contain bold sequence (match_highlight_on default)
+        assert!(
+            output.contains("\x1b[1m"),
+            "matched chars should have bold highlight: {output}"
+        );
+    }
+
+    #[test]
+    fn test_no_indices_no_highlight() {
+        let mut buf = Vec::new();
+        let s = make("checkout", None, SuggestionKind::Subcommand);
+        // match_indices is empty (default)
+        let theme = PopupTheme::default();
+        format_item(&mut buf, &s, 40, false, &theme);
+        let output = String::from_utf8_lossy(&buf);
+        // Should NOT contain bold (no match highlighting)
+        assert!(
+            !output.contains("\x1b[1m"),
+            "no indices means no highlight: {output}"
+        );
+    }
+
+    #[test]
+    fn test_highlight_consecutive_single_span() {
+        let mut buf = Vec::new();
+        let mut s = make("checkout", None, SuggestionKind::Subcommand);
+        s.match_indices = vec![0, 1, 2]; // consecutive
+        let theme = PopupTheme::default();
+        format_item(&mut buf, &s, 40, false, &theme);
+        let output = String::from_utf8_lossy(&buf);
+        // Should have exactly one bold-on sequence for consecutive matches
+        let bold_count = output.matches("\x1b[1m").count();
+        assert_eq!(
+            bold_count, 1,
+            "consecutive matches should produce single span"
+        );
+    }
+
+    #[test]
+    fn test_highlight_on_selected_row() {
+        let mut buf = Vec::new();
+        let mut s = make("checkout", None, SuggestionKind::Subcommand);
+        s.match_indices = vec![0, 1, 2];
+        let theme = PopupTheme::default();
+        format_item(&mut buf, &s, 40, true, &theme);
+        let output = String::from_utf8_lossy(&buf);
+        // Should contain bold (highlight composes with selected reverse)
+        assert!(
+            output.contains("\x1b[1m"),
+            "selected row should still show highlight"
+        );
+    }
+
+    #[test]
+    fn test_highlight_filepath_basename_offset() {
+        let mut buf = Vec::new();
+        let mut s = make("src/main/App.java", None, SuggestionKind::FilePath);
+        // Indices for "App" in full path: chars 9, 10, 11
+        s.match_indices = vec![9, 10, 11];
+        let theme = PopupTheme::default();
+        format_item(&mut buf, &s, 40, false, &theme);
+        let output = String::from_utf8_lossy(&buf);
+        // Display shows "App.java", highlight should be on "App"
+        assert!(
+            output.contains("\x1b[1m"),
+            "basename highlight should work: {output}"
+        );
+    }
+
+    #[test]
+    fn test_highlight_indices_in_stripped_prefix_skipped() {
+        let mut buf = Vec::new();
+        let mut s = make("src/main/App.java", None, SuggestionKind::FilePath);
+        // Indices in the stripped prefix (before "App.java")
+        s.match_indices = vec![0, 1, 2]; // "src" — in prefix, should be skipped
+        let theme = PopupTheme::default();
+        format_item(&mut buf, &s, 40, false, &theme);
+        let output = String::from_utf8_lossy(&buf);
+        // No highlight — all indices are in the stripped prefix
+        assert!(
+            !output.contains("\x1b[1m"),
+            "indices in stripped prefix should not highlight: {output}"
+        );
+    }
+
+    #[test]
+    fn test_highlight_non_ascii_path_offset() {
+        let mut buf = Vec::new();
+        // "café/" is 5 chars but 6 bytes (é = 2 bytes in UTF-8)
+        let mut s = make("café/menu.txt", None, SuggestionKind::FilePath);
+        // "menu" starts at char index 5; match indices for "men" = 5, 6, 7
+        s.match_indices = vec![5, 6, 7];
+        let theme = PopupTheme::default();
+        format_item(&mut buf, &s, 40, false, &theme);
+        let output = String::from_utf8_lossy(&buf);
+        // Display shows "menu.txt", highlight should be on "men"
+        assert!(
+            output.contains("\x1b[1m"),
+            "non-ASCII path offset should work: {output}"
+        );
+    }
+
+    #[test]
+    fn test_highlight_indices_beyond_truncation_ignored() {
+        let mut buf = Vec::new();
+        let long_text = "a_very_long_command_name_that_will_be_truncated";
+        let mut s = make(long_text, None, SuggestionKind::Command);
+        // Index 40+ is beyond a width=20 popup's text area
+        s.match_indices = vec![42, 43, 44];
+        let theme = PopupTheme::default();
+        format_item(&mut buf, &s, 20, false, &theme);
+        let output = String::from_utf8_lossy(&buf);
+        // No highlight — all indices are beyond the truncation point
+        assert!(
+            !output.contains("\x1b[1m"),
+            "indices beyond truncation should not highlight: {output}"
         );
     }
 }
