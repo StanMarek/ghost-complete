@@ -64,15 +64,12 @@ fn item_display_width(suggestion: &Suggestion) -> usize {
 mod tests {
     use super::*;
     use crate::types::{DEFAULT_MAX_POPUP_WIDTH, DEFAULT_MAX_VISIBLE, DEFAULT_MIN_POPUP_WIDTH};
-    use gc_suggest::{SuggestionKind, SuggestionSource};
 
     fn make(text: &str, desc: Option<&str>) -> Suggestion {
         Suggestion {
             text: text.to_string(),
             description: desc.map(String::from),
-            kind: SuggestionKind::Command,
-            source: SuggestionSource::Commands,
-            score: 0,
+            ..Default::default()
         }
     }
 

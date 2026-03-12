@@ -319,7 +319,7 @@ mod tests {
             description: desc.map(String::from),
             kind,
             source: SuggestionSource::Spec,
-            score: 0,
+            ..Default::default()
         }
     }
 

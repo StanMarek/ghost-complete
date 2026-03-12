@@ -4,7 +4,7 @@ use regex::Regex;
 use serde::de::{self, MapAccess, Visitor};
 use serde::Deserialize;
 
-use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
+use crate::types::{Suggestion, SuggestionSource};
 
 /// A single transform step in a pipeline that processes raw generator output
 /// into completion suggestions.
@@ -389,9 +389,8 @@ pub fn apply_regex_extract(
             Some(Suggestion {
                 text,
                 description,
-                kind: SuggestionKind::Command,
                 source: SuggestionSource::Script,
-                score: 0,
+                ..Default::default()
             })
         })
         .collect()
@@ -417,9 +416,8 @@ pub fn apply_json_extract(
             Some(Suggestion {
                 text,
                 description,
-                kind: SuggestionKind::Command,
                 source: SuggestionSource::Script,
-                score: 0,
+                ..Default::default()
             })
         })
         .collect()
@@ -441,9 +439,8 @@ pub fn apply_column_extract(
             Some(Suggestion {
                 text,
                 description,
-                kind: SuggestionKind::Command,
                 source: SuggestionSource::Script,
-                score: 0,
+                ..Default::default()
             })
         })
         .collect()
@@ -568,10 +565,8 @@ pub fn execute_pipeline(output: &str, transforms: &[Transform]) -> Result<Vec<Su
         .into_iter()
         .map(|text| Suggestion {
             text,
-            description: None,
-            kind: SuggestionKind::Command,
             source: SuggestionSource::Script,
-            score: 0,
+            ..Default::default()
         })
         .collect())
 }

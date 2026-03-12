@@ -282,7 +282,7 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
             description: s.description.clone(),
             kind: SuggestionKind::Subcommand,
             source: SuggestionSource::Spec,
-            score: 0,
+            ..Default::default()
         })
         .collect();
 
@@ -294,7 +294,7 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
                 description: o.description.clone(),
                 kind: SuggestionKind::Flag,
                 source: SuggestionSource::Spec,
-                score: 0,
+                ..Default::default()
             })
         })
         .collect();

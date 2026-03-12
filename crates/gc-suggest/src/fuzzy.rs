@@ -45,15 +45,12 @@ pub fn rank(query: &str, mut suggestions: Vec<Suggestion>, max_results: usize) -
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::{SuggestionKind, SuggestionSource};
+    use crate::types::SuggestionSource;
 
     fn make(text: &str) -> Suggestion {
         Suggestion {
             text: text.to_string(),
-            description: None,
-            kind: SuggestionKind::Command,
-            source: SuggestionSource::Commands,
-            score: 0,
+            ..Default::default()
         }
     }
 
@@ -107,31 +104,23 @@ mod tests {
         let items = vec![
             Suggestion {
                 text: "checkout".to_string(),
-                description: None,
-                kind: SuggestionKind::Command,
                 source: SuggestionSource::History,
-                score: 0,
+                ..Default::default()
             },
             Suggestion {
                 text: "cherry-pick".to_string(),
-                description: None,
-                kind: SuggestionKind::Command,
                 source: SuggestionSource::Commands,
-                score: 0,
+                ..Default::default()
             },
             Suggestion {
                 text: "check".to_string(),
-                description: None,
-                kind: SuggestionKind::Command,
                 source: SuggestionSource::History,
-                score: 0,
+                ..Default::default()
             },
             Suggestion {
                 text: "chmod".to_string(),
-                description: None,
-                kind: SuggestionKind::Command,
                 source: SuggestionSource::Commands,
-                score: 0,
+                ..Default::default()
             },
         ];
         let result = rank("ch", items, DEFAULT_MAX_RESULTS);

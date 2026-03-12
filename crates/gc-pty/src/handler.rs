@@ -677,10 +677,7 @@ mod tests {
             overlay: OverlayState::new(),
             suggestions: vec![Suggestion {
                 text: "test".to_string(),
-                description: None,
-                kind: SuggestionKind::Command,
-                source: SuggestionSource::Commands,
-                score: 0,
+                ..Default::default()
             }],
             last_layout: Some(PopupLayout {
                 start_row: 5,
@@ -790,10 +787,9 @@ mod tests {
             },
             suggestions: vec![Suggestion {
                 text: "Desktop/".to_string(),
-                description: None,
                 kind: SuggestionKind::Directory,
                 source: SuggestionSource::Filesystem,
-                score: 0,
+                ..Default::default()
             }],
             last_layout: Some(PopupLayout {
                 start_row: 5,
@@ -848,10 +844,9 @@ mod tests {
             },
             suggestions: vec![Suggestion {
                 text: "README.md".to_string(),
-                description: None,
                 kind: SuggestionKind::FilePath,
                 source: SuggestionSource::Filesystem,
-                score: 0,
+                ..Default::default()
             }],
             last_layout: Some(PopupLayout {
                 start_row: 5,
@@ -905,10 +900,7 @@ mod tests {
             overlay: OverlayState::new(), // selected: None
             suggestions: vec![Suggestion {
                 text: "test".to_string(),
-                description: None,
-                kind: SuggestionKind::Command,
-                source: SuggestionSource::Commands,
-                score: 0,
+                ..Default::default()
             }],
             last_layout: Some(PopupLayout {
                 start_row: 5,
@@ -949,10 +941,7 @@ mod tests {
             overlay: OverlayState::new(), // selected: None
             suggestions: vec![Suggestion {
                 text: "test".to_string(),
-                description: None,
-                kind: SuggestionKind::Command,
-                source: SuggestionSource::Commands,
-                score: 0,
+                ..Default::default()
             }],
             last_layout: Some(PopupLayout {
                 start_row: 5,

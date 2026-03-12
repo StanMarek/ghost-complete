@@ -106,7 +106,7 @@ impl Provider for HistoryProvider {
                     description: Some(entry.clone()),
                     kind: SuggestionKind::History,
                     source: SuggestionSource::History,
-                    score: 0,
+                    ..Default::default()
                 }
             })
             .collect();

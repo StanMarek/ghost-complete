@@ -41,7 +41,7 @@ pub fn git_suggestions(cwd: &Path, kind: GitQueryKind) -> Result<Vec<Suggestion>
             description: Some(description.to_string()),
             kind: suggestion_kind,
             source: SuggestionSource::Git,
-            score: 0,
+            ..Default::default()
         })
         .collect())
 }

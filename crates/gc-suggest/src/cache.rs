@@ -89,15 +89,13 @@ mod tests {
     use super::*;
     use std::time::Duration;
 
-    use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
+    use crate::types::{Suggestion, SuggestionSource};
 
     fn make_suggestions() -> Vec<Suggestion> {
         vec![Suggestion {
             text: "test".into(),
-            description: None,
-            kind: SuggestionKind::Command,
             source: SuggestionSource::Spec,
-            score: 0,
+            ..Default::default()
         }]
     }
 

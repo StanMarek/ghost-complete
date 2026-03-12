@@ -8,17 +8,14 @@ use gc_suggest::fuzzy;
 use gc_suggest::history::HistoryProvider;
 use gc_suggest::specs;
 use gc_suggest::transform::{self, NamedTransform, ParameterizedTransform, Transform};
-use gc_suggest::types::{Suggestion, SuggestionKind, SuggestionSource};
+use gc_suggest::types::Suggestion;
 use gc_suggest::SpecStore;
 use gc_suggest::SuggestionEngine;
 
 fn make_suggestion(text: &str) -> Suggestion {
     Suggestion {
         text: text.to_string(),
-        description: None,
-        kind: SuggestionKind::Command,
-        source: SuggestionSource::Commands,
-        score: 0,
+        ..Default::default()
     }
 }
 

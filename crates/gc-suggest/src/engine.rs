@@ -182,10 +182,8 @@ impl SuggestionEngine {
                         .filter(|l| !l.trim().is_empty())
                         .map(|l| Suggestion {
                             text: l.to_string(),
-                            description: None,
-                            kind: SuggestionKind::Command,
                             source: SuggestionSource::Script,
-                            score: 0,
+                            ..Default::default()
                         })
                         .collect()
                 } else {
@@ -319,7 +317,7 @@ impl SuggestionEngine {
                                     description: Some("Parent directory".to_string()),
                                     kind: SuggestionKind::Directory,
                                     source: SuggestionSource::Filesystem,
-                                    score: 0,
+                                    ..Default::default()
                                 });
                             }
                         }
