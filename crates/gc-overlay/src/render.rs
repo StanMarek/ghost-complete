@@ -845,7 +845,11 @@ mod tests {
             0,
         );
         // capped to screen_rows - 1 = 5
-        assert!(layout.height <= 5, "height {} should be <= 5", layout.height);
+        assert!(
+            layout.height <= 5,
+            "height {} should be <= 5",
+            layout.height
+        );
         assert!(layout.start_row >= 1);
     }
 

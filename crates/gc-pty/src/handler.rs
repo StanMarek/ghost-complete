@@ -477,6 +477,12 @@ impl InputHandler {
         screen_rows: u16,
         screen_cols: u16,
     ) {
+        let prior_deficit = self
+            .last_layout
+            .as_ref()
+            .map(|l| l.scroll_deficit)
+            .unwrap_or(0);
+
         if let Some(ref layout) = self.last_layout {
             let mut clear_buf = Vec::new();
             clear_popup(&mut clear_buf, layout);
@@ -496,6 +502,7 @@ impl InputHandler {
             self.min_width,
             self.max_width,
             &self.theme,
+            prior_deficit,
         );
         let _ = stdout.write_all(&render_buf);
         let _ = stdout.flush();
@@ -543,9 +550,11 @@ impl InputHandler {
     }
 
     /// Handle terminal resize while popup is visible.
-    pub fn handle_resize(&mut self, parser: &Arc<Mutex<TerminalParser>>, stdout: &mut dyn Write) {
+    /// Dismisses popup instead of re-rendering — after a resize, screen dimensions
+    /// change and prior scroll deficit is stale. Popup recomputes on next trigger.
+    pub fn handle_resize(&mut self, _parser: &Arc<Mutex<TerminalParser>>, stdout: &mut dyn Write) {
         if self.visible {
-            self.render(parser, stdout);
+            self.dismiss(stdout);
         }
     }
 }
@@ -671,7 +680,7 @@ mod tests {
                 start_col: 0,
                 width: 20,
                 height: 1,
-                renders_above: false,
+                scroll_deficit: 0,
             }),
             visible: true,
             trigger_requested: false,
@@ -782,7 +791,7 @@ mod tests {
                 start_col: 0,
                 width: 20,
                 height: 1,
-                renders_above: false,
+                scroll_deficit: 0,
             }),
             visible: true,
             trigger_requested: false,
@@ -839,7 +848,7 @@ mod tests {
                 start_col: 0,
                 width: 20,
                 height: 1,
-                renders_above: false,
+                scroll_deficit: 0,
             }),
             visible: true,
             trigger_requested: false,
@@ -895,7 +904,7 @@ mod tests {
                 start_col: 0,
                 width: 20,
                 height: 1,
-                renders_above: false,
+                scroll_deficit: 0,
             }),
             visible: true,
             trigger_requested: false,
@@ -938,7 +947,7 @@ mod tests {
                 start_col: 0,
                 width: 20,
                 height: 1,
-                renders_above: false,
+                scroll_deficit: 0,
             }),
             visible: true,
             trigger_requested: false,
