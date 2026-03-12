@@ -164,12 +164,27 @@ fn format_item(
     // Gutter: " K "
     let _ = write!(buf, " {kind_char} ");
 
-    // Text
-    let text = &s.text;
-    let _ = write!(buf, "{text}");
-
-    let gutter_text_len = 3 + text.len();
     let total_width = width as usize;
+    let max_text_chars = total_width.saturating_sub(3); // 3 = gutter
+
+    // For filesystem entries, show just the last path component (the user
+    // already typed the prefix, so repeating it wastes popup space).
+    let display_text = match s.kind {
+        SuggestionKind::FilePath | SuggestionKind::Directory => {
+            let trimmed = s.text.trim_end_matches('/');
+            match trimmed.rfind('/') {
+                Some(idx) => &s.text[idx + 1..],
+                None => &s.text,
+            }
+        }
+        _ => &s.text,
+    };
+
+    // Text — truncate to fit within popup width
+    let truncated_text: String = display_text.chars().take(max_text_chars).collect();
+    let _ = write!(buf, "{truncated_text}");
+
+    let gutter_text_len = 3 + truncated_text.len();
 
     // Description (if room)
     let desc = s.description.as_deref().unwrap_or("");
@@ -339,6 +354,78 @@ mod tests {
         assert!(
             output.starts_with(" S checkout"),
             "should show kind char S for subcommand: got '{output}'"
+        );
+    }
+
+    #[test]
+    fn test_format_item_shows_only_filename_for_directory() {
+        let mut buf = Vec::new();
+        let s = make(
+            "Desktop/coding/advent-of-code/master/2023-rust/",
+            None,
+            SuggestionKind::Directory,
+        );
+        format_item(&mut buf, &s, 40, false, &PopupTheme::default());
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            output.contains("2023-rust/"),
+            "should show only dirname: got '{output}'"
+        );
+        assert!(
+            !output.contains("Desktop/"),
+            "should NOT show full path prefix: got '{output}'"
+        );
+    }
+
+    #[test]
+    fn test_format_item_shows_only_filename_for_file() {
+        let mut buf = Vec::new();
+        let s = make(
+            "src/main/java/App.java",
+            None,
+            SuggestionKind::FilePath,
+        );
+        format_item(&mut buf, &s, 40, false, &PopupTheme::default());
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            output.contains("App.java"),
+            "should show only filename: got '{output}'"
+        );
+        assert!(
+            !output.contains("src/"),
+            "should NOT show path prefix: got '{output}'"
+        );
+    }
+
+    #[test]
+    fn test_format_item_no_slash_shows_full_name() {
+        let mut buf = Vec::new();
+        let s = make("Desktop/", None, SuggestionKind::Directory);
+        format_item(&mut buf, &s, 40, false, &PopupTheme::default());
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            output.contains("Desktop/"),
+            "single-component dir should show full name: got '{output}'"
+        );
+    }
+
+    #[test]
+    fn test_format_item_truncates_long_text() {
+        let mut buf = Vec::new();
+        let long_text = "https://api.github.com/orgs/Example/packages?package_type=container";
+        let s = make(long_text, None, SuggestionKind::History);
+        let width: u16 = 30;
+        format_item(&mut buf, &s, width, false, &PopupTheme::default());
+        // Count printable characters (no ANSI escape sequences)
+        let output = String::from_utf8_lossy(&buf);
+        let printable: String = output
+            .chars()
+            .filter(|c| !c.is_control() || *c == ' ')
+            .collect();
+        assert!(
+            printable.len() <= width as usize,
+            "printable chars ({}) must not exceed width ({width}): '{printable}'",
+            printable.len()
         );
     }
 
