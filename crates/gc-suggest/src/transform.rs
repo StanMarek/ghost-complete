@@ -1,7 +1,10 @@
 use std::fmt;
 
+use regex::Regex;
 use serde::de::{self, MapAccess, Visitor};
 use serde::Deserialize;
+
+use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 
 /// A single transform step in a pipeline that processes raw generator output
 /// into completion suggestions.
@@ -280,6 +283,293 @@ pub fn validate_pipeline(transforms: &[Transform]) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// Named transform implementations
+// ---------------------------------------------------------------------------
+
+/// Split raw output on newline boundaries.
+pub fn apply_split_lines(output: &str) -> Vec<String> {
+    output.split('\n').map(String::from).collect()
+}
+
+/// Split raw output on a custom delimiter.
+pub fn apply_split_on(output: &str, delimiter: &str) -> Vec<String> {
+    output.split(delimiter).map(String::from).collect()
+}
+
+/// Remove empty and whitespace-only lines.
+pub fn apply_filter_empty(lines: Vec<String>) -> Vec<String> {
+    lines
+        .into_iter()
+        .filter(|line| !line.trim().is_empty())
+        .collect()
+}
+
+/// Trim leading/trailing whitespace from each line.
+pub fn apply_trim(lines: Vec<String>) -> Vec<String> {
+    lines
+        .into_iter()
+        .map(|line| line.trim().to_string())
+        .collect()
+}
+
+/// Drop the first element (header line).
+pub fn apply_skip_first(lines: Vec<String>) -> Vec<String> {
+    if lines.is_empty() {
+        return lines;
+    }
+    lines.into_iter().skip(1).collect()
+}
+
+/// Drop the first N elements.
+pub fn apply_skip(lines: Vec<String>, n: usize) -> Vec<String> {
+    lines.into_iter().skip(n).collect()
+}
+
+/// Keep only the first N elements.
+pub fn apply_take(lines: Vec<String>, n: usize) -> Vec<String> {
+    lines.into_iter().take(n).collect()
+}
+
+/// Remove consecutive duplicates (like Unix `uniq`).
+pub fn apply_dedup(lines: Vec<String>) -> Vec<String> {
+    let mut result = Vec::with_capacity(lines.len());
+    for line in lines {
+        if result.last().map_or(true, |prev: &String| *prev != line) {
+            result.push(line);
+        }
+    }
+    result
+}
+
+// ---------------------------------------------------------------------------
+// Parameterized transform implementations
+// ---------------------------------------------------------------------------
+
+/// Guard against error output. Returns `None` to abort pipeline, `Some(output)` to continue.
+pub fn apply_error_guard(
+    output: &str,
+    starts_with: Option<&str>,
+    contains: Option<&str>,
+) -> Option<String> {
+    if let Some(prefix) = starts_with {
+        if output.starts_with(prefix) {
+            return None;
+        }
+    }
+    if let Some(needle) = contains {
+        if output.contains(needle) {
+            return None;
+        }
+    }
+    Some(output.to_string())
+}
+
+/// Extract fields from each line using a regex with capture groups.
+/// Lines that don't match are silently skipped.
+pub fn apply_regex_extract(
+    lines: &[String],
+    pattern: &str,
+    name_group: usize,
+    desc_group: Option<usize>,
+) -> Vec<Suggestion> {
+    let re = match Regex::new(pattern) {
+        Ok(re) => re,
+        Err(_) => return Vec::new(),
+    };
+
+    lines
+        .iter()
+        .filter_map(|line| {
+            let caps = re.captures(line)?;
+            let text = caps.get(name_group)?.as_str().to_string();
+            let description =
+                desc_group.and_then(|g| caps.get(g).map(|m| m.as_str().to_string()));
+            Some(Suggestion {
+                text,
+                description,
+                kind: SuggestionKind::Command,
+                source: SuggestionSource::Script,
+                score: 0,
+            })
+        })
+        .collect()
+}
+
+/// Parse each line as JSON and extract fields by top-level key name.
+/// Strips `$.` prefix from paths if present (simplified JSONPath).
+pub fn apply_json_extract(
+    lines: &[String],
+    name_path: &str,
+    desc_path: Option<&str>,
+) -> Vec<Suggestion> {
+    let name_key = name_path.strip_prefix("$.").unwrap_or(name_path);
+    let desc_key = desc_path.map(|p| p.strip_prefix("$.").unwrap_or(p));
+
+    lines
+        .iter()
+        .filter_map(|line| {
+            let obj: serde_json::Value = serde_json::from_str(line).ok()?;
+            let text = obj.get(name_key)?.as_str()?.to_string();
+            let description =
+                desc_key.and_then(|dk| obj.get(dk).and_then(|v| v.as_str()).map(String::from));
+            Some(Suggestion {
+                text,
+                description,
+                kind: SuggestionKind::Command,
+                source: SuggestionSource::Script,
+                score: 0,
+            })
+        })
+        .collect()
+}
+
+/// Split each line by whitespace and extract columns by index.
+pub fn apply_column_extract(
+    lines: &[String],
+    column: usize,
+    description_column: Option<usize>,
+) -> Vec<Suggestion> {
+    lines
+        .iter()
+        .filter_map(|line| {
+            let parts: Vec<&str> = line.split_whitespace().collect();
+            let text = parts.get(column)?.to_string();
+            let description =
+                description_column.and_then(|dc| parts.get(dc).map(|s| s.to_string()));
+            Some(Suggestion {
+                text,
+                description,
+                kind: SuggestionKind::Command,
+                source: SuggestionSource::Script,
+                score: 0,
+            })
+        })
+        .collect()
+}
+
+// ---------------------------------------------------------------------------
+// Pipeline executor
+// ---------------------------------------------------------------------------
+
+/// Execute a transform pipeline against raw command output.
+/// Two-phase: pre-split (error_guard), then split, then post-split.
+pub fn execute_pipeline(output: &str, transforms: &[Transform]) -> Result<Vec<Suggestion>, String> {
+    let mut current_output = output.to_string();
+    let mut lines: Option<Vec<String>> = None;
+    let mut suggestions: Option<Vec<Suggestion>> = None;
+
+    for transform in transforms {
+        match transform {
+            // Pre-split: error_guard
+            Transform::Parameterized(ParameterizedTransform::ErrorGuard {
+                starts_with,
+                contains,
+            }) => {
+                match apply_error_guard(
+                    &current_output,
+                    starts_with.as_deref(),
+                    contains.as_deref(),
+                ) {
+                    None => return Ok(Vec::new()),
+                    Some(out) => current_output = out,
+                }
+            }
+
+            // Split transforms
+            Transform::Named(NamedTransform::SplitLines) => {
+                lines = Some(apply_split_lines(&current_output));
+            }
+            Transform::Parameterized(ParameterizedTransform::SplitOn { delimiter }) => {
+                lines = Some(apply_split_on(&current_output, delimiter));
+            }
+
+            // Post-split named transforms
+            Transform::Named(NamedTransform::FilterEmpty) => {
+                lines = Some(apply_filter_empty(
+                    lines.take().unwrap_or_else(|| vec![current_output.clone()]),
+                ));
+            }
+            Transform::Named(NamedTransform::Trim) => {
+                lines = Some(apply_trim(
+                    lines.take().unwrap_or_else(|| vec![current_output.clone()]),
+                ));
+            }
+            Transform::Named(NamedTransform::SkipFirst) => {
+                lines = Some(apply_skip_first(
+                    lines.take().unwrap_or_else(|| vec![current_output.clone()]),
+                ));
+            }
+            Transform::Named(NamedTransform::Dedup) => {
+                lines = Some(apply_dedup(
+                    lines.take().unwrap_or_else(|| vec![current_output.clone()]),
+                ));
+            }
+
+            // Post-split parameterized transforms
+            Transform::Parameterized(ParameterizedTransform::Skip { n }) => {
+                lines = Some(apply_skip(
+                    lines.take().unwrap_or_else(|| vec![current_output.clone()]),
+                    *n,
+                ));
+            }
+            Transform::Parameterized(ParameterizedTransform::Take { n }) => {
+                lines = Some(apply_take(
+                    lines.take().unwrap_or_else(|| vec![current_output.clone()]),
+                    *n,
+                ));
+            }
+
+            // Extract transforms: produce Vec<Suggestion>
+            Transform::Parameterized(ParameterizedTransform::RegexExtract {
+                pattern,
+                name,
+                description,
+            }) => {
+                let input_lines =
+                    lines.take().unwrap_or_else(|| vec![current_output.clone()]);
+                suggestions = Some(apply_regex_extract(&input_lines, pattern, *name, *description));
+            }
+            Transform::Parameterized(ParameterizedTransform::JsonExtract {
+                name,
+                description,
+            }) => {
+                let input_lines =
+                    lines.take().unwrap_or_else(|| vec![current_output.clone()]);
+                suggestions =
+                    Some(apply_json_extract(&input_lines, name, description.as_deref()));
+            }
+            Transform::Parameterized(ParameterizedTransform::ColumnExtract {
+                column,
+                description_column,
+            }) => {
+                let input_lines =
+                    lines.take().unwrap_or_else(|| vec![current_output.clone()]);
+                suggestions =
+                    Some(apply_column_extract(&input_lines, *column, *description_column));
+            }
+        }
+    }
+
+    // If an extract already produced suggestions, return them.
+    if let Some(s) = suggestions {
+        return Ok(s);
+    }
+
+    // Otherwise, convert remaining lines to plain suggestions.
+    let final_lines = lines.unwrap_or_else(|| vec![current_output]);
+    Ok(final_lines
+        .into_iter()
+        .map(|text| Suggestion {
+            text,
+            description: None,
+            kind: SuggestionKind::Command,
+            source: SuggestionSource::Script,
+            score: 0,
+        })
+        .collect())
 }
 
 #[cfg(test)]
@@ -596,5 +886,200 @@ mod tests {
             )),
             "error_guard"
         );
+    }
+
+    // -- Named transform execution --
+
+    #[test]
+    fn test_split_lines() {
+        let result = apply_split_lines("foo\nbar\nbaz\n");
+        assert_eq!(result, vec!["foo", "bar", "baz", ""]);
+    }
+
+    #[test]
+    fn test_split_on() {
+        let result = apply_split_on("a,b,c", ",");
+        assert_eq!(result, vec!["a", "b", "c"]);
+    }
+
+    #[test]
+    fn test_filter_empty() {
+        let input = vec!["foo".into(), "".into(), "  ".into(), "bar".into()];
+        let result = apply_filter_empty(input);
+        assert_eq!(result, vec!["foo", "bar"]);
+    }
+
+    #[test]
+    fn test_trim() {
+        let input = vec!["  foo  ".into(), "bar  ".into()];
+        let result = apply_trim(input);
+        assert_eq!(result, vec!["foo", "bar"]);
+    }
+
+    #[test]
+    fn test_skip_first() {
+        let input = vec!["header".into(), "data1".into(), "data2".into()];
+        let result = apply_skip_first(input);
+        assert_eq!(result, vec!["data1", "data2"]);
+    }
+
+    #[test]
+    fn test_skip() {
+        let input = vec!["a".into(), "b".into(), "c".into(), "d".into()];
+        let result = apply_skip(input, 2);
+        assert_eq!(result, vec!["c", "d"]);
+    }
+
+    #[test]
+    fn test_take() {
+        let input = vec!["a".into(), "b".into(), "c".into(), "d".into()];
+        let result = apply_take(input, 2);
+        assert_eq!(result, vec!["a", "b"]);
+    }
+
+    #[test]
+    fn test_dedup() {
+        let input = vec!["a".into(), "a".into(), "b".into(), "b".into(), "a".into()];
+        let result = apply_dedup(input);
+        assert_eq!(result, vec!["a", "b", "a"]);
+    }
+
+    // -- Parameterized transform execution --
+
+    #[test]
+    fn test_error_guard_blocks() {
+        let result = apply_error_guard("Error: not found", Some("Error:"), None);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_error_guard_passes() {
+        let result = apply_error_guard("foo bar", Some("Error:"), None);
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn test_error_guard_contains() {
+        let result = apply_error_guard("something error occurred", None, Some("error"));
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_regex_extract() {
+        let lines = vec!["nginx   running".into(), "redis   stopped".into()];
+        let result = apply_regex_extract(&lines, r"^(\S+)\s+(\S+)", 1, Some(2));
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].text, "nginx");
+        assert_eq!(result[0].description.as_deref(), Some("running"));
+    }
+
+    #[test]
+    fn test_regex_extract_no_match_skipped() {
+        let lines = vec!["matches_pattern".into(), "".into(), "also_matches".into()];
+        let result = apply_regex_extract(&lines, r"^(\S+)$", 1, None);
+        assert_eq!(result.len(), 2);
+    }
+
+    #[test]
+    fn test_json_extract() {
+        let lines = vec![
+            r#"{"Name":"nginx","Status":"running"}"#.into(),
+            r#"{"Name":"redis","Status":"stopped"}"#.into(),
+        ];
+        let result = apply_json_extract(&lines, "Name", Some("Status"));
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].text, "nginx");
+        assert_eq!(result[0].description.as_deref(), Some("running"));
+    }
+
+    #[test]
+    fn test_json_extract_with_dollar_prefix() {
+        let lines = vec![r#"{"Name":"test"}"#.into()];
+        let result = apply_json_extract(&lines, "$.Name", None);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].text, "test");
+    }
+
+    #[test]
+    fn test_column_extract() {
+        let lines = vec![
+            "abc123  some description".into(),
+            "def456  other desc".into(),
+        ];
+        let result = apply_column_extract(&lines, 0, Some(1));
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].text, "abc123");
+        assert!(result[0].description.is_some());
+    }
+
+    // -- Pipeline executor --
+
+    #[test]
+    fn test_execute_pipeline_basic() {
+        let transforms: Vec<Transform> =
+            serde_json::from_str(r#"["split_lines", "filter_empty", "trim"]"#).unwrap();
+        let output = "  foo  \n\n  bar  \n  baz  \n";
+        let result = execute_pipeline(output, &transforms).unwrap();
+        assert_eq!(result.len(), 3);
+        assert_eq!(result[0].text, "foo");
+        assert_eq!(result[1].text, "bar");
+        assert_eq!(result[2].text, "baz");
+    }
+
+    #[test]
+    fn test_execute_pipeline_with_error_guard_blocks() {
+        let transforms: Vec<Transform> = serde_json::from_str(
+            r#"[{"type": "error_guard", "starts_with": "Error:"}, "split_lines", "filter_empty"]"#,
+        )
+        .unwrap();
+        let output = "Error: command not found";
+        let result = execute_pipeline(output, &transforms).unwrap();
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_execute_pipeline_with_error_guard_passes() {
+        let transforms: Vec<Transform> = serde_json::from_str(
+            r#"[{"type": "error_guard", "starts_with": "Error:"}, "split_lines", "filter_empty"]"#,
+        )
+        .unwrap();
+        let output = "foo\nbar\n";
+        let result = execute_pipeline(output, &transforms).unwrap();
+        assert_eq!(result.len(), 2);
+    }
+
+    #[test]
+    fn test_execute_pipeline_regex_extract() {
+        let transforms: Vec<Transform> = serde_json::from_str(
+            r#"["split_lines", "skip_first", "filter_empty", {"type": "regex_extract", "pattern": "^(\\S+)\\s+(\\S+)", "name": 1, "description": 2}]"#,
+        )
+        .unwrap();
+        let output = "NAME    STATUS\nnginx   running\nredis   stopped\n";
+        let result = execute_pipeline(output, &transforms).unwrap();
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].text, "nginx");
+        assert_eq!(result[0].description.as_deref(), Some("running"));
+    }
+
+    #[test]
+    fn test_execute_pipeline_json_extract() {
+        let transforms: Vec<Transform> = serde_json::from_str(
+            r#"["split_lines", "filter_empty", {"type": "json_extract", "name": "Name", "description": "Status"}]"#,
+        )
+        .unwrap();
+        let output =
+            "{\"Name\":\"nginx\",\"Status\":\"running\"}\n{\"Name\":\"redis\",\"Status\":\"stopped\"}";
+        let result = execute_pipeline(output, &transforms).unwrap();
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].text, "nginx");
+    }
+
+    #[test]
+    fn test_execute_pipeline_no_split_treats_as_single_item() {
+        let transforms: Vec<Transform> = vec![];
+        let output = "single_item";
+        let result = execute_pipeline(output, &transforms).unwrap();
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].text, "single_item");
     }
 }

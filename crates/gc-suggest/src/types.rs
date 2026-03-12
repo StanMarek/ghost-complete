@@ -18,6 +18,7 @@ pub enum SuggestionSource {
     History,
     Commands,
     Spec,
+    Script,
 }
 
 #[derive(Debug, Clone)]
