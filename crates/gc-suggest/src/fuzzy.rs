@@ -18,12 +18,17 @@ pub fn rank(query: &str, mut suggestions: Vec<Suggestion>, max_results: usize) -
         AtomKind::Fuzzy,
     );
     let mut matcher = Matcher::new(Config::DEFAULT);
+    let mut indices_buf = Vec::new();
 
     suggestions.retain_mut(|s| {
         let haystack = Utf32String::from(s.text.as_str());
-        match pattern.score(haystack.slice(..), &mut matcher) {
+        indices_buf.clear();
+        match pattern.indices(haystack.slice(..), &mut matcher, &mut indices_buf) {
             Some(score) => {
                 s.score = score;
+                indices_buf.sort_unstable();
+                indices_buf.dedup();
+                s.match_indices = indices_buf.clone();
                 true
             }
             None => false,
@@ -146,5 +151,37 @@ mod tests {
         for s in &result {
             assert!(s.score > 0, "score should be > 0 after ranking");
         }
+    }
+
+    #[test]
+    fn test_match_indices_populated() {
+        let items = vec![make("checkout"), make("cherry-pick")];
+        let result = rank("che", items, DEFAULT_MAX_RESULTS);
+        for s in &result {
+            assert!(
+                !s.match_indices.is_empty(),
+                "match_indices should be populated for '{}'",
+                s.text
+            );
+        }
+        let checkout = result.iter().find(|s| s.text == "checkout").unwrap();
+        assert_eq!(checkout.match_indices, vec![0, 1, 2]);
+    }
+
+    #[test]
+    fn test_match_indices_sorted_and_deduped() {
+        let items = vec![make("abcabc")];
+        let result = rank("abc", items, DEFAULT_MAX_RESULTS);
+        let s = &result[0];
+        for window in s.match_indices.windows(2) {
+            assert!(window[0] < window[1], "indices must be sorted and unique");
+        }
+    }
+
+    #[test]
+    fn test_empty_query_no_match_indices() {
+        let items = vec![make("checkout")];
+        let result = rank("", items, DEFAULT_MAX_RESULTS);
+        assert!(result[0].match_indices.is_empty());
     }
 }
