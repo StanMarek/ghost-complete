@@ -1,4 +1,5 @@
 mod config_cmd;
+mod doctor;
 mod install;
 mod status;
 mod validate;
@@ -96,6 +97,10 @@ fn main() -> Result<()> {
         Some("config") => {
             init_tracing(&cli.log_level, cli.log_file.as_deref())?;
             return config_cmd::run_config(cli.config.as_deref());
+        }
+        Some("doctor") => {
+            init_tracing(&cli.log_level, cli.log_file.as_deref())?;
+            return doctor::run_doctor(cli.config.as_deref());
         }
         _ => {}
     }
