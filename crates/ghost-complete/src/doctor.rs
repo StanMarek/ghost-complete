@@ -15,16 +15,28 @@ struct CheckResult {
 
 impl CheckResult {
     fn ok(msg: impl Into<String>) -> Self {
-        Self { severity: Severity::Ok, message: msg.into() }
+        Self {
+            severity: Severity::Ok,
+            message: msg.into(),
+        }
     }
     fn warn(msg: impl Into<String>) -> Self {
-        Self { severity: Severity::Warn, message: msg.into() }
+        Self {
+            severity: Severity::Warn,
+            message: msg.into(),
+        }
     }
     fn fail(msg: impl Into<String>) -> Self {
-        Self { severity: Severity::Fail, message: msg.into() }
+        Self {
+            severity: Severity::Fail,
+            message: msg.into(),
+        }
     }
     fn skip(msg: impl Into<String>) -> Self {
-        Self { severity: Severity::Skip, message: msg.into() }
+        Self {
+            severity: Severity::Skip,
+            message: msg.into(),
+        }
     }
 }
 
@@ -33,7 +45,7 @@ fn print_results(results: &[CheckResult]) {
 
     for result in results {
         let (label, color) = match result.severity {
-            Severity::Ok   => ("[OK]  ", "\x1b[32m"),
+            Severity::Ok => ("[OK]  ", "\x1b[32m"),
             Severity::Warn => ("[WARN]", "\x1b[33m"),
             Severity::Fail => ("[FAIL]", "\x1b[31m"),
             Severity::Skip => ("[SKIP]", "\x1b[2m"),
@@ -41,8 +53,14 @@ fn print_results(results: &[CheckResult]) {
         println!("  {color}{label}\x1b[0m {}", result.message);
     }
 
-    let fails = results.iter().filter(|r| matches!(r.severity, Severity::Fail)).count();
-    let warns = results.iter().filter(|r| matches!(r.severity, Severity::Warn)).count();
+    let fails = results
+        .iter()
+        .filter(|r| matches!(r.severity, Severity::Fail))
+        .count();
+    let warns = results
+        .iter()
+        .filter(|r| matches!(r.severity, Severity::Warn))
+        .count();
 
     println!();
     if fails == 0 && warns == 0 {
@@ -146,11 +164,15 @@ fn check_shell_integration() -> CheckResult {
                 )
             }
         }
-        Err(_) => CheckResult::warn("~/.zshrc not found — run `ghost-complete install`"),
+        Err(e) => CheckResult::warn(format!("Cannot read ~/.zshrc: {e}")),
     }
 }
 
 /// Check 5: Running inside Ghostty
+///
+/// Note: The tmux detection is a heuristic (TMUX + GHOSTTY_RESOURCES_DIR).
+/// The shell init block uses a stricter PPID check to avoid env-var leakage,
+/// but that requires a process tree walk which is not appropriate here.
 fn check_ghostty() -> CheckResult {
     let term_program = std::env::var("TERM_PROGRAM").unwrap_or_default();
     let in_tmux = std::env::var("TMUX").is_ok();
