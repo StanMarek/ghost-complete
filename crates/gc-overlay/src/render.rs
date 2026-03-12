@@ -64,6 +64,10 @@ pub fn parse_style(style_str: &str) -> Result<Vec<u8>> {
 
 /// Render a popup into a byte buffer. Returns the layout used for positioning
 /// (needed later for cleanup).
+///
+/// `prior_deficit` is the scroll deficit from a previous render in the same
+/// popup session (e.g., during tab-cycling). It prevents re-scrolling by
+/// accounting for viewport shifts that the parser doesn't know about.
 #[allow(clippy::too_many_arguments)]
 pub fn render_popup(
     buf: &mut Vec<u8>,
@@ -77,25 +81,77 @@ pub fn render_popup(
     min_width: u16,
     max_width: u16,
     theme: &PopupTheme,
+    prior_deficit: u16,
 ) -> PopupLayout {
+    if suggestions.is_empty() {
+        return PopupLayout {
+            start_row: 0,
+            start_col: 0,
+            width: 0,
+            height: 0,
+            scroll_deficit: 0,
+        };
+    }
+
+    // Cap popup height to screen_rows - 1 (leave room for prompt row)
+    let effective_max = if screen_rows > 1 {
+        max_visible.min((screen_rows - 1) as usize)
+    } else {
+        return PopupLayout {
+            start_row: 0,
+            start_col: 0,
+            width: 0,
+            height: 0,
+            scroll_deficit: 0,
+        };
+    };
+
+    // Adjust cursor for prior scroll (parser doesn't know about our scrolling)
+    let adj_cursor_row = cursor_row.saturating_sub(prior_deficit);
+
+    // Calculate how much more scrolling is needed
+    let space_below = screen_rows.saturating_sub(adj_cursor_row + 1);
+    let visible_count = suggestions.len().min(effective_max) as u16;
+    let new_deficit = visible_count.saturating_sub(space_below);
+    let total_deficit = prior_deficit + new_deficit;
+    let final_cursor_row = cursor_row.saturating_sub(total_deficit);
+
+    ansi::begin_sync(buf);
+
+    // Scroll viewport if we need more room
+    if new_deficit > 0 {
+        // Move to last viewport row so newlines cause actual scrolls
+        ansi::move_to(buf, screen_rows - 1, 0);
+        for _ in 0..new_deficit {
+            buf.push(b'\n');
+        }
+        // Reposition cursor to the adjusted prompt location
+        ansi::move_to(buf, final_cursor_row, cursor_col);
+    }
+
+    // Save cursor AFTER scroll repositioning
+    ansi::save_cursor(buf);
+
     let layout = layout::compute_layout(
         suggestions,
         state.scroll_offset,
-        cursor_row,
+        final_cursor_row,
         cursor_col,
         screen_rows,
         screen_cols,
-        max_visible,
+        effective_max,
         min_width,
         max_width,
     );
 
     if layout.height == 0 {
-        return layout;
+        ansi::restore_cursor(buf);
+        ansi::end_sync(buf);
+        return PopupLayout {
+            scroll_deficit: total_deficit,
+            ..layout
+        };
     }
-
-    ansi::begin_sync(buf);
-    ansi::save_cursor(buf);
 
     let end = (state.scroll_offset + layout.height as usize).min(suggestions.len());
     let visible = &suggestions[state.scroll_offset..end];
@@ -118,7 +174,10 @@ pub fn render_popup(
     ansi::restore_cursor(buf);
     ansi::end_sync(buf);
 
-    layout
+    PopupLayout {
+        scroll_deficit: total_deficit,
+        ..layout
+    }
 }
 
 /// Clear the popup area by overwriting with spaces.
@@ -261,6 +320,7 @@ mod tests {
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
             &PopupTheme::default(),
+            0,
         );
         let output = String::from_utf8_lossy(&buf);
         assert!(
@@ -287,6 +347,7 @@ mod tests {
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
             &PopupTheme::default(),
+            0,
         );
         let output = String::from_utf8_lossy(&buf);
         assert!(output.contains("\x1b7"), "should contain save cursor");
@@ -310,6 +371,7 @@ mod tests {
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
             &PopupTheme::default(),
+            0,
         );
         let output = String::from_utf8_lossy(&buf);
         // Popup below cursor at row 5 → starts at row 6 (1-indexed: 7)
@@ -337,6 +399,7 @@ mod tests {
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
             &PopupTheme::default(),
+            0,
         );
         let output = String::from_utf8_lossy(&buf);
         assert!(
@@ -443,7 +506,7 @@ mod tests {
             start_col: 0,
             width: 20,
             height: 3,
-            renders_above: false,
+            scroll_deficit: 0,
         };
         clear_popup(&mut buf, &layout);
         let output = String::from_utf8_lossy(&buf);
@@ -462,7 +525,7 @@ mod tests {
             start_col: 5,
             width: 25,
             height: 4,
-            renders_above: false,
+            scroll_deficit: 0,
         };
         clear_popup(&mut buf, &layout);
         let output = String::from_utf8_lossy(&buf);
@@ -493,6 +556,7 @@ mod tests {
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
             &PopupTheme::default(),
+            0,
         );
         let output = String::from_utf8_lossy(&buf);
         assert!(
@@ -523,6 +587,7 @@ mod tests {
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
             &PopupTheme::default(),
+            0,
         );
         assert_eq!(layout.height, 0);
         assert!(
@@ -576,5 +641,241 @@ mod tests {
     #[test]
     fn test_parse_style_invalid_fg_overflow() {
         assert!(parse_style("fg:999").is_err());
+    }
+
+    // --- scroll-to-make-room tests ---
+
+    #[test]
+    fn test_render_scroll_when_deficit_needed() {
+        let mut buf = Vec::new();
+        let suggestions = make_suggestions(); // 3 items
+        let state = OverlayState::new();
+        // cursor at row 22 on 24-row screen: space_below = 1, need 3, deficit = 2
+        let layout = render_popup(
+            &mut buf,
+            &suggestions,
+            &state,
+            22,
+            0,
+            24,
+            80,
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &PopupTheme::default(),
+            0,
+        );
+        let output = String::from_utf8_lossy(&buf);
+        // Should CUP to last row before newlines
+        assert!(
+            output.contains("\x1b[24;1H"),
+            "should CUP to last row: {output}"
+        );
+        // Should contain newlines
+        assert!(
+            output.contains("\n\n"),
+            "should emit deficit newlines: {output}"
+        );
+        assert_eq!(layout.scroll_deficit, 2);
+        // adj_row = 22 - 2 = 20, start_row = 21
+        assert_eq!(layout.start_row, 21);
+    }
+
+    #[test]
+    fn test_render_no_scroll_when_room_below() {
+        let mut buf = Vec::new();
+        let suggestions = make_suggestions(); // 3 items
+        let state = OverlayState::new();
+        let layout = render_popup(
+            &mut buf,
+            &suggestions,
+            &state,
+            5,
+            0,
+            24,
+            80,
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &PopupTheme::default(),
+            0,
+        );
+        // No newlines means no scrolling occurred (popup uses CUP, not newlines)
+        assert!(
+            !buf.contains(&b'\n'),
+            "should not contain newlines (no scroll needed)"
+        );
+        assert_eq!(layout.scroll_deficit, 0);
+        assert_eq!(layout.start_row, 6);
+    }
+
+    #[test]
+    fn test_render_prior_deficit_prevents_rescroll() {
+        let mut buf = Vec::new();
+        let suggestions = make_suggestions(); // 3 items
+        let state = OverlayState::new();
+        // prior_deficit=2: adjusted cursor = 22-2 = 20, space_below = 3, no new deficit
+        let layout = render_popup(
+            &mut buf,
+            &suggestions,
+            &state,
+            22,
+            0,
+            24,
+            80,
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &PopupTheme::default(),
+            2,
+        );
+        // No newlines means no scrolling occurred (popup uses CUP, not newlines)
+        assert!(
+            !buf.contains(&b'\n'),
+            "should not contain newlines (no re-scroll)"
+        );
+        assert_eq!(layout.scroll_deficit, 2); // carries forward
+        assert_eq!(layout.start_row, 21);
+    }
+
+    #[test]
+    fn test_render_incremental_deficit() {
+        // First render: 3 items, cursor at row 22, screen 24 -> deficit = 2
+        let mut buf1 = Vec::new();
+        let suggestions_3 = make_suggestions(); // 3 items
+        let state = OverlayState::new();
+        let layout1 = render_popup(
+            &mut buf1,
+            &suggestions_3,
+            &state,
+            22,
+            0,
+            24,
+            80,
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &PopupTheme::default(),
+            0,
+        );
+        assert_eq!(layout1.scroll_deficit, 2);
+
+        // Second render: 8 items, same cursor, prior_deficit=2
+        // adj_cursor = 22-2 = 20, space_below = 3, need 8, new_deficit = 5
+        let mut buf2 = Vec::new();
+        let suggestions_8: Vec<Suggestion> = (0..8)
+            .map(|i| make(&format!("item{i}"), None, SuggestionKind::Command))
+            .collect();
+        let layout2 = render_popup(
+            &mut buf2,
+            &suggestions_8,
+            &state,
+            22,
+            0,
+            24,
+            80,
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &PopupTheme::default(),
+            2, // prior_deficit from first render
+        );
+        let output2 = String::from_utf8_lossy(&buf2);
+        // Should scroll 5 more (total = 2 + 5 = 7)
+        assert!(
+            output2.contains("\x1b[24;1H"),
+            "should scroll for incremental deficit"
+        );
+        assert_eq!(layout2.scroll_deficit, 7);
+        // final_cursor = 22 - 7 = 15, start_row = 16
+        assert_eq!(layout2.start_row, 16);
+    }
+
+    #[test]
+    fn test_render_decsc_after_scroll_not_before() {
+        let mut buf = Vec::new();
+        let suggestions = make_suggestions();
+        let state = OverlayState::new();
+        render_popup(
+            &mut buf,
+            &suggestions,
+            &state,
+            22,
+            0,
+            24,
+            80,
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &PopupTheme::default(),
+            0,
+        );
+        let output = String::from_utf8_lossy(&buf);
+        let cup_to_adjusted = "\x1b[21;1H"; // adj_row=20, ANSI row=21
+        let decsc = "\x1b7";
+        let cup_pos = output
+            .find(cup_to_adjusted)
+            .expect("should contain CUP to adjusted position");
+        let decsc_pos = output.find(decsc).expect("should contain DECSC");
+        assert!(
+            decsc_pos > cup_pos,
+            "DECSC must come AFTER CUP to adjusted position"
+        );
+    }
+
+    #[test]
+    fn test_render_small_terminal_caps_height() {
+        let mut buf = Vec::new();
+        let suggestions: Vec<Suggestion> = (0..15)
+            .map(|i| make(&format!("item{i}"), None, SuggestionKind::Command))
+            .collect();
+        let state = OverlayState::new();
+        let layout = render_popup(
+            &mut buf,
+            &suggestions,
+            &state,
+            4,
+            0,
+            6, // only 6 rows
+            80,
+            15, // max_visible bigger than screen
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &PopupTheme::default(),
+            0,
+        );
+        // capped to screen_rows - 1 = 5
+        assert!(layout.height <= 5, "height {} should be <= 5", layout.height);
+        assert!(layout.start_row >= 1);
+    }
+
+    #[test]
+    fn test_render_adj_row_never_underflows() {
+        let mut buf = Vec::new();
+        // cursor at row 2, 6-row terminal, 15 suggestions, max_visible=15
+        // effective_max = min(15, 5) = 5
+        // adj_cursor = 2, space_below = 6-2-1 = 3, visible=5, deficit = 2
+        // total_deficit = 2, final_cursor = 2 - 2 = 0 (not underflowed)
+        let suggestions: Vec<Suggestion> = (0..15)
+            .map(|i| make(&format!("item{i}"), None, SuggestionKind::Command))
+            .collect();
+        let state = OverlayState::new();
+        let layout = render_popup(
+            &mut buf,
+            &suggestions,
+            &state,
+            2,
+            0,
+            6,
+            80,
+            15,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &PopupTheme::default(),
+            0,
+        );
+        // final_cursor = 0, start_row = 1
+        assert_eq!(layout.start_row, 1);
+        assert_eq!(layout.scroll_deficit, 2);
     }
 }

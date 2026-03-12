@@ -64,7 +64,7 @@ pub struct PopupLayout {
     pub start_col: u16,
     pub width: u16,
     pub height: u16,
-    pub renders_above: bool,
+    pub scroll_deficit: u16,
 }
 
 #[cfg(test)]

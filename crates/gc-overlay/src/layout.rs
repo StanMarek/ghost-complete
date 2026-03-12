@@ -8,7 +8,7 @@ pub fn compute_layout(
     scroll_offset: usize,
     cursor_row: u16,
     cursor_col: u16,
-    screen_rows: u16,
+    _screen_rows: u16,
     screen_cols: u16,
     max_visible: usize,
     min_width: u16,
@@ -27,14 +27,9 @@ pub fn compute_layout(
         .unwrap_or(min_width as usize);
     let width = (content_width as u16).clamp(min_width, max_width.min(screen_cols));
 
-    // Vertical: prefer below cursor, above if not enough space
-    let space_below = screen_rows.saturating_sub(cursor_row + 1);
-    let renders_above = space_below < height;
-    let start_row = if renders_above {
-        cursor_row.saturating_sub(height)
-    } else {
-        cursor_row + 1
-    };
+    // Always render below cursor. Caller is responsible for adjusting
+    // cursor_row via scroll deficit before calling this function.
+    let start_row = cursor_row + 1;
 
     // Horizontal: start at cursor col, shift left if overflows
     let start_col = if cursor_col + width > screen_cols {
@@ -48,7 +43,7 @@ pub fn compute_layout(
         start_col,
         width,
         height,
-        renders_above,
+        scroll_deficit: 0, // Caller sets this after computing scroll
     }
 }
 
@@ -95,12 +90,12 @@ mod tests {
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
         );
-        assert!(!layout.renders_above);
+        assert_eq!(layout.scroll_deficit, 0);
         assert_eq!(layout.start_row, 6);
     }
 
     #[test]
-    fn test_popup_above_cursor() {
+    fn test_popup_always_below_even_near_bottom() {
         let suggestions: Vec<Suggestion> =
             (0..5).map(|i| make(&format!("item{i}"), None)).collect();
         let layout = compute_layout(
@@ -114,8 +109,9 @@ mod tests {
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
         );
-        assert!(layout.renders_above);
-        assert!(layout.start_row < 22);
+        // Layout always places below — start_row = cursor_row + 1
+        assert_eq!(layout.start_row, 23);
+        assert_eq!(layout.scroll_deficit, 0);
     }
 
     #[test]
