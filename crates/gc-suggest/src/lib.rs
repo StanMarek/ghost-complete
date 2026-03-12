@@ -10,6 +10,8 @@ mod fuzzy;
 mod git;
 mod history;
 mod provider;
+pub mod cache;
+pub mod script;
 pub mod specs;
 pub mod transform;
 pub mod types;
