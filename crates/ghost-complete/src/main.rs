@@ -1,4 +1,5 @@
 mod install;
+mod status;
 mod validate;
 
 use anyhow::{Context, Result};
@@ -10,7 +11,7 @@ use tracing_subscriber::EnvFilter;
     name = "ghost-complete",
     version,
     about = "Terminal-native autocomplete engine",
-    after_help = "COMMANDS:\n  install          Install shell integration (zsh/bash/fish)\n  uninstall        Remove shell integration\n  validate-specs   Validate completion spec files\n\nSHELL SUPPORT:\n  zsh   Full support (auto-installed into ~/.zshrc)\n  bash  Ctrl+Space trigger (source shell script from .bashrc)\n  fish  Ctrl+Space trigger (source shell script from config.fish)"
+    after_help = "COMMANDS:\n  install          Install shell integration (zsh/bash/fish)\n  uninstall        Remove shell integration\n  validate-specs   Validate completion spec files\n  status           Show loaded specs and JS compatibility\n\nSHELL SUPPORT:\n  zsh   Full support (auto-installed into ~/.zshrc)\n  bash  Ctrl+Space trigger (source shell script from .bashrc)\n  fish  Ctrl+Space trigger (source shell script from config.fish)"
 )]
 struct Cli {
     /// Path to config file
@@ -86,6 +87,10 @@ fn main() -> Result<()> {
         Some("validate-specs") => {
             init_tracing(&cli.log_level, cli.log_file.as_deref())?;
             return validate::run_validate_specs(cli.config.as_deref());
+        }
+        Some("status") => {
+            init_tracing(&cli.log_level, cli.log_file.as_deref())?;
+            return status::run_status(cli.config.as_deref());
         }
         _ => {}
     }
