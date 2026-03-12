@@ -99,7 +99,7 @@ Benchmarks `specs::resolve_spec()` with pre-loaded specs and pre-constructed `Co
 
 | Name | Command | Context | Purpose |
 |------|---------|---------|---------|
-| `shallow` | `git checkout` | word_index=1, current_word="" | 1 level subcommand resolution |
+| `shallow` | `git checkout` | word_index=2, current_word="" | 1 level subcommand resolution |
 | `deep` | `docker compose up` | word_index=3, current_word="--" | 2 levels + flag matching |
 
 Uses real specs loaded from disk.
@@ -114,7 +114,7 @@ Benchmarks `execute_pipeline()` with realistic inputs.
 |------|-----------|-------|---------|
 | `simple` | `split_lines, filter_empty, trim` | 500 lines of whitespace-padded text | Common fast path |
 | `regex` | `split_lines, regex_extract` | 200 lines of `git branch -v` style output | Regex compilation + extraction |
-| `json` | `json_extract` | 100 lines, each a JSON object | JSON parsing cost |
+| `json` | `split_lines, json_extract` | 100 lines, each a JSON object | JSON parsing cost |
 
 Input strings constructed once, cloned per iteration.
 
@@ -179,7 +179,7 @@ jobs:
   bench:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo bench --workspace
       - uses: actions/upload-artifact@v4
