@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.4] - 2026-03-12
+
+### Fixed
+
+- **Popup rendering artifacts from long suggestions** — suggestion text (history URLs, deep paths) was written to the render buffer without truncation, overflowing past the popup's declared width. `clear_popup` only erased `layout.width` columns, leaving ghost characters on screen until a terminal resize. Text is now truncated to fit within the popup boundary.
+- **Redundant path prefix in filesystem completions** — directory/file suggestions now display only the last path component (e.g., `2023-rust/` instead of `Desktop/coding/project/2023-rust/`), since the user already typed the prefix.
+
 ## [0.1.3] - 2026-03-10
 
 ### Added
@@ -64,6 +71,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Shell integration** for zsh (full), bash (Ctrl+/), and fish (Ctrl+/)
 - **`validate-specs` subcommand** with colored output and item counts
 
+[0.1.4]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.1.4
 [0.1.3]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.1.3
 [0.1.2]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.1.2
 [0.1.1]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.1.1
