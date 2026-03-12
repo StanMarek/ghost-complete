@@ -30,9 +30,20 @@ fn test_exit_code_nonzero() {
 fn test_large_output() {
     let mut proc = GhostProcess::spawn();
     proc.send_line("seq 1 5000");
-    // Wait for last number to appear, then give the buffer time to fully drain.
-    proc.expect_output("5000");
-    thread::sleep(Duration::from_millis(500));
+    // Wait for a number that appears only in seq's output (not in the echoed command).
+    // "5000" also appears in "seq 1 5000", so we wait for "4999" instead.
+    proc.expect_output("4999");
+
+    // Poll until output buffer has stabilized (no new bytes for 500ms).
+    let mut prev_len = 0;
+    for _ in 0..10 {
+        thread::sleep(Duration::from_millis(500));
+        let snapshot = proc.output_snapshot();
+        if snapshot.len() == prev_len {
+            break;
+        }
+        prev_len = snapshot.len();
+    }
 
     let snapshot = proc.output_snapshot();
     let text = String::from_utf8_lossy(&snapshot);
