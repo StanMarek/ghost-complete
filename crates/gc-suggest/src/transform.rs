@@ -234,19 +234,19 @@ pub fn validate_pipeline(transforms: &[Transform]) -> Result<(), String> {
         if is_split {
             split_count += 1;
             if split_count > 1 {
-                return Err(
-                    "transform pipeline has multiple split transforms; \
+                return Err("transform pipeline has multiple split transforms; \
                      only one of split_lines/split_on is allowed"
-                        .to_string(),
-                );
+                    .to_string());
             }
             seen_split = true;
             continue;
         }
 
         // Check error_guard must be before split
-        let is_error_guard =
-            matches!(t, Transform::Parameterized(ParameterizedTransform::ErrorGuard { .. }));
+        let is_error_guard = matches!(
+            t,
+            Transform::Parameterized(ParameterizedTransform::ErrorGuard { .. })
+        );
         if is_error_guard {
             if seen_split {
                 return Err(format!(
@@ -415,10 +415,7 @@ mod tests {
         )
         .unwrap();
         match t {
-            Transform::Parameterized(ParameterizedTransform::JsonExtract {
-                name,
-                description,
-            }) => {
+            Transform::Parameterized(ParameterizedTransform::JsonExtract { name, description }) => {
                 assert_eq!(name, "name");
                 assert_eq!(description.as_deref(), Some("desc"));
             }
@@ -591,10 +588,12 @@ mod tests {
             "split_on"
         );
         assert_eq!(
-            transform_name(&Transform::Parameterized(ParameterizedTransform::ErrorGuard {
-                starts_with: None,
-                contains: None
-            })),
+            transform_name(&Transform::Parameterized(
+                ParameterizedTransform::ErrorGuard {
+                    starts_with: None,
+                    contains: None
+                }
+            )),
             "error_guard"
         );
     }

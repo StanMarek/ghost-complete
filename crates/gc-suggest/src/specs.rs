@@ -127,8 +127,12 @@ impl SpecStore {
     fn load_spec(path: &Path) -> Result<CompletionSpec> {
         let contents = std::fs::read_to_string(path)
             .with_context(|| format!("failed to read spec file: {}", path.display()))?;
-        let spec: CompletionSpec = serde_json::from_str(&contents)
+        let mut spec: CompletionSpec = serde_json::from_str(&contents)
             .with_context(|| format!("failed to parse spec file: {}", path.display()))?;
+        let warnings = validate_spec_generators(&mut spec);
+        for w in &warnings {
+            tracing::warn!("{}: {w}", spec.name);
+        }
         Ok(spec)
     }
 
@@ -282,6 +286,71 @@ fn collect_generators(
 
 fn find_option<'a>(options: &'a [OptionSpec], flag: &str) -> Option<&'a OptionSpec> {
     options.iter().find(|o| o.name.iter().any(|n| n == flag))
+}
+
+/// Walk all generators in a spec tree, validate their transform pipelines,
+/// and remove generators with invalid pipelines. Returns warnings for each
+/// removed generator.
+fn validate_spec_generators(spec: &mut CompletionSpec) -> Vec<String> {
+    let mut warnings = Vec::new();
+    validate_args_generators(&mut spec.args, &spec.name, &mut warnings);
+    for opt in &mut spec.options {
+        if let Some(ref mut arg_spec) = opt.args {
+            validate_arg_generators(arg_spec, &spec.name, &mut warnings);
+        }
+    }
+    for sub in &mut spec.subcommands {
+        validate_subcommand_generators(sub, &spec.name, &mut warnings);
+    }
+    warnings
+}
+
+fn validate_subcommand_generators(
+    sub: &mut SubcommandSpec,
+    spec_name: &str,
+    warnings: &mut Vec<String>,
+) {
+    validate_args_generators(&mut sub.args, spec_name, warnings);
+    for opt in &mut sub.options {
+        if let Some(ref mut arg_spec) = opt.args {
+            validate_arg_generators(arg_spec, spec_name, warnings);
+        }
+    }
+    for nested_sub in &mut sub.subcommands {
+        validate_subcommand_generators(nested_sub, spec_name, warnings);
+    }
+}
+
+fn validate_args_generators(args: &mut [ArgSpec], spec_name: &str, warnings: &mut Vec<String>) {
+    for arg_spec in args.iter_mut() {
+        validate_arg_generators(arg_spec, spec_name, warnings);
+    }
+}
+
+fn validate_arg_generators(arg_spec: &mut ArgSpec, spec_name: &str, warnings: &mut Vec<String>) {
+    use crate::transform::validate_pipeline;
+
+    let original_len = arg_spec.generators.len();
+    arg_spec.generators.retain(|gen| {
+        if gen.transforms.is_empty() {
+            return true;
+        }
+        match validate_pipeline(&gen.transforms) {
+            Ok(()) => true,
+            Err(e) => {
+                warnings.push(format!(
+                    "generator in {spec_name} has invalid transform pipeline: {e}"
+                ));
+                false
+            }
+        }
+    });
+    if arg_spec.generators.len() < original_len {
+        tracing::debug!(
+            "{spec_name}: removed {} generator(s) with invalid transform pipelines",
+            original_len - arg_spec.generators.len()
+        );
+    }
 }
 
 #[cfg(test)]
@@ -718,8 +787,7 @@ mod tests {
 
     #[test]
     fn test_deserialize_native_generator() {
-        let gen: GeneratorSpec =
-            serde_json::from_str(r#"{"type": "git_branches"}"#).unwrap();
+        let gen: GeneratorSpec = serde_json::from_str(r#"{"type": "git_branches"}"#).unwrap();
         assert_eq!(gen.generator_type.as_deref(), Some("git_branches"));
         assert!(gen.script.is_none());
         assert!(gen.script_template.is_none());
@@ -782,10 +850,7 @@ mod tests {
         )
         .unwrap();
         assert!(gen.requires_js);
-        assert_eq!(
-            gen.js_source.as_deref(),
-            Some("module.exports = { ... }")
-        );
+        assert_eq!(gen.js_source.as_deref(), Some("module.exports = { ... }"));
     }
 
     #[test]
@@ -820,5 +885,155 @@ mod tests {
         assert_eq!(res.native_generators, vec!["git_branches"]);
         assert_eq!(res.script_generators.len(), 1);
         assert!(res.script_generators[0].script.is_some());
+    }
+
+    #[test]
+    fn test_validate_spec_strips_invalid_generator_pipeline() {
+        // A spec with one valid generator and one with an invalid pipeline
+        // (post-split transform before split). The invalid one should be
+        // stripped during load_spec.
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("test.json"),
+            r#"{
+                "name": "test",
+                "args": [{
+                    "name": "target",
+                    "generators": [
+                        {"type": "git_branches"},
+                        {"script": ["cmd"], "transforms": ["filter_empty", "split_lines"]}
+                    ]
+                }]
+            }"#,
+        )
+        .unwrap();
+
+        let result = SpecStore::load_from_dir(dir.path()).unwrap();
+        let spec = result.store.get("test").unwrap();
+        // The second generator should have been removed
+        assert_eq!(
+            spec.args[0].generators.len(),
+            1,
+            "invalid generator should be removed; remaining: {:?}",
+            spec.args[0].generators
+        );
+        assert_eq!(
+            spec.args[0].generators[0].generator_type.as_deref(),
+            Some("git_branches"),
+        );
+    }
+
+    #[test]
+    fn test_validate_spec_keeps_valid_pipeline() {
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("test.json"),
+            r#"{
+                "name": "test",
+                "args": [{
+                    "name": "target",
+                    "generators": [
+                        {"script": ["cmd"], "transforms": ["split_lines", "filter_empty", "trim"]}
+                    ]
+                }]
+            }"#,
+        )
+        .unwrap();
+
+        let result = SpecStore::load_from_dir(dir.path()).unwrap();
+        let spec = result.store.get("test").unwrap();
+        assert_eq!(
+            spec.args[0].generators.len(),
+            1,
+            "valid generator should be kept"
+        );
+    }
+
+    #[test]
+    fn test_validate_spec_empty_transforms_kept() {
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("test.json"),
+            r#"{
+                "name": "test",
+                "args": [{
+                    "name": "target",
+                    "generators": [
+                        {"type": "git_branches"},
+                        {"script": ["cmd"]}
+                    ]
+                }]
+            }"#,
+        )
+        .unwrap();
+
+        let result = SpecStore::load_from_dir(dir.path()).unwrap();
+        let spec = result.store.get("test").unwrap();
+        assert_eq!(
+            spec.args[0].generators.len(),
+            2,
+            "generators with empty transforms should be kept"
+        );
+    }
+
+    #[test]
+    fn test_validate_spec_recursive_subcommands() {
+        // Ensure validation walks into nested subcommands
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("test.json"),
+            r#"{
+                "name": "test",
+                "subcommands": [{
+                    "name": "sub",
+                    "args": [{
+                        "name": "target",
+                        "generators": [
+                            {"script": ["cmd"], "transforms": ["trim", "split_lines"]}
+                        ]
+                    }]
+                }]
+            }"#,
+        )
+        .unwrap();
+
+        let result = SpecStore::load_from_dir(dir.path()).unwrap();
+        let spec = result.store.get("test").unwrap();
+        assert_eq!(
+            spec.subcommands[0].args[0].generators.len(),
+            0,
+            "invalid generator in subcommand should be removed"
+        );
+    }
+
+    #[test]
+    fn test_validate_spec_option_args() {
+        // Ensure validation walks into option arg specs
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("test.json"),
+            r#"{
+                "name": "test",
+                "options": [{
+                    "name": ["-f"],
+                    "description": "flag",
+                    "args": {
+                        "name": "val",
+                        "generators": [
+                            {"script": ["cmd"], "transforms": ["split_lines", "split_lines"]}
+                        ]
+                    }
+                }]
+            }"#,
+        )
+        .unwrap();
+
+        let result = SpecStore::load_from_dir(dir.path()).unwrap();
+        let spec = result.store.get("test").unwrap();
+        assert_eq!(
+            spec.options[0].args.as_ref().unwrap().generators.len(),
+            0,
+            "double-split generator in option args should be removed"
+        );
     }
 }
