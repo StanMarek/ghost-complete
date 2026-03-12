@@ -49,13 +49,29 @@ crates/gc-parser/
 
 No new crates. No shared fixture libraries.
 
+### Visibility changes required in `gc-suggest/src/lib.rs`
+
+Criterion benchmarks compile as external crates — they cannot access private modules. The following changes are required:
+
+1. **`mod fuzzy` → `pub mod fuzzy`** — Exposes `fuzzy::rank()` for direct microbenchmarking. The `rank` function is a clean, stateless function with no encapsulation reason to keep private.
+
+2. **`SuggestionEngine::with_providers()`: remove `#[cfg(test)]` guard** — Make it unconditionally `pub`. This constructor is needed for deterministic benchmark setup with controlled providers. It has no security or safety implications.
+
+3. **`mod commands` → `pub mod commands`** — Exposes `CommandsProvider::from_list()` for benchmark setup.
+
+4. **`mod history` → `pub mod history`** — Exposes `HistoryProvider::from_entries()` for benchmark setup.
+
+5. **Remove `#[cfg(test)]` from `CommandsProvider::from_list()` and `HistoryProvider::from_entries()`** — These constructors must be available in bench code.
+
+These are minimal visibility changes — only the constructors needed for deterministic test/bench setup become public. The provider implementations remain internal.
+
 ---
 
 ## gc-suggest Benchmarks (`suggest_bench.rs`)
 
 ### 1. `fuzzy_ranking`
 
-Benchmarks `fuzzy::rank()` directly.
+Benchmarks `gc_suggest::fuzzy::rank()` directly (requires `pub mod fuzzy` visibility change above).
 
 **Sub-benchmarks:**
 
@@ -98,7 +114,7 @@ Benchmarks `execute_pipeline()` with realistic inputs.
 |------|-----------|-------|---------|
 | `simple` | `split_lines, filter_empty, trim` | 500 lines of whitespace-padded text | Common fast path |
 | `regex` | `split_lines, regex_extract` | 200 lines of `git branch -v` style output | Regex compilation + extraction |
-| `json` | `json_extract` | 100-element JSON array | JSON parsing cost |
+| `json` | `json_extract` | 100 lines, each a JSON object | JSON parsing cost |
 
 Input strings constructed once, cloned per iteration.
 
@@ -107,10 +123,13 @@ Input strings constructed once, cloned per iteration.
 Benchmarks `SuggestionEngine::suggest_sync()` end-to-end with realistic setup.
 
 **Setup (constructed once, reused across iterations):**
-- All 717 real specs loaded from `specs/` directory
+- All 717 real specs loaded from `specs/` directory via `SpecStore::load_from_dir()`
 - Temp directory with ~2,000 generated files (mix of `.rs`, `.txt`, `.json`, directories)
-- `CommandsProvider` with ~100 synthetic command names
-- `HistoryProvider` with ~50 synthetic history entries
+- `CommandsProvider::from_list()` with ~100 synthetic command names (deterministic)
+- `HistoryProvider::from_entries()` with ~50 synthetic history entries (deterministic)
+- Engine constructed via `SuggestionEngine::with_providers()` (requires visibility changes described above)
+
+This ensures benchmark results are reproducible across machines — no dependency on the host's `$PATH` or `~/.zsh_history`.
 
 **Sub-benchmarks:**
 
@@ -119,8 +138,6 @@ Benchmarks `SuggestionEngine::suggest_sync()` end-to-end with realistic setup.
 | `command_position` | word_index=0, query="gi" | commands + history + fuzzy |
 | `subcommand_with_spec` | git, word_index=1, query="ch" | spec resolution + fuzzy |
 | `filesystem_fallback` | unknown_cmd, word_index=1, query="" | filesystem provider + fuzzy |
-
-The `with_providers` test constructor (already `#[cfg(test)]`) needs to also be available under `#[cfg(any(test, feature = "bench"))]`, or the benchmark constructs the engine via `SuggestionEngine::new()` pointing at the real specs directory. Prefer the latter to avoid feature flag complexity.
 
 ---
 
@@ -237,4 +254,4 @@ name = "parser_bench"
 harness = false
 ```
 
-No other dependency changes. No feature flags.
+No other dependency changes. No feature flags. Visibility changes to `gc-suggest` internals are described in the "Visibility changes required" section above.
