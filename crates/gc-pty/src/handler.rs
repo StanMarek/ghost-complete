@@ -88,6 +88,10 @@ pub struct InputHandler {
     theme: PopupTheme,
     dynamic_rx: Option<mpsc::Receiver<Vec<Suggestion>>>,
     generator_timeout_ms: u64,
+    /// Accumulated viewport scroll from popup rendering. Persists across
+    /// dismiss/re-trigger cycles because viewport scroll is permanent.
+    /// Reset when a CPR sync corrects the parser's cursor position (new prompt).
+    scroll_deficit: u16,
 }
 
 impl InputHandler {
@@ -107,6 +111,7 @@ impl InputHandler {
             theme: PopupTheme::default(),
             dynamic_rx: None,
             generator_timeout_ms: 5000,
+            scroll_deficit: 0,
         })
     }
 
@@ -351,7 +356,12 @@ impl InputHandler {
 
     pub fn trigger(&mut self, parser: &Arc<Mutex<TerminalParser>>, stdout: &mut dyn Write) {
         let (buffer, cursor, cwd, cursor_row, cursor_col, screen_rows, screen_cols) = {
-            let p = parser.lock().unwrap();
+            let mut p = parser.lock().unwrap();
+            // CPR sync means the parser's cursor_row now reflects reality,
+            // so any accumulated scroll deficit from prior renders is stale.
+            if p.state_mut().take_cpr_synced() {
+                self.scroll_deficit = 0;
+            }
             let state = p.state();
             let buffer = state.command_buffer().unwrap_or("").to_string();
             let cursor = state.buffer_cursor();
@@ -477,12 +487,6 @@ impl InputHandler {
         screen_rows: u16,
         screen_cols: u16,
     ) {
-        let prior_deficit = self
-            .last_layout
-            .as_ref()
-            .map(|l| l.scroll_deficit)
-            .unwrap_or(0);
-
         if let Some(ref layout) = self.last_layout {
             let mut clear_buf = Vec::new();
             clear_popup(&mut clear_buf, layout);
@@ -502,10 +506,11 @@ impl InputHandler {
             self.min_width,
             self.max_width,
             &self.theme,
-            prior_deficit,
+            self.scroll_deficit,
         );
         let _ = stdout.write_all(&render_buf);
         let _ = stdout.flush();
+        self.scroll_deficit = layout.scroll_deficit;
         self.last_layout = Some(layout);
     }
 
@@ -556,6 +561,8 @@ impl InputHandler {
         if self.visible {
             self.dismiss(stdout);
         }
+        // Screen dimensions changed — prior scroll deficit is meaningless.
+        self.scroll_deficit = 0;
     }
 }
 
@@ -692,6 +699,7 @@ mod tests {
             theme: PopupTheme::default(),
             dynamic_rx: None,
             generator_timeout_ms: 5000,
+            scroll_deficit: 0,
         };
 
         let mut stdout_buf = Vec::new();
@@ -719,6 +727,7 @@ mod tests {
             theme: PopupTheme::default(),
             dynamic_rx: None,
             generator_timeout_ms: 5000,
+            scroll_deficit: 0,
         }
     }
 
@@ -803,6 +812,7 @@ mod tests {
             theme: PopupTheme::default(),
             dynamic_rx: None,
             generator_timeout_ms: 5000,
+            scroll_deficit: 0,
         };
 
         // Simulate buffer "cd " with cursor at 3
@@ -860,6 +870,7 @@ mod tests {
             theme: PopupTheme::default(),
             dynamic_rx: None,
             generator_timeout_ms: 5000,
+            scroll_deficit: 0,
         };
 
         let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
@@ -916,6 +927,7 @@ mod tests {
             theme: PopupTheme::default(),
             dynamic_rx: None,
             generator_timeout_ms: 5000,
+            scroll_deficit: 0,
         };
 
         let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
@@ -959,6 +971,7 @@ mod tests {
             theme: PopupTheme::default(),
             dynamic_rx: None,
             generator_timeout_ms: 5000,
+            scroll_deficit: 0,
         };
 
         let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
