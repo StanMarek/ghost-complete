@@ -11,3 +11,5 @@ mod resize;
 mod spawn;
 
 pub use proxy::run_proxy;
+pub use handler::parse_key_name;
+pub use gc_overlay::parse_style;
