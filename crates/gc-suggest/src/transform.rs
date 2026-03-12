@@ -385,8 +385,7 @@ pub fn apply_regex_extract(
         .filter_map(|line| {
             let caps = re.captures(line)?;
             let text = caps.get(name_group)?.as_str().to_string();
-            let description =
-                desc_group.and_then(|g| caps.get(g).map(|m| m.as_str().to_string()));
+            let description = desc_group.and_then(|g| caps.get(g).map(|m| m.as_str().to_string()));
             Some(Suggestion {
                 text,
                 description,
@@ -528,27 +527,32 @@ pub fn execute_pipeline(output: &str, transforms: &[Transform]) -> Result<Vec<Su
                 name,
                 description,
             }) => {
-                let input_lines =
-                    lines.take().unwrap_or_else(|| vec![current_output.clone()]);
-                suggestions = Some(apply_regex_extract(&input_lines, pattern, *name, *description));
+                let input_lines = lines.take().unwrap_or_else(|| vec![current_output.clone()]);
+                suggestions = Some(apply_regex_extract(
+                    &input_lines,
+                    pattern,
+                    *name,
+                    *description,
+                ));
             }
-            Transform::Parameterized(ParameterizedTransform::JsonExtract {
-                name,
-                description,
-            }) => {
-                let input_lines =
-                    lines.take().unwrap_or_else(|| vec![current_output.clone()]);
-                suggestions =
-                    Some(apply_json_extract(&input_lines, name, description.as_deref()));
+            Transform::Parameterized(ParameterizedTransform::JsonExtract { name, description }) => {
+                let input_lines = lines.take().unwrap_or_else(|| vec![current_output.clone()]);
+                suggestions = Some(apply_json_extract(
+                    &input_lines,
+                    name,
+                    description.as_deref(),
+                ));
             }
             Transform::Parameterized(ParameterizedTransform::ColumnExtract {
                 column,
                 description_column,
             }) => {
-                let input_lines =
-                    lines.take().unwrap_or_else(|| vec![current_output.clone()]);
-                suggestions =
-                    Some(apply_column_extract(&input_lines, *column, *description_column));
+                let input_lines = lines.take().unwrap_or_else(|| vec![current_output.clone()]);
+                suggestions = Some(apply_column_extract(
+                    &input_lines,
+                    *column,
+                    *description_column,
+                ));
             }
         }
     }

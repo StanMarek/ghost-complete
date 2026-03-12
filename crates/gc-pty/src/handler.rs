@@ -11,6 +11,7 @@ use gc_overlay::types::{
 use gc_overlay::{clear_popup, render_popup, PopupTheme};
 use gc_parser::TerminalParser;
 use gc_suggest::{Suggestion, SuggestionEngine};
+use tokio::sync::mpsc;
 
 use crate::input::KeyEvent;
 
@@ -73,7 +74,7 @@ pub fn parse_key_name(name: &str) -> anyhow::Result<KeyEvent> {
 }
 
 pub struct InputHandler {
-    engine: SuggestionEngine,
+    engine: Arc<SuggestionEngine>,
     overlay: OverlayState,
     suggestions: Vec<Suggestion>,
     last_layout: Option<PopupLayout>,
@@ -85,12 +86,14 @@ pub struct InputHandler {
     trigger_chars: HashSet<char>,
     keybindings: Keybindings,
     theme: PopupTheme,
+    dynamic_rx: Option<mpsc::Receiver<Vec<Suggestion>>>,
+    generator_timeout_ms: u64,
 }
 
 impl InputHandler {
     pub fn new(spec_dir: &Path) -> anyhow::Result<Self> {
         Ok(Self {
-            engine: SuggestionEngine::new(spec_dir)?,
+            engine: Arc::new(SuggestionEngine::new(spec_dir)?),
             overlay: OverlayState::new(),
             suggestions: Vec::new(),
             last_layout: None,
@@ -102,6 +105,8 @@ impl InputHandler {
             trigger_chars: DEFAULT_TRIGGER_CHARS.iter().copied().collect(),
             keybindings: Keybindings::default(),
             theme: PopupTheme::default(),
+            dynamic_rx: None,
+            generator_timeout_ms: 5000,
         })
     }
 
@@ -127,6 +132,11 @@ impl InputHandler {
         self
     }
 
+    pub fn with_generator_timeout(mut self, timeout_ms: u64) -> Self {
+        self.generator_timeout_ms = timeout_ms;
+        self
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn with_suggest_config(
         self,
@@ -138,16 +148,22 @@ impl InputHandler {
         specs: bool,
         git: bool,
     ) -> Self {
-        let engine = self.engine.with_suggest_config(
-            max_results,
-            max_history_entries,
-            commands,
-            history,
-            filesystem,
-            specs,
-            git,
-        );
-        Self { engine, ..self }
+        // During builder phase the Arc has exactly one reference, so try_unwrap succeeds.
+        let engine = Arc::try_unwrap(self.engine)
+            .unwrap_or_else(|_| panic!("with_suggest_config called after engine was shared"))
+            .with_suggest_config(
+                max_results,
+                max_history_entries,
+                commands,
+                history,
+                filesystem,
+                specs,
+                git,
+            );
+        Self {
+            engine: Arc::new(engine),
+            ..self
+        }
     }
 
     #[allow(dead_code)]
@@ -362,6 +378,9 @@ impl InputHandler {
 
         let ctx = parse_command_context(&buffer, cursor);
 
+        // Drop any pending dynamic results from a previous trigger
+        self.dynamic_rx = None;
+
         match self.engine.suggest_sync(&ctx, &cwd) {
             Ok(suggestions) if !suggestions.is_empty() => {
                 self.suggestions = suggestions;
@@ -373,6 +392,68 @@ impl InputHandler {
                 if self.visible {
                     self.dismiss(stdout);
                 }
+            }
+        }
+
+        // Spawn async task for script-based generators.
+        // Results arrive later and get merged by try_merge_dynamic().
+        let (tx, rx) = mpsc::channel::<Vec<Suggestion>>(1);
+        self.dynamic_rx = Some(rx);
+        let engine = Arc::clone(&self.engine);
+        let ctx_clone = ctx.clone();
+        let cwd_clone = cwd.clone();
+        let timeout = self.generator_timeout_ms;
+        tokio::spawn(async move {
+            match engine
+                .suggest_dynamic(&ctx_clone, &cwd_clone, timeout)
+                .await
+            {
+                Ok(results) if !results.is_empty() => {
+                    let _ = tx.send(results).await;
+                }
+                Ok(_) => {} // empty results, nothing to send
+                Err(e) => {
+                    tracing::debug!("dynamic suggestions failed: {e}");
+                }
+            }
+        });
+    }
+
+    /// Check for pending dynamic (script generator) results and merge them
+    /// into the current suggestions. Returns `true` if the popup was updated.
+    pub fn try_merge_dynamic(
+        &mut self,
+        parser: &Arc<Mutex<TerminalParser>>,
+        stdout: &mut dyn Write,
+    ) -> bool {
+        let rx = match self.dynamic_rx.as_mut() {
+            Some(rx) => rx,
+            None => return false,
+        };
+
+        match rx.try_recv() {
+            Ok(dynamic_results) => {
+                self.dynamic_rx = None;
+                if !self.visible || dynamic_results.is_empty() {
+                    return false;
+                }
+
+                // Merge: add dynamic results, dedup by text
+                let mut seen: HashSet<String> =
+                    self.suggestions.iter().map(|s| s.text.clone()).collect();
+                for s in dynamic_results {
+                    if seen.insert(s.text.clone()) {
+                        self.suggestions.push(s);
+                    }
+                }
+
+                self.render(parser, stdout);
+                true
+            }
+            Err(mpsc::error::TryRecvError::Empty) => false,
+            Err(mpsc::error::TryRecvError::Disconnected) => {
+                self.dynamic_rx = None;
+                false
             }
         }
     }
@@ -432,6 +513,7 @@ impl InputHandler {
         self.suggestions.clear();
         self.overlay.reset();
         self.last_layout = None;
+        self.dynamic_rx = None;
     }
 
     fn accept_suggestion(&self, parser: &Arc<Mutex<TerminalParser>>) -> Vec<u8> {
@@ -575,7 +657,7 @@ mod tests {
     #[test]
     fn test_dismiss_clears_state() {
         let mut handler = InputHandler {
-            engine: SuggestionEngine::new(Path::new(".")).unwrap(),
+            engine: Arc::new(SuggestionEngine::new(Path::new(".")).unwrap()),
             overlay: OverlayState::new(),
             suggestions: vec![Suggestion {
                 text: "test".to_string(),
@@ -599,6 +681,8 @@ mod tests {
             trigger_chars: DEFAULT_TRIGGER_CHARS.iter().copied().collect(),
             keybindings: Keybindings::default(),
             theme: PopupTheme::default(),
+            dynamic_rx: None,
+            generator_timeout_ms: 5000,
         };
 
         let mut stdout_buf = Vec::new();
@@ -612,7 +696,7 @@ mod tests {
 
     fn make_handler() -> InputHandler {
         InputHandler {
-            engine: SuggestionEngine::new(Path::new(".")).unwrap(),
+            engine: Arc::new(SuggestionEngine::new(Path::new(".")).unwrap()),
             overlay: OverlayState::new(),
             suggestions: Vec::new(),
             last_layout: None,
@@ -624,6 +708,8 @@ mod tests {
             trigger_chars: DEFAULT_TRIGGER_CHARS.iter().copied().collect(),
             keybindings: Keybindings::default(),
             theme: PopupTheme::default(),
+            dynamic_rx: None,
+            generator_timeout_ms: 5000,
         }
     }
 
@@ -679,7 +765,7 @@ mod tests {
     #[test]
     fn test_tab_accept_directory_predicts_buffer() {
         let mut handler = InputHandler {
-            engine: SuggestionEngine::new(Path::new(".")).unwrap(),
+            engine: Arc::new(SuggestionEngine::new(Path::new(".")).unwrap()),
             overlay: OverlayState {
                 selected: Some(0),
                 scroll_offset: 0,
@@ -706,6 +792,8 @@ mod tests {
             trigger_chars: DEFAULT_TRIGGER_CHARS.iter().copied().collect(),
             keybindings: Keybindings::default(),
             theme: PopupTheme::default(),
+            dynamic_rx: None,
+            generator_timeout_ms: 5000,
         };
 
         // Simulate buffer "cd " with cursor at 3
@@ -734,7 +822,7 @@ mod tests {
     #[test]
     fn test_tab_accept_file_dismisses() {
         let mut handler = InputHandler {
-            engine: SuggestionEngine::new(Path::new(".")).unwrap(),
+            engine: Arc::new(SuggestionEngine::new(Path::new(".")).unwrap()),
             overlay: OverlayState {
                 selected: Some(0),
                 scroll_offset: 0,
@@ -761,6 +849,8 @@ mod tests {
             trigger_chars: DEFAULT_TRIGGER_CHARS.iter().copied().collect(),
             keybindings: Keybindings::default(),
             theme: PopupTheme::default(),
+            dynamic_rx: None,
+            generator_timeout_ms: 5000,
         };
 
         let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
@@ -791,7 +881,7 @@ mod tests {
     #[test]
     fn test_enter_no_selection_forwards_enter() {
         let mut handler = InputHandler {
-            engine: SuggestionEngine::new(Path::new(".")).unwrap(),
+            engine: Arc::new(SuggestionEngine::new(Path::new(".")).unwrap()),
             overlay: OverlayState::new(), // selected: None
             suggestions: vec![Suggestion {
                 text: "test".to_string(),
@@ -815,6 +905,8 @@ mod tests {
             trigger_chars: DEFAULT_TRIGGER_CHARS.iter().copied().collect(),
             keybindings: Keybindings::default(),
             theme: PopupTheme::default(),
+            dynamic_rx: None,
+            generator_timeout_ms: 5000,
         };
 
         let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
@@ -832,7 +924,7 @@ mod tests {
     #[test]
     fn test_tab_no_selection_forwards_tab() {
         let mut handler = InputHandler {
-            engine: SuggestionEngine::new(Path::new(".")).unwrap(),
+            engine: Arc::new(SuggestionEngine::new(Path::new(".")).unwrap()),
             overlay: OverlayState::new(), // selected: None
             suggestions: vec![Suggestion {
                 text: "test".to_string(),
@@ -856,6 +948,8 @@ mod tests {
             trigger_chars: DEFAULT_TRIGGER_CHARS.iter().copied().collect(),
             keybindings: Keybindings::default(),
             theme: PopupTheme::default(),
+            dynamic_rx: None,
+            generator_timeout_ms: 5000,
         };
 
         let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));

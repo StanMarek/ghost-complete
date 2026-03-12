@@ -87,6 +87,7 @@ impl Default for PopupConfig {
 pub struct SuggestConfig {
     pub max_results: usize,
     pub max_history_entries: usize,
+    pub generator_timeout_ms: u64,
     pub providers: ProvidersConfig,
 }
 
@@ -95,6 +96,7 @@ impl Default for SuggestConfig {
         Self {
             max_results: 50,
             max_history_entries: 10_000,
+            generator_timeout_ms: 5000,
             providers: ProvidersConfig::default(),
         }
     }
@@ -183,6 +185,7 @@ mod tests {
         assert_eq!(config.popup.max_width, 60);
         assert_eq!(config.suggest.max_results, 50);
         assert_eq!(config.suggest.max_history_entries, 10_000);
+        assert_eq!(config.suggest.generator_timeout_ms, 5000);
         assert!(config.suggest.providers.commands);
         assert!(config.suggest.providers.history);
         assert!(config.suggest.providers.filesystem);

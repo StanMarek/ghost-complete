@@ -93,6 +93,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 config.popup.max_width,
             )
             .with_trigger_chars(&config.trigger.auto_chars)
+            .with_generator_timeout(config.suggest.generator_timeout_ms)
             .with_suggest_config(
                 config.suggest.max_results,
                 config.suggest.max_history_entries,
@@ -257,6 +258,20 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 {
                     let mut h = handler_for_stdout.lock().unwrap();
                     h.trigger(&parser_for_stdout, &mut render_buf);
+                }
+                if !render_buf.is_empty() {
+                    let mut stdout = std::io::stdout().lock();
+                    let _ = stdout.write_all(&render_buf);
+                    let _ = stdout.flush();
+                }
+            }
+
+            // Poll for dynamic (script generator) results — non-blocking.
+            {
+                let mut render_buf = Vec::new();
+                {
+                    let mut h = handler_for_stdout.lock().unwrap();
+                    h.try_merge_dynamic(&parser_for_stdout, &mut render_buf);
                 }
                 if !render_buf.is_empty() {
                     let mut stdout = std::io::stdout().lock();

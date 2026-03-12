@@ -3,6 +3,7 @@
 //! Dispatches to providers (filesystem, git, history, `$PATH` commands,
 //! Fig-compatible JSON specs) and fuzzy-ranks results with `nucleo`.
 
+pub mod cache;
 mod commands;
 mod engine;
 mod filesystem;
@@ -10,7 +11,6 @@ mod fuzzy;
 mod git;
 mod history;
 mod provider;
-pub mod cache;
 pub mod script;
 pub mod specs;
 pub mod transform;
