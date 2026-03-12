@@ -1,0 +1,81 @@
+{
+  "name": "ghost-complete",
+  "description": "Terminal-native autocomplete engine",
+  "subcommands": [
+    {
+      "name": "install",
+      "description": "Install shell integration (zsh/bash/fish)"
+    },
+    {
+      "name": "uninstall",
+      "description": "Remove shell integration"
+    },
+    {
+      "name": "validate-specs",
+      "description": "Validate completion spec files"
+    },
+    {
+      "name": "status",
+      "description": "Show loaded specs and JS compatibility"
+    },
+    {
+      "name": "config",
+      "description": "Show resolved configuration"
+    },
+    {
+      "name": "doctor",
+      "description": "Run health checks"
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "--config"
+      ],
+      "description": "Path to config file",
+      "args": {
+        "name": "path",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--log-level"
+      ],
+      "description": "Log level",
+      "args": {
+        "name": "level",
+        "suggestions": [
+          { "name": "trace" },
+          { "name": "debug" },
+          { "name": "info" },
+          { "name": "warn" },
+          { "name": "error" }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--log-file"
+      ],
+      "description": "Log to file instead of stderr",
+      "args": {
+        "name": "path",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--version"
+      ],
+      "description": "Print version"
+    },
+    {
+      "name": [
+        "--help",
+        "-h"
+      ],
+      "description": "Print help"
+    }
+  ]
+}

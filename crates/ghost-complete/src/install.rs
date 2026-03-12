@@ -411,6 +411,10 @@ const EMBEDDED_SPECS: &[(&str, &str)] = &[
     ("gem.json", include_str!("../../../specs/gem.json")),
     ("gh.json", include_str!("../../../specs/gh.json")),
     ("ghq.json", include_str!("../../../specs/ghq.json")),
+    (
+        "ghost-complete.json",
+        include_str!("../../../specs/ghost-complete.json"),
+    ),
     ("gibo.json", include_str!("../../../specs/gibo.json")),
     (
         "git-cliff.json",
