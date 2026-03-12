@@ -74,6 +74,12 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
         selected_on: parse_style(&config.theme.selected).context("invalid theme.selected style")?,
         description_on: parse_style(&config.theme.description)
             .context("invalid theme.description style")?,
+        match_highlight_on: parse_style(&config.theme.match_highlight)
+            .context("invalid theme.match_highlight style")?,
+        item_text_on: parse_style(&config.theme.item_text)
+            .context("invalid theme.item_text style")?,
+        scrollbar_on: parse_style(&config.theme.scrollbar)
+            .context("invalid theme.scrollbar style")?,
     };
 
     // Initialize suggestion handler with config

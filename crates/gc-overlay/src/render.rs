@@ -12,6 +12,9 @@ use crate::types::{OverlayState, PopupLayout};
 pub struct PopupTheme {
     pub selected_on: Vec<u8>,
     pub description_on: Vec<u8>,
+    pub match_highlight_on: Vec<u8>,
+    pub item_text_on: Vec<u8>,
+    pub scrollbar_on: Vec<u8>,
 }
 
 impl Default for PopupTheme {
@@ -19,6 +22,9 @@ impl Default for PopupTheme {
         Self {
             selected_on: b"\x1b[7m".to_vec(),
             description_on: b"\x1b[2m".to_vec(),
+            match_highlight_on: b"\x1b[1m".to_vec(),
+            item_text_on: b"\x1b[2m".to_vec(),
+            scrollbar_on: b"\x1b[2m".to_vec(),
         }
     }
 }
