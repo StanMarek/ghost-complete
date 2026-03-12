@@ -1,0 +1,84 @@
+{
+  "name": "hyper",
+  "description": "Hyper is an Electron-based terminal",
+  "subcommands": [
+    {
+      "name": "install",
+      "description": "Install a plugin",
+      "args": {
+        "name": "plugin"
+      }
+    },
+    {
+      "name": "docs",
+      "description": "Open the npm page of a plugin",
+      "args": {
+        "name": "plugin"
+      }
+    },
+    {
+      "name": "help",
+      "description": "Display help"
+    },
+    {
+      "name": "list",
+      "description": "List installed plugins"
+    },
+    {
+      "name": "list-remote",
+      "description": "List plugins available on npm"
+    },
+    {
+      "name": "search",
+      "description": "Search for plugins on npm",
+      "args": {
+        "name": "query",
+        "description": "Your search query",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "uninstall",
+      "description": "Uninstall plugin",
+      "args": {
+        "name": "plugin",
+        "description": "Plugin to uninstall",
+        "generators": [
+          {
+            "script": [
+              "hyper",
+              "list"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "version",
+      "description": "Show version"
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "-h",
+        "--help"
+      ],
+      "description": "Output usage information"
+    },
+    {
+      "name": [
+        "-v",
+        "--verbose"
+      ],
+      "description": "Verbose mode (disabled by default)"
+    }
+  ],
+  "args": {
+    "template": "folders"
+  }
+}

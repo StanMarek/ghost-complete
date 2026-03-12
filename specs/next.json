@@ -1,0 +1,140 @@
+{
+  "name": "next",
+  "description": "Next.js CLI to start, build and export your application",
+  "subcommands": [
+    {
+      "name": "build",
+      "description": "Create an optimized production build of your application",
+      "options": [
+        {
+          "name": [
+            "--profile"
+          ],
+          "description": "Enable production profiling"
+        },
+        {
+          "name": [
+            "--debug"
+          ],
+          "description": "Enable more verbose build output"
+        }
+      ],
+      "args": {
+        "name": "dir",
+        "description": "Represent the directory of the Next.js application",
+        "template": "folders",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "dev",
+      "description": "Start the application in development mode",
+      "options": [
+        {
+          "name": [
+            "-p",
+            "--port"
+          ],
+          "description": "A port number on which to start the application",
+          "args": {}
+        },
+        {
+          "name": [
+            "-H",
+            null,
+            "--hostname"
+          ],
+          "description": "Hostname on which to start the application",
+          "args": {}
+        }
+      ],
+      "args": {
+        "name": "dir",
+        "description": "Represent the directory of the Next.js application",
+        "template": "folders",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "start",
+      "description": "Start the application in production mode",
+      "options": [
+        {
+          "name": [
+            "-p",
+            "--port"
+          ],
+          "description": "A port number on which to start the application",
+          "args": {}
+        },
+        {
+          "name": [
+            "-H",
+            null,
+            "--hostname"
+          ],
+          "description": "Hostname on which to start the application",
+          "args": {}
+        }
+      ],
+      "args": {
+        "name": "dir",
+        "description": "Represent the directory of the Next.js application",
+        "template": "folders",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "export",
+      "description": "Exports the application for production deployment",
+      "options": [
+        {
+          "name": [
+            "-s"
+          ],
+          "description": "Do not print any messages to console"
+        }
+      ],
+      "args": {
+        "name": "dir",
+        "description": "Represent the directory of the Next.js application",
+        "template": "folders",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "telemetry",
+      "description": "Allows you to control Next.js' telemetry collection",
+      "args": {
+        "name": "status",
+        "description": "Turn Next.js' telemetry collection on or off",
+        "suggestions": [
+          {
+            "name": "enable",
+            "description": "Enable Next.js' telemetry collection"
+          },
+          {
+            "name": "disable",
+            "description": "Disable Next.js' telemetry collection"
+          }
+        ]
+      }
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "-h",
+        "--help"
+      ],
+      "description": "Output usage information"
+    },
+    {
+      "name": [
+        "-v",
+        "--version"
+      ],
+      "description": "Output the version number"
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "name": "envchain",
+  "description": "Set environment variables with macOS keychain or D-Bus secret service",
+  "subcommands": [
+    {
+      "name": "-s",
+      "description": "Add keychain item of environment variable +ENV+ for namespace +NAMESPACE+",
+      "options": [
+        {
+          "name": [
+            "-n",
+            "--noecho"
+          ],
+          "description": "Do not echo user input"
+        },
+        {
+          "name": [
+            "-p",
+            "--require-passphrase"
+          ],
+          "description": "Always ask for keychain passphrase"
+        },
+        {
+          "name": [
+            "-P",
+            "--no-require-passphrase"
+          ],
+          "description": "Do not ask for keychain passphrase"
+        }
+      ],
+      "args": [
+        {
+          "name": "NAMESPACE",
+          "generators": [
+            {
+              "script": [
+                "envchain",
+                "--list"
+              ],
+              "requires_js": true,
+              "js_source": "s=>Array.from(new Set(s.split(`\n`))).map(e=>({name:e,description:`NAMESPACE ${e}`}))"
+            }
+          ]
+        },
+        {
+          "name": "ENV",
+          "isVariadic": true
+        }
+      ]
+    },
+    {
+      "name": "-l",
+      "description": "List namespaces that have been created"
+    }
+  ],
+  "args": [
+    {
+      "name": "NAMESPACE",
+      "generators": [
+        {
+          "script": [
+            "envchain",
+            "--list"
+          ],
+          "requires_js": true,
+          "js_source": "s=>Array.from(new Set(s.split(`\n`))).map(e=>({name:e,description:`NAMESPACE ${e}`}))"
+        }
+      ]
+    },
+    {
+      "name": "CMD"
+    }
+  ]
+}

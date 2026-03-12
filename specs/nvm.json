@@ -1,0 +1,586 @@
+{
+  "name": "nvm",
+  "description": "Node Package Manager",
+  "subcommands": [
+    {
+      "name": "install",
+      "description": "Download and install a <version>. Uses .nvmrc if available and version is omitted",
+      "options": [
+        {
+          "name": [
+            "-s"
+          ],
+          "description": "Skip binary download, install from source only"
+        },
+        {
+          "name": [
+            "--reinstall-packages-from"
+          ],
+          "description": "When installing, reinstall packages installed in <version>",
+          "args": {
+            "name": "version",
+            "description": "Node version",
+            "suggestions": [
+              {
+                "name": "node",
+                "description": "The latest version of node"
+              },
+              {
+                "name": "iojs",
+                "description": "The latest version of io.js"
+              },
+              {
+                "name": "system",
+                "description": "System-installed version of node"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--lts"
+          ],
+          "description": "When installing, only select from LTS (long-term support) versions"
+        },
+        {
+          "name": [
+            "--lts"
+          ],
+          "description": "When installing, only select from versions for a specific LTS line",
+          "args": {
+            "name": "LTS name"
+          }
+        },
+        {
+          "name": [
+            "--skip-default-packages"
+          ],
+          "description": "When installing, skip the default-packages file if it exists"
+        },
+        {
+          "name": [
+            "--latest-npm"
+          ],
+          "description": "After installing, attempt to upgrade to the latest working npm on the given node version"
+        },
+        {
+          "name": [
+            "--no-progress"
+          ],
+          "description": "Disable the progress bar on any downloads"
+        },
+        {
+          "name": [
+            "--alias"
+          ],
+          "description": "After installing, set the alias specified to the version specified. (same as: nvm alias <name> <version>)",
+          "args": {
+            "name": "name"
+          }
+        },
+        {
+          "name": [
+            "--default"
+          ],
+          "description": "After installing, set default alias to the version specified. (same as: nvm alias default <version>)"
+        }
+      ],
+      "args": {
+        "name": "version",
+        "description": "Node version",
+        "isOptional": true,
+        "suggestions": [
+          {
+            "name": "node",
+            "description": "The latest version of node"
+          },
+          {
+            "name": "iojs",
+            "description": "The latest version of io.js"
+          },
+          {
+            "name": "system",
+            "description": "System-installed version of node"
+          }
+        ]
+      }
+    },
+    {
+      "name": "uninstall",
+      "description": "Uninstall a version",
+      "options": [
+        {
+          "name": [
+            "--lts"
+          ],
+          "description": "Uninstall using automatic LTS (long-term support) alias `lts/*`, if available"
+        },
+        {
+          "name": [
+            "--lts"
+          ],
+          "description": "Uninstall using automatic alias for provided LTS line, if available",
+          "args": {
+            "name": "LTS name"
+          }
+        }
+      ],
+      "args": {
+        "name": "version",
+        "description": "Node version",
+        "suggestions": [
+          {
+            "name": "node",
+            "description": "The latest version of node"
+          },
+          {
+            "name": "iojs",
+            "description": "The latest version of io.js"
+          },
+          {
+            "name": "system",
+            "description": "System-installed version of node"
+          }
+        ]
+      }
+    },
+    {
+      "name": "use",
+      "description": "Modify PATH to use <version>. Uses .nvmrc if available and version is omitted",
+      "options": [
+        {
+          "name": [
+            "--silent"
+          ],
+          "description": "Silences stdout/stderr output"
+        },
+        {
+          "name": [
+            "--lts"
+          ],
+          "description": "Uses automatic LTS (long-term support) alias `lts/*`, if available"
+        },
+        {
+          "name": [
+            "--lts"
+          ],
+          "description": "Uses automatic alias for provided LTS line, if available",
+          "args": {
+            "name": "LTS name"
+          }
+        }
+      ],
+      "args": {
+        "name": "version",
+        "description": "Node version",
+        "isOptional": true,
+        "suggestions": [
+          {
+            "name": "node",
+            "description": "The latest version of node"
+          },
+          {
+            "name": "iojs",
+            "description": "The latest version of io.js"
+          },
+          {
+            "name": "system",
+            "description": "System-installed version of node"
+          }
+        ]
+      }
+    },
+    {
+      "name": "exec",
+      "description": "Run <command> on <version>. Uses .nvmrc if available and version is omitted",
+      "options": [
+        {
+          "name": [
+            "--silent"
+          ],
+          "description": "Silences stdout/stderr output"
+        },
+        {
+          "name": [
+            "--lts"
+          ],
+          "description": "Uses automatic LTS (long-term support) alias `lts/*`, if available"
+        },
+        {
+          "name": [
+            "--lts"
+          ],
+          "description": "Uses automatic alias for provided LTS line, if available",
+          "args": {
+            "name": "LTS name"
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "version",
+          "description": "Node version",
+          "isOptional": true,
+          "suggestions": [
+            {
+              "name": "node",
+              "description": "The latest version of node"
+            },
+            {
+              "name": "iojs",
+              "description": "The latest version of io.js"
+            },
+            {
+              "name": "system",
+              "description": "System-installed version of node"
+            }
+          ]
+        },
+        {
+          "name": "command",
+          "isVariadic": true
+        }
+      ]
+    },
+    {
+      "name": "run",
+      "description": "Run `node` on <version> with <args> as arguments. Uses .nvmrc if available and version is omitted",
+      "options": [
+        {
+          "name": [
+            "--silent"
+          ],
+          "description": "Silences stdout/stderr output"
+        },
+        {
+          "name": [
+            "--lts"
+          ],
+          "description": "Uses automatic LTS (long-term support) alias `lts/*`, if available"
+        },
+        {
+          "name": [
+            "--lts"
+          ],
+          "description": "Uses automatic alias for provided LTS line, if available",
+          "args": {
+            "name": "LTS name"
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "version",
+          "description": "Node version",
+          "isOptional": true,
+          "suggestions": [
+            {
+              "name": "node",
+              "description": "The latest version of node"
+            },
+            {
+              "name": "iojs",
+              "description": "The latest version of io.js"
+            },
+            {
+              "name": "system",
+              "description": "System-installed version of node"
+            }
+          ]
+        },
+        {
+          "name": "args",
+          "isVariadic": true
+        }
+      ]
+    },
+    {
+      "name": "current",
+      "description": "Display currently activated version of Node"
+    },
+    {
+      "name": "ls",
+      "description": "List installed versions, matching a given <version> if provided",
+      "options": [
+        {
+          "name": [
+            "--no-colors"
+          ],
+          "description": "Suppress colored output"
+        },
+        {
+          "name": [
+            "--no-alias"
+          ],
+          "description": "Suppress `nvm alias` output"
+        }
+      ],
+      "args": {
+        "name": "version",
+        "description": "Node version",
+        "suggestions": [
+          {
+            "name": "node",
+            "description": "The latest version of node"
+          },
+          {
+            "name": "iojs",
+            "description": "The latest version of io.js"
+          },
+          {
+            "name": "system",
+            "description": "System-installed version of node"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ls-remote",
+      "description": "List remote versions available for install, matching a given <version> if provided",
+      "options": [
+        {
+          "name": [
+            "--lts"
+          ],
+          "description": "When listing, only show LTS (long-term support) versions"
+        },
+        {
+          "name": [
+            "--lts"
+          ],
+          "description": "When listing, only show versions for a specific LTS line",
+          "args": {
+            "name": "LTS name"
+          }
+        },
+        {
+          "name": [
+            "--no-colors"
+          ],
+          "description": "Suppress colored output"
+        }
+      ],
+      "args": {
+        "name": "version",
+        "description": "Node version",
+        "suggestions": [
+          {
+            "name": "node",
+            "description": "The latest version of node"
+          },
+          {
+            "name": "iojs",
+            "description": "The latest version of io.js"
+          },
+          {
+            "name": "system",
+            "description": "System-installed version of node"
+          }
+        ]
+      }
+    },
+    {
+      "name": "version",
+      "description": "Resolve the given description to a single local version",
+      "args": {
+        "name": "version",
+        "description": "Node version",
+        "suggestions": [
+          {
+            "name": "node",
+            "description": "The latest version of node"
+          },
+          {
+            "name": "iojs",
+            "description": "The latest version of io.js"
+          },
+          {
+            "name": "system",
+            "description": "System-installed version of node"
+          }
+        ]
+      }
+    },
+    {
+      "name": "version-remote",
+      "description": "Resolve the given description to a single remote version",
+      "options": [
+        {
+          "name": [
+            "--lts"
+          ],
+          "description": "When listing, only show LTS (long-term support) versions"
+        },
+        {
+          "name": [
+            "--lts"
+          ],
+          "description": "When listing, only show versions for a specific LTS line",
+          "args": {
+            "name": "LTS name"
+          }
+        }
+      ],
+      "args": {
+        "name": "version",
+        "description": "Node version",
+        "suggestions": [
+          {
+            "name": "node",
+            "description": "The latest version of node"
+          },
+          {
+            "name": "iojs",
+            "description": "The latest version of io.js"
+          },
+          {
+            "name": "system",
+            "description": "System-installed version of node"
+          }
+        ]
+      }
+    },
+    {
+      "name": "deactivate",
+      "description": "Undo effects of `nvm` on current shell",
+      "options": [
+        {
+          "name": [
+            "--silent"
+          ],
+          "description": "Silences stdout/stderr output"
+        }
+      ]
+    },
+    {
+      "name": "alias",
+      "description": "Show all aliases beginning with <pattern> or Set an alias named <name> pointing to <version>",
+      "args": [
+        {
+          "name": "pattern or name",
+          "description": "Pattern or name"
+        },
+        {
+          "name": "version",
+          "isOptional": true
+        }
+      ]
+    },
+    {
+      "name": "unalias",
+      "description": "Deletes the alias named <name>",
+      "args": {
+        "name": "name"
+      }
+    },
+    {
+      "name": "install-latest-npm",
+      "description": "Attempt to upgrade to the latest working `npm` on the current node version"
+    },
+    {
+      "name": "reinstall-packages",
+      "description": "Reinstall global `npm` packages contained in <version> to current version",
+      "args": {
+        "name": "version",
+        "description": "Node version",
+        "suggestions": [
+          {
+            "name": "node",
+            "description": "The latest version of node"
+          },
+          {
+            "name": "iojs",
+            "description": "The latest version of io.js"
+          },
+          {
+            "name": "system",
+            "description": "System-installed version of node"
+          }
+        ]
+      }
+    },
+    {
+      "name": "unload",
+      "description": "Unload `nvm` from shell"
+    },
+    {
+      "name": "which",
+      "description": "Display path to installed node version. Uses .nvmrc if available and version is omitted",
+      "subcommands": [
+        {
+          "name": "current"
+        }
+      ],
+      "options": [
+        {
+          "name": [
+            "--silent"
+          ],
+          "description": "Silences stdout/stderr output when a version is omitted"
+        }
+      ],
+      "args": {
+        "name": "version",
+        "description": "Node version",
+        "isOptional": true,
+        "suggestions": [
+          {
+            "name": "node",
+            "description": "The latest version of node"
+          },
+          {
+            "name": "iojs",
+            "description": "The latest version of io.js"
+          },
+          {
+            "name": "system",
+            "description": "System-installed version of node"
+          }
+        ]
+      }
+    },
+    {
+      "name": "cache",
+      "args": {
+        "suggestions": [
+          {
+            "name": "dir",
+            "description": "Display path to the cache directory for nvm"
+          },
+          {
+            "name": "clear",
+            "description": "Empty cache directory for nvm"
+          }
+        ]
+      }
+    },
+    {
+      "name": "set-colors",
+      "description": "Set five text colors using format \"yMeBg\". Available when supported",
+      "args": {
+        "name": "color codes",
+        "description": "Using format \"yMeBg\""
+      }
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "--help"
+      ],
+      "description": "Show help page"
+    },
+    {
+      "name": [
+        "--version"
+      ],
+      "description": "Print out the installed version of nvm"
+    },
+    {
+      "name": [
+        "--no-colors"
+      ],
+      "description": "Suppress colored output"
+    }
+  ]
+}

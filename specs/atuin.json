@@ -1,0 +1,711 @@
+{
+  "name": "atuin",
+  "description": "Magical shell history",
+  "subcommands": [
+    {
+      "name": "history",
+      "description": "Manipulate shell history",
+      "subcommands": [
+        {
+          "name": "start",
+          "description": "Begins a new command in the history",
+          "args": {
+            "name": "COMMAND",
+            "isVariadic": true
+          }
+        },
+        {
+          "name": "end",
+          "description": "Finishes a new command in the history (adds time, exit code)",
+          "options": [
+            {
+              "name": [
+                "--exit",
+                "-e"
+              ],
+              "args": {
+                "name": "EXIT"
+              }
+            }
+          ],
+          "args": {
+            "name": "ID"
+          }
+        },
+        {
+          "name": "list",
+          "description": "List all items in history",
+          "options": [
+            {
+              "name": [
+                "--cwd",
+                "-c"
+              ]
+            },
+            {
+              "name": [
+                "--session",
+                "-s"
+              ]
+            },
+            {
+              "name": [
+                "--human"
+              ]
+            },
+            {
+              "name": [
+                "--cmd-only"
+              ],
+              "description": "Show only the text of the command"
+            },
+            {
+              "name": [
+                "--format",
+                "-f"
+              ],
+              "args": {
+                "name": "FORMAT",
+                "description": "Available variables: {command}, {directory}, {duration}, {user}, {host} and {time}. Example: --format \"{time} - [{duration}] - {directory}$\\t{command}\""
+              }
+            }
+          ]
+        },
+        {
+          "name": "last",
+          "description": "Get the last command ran",
+          "options": [
+            {
+              "name": [
+                "--human"
+              ]
+            },
+            {
+              "name": [
+                "--cmd-only"
+              ],
+              "description": "Show only the text of the command"
+            },
+            {
+              "name": [
+                "--format",
+                "-f"
+              ],
+              "args": {
+                "name": "FORMAT",
+                "description": "Available variables: {command}, {directory}, {duration}, {user}, {host} and {time}. Example: --format \"{time} - [{duration}] - {directory}$\\t{command}\""
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "import",
+      "description": "Import shell history from file",
+      "subcommands": [
+        {
+          "name": "auto",
+          "description": "Import history for the current shell"
+        },
+        {
+          "name": "zsh",
+          "description": "Import history from the zsh history file"
+        },
+        {
+          "name": "zsh-hist-db",
+          "description": "Import history from the zsh history file"
+        },
+        {
+          "name": "bash",
+          "description": "Import history from the bash history file"
+        },
+        {
+          "name": "resh",
+          "description": "Import history from the resh history file"
+        },
+        {
+          "name": "fish",
+          "description": "Import history from the fish history file"
+        },
+        {
+          "name": "nu",
+          "description": "Import history from the nu history file"
+        },
+        {
+          "name": "nu-hist-db",
+          "description": "Import history from the nu history file"
+        }
+      ]
+    },
+    {
+      "name": "stats",
+      "description": "Calculate statistics for your history",
+      "options": [
+        {
+          "name": [
+            "--count",
+            "-c"
+          ],
+          "description": "How many top commands to list",
+          "args": {
+            "name": "COUNT"
+          }
+        }
+      ],
+      "args": {
+        "name": "PERIOD",
+        "description": "Compute statistics for the specified period, leave blank for statistics since the beginning",
+        "isVariadic": true
+      }
+    },
+    {
+      "name": "search",
+      "description": "Interactive history search",
+      "options": [
+        {
+          "name": [
+            "--cwd",
+            "-c"
+          ],
+          "description": "Filter search result by directory",
+          "args": {
+            "name": "CWD"
+          }
+        },
+        {
+          "name": [
+            "--exclude-cwd"
+          ],
+          "description": "Exclude directory from results",
+          "args": {
+            "name": "EXCLUDE_CWD"
+          }
+        },
+        {
+          "name": [
+            "--exit",
+            "-e"
+          ],
+          "description": "Filter search result by exit code",
+          "args": {
+            "name": "EXIT"
+          }
+        },
+        {
+          "name": [
+            "--exclude-exit"
+          ],
+          "description": "Exclude results with this exit code",
+          "args": {
+            "name": "EXCLUDE_EXIT"
+          }
+        },
+        {
+          "name": [
+            "--before",
+            "-b"
+          ],
+          "description": "Only include results added before this date",
+          "args": {
+            "name": "BEFORE"
+          }
+        },
+        {
+          "name": [
+            "--after"
+          ],
+          "description": "Only include results after this date",
+          "args": {
+            "name": "AFTER"
+          }
+        },
+        {
+          "name": [
+            "--limit"
+          ],
+          "description": "How many entries to return at most",
+          "args": {
+            "name": "LIMIT"
+          }
+        },
+        {
+          "name": [
+            "--offset"
+          ],
+          "description": "Offset from the start of the results",
+          "args": {
+            "name": "OFFSET"
+          }
+        },
+        {
+          "name": [
+            "--interactive",
+            "-i"
+          ],
+          "description": "Open interactive search UI"
+        },
+        {
+          "name": [
+            "--filter-mode"
+          ],
+          "description": "Allow overriding filter mode over config",
+          "args": {
+            "name": "FILTER_MODE",
+            "suggestions": [
+              {
+                "name": "global"
+              },
+              {
+                "name": "host"
+              },
+              {
+                "name": "session"
+              },
+              {
+                "name": "directory"
+              },
+              {
+                "name": "workspace"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--search-mode"
+          ],
+          "description": "Allow overriding search mode over config",
+          "args": {
+            "name": "SEARCH_MODE",
+            "suggestions": [
+              {
+                "name": "prefix"
+              },
+              {
+                "name": "full-text"
+              },
+              {
+                "name": "fuzzy"
+              },
+              {
+                "name": "skim"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--human"
+          ],
+          "description": "Use human-readable formatting for time"
+        },
+        {
+          "name": [
+            "--cmd-only"
+          ],
+          "description": "Show only the text of the command"
+        },
+        {
+          "name": [
+            "--delete"
+          ],
+          "description": "Delete anything matching this query. Will not print out the match"
+        },
+        {
+          "name": [
+            "--delete-it-all"
+          ],
+          "description": "Delete EVERYTHING!"
+        },
+        {
+          "name": [
+            "--reverse",
+            "-r"
+          ],
+          "description": "Reverse the order of results, oldest first"
+        },
+        {
+          "name": [
+            "--format",
+            "-f"
+          ],
+          "args": {
+            "name": "FORMAT",
+            "description": "Available variables: {command}, {directory}, {duration}, {user}, {host} and {time}. Example: --format \"{time} - [{duration}] - {directory}$\\t{command}\""
+          }
+        },
+        {
+          "name": [
+            "--inline-height"
+          ],
+          "description": "Set the maximum number of lines Atuin's interface should take up",
+          "args": {
+            "name": "INLINE_HEIGHT"
+          }
+        }
+      ],
+      "args": {
+        "name": "QUERY",
+        "isVariadic": true
+      }
+    },
+    {
+      "name": "sync",
+      "description": "Sync with the configured server",
+      "options": [
+        {
+          "name": [
+            "--force",
+            "-f"
+          ],
+          "description": "Force re-download everything"
+        }
+      ]
+    },
+    {
+      "name": "login",
+      "description": "Login to the configured server",
+      "options": [
+        {
+          "name": [
+            "--username",
+            "-u"
+          ],
+          "args": {
+            "name": "USERNAME"
+          }
+        },
+        {
+          "name": [
+            "--password",
+            "-p"
+          ],
+          "args": {
+            "name": "PASSWORD"
+          }
+        },
+        {
+          "name": [
+            "--key",
+            "-k"
+          ],
+          "description": "The encryption key for your account",
+          "args": {
+            "name": "KEY"
+          }
+        }
+      ]
+    },
+    {
+      "name": "logout",
+      "description": "Log out"
+    },
+    {
+      "name": "register",
+      "description": "Register with the configured server",
+      "options": [
+        {
+          "name": [
+            "--username",
+            "-u"
+          ],
+          "args": {
+            "name": "USERNAME"
+          }
+        },
+        {
+          "name": [
+            "--password",
+            "-p"
+          ],
+          "args": {
+            "name": "PASSWORD"
+          }
+        },
+        {
+          "name": [
+            "--email",
+            "-e"
+          ],
+          "args": {
+            "name": "EMAIL"
+          }
+        }
+      ]
+    },
+    {
+      "name": "key",
+      "description": "Print the encryption key for transfer to another machine",
+      "options": [
+        {
+          "name": [
+            "--base64"
+          ],
+          "description": "Switch to base64 output of the key"
+        }
+      ]
+    },
+    {
+      "name": "status"
+    },
+    {
+      "name": "account",
+      "subcommands": [
+        {
+          "name": "login",
+          "description": "Login to the configured server",
+          "options": [
+            {
+              "name": [
+                "--username",
+                "-u"
+              ],
+              "args": {
+                "name": "USERNAME"
+              }
+            },
+            {
+              "name": [
+                "--password",
+                "-p"
+              ],
+              "args": {
+                "name": "PASSWORD"
+              }
+            },
+            {
+              "name": [
+                "--key",
+                "-k"
+              ],
+              "description": "The encryption key for your account",
+              "args": {
+                "name": "KEY"
+              }
+            }
+          ]
+        },
+        {
+          "name": "register",
+          "options": [
+            {
+              "name": [
+                "--username",
+                "-u"
+              ],
+              "args": {
+                "name": "USERNAME"
+              }
+            },
+            {
+              "name": [
+                "--password",
+                "-p"
+              ],
+              "args": {
+                "name": "PASSWORD"
+              }
+            },
+            {
+              "name": [
+                "--email",
+                "-e"
+              ],
+              "args": {
+                "name": "EMAIL"
+              }
+            }
+          ]
+        },
+        {
+          "name": "logout",
+          "description": "Log out"
+        },
+        {
+          "name": "delete"
+        }
+      ]
+    },
+    {
+      "name": "kv",
+      "subcommands": [
+        {
+          "name": "set",
+          "options": [
+            {
+              "name": [
+                "--key",
+                "-k"
+              ],
+              "args": {
+                "name": "KEY"
+              }
+            },
+            {
+              "name": [
+                "--namespace",
+                "-n"
+              ],
+              "args": {
+                "name": "NAMESPACE"
+              }
+            }
+          ],
+          "args": {
+            "name": "VALUE"
+          }
+        },
+        {
+          "name": "get",
+          "options": [
+            {
+              "name": [
+                "--namespace",
+                "-n"
+              ],
+              "args": {
+                "name": "NAMESPACE"
+              }
+            }
+          ],
+          "args": {
+            "name": "KEY"
+          }
+        }
+      ]
+    },
+    {
+      "name": "server",
+      "description": "Start an atuin server",
+      "subcommands": [
+        {
+          "name": "start",
+          "description": "Start the server",
+          "options": [
+            {
+              "name": [
+                "--host"
+              ],
+              "description": "The host address to bind",
+              "args": {
+                "name": "HOST"
+              }
+            },
+            {
+              "name": [
+                "--port",
+                "-p"
+              ],
+              "description": "The port to bind",
+              "args": {
+                "name": "PORT"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "init",
+      "description": "Output shell setup",
+      "options": [
+        {
+          "name": [
+            "--disable-ctrl-r"
+          ],
+          "description": "Disable the binding of CTRL-R to atuin"
+        },
+        {
+          "name": [
+            "--disable-up-arrow"
+          ],
+          "description": "Disable the binding of the Up Arrow key to atuin"
+        }
+      ],
+      "args": {
+        "name": "SHELL",
+        "suggestions": [
+          {
+            "name": "zsh"
+          },
+          {
+            "name": "bash"
+          },
+          {
+            "name": "fish"
+          },
+          {
+            "name": "nu"
+          }
+        ]
+      }
+    },
+    {
+      "name": "uuid",
+      "description": "Generate a UUID"
+    },
+    {
+      "name": "contributors"
+    },
+    {
+      "name": "gen-completions",
+      "description": "Generate shell completions",
+      "options": [
+        {
+          "name": [
+            "--shell",
+            "-s"
+          ],
+          "description": "Set the shell for generating completions",
+          "args": {
+            "name": "SHELL",
+            "suggestions": [
+              {
+                "name": "bash"
+              },
+              {
+                "name": "elvish"
+              },
+              {
+                "name": "fish"
+              },
+              {
+                "name": "powershell"
+              },
+              {
+                "name": "zsh"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--out-dir",
+            "-o"
+          ],
+          "description": "Set the output directory",
+          "args": {
+            "name": "OUT_DIR"
+          }
+        }
+      ]
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "--help",
+        "-h"
+      ],
+      "description": "Print help"
+    },
+    {
+      "name": [
+        "--version",
+        "-V"
+      ],
+      "description": "Print version"
+    }
+  ]
+}

@@ -1,85 +1,113 @@
 {
   "name": "ln",
-  "description": "Make links between files",
-  "args": [
-    {
-      "name": "target",
-      "description": "Target file or directory to link to",
-      "template": "filepaths"
-    },
-    {
-      "name": "link_name",
-      "description": "Name of the link to create",
-      "template": "filepaths"
-    }
-  ],
+  "description": "Create (default hard) symbolic links to files",
   "options": [
     {
       "name": [
-        "-s",
-        "--symbolic"
+        "-s"
       ],
-      "description": "Create a symbolic link instead of a hard link"
+      "description": "Create a symbolic link",
+      "args": [
+        {
+          "name": "source_file",
+          "template": [
+            "filepaths",
+            "folders"
+          ]
+        },
+        {
+          "name": "link_name or link_dirname",
+          "isOptional": true
+        }
+      ]
     },
     {
       "name": [
-        "-f",
-        "--force"
+        "-v"
       ],
-      "description": "Remove existing destination files"
+      "description": "Verbose"
     },
     {
       "name": [
-        "-v",
-        "--verbose"
+        "-F"
       ],
-      "description": "Print name of each linked file"
+      "description": "If link name already exists replace it",
+      "args": [
+        {
+          "name": "source_file",
+          "template": [
+            "filepaths",
+            "folders"
+          ]
+        },
+        {
+          "name": "link_name or link_dirname",
+          "isOptional": true
+        }
+      ]
     },
     {
       "name": [
-        "-n",
-        "--no-dereference"
+        "-h"
       ],
-      "description": "Treat symlink destination as a normal file"
+      "description": "Don't follow symbolic links"
     },
     {
       "name": [
-        "-i",
-        "--interactive"
+        "-f"
       ],
-      "description": "Prompt before removing existing files"
+      "description": "If link name already exists unlink the old one before creating the new one",
+      "args": [
+        {
+          "name": "source_file",
+          "template": [
+            "filepaths",
+            "folders"
+          ]
+        },
+        {
+          "name": "link_name or link_dirname",
+          "isOptional": true
+        }
+      ]
     },
     {
       "name": [
-        "-r",
-        "--relative"
+        "-i"
       ],
-      "description": "Create symbolic links relative to link location"
+      "description": "Prompt if proposed link already exists",
+      "args": [
+        {
+          "name": "source_file",
+          "template": [
+            "filepaths",
+            "folders"
+          ]
+        },
+        {
+          "name": "link_name or link_dirname",
+          "isOptional": true
+        }
+      ]
     },
     {
       "name": [
-        "-b",
-        "--backup"
+        "-n"
       ],
-      "description": "Make a backup of each existing destination file"
+      "description": "Same as -h don't follow symbolic links"
+    }
+  ],
+  "args": [
+    {
+      "name": "source_file",
+      "template": [
+        "filepaths",
+        "folders"
+      ]
     },
     {
-      "name": [
-        "-t",
-        "--target-directory"
-      ],
-      "description": "Specify the target directory for the links",
-      "args": {
-        "name": "directory",
-        "template": "folders"
-      }
-    },
-    {
-      "name": [
-        "-T",
-        "--no-target-directory"
-      ],
-      "description": "Treat link name as a normal file always"
+      "name": "link_name or link_dirname",
+      "isOptional": true
     }
   ]
 }

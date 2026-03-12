@@ -1,0 +1,176 @@
+{
+  "name": "capacitor",
+  "description": "The Capacitor command-line interface (CLI) tool is used to develop Capacitor apps",
+  "subcommands": [
+    {
+      "name": "add",
+      "description": "Add a native platform project to your app",
+      "args": {
+        "name": "platform",
+        "suggestions": [
+          {
+            "name": "android"
+          },
+          {
+            "name": "ios"
+          }
+        ]
+      }
+    },
+    {
+      "name": "copy",
+      "description": "Copy the web app build and Capacitor configuration file into the native platform project. Run this each time you make changes to your web app or change a configuration value",
+      "args": {
+        "name": "platform",
+        "isOptional": true,
+        "suggestions": [
+          {
+            "name": "android"
+          },
+          {
+            "name": "ios"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ls",
+      "description": "List all installed Cordova and Capacitor plugins",
+      "args": {
+        "name": "platform",
+        "isOptional": true,
+        "suggestions": [
+          {
+            "name": "android"
+          },
+          {
+            "name": "ios"
+          }
+        ]
+      }
+    },
+    {
+      "name": "open",
+      "description": "Opens the native project workspace in the specified native IDE (Xcode for iOS, Android Studio for Android)",
+      "args": {
+        "name": "platform",
+        "suggestions": [
+          {
+            "name": "android"
+          },
+          {
+            "name": "ios"
+          }
+        ]
+      }
+    },
+    {
+      "name": "run",
+      "description": "Opens the native project workspace in the specified native IDE (Xcode for iOS, Android Studio for Android)",
+      "options": [
+        {
+          "name": [
+            "--list"
+          ],
+          "description": "Print a list of target devices available to the given platform"
+        },
+        {
+          "name": [
+            "--target"
+          ],
+          "description": "Run on a specific target device",
+          "args": {
+            "name": "target",
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "async(i,o)=>{let[m,g,n]=i;if(!d(n))return[];let{stdout:t}=await o({command:\"npx\",args:[\"capacitor\",\"run\",n,\"--list\"]});return t.trim().split(`\n`).slice(2).map(a=>{let[s,r,p]=a.replace(/\\s\\s+/g,\"|\").split(\"|\");return{name:p,displayName:`${s} ${r}`,icon:\"\\u{1F4F1}\"}})}"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "platform",
+        "suggestions": [
+          {
+            "name": "android"
+          },
+          {
+            "name": "ios"
+          }
+        ]
+      }
+    },
+    {
+      "name": "sync",
+      "description": "This command runs copy and then update",
+      "options": [
+        {
+          "name": [
+            "--deployment"
+          ],
+          "description": "Podfile.lock won't be deleted and pod install will use --deployment option"
+        },
+        {
+          "name": [
+            "--inline"
+          ],
+          "description": "After syncing, all JS source maps will be inlined allowing for debugging an Android Web View in Chromium based browsers"
+        }
+      ],
+      "args": {
+        "name": "platform",
+        "isOptional": true,
+        "suggestions": [
+          {
+            "name": "android"
+          },
+          {
+            "name": "ios"
+          }
+        ]
+      }
+    },
+    {
+      "name": "update",
+      "description": "Updates the native plugins and dependencies referenced in package.json",
+      "options": [
+        {
+          "name": [
+            "--deployment"
+          ],
+          "description": "Podfile.lock won't be deleted and pod install will use --deployment option"
+        }
+      ],
+      "args": {
+        "name": "platform",
+        "isOptional": true,
+        "suggestions": [
+          {
+            "name": "android"
+          },
+          {
+            "name": "ios"
+          }
+        ]
+      }
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "--help",
+        "-h"
+      ],
+      "description": "Output usage information. Can be used with individual commands too"
+    },
+    {
+      "name": [
+        "--version",
+        "-V"
+      ],
+      "description": "Output the version number"
+    }
+  ]
+}

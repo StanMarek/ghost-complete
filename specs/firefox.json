@@ -1,0 +1,319 @@
+{
+  "name": "firefox",
+  "description": "Free open-source web browser developer by Mozilla",
+  "options": [
+    {
+      "name": [
+        "--display"
+      ],
+      "description": "Specify an X display to use",
+      "args": {
+        "name": "display",
+        "description": "X display to use"
+      }
+    },
+    {
+      "name": [
+        "--sync"
+      ],
+      "description": "Make X calls synchronous"
+    },
+    {
+      "name": [
+        "--g-fatal-warnings"
+      ],
+      "description": "Make all warnings fatal"
+    },
+    {
+      "name": [
+        "-h",
+        "--help"
+      ],
+      "description": "Print help message and exit"
+    },
+    {
+      "name": [
+        "-v",
+        "--version"
+      ],
+      "description": "Print version information and exit"
+    },
+    {
+      "name": [
+        "--full-version"
+      ],
+      "description": "Print full version information and exit"
+    },
+    {
+      "name": [
+        "-P"
+      ],
+      "description": "Specify profile to use",
+      "args": {
+        "name": "profile",
+        "description": "Profile to use"
+      }
+    },
+    {
+      "name": [
+        "--profile"
+      ],
+      "description": "Specify profile to use by folder",
+      "args": {
+        "name": "profile",
+        "description": "Profile folder to use",
+        "template": "folders"
+      }
+    },
+    {
+      "name": [
+        "--migration"
+      ],
+      "description": "Start with migration wizard"
+    },
+    {
+      "name": [
+        "--ProfileManager"
+      ],
+      "description": "Start with ProfileManager"
+    },
+    {
+      "name": [
+        "--no-remote"
+      ],
+      "description": "Do not accept or send remote commands; implies --new-instance"
+    },
+    {
+      "name": [
+        "--new-instance"
+      ],
+      "description": "Open new instance, not a new window in running instance"
+    },
+    {
+      "name": [
+        "--safe-mode"
+      ],
+      "description": "Disables extensions and themes for this session"
+    },
+    {
+      "name": [
+        "--allow-downgrade"
+      ],
+      "description": "Allows downgrading a profile"
+    },
+    {
+      "name": [
+        "--MOZ_LOG"
+      ],
+      "description": "Treated as MOZ_LOG=<modules> environment variable, overrides it",
+      "args": {
+        "name": "modules"
+      }
+    },
+    {
+      "name": [
+        "--MOZ_LOG_FILE"
+      ],
+      "description": "Treated as MOZ_LOG_FILE=<file> environment variable, overrides it. If MOZ_LOG_FILE is not specified as an argument or as an environment variable, logging will be written to stdout",
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--headless"
+      ],
+      "description": "Run without a GUI"
+    },
+    {
+      "name": [
+        "--jsdebugger"
+      ],
+      "description": "Open the Browser Toolbox. Defaults to the local build but can be overridden by a firefox path",
+      "args": {
+        "name": "folder",
+        "template": "folders",
+        "isOptional": true
+      }
+    },
+    {
+      "name": [
+        "--wait-for-jsdebugger"
+      ],
+      "description": "Spin event loop until JS debugger connects; enables debugging (some) application startup code paths"
+    },
+    {
+      "name": [
+        "--start-debugger-server"
+      ],
+      "description": "Start the devtools server on a TCP port or Unix domain socket path",
+      "args": {
+        "name": "port or path",
+        "template": "filepaths",
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "async n=>{let i=n[n.length-1],e=Number(i);return Number.isNaN(e)?[]:Number.isInteger(e)?e<0||e>65535?[]:[{name:i,description:\"Port number\"}]:[]}"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--browser"
+      ],
+      "description": "Open a browser window"
+    },
+    {
+      "name": [
+        "--new-window"
+      ],
+      "description": "Open a URL in a new window",
+      "args": {
+        "name": "URL",
+        "description": "URL to open"
+      }
+    },
+    {
+      "name": [
+        "--new-tab"
+      ],
+      "description": "Open a URL in a new tab",
+      "args": {
+        "name": "URL",
+        "description": "URL to open"
+      }
+    },
+    {
+      "name": [
+        "--private-window"
+      ],
+      "description": "Open a URL in a new private window",
+      "args": {
+        "name": "URL",
+        "description": "URL to open"
+      }
+    },
+    {
+      "name": [
+        "--preferences"
+      ],
+      "description": "Open the preferences dialog"
+    },
+    {
+      "name": [
+        "--screenshot"
+      ],
+      "description": "Take a screenshot",
+      "args": {
+        "name": "folder",
+        "description": "Folder to save screenshot to",
+        "template": "folders",
+        "isOptional": true
+      }
+    },
+    {
+      "name": [
+        "--window-size"
+      ],
+      "description": "Size of your screenshot",
+      "args": [
+        {
+          "name": "width",
+          "description": "Width of your screenshot"
+        },
+        {
+          "name": "height",
+          "description": "Height of your screenshot",
+          "isOptional": true
+        }
+      ]
+    },
+    {
+      "name": [
+        "--search"
+      ],
+      "description": "Search for a term in your default search engine",
+      "args": {
+        "name": "term",
+        "description": "Term to search for"
+      }
+    },
+    {
+      "name": [
+        "--setDefaultBrowser"
+      ],
+      "description": "Set Firefox as the default browser"
+    },
+    {
+      "name": [
+        "--first-startup"
+      ],
+      "description": "Run post-install actions before opening a new window"
+    },
+    {
+      "name": [
+        "--kiosk"
+      ],
+      "description": "Start the browser in kiosk mode"
+    },
+    {
+      "name": [
+        "--disable-pinch"
+      ],
+      "description": "Disable touch-screen and touch-pad pinch gestures"
+    },
+    {
+      "name": [
+        "--jsconsole"
+      ],
+      "description": "Open the Browser Console"
+    },
+    {
+      "name": [
+        "--devtools"
+      ],
+      "description": "Open DevTools on initial load"
+    },
+    {
+      "name": [
+        "--marionette"
+      ],
+      "description": "Enable remote debugging server"
+    },
+    {
+      "name": [
+        "--remote-debugging-port"
+      ],
+      "description": "Start the Firefox Remote Agent, which is a low-level remote debugging interface used for WebDriver",
+      "args": {
+        "name": "port",
+        "description": "Defaults to port 9222",
+        "isOptional": true
+      }
+    },
+    {
+      "name": [
+        "--allow-remote-hosts"
+      ],
+      "description": "Values of the Host header to allow for incoming requests",
+      "args": {
+        "name": "hosts"
+      }
+    },
+    {
+      "name": [
+        "--allow-remote-origins"
+      ],
+      "description": "Values of the Origin header to allow for incoming requests",
+      "args": {
+        "name": "origins"
+      }
+    }
+  ],
+  "args": {
+    "name": "URL",
+    "description": "URL to open"
+  }
+}

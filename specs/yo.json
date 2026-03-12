@@ -1,0 +1,79 @@
+{
+  "name": "yo",
+  "description": "Yeoman generator",
+  "options": [
+    {
+      "name": [
+        "--help"
+      ],
+      "description": "Print info and generator's options and usage"
+    },
+    {
+      "name": [
+        "-f",
+        "--force"
+      ],
+      "description": "Overwrite files that already exist"
+    },
+    {
+      "name": [
+        "--version"
+      ],
+      "description": "Print version"
+    },
+    {
+      "name": [
+        "--no-color"
+      ],
+      "description": "Disable color"
+    },
+    {
+      "name": [
+        "--insight"
+      ],
+      "description": "Enable anonymous tracking"
+    },
+    {
+      "name": [
+        "--no-insight"
+      ],
+      "description": "Disable anonymous tracking"
+    },
+    {
+      "name": [
+        "--generators"
+      ],
+      "description": "Print available generators"
+    },
+    {
+      "name": [
+        "--local-only"
+      ],
+      "description": "Disable lookup of globally-installed generators"
+    }
+  ],
+  "args": {
+    "name": "generator",
+    "isOptional": true,
+    "suggestions": [
+      {
+        "name": "doctor",
+        "description": "Running sanity checks on your system"
+      },
+      {
+        "name": "completion",
+        "description": "To enable shell completion for the yo command"
+      }
+    ],
+    "generators": [
+      {
+        "script": [
+          "yo",
+          "--generators"
+        ],
+        "requires_js": true,
+        "js_source": "function(n){try{return n.split(`\n`).filter(e=>e.trim()&&e!==\"Available Generators:\").map(e=>({name:e.trim(),icon:\"https://avatars.githubusercontent.com/u/1714870?v=4\",displayName:o(e),description:`${o(e)} Generator`,priority:100,options:[{name:\"--help\",description:`Help of \"${o(e)}\" generator`}]}))}catch(e){return console.error(e),[]}}"
+      }
+    ]
+  }
+}

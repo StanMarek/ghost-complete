@@ -1,0 +1,2512 @@
+{
+  "name": "kitty",
+  "subcommands": [
+    {
+      "name": "@",
+      "subcommands": [
+        {
+          "name": "close-tab",
+          "description": "Close the specified tab(s)",
+          "options": [
+            {
+              "name": [
+                "-m",
+                "--match"
+              ],
+              "description": "The tab to match",
+              "args": {
+                "name": "MATCH"
+              }
+            },
+            {
+              "name": [
+                "--self"
+              ],
+              "description": "Close the tab of the window this command is run in, rather than the active tab"
+            },
+            {
+              "name": [
+                "--target-group"
+              ],
+              "description": "Close the specified group of tabs",
+              "args": {
+                "name": "TARGET_GROUP"
+              }
+            }
+          ]
+        },
+        {
+          "name": "close-window",
+          "description": "Close the specified window(s)",
+          "options": [
+            {
+              "name": [
+                "-m",
+                "--match"
+              ],
+              "description": "The window to match",
+              "args": {
+                "name": "MATCH"
+              }
+            },
+            {
+              "name": [
+                "--self"
+              ],
+              "description": "Close the window this command is run in, rather than the active window"
+            }
+          ]
+        },
+        {
+          "name": "create-marker",
+          "options": [
+            {
+              "name": [
+                "-m",
+                "--match"
+              ],
+              "description": "The window to match",
+              "args": {
+                "name": "MATCH"
+              }
+            },
+            {
+              "name": [
+                "--self"
+              ],
+              "description": "Close the window this command is run in, rather than the active window"
+            }
+          ],
+          "args": [
+            {
+              "name": "MARKER"
+            },
+            {
+              "name": "SPECIFICATION"
+            }
+          ]
+        },
+        {
+          "name": "detach-tab",
+          "description": "Detach the specified tab",
+          "options": [
+            {
+              "name": [
+                "-m",
+                "--match"
+              ],
+              "description": "The tab to match",
+              "args": {
+                "name": "MATCH"
+              }
+            },
+            {
+              "name": [
+                "-t",
+                "--target-tab"
+              ],
+              "description": "The tab to match",
+              "args": {
+                "name": "TARGET_TAB"
+              }
+            },
+            {
+              "name": [
+                "--self"
+              ],
+              "description": "Detach the tab this command is run in, rather than the active tab"
+            }
+          ]
+        },
+        {
+          "name": "detach-window",
+          "description": "Detach the specified window",
+          "options": [
+            {
+              "name": [
+                "-m",
+                "--match"
+              ],
+              "description": "The window to match",
+              "args": {
+                "name": "MATCH"
+              }
+            },
+            {
+              "name": [
+                "-t",
+                "--target-tab"
+              ],
+              "description": "The tab to match",
+              "args": {
+                "name": "TARGET_TAB"
+              }
+            },
+            {
+              "name": [
+                "--self"
+              ],
+              "description": "Detach the window this command is run in, rather than the active window"
+            }
+          ]
+        },
+        {
+          "name": "disable-ligatures",
+          "description": "Control ligature rendering for the specified windows/tabs",
+          "options": [
+            {
+              "name": [
+                "-a",
+                "--all"
+              ],
+              "description": "Disable in all windows"
+            },
+            {
+              "name": [
+                "-m",
+                "--match"
+              ],
+              "description": "The window to match",
+              "args": {
+                "name": "MATCH"
+              }
+            },
+            {
+              "name": [
+                "-t",
+                "--match-tab"
+              ],
+              "description": "The tab to match"
+            }
+          ],
+          "args": {
+            "name": "STRATEGY",
+            "suggestions": [
+              {
+                "name": "never"
+              },
+              {
+                "name": "always"
+              },
+              {
+                "name": "cursor"
+              }
+            ]
+          }
+        },
+        {
+          "name": "env",
+          "description": "Change the environment variables seen by processing in newly launched windows",
+          "args": {
+            "name": "ENV",
+            "isVariadic": true
+          }
+        },
+        {
+          "name": "focus-tab",
+          "description": "The active window in the specified tab will be focused",
+          "options": [
+            {
+              "name": [
+                "-m",
+                "--match"
+              ],
+              "description": "The tab to match",
+              "args": {
+                "name": "MATCH"
+              }
+            },
+            {
+              "name": [
+                "--no-response"
+              ],
+              "description": "Don't wait for a response indicating the success of the action"
+            }
+          ]
+        },
+        {
+          "name": "focus-window",
+          "description": "Focus the specified window, if no window is specified, focus the window this command is run inside",
+          "options": [
+            {
+              "name": [
+                "-m",
+                "--match"
+              ],
+              "description": "The window to match",
+              "args": {
+                "name": "MATCH"
+              }
+            },
+            {
+              "name": [
+                "--no-response"
+              ],
+              "description": "Don't wait for a response indicating the success of the action"
+            }
+          ]
+        },
+        {
+          "name": "get-colors",
+          "description": "Get the terminal colors for the specified window",
+          "options": [
+            {
+              "name": [
+                "-c",
+                "--configured"
+              ],
+              "description": "Instead of outputting the colors for the specified window, output the currently configured colors"
+            },
+            {
+              "name": [
+                "-m",
+                "--match"
+              ],
+              "description": "The window to match"
+            }
+          ]
+        },
+        {
+          "name": "get-text"
+        },
+        {
+          "name": "goto-layout"
+        },
+        {
+          "name": "kitten"
+        },
+        {
+          "name": "last-used-layout"
+        },
+        {
+          "name": "launch"
+        },
+        {
+          "name": "ls"
+        },
+        {
+          "name": "new-window"
+        },
+        {
+          "name": "remove-marker"
+        },
+        {
+          "name": "resize-os-window"
+        },
+        {
+          "name": "resize-window"
+        },
+        {
+          "name": "scroll-window"
+        },
+        {
+          "name": "select-window"
+        },
+        {
+          "name": "send-text"
+        },
+        {
+          "name": "set-background-image"
+        },
+        {
+          "name": "set-background-opacity"
+        },
+        {
+          "name": "set-colors"
+        },
+        {
+          "name": "set-enabled-layouts"
+        },
+        {
+          "name": "set-font-size"
+        },
+        {
+          "name": "set-spacing"
+        },
+        {
+          "name": "set-tab-color",
+          "description": "The foreground and background colors when active and inactive can be overridden using this command",
+          "options": [
+            {
+              "name": [
+                "-m",
+                "--match"
+              ],
+              "description": "The tab to match",
+              "args": {
+                "name": "MATCH"
+              }
+            },
+            {
+              "name": [
+                "--self"
+              ],
+              "description": "Close the window this command is run in, rather than the active window"
+            }
+          ]
+        },
+        {
+          "name": "set-tab-title",
+          "description": "Set the title for the specified tab(s)",
+          "options": [
+            {
+              "name": [
+                "-m",
+                "--match"
+              ],
+              "description": "The tab to match"
+            }
+          ]
+        },
+        {
+          "name": "set-window-logo"
+        },
+        {
+          "name": "set-window-title",
+          "description": "Set the title of the specified window(s)",
+          "options": [
+            {
+              "name": [
+                "-m",
+                "--match"
+              ],
+              "description": "The window to match"
+            },
+            {
+              "name": [
+                "--temporary"
+              ],
+              "description": "The title can be overwritten by escape sequences"
+            }
+          ]
+        },
+        {
+          "name": "signal-child",
+          "description": "Send one or more signals to the foreground process in the specified window(s)",
+          "options": [
+            {
+              "name": [
+                "-m",
+                "--match"
+              ],
+              "description": "The window to match"
+            }
+          ],
+          "args": {
+            "name": "SIGNAL",
+            "isVariadic": true
+          }
+        }
+      ],
+      "options": [
+        {
+          "name": [
+            "--to"
+          ],
+          "description": "An address for the kitty instance to control",
+          "args": {
+            "name": "TO"
+          }
+        }
+      ]
+    },
+    {
+      "name": "icat",
+      "description": "A cat like utility to display images in the terminal",
+      "options": [
+        {
+          "name": [
+            "--align"
+          ],
+          "description": "Horizontal alignment for the displayed image",
+          "args": {
+            "name": "ALIGN",
+            "suggestions": [
+              {
+                "name": "center"
+              },
+              {
+                "name": "left"
+              },
+              {
+                "name": "right"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--place"
+          ],
+          "description": "Choose where on the screen to display the image",
+          "args": {
+            "name": "PLACE",
+            "description": "<width>x<height>@<left>x<top>"
+          }
+        },
+        {
+          "name": [
+            "--scale-up"
+          ],
+          "description": "Images that are smaller than the specified area to be scaled up to use as much of the specified area as possible"
+        },
+        {
+          "name": [
+            "--background"
+          ],
+          "description": "Specify a background color, this will cause transparent images to be composited on top of the specified color",
+          "args": {
+            "name": "COLOR",
+            "suggestions": [
+              {
+                "name": "none"
+              },
+              {
+                "name": "black"
+              },
+              {
+                "name": "white"
+              },
+              {
+                "name": "gray"
+              },
+              {
+                "name": "red"
+              },
+              {
+                "name": "green"
+              },
+              {
+                "name": "blue"
+              },
+              {
+                "name": "yellow"
+              },
+              {
+                "name": "magenta"
+              },
+              {
+                "name": "cyan"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--mirror"
+          ],
+          "description": "Mirror the image about a horizontal or vertical axis or both",
+          "args": {
+            "name": "AXIS",
+            "suggestions": [
+              {
+                "name": "horizontal"
+              },
+              {
+                "name": "both"
+              },
+              {
+                "name": "none"
+              },
+              {
+                "name": "vertical"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--clear"
+          ],
+          "description": "Remove all images currently displayed on the screen"
+        },
+        {
+          "name": [
+            "--transfer-mode"
+          ],
+          "description": "Which mechanism to use to transfer images to the terminal",
+          "args": {
+            "name": "TRANSFER_MODE",
+            "suggestions": [
+              {
+                "name": "file"
+              },
+              {
+                "name": "detect"
+              },
+              {
+                "name": "stream"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--detect-support"
+          ],
+          "description": "Detect support for image display in the terminal"
+        },
+        {
+          "name": [
+            "--detection-timeout"
+          ],
+          "description": "How long to wait for detection to complete before aborting",
+          "args": {
+            "name": "TIMEOUT"
+          }
+        },
+        {
+          "name": [
+            "--print-window-size"
+          ],
+          "description": "Print the current terminal window size in pixels"
+        },
+        {
+          "name": [
+            "--stdin"
+          ],
+          "description": "Read an image from stdin"
+        }
+      ],
+      "args": {
+        "name": "image-file-or-url-or-directory",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": "+icat",
+      "description": "A cat like utility to display images in the terminal",
+      "options": [
+        {
+          "name": [
+            "--align"
+          ],
+          "description": "Horizontal alignment for the displayed image",
+          "args": {
+            "name": "ALIGN",
+            "suggestions": [
+              {
+                "name": "center"
+              },
+              {
+                "name": "left"
+              },
+              {
+                "name": "right"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--place"
+          ],
+          "description": "Choose where on the screen to display the image",
+          "args": {
+            "name": "PLACE",
+            "description": "<width>x<height>@<left>x<top>"
+          }
+        },
+        {
+          "name": [
+            "--scale-up"
+          ],
+          "description": "Images that are smaller than the specified area to be scaled up to use as much of the specified area as possible"
+        },
+        {
+          "name": [
+            "--background"
+          ],
+          "description": "Specify a background color, this will cause transparent images to be composited on top of the specified color",
+          "args": {
+            "name": "COLOR",
+            "suggestions": [
+              {
+                "name": "none"
+              },
+              {
+                "name": "black"
+              },
+              {
+                "name": "white"
+              },
+              {
+                "name": "gray"
+              },
+              {
+                "name": "red"
+              },
+              {
+                "name": "green"
+              },
+              {
+                "name": "blue"
+              },
+              {
+                "name": "yellow"
+              },
+              {
+                "name": "magenta"
+              },
+              {
+                "name": "cyan"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--mirror"
+          ],
+          "description": "Mirror the image about a horizontal or vertical axis or both",
+          "args": {
+            "name": "AXIS",
+            "suggestions": [
+              {
+                "name": "horizontal"
+              },
+              {
+                "name": "both"
+              },
+              {
+                "name": "none"
+              },
+              {
+                "name": "vertical"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--clear"
+          ],
+          "description": "Remove all images currently displayed on the screen"
+        },
+        {
+          "name": [
+            "--transfer-mode"
+          ],
+          "description": "Which mechanism to use to transfer images to the terminal",
+          "args": {
+            "name": "TRANSFER_MODE",
+            "suggestions": [
+              {
+                "name": "file"
+              },
+              {
+                "name": "detect"
+              },
+              {
+                "name": "stream"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--detect-support"
+          ],
+          "description": "Detect support for image display in the terminal"
+        },
+        {
+          "name": [
+            "--detection-timeout"
+          ],
+          "description": "How long to wait for detection to complete before aborting",
+          "args": {
+            "name": "TIMEOUT"
+          }
+        },
+        {
+          "name": [
+            "--print-window-size"
+          ],
+          "description": "Print the current terminal window size in pixels"
+        },
+        {
+          "name": [
+            "--stdin"
+          ],
+          "description": "Read an image from stdin"
+        }
+      ],
+      "args": {
+        "name": "image-file-or-url-or-directory",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": "+list-fonts"
+    },
+    {
+      "name": "+hold"
+    },
+    {
+      "name": "+complete"
+    },
+    {
+      "name": "+runpy"
+    },
+    {
+      "name": "+launch"
+    },
+    {
+      "name": "+open"
+    },
+    {
+      "name": "+kitten",
+      "subcommands": [
+        {
+          "name": "icat",
+          "description": "A cat like utility to display images in the terminal",
+          "options": [
+            {
+              "name": [
+                "--align"
+              ],
+              "description": "Horizontal alignment for the displayed image",
+              "args": {
+                "name": "ALIGN",
+                "suggestions": [
+                  {
+                    "name": "center"
+                  },
+                  {
+                    "name": "left"
+                  },
+                  {
+                    "name": "right"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "--place"
+              ],
+              "description": "Choose where on the screen to display the image",
+              "args": {
+                "name": "PLACE",
+                "description": "<width>x<height>@<left>x<top>"
+              }
+            },
+            {
+              "name": [
+                "--scale-up"
+              ],
+              "description": "Images that are smaller than the specified area to be scaled up to use as much of the specified area as possible"
+            },
+            {
+              "name": [
+                "--background"
+              ],
+              "description": "Specify a background color, this will cause transparent images to be composited on top of the specified color",
+              "args": {
+                "name": "COLOR",
+                "suggestions": [
+                  {
+                    "name": "none"
+                  },
+                  {
+                    "name": "black"
+                  },
+                  {
+                    "name": "white"
+                  },
+                  {
+                    "name": "gray"
+                  },
+                  {
+                    "name": "red"
+                  },
+                  {
+                    "name": "green"
+                  },
+                  {
+                    "name": "blue"
+                  },
+                  {
+                    "name": "yellow"
+                  },
+                  {
+                    "name": "magenta"
+                  },
+                  {
+                    "name": "cyan"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "--mirror"
+              ],
+              "description": "Mirror the image about a horizontal or vertical axis or both",
+              "args": {
+                "name": "AXIS",
+                "suggestions": [
+                  {
+                    "name": "horizontal"
+                  },
+                  {
+                    "name": "both"
+                  },
+                  {
+                    "name": "none"
+                  },
+                  {
+                    "name": "vertical"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "--clear"
+              ],
+              "description": "Remove all images currently displayed on the screen"
+            },
+            {
+              "name": [
+                "--transfer-mode"
+              ],
+              "description": "Which mechanism to use to transfer images to the terminal",
+              "args": {
+                "name": "TRANSFER_MODE",
+                "suggestions": [
+                  {
+                    "name": "file"
+                  },
+                  {
+                    "name": "detect"
+                  },
+                  {
+                    "name": "stream"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "--detect-support"
+              ],
+              "description": "Detect support for image display in the terminal"
+            },
+            {
+              "name": [
+                "--detection-timeout"
+              ],
+              "description": "How long to wait for detection to complete before aborting",
+              "args": {
+                "name": "TIMEOUT"
+              }
+            },
+            {
+              "name": [
+                "--print-window-size"
+              ],
+              "description": "Print the current terminal window size in pixels"
+            },
+            {
+              "name": [
+                "--stdin"
+              ],
+              "description": "Read an image from stdin"
+            }
+          ],
+          "args": {
+            "name": "image-file-or-url-or-directory",
+            "template": "filepaths"
+          }
+        },
+        {
+          "name": "diff",
+          "args": [
+            {
+              "name": "file1",
+              "template": "filepaths"
+            },
+            {
+              "name": "file2",
+              "template": "filepaths"
+            }
+          ]
+        },
+        {
+          "name": "show_key"
+        },
+        {
+          "name": "clipboard"
+        },
+        {
+          "name": "unicode_input"
+        },
+        {
+          "name": "panel"
+        },
+        {
+          "name": "transfer"
+        },
+        {
+          "name": "query_terminal"
+        },
+        {
+          "name": "broadcast"
+        },
+        {
+          "name": "hyperlinked_grep",
+          "options": [
+            {
+              "name": [
+                "-A",
+                "--after-context"
+              ],
+              "description": "Shows NUM lines after each match",
+              "args": {
+                "name": "Num"
+              }
+            },
+            {
+              "name": [
+                "--auto-hybrid-regex"
+              ],
+              "description": "When this flag is used, ripgrep will dynamically choose between supported regex engines depending on the features used in a pattern"
+            },
+            {
+              "name": [
+                "-B",
+                "--before-context"
+              ],
+              "description": "Shows NUM lines before each match",
+              "args": {
+                "name": "Num"
+              }
+            },
+            {
+              "name": [
+                "--binary"
+              ],
+              "description": "Enabling this flag will cause ripgrep to search binary files"
+            },
+            {
+              "name": [
+                "--block-buffered"
+              ],
+              "description": "When enabled, ripgrep will use block buffering"
+            },
+            {
+              "name": [
+                "-b",
+                "--byte-offset"
+              ],
+              "description": "Prints the 0-based byte offset within the input file before each line of output"
+            },
+            {
+              "name": [
+                "-s",
+                "--case-sensitive"
+              ],
+              "description": "Search case sensitively"
+            },
+            {
+              "name": [
+                "--color"
+              ],
+              "description": "Controls when to use colors",
+              "args": {
+                "name": "when",
+                "suggestions": [
+                  {
+                    "name": "never",
+                    "description": "Colors will never be used"
+                  },
+                  {
+                    "name": "auto",
+                    "description": "Ripgrep tries to be smart"
+                  },
+                  {
+                    "name": "always",
+                    "description": "Colors will always be used regardless of where output is sent"
+                  },
+                  {
+                    "name": "ansi",
+                    "description": "Colors will always be used, but emits ANSI escapes"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "--colors"
+              ],
+              "description": "Specifies color settings for use in the output",
+              "args": {
+                "name": "Color Spec",
+                "description": "{type}:{attribute}:{value}, ex: `match:fg:magenta`",
+                "isVariadic": true
+              }
+            },
+            {
+              "name": [
+                "--column"
+              ],
+              "description": "Shows column numbers for the first match on each line"
+            },
+            {
+              "name": [
+                "-C",
+                "--context"
+              ],
+              "description": "Shows NUM lines before and after each match",
+              "args": {
+                "name": "NUM"
+              }
+            },
+            {
+              "name": [
+                "--context-separator"
+              ],
+              "description": "The string used to separate non-contiguous context lines in the output",
+              "args": {
+                "name": "Separator"
+              }
+            },
+            {
+              "name": [
+                "-c",
+                "--count"
+              ],
+              "description": "Suppresses normal output and shows the number of lines that match the given pattersns for each file searched"
+            },
+            {
+              "name": [
+                "--count-matches"
+              ],
+              "description": "Suppresses normal output and shows the number of individual matches of the given patterns for each file searched"
+            },
+            {
+              "name": [
+                "--crlf"
+              ],
+              "description": "Treats CRLF as a line terminator instead of just a line break"
+            },
+            {
+              "name": [
+                "--debug"
+              ],
+              "description": "Shows debug messages"
+            },
+            {
+              "name": [
+                "--dfa-size-limit"
+              ],
+              "description": "The upper size limit of the regex DFA",
+              "args": [
+                {
+                  "name": "NUM"
+                },
+                {
+                  "name": "suffix",
+                  "isOptional": true
+                }
+              ]
+            },
+            {
+              "name": [
+                "-E",
+                "--encoding"
+              ],
+              "description": "Specifies the text encoding that ripgrep will use on all files searched",
+              "args": {
+                "name": "Encoding"
+              }
+            },
+            {
+              "name": [
+                "--engine"
+              ],
+              "description": "Specifies which regular expression engine to use",
+              "args": {
+                "name": "Engine",
+                "suggestions": [
+                  {
+                    "name": "default"
+                  },
+                  {
+                    "name": "pcre2"
+                  },
+                  {
+                    "name": "auto"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "-f",
+                "--file"
+              ],
+              "description": "Searches for patterns from the given file, with one pattern per line",
+              "args": {
+                "name": "Patternfile",
+                "template": "filepaths",
+                "isVariadic": true
+              }
+            },
+            {
+              "name": [
+                "--files"
+              ],
+              "description": "Prints each file that would be searched without actually performing the search"
+            },
+            {
+              "name": [
+                "-l",
+                "--files-with-matches"
+              ],
+              "description": "Only prints the paths with at least one match"
+            },
+            {
+              "name": [
+                "--files-without-match"
+              ],
+              "description": "Only prints the paths that contains zero matches"
+            },
+            {
+              "name": [
+                "-F",
+                "--fixed-strings"
+              ],
+              "description": "Treats the pattern as a literal string instead of a regular expression"
+            },
+            {
+              "name": [
+                "-L",
+                "--follow"
+              ],
+              "description": "Follows symbolic links while traversing directories"
+            },
+            {
+              "name": [
+                "-g",
+                "--glob"
+              ],
+              "description": "Includes or excludes files and directories for searching that match the given glob",
+              "args": {
+                "name": "GLOB",
+                "isVariadic": true
+              }
+            },
+            {
+              "name": [
+                "--glob-case-insensitive"
+              ],
+              "description": "Processes glob patterns given with the -g/--glob flag"
+            },
+            {
+              "name": [
+                "--heading"
+              ],
+              "description": "Prints the file path above clusters of matches from each file instead of printing the file path as a prefix for reach matched line"
+            },
+            {
+              "name": [
+                "--hidden"
+              ],
+              "description": "Searches hidden files and directories"
+            },
+            {
+              "name": [
+                "--iglob"
+              ],
+              "description": "Includes or excludes files and directories for searching that match given the glob",
+              "args": {
+                "name": "GLOB",
+                "template": [
+                  "filepaths",
+                  "folders"
+                ],
+                "isVariadic": true
+              }
+            },
+            {
+              "name": [
+                "--ignore-file"
+              ],
+              "description": "Specifies a path to one or more .gitignore format rules files",
+              "args": {
+                "name": "Path",
+                "template": "filepaths",
+                "isVariadic": true
+              }
+            },
+            {
+              "name": [
+                "--ignore-file-case-insensitive"
+              ],
+              "description": "Process ignores files case insensitively"
+            },
+            {
+              "name": [
+                "--include-zero"
+              ],
+              "description": "Prints the number of matchesfor each file when used with --count or --count matches"
+            },
+            {
+              "name": [
+                "-v",
+                "--invert-match"
+              ],
+              "description": "Inverts matching"
+            },
+            {
+              "name": [
+                "--json"
+              ],
+              "description": "Enables printing results in a JSON Lines format"
+            },
+            {
+              "name": [
+                "--no-json"
+              ],
+              "description": "Disables the JSON Lines format"
+            },
+            {
+              "name": [
+                "--line-buffered"
+              ],
+              "description": "Enables line buffering"
+            },
+            {
+              "name": [
+                "-n",
+                "--line-number"
+              ],
+              "description": "Shows the line numbers (1-based)"
+            },
+            {
+              "name": [
+                "-x",
+                "--line-regexp"
+              ],
+              "description": "Only shows matches surrounded by line boundaries"
+            },
+            {
+              "name": [
+                "-M",
+                "--max-columns"
+              ],
+              "description": "Don't print lines longer than this limit in bytes",
+              "args": {
+                "name": "NUM"
+              }
+            },
+            {
+              "name": [
+                "--max-columns-preview"
+              ],
+              "description": "Completely replaces any line that is too long with a message indicating that a matching line was removed"
+            },
+            {
+              "name": [
+                "-m",
+                "--max-count"
+              ],
+              "description": "Limits the number of matching lines per file searched to NUM",
+              "args": {
+                "name": "NUM"
+              }
+            },
+            {
+              "name": [
+                "--max-depth"
+              ],
+              "description": "Limits the depth of directory traversal to NUM levels beyond the paths given",
+              "args": {
+                "name": "NUM"
+              }
+            },
+            {
+              "name": [
+                "--max-filesize"
+              ],
+              "description": "Ignores files larger than NUM in size",
+              "args": [
+                {
+                  "name": "NUM"
+                },
+                {
+                  "name": "Suffix",
+                  "isOptional": true
+                }
+              ]
+            },
+            {
+              "name": [
+                "-mmap"
+              ],
+              "description": "Searches using memory maps when possible"
+            },
+            {
+              "name": [
+                "-U",
+                "--multiline"
+              ],
+              "description": "Enables matching across multiple lines"
+            },
+            {
+              "name": [
+                "--multiline-dotall"
+              ],
+              "description": "Enables dot all in your regex pattern"
+            },
+            {
+              "name": [
+                "--no-config"
+              ],
+              "description": "Never read configuration files"
+            },
+            {
+              "name": [
+                "-I",
+                "--no-filename"
+              ],
+              "description": "Never prints the file path with the matched lines"
+            },
+            {
+              "name": [
+                "--no-heading"
+              ],
+              "description": "Don't group matches by each file"
+            },
+            {
+              "name": [
+                "--no-ignore"
+              ],
+              "description": "Don't respect ignore files (.gitignore, .ignore, etc.)"
+            },
+            {
+              "name": [
+                "--no-ignore-dot"
+              ],
+              "description": "Don't respect .ignore files"
+            },
+            {
+              "name": [
+                "--no-ignore-excluded"
+              ],
+              "description": "Don't respect ignore files that are manually configured for the repository"
+            },
+            {
+              "name": [
+                "--no-ignore-files"
+              ],
+              "description": "Ignores any --ignore-file flags"
+            },
+            {
+              "name": [
+                "--no-ignore-global"
+              ],
+              "description": "Don't respect ignore files that come from `global` sources"
+            },
+            {
+              "name": [
+                "--no-ignore-messages"
+              ],
+              "description": "Suppresses all error messages related to parsing ignore files"
+            },
+            {
+              "name": [
+                "--no-ignore-parent"
+              ],
+              "description": "Don't repsect ignore files in parent directories"
+            },
+            {
+              "name": [
+                "--no-ignore-vcs"
+              ],
+              "description": "Don't respect version control ignore files"
+            },
+            {
+              "name": [
+                "-N",
+                "--no-line-number"
+              ],
+              "description": "Suppress line numbers"
+            },
+            {
+              "name": [
+                "--no-messages"
+              ],
+              "description": "Suppresses all error messages related to opening and reading files"
+            },
+            {
+              "name": [
+                "--no-map"
+              ],
+              "description": "Never use memory maps, even when they might be faster"
+            },
+            {
+              "name": [
+                "--no-pcre2-unicode"
+              ]
+            },
+            {
+              "name": [
+                "--no-require-git"
+              ],
+              "description": "Will only respect global gitignore rules"
+            },
+            {
+              "name": [
+                "--no-unicode"
+              ],
+              "description": "Turn off unicode"
+            },
+            {
+              "name": [
+                "--unicode"
+              ],
+              "description": "Disables --no-unicode flag"
+            },
+            {
+              "name": [
+                "-0",
+                "--null"
+              ],
+              "description": "Whenever a file path is printed, follow it with a NUL byte"
+            },
+            {
+              "name": [
+                "--null-data"
+              ],
+              "description": "Uses NUL as a line terminator instead of the default line break"
+            },
+            {
+              "name": [
+                "--one-file-system"
+              ],
+              "description": "Will not cross file system boundaries relative to where the search started from"
+            },
+            {
+              "name": [
+                "--no-one-file-system"
+              ],
+              "description": "Disables `--one-file-system` flag"
+            },
+            {
+              "name": [
+                "-o",
+                "--only-matching"
+              ],
+              "description": "Prints only the matched (non-empty) parts of a matching line, with each such part on a separate output line"
+            },
+            {
+              "name": [
+                "--passthru"
+              ],
+              "description": "Prints both matching and non-matching lines"
+            },
+            {
+              "name": [
+                "--path-separator"
+              ],
+              "description": "Sets the path separator to use when printing file paths",
+              "args": {
+                "name": "Separator"
+              }
+            },
+            {
+              "name": [
+                "-P",
+                "--pcre2"
+              ],
+              "description": "Usess the PCRE2 regex engine instead of its default regex engine"
+            },
+            {
+              "name": [
+                "--pcre2-version"
+              ],
+              "description": "Prints the version of PCRE2 in use"
+            },
+            {
+              "name": [
+                "--pre"
+              ],
+              "description": "For each input File, search the standard output of the command",
+              "args": {
+                "name": "Command"
+              }
+            },
+            {
+              "name": [
+                "--pre-glob"
+              ],
+              "description": "Only files that match the given set of globs will be handed to the command specified by the `--pre flag`",
+              "args": {
+                "name": "GLOB",
+                "isVariadic": true
+              }
+            },
+            {
+              "name": [
+                "-p",
+                "--pretty"
+              ],
+              "description": "Convenience alias for `--color always --heading --line-number`"
+            },
+            {
+              "name": [
+                "-q",
+                "--quiet"
+              ],
+              "description": "Do not print anything to stdout"
+            },
+            {
+              "name": [
+                "--regex-size-limit"
+              ],
+              "description": "Sets the upper size limit of the compiled regex",
+              "args": [
+                {
+                  "name": "NUM"
+                },
+                {
+                  "name": "Suffix",
+                  "isOptional": true
+                }
+              ]
+            },
+            {
+              "name": [
+                "-e",
+                "--regexp"
+              ],
+              "description": "A pattern to search for",
+              "args": {
+                "name": "Pattern",
+                "isVariadic": true
+              }
+            },
+            {
+              "name": [
+                "-r",
+                "--replace"
+              ],
+              "description": "Replace every match with the text given when printing results",
+              "args": {
+                "name": "Replacement Text"
+              }
+            },
+            {
+              "name": [
+                "-z",
+                "--search-zip"
+              ],
+              "description": "Search in compressed files"
+            },
+            {
+              "name": [
+                "-S",
+                "--smart-case"
+              ],
+              "description": "Searches case insensitively if the pattern is all lowercase"
+            },
+            {
+              "name": [
+                "--sort"
+              ],
+              "args": {
+                "name": "Sortby",
+                "suggestions": [
+                  {
+                    "name": "none",
+                    "description": "Do not sort results. Fastest. Can be multi-threaded"
+                  },
+                  {
+                    "name": "path",
+                    "description": "Sort by file path, Always single-threaded"
+                  },
+                  {
+                    "name": "modified",
+                    "description": "Sort by the last modified time on a file. Always single-threaded"
+                  },
+                  {
+                    "name": "accessed",
+                    "description": "Sort by the last accessed time on a file. Always single-threaded"
+                  },
+                  {
+                    "name": "created",
+                    "description": "Sort by the creation time on a file. Always single-threaded"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "--sortr"
+              ],
+              "description": "Enables sorting results in descending order",
+              "args": {
+                "name": "Sortby",
+                "suggestions": [
+                  {
+                    "name": "none",
+                    "description": "Do not sort results. Fastest. Can be multi-threaded"
+                  },
+                  {
+                    "name": "path",
+                    "description": "Sort by file path, Always single-threaded"
+                  },
+                  {
+                    "name": "modified",
+                    "description": "Sort by the last modified time on a file. Always single-threaded"
+                  },
+                  {
+                    "name": "accessed",
+                    "description": "Sort by the last accessed time on a file. Always single-threaded"
+                  },
+                  {
+                    "name": "created",
+                    "description": "Sort by the creation time on a file. Always single-threaded"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "--stats"
+              ],
+              "description": "Prints aggregate statistics about this ripgrep search"
+            },
+            {
+              "name": [
+                "-a",
+                "--text"
+              ],
+              "description": "Searches binary files as if they were text"
+            },
+            {
+              "name": [
+                "-j",
+                "--threads"
+              ],
+              "description": "The approximate number of threads to use",
+              "args": {
+                "name": "NUM"
+              }
+            },
+            {
+              "name": [
+                "--trim"
+              ],
+              "description": "All ASCII whitespace at the beginning of each line printed will be trimmed"
+            },
+            {
+              "name": [
+                "-t",
+                "--type"
+              ],
+              "description": "Only searches files matching TYPE",
+              "args": {
+                "name": "Type",
+                "isVariadic": true
+              }
+            },
+            {
+              "name": [
+                "--type-add"
+              ],
+              "description": "Add a new glob for a particular file type",
+              "args": {
+                "name": "Type Spec",
+                "isVariadic": true
+              }
+            },
+            {
+              "name": [
+                "--type-clear"
+              ],
+              "description": "Clear the file type globs previously defined for type",
+              "args": {
+                "name": "type",
+                "isVariadic": true
+              }
+            },
+            {
+              "name": [
+                "--type-list"
+              ],
+              "description": "Shows all supported file types and their corresponding globs"
+            },
+            {
+              "name": [
+                "-T",
+                "--type-not"
+              ],
+              "description": "Do not search files matching type",
+              "args": {
+                "name": "type",
+                "isVariadic": true
+              }
+            },
+            {
+              "name": [
+                "-u",
+                "--unrestricted"
+              ],
+              "description": "Reduce the level of smart searching, increase by adding `u`s, ex: -uuu"
+            },
+            {
+              "name": [
+                "--vimgrep"
+              ],
+              "description": "Shows results with every match on its own line, including line numbers and column nnumbers"
+            },
+            {
+              "name": [
+                "-H",
+                "--with-filename"
+              ],
+              "description": "Displays the file path for matches"
+            },
+            {
+              "name": [
+                "-w",
+                "--word-regexp"
+              ],
+              "description": "Only shows the matches surrounded by word boundaries"
+            }
+          ],
+          "args": [
+            {
+              "name": "Pattern",
+              "description": "A regular expression used for searching"
+            },
+            {
+              "name": "Path",
+              "description": "A file or directory to search",
+              "template": [
+                "filepaths",
+                "folders"
+              ],
+              "isVariadic": true,
+              "isOptional": true
+            }
+          ]
+        },
+        {
+          "name": "ssh",
+          "options": [
+            {
+              "name": [
+                "-1"
+              ],
+              "description": "Forces ssh to try protocol version 1 only"
+            },
+            {
+              "name": [
+                "-2"
+              ],
+              "description": "Forces ssh to try protocol version 2 only"
+            },
+            {
+              "name": [
+                "-4"
+              ],
+              "description": "Forces ssh to use IPv4 addresses only"
+            },
+            {
+              "name": [
+                "-6"
+              ],
+              "description": "Forces ssh to use IPv6 addresses only"
+            },
+            {
+              "name": [
+                "-A"
+              ],
+              "description": "Enables forwarding of the authentication agent connection"
+            },
+            {
+              "name": [
+                "-a"
+              ],
+              "description": "Disables forwarding of the authentication agent connection"
+            },
+            {
+              "name": [
+                "-b"
+              ],
+              "description": "Use bind_address on the local machine as the source address of the connection",
+              "args": {
+                "name": "bind address",
+                "description": "Source address of the connection"
+              }
+            },
+            {
+              "name": [
+                "-C"
+              ],
+              "description": "Requests compression of all data (including stdin, stdout, stderr, and data for forwarded X11 and TCP connections)"
+            },
+            {
+              "name": [
+                "-c"
+              ],
+              "description": "Selects the cipher specification for encrypting the session",
+              "args": {
+                "name": "cipher spec",
+                "description": "The selected cipher specification"
+              }
+            },
+            {
+              "name": [
+                "-D"
+              ],
+              "description": "Specifies a local 'dynamic' application-level port forwarding",
+              "args": {
+                "name": "port",
+                "description": "Port of the bind address"
+              }
+            },
+            {
+              "name": [
+                "-e"
+              ],
+              "description": "Sets the escape character for sessions with a pty (default: '~')",
+              "args": {
+                "name": "escape char",
+                "description": "Specified escape character"
+              }
+            },
+            {
+              "name": [
+                "-F"
+              ],
+              "description": "Specifies an alternative per-user configuration file",
+              "args": {
+                "name": "configfile",
+                "description": "Path to alternative config file",
+                "template": "filepaths"
+              }
+            },
+            {
+              "name": [
+                "-f"
+              ],
+              "description": "Requests ssh to go to background just before command execution"
+            },
+            {
+              "name": [
+                "-g"
+              ],
+              "description": "Allows remote hosts to connect to local forwarded ports"
+            },
+            {
+              "name": [
+                "-I"
+              ],
+              "description": "Specify the PKCS#11 shared library ssh should use to communicate with a PKCS#11 token providing the user's private RSA key",
+              "args": {
+                "name": "pkcs11"
+              }
+            },
+            {
+              "name": [
+                "-i"
+              ],
+              "description": "Selects a file from which the identity (private key) for public key authentication is read",
+              "args": {
+                "name": "identity file",
+                "description": "Path to identity (private key)",
+                "template": "filepaths"
+              }
+            },
+            {
+              "name": [
+                "-K"
+              ],
+              "description": "Enables GSSAPI-based authentication and forwarding (delegation) of GSSAPI credentials to the server"
+            },
+            {
+              "name": [
+                "-k"
+              ],
+              "description": "Disables forwarding (delegation) of GSSAPI credentials to the server"
+            },
+            {
+              "name": [
+                "-L"
+              ],
+              "description": "Specifies that the given port on the local (client) host is to be forwarded to the given host and port on the remote side",
+              "args": {
+                "name": "port:host:hostport",
+                "description": "Local port, followed by host and host port to forward to"
+              }
+            },
+            {
+              "name": [
+                "-l"
+              ],
+              "description": "Specifies the user to log in as on the remote machine",
+              "args": {
+                "name": "login name",
+                "description": "Name of user logging into remote machine"
+              }
+            },
+            {
+              "name": [
+                "-M"
+              ],
+              "description": "Places the ssh client into ``master'' mode for connection sharing"
+            },
+            {
+              "name": [
+                "-m"
+              ],
+              "description": "Additionally, for protocol version 2 a comma-separated list of MAC (message authentication code) algorithms can be specified in order of preference",
+              "args": {
+                "name": "mac spec"
+              }
+            },
+            {
+              "name": [
+                "-N"
+              ],
+              "description": "Do not execute a remote command"
+            },
+            {
+              "name": [
+                "-n"
+              ],
+              "description": "Redirects stdin from /dev/null (actually, prevents reading from stdin)"
+            },
+            {
+              "name": [
+                "-O"
+              ],
+              "description": "Control an active connection multiplexing master process",
+              "args": {
+                "name": "ctl cmd",
+                "description": "Command that's passed to the master process"
+              }
+            },
+            {
+              "name": [
+                "-o"
+              ],
+              "description": "Can be used to give options in the format used in the configuration file",
+              "args": {
+                "name": "option",
+                "description": "Options that can be specified in the format of the config file",
+                "suggestions": [
+                  {
+                    "name": "AddressFamily"
+                  },
+                  {
+                    "name": "BatchMode"
+                  },
+                  {
+                    "name": "BindAddress"
+                  },
+                  {
+                    "name": "ChallengeResponseAuthentication"
+                  },
+                  {
+                    "name": "CheckHostIP"
+                  },
+                  {
+                    "name": "Cipher"
+                  },
+                  {
+                    "name": "Ciphers"
+                  },
+                  {
+                    "name": "ClearAllForwardings"
+                  },
+                  {
+                    "name": "Compression"
+                  },
+                  {
+                    "name": "CompressionLevel"
+                  },
+                  {
+                    "name": "ConnectionAttempts"
+                  },
+                  {
+                    "name": "ConnectTimeout"
+                  },
+                  {
+                    "name": "ControlMaster"
+                  },
+                  {
+                    "name": "ControlPath"
+                  },
+                  {
+                    "name": "ControlPersist"
+                  },
+                  {
+                    "name": "DynamicForward"
+                  },
+                  {
+                    "name": "EscapeChar"
+                  },
+                  {
+                    "name": "ExitOnForwardFailure"
+                  },
+                  {
+                    "name": "ForwardAgent"
+                  },
+                  {
+                    "name": "ForwardX11"
+                  },
+                  {
+                    "name": "ForwardX11Timeout"
+                  },
+                  {
+                    "name": "ForwardX11Trusted"
+                  },
+                  {
+                    "name": "GatewayPorts"
+                  },
+                  {
+                    "name": "GlobalKnownHostsFile"
+                  },
+                  {
+                    "name": "GSSAPIAuthentication"
+                  },
+                  {
+                    "name": "GSSAPIDelegateCredentials"
+                  },
+                  {
+                    "name": "HashKnownHosts"
+                  },
+                  {
+                    "name": "Host"
+                  },
+                  {
+                    "name": "HostbasedAuthentication"
+                  },
+                  {
+                    "name": "HostKeyAlgorithms"
+                  },
+                  {
+                    "name": "HostKeyAlias"
+                  },
+                  {
+                    "name": "HostName"
+                  },
+                  {
+                    "name": "IdentityFile"
+                  },
+                  {
+                    "name": "IdentitiesOnly"
+                  },
+                  {
+                    "name": "IPQoS"
+                  },
+                  {
+                    "name": "KbdInteractiveAuthentication"
+                  },
+                  {
+                    "name": "KbdInteractiveDevices"
+                  },
+                  {
+                    "name": "KexAlgorithms"
+                  },
+                  {
+                    "name": "LocalCommand"
+                  },
+                  {
+                    "name": "LocalForward"
+                  },
+                  {
+                    "name": "LogLevel"
+                  },
+                  {
+                    "name": "MACs"
+                  },
+                  {
+                    "name": "NoHostAuthenticationForLocalhost"
+                  },
+                  {
+                    "name": "NumberOfPasswordPrompts"
+                  },
+                  {
+                    "name": "PasswordAuthentication"
+                  },
+                  {
+                    "name": "PermitLocalCommand"
+                  },
+                  {
+                    "name": "PKCS11Provider"
+                  },
+                  {
+                    "name": "Port"
+                  },
+                  {
+                    "name": "PreferredAuthentications"
+                  },
+                  {
+                    "name": "Protocol"
+                  },
+                  {
+                    "name": "ProxyCommand"
+                  },
+                  {
+                    "name": "PubkeyAuthentication"
+                  },
+                  {
+                    "name": "RekeyLimit"
+                  },
+                  {
+                    "name": "RequestTTY"
+                  },
+                  {
+                    "name": "RhostsRSAAuthentication"
+                  },
+                  {
+                    "name": "RSAAuthentication"
+                  },
+                  {
+                    "name": "SendEnv"
+                  },
+                  {
+                    "name": "ServerAliveInterval"
+                  },
+                  {
+                    "name": "ServerAliveCountMax"
+                  },
+                  {
+                    "name": "StrictHostKeyChecking"
+                  },
+                  {
+                    "name": "TCPKeepAlive"
+                  },
+                  {
+                    "name": "Tunnel"
+                  },
+                  {
+                    "name": "TunnelDevice"
+                  },
+                  {
+                    "name": "UsePrivilegedPort"
+                  },
+                  {
+                    "name": "User"
+                  },
+                  {
+                    "name": "UserKnownHostsFile"
+                  },
+                  {
+                    "name": "VerifyHostKeyDNS"
+                  },
+                  {
+                    "name": "VisualHostKey"
+                  },
+                  {
+                    "name": "XAuthLocation"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "-p"
+              ],
+              "description": "Port to connect to on the remote host",
+              "args": {
+                "name": "port",
+                "description": "Port to connect to"
+              }
+            },
+            {
+              "name": [
+                "-q"
+              ],
+              "description": "Quiet mode.  Causes most warning and diagnostic messages to be suppressed"
+            },
+            {
+              "name": [
+                "-R"
+              ],
+              "description": "Specifies that the given port on the remote (server) host is to be forwarded to the given host and port on the local side",
+              "args": {
+                "name": "port:host:hostport",
+                "description": "Local port, followed by host and host port to forward to"
+              }
+            },
+            {
+              "name": [
+                "-S"
+              ],
+              "description": "Specifies the location of a control socket for connection sharing, or the string 'none' to disable connection sharing",
+              "args": {
+                "name": "ctl_path",
+                "description": "Location of the control socket",
+                "template": "filepaths"
+              }
+            },
+            {
+              "name": [
+                "-s"
+              ],
+              "description": "May be used to request invocation of a subsystem on the remote system"
+            },
+            {
+              "name": [
+                "-T"
+              ],
+              "description": "Disable pseudo-tty allocation"
+            },
+            {
+              "name": [
+                "-t"
+              ],
+              "description": "Force pseudo-tty allocation"
+            },
+            {
+              "name": [
+                "-V"
+              ],
+              "description": "Display the version number and exit"
+            },
+            {
+              "name": [
+                "-v"
+              ],
+              "description": "Verbose mode.  Causes ssh to print debugging messages about its progress"
+            },
+            {
+              "name": [
+                "-W"
+              ],
+              "description": "Requests that standard input and output on the client be forwarded to host on port over the secure channel",
+              "args": {
+                "name": "host:port",
+                "description": "Host and port to forward to"
+              }
+            },
+            {
+              "name": [
+                "-w"
+              ],
+              "description": "Requests tunnel device forwarding with the specified tun(4) devices between the client (local_tun) and the server (remote_tun)",
+              "args": {
+                "name": "local tun",
+                "description": "Local device to forward to"
+              }
+            },
+            {
+              "name": [
+                "-X"
+              ],
+              "description": "Enables X11 forwarding"
+            },
+            {
+              "name": [
+                "-x"
+              ],
+              "description": "Disables X11 forwarding"
+            },
+            {
+              "name": [
+                "-Y"
+              ],
+              "description": "Enables trusted X11 forwarding"
+            },
+            {
+              "name": [
+                "-y"
+              ],
+              "description": "Send log information using the syslog(3) system module"
+            }
+          ],
+          "args": {
+            "name": "user@hostname",
+            "description": "Address of remote machine to log into",
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "async(n,e,o)=>{let{stdout:a}=await e({command:\"cat\",args:[`${o.environmentVariables.HOME}/.ssh/known_hosts`]});return a.split(`\n`).map(t=>{let s=p.exec(t);if(s)return String(s)}).filter((t,s,r)=>t&&r.indexOf(t)===s).map(t=>({name:(n[1].endsWith(\"@\")?n[1]:\"\")+t,description:\"SSH host\"}))}"
+              },
+              {
+                "requires_js": true,
+                "js_source": "async(n,e,o)=>(await c(\"config\",e,o.environmentVariables.HOME,\"~/.ssh\")).filter(t=>t.trim().toLowerCase().startsWith(\"host \")&&!t.includes(\"*\")).map(t=>({name:t.split(\" \")[1],description:\"SSH host\",priority:90}))"
+              },
+              {
+                "template": "history"
+              }
+            ]
+          }
+        },
+        {
+          "name": "choose"
+        },
+        {
+          "name": "ask"
+        },
+        {
+          "name": "themes",
+          "description": "Change the kitty theme"
+        },
+        {
+          "name": "hints"
+        },
+        {
+          "name": "remote_file"
+        },
+        {
+          "name": "show_error"
+        },
+        {
+          "name": "resize_window"
+        },
+        {
+          "name": "mouse_demo"
+        }
+      ]
+    },
+    {
+      "name": "+edit-config"
+    },
+    {
+      "name": "+shebang"
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "-T",
+        "--title"
+      ],
+      "description": "Set the OS window title",
+      "args": {
+        "name": "TITLE"
+      }
+    },
+    {
+      "name": [
+        "-C",
+        "--config"
+      ],
+      "description": "Specify a path to the configuration file(s) to use",
+      "args": {
+        "name": "CONFIG",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "-o",
+        "--override"
+      ],
+      "description": "Override individual configuration options"
+    },
+    {
+      "name": [
+        "-d",
+        "--directory",
+        "--working-directory"
+      ],
+      "description": "Change to the specified directory when launching",
+      "args": {
+        "name": "DIRECTORY",
+        "template": "folders"
+      }
+    },
+    {
+      "name": [
+        "--session"
+      ],
+      "description": "Path to a file containing the startup session",
+      "args": {
+        "name": "SESSION",
+        "template": "filepaths",
+        "suggestions": [
+          {
+            "name": "-",
+            "description": "Read from stdin"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--hold"
+      ],
+      "description": "Remain open after child process exits"
+    },
+    {
+      "name": [
+        "-1",
+        "--single-instance"
+      ],
+      "description": "Only a single instance of kitty will run"
+    },
+    {
+      "name": [
+        "--instance-group"
+      ],
+      "description": "Kitty will open a new window in an existing instance and quit immediately",
+      "args": {
+        "name": "INSTANCE_GROUP"
+      }
+    },
+    {
+      "name": [
+        "--wait-for-single-instance-window-close"
+      ],
+      "description": "The new window will not quit till the newly opened window is closed"
+    },
+    {
+      "name": [
+        "--listen-on"
+      ],
+      "description": "Tell kitty to listen on the specified address for control messages",
+      "args": {
+        "name": "LISTEN_ON"
+      }
+    },
+    {
+      "name": [
+        "--start-as"
+      ],
+      "description": "Control how the initial kitty window is created",
+      "args": {
+        "name": "START_AS",
+        "suggestions": [
+          {
+            "name": "normal"
+          },
+          {
+            "name": "fullscreen"
+          },
+          {
+            "name": "maximized"
+          },
+          {
+            "name": "minimized"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "-v",
+        "--version"
+      ],
+      "description": "The current kitty version"
+    },
+    {
+      "name": [
+        "-h",
+        "--help"
+      ],
+      "description": "Display this help message"
+    }
+  ],
+  "args": {}
+}

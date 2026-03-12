@@ -1,0 +1,110 @@
+{
+  "name": "playwright",
+  "subcommands": [
+    {
+      "name": "test",
+      "description": "Run tests with Playwright Test",
+      "options": [
+        {
+          "name": [
+            "-g"
+          ],
+          "description": "Run the test with the title",
+          "args": {
+            "name": "title"
+          }
+        },
+        {
+          "name": [
+            "--headed"
+          ],
+          "description": "Run tests in headed browsers"
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for command"
+        }
+      ],
+      "args": {
+        "name": "tests",
+        "description": "Test files to run",
+        "template": [
+          "filepaths",
+          "folders"
+        ],
+        "isVariadic": true,
+        "isOptional": true
+      }
+    },
+    {
+      "name": "install",
+      "description": "Running without arguments will install default browsers",
+      "options": [
+        {
+          "name": [
+            "--with-deps"
+          ],
+          "description": "Install system dependencies for browsers"
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for command"
+        }
+      ],
+      "args": {
+        "name": "browsers",
+        "description": "Browser to install",
+        "isVariadic": true,
+        "isOptional": true,
+        "suggestions": [
+          {
+            "name": "chromium"
+          },
+          {
+            "name": "chrome"
+          },
+          {
+            "name": "chrome-beta"
+          },
+          {
+            "name": "msedge"
+          },
+          {
+            "name": "msedge-beta"
+          },
+          {
+            "name": "msedge-dev"
+          },
+          {
+            "name": "firefox"
+          },
+          {
+            "name": "webkit"
+          }
+        ]
+      }
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "--version",
+        "-V"
+      ],
+      "description": "Output the version number"
+    },
+    {
+      "name": [
+        "--help",
+        "-h"
+      ],
+      "description": "Display help for command"
+    }
+  ]
+}

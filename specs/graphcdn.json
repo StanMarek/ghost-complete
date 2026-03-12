@@ -1,0 +1,115 @@
+{
+  "name": "graphcdn",
+  "description": "GraphCDN CLI",
+  "subcommands": [
+    {
+      "name": "login",
+      "description": "Authenticate the CLI",
+      "options": [
+        {
+          "name": [
+            "--token"
+          ],
+          "args": {
+            "name": "token"
+          }
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "init",
+      "description": "Create a new GraphCDN service",
+      "options": [
+        {
+          "name": [
+            "-y",
+            "--yes"
+          ],
+          "description": "Skip all the questions and just init"
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "pull",
+      "description": "Pull the latest service configuration",
+      "options": [
+        {
+          "name": [
+            "--service"
+          ],
+          "description": "Name of the service to pull from (only required without graphcdn.yml)",
+          "args": {
+            "name": "service",
+            "description": "Name of the environment to pull from"
+          }
+        },
+        {
+          "name": [
+            "--env"
+          ],
+          "args": {
+            "name": "env"
+          }
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "push",
+      "description": "Push and deploy the latest app configuration",
+      "options": [
+        {
+          "name": [
+            "--env"
+          ],
+          "args": {
+            "name": "env"
+          }
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ],
+      "args": {
+        "name": "field",
+        "isOptional": true,
+        "suggestions": [
+          {
+            "name": "schema"
+          },
+          {
+            "name": "rules"
+          }
+        ]
+      }
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ]
+}

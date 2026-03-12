@@ -1,0 +1,478 @@
+{
+  "name": "n",
+  "description": "Node version management",
+  "subcommands": [
+    {
+      "name": "i",
+      "description": "Install a Node.js version",
+      "args": {
+        "name": "version",
+        "suggestions": [
+          {
+            "name": "latest",
+            "description": "Newest official release"
+          },
+          {
+            "name": "lts",
+            "description": "Newest Long Term Support official release"
+          },
+          {
+            "name": "auto",
+            "description": "Read version from file: .n-node-version, .node-version, .nvmrc, or package.json"
+          },
+          {
+            "name": "engine",
+            "description": "Read version from package.json"
+          }
+        ],
+        "generators": [
+          {
+            "script": [
+              "n",
+              "lsr",
+              "--all"
+            ],
+            "requires_js": true,
+            "js_source": "function(e){let n=new Set,t=e.split(`\n`).slice(1);for(let i of t){n.add(i);let r=i.split(\".\");n.add(r[0]+\".\"+r[1]),n.add(r[0])}return Array.from(n).map(i=>({name:[i,`v${i}`],description:`Node.js ${i}`}))}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "rm",
+      "description": "Remove a Node.js version",
+      "args": {
+        "name": "version",
+        "isVariadic": true,
+        "suggestions": [
+          {
+            "name": "latest",
+            "description": "Newest official release"
+          },
+          {
+            "name": "lts",
+            "description": "Newest Long Term Support official release"
+          },
+          {
+            "name": "auto",
+            "description": "Read version from file: .n-node-version, .node-version, .nvmrc, or package.json"
+          },
+          {
+            "name": "engine",
+            "description": "Read version from package.json"
+          }
+        ],
+        "generators": [
+          {
+            "script": [
+              "n",
+              "lsr",
+              "--all"
+            ],
+            "requires_js": true,
+            "js_source": "function(e){let n=new Set,t=e.split(`\n`).slice(1);for(let i of t){n.add(i);let r=i.split(\".\");n.add(r[0]+\".\"+r[1]),n.add(r[0])}return Array.from(n).map(i=>({name:[i,`v${i}`],description:`Node.js ${i}`}))}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "prune",
+      "description": "Remove all cached Node.js versions except the installed version"
+    },
+    {
+      "name": "doctor",
+      "description": "Display diagnostics to help resolve problems"
+    },
+    {
+      "name": "uninstall",
+      "description": "Remove the installed Node.js"
+    },
+    {
+      "name": "ls",
+      "description": "Output downloaded versions"
+    },
+    {
+      "name": "lsr",
+      "description": "Output matching versions available for download",
+      "options": [
+        {
+          "name": [
+            "--all"
+          ],
+          "description": "Ls-remote displays all matches instead of last 20"
+        }
+      ],
+      "args": {
+        "name": "version",
+        "suggestions": [
+          {
+            "name": "latest",
+            "description": "Newest official release"
+          },
+          {
+            "name": "lts",
+            "description": "Newest Long Term Support official release"
+          },
+          {
+            "name": "auto",
+            "description": "Read version from file: .n-node-version, .node-version, .nvmrc, or package.json"
+          },
+          {
+            "name": "engine",
+            "description": "Read version from package.json"
+          }
+        ],
+        "generators": [
+          {
+            "script": [
+              "n",
+              "lsr",
+              "--all"
+            ],
+            "requires_js": true,
+            "js_source": "function(e){let n=new Set,t=e.split(`\n`).slice(1);for(let i of t){n.add(i);let r=i.split(\".\");n.add(r[0]+\".\"+r[1]),n.add(r[0])}return Array.from(n).map(i=>({name:[i,`v${i}`],description:`Node.js ${i}`}))}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "which",
+      "description": "Output path for downloaded node version",
+      "args": {
+        "name": "version",
+        "suggestions": [
+          {
+            "name": "latest",
+            "description": "Newest official release"
+          },
+          {
+            "name": "lts",
+            "description": "Newest Long Term Support official release"
+          },
+          {
+            "name": "auto",
+            "description": "Read version from file: .n-node-version, .node-version, .nvmrc, or package.json"
+          },
+          {
+            "name": "engine",
+            "description": "Read version from package.json"
+          }
+        ],
+        "generators": [
+          {
+            "script": [
+              "n",
+              "lsr",
+              "--all"
+            ],
+            "requires_js": true,
+            "js_source": "function(e){let n=new Set,t=e.split(`\n`).slice(1);for(let i of t){n.add(i);let r=i.split(\".\");n.add(r[0]+\".\"+r[1]),n.add(r[0])}return Array.from(n).map(i=>({name:[i,`v${i}`],description:`Node.js ${i}`}))}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "run",
+      "description": "Execute downloaded Node.js version with args",
+      "options": [
+        {
+          "name": [
+            "-e",
+            "--eval=..."
+          ],
+          "description": "Evaluate script",
+          "args": {}
+        },
+        {
+          "name": [
+            "--watch"
+          ],
+          "description": "Watch input files"
+        },
+        {
+          "name": [
+            "--watch-path"
+          ],
+          "description": "Specify a watch directory or file",
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          }
+        },
+        {
+          "name": [
+            "--watch-preserve-output"
+          ],
+          "description": "Disable the clearing of the console when watch mode restarts the process"
+        },
+        {
+          "name": [
+            "--env-file"
+          ],
+          "description": "Specify a file containing environment variables",
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          }
+        },
+        {
+          "name": [
+            "-p",
+            "--print"
+          ],
+          "description": "Evaluate script and print result"
+        },
+        {
+          "name": [
+            "-c",
+            "--check"
+          ],
+          "description": "Syntax check script without executing"
+        },
+        {
+          "name": [
+            "-v",
+            "--version"
+          ],
+          "description": "Print Node.js version"
+        },
+        {
+          "name": [
+            "-i",
+            "--interactive"
+          ],
+          "description": "Always enter the REPL even if stdin does not appear to be a terminal"
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print node command line options (currently set)"
+        },
+        {
+          "name": [
+            "--inspect"
+          ],
+          "description": "Activate inspector on host:port (default: 127.0.0.1:9229)",
+          "args": {
+            "name": "[host:]port",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--preserve-symlinks"
+          ],
+          "description": "Follows symlinks to directories when examining source code and templates for translation strings"
+        }
+      ],
+      "args": [
+        {
+          "name": "version",
+          "suggestions": [
+            {
+              "name": "latest",
+              "description": "Newest official release"
+            },
+            {
+              "name": "lts",
+              "description": "Newest Long Term Support official release"
+            },
+            {
+              "name": "auto",
+              "description": "Read version from file: .n-node-version, .node-version, .nvmrc, or package.json"
+            },
+            {
+              "name": "engine",
+              "description": "Read version from package.json"
+            }
+          ],
+          "generators": [
+            {
+              "script": [
+                "n",
+                "lsr",
+                "--all"
+              ],
+              "requires_js": true,
+              "js_source": "function(e){let n=new Set,t=e.split(`\n`).slice(1);for(let i of t){n.add(i);let r=i.split(\".\");n.add(r[0]+\".\"+r[1]),n.add(r[0])}return Array.from(n).map(i=>({name:[i,`v${i}`],description:`Node.js ${i}`}))}"
+            }
+          ]
+        },
+        {
+          "name": "node script",
+          "generators": [
+            {
+              "requires_js": true,
+              "js_source": "(m,g,w)=>ue(this,void 0,void 0,function*(){var p;let{isDangerous:b,currentWorkingDirectory:x,searchTerm:f}=w,O=(p=(0,v.getCurrentInsertedDirectory)(l??x,f,w))!==null&&p!==void 0?p:\"/\";try{let E=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:O}),Y=W(E.stdout.split(`\n`),[\".DS_Store\"]),q=[];for(let I of Y)if(I){let M=I.endsWith(\"/\")?\"folders\":\"filepaths\";(M===\"filepaths\"&&d!==\"only\"||M===\"folders\"&&d!==\"never\")&&q.push({type:M===\"filepaths\"?\"file\":\"folder\",name:I,insertValue:I,isDangerous:b,context:{templateType:M}})}return S(h(q))}catch{return[]}})"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "exec",
+      "description": "Execute command with modified PATH, so downloaded node version and npm first",
+      "args": [
+        {
+          "name": "version",
+          "suggestions": [
+            {
+              "name": "latest",
+              "description": "Newest official release"
+            },
+            {
+              "name": "lts",
+              "description": "Newest Long Term Support official release"
+            },
+            {
+              "name": "auto",
+              "description": "Read version from file: .n-node-version, .node-version, .nvmrc, or package.json"
+            },
+            {
+              "name": "engine",
+              "description": "Read version from package.json"
+            }
+          ],
+          "generators": [
+            {
+              "script": [
+                "n",
+                "lsr",
+                "--all"
+              ],
+              "requires_js": true,
+              "js_source": "function(e){let n=new Set,t=e.split(`\n`).slice(1);for(let i of t){n.add(i);let r=i.split(\".\");n.add(r[0]+\".\"+r[1]),n.add(r[0])}return Array.from(n).map(i=>({name:[i,`v${i}`],description:`Node.js ${i}`}))}"
+            }
+          ]
+        },
+        {
+          "name": "cmd"
+        },
+        {
+          "name": "args",
+          "isVariadic": true
+        }
+      ]
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "-V",
+        "--version"
+      ],
+      "description": "Output version of n"
+    },
+    {
+      "name": [
+        "-h",
+        "--help"
+      ],
+      "description": "Display help information"
+    },
+    {
+      "name": [
+        "-p",
+        "--preserve"
+      ],
+      "description": "Preserve npm and npx during install of Node.js"
+    },
+    {
+      "name": [
+        "--no-preserve"
+      ],
+      "description": "Do not preserve npm and npx during install of Node.js"
+    },
+    {
+      "name": [
+        "-q",
+        "--quiet"
+      ],
+      "description": "Disable curl output. Disable log messages processing \"auto\" and \"engine\" labels"
+    },
+    {
+      "name": [
+        "-d",
+        "--download"
+      ],
+      "description": "Download only"
+    },
+    {
+      "name": [
+        "-a",
+        "--arch"
+      ],
+      "description": "Override system architecture",
+      "args": {
+        "name": "Architecture",
+        "suggestions": [
+          {
+            "name": "x64"
+          },
+          {
+            "name": "arm64"
+          },
+          {
+            "name": "x86"
+          },
+          {
+            "name": "armv6l"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--insecure"
+      ],
+      "description": "Turn off certificate checking for https requests (may be needed from behind a proxy server)"
+    },
+    {
+      "name": [
+        "--use-xz"
+      ],
+      "description": "Override automatic detection of xz support and enable use of xz compressed node downloads"
+    },
+    {
+      "name": [
+        "--no-use-xz"
+      ],
+      "description": "Override automatic detection of xz support and disable use of xz compressed node downloads"
+    }
+  ],
+  "args": {
+    "name": "version",
+    "isOptional": true,
+    "suggestions": [
+      {
+        "name": "latest",
+        "description": "Newest official release"
+      },
+      {
+        "name": "lts",
+        "description": "Newest Long Term Support official release"
+      },
+      {
+        "name": "auto",
+        "description": "Read version from file: .n-node-version, .node-version, .nvmrc, or package.json"
+      },
+      {
+        "name": "engine",
+        "description": "Read version from package.json"
+      }
+    ],
+    "generators": [
+      {
+        "script": [
+          "n",
+          "lsr",
+          "--all"
+        ],
+        "requires_js": true,
+        "js_source": "function(e){let n=new Set,t=e.split(`\n`).slice(1);for(let i of t){n.add(i);let r=i.split(\".\");n.add(r[0]+\".\"+r[1]),n.add(r[0])}return Array.from(n).map(i=>({name:[i,`v${i}`],description:`Node.js ${i}`}))}"
+      }
+    ]
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "name": "sapphire",
+  "description": "CLI for the Sapphire Framework",
+  "subcommands": [
+    {
+      "name": "new",
+      "description": "Creates a new Sapphire project",
+      "options": [
+        {
+          "name": [
+            "-v",
+            "--verbose"
+          ],
+          "description": "Enable verbose logging"
+        }
+      ],
+      "args": {
+        "name": "name",
+        "description": "Project name",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "generate",
+      "description": "Generates a component/piece",
+      "args": [
+        {
+          "name": "component",
+          "description": "Component/piece name"
+        },
+        {
+          "name": "name",
+          "description": "File name",
+          "template": "filepaths"
+        }
+      ]
+    },
+    {
+      "name": "init",
+      "description": "Creates a config file on an existing Sapphire project"
+    },
+    {
+      "name": "help",
+      "description": "Display help for command",
+      "args": {
+        "name": "command",
+        "description": "Command to display help for",
+        "template": "help",
+        "isOptional": true
+      }
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "--help",
+        "-h"
+      ],
+      "description": "Show help for sapphire"
+    },
+    {
+      "name": [
+        "--version",
+        "-V"
+      ],
+      "description": "Output the version number"
+    }
+  ]
+}

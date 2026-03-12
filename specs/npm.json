@@ -1,96 +1,3221 @@
 {
   "name": "npm",
-  "description": "Node.js package manager",
+  "description": "Node package manager",
   "subcommands": [
     {
       "name": "install",
-      "description": "Install a package",
-      "args": [
-        { "name": "package", "description": "Package to install" }
-      ],
+      "description": "Install a package and its dependencies",
       "options": [
-        { "name": ["--save-dev", "-D"], "description": "Save as devDependency" },
-        { "name": ["--save-exact", "-E"], "description": "Save exact version" },
-        { "name": ["--global", "-g"], "description": "Install globally" },
-        { "name": ["--legacy-peer-deps"], "description": "Ignore peer dependency conflicts" }
-      ]
+        {
+          "name": [
+            "-P",
+            "--save-prod"
+          ],
+          "description": "Package will appear in your `dependencies`. This is the default unless `-D` or `-O` are present"
+        },
+        {
+          "name": [
+            "-D",
+            "--save-dev"
+          ],
+          "description": "Package will appear in your `devDependencies`"
+        },
+        {
+          "name": [
+            "-O",
+            "--save-optional"
+          ],
+          "description": "Package will appear in your `optionalDependencies`"
+        },
+        {
+          "name": [
+            "--no-save"
+          ],
+          "description": "Prevents saving to `dependencies`"
+        },
+        {
+          "name": [
+            "-E",
+            "--save-exact"
+          ],
+          "description": "Saved dependencies will be configured with an exact version rather than using npm's default semver range operator"
+        },
+        {
+          "name": [
+            "-B",
+            "--save-bundle"
+          ],
+          "description": "Saved dependencies will also be added to your bundleDependencies list"
+        },
+        {
+          "name": [
+            "-g",
+            "--global"
+          ],
+          "description": "Operates in 'global' mode, so that packages are installed into the prefix folder instead of the current working directory"
+        },
+        {
+          "name": [
+            "--global-style"
+          ],
+          "description": "Causes npm to install the package into your local node_modules folder with the same layout it uses with the global node_modules folder"
+        },
+        {
+          "name": [
+            "--legacy-bundling"
+          ],
+          "description": "Causes npm to install the package such that versions of npm prior to 1.4, such as the one included with node 0.8, can install the package"
+        },
+        {
+          "name": [
+            "--legacy-peer-deps"
+          ],
+          "description": "Bypass peerDependency auto-installation. Emulate install behavior of NPM v4 through v6"
+        },
+        {
+          "name": [
+            "--strict-peer-deps"
+          ],
+          "description": "If set to true, and --legacy-peer-deps is not set, then any conflicting peerDependencies will be treated as an install failure"
+        },
+        {
+          "name": [
+            "--no-package-lock"
+          ],
+          "description": "Ignores package-lock.json files when installing"
+        },
+        {
+          "name": [
+            "--registry"
+          ],
+          "description": "The base URL of the npm registry",
+          "args": {
+            "name": "registry"
+          }
+        },
+        {
+          "name": [
+            "--verbose"
+          ],
+          "description": "Show extra information",
+          "args": {
+            "name": "verbose"
+          }
+        },
+        {
+          "name": [
+            "--omit"
+          ],
+          "description": "Dependency types to omit from the installation tree on disk",
+          "args": {
+            "name": "Package type",
+            "suggestions": [
+              {
+                "name": "dev"
+              },
+              {
+                "name": "optional"
+              },
+              {
+                "name": "peer"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--ignore-scripts"
+          ],
+          "description": "If true, npm does not run scripts specified in package.json files"
+        },
+        {
+          "name": [
+            "--no-audit"
+          ],
+          "description": "Submit audit reports alongside the current npm command to the default registry and all registries configured for scopes"
+        },
+        {
+          "name": [
+            "--no-bin-links"
+          ],
+          "description": "Tells npm to not create symlinks (or .cmd shims on Windows) for package executables"
+        },
+        {
+          "name": [
+            "--no-fund"
+          ],
+          "description": "Hides the message at the end of each npm install acknowledging the number of dependencies looking for funding"
+        },
+        {
+          "name": [
+            "--dry-run"
+          ],
+          "description": "Indicates that you don't want npm to make any changes and that it should only report what it would have done"
+        },
+        {
+          "name": [
+            "-w",
+            "--workspace"
+          ],
+          "description": "Enable running a command in the context of the configured workspaces of the current project",
+          "args": {
+            "name": "workspace",
+            "isVariadic": true,
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-ws",
+            "--workspaces"
+          ],
+          "description": "Enable running a command in the context of all the configured workspaces"
+        }
+      ],
+      "args": {
+        "name": "package",
+        "isVariadic": true,
+        "isOptional": true,
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "async(s,c,p)=>{let t=s[s.length-1];if(t===\"\")return[];let r=n&&n.length>0?`+keywords:${n.join(\",\")}`:\"\",g=[\"-s\",\"-H\",\"Accept: application/json\",r?`https://api.npms.io/v2/search?size=20&q=${t}${r}`:`https://api.npms.io/v2/search/suggestions?q=${t}&size=20`],d=[\"-s\",\"-H\",\"Accept: application/vnd.npm.install-v1+json\",`https://registry.npmjs.org/${t.slice(0,-1)}`],P=m=>c({command:\"curl\",args:m[m.length-1]===\"@\"?d:g}),x=t.startsWith(\"@\")?j(t)>1:t.includes(\"@\");try{let m=JSON.parse((await P(t)).stdout);if(x){let w=Object.entries(m[\"dist-tags\"]||{}).map(([D,T])=>({name:D,description:T}));return w.push(...Object.keys(m.versions).map(D=>({name:D})).reverse()),w}return(r?m.results:m).map(w=>({name:w.package.name,description:w.package.description}))}catch(m){return console.error({error:m}),[]}}"
+          }
+        ]
+      }
     },
     {
       "name": "run",
-      "description": "Run a script defined in package.json",
-      "args": [
-        { "name": "script", "description": "Script name to run" }
-      ]
-    },
-    {
-      "name": "test",
-      "description": "Run the test script",
+      "description": "Run arbitrary package scripts",
       "options": [
-        { "name": ["--"], "description": "Pass arguments to test runner" }
-      ]
-    },
-    {
-      "name": "start",
-      "description": "Run the start script"
-    },
-    {
-      "name": "build",
-      "description": "Run the build script"
-    },
-    {
-      "name": "publish",
-      "description": "Publish a package to the registry",
-      "options": [
-        { "name": ["--access"], "description": "Set access level (public or restricted)" },
-        { "name": ["--tag"], "description": "Register with the given tag" },
-        { "name": ["--dry-run"], "description": "Do everything except actually publishing" }
-      ]
+        {
+          "name": [
+            "-w",
+            "--workspace"
+          ],
+          "description": "Enable running a command in the context of the configured workspaces of the current project",
+          "args": {
+            "name": "workspace",
+            "isVariadic": true,
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-ws",
+            "--workspaces"
+          ],
+          "description": "Enable running a command in the context of all the configured workspaces"
+        },
+        {
+          "name": [
+            "--if-present"
+          ],
+          "description": "Npm will not exit with an error code when run-script is invoked for a script that isn't defined in the scripts section of package.json"
+        },
+        {
+          "name": [
+            "--silent"
+          ]
+        },
+        {
+          "name": [
+            "--ignore-scripts"
+          ],
+          "description": "If true, npm does not run scripts specified in package.json files"
+        },
+        {
+          "name": [
+            "--script-shell"
+          ],
+          "description": "The shell to use for scripts run with the npm exec, npm run and npm init <pkg> commands",
+          "args": {
+            "name": "script-shell"
+          }
+        },
+        {
+          "name": [
+            "--"
+          ],
+          "args": {
+            "name": "args",
+            "isVariadic": true
+          }
+        }
+      ],
+      "args": {
+        "name": "script",
+        "description": "Script to run from your package.json",
+        "generators": [
+          {
+            "script": [
+              "bash",
+              "-c",
+              "until [[ -f package.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat package.json"
+            ],
+            "requires_js": true,
+            "js_source": "function(n,[s]){if(n.trim()==\"\")return[];try{let c=JSON.parse(n),p=c.scripts,t=c.fig||{};if(p)return Object.entries(p).map(([r,h])=>{let g=s===\"yarn\"?\"fig://icon?type=yarn\":\"fig://icon?type=npm\",d=t[r];return{name:r,icon:g,description:h,priority:51,...d}})}catch(c){console.error(c)}return[]}",
+            "cache": {
+              "cache_by_directory": true
+            }
+          }
+        ]
+      }
     },
     {
       "name": "init",
-      "description": "Create a package.json file",
+      "description": "Trigger the initialization",
       "options": [
-        { "name": ["-y", "--yes"], "description": "Skip the questionnaire" }
+        {
+          "name": [
+            "-y",
+            "--yes"
+          ],
+          "description": "Automatically answer 'yes' to any prompts that npm might print on the command line"
+        },
+        {
+          "name": [
+            "-w"
+          ],
+          "description": "Create the folders and boilerplate expected while also adding a reference to your project workspaces property",
+          "args": {
+            "name": "dir"
+          }
+        }
       ]
     },
     {
-      "name": "uninstall",
-      "description": "Remove a package",
-      "args": [
-        { "name": "package", "description": "Package to remove" }
-      ],
+      "name": "access",
+      "description": "Set access controls on private packages"
+    },
+    {
+      "name": "adduser",
+      "description": "Add a registry user account",
       "options": [
-        { "name": ["--save-dev", "-D"], "description": "Remove from devDependencies" },
-        { "name": ["--global", "-g"], "description": "Remove global package" }
+        {
+          "name": [
+            "--registry"
+          ],
+          "description": "The base URL of the npm registry",
+          "args": {
+            "name": "registry"
+          }
+        },
+        {
+          "name": [
+            "--scope"
+          ],
+          "description": "Associate an operation with a scope for a scoped registry",
+          "args": {
+            "name": "scope",
+            "description": "Scope name"
+          }
+        }
       ]
     },
     {
-      "name": "update",
-      "description": "Update packages",
-      "args": [
-        { "name": "package", "description": "Package to update" }
+      "name": "audit",
+      "description": "Run a security audit",
+      "subcommands": [
+        {
+          "name": "fix",
+          "description": "If the fix argument is provided, then remediations will be applied to the package tree",
+          "options": [
+            {
+              "name": [
+                "--dry-run"
+              ],
+              "description": "Indicates that you don't want npm to make any changes and that it should only report what it would have done"
+            },
+            {
+              "name": [
+                "-f",
+                "--force"
+              ],
+              "description": "Removes various protections against unfortunate side effects, common mistakes, unnecessary performance degradation, and malicious input"
+            },
+            {
+              "name": [
+                "-w",
+                "--workspace"
+              ],
+              "description": "Enable running a command in the context of the configured workspaces of the current project",
+              "args": {
+                "name": "workspace",
+                "isVariadic": true,
+                "generators": [
+                  {
+                    "requires_js": true,
+                    "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "-ws",
+                "--workspaces"
+              ],
+              "description": "Enable running a command in the context of all the configured workspaces"
+            }
+          ]
+        }
       ],
       "options": [
-        { "name": ["--global", "-g"], "description": "Update global packages" }
+        {
+          "name": [
+            "-w",
+            "--workspace"
+          ],
+          "description": "Enable running a command in the context of the configured workspaces of the current project",
+          "args": {
+            "name": "workspace",
+            "isVariadic": true,
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-ws",
+            "--workspaces"
+          ],
+          "description": "Enable running a command in the context of all the configured workspaces"
+        },
+        {
+          "name": [
+            "--audit-level"
+          ],
+          "description": "The minimum level of vulnerability for npm audit to exit with a non-zero exit code",
+          "args": {
+            "name": "audit",
+            "suggestions": [
+              {
+                "name": "info"
+              },
+              {
+                "name": "low"
+              },
+              {
+                "name": "moderate"
+              },
+              {
+                "name": "high"
+              },
+              {
+                "name": "critical"
+              },
+              {
+                "name": "none"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--package-lock-only"
+          ],
+          "description": "Current operation will only use the package-lock.json, ignoring node_modules"
+        },
+        {
+          "name": [
+            "--json"
+          ],
+          "description": "Show output in json format"
+        },
+        {
+          "name": [
+            "--omit"
+          ],
+          "description": "Dependency types to omit from the installation tree on disk",
+          "args": {
+            "name": "Package type",
+            "suggestions": [
+              {
+                "name": "dev"
+              },
+              {
+                "name": "optional"
+              },
+              {
+                "name": "peer"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "bin",
+      "description": "Print the folder where npm will install executables",
+      "options": [
+        {
+          "name": [
+            "-g",
+            "--global"
+          ],
+          "description": "Operates in 'global' mode, so that packages are installed into the prefix folder instead of the current working directory"
+        }
+      ]
+    },
+    {
+      "name": "bugs",
+      "description": "Report bugs for a package in a web browser",
+      "options": [
+        {
+          "name": [
+            "--no-browser"
+          ],
+          "description": "Display in command line instead of browser"
+        },
+        {
+          "name": [
+            "--browser"
+          ],
+          "description": "The browser that is called by the npm bugs command to open websites",
+          "args": {
+            "name": "browser"
+          }
+        },
+        {
+          "name": [
+            "--registry"
+          ],
+          "description": "The base URL of the npm registry",
+          "args": {
+            "name": "registry"
+          }
+        }
+      ],
+      "args": {
+        "name": "package",
+        "isVariadic": true,
+        "isOptional": true,
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "async(s,c,p)=>{let t=s[s.length-1];if(t===\"\")return[];let r=n&&n.length>0?`+keywords:${n.join(\",\")}`:\"\",g=[\"-s\",\"-H\",\"Accept: application/json\",r?`https://api.npms.io/v2/search?size=20&q=${t}${r}`:`https://api.npms.io/v2/search/suggestions?q=${t}&size=20`],d=[\"-s\",\"-H\",\"Accept: application/vnd.npm.install-v1+json\",`https://registry.npmjs.org/${t.slice(0,-1)}`],P=m=>c({command:\"curl\",args:m[m.length-1]===\"@\"?d:g}),x=t.startsWith(\"@\")?j(t)>1:t.includes(\"@\");try{let m=JSON.parse((await P(t)).stdout);if(x){let w=Object.entries(m[\"dist-tags\"]||{}).map(([D,T])=>({name:D,description:T}));return w.push(...Object.keys(m.versions).map(D=>({name:D})).reverse()),w}return(r?m.results:m).map(w=>({name:w.package.name,description:w.package.description}))}catch(m){return console.error({error:m}),[]}}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "cache",
+      "description": "Manipulates packages cache",
+      "subcommands": [
+        {
+          "name": "add",
+          "description": "Add the specified packages to the local cache"
+        },
+        {
+          "name": "clean",
+          "description": "Delete all data out of the cache folder"
+        },
+        {
+          "name": "verify",
+          "description": "Verify the contents of the cache folder, garbage collecting any unneeded data, and verifying the integrity of the cache index and all cached data"
+        }
+      ],
+      "options": [
+        {
+          "name": [
+            "--cache"
+          ],
+          "description": "The location of npm's cache directory",
+          "args": {
+            "name": "cache"
+          }
+        }
+      ]
+    },
+    {
+      "name": "ci",
+      "description": "Install a project with a clean slate",
+      "options": [
+        {
+          "name": [
+            "--audit"
+          ],
+          "description": "When \"true\" submit audit reports alongside the current npm command to the default registry and all registries configured for scopes",
+          "args": {
+            "name": "audit",
+            "suggestions": [
+              {
+                "name": "true"
+              },
+              {
+                "name": "false"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--no-audit"
+          ],
+          "description": "Do not submit audit reports alongside the current npm command"
+        },
+        {
+          "name": [
+            "--ignore-scripts"
+          ],
+          "description": "If true, npm does not run scripts specified in package.json files"
+        },
+        {
+          "name": [
+            "--script-shell"
+          ],
+          "description": "The shell to use for scripts run with the npm exec, npm run and npm init <pkg> commands",
+          "args": {
+            "name": "script-shell"
+          }
+        },
+        {
+          "name": [
+            "--verbose"
+          ],
+          "description": "Show extra information",
+          "args": {
+            "name": "verbose"
+          }
+        },
+        {
+          "name": [
+            "--registry"
+          ],
+          "description": "The base URL of the npm registry",
+          "args": {
+            "name": "registry"
+          }
+        }
+      ]
+    },
+    {
+      "name": "cit",
+      "description": "Install a project with a clean slate and run tests"
+    },
+    {
+      "name": "clean-install-test",
+      "description": "Install a project with a clean slate and run tests"
+    },
+    {
+      "name": "completion",
+      "description": "Tab completion for npm"
+    },
+    {
+      "name": "config",
+      "description": "Manage the npm configuration files",
+      "subcommands": [
+        {
+          "name": "set",
+          "description": "Sets the config key to the value",
+          "options": [
+            {
+              "name": [
+                "-g",
+                "--global"
+              ],
+              "description": "Sets it globally"
+            }
+          ],
+          "args": [
+            {
+              "name": "key"
+            },
+            {
+              "name": "value"
+            }
+          ]
+        },
+        {
+          "name": "get",
+          "description": "Echo the config value to stdout",
+          "args": {
+            "name": "key"
+          }
+        },
+        {
+          "name": "list",
+          "description": "Show all the config settings",
+          "options": [
+            {
+              "name": [
+                "-g"
+              ],
+              "description": "Lists globally installed packages"
+            },
+            {
+              "name": [
+                "-l"
+              ],
+              "description": "Also shows defaults"
+            },
+            {
+              "name": [
+                "--json"
+              ],
+              "description": "Show output in json format"
+            }
+          ]
+        },
+        {
+          "name": "delete",
+          "description": "Deletes the key from all configuration files",
+          "args": {
+            "name": "key"
+          }
+        },
+        {
+          "name": "edit",
+          "description": "Opens the config file in an editor",
+          "options": [
+            {
+              "name": [
+                "--global"
+              ],
+              "description": "Edits the global config"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "create",
+      "description": "Create a package.json file"
+    },
+    {
+      "name": "dedupe",
+      "description": "Reduce duplication in the package tree"
+    },
+    {
+      "name": "deprecate",
+      "description": "Deprecate a version of a package",
+      "options": [
+        {
+          "name": [
+            "--registry"
+          ],
+          "description": "The base URL of the npm registry",
+          "args": {
+            "name": "registry"
+          }
+        }
+      ]
+    },
+    {
+      "name": "dist-tag",
+      "description": "Modify package distribution tags"
+    },
+    {
+      "name": "docs",
+      "description": "Open documentation for a package in a web browser",
+      "options": [
+        {
+          "name": [
+            "-w",
+            "--workspace"
+          ],
+          "description": "Enable running a command in the context of the configured workspaces of the current project",
+          "args": {
+            "name": "workspace",
+            "isVariadic": true,
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-ws",
+            "--workspaces"
+          ],
+          "description": "Enable running a command in the context of all the configured workspaces"
+        },
+        {
+          "name": [
+            "--registry"
+          ],
+          "description": "The base URL of the npm registry",
+          "args": {
+            "name": "registry"
+          }
+        },
+        {
+          "name": [
+            "--no-browser"
+          ],
+          "description": "Display in command line instead of browser"
+        },
+        {
+          "name": [
+            "--browser"
+          ],
+          "description": "The browser that is called by the npm docs command to open websites",
+          "args": {
+            "name": "browser"
+          }
+        }
+      ],
+      "args": {
+        "name": "package",
+        "isVariadic": true,
+        "isOptional": true,
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "async(s,c,p)=>{let t=s[s.length-1];if(t===\"\")return[];let r=n&&n.length>0?`+keywords:${n.join(\",\")}`:\"\",g=[\"-s\",\"-H\",\"Accept: application/json\",r?`https://api.npms.io/v2/search?size=20&q=${t}${r}`:`https://api.npms.io/v2/search/suggestions?q=${t}&size=20`],d=[\"-s\",\"-H\",\"Accept: application/vnd.npm.install-v1+json\",`https://registry.npmjs.org/${t.slice(0,-1)}`],P=m=>c({command:\"curl\",args:m[m.length-1]===\"@\"?d:g}),x=t.startsWith(\"@\")?j(t)>1:t.includes(\"@\");try{let m=JSON.parse((await P(t)).stdout);if(x){let w=Object.entries(m[\"dist-tags\"]||{}).map(([D,T])=>({name:D,description:T}));return w.push(...Object.keys(m.versions).map(D=>({name:D})).reverse()),w}return(r?m.results:m).map(w=>({name:w.package.name,description:w.package.description}))}catch(m){return console.error({error:m}),[]}}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "doctor",
+      "description": "Check your npm environment",
+      "options": [
+        {
+          "name": [
+            "--registry"
+          ],
+          "description": "The base URL of the npm registry",
+          "args": {
+            "name": "registry"
+          }
+        }
+      ]
+    },
+    {
+      "name": "edit",
+      "description": "Edit an installed package",
+      "options": [
+        {
+          "name": [
+            "--editor"
+          ],
+          "description": "The command to run for npm edit or npm config edit"
+        }
+      ]
+    },
+    {
+      "name": "explore",
+      "description": "Browse an installed package",
+      "args": {
+        "name": "package",
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "async function(n,s){if(!n.includes(\"-g\")&&!n.includes(\"--global\")){let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=JSON.parse(p),r=t.dependencies??{},h=t.devDependencies,g=t.optionalDependencies??{};return Object.assign(r,h,g),Object.keys(r).filter(d=>!n.some(x=>x===d)).map(d=>({name:d,icon:\"\\u{1F4E6}\",description:r[d]?\"dependency\":g[d]?\"optionalDependency\":\"devDependency\"}))}else{let{stdout:c}=await s({command:\"bash\",args:[\"-c\",\"ls -1 `npm root -g`\"]});return c.split(`\n`).map(p=>({name:p,icon:\"\\u{1F4E6}\",description:\"Global dependency\"}))}}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "fund",
+      "description": "Retrieve funding information"
+    },
+    {
+      "name": "get",
+      "description": "Echo the config value to stdout"
+    },
+    {
+      "name": "help",
+      "description": "Get help on npm",
+      "options": [
+        {
+          "name": [
+            "--viewer"
+          ],
+          "description": "The program to use to view help content",
+          "args": {
+            "name": "viewer"
+          }
+        }
+      ],
+      "args": {
+        "name": "term",
+        "description": "Terms to search for",
+        "isVariadic": true
+      }
+    },
+    {
+      "name": "help-search",
+      "description": "Search npm help documentation",
+      "options": [
+        {
+          "name": [
+            "-l",
+            "--long"
+          ],
+          "description": "Show extended information"
+        }
+      ],
+      "args": {
+        "name": "text",
+        "description": "Text to search for"
+      }
+    },
+    {
+      "name": "hook",
+      "description": "Manage registry hooks"
+    },
+    {
+      "name": "install-ci-test",
+      "description": "Install a project with a clean slate and run tests"
+    },
+    {
+      "name": "install-test",
+      "description": "Install package(s) and run tests"
+    },
+    {
+      "name": "it",
+      "description": "Install package(s) and run tests"
+    },
+    {
+      "name": "link",
+      "description": "Symlink a package folder",
+      "args": {
+        "name": "path",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": "ln",
+      "description": "Symlink a package folder"
+    },
+    {
+      "name": "logout",
+      "description": "Log out of the registry",
+      "options": [
+        {
+          "name": [
+            "--registry"
+          ],
+          "description": "The base URL of the npm registry",
+          "args": {
+            "name": "registry"
+          }
+        },
+        {
+          "name": [
+            "--scope"
+          ],
+          "description": "Associate an operation with a scope for a scoped registry",
+          "args": {
+            "name": "scope",
+            "description": "Scope name"
+          }
+        }
       ]
     },
     {
       "name": "ls",
       "description": "List installed packages",
       "options": [
-        { "name": ["--all"], "description": "Show all packages" },
-        { "name": ["--depth"], "description": "Max display depth of the dependency tree" },
-        { "name": ["--global", "-g"], "description": "List global packages" },
-        { "name": ["--json"], "description": "Output in JSON format" }
+        {
+          "name": [
+            "-a",
+            "-all"
+          ],
+          "description": "Show all outdated or installed packages"
+        },
+        {
+          "name": [
+            "--json"
+          ],
+          "description": "Show output in json format"
+        },
+        {
+          "name": [
+            "-l",
+            "--long"
+          ],
+          "description": "Show extended information"
+        },
+        {
+          "name": [
+            "-p",
+            "--parseable"
+          ],
+          "description": "Output parseable results from commands that write to standard output"
+        },
+        {
+          "name": [
+            "--depth"
+          ],
+          "description": "The depth to go when recursing packages",
+          "args": {
+            "name": "depth"
+          }
+        },
+        {
+          "name": [
+            "--link"
+          ],
+          "description": "Limits output to only those packages that are linked"
+        },
+        {
+          "name": [
+            "--package-lock-only"
+          ],
+          "description": "Current operation will only use the package-lock.json, ignoring node_modules"
+        },
+        {
+          "name": [
+            "--no-unicode"
+          ],
+          "description": "Uses unicode characters in the tree output"
+        },
+        {
+          "name": [
+            "-g",
+            "--global"
+          ],
+          "description": "Operates in 'global' mode, so that packages are installed into the prefix folder instead of the current working directory"
+        },
+        {
+          "name": [
+            "--omit"
+          ],
+          "description": "Dependency types to omit from the installation tree on disk",
+          "args": {
+            "name": "Package type",
+            "suggestions": [
+              {
+                "name": "dev"
+              },
+              {
+                "name": "optional"
+              },
+              {
+                "name": "peer"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-w",
+            "--workspace"
+          ],
+          "description": "Enable running a command in the context of the configured workspaces of the current project",
+          "args": {
+            "name": "workspace",
+            "isVariadic": true,
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-ws",
+            "--workspaces"
+          ],
+          "description": "Enable running a command in the context of all the configured workspaces"
+        }
+      ],
+      "args": {
+        "name": "[@scope]/pkg",
+        "isVariadic": true
+      }
+    },
+    {
+      "name": "org",
+      "description": "Manage orgs",
+      "subcommands": [
+        {
+          "name": "set",
+          "description": "Add a user to an org or manage roles",
+          "options": [
+            {
+              "name": [
+                "--registry"
+              ],
+              "description": "The base URL of the npm registry",
+              "args": {
+                "name": "registry"
+              }
+            },
+            {
+              "name": [
+                "--otp"
+              ],
+              "description": "One-time password from a two-factor authenticator",
+              "args": {
+                "name": "otp"
+              }
+            }
+          ],
+          "args": [
+            {
+              "name": "orgname",
+              "description": "Organization name"
+            },
+            {
+              "name": "username",
+              "description": "User name"
+            },
+            {
+              "name": "role",
+              "isOptional": true,
+              "suggestions": [
+                {
+                  "name": "developer"
+                },
+                {
+                  "name": "admin"
+                },
+                {
+                  "name": "owner"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "rm",
+          "description": "Remove a user from an org",
+          "options": [
+            {
+              "name": [
+                "--registry"
+              ],
+              "description": "The base URL of the npm registry",
+              "args": {
+                "name": "registry"
+              }
+            },
+            {
+              "name": [
+                "--otp"
+              ],
+              "description": "One-time password from a two-factor authenticator",
+              "args": {
+                "name": "otp"
+              }
+            }
+          ],
+          "args": [
+            {
+              "name": "orgname",
+              "description": "Organization name"
+            },
+            {
+              "name": "username",
+              "description": "User name"
+            }
+          ]
+        },
+        {
+          "name": "ls",
+          "description": "List users in an org or see what roles a particular user has in an org",
+          "options": [
+            {
+              "name": [
+                "--registry"
+              ],
+              "description": "The base URL of the npm registry",
+              "args": {
+                "name": "registry"
+              }
+            },
+            {
+              "name": [
+                "--otp"
+              ],
+              "description": "One-time password from a two-factor authenticator",
+              "args": {
+                "name": "otp"
+              }
+            },
+            {
+              "name": [
+                "--json"
+              ],
+              "description": "Show output in json format"
+            },
+            {
+              "name": [
+                "-p",
+                "--parseable"
+              ],
+              "description": "Output parseable results from commands that write to standard output"
+            }
+          ],
+          "args": [
+            {
+              "name": "orgname",
+              "description": "Organization name"
+            },
+            {
+              "name": "username",
+              "description": "User name",
+              "isOptional": true
+            }
+          ]
+        }
       ]
     },
     {
-      "name": "audit",
-      "description": "Run a security audit",
+      "name": "outdated",
+      "description": "Check for outdated packages",
       "options": [
-        { "name": ["--fix"], "description": "Apply remediations to the package tree" },
-        { "name": ["--json"], "description": "Output in JSON format" },
-        { "name": ["--production"], "description": "Only audit production dependencies" }
+        {
+          "name": [
+            "-a",
+            "-all"
+          ],
+          "description": "Show all outdated or installed packages"
+        },
+        {
+          "name": [
+            "--json"
+          ],
+          "description": "Show output in json format"
+        },
+        {
+          "name": [
+            "-l",
+            "--long"
+          ],
+          "description": "Show extended information"
+        },
+        {
+          "name": [
+            "-p",
+            "--parseable"
+          ],
+          "description": "Output parseable results from commands that write to standard output"
+        },
+        {
+          "name": [
+            "-g"
+          ],
+          "description": "Checks globally"
+        },
+        {
+          "name": [
+            "-w",
+            "--workspace"
+          ],
+          "description": "Enable running a command in the context of the configured workspaces of the current project",
+          "args": {
+            "name": "workspace",
+            "isVariadic": true,
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-ws",
+            "--workspaces"
+          ],
+          "description": "Enable running a command in the context of all the configured workspaces"
+        }
+      ],
+      "args": {
+        "name": "[<@scope>/]<pkg>",
+        "isVariadic": true,
+        "isOptional": true
+      }
+    },
+    {
+      "name": "owner",
+      "description": "Manage package owners",
+      "subcommands": [
+        {
+          "name": "ls",
+          "description": "List all the users who have access to modify a package and push new versions. Handy when you need to know who to bug for help",
+          "options": [
+            {
+              "name": [
+                "--registry"
+              ],
+              "description": "The base URL of the npm registry",
+              "args": {
+                "name": "registry"
+              }
+            }
+          ],
+          "args": {
+            "name": "[@scope/]pkg"
+          }
+        },
+        {
+          "name": "add",
+          "description": "Add a new user as a maintainer of a package. This user is enabled to modify metadata, publish new versions, and add other owners",
+          "options": [
+            {
+              "name": [
+                "--registry"
+              ],
+              "description": "The base URL of the npm registry",
+              "args": {
+                "name": "registry"
+              }
+            },
+            {
+              "name": [
+                "--otp"
+              ],
+              "description": "One-time password from a two-factor authenticator",
+              "args": {
+                "name": "otp"
+              }
+            }
+          ],
+          "args": [
+            {
+              "name": "user"
+            },
+            {
+              "name": "[@scope/]pkg"
+            }
+          ]
+        },
+        {
+          "name": "rm",
+          "description": "Remove a user from the package owner list. This immediately revokes their privileges",
+          "options": [
+            {
+              "name": [
+                "--registry"
+              ],
+              "description": "The base URL of the npm registry",
+              "args": {
+                "name": "registry"
+              }
+            },
+            {
+              "name": [
+                "--otp"
+              ],
+              "description": "One-time password from a two-factor authenticator",
+              "args": {
+                "name": "otp"
+              }
+            }
+          ],
+          "args": [
+            {
+              "name": "user"
+            },
+            {
+              "name": "[@scope/]pkg"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "pack",
+      "description": "Create a tarball from a package",
+      "options": [
+        {
+          "name": [
+            "--json"
+          ],
+          "description": "Show output in json format"
+        },
+        {
+          "name": [
+            "--dry-run"
+          ],
+          "description": "Indicates that you don't want npm to make any changes and that it should only report what it would have done"
+        },
+        {
+          "name": [
+            "-w",
+            "--workspace"
+          ],
+          "description": "Enable running a command in the context of the configured workspaces of the current project",
+          "args": {
+            "name": "workspace",
+            "isVariadic": true,
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-ws",
+            "--workspaces"
+          ],
+          "description": "Enable running a command in the context of all the configured workspaces"
+        },
+        {
+          "name": [
+            "--pack-destination"
+          ],
+          "description": "Directory in which npm pack will save tarballs",
+          "args": {
+            "name": "pack-destination",
+            "template": [
+              "folders"
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "[<@scope>/]<pkg>"
+      }
+    },
+    {
+      "name": "ping",
+      "description": "Ping npm registry",
+      "options": [
+        {
+          "name": [
+            "--registry"
+          ],
+          "description": "The base URL of the npm registry",
+          "args": {
+            "name": "registry"
+          }
+        }
+      ]
+    },
+    {
+      "name": "pkg",
+      "description": "Manages your package.json",
+      "subcommands": [
+        {
+          "name": "get",
+          "description": "Retrieves a value key, defined in your package.json file. It is possible to get multiple values and values for child fields",
+          "options": [
+            {
+              "name": [
+                "--json"
+              ],
+              "description": "Show output in json format"
+            },
+            {
+              "name": [
+                "-w",
+                "--workspace"
+              ],
+              "description": "Enable running a command in the context of the configured workspaces of the current project",
+              "args": {
+                "name": "workspace",
+                "isVariadic": true,
+                "generators": [
+                  {
+                    "requires_js": true,
+                    "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "-ws",
+                "--workspaces"
+              ],
+              "description": "Enable running a command in the context of all the configured workspaces"
+            }
+          ],
+          "args": {
+            "name": "field",
+            "description": "Name of the field to get. You can view child fields by separating them with a period",
+            "isVariadic": true
+          }
+        },
+        {
+          "name": "set",
+          "description": "Sets a value in your package.json based on the field value. It is possible to set multiple values and values for child fields",
+          "options": [
+            {
+              "name": [
+                "--json"
+              ],
+              "description": "Show output in json format"
+            },
+            {
+              "name": [
+                "-w",
+                "--workspace"
+              ],
+              "description": "Enable running a command in the context of the configured workspaces of the current project",
+              "args": {
+                "name": "workspace",
+                "isVariadic": true,
+                "generators": [
+                  {
+                    "requires_js": true,
+                    "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "-ws",
+                "--workspaces"
+              ],
+              "description": "Enable running a command in the context of all the configured workspaces"
+            },
+            {
+              "name": [
+                "-f",
+                "--force"
+              ],
+              "description": "Removes various protections against unfortunate side effects, common mistakes, unnecessary performance degradation, and malicious input. Allow clobbering existing values in npm pkg"
+            }
+          ],
+          "args": {
+            "name": "field",
+            "description": "Name of the field to set. You can set child fields by separating them with a period",
+            "isVariadic": true
+          }
+        },
+        {
+          "name": "delete",
+          "description": "Deletes a key from your package.json",
+          "options": [
+            {
+              "name": [
+                "-w",
+                "--workspace"
+              ],
+              "description": "Enable running a command in the context of the configured workspaces of the current project",
+              "args": {
+                "name": "workspace",
+                "isVariadic": true,
+                "generators": [
+                  {
+                    "requires_js": true,
+                    "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "-ws",
+                "--workspaces"
+              ],
+              "description": "Enable running a command in the context of all the configured workspaces"
+            },
+            {
+              "name": [
+                "-f",
+                "--force"
+              ],
+              "description": "Removes various protections against unfortunate side effects, common mistakes, unnecessary performance degradation, and malicious input. Allow clobbering existing values in npm pkg"
+            }
+          ],
+          "args": {
+            "name": "key",
+            "description": "Name of the key to delete. You can delete child fields by separating them with a period",
+            "isVariadic": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "prefix",
+      "description": "Display prefix",
+      "options": [
+        {
+          "name": [
+            "-g",
+            "--global"
+          ],
+          "description": "Print the global prefix to standard out"
+        }
+      ]
+    },
+    {
+      "name": "profile",
+      "description": "Change settings on your registry profile",
+      "subcommands": [
+        {
+          "name": "get",
+          "description": "Display all of the properties of your profile, or one or more specific properties",
+          "options": [
+            {
+              "name": [
+                "--registry"
+              ],
+              "description": "The base URL of the npm registry",
+              "args": {
+                "name": "registry"
+              }
+            },
+            {
+              "name": [
+                "--json"
+              ],
+              "description": "Show output in json format"
+            },
+            {
+              "name": [
+                "-p",
+                "--parseable"
+              ],
+              "description": "Output parseable results from commands that write to standard output"
+            },
+            {
+              "name": [
+                "--otp"
+              ],
+              "description": "One-time password from a two-factor authenticator",
+              "args": {
+                "name": "otp"
+              }
+            }
+          ],
+          "args": {
+            "name": "property",
+            "description": "Property name",
+            "isOptional": true
+          }
+        },
+        {
+          "name": "set",
+          "description": "Set the value of a profile property",
+          "subcommands": [
+            {
+              "name": "password",
+              "description": "Change your password. This is interactive, you'll be prompted for your current password and a new password"
+            }
+          ],
+          "options": [
+            {
+              "name": [
+                "--registry"
+              ],
+              "description": "The base URL of the npm registry",
+              "args": {
+                "name": "registry"
+              }
+            },
+            {
+              "name": [
+                "--json"
+              ],
+              "description": "Show output in json format"
+            },
+            {
+              "name": [
+                "-p",
+                "--parseable"
+              ],
+              "description": "Output parseable results from commands that write to standard output"
+            },
+            {
+              "name": [
+                "--otp"
+              ],
+              "description": "One-time password from a two-factor authenticator",
+              "args": {
+                "name": "otp"
+              }
+            }
+          ],
+          "args": [
+            {
+              "name": "property",
+              "description": "Property name",
+              "suggestions": [
+                {
+                  "name": "email"
+                },
+                {
+                  "name": "fullname"
+                },
+                {
+                  "name": "homepage"
+                },
+                {
+                  "name": "freenode"
+                },
+                {
+                  "name": "twitter"
+                },
+                {
+                  "name": "github"
+                }
+              ]
+            },
+            {
+              "name": "value",
+              "description": "Property value"
+            }
+          ]
+        },
+        {
+          "name": "enable-2fa",
+          "description": "Enables two-factor authentication",
+          "options": [
+            {
+              "name": [
+                "--registry"
+              ],
+              "description": "The base URL of the npm registry",
+              "args": {
+                "name": "registry"
+              }
+            },
+            {
+              "name": [
+                "--otp"
+              ],
+              "description": "One-time password from a two-factor authenticator",
+              "args": {
+                "name": "otp"
+              }
+            }
+          ],
+          "args": {
+            "name": "mode",
+            "description": "Mode for two-factor authentication. Defaults to auth-and-writes mode",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "auth-only",
+                "description": "Require an OTP when logging in or making changes to your account's authentication"
+              },
+              {
+                "name": "auth-and-writes",
+                "description": "Requires an OTP at all the times auth-only does, and also requires one when publishing a module, setting the latest dist-tag, or changing access via npm access and npm owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "disable-2fa",
+          "description": "Disables two-factor authentication",
+          "options": [
+            {
+              "name": [
+                "--registry"
+              ],
+              "description": "The base URL of the npm registry",
+              "args": {
+                "name": "registry"
+              }
+            },
+            {
+              "name": [
+                "--otp"
+              ],
+              "description": "One-time password from a two-factor authenticator",
+              "args": {
+                "name": "otp"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "prune",
+      "description": "Remove extraneous packages",
+      "options": [
+        {
+          "name": [
+            "--omit"
+          ],
+          "description": "Dependency types to omit from the installation tree on disk",
+          "args": {
+            "name": "Package type",
+            "suggestions": [
+              {
+                "name": "dev"
+              },
+              {
+                "name": "optional"
+              },
+              {
+                "name": "peer"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--dry-run"
+          ],
+          "description": "Indicates that you don't want npm to make any changes and that it should only report what it would have done"
+        },
+        {
+          "name": [
+            "--json"
+          ],
+          "description": "Show output in json format"
+        },
+        {
+          "name": [
+            "--production"
+          ],
+          "description": "Remove the packages specified in your devDependencies"
+        },
+        {
+          "name": [
+            "-w",
+            "--workspace"
+          ],
+          "description": "Enable running a command in the context of the configured workspaces of the current project",
+          "args": {
+            "name": "workspace",
+            "isVariadic": true,
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-ws",
+            "--workspaces"
+          ],
+          "description": "Enable running a command in the context of all the configured workspaces"
+        }
+      ],
+      "args": {
+        "name": "[<@scope>/]<pkg>",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "publish",
+      "description": "Publish a package",
+      "options": [
+        {
+          "name": [
+            "--tag"
+          ],
+          "description": "Registers the published package with the given tag",
+          "args": {
+            "name": "tag"
+          }
+        },
+        {
+          "name": [
+            "-w",
+            "--workspace"
+          ],
+          "description": "Enable running a command in the context of the configured workspaces of the current project",
+          "args": {
+            "name": "workspace",
+            "isVariadic": true,
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-ws",
+            "--workspaces"
+          ],
+          "description": "Enable running a command in the context of all the configured workspaces"
+        },
+        {
+          "name": [
+            "--access"
+          ],
+          "description": "Sets scoped package to be publicly viewable if set to 'public'",
+          "args": {
+            "suggestions": [
+              {
+                "name": "restricted"
+              },
+              {
+                "name": "public"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--dry-run"
+          ],
+          "description": "Indicates that you don't want npm to make any changes and that it should only report what it would have done"
+        },
+        {
+          "name": [
+            "--otp"
+          ],
+          "description": "One-time password from a two-factor authenticator",
+          "args": {
+            "name": "otp"
+          }
+        }
+      ],
+      "args": {
+        "name": "tarball|folder",
+        "description": "A url or file path to a gzipped tar archive containing a single folder with a package.json file inside | A folder containing a package.json file",
+        "template": [
+          "folders"
+        ],
+        "isOptional": true
+      }
+    },
+    {
+      "name": "rebuild",
+      "description": "Rebuild a package",
+      "options": [
+        {
+          "name": [
+            "-g",
+            "--global"
+          ],
+          "description": "Operates in 'global' mode, so that packages are installed into the prefix folder instead of the current working directory"
+        },
+        {
+          "name": [
+            "-w",
+            "--workspace"
+          ],
+          "description": "Enable running a command in the context of the configured workspaces of the current project",
+          "args": {
+            "name": "workspace",
+            "isVariadic": true,
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-ws",
+            "--workspaces"
+          ],
+          "description": "Enable running a command in the context of all the configured workspaces"
+        },
+        {
+          "name": [
+            "--ignore-scripts"
+          ],
+          "description": "If true, npm does not run scripts specified in package.json files"
+        },
+        {
+          "name": [
+            "--no-bin-links"
+          ],
+          "description": "Tells npm to not create symlinks (or .cmd shims on Windows) for package executables"
+        }
+      ],
+      "args": {
+        "name": "[<@scope>/]<pkg>[@<version>]"
+      }
+    },
+    {
+      "name": "repo",
+      "description": "Open package repository page in the browser",
+      "options": [
+        {
+          "name": [
+            "-w",
+            "--workspace"
+          ],
+          "description": "Enable running a command in the context of the configured workspaces of the current project",
+          "args": {
+            "name": "workspace",
+            "isVariadic": true,
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-ws",
+            "--workspaces"
+          ],
+          "description": "Enable running a command in the context of all the configured workspaces"
+        },
+        {
+          "name": [
+            "--no-browser"
+          ],
+          "description": "Display in command line instead of browser"
+        },
+        {
+          "name": [
+            "--browser"
+          ],
+          "description": "The browser that is called by the npm repo command to open websites",
+          "args": {
+            "name": "browser"
+          }
+        }
+      ],
+      "args": {
+        "name": "package",
+        "isVariadic": true,
+        "isOptional": true,
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "async(s,c,p)=>{let t=s[s.length-1];if(t===\"\")return[];let r=n&&n.length>0?`+keywords:${n.join(\",\")}`:\"\",g=[\"-s\",\"-H\",\"Accept: application/json\",r?`https://api.npms.io/v2/search?size=20&q=${t}${r}`:`https://api.npms.io/v2/search/suggestions?q=${t}&size=20`],d=[\"-s\",\"-H\",\"Accept: application/vnd.npm.install-v1+json\",`https://registry.npmjs.org/${t.slice(0,-1)}`],P=m=>c({command:\"curl\",args:m[m.length-1]===\"@\"?d:g}),x=t.startsWith(\"@\")?j(t)>1:t.includes(\"@\");try{let m=JSON.parse((await P(t)).stdout);if(x){let w=Object.entries(m[\"dist-tags\"]||{}).map(([D,T])=>({name:D,description:T}));return w.push(...Object.keys(m.versions).map(D=>({name:D})).reverse()),w}return(r?m.results:m).map(w=>({name:w.package.name,description:w.package.description}))}catch(m){return console.error({error:m}),[]}}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "restart",
+      "description": "Restart a package",
+      "options": [
+        {
+          "name": [
+            "--ignore-scripts"
+          ],
+          "description": "If true, npm does not run scripts specified in package.json files"
+        },
+        {
+          "name": [
+            "--script-shell"
+          ],
+          "description": "The shell to use for scripts run with the npm exec, npm run and npm init <pkg> commands",
+          "args": {
+            "name": "script-shell"
+          }
+        },
+        {
+          "name": [
+            "--"
+          ],
+          "args": {
+            "name": "arg",
+            "description": "Arguments to be passed to the restart script"
+          }
+        }
+      ]
+    },
+    {
+      "name": "root",
+      "description": "Display npm root",
+      "options": [
+        {
+          "name": [
+            "-g",
+            "--global"
+          ],
+          "description": "Print the effective global node_modules folder to standard out"
+        }
+      ]
+    },
+    {
+      "name": "search",
+      "description": "Search for packages",
+      "options": [
+        {
+          "name": [
+            "-l",
+            "--long"
+          ],
+          "description": "Show extended information"
+        },
+        {
+          "name": [
+            "--json"
+          ],
+          "description": "Show output in json format"
+        },
+        {
+          "name": [
+            "--color"
+          ],
+          "description": "Show colors",
+          "args": {
+            "name": "always",
+            "description": "Always show colors",
+            "suggestions": [
+              {
+                "name": "always"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--no-color"
+          ],
+          "description": "Do not show colors"
+        },
+        {
+          "name": [
+            "-p",
+            "--parseable"
+          ],
+          "description": "Output parseable results from commands that write to standard output"
+        },
+        {
+          "name": [
+            "--no-description"
+          ],
+          "description": "Do not show descriptions"
+        },
+        {
+          "name": [
+            "--searchopts"
+          ],
+          "description": "Space-separated options that are always passed to search",
+          "args": {
+            "name": "searchopts"
+          }
+        },
+        {
+          "name": [
+            "--searchexclude"
+          ],
+          "description": "Space-separated options that limit the results from search",
+          "args": {
+            "name": "searchexclude"
+          }
+        },
+        {
+          "name": [
+            "--registry"
+          ],
+          "description": "The base URL of the npm registry",
+          "args": {
+            "name": "registry"
+          }
+        },
+        {
+          "name": [
+            "--prefer-online"
+          ],
+          "description": "If true, staleness checks for cached data will be forced, making the CLI look for updates immediately even for fresh package data"
+        },
+        {
+          "name": [
+            "--prefer-offline"
+          ],
+          "description": "If true, staleness checks for cached data will be bypassed, but missing data will be requested from the server"
+        },
+        {
+          "name": [
+            "--offline"
+          ],
+          "description": "Force offline mode: no network requests will be done during install"
+        }
+      ],
+      "args": {
+        "name": "search terms",
+        "isVariadic": true
+      }
+    },
+    {
+      "name": "set",
+      "description": "Sets the config key to the value"
+    },
+    {
+      "name": "set-script",
+      "description": "Set tasks in the scripts section of package.json",
+      "options": [
+        {
+          "name": [
+            "-w",
+            "--workspace"
+          ],
+          "description": "Enable running a command in the context of the configured workspaces of the current project",
+          "args": {
+            "name": "workspace",
+            "isVariadic": true,
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-ws",
+            "--workspaces"
+          ],
+          "description": "Enable running a command in the context of all the configured workspaces"
+        }
+      ],
+      "args": [
+        {
+          "name": "script",
+          "description": "Name of the task to be added to the scripts section of package.json"
+        },
+        {
+          "name": "command",
+          "description": "Command to run when script is called"
+        }
+      ]
+    },
+    {
+      "name": "shrinkwrap",
+      "description": "Lock down dependency versions for publication"
+    },
+    {
+      "name": "star",
+      "description": "Mark your favorite packages",
+      "options": [
+        {
+          "name": [
+            "--registry"
+          ],
+          "description": "The base URL of the npm registry",
+          "args": {
+            "name": "registry"
+          }
+        },
+        {
+          "name": [
+            "--no-unicode"
+          ],
+          "description": "Do not use unicode characters in the tree output"
+        }
+      ],
+      "args": {
+        "name": "pkg",
+        "description": "Package to mark as favorite"
+      }
+    },
+    {
+      "name": "stars",
+      "description": "View packages marked as favorites",
+      "options": [
+        {
+          "name": [
+            "--registry"
+          ],
+          "description": "The base URL of the npm registry",
+          "args": {
+            "name": "registry"
+          }
+        }
+      ],
+      "args": {
+        "name": "user",
+        "description": "View packages marked as favorites by <user>",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "start",
+      "description": "Start a package",
+      "options": [
+        {
+          "name": [
+            "--ignore-scripts"
+          ],
+          "description": "If true, npm does not run scripts specified in package.json files"
+        },
+        {
+          "name": [
+            "--script-shell"
+          ],
+          "description": "The shell to use for scripts run with the npm exec, npm run and npm init <pkg> commands",
+          "args": {
+            "name": "script-shell"
+          }
+        },
+        {
+          "name": [
+            "--"
+          ],
+          "args": {
+            "name": "arg",
+            "description": "Arguments to be passed to the start script"
+          }
+        }
+      ]
+    },
+    {
+      "name": "stop",
+      "description": "Stop a package",
+      "options": [
+        {
+          "name": [
+            "--ignore-scripts"
+          ],
+          "description": "If true, npm does not run scripts specified in package.json files"
+        },
+        {
+          "name": [
+            "--script-shell"
+          ],
+          "description": "The shell to use for scripts run with the npm exec, npm run and npm init <pkg> commands",
+          "args": {
+            "name": "script-shell"
+          }
+        },
+        {
+          "name": [
+            "--"
+          ],
+          "args": {
+            "name": "arg",
+            "description": "Arguments to be passed to the stop script"
+          }
+        }
+      ]
+    },
+    {
+      "name": "team",
+      "description": "Manage organization teams and team memberships",
+      "subcommands": [
+        {
+          "name": "create",
+          "options": [
+            {
+              "name": [
+                "--registry"
+              ],
+              "description": "The base URL of the npm registry",
+              "args": {
+                "name": "registry"
+              }
+            },
+            {
+              "name": [
+                "--otp"
+              ],
+              "description": "One-time password from a two-factor authenticator",
+              "args": {
+                "name": "otp"
+              }
+            }
+          ],
+          "args": {
+            "name": "scope:team"
+          }
+        },
+        {
+          "name": "destroy",
+          "options": [
+            {
+              "name": [
+                "--registry"
+              ],
+              "description": "The base URL of the npm registry",
+              "args": {
+                "name": "registry"
+              }
+            },
+            {
+              "name": [
+                "--otp"
+              ],
+              "description": "One-time password from a two-factor authenticator",
+              "args": {
+                "name": "otp"
+              }
+            }
+          ],
+          "args": {
+            "name": "scope:team"
+          }
+        },
+        {
+          "name": "add",
+          "options": [
+            {
+              "name": [
+                "--registry"
+              ],
+              "description": "The base URL of the npm registry",
+              "args": {
+                "name": "registry"
+              }
+            },
+            {
+              "name": [
+                "--otp"
+              ],
+              "description": "One-time password from a two-factor authenticator",
+              "args": {
+                "name": "otp"
+              }
+            }
+          ],
+          "args": [
+            {
+              "name": "scope:team"
+            },
+            {
+              "name": "user"
+            }
+          ]
+        },
+        {
+          "name": "rm",
+          "options": [
+            {
+              "name": [
+                "--registry"
+              ],
+              "description": "The base URL of the npm registry",
+              "args": {
+                "name": "registry"
+              }
+            },
+            {
+              "name": [
+                "--otp"
+              ],
+              "description": "One-time password from a two-factor authenticator",
+              "args": {
+                "name": "otp"
+              }
+            }
+          ],
+          "args": [
+            {
+              "name": "scope:team"
+            },
+            {
+              "name": "user"
+            }
+          ]
+        },
+        {
+          "name": "ls",
+          "options": [
+            {
+              "name": [
+                "--registry"
+              ],
+              "description": "The base URL of the npm registry",
+              "args": {
+                "name": "registry"
+              }
+            },
+            {
+              "name": [
+                "--json"
+              ],
+              "description": "Show output in json format"
+            },
+            {
+              "name": [
+                "-p",
+                "--parseable"
+              ],
+              "description": "Output parseable results from commands that write to standard output"
+            }
+          ],
+          "args": {
+            "name": "scope|scope:team"
+          }
+        }
+      ]
+    },
+    {
+      "name": "test",
+      "description": "Test a package",
+      "options": [
+        {
+          "name": [
+            "--ignore-scripts"
+          ],
+          "description": "If true, npm does not run scripts specified in package.json files"
+        },
+        {
+          "name": [
+            "--script-shell"
+          ],
+          "description": "The shell to use for scripts run with the npm exec, npm run and npm init <pkg> commands",
+          "args": {
+            "name": "script-shell"
+          }
+        }
+      ]
+    },
+    {
+      "name": "token",
+      "description": "Manage your authentication tokens",
+      "subcommands": [
+        {
+          "name": "list",
+          "description": "Shows a table of all active authentication tokens",
+          "options": [
+            {
+              "name": [
+                "--json"
+              ],
+              "description": "Show output in json format"
+            },
+            {
+              "name": [
+                "-p",
+                "--parseable"
+              ],
+              "description": "Output parseable results from commands that write to standard output"
+            }
+          ]
+        },
+        {
+          "name": "create",
+          "description": "Create a new authentication token",
+          "options": [
+            {
+              "name": [
+                "--read-only"
+              ],
+              "description": "This is used to mark a token as unable to publish when configuring limited access tokens with the npm token create command"
+            },
+            {
+              "name": [
+                "--cidr"
+              ],
+              "description": "This is a list of CIDR address to be used when configuring limited access tokens with the npm token create command",
+              "args": {
+                "name": "cidr"
+              }
+            }
+          ]
+        },
+        {
+          "name": "revoke",
+          "description": "Immediately removes an authentication token from the registry. You will no longer be able to use it",
+          "args": {
+            "name": "idtoken"
+          }
+        }
+      ],
+      "options": [
+        {
+          "name": [
+            "--registry"
+          ],
+          "description": "The base URL of the npm registry",
+          "args": {
+            "name": "registry"
+          }
+        },
+        {
+          "name": [
+            "--otp"
+          ],
+          "description": "One-time password from a two-factor authenticator",
+          "args": {
+            "name": "otp"
+          }
+        }
+      ]
+    },
+    {
+      "name": "uninstall",
+      "description": "Uninstall a package",
+      "options": [
+        {
+          "name": [
+            "-S",
+            "--save"
+          ],
+          "description": "Package will be removed from your dependencies"
+        },
+        {
+          "name": [
+            "-D",
+            "--save-dev"
+          ],
+          "description": "Package will appear in your `devDependencies`"
+        },
+        {
+          "name": [
+            "-O",
+            "--save-optional"
+          ],
+          "description": "Package will appear in your `optionalDependencies`"
+        },
+        {
+          "name": [
+            "--no-save"
+          ],
+          "description": "Prevents saving to `dependencies`"
+        },
+        {
+          "name": [
+            "-g"
+          ],
+          "description": "Uninstall global package"
+        },
+        {
+          "name": [
+            "-w",
+            "--workspace"
+          ],
+          "description": "Enable running a command in the context of the configured workspaces of the current project",
+          "args": {
+            "name": "workspace",
+            "isVariadic": true,
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-ws",
+            "--workspaces"
+          ],
+          "description": "Enable running a command in the context of all the configured workspaces"
+        }
+      ],
+      "args": {
+        "name": "package",
+        "isVariadic": true,
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "async function(n,s){if(!n.includes(\"-g\")&&!n.includes(\"--global\")){let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=JSON.parse(p),r=t.dependencies??{},h=t.devDependencies,g=t.optionalDependencies??{};return Object.assign(r,h,g),Object.keys(r).filter(d=>!n.some(x=>x===d)).map(d=>({name:d,icon:\"\\u{1F4E6}\",description:r[d]?\"dependency\":g[d]?\"optionalDependency\":\"devDependency\"}))}else{let{stdout:c}=await s({command:\"bash\",args:[\"-c\",\"ls -1 `npm root -g`\"]});return c.split(`\n`).map(p=>({name:p,icon:\"\\u{1F4E6}\",description:\"Global dependency\"}))}}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "r",
+      "description": "Uninstall a package",
+      "options": [
+        {
+          "name": [
+            "-S",
+            "--save"
+          ],
+          "description": "Package will be removed from your dependencies"
+        },
+        {
+          "name": [
+            "-D",
+            "--save-dev"
+          ],
+          "description": "Package will appear in your `devDependencies`"
+        },
+        {
+          "name": [
+            "-O",
+            "--save-optional"
+          ],
+          "description": "Package will appear in your `optionalDependencies`"
+        },
+        {
+          "name": [
+            "--no-save"
+          ],
+          "description": "Prevents saving to `dependencies`"
+        },
+        {
+          "name": [
+            "-g"
+          ],
+          "description": "Uninstall global package"
+        },
+        {
+          "name": [
+            "-w",
+            "--workspace"
+          ],
+          "description": "Enable running a command in the context of the configured workspaces of the current project",
+          "args": {
+            "name": "workspace",
+            "isVariadic": true,
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-ws",
+            "--workspaces"
+          ],
+          "description": "Enable running a command in the context of all the configured workspaces"
+        }
+      ],
+      "args": {
+        "name": "package",
+        "isVariadic": true,
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "async function(n,s){if(!n.includes(\"-g\")&&!n.includes(\"--global\")){let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=JSON.parse(p),r=t.dependencies??{},h=t.devDependencies,g=t.optionalDependencies??{};return Object.assign(r,h,g),Object.keys(r).filter(d=>!n.some(x=>x===d)).map(d=>({name:d,icon:\"\\u{1F4E6}\",description:r[d]?\"dependency\":g[d]?\"optionalDependency\":\"devDependency\"}))}else{let{stdout:c}=await s({command:\"bash\",args:[\"-c\",\"ls -1 `npm root -g`\"]});return c.split(`\n`).map(p=>({name:p,icon:\"\\u{1F4E6}\",description:\"Global dependency\"}))}}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "un",
+      "description": "Uninstall a package",
+      "options": [
+        {
+          "name": [
+            "-S",
+            "--save"
+          ],
+          "description": "Package will be removed from your dependencies"
+        },
+        {
+          "name": [
+            "-D",
+            "--save-dev"
+          ],
+          "description": "Package will appear in your `devDependencies`"
+        },
+        {
+          "name": [
+            "-O",
+            "--save-optional"
+          ],
+          "description": "Package will appear in your `optionalDependencies`"
+        },
+        {
+          "name": [
+            "--no-save"
+          ],
+          "description": "Prevents saving to `dependencies`"
+        },
+        {
+          "name": [
+            "-g"
+          ],
+          "description": "Uninstall global package"
+        },
+        {
+          "name": [
+            "-w",
+            "--workspace"
+          ],
+          "description": "Enable running a command in the context of the configured workspaces of the current project",
+          "args": {
+            "name": "workspace",
+            "isVariadic": true,
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-ws",
+            "--workspaces"
+          ],
+          "description": "Enable running a command in the context of all the configured workspaces"
+        }
+      ],
+      "args": {
+        "name": "package",
+        "isVariadic": true,
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "async function(n,s){if(!n.includes(\"-g\")&&!n.includes(\"--global\")){let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=JSON.parse(p),r=t.dependencies??{},h=t.devDependencies,g=t.optionalDependencies??{};return Object.assign(r,h,g),Object.keys(r).filter(d=>!n.some(x=>x===d)).map(d=>({name:d,icon:\"\\u{1F4E6}\",description:r[d]?\"dependency\":g[d]?\"optionalDependency\":\"devDependency\"}))}else{let{stdout:c}=await s({command:\"bash\",args:[\"-c\",\"ls -1 `npm root -g`\"]});return c.split(`\n`).map(p=>({name:p,icon:\"\\u{1F4E6}\",description:\"Global dependency\"}))}}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "remove",
+      "description": "Uninstall a package",
+      "options": [
+        {
+          "name": [
+            "-S",
+            "--save"
+          ],
+          "description": "Package will be removed from your dependencies"
+        },
+        {
+          "name": [
+            "-D",
+            "--save-dev"
+          ],
+          "description": "Package will appear in your `devDependencies`"
+        },
+        {
+          "name": [
+            "-O",
+            "--save-optional"
+          ],
+          "description": "Package will appear in your `optionalDependencies`"
+        },
+        {
+          "name": [
+            "--no-save"
+          ],
+          "description": "Prevents saving to `dependencies`"
+        },
+        {
+          "name": [
+            "-g"
+          ],
+          "description": "Uninstall global package"
+        },
+        {
+          "name": [
+            "-w",
+            "--workspace"
+          ],
+          "description": "Enable running a command in the context of the configured workspaces of the current project",
+          "args": {
+            "name": "workspace",
+            "isVariadic": true,
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-ws",
+            "--workspaces"
+          ],
+          "description": "Enable running a command in the context of all the configured workspaces"
+        }
+      ],
+      "args": {
+        "name": "package",
+        "isVariadic": true,
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "async function(n,s){if(!n.includes(\"-g\")&&!n.includes(\"--global\")){let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=JSON.parse(p),r=t.dependencies??{},h=t.devDependencies,g=t.optionalDependencies??{};return Object.assign(r,h,g),Object.keys(r).filter(d=>!n.some(x=>x===d)).map(d=>({name:d,icon:\"\\u{1F4E6}\",description:r[d]?\"dependency\":g[d]?\"optionalDependency\":\"devDependency\"}))}else{let{stdout:c}=await s({command:\"bash\",args:[\"-c\",\"ls -1 `npm root -g`\"]});return c.split(`\n`).map(p=>({name:p,icon:\"\\u{1F4E6}\",description:\"Global dependency\"}))}}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "unlink",
+      "description": "Uninstall a package",
+      "options": [
+        {
+          "name": [
+            "-S",
+            "--save"
+          ],
+          "description": "Package will be removed from your dependencies"
+        },
+        {
+          "name": [
+            "-D",
+            "--save-dev"
+          ],
+          "description": "Package will appear in your `devDependencies`"
+        },
+        {
+          "name": [
+            "-O",
+            "--save-optional"
+          ],
+          "description": "Package will appear in your `optionalDependencies`"
+        },
+        {
+          "name": [
+            "--no-save"
+          ],
+          "description": "Prevents saving to `dependencies`"
+        },
+        {
+          "name": [
+            "-g"
+          ],
+          "description": "Uninstall global package"
+        },
+        {
+          "name": [
+            "-w",
+            "--workspace"
+          ],
+          "description": "Enable running a command in the context of the configured workspaces of the current project",
+          "args": {
+            "name": "workspace",
+            "isVariadic": true,
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-ws",
+            "--workspaces"
+          ],
+          "description": "Enable running a command in the context of all the configured workspaces"
+        }
+      ],
+      "args": {
+        "name": "package",
+        "isVariadic": true,
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "async function(n,s){if(!n.includes(\"-g\")&&!n.includes(\"--global\")){let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=JSON.parse(p),r=t.dependencies??{},h=t.devDependencies,g=t.optionalDependencies??{};return Object.assign(r,h,g),Object.keys(r).filter(d=>!n.some(x=>x===d)).map(d=>({name:d,icon:\"\\u{1F4E6}\",description:r[d]?\"dependency\":g[d]?\"optionalDependency\":\"devDependency\"}))}else{let{stdout:c}=await s({command:\"bash\",args:[\"-c\",\"ls -1 `npm root -g`\"]});return c.split(`\n`).map(p=>({name:p,icon:\"\\u{1F4E6}\",description:\"Global dependency\"}))}}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "unpublish",
+      "description": "Remove a package from the registry",
+      "options": [
+        {
+          "name": [
+            "--dry-run"
+          ],
+          "description": "Indicates that you don't want npm to make any changes and that it should only report what it would have done"
+        },
+        {
+          "name": [
+            "-f",
+            "--force"
+          ],
+          "description": "Allow unpublishing all versions of a published package. Removes various protections against unfortunate side effects, common mistakes, unnecessary performance degradation, and malicious input"
+        },
+        {
+          "name": [
+            "-w",
+            "--workspace"
+          ],
+          "description": "Enable running a command in the context of the configured workspaces of the current project",
+          "args": {
+            "name": "workspace",
+            "isVariadic": true,
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-ws",
+            "--workspaces"
+          ],
+          "description": "Enable running a command in the context of all the configured workspaces"
+        }
+      ],
+      "args": {
+        "name": "[<@scope>/]<pkg>[@<version>]"
+      }
+    },
+    {
+      "name": "unstar",
+      "description": "Remove an item from your favorite packages",
+      "options": [
+        {
+          "name": [
+            "--registry"
+          ],
+          "description": "The base URL of the npm registry",
+          "args": {
+            "name": "registry"
+          }
+        },
+        {
+          "name": [
+            "--otp"
+          ],
+          "description": "One-time password from a two-factor authenticator",
+          "args": {
+            "name": "otp"
+          }
+        },
+        {
+          "name": [
+            "--no-unicode"
+          ],
+          "description": "Do not use unicode characters in the tree output"
+        }
+      ],
+      "args": {
+        "name": "pkg",
+        "description": "Package to unmark as favorite"
+      }
+    },
+    {
+      "name": "update",
+      "description": "Update a package",
+      "options": [
+        {
+          "name": [
+            "-g"
+          ],
+          "description": "Update global package"
+        },
+        {
+          "name": [
+            "--global-style"
+          ],
+          "description": "Causes npm to install the package into your local node_modules folder with the same layout it uses with the global node_modules folder"
+        },
+        {
+          "name": [
+            "--legacy-bundling"
+          ],
+          "description": "Causes npm to install the package such that versions of npm prior to 1.4, such as the one included with node 0.8, can install the package"
+        },
+        {
+          "name": [
+            "--strict-peer-deps"
+          ],
+          "description": "If set to true, and --legacy-peer-deps is not set, then any conflicting peerDependencies will be treated as an install failure"
+        },
+        {
+          "name": [
+            "--no-package-lock"
+          ],
+          "description": "Ignores package-lock.json files when installing"
+        },
+        {
+          "name": [
+            "--omit"
+          ],
+          "description": "Dependency types to omit from the installation tree on disk",
+          "args": {
+            "name": "Package type",
+            "suggestions": [
+              {
+                "name": "dev"
+              },
+              {
+                "name": "optional"
+              },
+              {
+                "name": "peer"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--ignore-scripts"
+          ],
+          "description": "If true, npm does not run scripts specified in package.json files"
+        },
+        {
+          "name": [
+            "--no-audit"
+          ],
+          "description": "Submit audit reports alongside the current npm command to the default registry and all registries configured for scopes"
+        },
+        {
+          "name": [
+            "--no-bin-links"
+          ],
+          "description": "Tells npm to not create symlinks (or .cmd shims on Windows) for package executables"
+        },
+        {
+          "name": [
+            "--no-fund"
+          ],
+          "description": "Hides the message at the end of each npm install acknowledging the number of dependencies looking for funding"
+        },
+        {
+          "name": [
+            "--save"
+          ],
+          "description": "Update the semver values of direct dependencies in your project package.json"
+        },
+        {
+          "name": [
+            "--dry-run"
+          ],
+          "description": "Indicates that you don't want npm to make any changes and that it should only report what it would have done"
+        },
+        {
+          "name": [
+            "-w",
+            "--workspace"
+          ],
+          "description": "Enable running a command in the context of the configured workspaces of the current project",
+          "args": {
+            "name": "workspace",
+            "isVariadic": true,
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-ws",
+            "--workspaces"
+          ],
+          "description": "Enable running a command in the context of all the configured workspaces"
+        }
+      ]
+    },
+    {
+      "name": "version",
+      "description": "Bump a package version",
+      "options": [
+        {
+          "name": [
+            "-w",
+            "--workspace"
+          ],
+          "description": "Enable running a command in the context of the configured workspaces of the current project",
+          "args": {
+            "name": "workspace",
+            "isVariadic": true,
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-ws",
+            "--workspaces"
+          ],
+          "description": "Enable running a command in the context of all the configured workspaces"
+        },
+        {
+          "name": [
+            "--json"
+          ],
+          "description": "Show output in json format"
+        },
+        {
+          "name": [
+            "--allow-same-version"
+          ],
+          "description": "Prevents throwing an error when npm version is used to set the new version to the same value as the current version"
+        },
+        {
+          "name": [
+            "--no-commit-hooks"
+          ],
+          "description": "Do not run git commit hooks when using the npm version command"
+        },
+        {
+          "name": [
+            "--no-git-tag-version"
+          ],
+          "description": "Do not tag the commit when using the npm version command"
+        },
+        {
+          "name": [
+            "--preid"
+          ],
+          "description": "The \"prerelease identifier\" to use as a prefix for the \"prerelease\" part of a semver. Like the rc in 1.2.0-rc.8",
+          "args": {
+            "name": "prerelease-id"
+          }
+        },
+        {
+          "name": [
+            "--sign-git-tag"
+          ],
+          "description": "If set to true, then the npm version command will tag the version using -s to add a signature"
+        }
+      ]
+    },
+    {
+      "name": "view",
+      "description": "View registry info",
+      "options": [
+        {
+          "name": [
+            "-w",
+            "--workspace"
+          ],
+          "description": "Enable running a command in the context of the configured workspaces of the current project",
+          "args": {
+            "name": "workspace",
+            "isVariadic": true,
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-ws",
+            "--workspaces"
+          ],
+          "description": "Enable running a command in the context of all the configured workspaces"
+        },
+        {
+          "name": [
+            "--json"
+          ],
+          "description": "Show output in json format"
+        }
+      ]
+    },
+    {
+      "name": "whoami",
+      "description": "Display npm username",
+      "options": [
+        {
+          "name": [
+            "--registry"
+          ],
+          "description": "The base URL of the npm registry",
+          "args": {
+            "name": "registry"
+          }
+        }
       ]
     }
   ]

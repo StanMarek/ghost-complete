@@ -1,0 +1,31 @@
+{
+  "name": "nr",
+  "description": "Use the right package manager - run",
+  "options": [
+    {
+      "name": [
+        "-h",
+        "--help"
+      ],
+      "description": "Output usage information"
+    }
+  ],
+  "args": {
+    "name": "script",
+    "description": "The script to run",
+    "generators": [
+      {
+        "script": [
+          "bash",
+          "-c",
+          "until [[ -f package.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat package.json"
+        ],
+        "requires_js": true,
+        "js_source": "function(n,[s]){if(n.trim()==\"\")return[];try{let c=JSON.parse(n),p=c.scripts,t=c.fig||{};if(p)return Object.entries(p).map(([r,h])=>{let g=s===\"yarn\"?\"fig://icon?type=yarn\":\"fig://icon?type=npm\",d=t[r];return{name:r,icon:g,description:h,priority:51,...d}})}catch(c){console.error(c)}return[]}",
+        "cache": {
+          "cache_by_directory": true
+        }
+      }
+    ]
+  }
+}

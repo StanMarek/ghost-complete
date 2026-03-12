@@ -1,0 +1,154 @@
+{
+  "name": "v",
+  "description": "The V Programming Language",
+  "subcommands": [
+    {
+      "name": "run",
+      "description": "Compile and run the program",
+      "args": {
+        "name": "file",
+        "description": "The input file",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": "crun",
+      "description": "Compile if executable inexistent or not updated and run the program",
+      "args": {
+        "name": "file",
+        "description": "The input file",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": "watch",
+      "description": "Watch the file for changes and recompile",
+      "subcommands": [
+        {
+          "name": "run",
+          "description": "Run the program after recompiling",
+          "args": {
+            "name": "file",
+            "description": "The input file",
+            "template": "filepaths"
+          }
+        }
+      ],
+      "args": {
+        "name": "file",
+        "description": "The input file",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": "new",
+      "description": "Setup the file structure for a V project (in a sub folder)"
+    },
+    {
+      "name": "init",
+      "description": "Setup the file structure for an already existing V project"
+    },
+    {
+      "name": "test",
+      "description": "Run all test files in the provided directory"
+    },
+    {
+      "name": "fmt",
+      "description": "Format the V code provided",
+      "args": {
+        "name": "file",
+        "description": "The input file",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": "vet",
+      "description": "Report suspicious code constructs"
+    },
+    {
+      "name": "doc",
+      "description": "Generate documentation for a V module"
+    },
+    {
+      "name": "vlib-docs",
+      "description": "Generate and open the documentation of all the vlib modules"
+    },
+    {
+      "name": "repl",
+      "description": "Run the REPL"
+    },
+    {
+      "name": "where",
+      "description": "Find and print the location of current project declarations"
+    },
+    {
+      "name": "symlink",
+      "description": "Create a symbolic link for V"
+    },
+    {
+      "name": "up",
+      "description": "Run the V self-updater"
+    },
+    {
+      "name": "self",
+      "description": "Run the V self-compiler",
+      "options": [
+        {
+          "name": [
+            "-prod"
+          ],
+          "description": "Compile V for production (optimize compilation)"
+        }
+      ]
+    },
+    {
+      "name": "help",
+      "description": "Display help for V",
+      "subcommands": [
+        {
+          "name": "other",
+          "description": "Display help for less frequently used commands"
+        },
+        {
+          "name": "topics",
+          "description": "Display a list of all known help topics"
+        }
+      ],
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "v",
+              "help",
+              "topics"
+            ],
+            "requires_js": true,
+            "js_source": "n=>n.trim().slice(19,-1).split(\", \").filter(i=>i!=\"other\").map(i=>({priority:0,name:i,description:`Display help for: \"${i}\"`}))"
+          }
+        ]
+      }
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "--help",
+        "-h"
+      ],
+      "description": "Show help for V"
+    },
+    {
+      "name": [
+        "version",
+        "--version",
+        "-v"
+      ],
+      "description": "Show V installed version"
+    }
+  ],
+  "args": {
+    "name": "file",
+    "description": "The file to compile",
+    "template": "filepaths"
+  }
+}

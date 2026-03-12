@@ -1,0 +1,105 @@
+{
+  "name": "projj",
+  "description": "Manage repository easily",
+  "subcommands": [
+    {
+      "name": "completion",
+      "description": "Generate completion script"
+    },
+    {
+      "name": "add",
+      "description": "Add repository",
+      "args": {
+        "name": "repository url"
+      }
+    },
+    {
+      "name": "find",
+      "description": "Find repository",
+      "args": {
+        "name": "repository name",
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "async(c,o,r)=>{let{stdout:n}=await o({command:\"cat\",args:[`${r.environmentVariables.HOME}/.projj/cache.json`]}),t=JSON.parse(n);return Object.keys(t).map(e=>({name:e.split(\"/\").pop(),description:t[e].repo}))}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "import",
+      "description": "Import repositories from existing directory",
+      "args": {
+        "name": "directory",
+        "template": "folders"
+      }
+    },
+    {
+      "name": "init",
+      "description": "Initialize configuration"
+    },
+    {
+      "name": "remove",
+      "description": "Remove repository",
+      "args": {
+        "name": "repository name",
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "async(c,o,r)=>{let{stdout:n}=await o({command:\"cat\",args:[`${r.environmentVariables.HOME}/.projj/cache.json`]}),t=JSON.parse(n);return Object.keys(t).map(e=>({name:e.split(\"/\").pop(),description:t[e].repo}))}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "run",
+      "description": "Run hook in current directory",
+      "args": {
+        "name": "hook name",
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "async(c,o,r)=>{let{stdout:n}=await o({command:\"cat\",args:[`${r.environmentVariables.HOME}/.projj/config.json`]}),e=JSON.parse(n).hooks;return Object.keys(e).map(a=>({name:a,description:e[a]}))}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "runall",
+      "description": "Run hook in every repository",
+      "args": {
+        "name": "hook name",
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "async(c,o,r)=>{let{stdout:n}=await o({command:\"cat\",args:[`${r.environmentVariables.HOME}/.projj/config.json`]}),e=JSON.parse(n).hooks;return Object.keys(e).map(a=>({name:a,description:e[a]}))}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "sync",
+      "description": "Sync data from directory",
+      "args": {
+        "name": "directory",
+        "template": "folders"
+      }
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "--help",
+        "-h"
+      ],
+      "description": "Show help for projj"
+    },
+    {
+      "name": [
+        "--version",
+        "-v"
+      ],
+      "description": "Show version number"
+    }
+  ]
+}

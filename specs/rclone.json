@@ -1,0 +1,1326 @@
+{
+  "name": "rclone",
+  "description": "The Swiss army knife of cloud storage",
+  "subcommands": [
+    {
+      "name": "about",
+      "description": "Get quota information from the remote",
+      "options": [
+        {
+          "name": [
+            "--full"
+          ],
+          "description": "Full numbers instead of SI units"
+        },
+        {
+          "name": [
+            "--json"
+          ],
+          "description": "Format output as JSON"
+        }
+      ],
+      "args": {
+        "name": "remote:",
+        "generators": [
+          {
+            "script": [
+              "rclone",
+              "listremotes"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "authorize",
+      "description": "Remote authorization",
+      "options": [
+        {
+          "name": [
+            "--auth-no-open-browser"
+          ],
+          "description": "Do not automatically open auth link in default browser"
+        }
+      ]
+    },
+    {
+      "name": "backend",
+      "description": "Run a backend specific command",
+      "options": [
+        {
+          "name": [
+            "--json"
+          ],
+          "description": "Format output as JSON"
+        }
+      ]
+    },
+    {
+      "name": "cat",
+      "description": "Concatenates any files and sends them to stdout",
+      "options": [
+        {
+          "name": [
+            "--discard"
+          ],
+          "description": "Discard the output instead of printing"
+        },
+        {
+          "name": [
+            "--count"
+          ],
+          "description": "Only print N characters. (default -1)",
+          "args": {
+            "name": "int"
+          }
+        },
+        {
+          "name": [
+            "--head"
+          ],
+          "description": "Only print the first N characters",
+          "args": {
+            "name": "int"
+          }
+        },
+        {
+          "name": [
+            "--offset"
+          ],
+          "description": "Start printing at offset N (or from end if -ve)",
+          "args": {
+            "name": "int"
+          }
+        },
+        {
+          "name": [
+            "--tail"
+          ],
+          "description": "Only print the last N characters",
+          "args": {
+            "name": "int"
+          }
+        }
+      ],
+      "args": {
+        "name": "remote:path",
+        "generators": [
+          {
+            "script": [
+              "rclone",
+              "listremotes"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "check",
+      "description": "Checks the files in the source and destination match",
+      "options": [
+        {
+          "name": [
+            "--download"
+          ],
+          "description": "Check by downloading rather than with hash"
+        },
+        {
+          "name": [
+            "--combined"
+          ],
+          "description": "Make a combined report of changes to this file",
+          "args": {
+            "template": "filepaths"
+          }
+        },
+        {
+          "name": [
+            "--differ"
+          ],
+          "description": "Report all non-matching files to this file",
+          "args": {
+            "template": "filepaths"
+          }
+        },
+        {
+          "name": [
+            "--error"
+          ],
+          "description": "Report all files with errors (hashing or reading) to this file",
+          "args": {
+            "template": "filepaths"
+          }
+        },
+        {
+          "name": [
+            "--match"
+          ],
+          "description": "Report all matching files to this file",
+          "args": {
+            "template": "filepaths"
+          }
+        },
+        {
+          "name": [
+            "--missing-on-dst"
+          ],
+          "description": "Report all files missing from the destination to this file",
+          "args": {
+            "template": "filepaths"
+          }
+        },
+        {
+          "name": [
+            "--missing-on-src"
+          ],
+          "description": "Report all files missing from the source to this file",
+          "args": {
+            "template": "filepaths"
+          }
+        },
+        {
+          "name": [
+            "--one-way"
+          ],
+          "description": "Check one way only, source files must exist on remote"
+        }
+      ],
+      "args": [
+        {
+          "name": "source:path",
+          "generators": [
+            {
+              "script": [
+                "rclone",
+                "listremotes"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "remote:path",
+          "generators": [
+            {
+              "script": [
+                "rclone",
+                "listremotes"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "cleanup",
+      "description": "Clean up the remote if possible",
+      "args": {
+        "name": "remote:path",
+        "generators": [
+          {
+            "script": [
+              "rclone",
+              "listremotes"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "config",
+      "description": "Enter an interactive configuration session",
+      "subcommands": [
+        {
+          "name": "create",
+          "description": "Create a new remote with name, type and options",
+          "args": [
+            {
+              "name": "name"
+            },
+            {
+              "name": "type"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "copy",
+      "description": "Copy files from source to dest, skipping already copied",
+      "args": [
+        {
+          "name": "source:path",
+          "generators": [
+            {
+              "script": [
+                "rclone",
+                "listremotes"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "dest:path",
+          "generators": [
+            {
+              "script": [
+                "rclone",
+                "listremotes"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "copyto",
+      "description": "Copy files from source to dest, skipping already copied",
+      "args": [
+        {
+          "name": "source:path",
+          "generators": [
+            {
+              "script": [
+                "rclone",
+                "listremotes"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "dest:path",
+          "generators": [
+            {
+              "script": [
+                "rclone",
+                "listremotes"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "copyurl",
+      "description": "Copy url content to dest",
+      "args": [
+        {
+          "name": "url"
+        },
+        {
+          "name": "dest:path",
+          "generators": [
+            {
+              "script": [
+                "rclone",
+                "listremotes"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "cryptcheck",
+      "description": "Cryptcheck checks the integrity of a crypted remote",
+      "options": [
+        {
+          "name": [
+            "--combined"
+          ],
+          "description": "Make a combined report of changes to this file",
+          "args": {
+            "template": "filepaths"
+          }
+        },
+        {
+          "name": [
+            "--differ"
+          ],
+          "description": "Report all non-matching files to this file",
+          "args": {
+            "template": "filepaths"
+          }
+        },
+        {
+          "name": [
+            "--error"
+          ],
+          "description": "Report all files with errors (hashing or reading) to this file",
+          "args": {
+            "template": "filepaths"
+          }
+        },
+        {
+          "name": [
+            "--match"
+          ],
+          "description": "Report all matching files to this file",
+          "args": {
+            "template": "filepaths"
+          }
+        },
+        {
+          "name": [
+            "--missing-on-dst"
+          ],
+          "description": "Report all files missing from the destination to this file",
+          "args": {
+            "template": "filepaths"
+          }
+        },
+        {
+          "name": [
+            "--missing-on-src"
+          ],
+          "description": "Report all files missing from the source to this file",
+          "args": {
+            "template": "filepaths"
+          }
+        },
+        {
+          "name": [
+            "--one-way"
+          ],
+          "description": "Check one way only, source files must exist on remote"
+        }
+      ],
+      "args": [
+        {
+          "name": "remote:path",
+          "generators": [
+            {
+              "script": [
+                "rclone",
+                "listremotes"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "cryptedremote",
+          "generators": [
+            {
+              "script": [
+                "rclone",
+                "listremotes"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "cryptdecode",
+      "description": "Cryptdecode returns unencrypted file names",
+      "options": [
+        {
+          "name": [
+            "--reverse"
+          ],
+          "description": "Reverse cryptdecode, encrypts filenames"
+        }
+      ],
+      "args": [
+        {
+          "name": "cryptedremote",
+          "generators": [
+            {
+              "script": [
+                "rclone",
+                "listremotes"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "encryptedfilename",
+          "isVariadic": true
+        }
+      ]
+    },
+    {
+      "name": "dedupe",
+      "description": "Interactively find duplicate filenames and delete/rename them",
+      "options": [
+        {
+          "name": [
+            "--by-hash"
+          ],
+          "description": "Find identical hashes rather than names"
+        },
+        {
+          "name": [
+            "--dedupe-mode"
+          ],
+          "description": "Dedupe mode",
+          "args": {
+            "name": "mode",
+            "suggestions": [
+              {
+                "name": "interactive",
+                "description": "Interactive"
+              },
+              {
+                "name": "skip",
+                "description": "Removes identical files then skips anything left"
+              },
+              {
+                "name": "rename",
+                "description": "Removes identical files then renames the rest to be different"
+              },
+              {
+                "name": "list",
+                "description": "Lists duplicate dirs and files only and changes nothing"
+              },
+              {
+                "name": "first",
+                "description": "removes identical files then keeps the first one."
+              },
+              {
+                "name": "newest",
+                "description": "removes identical files then keeps the newest one."
+              },
+              {
+                "name": "oldest",
+                "description": "removes identical files then keeps the oldest one."
+              },
+              {
+                "name": "largest",
+                "description": "removes identical files then keeps the largest one."
+              },
+              {
+                "name": "smallest",
+                "description": "removes identical files then keeps the smallest one."
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "remote:path",
+        "generators": [
+          {
+            "script": [
+              "rclone",
+              "listremotes"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "delete",
+      "description": "Remove the files in path",
+      "options": [
+        {
+          "name": [
+            "--rmdirs"
+          ],
+          "description": "Rmdirs removes empty directories but leaves root intact"
+        }
+      ],
+      "args": {
+        "name": "remote:path",
+        "generators": [
+          {
+            "script": [
+              "rclone",
+              "listremotes"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "deletefile",
+      "description": "Remove a single file from remote",
+      "args": {
+        "name": "remote:path",
+        "generators": [
+          {
+            "script": [
+              "rclone",
+              "listremotes"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "genautocomplete",
+      "description": "Output completion script for a given shell",
+      "subcommands": [
+        {
+          "name": "bash",
+          "description": "Output bash completion script for rclone.",
+          "args": {
+            "name": "output_file",
+            "description": "If output_file is \"-\", then the output will be written to stdout",
+            "isOptional": true
+          }
+        },
+        {
+          "name": "fish",
+          "description": "Output fish completion script for rclone.",
+          "args": {
+            "name": "output_file",
+            "description": "If output_file is \"-\", then the output will be written to stdout",
+            "isOptional": true
+          }
+        },
+        {
+          "name": "zsh",
+          "description": "Output zsh completion script for rclone.",
+          "args": {
+            "name": "output_file",
+            "description": "If output_file is \"-\", then the output will be written to stdout",
+            "isOptional": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "gendocs",
+      "description": "Output markdown docs for rclone to the directory supplied",
+      "args": {
+        "name": "output_directory",
+        "template": "folders"
+      }
+    },
+    {
+      "name": "hashsum",
+      "description": "Produces a hashsum file for all the objects in the path",
+      "options": [
+        {
+          "name": [
+            "--base64"
+          ],
+          "description": "Output base64 encoded hashsum"
+        },
+        {
+          "name": [
+            "--download"
+          ],
+          "description": "Download the file and hash it locally; if this flag is not specified, the hash is requested from the remote"
+        },
+        {
+          "name": [
+            "--output-file"
+          ],
+          "description": "Output hashsums to a file rather than the terminal",
+          "args": {
+            "template": "filepaths"
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "hash",
+          "suggestions": [
+            {
+              "name": "MD5"
+            },
+            {
+              "name": "SHA-1"
+            },
+            {
+              "name": "DropboxHash"
+            },
+            {
+              "name": "QuickXorHash"
+            },
+            {
+              "name": "Whirlpool"
+            },
+            {
+              "name": "CRC-32"
+            },
+            {
+              "name": "MailruHash"
+            }
+          ]
+        },
+        {
+          "name": "remote:path",
+          "generators": [
+            {
+              "script": [
+                "rclone",
+                "listremotes"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "help",
+      "description": "Show help for rclone commands, flags and backends",
+      "subcommands": [
+        {
+          "name": "flags",
+          "description": "List of global flags"
+        }
+      ]
+    },
+    {
+      "name": "link",
+      "description": "Generate public link to file/folder",
+      "options": [
+        {
+          "name": [
+            "--expire"
+          ],
+          "description": "The amount of time that the link will be valid (default 100y)",
+          "args": {
+            "name": "duration"
+          }
+        },
+        {
+          "name": [
+            "--unlink"
+          ],
+          "description": "Remove existing public link to file/folder"
+        }
+      ],
+      "args": {
+        "name": "remote:path",
+        "generators": [
+          {
+            "script": [
+              "rclone",
+              "listremotes"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "listremotes",
+      "description": "List all the remotes in the config file",
+      "options": [
+        {
+          "name": [
+            "--long"
+          ],
+          "description": "Show the type as well as names"
+        }
+      ]
+    },
+    {
+      "name": "ls",
+      "description": "List the objects in the path with size and path",
+      "args": {
+        "name": "remote:path",
+        "generators": [
+          {
+            "script": [
+              "rclone",
+              "listremotes"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "lsd",
+      "description": "List all directories/containers/buckets in the path",
+      "options": [
+        {
+          "name": [
+            "-R",
+            "--recursive"
+          ]
+        }
+      ],
+      "args": {
+        "name": "remote:path",
+        "generators": [
+          {
+            "script": [
+              "rclone",
+              "listremotes"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "lsf",
+      "description": "List directories and objects in remote:path formatted for parsing",
+      "options": [
+        {
+          "name": [
+            "--dirs-only"
+          ],
+          "description": "Only list directories"
+        },
+        {
+          "name": [
+            "--files-only"
+          ],
+          "description": "Only list files"
+        },
+        {
+          "name": [
+            "--recursive",
+            "-R"
+          ],
+          "description": "Recurse into the listing"
+        },
+        {
+          "name": [
+            "--absolute"
+          ],
+          "description": "Put a leading / in front of path names"
+        },
+        {
+          "name": [
+            "--csv"
+          ],
+          "description": "Output in CSV format"
+        },
+        {
+          "name": [
+            "-d",
+            "--dir-slash"
+          ],
+          "description": "Append a slash to directory names. (default true)"
+        },
+        {
+          "name": [
+            "--format",
+            "-F"
+          ],
+          "description": "Output format - see  help for details (default \"p\")",
+          "args": {
+            "name": "format",
+            "suggestions": [
+              {
+                "name": "p",
+                "description": "path"
+              },
+              {
+                "name": "s",
+                "description": "size"
+              },
+              {
+                "name": "t",
+                "description": "modification time"
+              },
+              {
+                "name": "h",
+                "description": "hash"
+              },
+              {
+                "name": "i",
+                "description": "ID of object"
+              },
+              {
+                "name": "o",
+                "description": "Original ID of underlying object"
+              },
+              {
+                "name": "m",
+                "description": "MimeType of object if known"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--hash"
+          ],
+          "description": "Use this hash when h is used in the format (default \"MD5\")",
+          "args": {
+            "name": "hash",
+            "suggestions": [
+              {
+                "name": "MD5"
+              },
+              {
+                "name": "SHA-1"
+              },
+              {
+                "name": "DropboxHash"
+              },
+              {
+                "name": "QuickXorHash"
+              },
+              {
+                "name": "Whirlpool"
+              },
+              {
+                "name": "CRC-32"
+              },
+              {
+                "name": "MailruHash"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--separator",
+            "-s"
+          ],
+          "description": "Separator for the items in the format. (default \";\")",
+          "args": {
+            "name": "separator"
+          }
+        }
+      ],
+      "args": {
+        "name": "remote:path",
+        "generators": [
+          {
+            "script": [
+              "rclone",
+              "listremotes"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "lsjson",
+      "description": "List directories and objects in the path in JSON format",
+      "options": [
+        {
+          "name": [
+            "--dirs-only"
+          ],
+          "description": "Only list directories"
+        },
+        {
+          "name": [
+            "--files-only"
+          ],
+          "description": "Only list files"
+        },
+        {
+          "name": [
+            "--recursive",
+            "-R"
+          ],
+          "description": "Recurse into the listing"
+        },
+        {
+          "name": [
+            "--encrypted",
+            "-M"
+          ],
+          "description": "Show the encrypted names"
+        },
+        {
+          "name": [
+            "--hash"
+          ],
+          "description": "Include hashes in the output (may take longer)"
+        },
+        {
+          "name": [
+            "--hash-type"
+          ],
+          "description": "Show only this hash type (may be repeated)",
+          "args": {
+            "name": "hashes",
+            "suggestions": [
+              {
+                "name": "MD5"
+              },
+              {
+                "name": "SHA-1"
+              },
+              {
+                "name": "DropboxHash"
+              },
+              {
+                "name": "QuickXorHash"
+              },
+              {
+                "name": "Whirlpool"
+              },
+              {
+                "name": "CRC-32"
+              },
+              {
+                "name": "MailruHash"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--no-mimetype"
+          ],
+          "description": "Don't read the mime type (can speed things up)"
+        },
+        {
+          "name": [
+            "--no-modtime"
+          ],
+          "description": "Don't read the modification time (can speed things up)"
+        },
+        {
+          "name": [
+            "--original"
+          ],
+          "description": "Show the ID of the underlying Object"
+        }
+      ],
+      "args": {
+        "name": "remote:path",
+        "generators": [
+          {
+            "script": [
+              "rclone",
+              "listremotes"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "lsl",
+      "description": "List the objects in path with modification time, size and path",
+      "args": {
+        "name": "remote:path",
+        "generators": [
+          {
+            "script": [
+              "rclone",
+              "listremotes"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "md5sum",
+      "description": "Produces an md5sum file for all the objects in the path",
+      "options": [
+        {
+          "name": [
+            "--base64"
+          ],
+          "description": "Output base64 encoded hashsum"
+        },
+        {
+          "name": [
+            "--download"
+          ],
+          "description": "Download the file and hash it locally; if this flag is not specified, the hash is requested from the remote"
+        },
+        {
+          "name": [
+            "--output-file"
+          ],
+          "description": "Output hashsums to a file rather than the terminal",
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          }
+        }
+      ],
+      "args": {
+        "name": "remote:path",
+        "generators": [
+          {
+            "script": [
+              "rclone",
+              "listremotes"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "mkdir",
+      "description": "Make the path if it doesn't already exist",
+      "args": {
+        "name": "remote:path",
+        "generators": [
+          {
+            "script": [
+              "rclone",
+              "listremotes"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "mount",
+      "description": "Mount the remote as file system on a mountpoint",
+      "args": [
+        {
+          "name": "remote:path",
+          "generators": [
+            {
+              "script": [
+                "rclone",
+                "listremotes"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "mountpoint",
+          "template": "folders"
+        }
+      ]
+    },
+    {
+      "name": "move",
+      "description": "Move files from source to dest",
+      "args": {}
+    },
+    {
+      "name": "moveto",
+      "description": "Move file or directory from source to dest",
+      "args": {}
+    },
+    {
+      "name": "ncdu",
+      "description": "Explore a remote with a text based user interface",
+      "args": {}
+    },
+    {
+      "name": "obscure",
+      "description": "Obscure password for use in the rclone config file",
+      "args": {}
+    },
+    {
+      "name": "purge",
+      "description": "Remove the path and all of its contents",
+      "args": {}
+    },
+    {
+      "name": "rc",
+      "description": "Run a command against a running rclone",
+      "args": {}
+    },
+    {
+      "name": "rcat",
+      "description": "Copies standard input to file on remote",
+      "args": {}
+    },
+    {
+      "name": "rcd",
+      "description": "Run rclone listening to remote control commands only",
+      "args": {}
+    },
+    {
+      "name": "rmdir",
+      "description": "Remove the empty directory at path",
+      "args": {}
+    },
+    {
+      "name": "rmdirs",
+      "description": "Remove empty directories under the path",
+      "args": {}
+    },
+    {
+      "name": "selfupdate",
+      "description": "Update the rclone binary"
+    },
+    {
+      "name": "serve",
+      "description": "Serve a remote over a protocol",
+      "args": {}
+    },
+    {
+      "name": "settier",
+      "description": "Changes storage class/tier of objects in remote",
+      "args": [
+        {},
+        {}
+      ]
+    },
+    {
+      "name": "sha1sum",
+      "description": "Produces an sha1sum file for all the objects in the path",
+      "args": {}
+    },
+    {
+      "name": "size",
+      "description": "Prints the total size and number of objects in remote:path",
+      "args": {}
+    },
+    {
+      "name": "sync",
+      "description": "Make source and dest identical, modifying destination only",
+      "args": [
+        {
+          "name": "source:path",
+          "generators": [
+            {
+              "script": [
+                "rclone",
+                "listremotes"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "dest:path",
+          "generators": [
+            {
+              "script": [
+                "rclone",
+                "listremotes"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "test",
+      "description": "Run a test command",
+      "args": {}
+    },
+    {
+      "name": "touch",
+      "description": "Create new file or change file modification time",
+      "args": {}
+    },
+    {
+      "name": "tree",
+      "description": "List the contents of the remote in a tree like fashion",
+      "args": {}
+    },
+    {
+      "name": "version",
+      "description": "Show the version number"
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "--version"
+      ],
+      "description": "View your current rclone version"
+    },
+    {
+      "name": [
+        "--help",
+        "-h"
+      ],
+      "description": "Show help for rclone commands, flags and backends"
+    }
+  ]
+}

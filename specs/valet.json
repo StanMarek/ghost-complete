@@ -1,0 +1,3672 @@
+{
+  "name": "valet",
+  "description": "Valet is a Laravel development environment for macOS minimalists",
+  "subcommands": [
+    {
+      "name": "diagnose",
+      "description": "Output diagnostics to aid in debugging Valet",
+      "options": [
+        {
+          "name": [
+            "-p",
+            "--print"
+          ],
+          "description": "Print diagnostics output while running"
+        },
+        {
+          "name": [
+            "--plain"
+          ],
+          "description": "Format clipboard output as plain text"
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "directory-listing",
+      "description": "Determine directory-listing behavior. Default is off, which means a 404 will display",
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "status",
+        "description": "On or off. (default=off) will show a 404 page; [on] will display a listing if project folder exists but requested URI not found",
+        "isOptional": true,
+        "suggestions": [
+          {
+            "name": "on"
+          },
+          {
+            "name": "off"
+          }
+        ]
+      }
+    },
+    {
+      "name": "fetch-share-url",
+      "description": "Get the URL to the current share tunnel (for Expose or ngrok)",
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "domain",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "forget",
+      "description": "Remove the current working (or specified) directory from Valet's list of paths",
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "path",
+        "template": "folders",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "help",
+      "description": "Display help for a command",
+      "options": [
+        {
+          "name": [
+            "--format"
+          ],
+          "description": "The output format (txt, xml, json, or md) [default: 'txt']",
+          "args": {
+            "name": "FORMAT",
+            "suggestions": [
+              {
+                "name": "txt"
+              },
+              {
+                "name": "xml"
+              },
+              {
+                "name": "json"
+              },
+              {
+                "name": "md"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--raw"
+          ],
+          "description": "To output raw command help"
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "command",
+        "generators": [
+          {
+            "script": [
+              "valet",
+              "list",
+              "--raw"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "install",
+      "description": "Install the Valet services",
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "link",
+      "description": "Link the current working directory to Valet",
+      "options": [
+        {
+          "name": [
+            "--secure"
+          ],
+          "description": "Link the site with a trusted TLS certificate"
+        },
+        {
+          "name": [
+            "--isolate"
+          ],
+          "description": "Isolate the site to the PHP version specified in the current working directory's .valetrc file"
+        },
+        {
+          "name": [
+            "--secure"
+          ]
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "name",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "links",
+      "description": "Display all of the registered Valet links",
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "list",
+      "description": "List commands",
+      "options": [
+        {
+          "name": [
+            "--raw"
+          ],
+          "description": "To output raw command list"
+        },
+        {
+          "name": [
+            "--format"
+          ],
+          "description": "The output format (txt, xml, json, or md) [default: 'txt']",
+          "args": {
+            "name": "FORMAT",
+            "suggestions": [
+              {
+                "name": "txt"
+              },
+              {
+                "name": "xml"
+              },
+              {
+                "name": "json"
+              },
+              {
+                "name": "md"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--short"
+          ],
+          "description": "To skip describing commands' arguments"
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "namespace",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "log",
+      "description": "Tail log file",
+      "options": [
+        {
+          "name": [
+            "-f",
+            "--follow"
+          ]
+        },
+        {
+          "name": [
+            "-l",
+            "--lines"
+          ],
+          "args": {
+            "name": "LINES"
+          }
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "key",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "loopback",
+      "description": "Get or set the loopback address used for Valet sites",
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "loopback",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "on-latest-version",
+      "description": "Determine if this is the latest version of Valet",
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "open",
+      "description": "Open the site for the current (or specified) directory in your browser",
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "domain",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "park",
+      "description": "Register the current working (or specified) directory with Valet",
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "path",
+        "template": "folders",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "parked",
+      "description": "Display all the current sites within parked paths",
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "paths",
+      "description": "Get all of the paths registered with Valet",
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "proxies",
+      "description": "Display all of the proxy sites",
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "proxy",
+      "description": "Create an Nginx proxy site for the specified host. Useful for docker, mailhog etc",
+      "options": [
+        {
+          "name": [
+            "--secure"
+          ],
+          "description": "Create a proxy with a trusted TLS certificate"
+        },
+        {
+          "name": [
+            "--secure"
+          ]
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "domain"
+        },
+        {
+          "name": "host"
+        }
+      ]
+    },
+    {
+      "name": "restart",
+      "description": "Restart the Valet services",
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "service",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "secure",
+      "description": "Secure the given domain with a trusted TLS certificate",
+      "options": [
+        {
+          "name": [
+            "expireIn"
+          ],
+          "description": "The amount of days the self signed certificate is valid for. Default is set to 368"
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "domain",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "share",
+      "description": "Generate a publicly accessible URL for your project",
+      "options": [
+        {
+          "name": [
+            "--auth"
+          ],
+          "description": "Enforce basic auth on tunnel endpoint, 'user:password'"
+        },
+        {
+          "name": [
+            "--authtoken"
+          ],
+          "description": "Ngrok.com authtoken identifying a user",
+          "args": {
+            "name": "token"
+          }
+        },
+        {
+          "name": [
+            "--bind-tls"
+          ],
+          "description": "Listen for http, https or both: true/false/both",
+          "args": {
+            "name": "listen",
+            "suggestions": [
+              {
+                "name": "true"
+              },
+              {
+                "name": "false"
+              },
+              {
+                "name": "both"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--config"
+          ],
+          "description": "Path to config files; they are merged if multiple",
+          "args": {
+            "name": "config",
+            "template": "filepaths"
+          }
+        },
+        {
+          "name": [
+            "--host-header"
+          ],
+          "description": "Set Host header; if 'rewrite' use local address hostname",
+          "args": {
+            "name": "host"
+          }
+        },
+        {
+          "name": [
+            "--hostname"
+          ],
+          "description": "Host tunnel on custom hostname (requires DNS CNAME)"
+        },
+        {
+          "name": [
+            "--inspect"
+          ],
+          "description": "Enable/disable http introspection"
+        },
+        {
+          "name": [
+            "--log"
+          ],
+          "description": "Path to log file, 'stdout', 'stderr' or 'false'",
+          "args": {
+            "name": "path",
+            "suggestions": [
+              {
+                "name": "stdout"
+              },
+              {
+                "name": "stderr"
+              },
+              {
+                "name": "false"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--log-format"
+          ],
+          "description": "Log record format: 'term', 'logfmt', 'json'",
+          "args": {
+            "name": "format",
+            "suggestions": [
+              {
+                "name": "term"
+              },
+              {
+                "name": "logfmt"
+              },
+              {
+                "name": "json"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--log-level"
+          ],
+          "description": "Logging level",
+          "args": {
+            "name": "level",
+            "suggestions": [
+              {
+                "name": "info"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--region"
+          ],
+          "description": "Ngrok server region [us, eu, au, ap, sa, jp, in] (default: us)",
+          "args": {
+            "name": "region",
+            "suggestions": [
+              {
+                "name": "us"
+              },
+              {
+                "name": "eu"
+              },
+              {
+                "name": "au"
+              },
+              {
+                "name": "ap"
+              },
+              {
+                "name": "sa"
+              },
+              {
+                "name": "jp"
+              },
+              {
+                "name": "in"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--subdomain"
+          ],
+          "description": "Host tunnel on a custom subdomain"
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "start",
+      "description": "Start the Valet services",
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "service",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "stop",
+      "description": "Stop the Valet services",
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "service",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "tld",
+      "description": "Get or set the TLD used for Valet sites",
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "tld",
+        "isOptional": true,
+        "suggestions": [
+          {
+            "name": "local"
+          },
+          {
+            "name": "test"
+          }
+        ]
+      }
+    },
+    {
+      "name": "trust",
+      "description": "Add sudoers files for Brew and Valet to make Valet commands run without passwords",
+      "options": [
+        {
+          "name": [
+            "--off"
+          ],
+          "description": "Remove the sudoers files so normal sudo password prompts are required"
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "options"
+      }
+    },
+    {
+      "name": "uninstall",
+      "description": "Uninstall the Valet services",
+      "options": [
+        {
+          "name": [
+            "--force"
+          ],
+          "description": "Do a forceful uninstall of Valet and related Homebrew pkgs"
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "unlink",
+      "description": "Remove the specified Valet link",
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "name",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "unproxy",
+      "description": "Delete an Nginx proxy config",
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "domain"
+      }
+    },
+    {
+      "name": "unsecure",
+      "description": "Stop serving the given domain over HTTPS and remove the trusted TLS certificate",
+      "options": [
+        {
+          "name": [
+            "--all"
+          ]
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "domain",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "use",
+      "description": "Change the version of PHP used by valet",
+      "options": [
+        {
+          "name": [
+            "--force"
+          ]
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "phpVersion",
+        "isOptional": true,
+        "suggestions": [
+          {
+            "name": "php@8.0"
+          },
+          {
+            "name": "php@8.1"
+          },
+          {
+            "name": "php@8.2"
+          }
+        ]
+      }
+    },
+    {
+      "name": "which",
+      "description": "Determine which Valet driver serves the current working directory",
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "isolate",
+      "description": "Change the version of PHP used by Valet to serve the current working directory",
+      "options": [
+        {
+          "name": [
+            "--site"
+          ],
+          "description": "Name of the website you want to isolate",
+          "args": {
+            "name": "SITE"
+          }
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "phpVersion",
+        "isOptional": true,
+        "suggestions": [
+          {
+            "name": "php@8.0"
+          },
+          {
+            "name": "php@8.1"
+          },
+          {
+            "name": "php@8.2"
+          }
+        ]
+      }
+    },
+    {
+      "name": "unisolate",
+      "description": "Stop customizing the version of PHP used by Valet to serve the current working directory",
+      "options": [
+        {
+          "name": [
+            "--site"
+          ],
+          "description": "Name of the website you want to unisolate",
+          "args": {
+            "name": "SITE"
+          }
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "isolated",
+      "description": "List all sites using isolated versions of PHP",
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "php",
+      "description": "Proxy PHP commands to the \"php\" executable on the isolated site",
+      "options": [
+        {
+          "name": [
+            "--site"
+          ],
+          "description": "Specify the site to use to get the PHP version (e.g. if the site isn't linked as its directory name)",
+          "args": {
+            "name": "SITE"
+          }
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "command",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "composer",
+      "description": "Proxy Composer commands with the \"php\" executable on the isolated site",
+      "options": [
+        {
+          "name": [
+            "--site"
+          ],
+          "description": "Specify the site to use to get the PHP version (e.g. if the site isn't linked as its directory name)",
+          "args": {
+            "name": "SITE"
+          }
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "command",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "which-php",
+      "description": "Get the PHP executable path for a site",
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "site",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "completion",
+      "description": "Dump the shell completion script",
+      "options": [
+        {
+          "name": [
+            "--debug"
+          ],
+          "description": "Tail the completion debug log"
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "shell",
+        "isOptional": true,
+        "suggestions": [
+          {
+            "name": "bash"
+          },
+          {
+            "name": "fish"
+          }
+        ]
+      }
+    },
+    {
+      "name": "secured",
+      "description": "Display all of the currently secured sites",
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "set-ngrok-token",
+      "description": "Set the Ngrok auth token",
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "token",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "share-tool",
+      "description": "Get the name of the current share tool (Expose or ngrok)",
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "tool",
+        "isOptional": true,
+        "suggestions": [
+          {
+            "name": "Expose"
+          },
+          {
+            "name": "Ngrok"
+          }
+        ]
+      }
+    },
+    {
+      "name": "status",
+      "description": "Output the status of Valet and its installed services and config",
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "-V",
+            "--version"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Force (or disable --no-ansi) ANSI output"
+        },
+        {
+          "name": [
+            "-n",
+            "--no-interaction"
+          ],
+          "description": "Do not ask any interactive question"
+        },
+        {
+          "name": [
+            "-v",
+            "-vv",
+            "-vvv",
+            "--verbose"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+          "args": {
+            "name": "verbosity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "1",
+                "description": "Normal output"
+              },
+              {
+                "name": "2",
+                "description": "More verbose output"
+              },
+              {
+                "name": "3",
+                "description": "Debug output"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "-h",
+        "--help"
+      ],
+      "description": "Display help for the given command. When no command is given display help for the list command"
+    },
+    {
+      "name": [
+        "-q",
+        "--quiet"
+      ],
+      "description": "Do not output any message"
+    },
+    {
+      "name": [
+        "-V",
+        "--version"
+      ],
+      "description": "Display this application version"
+    },
+    {
+      "name": [
+        "--ansi"
+      ],
+      "description": "Force (or disable --no-ansi) ANSI output"
+    },
+    {
+      "name": [
+        "--no-ansi"
+      ],
+      "description": "Force (or disable --no-ansi) ANSI output"
+    },
+    {
+      "name": [
+        "-n",
+        "--no-interaction"
+      ],
+      "description": "Do not ask any interactive question"
+    },
+    {
+      "name": [
+        "-v",
+        "-vv",
+        "-vvv",
+        "--verbose"
+      ],
+      "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+      "args": {
+        "name": "verbosity",
+        "isOptional": true,
+        "suggestions": [
+          {
+            "name": "1",
+            "description": "Normal output"
+          },
+          {
+            "name": "2",
+            "description": "More verbose output"
+          },
+          {
+            "name": "3",
+            "description": "Debug output"
+          }
+        ]
+      }
+    }
+  ]
+}

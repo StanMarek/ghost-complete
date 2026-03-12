@@ -1,0 +1,73 @@
+{
+  "name": "kubectx",
+  "description": "Switch between Kubernetes-contexts",
+  "options": [
+    {
+      "name": [
+        "--help",
+        "-h"
+      ],
+      "description": "Show help for kubectx"
+    },
+    {
+      "name": [
+        "--current",
+        "-c"
+      ],
+      "description": "Show current context"
+    },
+    {
+      "name": [
+        "--unset",
+        "-u"
+      ],
+      "description": "Unset the current context"
+    },
+    {
+      "name": [
+        "-d"
+      ],
+      "description": "Delete context",
+      "args": {
+        "name": "context",
+        "isVariadic": true,
+        "generators": [
+          {
+            "script": [
+              "kubectx"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "args": {
+    "name": "context",
+    "isOptional": true,
+    "generators": [
+      {
+        "script": [
+          "bash",
+          "-c",
+          "kubectx | grep -v $(kubectx -c)"
+        ],
+        "transforms": [
+          "split_lines",
+          "filter_empty"
+        ]
+      },
+      {
+        "script": [
+          "kubectx",
+          "-c"
+        ],
+        "requires_js": true,
+        "js_source": "e=>e?[{name:e,priority:100,icon:\"\\u2B50\\uFE0F\"}]:[]"
+      }
+    ]
+  }
+}

@@ -1,0 +1,4043 @@
+{
+  "name": "dotnet",
+  "description": "The dotnet cli",
+  "subcommands": [
+    {
+      "name": "new",
+      "subcommands": [
+        {
+          "name": "--list",
+          "description": "The dotnet new --list option lists available templates to use with dotnet new",
+          "options": [
+            {
+              "name": [
+                "--author"
+              ]
+            },
+            {
+              "name": [
+                "--columns"
+              ],
+              "description": "Comma-separated list of columns to display in the output",
+              "args": {
+                "name": "columns",
+                "suggestions": [
+                  {
+                    "name": "language"
+                  },
+                  {
+                    "name": "tags"
+                  },
+                  {
+                    "name": "author"
+                  },
+                  {
+                    "name": "type"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "--columns-all"
+              ],
+              "description": "Displays all columns in the output. Available since .NET Core 5.0.300 SDK"
+            },
+            {
+              "name": [
+                "--tag"
+              ],
+              "description": "Filters templates based on template tags. To be selected, a template must have at least one tag that exactly matches the criteria. Available since .NET Core 5.0.300 SDK",
+              "args": {
+                "name": "tag"
+              }
+            },
+            {
+              "name": [
+                "--type"
+              ],
+              "args": {
+                "name": "type",
+                "suggestions": [
+                  {
+                    "name": "project"
+                  },
+                  {
+                    "name": "item"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "--search",
+          "description": "The dotnet new --search option searches for templates supported by dotnet new on NuGet.org",
+          "options": [
+            {
+              "name": [
+                "--author"
+              ],
+              "description": "Filters templates based on template author. Partial match is supported",
+              "args": {
+                "name": "author"
+              }
+            },
+            {
+              "name": [
+                "--columns"
+              ],
+              "description": "Comma-separated list of columns to display in the output",
+              "args": {
+                "name": "columns",
+                "suggestions": [
+                  {
+                    "name": "language"
+                  },
+                  {
+                    "name": "tags"
+                  },
+                  {
+                    "name": "author"
+                  },
+                  {
+                    "name": "type"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "--columns-all"
+              ],
+              "description": "Displays all columns in the output"
+            },
+            {
+              "name": [
+                "-lang",
+                "--language"
+              ],
+              "description": "Filters templates based on language supported by the template. The language accepted varies by the template. Not valid for some templates",
+              "args": {
+                "name": "language",
+                "suggestions": [
+                  {
+                    "name": "C#"
+                  },
+                  {
+                    "name": "F#"
+                  },
+                  {
+                    "name": "VB"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "--package"
+              ],
+              "description": "Filters templates based on NuGet package ID. Partial match is supported",
+              "args": {
+                "name": "package"
+              }
+            },
+            {
+              "name": [
+                "--tag"
+              ],
+              "description": "Filters templates based on template tags. To be selected, a template must have at least one tag that exactly matches the criteria",
+              "args": {
+                "name": "tag"
+              }
+            },
+            {
+              "name": [
+                "--type"
+              ],
+              "description": "Filters templates based on template type. Predefined values are project and item",
+              "args": {
+                "name": "type",
+                "suggestions": [
+                  {
+                    "name": "project"
+                  },
+                  {
+                    "name": "item"
+                  }
+                ]
+              }
+            }
+          ],
+          "args": {
+            "name": "template",
+            "description": "If the argument is specified, only templates containing <TEMPLATE_NAME> in the template name or short name will be shown. The argument is mandatory when --author, --language, --package, --tag or --type options are not specified",
+            "isOptional": true
+          }
+        },
+        {
+          "name": "-i",
+          "options": [
+            {
+              "name": [
+                "--interactive"
+              ],
+              "description": "Allows the command to stop and wait for user input or action. For example, to complete authentication. Available since .NET 5.0 SDK"
+            },
+            {
+              "name": [
+                "--nuget-source"
+              ],
+              "description": "By default, dotnet new --install uses the hierarchy of NuGet configuration files from the current directory to determine the NuGet source the package can be installed from. If --nuget-source is specified, the source will be added to the list of sources to be checked",
+              "args": {
+                "name": "source"
+              }
+            }
+          ],
+          "args": {
+            "name": "id",
+            "description": "The dotnet new --install command installs a template package from the PATH or NUGET_ID provided",
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "script(e){return[\"curl\",\"-sfL\",\"-H\",\"Accept: application/json\",`https://azuresearch-usnc.nuget.org/query?packageType=Template&q=${e[e.length-1]}`]}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "-u",
+          "description": "The dotnet new --uninstall command uninstalls a template package at the PATH or NUGET_ID provided",
+          "args": {
+            "name": "id"
+          }
+        },
+        {
+          "name": "--update-check",
+          "description": "The dotnet new --update-check option checks if there are updates available for the template packs that are currently installed"
+        },
+        {
+          "name": "--update-apply",
+          "description": "The dotnet new --update-apply option checks if there are updates available for the template packages that are currently installed and installs them"
+        }
+      ],
+      "options": [
+        {
+          "name": [
+            "--dry-run"
+          ],
+          "description": "Displays a summary of what would happen if the given command were run if it would result in a template creation"
+        },
+        {
+          "name": [
+            "--force"
+          ],
+          "description": "Forces content to be generated even if it would change existing files. This is required when the template chosen would override existing files in the output directory"
+        },
+        {
+          "name": [
+            "-?",
+            "-h",
+            "--help"
+          ],
+          "description": "Prints out help for the command. It can be invoked for the dotnet new command itself or for any template. For example, dotnet new mvc --help"
+        },
+        {
+          "name": [
+            "-lang",
+            "--language"
+          ],
+          "description": "The language of the template to create",
+          "args": {
+            "name": "language",
+            "suggestions": [
+              {
+                "name": "C#"
+              },
+              {
+                "name": "F#"
+              },
+              {
+                "name": "VB"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-n",
+            "--name"
+          ],
+          "description": "The name for the created output. If no name is specified, the name of the current directory is used",
+          "args": {
+            "name": "output_name"
+          }
+        },
+        {
+          "name": [
+            "-o",
+            "--output"
+          ],
+          "description": "Location to place the generated output. The default is the current directory",
+          "args": {
+            "name": "output_directory",
+            "template": "folders"
+          }
+        }
+      ],
+      "args": {
+        "name": "template",
+        "description": "The template to instantiate when the command is invoked. Each template might have specific options you can pass",
+        "generators": [
+          {
+            "script": [
+              "dotnet",
+              "new",
+              "--list"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "add",
+      "subcommands": [
+        {
+          "name": "package",
+          "description": "The package reference to add",
+          "options": [
+            {
+              "name": [
+                "-f",
+                "--framework"
+              ],
+              "description": "Adds a package reference only when targeting a specific framework",
+              "args": {
+                "name": "framework"
+              }
+            },
+            {
+              "name": [
+                "--interactive"
+              ],
+              "description": "Allows the command to stop and wait for user input or action. For example, to complete authentication"
+            },
+            {
+              "name": [
+                "-n",
+                "--no-restore"
+              ],
+              "description": "Adds a package reference without performing a restore preview and compatibility check"
+            },
+            {
+              "name": [
+                "--package-directory"
+              ],
+              "description": "The directory where to restore the packages. The default package restore location is %userprofile%.nugetpackages on Windows and ~/.nuget/packages on macOS and Linux",
+              "args": {
+                "name": "directory",
+                "template": "folders"
+              }
+            },
+            {
+              "name": [
+                "--prerelease"
+              ],
+              "description": "Allows prerelease packages to be installed. Available since .NET Core 5 SDK"
+            },
+            {
+              "name": [
+                "-s",
+                "--source"
+              ],
+              "description": "The URI of the NuGet package source to use during the restore operation"
+            },
+            {
+              "name": [
+                "-v",
+                "--version"
+              ],
+              "description": "Version of the package",
+              "args": {
+                "name": "version",
+                "generators": [
+                  {
+                    "requires_js": true,
+                    "js_source": "script(e){let t=e.filter(r=>!r.startsWith(\"-\")),n=t.findIndex(r=>r===\"package\");return[\"curl\",\"-s\",\"-H\",\"Accept: application/json\",`https://api.nuget.org/v3-flatcontainer/${t[n+1].toLowerCase()}/index.json`]}"
+                  }
+                ]
+              }
+            }
+          ],
+          "args": {
+            "name": "id",
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "script(e){return[\"curl\",\"-s\",\"-H\",\"Accept: application/json\",`https://azuresearch-usnc.nuget.org/query?packageType=Dependency&q=${e[e.length-1]}`]}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "reference",
+          "description": "The dotnet add reference command provides a convenient option to add project references to a project. After running the command, the <ProjectReference> elements are added to the project file",
+          "options": [
+            {
+              "name": [
+                "-f",
+                "--framework"
+              ],
+              "description": "Adds a package reference only when targeting a specific framework",
+              "args": {
+                "name": "framework"
+              }
+            }
+          ],
+          "args": {
+            "name": "path",
+            "isVariadic": true,
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "(p,g,O)=>le(this,void 0,void 0,function*(){var f;let{isDangerous:_,currentWorkingDirectory:b,searchTerm:h}=O,w=(f=(0,v.getCurrentInsertedDirectory)(l??b,h,O))!==null&&f!==void 0?f:\"/\";try{let N=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:w}),X=$(N.stdout.split(`\n`),[\".DS_Store\"]),q=[];for(let k of X)if(k){let F=k.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&u!==\"only\"||F===\"folders\"&&u!==\"never\")&&q.push({type:F===\"filepaths\"?\"file\":\"folder\",name:k,insertValue:k,isDangerous:_,context:{templateType:F}})}return S(m(q))}catch{return[]}})"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "project",
+        "description": "Specifies the project file. If not specified, the command searches the current directory for one",
+        "isOptional": true,
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "(p,g,O)=>le(this,void 0,void 0,function*(){var f;let{isDangerous:_,currentWorkingDirectory:b,searchTerm:h}=O,w=(f=(0,v.getCurrentInsertedDirectory)(l??b,h,O))!==null&&f!==void 0?f:\"/\";try{let N=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:w}),X=$(N.stdout.split(`\n`),[\".DS_Store\"]),q=[];for(let k of X)if(k){let F=k.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&u!==\"only\"||F===\"folders\"&&u!==\"never\")&&q.push({type:F===\"filepaths\"?\"file\":\"folder\",name:k,insertValue:k,isDangerous:_,context:{templateType:F}})}return S(m(q))}catch{return[]}})"
+          }
+        ]
+      }
+    },
+    {
+      "name": "list",
+      "subcommands": [
+        {
+          "name": "package",
+          "description": "The dotnet list package command provides a convenient option to list all NuGet package references for a specific project or a solution. You first need to build the project in order to have the assets needed for this command to process",
+          "options": [
+            {
+              "name": [
+                "--config"
+              ],
+              "description": "The NuGet sources to use when searching for newer packages. Requires the --outdated option",
+              "args": {
+                "name": "source"
+              }
+            },
+            {
+              "name": [
+                "--deprecated"
+              ],
+              "description": "Displays packages that have been deprecated"
+            },
+            {
+              "name": [
+                "--framework"
+              ],
+              "description": "Displays only the packages applicable for the specified target framework. To specify multiple frameworks, repeat the option multiple times. For example: --framework netcoreapp2.2 --framework netstandard2.0",
+              "args": {
+                "name": "framework"
+              }
+            },
+            {
+              "name": [
+                "--highest-minor"
+              ],
+              "description": "Considers only the packages with a matching major version number when searching for newer packages. Requires the --outdated or --deprecated option"
+            },
+            {
+              "name": [
+                "--highest-patch"
+              ],
+              "description": "Considers only the packages with a matching major and minor version numbers when searching for newer packages. Requires the --outdated or --deprecated option"
+            },
+            {
+              "name": [
+                "--include-prerelease"
+              ],
+              "description": "Considers packages with prerelease versions when searching for newer packages. Requires the --outdated or --deprecated option"
+            },
+            {
+              "name": [
+                "--include-transitive"
+              ],
+              "description": "Lists transitive packages, in addition to the top-level packages. When specifying this option, you get a list of packages that the top-level packages depend on"
+            },
+            {
+              "name": [
+                "--interactive"
+              ],
+              "description": "Allows the command to stop and wait for user input or action. For example, to complete authentication. Available since .NET Core 3.0 SDK"
+            },
+            {
+              "name": [
+                "--outdated"
+              ],
+              "description": "Lists packages that have newer versions available"
+            },
+            {
+              "name": [
+                "-s",
+                "--source"
+              ],
+              "description": "The NuGet sources to use when searching for newer packages. Requires the --outdated or --deprecated option"
+            },
+            {
+              "name": [
+                "-v",
+                "--verbosity"
+              ],
+              "description": "Sets the verbosity level of the command. Allowed values are q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]. Not supported in every command. See specific command page to determine if this option is available",
+              "args": {
+                "name": "verbosity",
+                "suggestions": [
+                  {
+                    "name": "quiet"
+                  },
+                  {
+                    "name": "minimal"
+                  },
+                  {
+                    "name": "normal"
+                  },
+                  {
+                    "name": "detailed"
+                  },
+                  {
+                    "name": "diagnostic"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "--vulnerable"
+              ],
+              "description": "Lists packages that have known vulnerabilities. Cannot be combined with --deprecated or --outdated options"
+            }
+          ]
+        },
+        {
+          "name": "reference",
+          "description": "The dotnet list reference command provides a convenient option to list project references for a given project"
+        }
+      ],
+      "args": {
+        "name": "project",
+        "description": "The project or solution file to operate on. If not specified, the command searches the current directory for one. If more than one solution or project is found, an error is thrown",
+        "isOptional": true,
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "(p,g,w)=>le(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:_,searchTerm:h}=w,S=(f=(0,m.getCurrentInsertedDirectory)(l??_,h,w))!==null&&f!==void 0?f:\"/\";try{let N=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:S}),Z=P(N.stdout.split(`\n`),[\".DS_Store\"]),R=[];for(let A of Z)if(A){let F=A.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&u!==\"only\"||F===\"folders\"&&u!==\"never\")&&R.push({type:F===\"filepaths\"?\"file\":\"folder\",name:A,insertValue:A,isDangerous:b,context:{templateType:F}})}return O(v(R))}catch{return[]}})"
+          }
+        ]
+      }
+    },
+    {
+      "name": "remove",
+      "subcommands": [
+        {
+          "name": "package",
+          "description": "The dotnet remove package command provides a convenient option to remove a NuGet package reference from a project",
+          "args": {
+            "name": "id"
+          }
+        },
+        {
+          "name": "reference",
+          "description": "The dotnet remove reference command provides a convenient option to remove project references from a project",
+          "args": {
+            "name": "ref",
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "(h,v,O)=>ae(this,void 0,void 0,function*(){var d;let{isDangerous:_,currentWorkingDirectory:b,searchTerm:p}=O,w=(d=(0,y.getCurrentInsertedDirectory)(u??b,p,O))!==null&&d!==void 0?d:\"/\";try{let N=yield v({command:\"ls\",args:[\"-1ApL\"],cwd:w}),U=$(N.stdout.split(`\n`),[\".DS_Store\"]),P=[];for(let V of U)if(V){let F=V.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&a!==\"only\"||F===\"folders\"&&a!==\"never\")&&P.push({type:F===\"filepaths\"?\"file\":\"folder\",name:V,insertValue:V,isDangerous:_,context:{templateType:F}})}return S(g(P))}catch{return[]}})"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "project",
+        "description": "Specifies the project file. If not specified, the command searches the current directory for one",
+        "isOptional": true,
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "(h,v,O)=>ae(this,void 0,void 0,function*(){var d;let{isDangerous:_,currentWorkingDirectory:b,searchTerm:p}=O,w=(d=(0,y.getCurrentInsertedDirectory)(u??b,p,O))!==null&&d!==void 0?d:\"/\";try{let N=yield v({command:\"ls\",args:[\"-1ApL\"],cwd:w}),U=$(N.stdout.split(`\n`),[\".DS_Store\"]),P=[];for(let V of U)if(V){let F=V.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&a!==\"only\"||F===\"folders\"&&a!==\"never\")&&P.push({type:F===\"filepaths\"?\"file\":\"folder\",name:V,insertValue:V,isDangerous:_,context:{templateType:F}})}return S(g(P))}catch{return[]}})"
+          }
+        ]
+      }
+    },
+    {
+      "name": "build",
+      "options": [
+        {
+          "name": [
+            "-a",
+            "--arch"
+          ],
+          "description": "Specifies the target architecture. This is a shorthand syntax for setting the Runtime Identifier (RID), where the provided value is combined with the default RID. For example, on a win-x64 machine, specifying --arch x86 sets the RID to win-x86. If you use this option, don't use the -r|--runtime option. Available since .NET 6 Preview 7",
+          "args": {
+            "name": "arch",
+            "suggestions": [
+              {
+                "name": "x86"
+              },
+              {
+                "name": "x64"
+              },
+              {
+                "name": "arm"
+              },
+              {
+                "name": "arm64"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-c",
+            "--configuration"
+          ],
+          "description": "Defines the build configuration. The default for most projects is Debug, but you can override the build configuration settings in your project",
+          "args": {
+            "name": "config"
+          }
+        },
+        {
+          "name": [
+            "-f",
+            "--framework"
+          ],
+          "description": "Compiles for a specific framework. The framework must be defined in the project file"
+        },
+        {
+          "name": [
+            "--force"
+          ],
+          "description": "Forces all dependencies to be resolved even if the last restore was successful. Specifying this flag is the same as deleting the project.assets.json file"
+        },
+        {
+          "name": [
+            "--interactive"
+          ],
+          "description": "Allows the command to stop and wait for user input or action. For example, to complete authentication. Available since .NET Core 3.0 SDK"
+        },
+        {
+          "name": [
+            "--no-dependencies"
+          ],
+          "description": "Ignores project-to-project (P2P) references and only builds the specified root project"
+        },
+        {
+          "name": [
+            "--no-incremental"
+          ],
+          "description": "Marks the build as unsafe for incremental build. This flag turns off incremental compilation and forces a clean rebuild of the project's dependency graph"
+        },
+        {
+          "name": [
+            "--no-restore"
+          ],
+          "description": "Doesn't execute an implicit restore during build"
+        },
+        {
+          "name": [
+            "--nologo"
+          ],
+          "description": "Doesn't display the startup banner or the copyright message. Available since .NET Core 3.0 SDK"
+        },
+        {
+          "name": [
+            "--no-self-contained"
+          ],
+          "description": "Publishes the application as a framework dependent application. A compatible .NET runtime must be installed on the target machine to run the application"
+        },
+        {
+          "name": [
+            "-o",
+            "--output"
+          ],
+          "description": "Directory in which to place the built binaries. If not specified, the default path is ./bin/<configuration>/<framework>/. For projects with multiple target frameworks (via the TargetFrameworks property), you also need to define --framework when you specify this option",
+          "args": {
+            "name": "directory",
+            "template": "folders"
+          }
+        },
+        {
+          "name": [
+            "--os"
+          ],
+          "description": "Specifies the target operating system (OS). This is a shorthand syntax for setting the Runtime Identifier (RID), where the provided value is combined with the default RID. For example, on a win-x64 machine, specifying --os os sets the RID to os-x64. If you use this option, don't use the -r|--runtime option. Available since .NET 6 Preview 7",
+          "args": {
+            "name": "os"
+          }
+        },
+        {
+          "name": [
+            "-r",
+            "--runtime"
+          ],
+          "description": "Specifies the target runtime. For a list of Runtime Identifiers (RIDs), see the RID catalog. If you use this option, use --self-contained or --no-self-contained also",
+          "args": {
+            "name": "runtime"
+          }
+        },
+        {
+          "name": [
+            "--self-contained"
+          ],
+          "description": "Publishes the .NET runtime with the application so the runtime doesn't need to be installed on the target machine. The default is true if a runtime identifier is specified",
+          "args": {
+            "name": "self-contained",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "true"
+              },
+              {
+                "name": "false"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--source"
+          ],
+          "description": "The URI of the NuGet package source to use during the restore operation",
+          "args": {
+            "name": "source"
+          }
+        },
+        {
+          "name": [
+            "-v",
+            "--verbosity"
+          ],
+          "description": "Sets the verbosity level of the command. Allowed values are q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]. Not supported in every command. See specific command page to determine if this option is available",
+          "args": {
+            "name": "verbosity",
+            "suggestions": [
+              {
+                "name": "quiet"
+              },
+              {
+                "name": "minimal"
+              },
+              {
+                "name": "normal"
+              },
+              {
+                "name": "detailed"
+              },
+              {
+                "name": "diagnostic"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--version-suffix"
+          ],
+          "description": "Sets the value of the $(VersionSuffix) property to use when building the project. This only works if the $(Version) property isn't set. Then, $(Version) is set to the $(VersionPrefix) combined with the $(VersionSuffix), separated by a dash",
+          "args": {
+            "name": "suffix"
+          }
+        }
+      ],
+      "args": {
+        "name": "project",
+        "description": "The project or solution file to build. If a project or solution file isn't specified, MSBuild searches the current working directory for a file that has a file extension that ends in either proj or sln and uses that file",
+        "isOptional": true,
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "(h,m,w)=>ue(this,void 0,void 0,function*(){var d;let{isDangerous:b,currentWorkingDirectory:_,searchTerm:p}=w,S=(d=(0,y.getCurrentInsertedDirectory)(u??_,p,w))!==null&&d!==void 0?d:\"/\";try{let C=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:S}),X=q(C.stdout.split(`\n`),[\".DS_Store\"]),P=[];for(let D of X)if(D){let F=D.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&c!==\"only\"||F===\"folders\"&&c!==\"never\")&&P.push({type:F===\"filepaths\"?\"file\":\"folder\",name:D,insertValue:D,isDangerous:b,context:{templateType:F}})}return O(g(P))}catch{return[]}})"
+          }
+        ]
+      }
+    },
+    {
+      "name": "build-server",
+      "subcommands": [
+        {
+          "name": "shutdown",
+          "description": "Shuts down build servers that are started from dotnet. By default, all servers are shut down",
+          "options": [
+            {
+              "name": [
+                "--msbuild"
+              ],
+              "description": "Shuts down the MSBuild build server"
+            },
+            {
+              "name": [
+                "--razor"
+              ],
+              "description": "Shuts down the Razor build server"
+            },
+            {
+              "name": [
+                "--vbcscompiler"
+              ],
+              "description": "Shuts down the VB/C# compiler build server"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "clean",
+      "options": [
+        {
+          "name": [
+            "-c",
+            "--configuration"
+          ],
+          "description": "Defines the build configuration. The default for most projects is Debug, but you can override the build configuration settings in your project. This option is only required when cleaning if you specified it during build time",
+          "args": {
+            "name": "configuration",
+            "suggestions": [
+              {
+                "name": "Debug"
+              },
+              {
+                "name": "Release"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-f",
+            "--framework"
+          ],
+          "description": "The framework that was specified at build time. The framework must be defined in the project file. If you specified the framework at build time, you must specify the framework when cleaning",
+          "args": {
+            "name": "framework"
+          }
+        },
+        {
+          "name": [
+            "--interactive"
+          ],
+          "description": "Allows the command to stop and wait for user input or action. For example, to complete authentication. Available since .NET Core 3.0 SDK"
+        },
+        {
+          "name": [
+            "--nologo"
+          ],
+          "description": "Doesn't display the startup banner or the copyright message. Available since .NET Core 3.0 SDK"
+        },
+        {
+          "name": [
+            "-o",
+            "--output"
+          ],
+          "description": "The directory that contains the build artifacts to clean. Specify the -f|--framework <FRAMEWORK> switch with the output directory switch if you specified the framework when the project was built",
+          "args": {
+            "name": "directory",
+            "template": "folders"
+          }
+        },
+        {
+          "name": [
+            "-r",
+            "--runtime"
+          ],
+          "description": "Cleans the output folder of the specified runtime. This is used when a self-contained deployment was created"
+        },
+        {
+          "name": [
+            "-v",
+            "--verbosity"
+          ],
+          "description": "Sets the verbosity level of the command. Allowed values are q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]. Not supported in every command. See specific command page to determine if this option is available",
+          "args": {
+            "name": "verbosity",
+            "suggestions": [
+              {
+                "name": "quiet"
+              },
+              {
+                "name": "minimal"
+              },
+              {
+                "name": "normal"
+              },
+              {
+                "name": "detailed"
+              },
+              {
+                "name": "diagnostic"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "project",
+        "description": "The MSBuild project or solution to clean. If a project or solution file is not specified, MSBuild searches the current working directory for a file that has a file extension that ends in proj or sln, and uses that file",
+        "isOptional": true,
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "(h,g,_)=>ue(this,void 0,void 0,function*(){var d;let{isDangerous:b,currentWorkingDirectory:w,searchTerm:p}=_,S=(d=(0,m.getCurrentInsertedDirectory)(u??w,p,_))!==null&&d!==void 0?d:\"/\";try{let q=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:S}),Z=W(q.stdout.split(`\n`),[\".DS_Store\"]),N=[];for(let F of Z)if(F){let M=F.endsWith(\"/\")?\"folders\":\"filepaths\";(M===\"filepaths\"&&c!==\"only\"||M===\"folders\"&&c!==\"never\")&&N.push({type:M===\"filepaths\"?\"file\":\"folder\",name:F,insertValue:F,isDangerous:b,context:{templateType:M}})}return O(y(N))}catch{return[]}})"
+          }
+        ]
+      }
+    },
+    {
+      "name": "format",
+      "options": [
+        {
+          "name": [
+            "--diagnostics"
+          ],
+          "description": "A space-separated list of diagnostic IDs to use as a filter when fixing code style or third party issues. Default value is whichever IDs are listed in the editorconfig file",
+          "args": {
+            "name": "diagnostics"
+          }
+        },
+        {
+          "name": [
+            "--severity"
+          ],
+          "description": "The minimum severity of diagnostics to fix. Allowed values are info, warn, and error. The default value is warn",
+          "args": {
+            "name": "severity",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "info"
+              },
+              {
+                "name": "warn"
+              },
+              {
+                "name": "error"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--no-restore"
+          ],
+          "description": "Doesn't execute an implicit restore before formatting. Default is to do implicit restore"
+        },
+        {
+          "name": [
+            "--verify-no-changes"
+          ],
+          "description": "Verifies that no formatting changes would be performed. Terminates with a non zero exit code if any files would have been formatted"
+        },
+        {
+          "name": [
+            "--include"
+          ],
+          "description": "A space-separated list of relative file or folder paths to include in formatting. All files in the solution or project are formatted if empty",
+          "args": {
+            "name": "paths",
+            "template": [
+              "folders",
+              "filepaths"
+            ]
+          }
+        },
+        {
+          "name": [
+            "--exclude"
+          ],
+          "description": "A space-separated list of relative file or folder paths to exclude from formatting. The default is none",
+          "args": {
+            "name": "paths",
+            "template": [
+              "folders",
+              "filepaths"
+            ]
+          }
+        },
+        {
+          "name": [
+            "--include-generated"
+          ],
+          "description": "Formats files generated by the SDK"
+        },
+        {
+          "name": [
+            "-v",
+            "--verbosity"
+          ],
+          "description": "Sets the verbosity level of the command. Allowed values are q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]. Not supported in every command. See specific command page to determine if this option is available",
+          "args": {
+            "name": "verbosity",
+            "suggestions": [
+              {
+                "name": "quiet"
+              },
+              {
+                "name": "minimal"
+              },
+              {
+                "name": "normal"
+              },
+              {
+                "name": "detailed"
+              },
+              {
+                "name": "diagnostic"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--binarylog"
+          ],
+          "description": "Logs all project or solution load information to a binary log file",
+          "args": {
+            "name": "log",
+            "template": "filepaths"
+          }
+        },
+        {
+          "name": [
+            "--report"
+          ],
+          "description": "Produces a JSON report in the directory specified by <REPORT_PATH>",
+          "args": {
+            "name": "path",
+            "template": "folders"
+          }
+        }
+      ],
+      "args": {
+        "name": "project",
+        "description": "The MSBuild project or solution to run code formatting on. If a project or solution file is not specified, MSBuild searches the current working directory for a file that has a file extension that ends in proj or sln, and uses that file",
+        "isOptional": true,
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "(p,g,b)=>ue(this,void 0,void 0,function*(){var d;let{isDangerous:_,currentWorkingDirectory:O,searchTerm:h}=b,S=(d=(0,m.getCurrentInsertedDirectory)(u??O,h,b))!==null&&d!==void 0?d:\"/\";try{let E=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:S}),Z=K(E.stdout.split(`\n`),[\".DS_Store\"]),N=[];for(let V of Z)if(V){let D=V.endsWith(\"/\")?\"folders\":\"filepaths\";(D===\"filepaths\"&&c!==\"only\"||D===\"folders\"&&c!==\"never\")&&N.push({type:D===\"filepaths\"?\"file\":\"folder\",name:V,insertValue:V,isDangerous:_,context:{templateType:D}})}return w(v(N))}catch{return[]}})"
+          }
+        ]
+      }
+    },
+    {
+      "name": "migrate",
+      "options": [
+        {
+          "name": [
+            "--format-report-file-json"
+          ],
+          "description": "Output migration report file as JSON rather than user messages",
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          }
+        },
+        {
+          "name": [
+            "-r",
+            "--report"
+          ],
+          "description": "Output migration report to a file in addition to the console",
+          "args": {
+            "name": "report_file",
+            "template": "filepaths"
+          }
+        },
+        {
+          "name": [
+            "-s",
+            "--skip-project-references"
+          ],
+          "description": "Skip migrating project references. By default, project references are migrated recursively",
+          "args": {
+            "name": "type",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "Debug"
+              },
+              {
+                "name": "Release"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--skip-backup"
+          ],
+          "description": "Skip moving project.json, global.json, and *.xproj to a backup directory after successful migration"
+        },
+        {
+          "name": [
+            "-t",
+            "--template-file"
+          ],
+          "description": "Template csproj file to use for migration. By default, the same template as the one dropped by dotnet new console is used",
+          "args": {
+            "name": "file",
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "(p,g,O)=>ue(this,void 0,void 0,function*(){var d;let{isDangerous:_,currentWorkingDirectory:b,searchTerm:h}=O,S=(d=(0,y.getCurrentInsertedDirectory)(u??b,h,O))!==null&&d!==void 0?d:\"/\";try{let N=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:S}),Z=K(N.stdout.split(`\n`),[\".DS_Store\"]),R=[];for(let V of Z)if(V){let F=V.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&c!==\"only\"||F===\"folders\"&&c!==\"never\")&&R.push({type:F===\"filepaths\"?\"file\":\"folder\",name:V,insertValue:V,isDangerous:_,context:{templateType:F}})}return j(v(R))}catch{return[]}})"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-v",
+            "--sdk-package-version"
+          ],
+          "description": "The version of the sdk package that's referenced in the migrated app. The default is the version of the SDK in dotnet new",
+          "args": {
+            "name": "version"
+          }
+        },
+        {
+          "name": [
+            "-x",
+            "--xproj-file"
+          ],
+          "description": "The path to the xproj file to use. Required when there is more than one xproj in a project directory",
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          }
+        }
+      ],
+      "args": {
+        "name": "project",
+        "description": "The project or solution file to operate on. If not specified, the command searches the current directory for one. If more than one solution or project is found, an error is thrown",
+        "isOptional": true,
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "(p,g,O)=>ue(this,void 0,void 0,function*(){var d;let{isDangerous:_,currentWorkingDirectory:b,searchTerm:h}=O,S=(d=(0,y.getCurrentInsertedDirectory)(u??b,h,O))!==null&&d!==void 0?d:\"/\";try{let N=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:S}),Z=K(N.stdout.split(`\n`),[\".DS_Store\"]),R=[];for(let V of Z)if(V){let F=V.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&c!==\"only\"||F===\"folders\"&&c!==\"never\")&&R.push({type:F===\"filepaths\"?\"file\":\"folder\",name:V,insertValue:V,isDangerous:_,context:{templateType:F}})}return j(v(R))}catch{return[]}})"
+          }
+        ]
+      }
+    },
+    {
+      "name": "msbuild"
+    },
+    {
+      "name": "nuget",
+      "subcommands": [
+        {
+          "name": "delete",
+          "description": "The dotnet nuget delete command deletes or unlists a package from the server. For nuget.org, the action is to unlist the package",
+          "options": [
+            {
+              "name": [
+                "--force-english-output"
+              ],
+              "description": "Forces the application to run using an invariant, English-based culture"
+            },
+            {
+              "name": [
+                "--interactive"
+              ],
+              "description": "Allows the command to stop and wait for user input or action. For example, to complete authentication. Available since .NET Core 3.0 SDK"
+            },
+            {
+              "name": [
+                "-k",
+                "--api-key"
+              ],
+              "description": "The API key for the server",
+              "args": {
+                "name": "key"
+              }
+            },
+            {
+              "name": [
+                "--no-service-endpoint"
+              ],
+              "description": "Doesn't append \"api/v2/package\" to the source URL. Option available since .NET Core 2.1 SDK"
+            },
+            {
+              "name": [
+                "--non-interactive"
+              ],
+              "description": "Doesn't prompt for user input or confirmations"
+            },
+            {
+              "name": [
+                "-s",
+                "--source"
+              ],
+              "description": "Specifies the server URL. Supported URLs for nuget.org include https://www.nuget.org, https://www.nuget.org/api/v3, and https://www.nuget.org/api/v2/package. For private feeds, replace the host name (for example, %hostname%/api/v3)",
+              "args": {
+                "name": "source"
+              }
+            }
+          ],
+          "args": [
+            {
+              "name": "package_name",
+              "description": "Name/ID of the package to delete"
+            },
+            {
+              "name": "package_version",
+              "description": "Version of the package to delete"
+            }
+          ]
+        },
+        {
+          "name": "locals",
+          "description": "The dotnet nuget locals command clears or lists local NuGet resources in the http-request cache, temporary cache, or machine-wide global packages folder",
+          "options": [
+            {
+              "name": [
+                "-c",
+                "--clear"
+              ],
+              "description": "The clear option executes a clear operation on the specified cache type. The contents of the cache directories are deleted recursively. The executing user/group must have permission to the files in the cache directories. If not, an error is displayed indicating the files/folders that weren't cleared"
+            },
+            {
+              "name": [
+                "-l",
+                "--list"
+              ],
+              "description": "The list option is used to display the location of the specified cache type"
+            }
+          ],
+          "args": {
+            "name": "cache_location",
+            "suggestions": [
+              {
+                "name": "all"
+              },
+              {
+                "name": "http-cache"
+              },
+              {
+                "name": "global-packages"
+              },
+              {
+                "name": "temp"
+              }
+            ]
+          }
+        },
+        {
+          "name": "push",
+          "description": "The dotnet nuget push command pushes a package to the server and publishes it. The push command uses server and credential details found in the system's NuGet config file or chain of config files. For more information on config files, see Configuring NuGet Behavior. NuGet's default configuration is obtained by loading %AppData%NuGetNuGet.config (Windows) or $HOME/.local/share (Linux/macOS), then loading any nuget.config or .nuget\nuget.config starting from the root of drive and ending in the current directory",
+          "options": [
+            {
+              "name": [
+                "-d",
+                "--disable-buffering"
+              ],
+              "description": "Disables buffering when pushing to an HTTP(S) server to reduce memory usage"
+            },
+            {
+              "name": [
+                "--force-english-output"
+              ],
+              "description": "Forces the application to run using an invariant, English-based culture"
+            },
+            {
+              "name": [
+                "--interactive"
+              ],
+              "description": "Allows the command to stop and wait for user input or action. For example, to complete authentication. Available since .NET Core 3.0 SDK"
+            },
+            {
+              "name": [
+                "-k",
+                "--api-key"
+              ],
+              "description": "The API key for the server",
+              "args": {
+                "name": "key"
+              }
+            },
+            {
+              "name": [
+                "-n",
+                "--no-symbols"
+              ],
+              "description": "Doesn't push symbols (even if present)"
+            },
+            {
+              "name": [
+                "--no-service-endpoint"
+              ],
+              "description": "Doesn't append \"api/v2/package\" to the source URL. Option available since .NET Core 2.1 SDK"
+            },
+            {
+              "name": [
+                "-s",
+                "--source"
+              ],
+              "description": "Specifies the server URL. NuGet identifies a UNC or local folder source and simply copies the file there instead of pushing it using HTTP",
+              "args": {
+                "name": "source"
+              }
+            },
+            {
+              "name": [
+                "--skip-duplicate"
+              ],
+              "description": "When pushing multiple packages to an HTTP(S) server, treats any 409 Conflict response as a warning so that the push can continue. Available since .NET Core 3.1 SDK"
+            },
+            {
+              "name": [
+                "-sk",
+                "--symbol-api-key"
+              ],
+              "description": "The API key for the symbol server",
+              "args": {
+                "name": "key"
+              }
+            },
+            {
+              "name": [
+                "-ss",
+                "--symbol-source"
+              ],
+              "description": "Specifies the symbol server URL",
+              "args": {
+                "name": "symbol_source"
+              }
+            },
+            {
+              "name": [
+                "-t",
+                "--timeout"
+              ],
+              "description": "Specifies the timeout for pushing to a server in seconds. Defaults to 300 seconds (5 minutes). Specifying 0 applies the default value",
+              "args": {
+                "name": "timeout",
+                "isOptional": true
+              }
+            }
+          ],
+          "args": {
+            "name": "root",
+            "description": "Specifies the file path to the package to be pushed",
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "(p,g,w)=>pe(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:S,searchTerm:h}=w,k=(f=(0,v.getCurrentInsertedDirectory)(u??S,h,w))!==null&&f!==void 0?f:\"/\";try{let P=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:k}),te=K(P.stdout.split(`\n`),[\".DS_Store\"]),R=[];for(let j of te)if(j){let F=j.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&l!==\"only\"||F===\"folders\"&&l!==\"never\")&&R.push({type:F===\"filepaths\"?\"file\":\"folder\",name:j,insertValue:j,isDangerous:b,context:{templateType:F}})}return T(m(R))}catch{return[]}})"
+              }
+            ]
+          }
+        },
+        {
+          "name": "add",
+          "subcommands": [
+            {
+              "name": "source",
+              "description": "The dotnet nuget add source command adds a new package source to your NuGet configuration files",
+              "options": [
+                {
+                  "name": [
+                    "--configfile"
+                  ],
+                  "description": "The NuGet configuration file (nuget.config) to use. If specified, only the settings from this file will be used. If not specified, the hierarchy of configuration files from the current directory will be used",
+                  "args": {
+                    "name": "file",
+                    "generators": [
+                      {
+                        "requires_js": true,
+                        "js_source": "(p,g,w)=>pe(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:S,searchTerm:h}=w,k=(f=(0,v.getCurrentInsertedDirectory)(u??S,h,w))!==null&&f!==void 0?f:\"/\";try{let P=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:k}),te=K(P.stdout.split(`\n`),[\".DS_Store\"]),R=[];for(let j of te)if(j){let F=j.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&l!==\"only\"||F===\"folders\"&&l!==\"never\")&&R.push({type:F===\"filepaths\"?\"file\":\"folder\",name:j,insertValue:j,isDangerous:b,context:{templateType:F}})}return T(m(R))}catch{return[]}})"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": [
+                    "-n",
+                    "--name"
+                  ],
+                  "description": "Name of the source",
+                  "args": {
+                    "name": "name"
+                  }
+                },
+                {
+                  "name": [
+                    "-p",
+                    "--password"
+                  ],
+                  "description": "Password to be used when connecting to an authenticated source",
+                  "args": {
+                    "name": "password"
+                  }
+                },
+                {
+                  "name": [
+                    "--store-password-in-clear-text"
+                  ],
+                  "description": "Enables storing portable package source credentials by disabling password encryption",
+                  "args": {
+                    "name": "clear-text"
+                  }
+                },
+                {
+                  "name": [
+                    "-u",
+                    "--username"
+                  ],
+                  "description": "Username to be used when connecting to an authenticated source",
+                  "args": {
+                    "name": "username"
+                  }
+                },
+                {
+                  "name": [
+                    "--valid-authentication-types"
+                  ],
+                  "description": "Comma-separated list of valid authentication types for this source. Set this to basic if the server advertises NTLM or Negotiate and your credentials must be sent using the Basic mechanism, for instance when using a PAT with on-premises Azure DevOps Server. Other valid values include negotiate, kerberos, ntlm, and digest, but these values are unlikely to be useful",
+                  "args": {
+                    "name": "types",
+                    "suggestions": [
+                      {
+                        "name": "negotiate"
+                      },
+                      {
+                        "name": "kerberos"
+                      },
+                      {
+                        "name": "ntlm"
+                      },
+                      {
+                        "name": "digest"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "args": {
+                "name": "package_source",
+                "description": "Path to the package source"
+              }
+            }
+          ]
+        },
+        {
+          "name": "disable",
+          "subcommands": [
+            {
+              "name": "source",
+              "description": "The dotnet nuget disable source command disables an existing source in your NuGet configuration files",
+              "options": [
+                {
+                  "name": [
+                    "--configfile"
+                  ],
+                  "description": "The NuGet configuration file (nuget.config) to use. If specified, only the settings from this file will be used. If not specified, the hierarchy of configuration files from the current directory will be used",
+                  "args": {
+                    "name": "file",
+                    "generators": [
+                      {
+                        "requires_js": true,
+                        "js_source": "(p,g,w)=>pe(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:S,searchTerm:h}=w,k=(f=(0,v.getCurrentInsertedDirectory)(u??S,h,w))!==null&&f!==void 0?f:\"/\";try{let P=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:k}),te=K(P.stdout.split(`\n`),[\".DS_Store\"]),R=[];for(let j of te)if(j){let F=j.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&l!==\"only\"||F===\"folders\"&&l!==\"never\")&&R.push({type:F===\"filepaths\"?\"file\":\"folder\",name:j,insertValue:j,isDangerous:b,context:{templateType:F}})}return T(m(R))}catch{return[]}})"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "args": {
+                "name": "name",
+                "description": "Name of the source"
+              }
+            }
+          ]
+        },
+        {
+          "name": "enable",
+          "subcommands": [
+            {
+              "name": "source",
+              "description": "The dotnet nuget enable source command enables an existing source in your NuGet configuration files",
+              "options": [
+                {
+                  "name": [
+                    "--configfile"
+                  ],
+                  "description": "The NuGet configuration file (nuget.config) to use. If specified, only the settings from this file will be used. If not specified, the hierarchy of configuration files from the current directory will be used",
+                  "args": {
+                    "name": "file",
+                    "generators": [
+                      {
+                        "requires_js": true,
+                        "js_source": "(p,g,w)=>pe(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:S,searchTerm:h}=w,k=(f=(0,v.getCurrentInsertedDirectory)(u??S,h,w))!==null&&f!==void 0?f:\"/\";try{let P=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:k}),te=K(P.stdout.split(`\n`),[\".DS_Store\"]),R=[];for(let j of te)if(j){let F=j.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&l!==\"only\"||F===\"folders\"&&l!==\"never\")&&R.push({type:F===\"filepaths\"?\"file\":\"folder\",name:j,insertValue:j,isDangerous:b,context:{templateType:F}})}return T(m(R))}catch{return[]}})"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "args": {
+                "name": "name",
+                "description": "Name of the source"
+              }
+            }
+          ]
+        },
+        {
+          "name": "list",
+          "subcommands": [
+            {
+              "name": "source",
+              "description": "The dotnet nuget list source command lists all existing sources from your NuGet configuration files"
+            }
+          ],
+          "options": [
+            {
+              "name": [
+                "--configfile"
+              ],
+              "description": "The NuGet configuration file (nuget.config) to use. If specified, only the settings from this file will be used. If not specified, the hierarchy of configuration files from the current directory will be used",
+              "args": {
+                "name": "file",
+                "generators": [
+                  {
+                    "requires_js": true,
+                    "js_source": "(p,g,w)=>pe(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:S,searchTerm:h}=w,k=(f=(0,v.getCurrentInsertedDirectory)(u??S,h,w))!==null&&f!==void 0?f:\"/\";try{let P=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:k}),te=K(P.stdout.split(`\n`),[\".DS_Store\"]),R=[];for(let j of te)if(j){let F=j.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&l!==\"only\"||F===\"folders\"&&l!==\"never\")&&R.push({type:F===\"filepaths\"?\"file\":\"folder\",name:j,insertValue:j,isDangerous:b,context:{templateType:F}})}return T(m(R))}catch{return[]}})"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "--format"
+              ],
+              "description": "The format of the list command output: Detailed (the default) and Short",
+              "args": {
+                "name": "output",
+                "suggestions": [
+                  {
+                    "name": "Detailed"
+                  },
+                  {
+                    "name": "Short"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "remove",
+          "subcommands": [
+            {
+              "name": "source",
+              "description": "The dotnet nuget remove source command removes an existing source from your NuGet configuration files",
+              "options": [
+                {
+                  "name": [
+                    "--configFile"
+                  ],
+                  "description": "The NuGet configuration file (nuget.config) to use. If specified, only the settings from this file will be used. If not specified, the hierarchy of configuration files from the current directory will be used",
+                  "args": {
+                    "name": "file",
+                    "generators": [
+                      {
+                        "requires_js": true,
+                        "js_source": "(p,g,w)=>pe(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:S,searchTerm:h}=w,k=(f=(0,v.getCurrentInsertedDirectory)(u??S,h,w))!==null&&f!==void 0?f:\"/\";try{let P=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:k}),te=K(P.stdout.split(`\n`),[\".DS_Store\"]),R=[];for(let j of te)if(j){let F=j.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&l!==\"only\"||F===\"folders\"&&l!==\"never\")&&R.push({type:F===\"filepaths\"?\"file\":\"folder\",name:j,insertValue:j,isDangerous:b,context:{templateType:F}})}return T(m(R))}catch{return[]}})"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "args": {
+                "name": "name",
+                "description": "Name of the source"
+              }
+            }
+          ]
+        },
+        {
+          "name": "update",
+          "subcommands": [
+            {
+              "name": "source",
+              "description": "The dotnet nuget update source command updates an existing source in your NuGet configuration files",
+              "options": [
+                {
+                  "name": [
+                    "--configfile"
+                  ],
+                  "description": "The NuGet configuration file (nuget.config) to use. If specified, only the settings from this file will be used. If not specified, the hierarchy of configuration files from the current directory will be used",
+                  "args": {
+                    "name": "file",
+                    "generators": [
+                      {
+                        "requires_js": true,
+                        "js_source": "(p,g,w)=>pe(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:S,searchTerm:h}=w,k=(f=(0,v.getCurrentInsertedDirectory)(u??S,h,w))!==null&&f!==void 0?f:\"/\";try{let P=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:k}),te=K(P.stdout.split(`\n`),[\".DS_Store\"]),R=[];for(let j of te)if(j){let F=j.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&l!==\"only\"||F===\"folders\"&&l!==\"never\")&&R.push({type:F===\"filepaths\"?\"file\":\"folder\",name:j,insertValue:j,isDangerous:b,context:{templateType:F}})}return T(m(R))}catch{return[]}})"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": [
+                    "-n",
+                    "--name"
+                  ],
+                  "description": "Name of the source",
+                  "args": {
+                    "name": "name"
+                  }
+                },
+                {
+                  "name": [
+                    "-p",
+                    "--password"
+                  ],
+                  "description": "Password to be used when connecting to an authenticated source",
+                  "args": {
+                    "name": "password"
+                  }
+                },
+                {
+                  "name": [
+                    "--store-password-in-clear-text"
+                  ],
+                  "description": "Enables storing portable package source credentials by disabling password encryption",
+                  "args": {
+                    "name": "clear-text"
+                  }
+                },
+                {
+                  "name": [
+                    "-u",
+                    "--username"
+                  ],
+                  "description": "Username to be used when connecting to an authenticated source",
+                  "args": {
+                    "name": "username"
+                  }
+                },
+                {
+                  "name": [
+                    "--valid-authentication-types"
+                  ],
+                  "description": "Comma-separated list of valid authentication types for this source. Set this to basic if the server advertises NTLM or Negotiate and your credentials must be sent using the Basic mechanism, for instance when using a PAT with on-premises Azure DevOps Server. Other valid values include negotiate, kerberos, ntlm, and digest, but these values are unlikely to be useful",
+                  "args": {
+                    "name": "types",
+                    "suggestions": [
+                      {
+                        "name": "negotiate"
+                      },
+                      {
+                        "name": "kerberos"
+                      },
+                      {
+                        "name": "ntlm"
+                      },
+                      {
+                        "name": "digest"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "args": {
+                "name": "name",
+                "description": "Name of the source"
+              }
+            }
+          ]
+        },
+        {
+          "name": "verify",
+          "description": "The dotnet nuget verify command verifies a signed NuGet package",
+          "options": [
+            {
+              "name": [
+                "--all"
+              ],
+              "description": "Specifies that all verifications possible should be performed on the package(s). By default, only signatures are verified"
+            },
+            {
+              "name": [
+                "--certificate-fingerprint"
+              ],
+              "description": "Verify that the signer certificate matches with one of the specified SHA256 fingerprints. This option can be supplied multiple times to provide multiple fingerprints",
+              "args": {
+                "name": "fingerprint"
+              }
+            },
+            {
+              "name": [
+                "-v",
+                "--verbosity"
+              ],
+              "description": "Sets the verbosity level of the command. Allowed values are q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]. Not supported in every command. See specific command page to determine if this option is available",
+              "args": {
+                "name": "verbosity",
+                "suggestions": [
+                  {
+                    "name": "quiet"
+                  },
+                  {
+                    "name": "minimal"
+                  },
+                  {
+                    "name": "normal"
+                  },
+                  {
+                    "name": "detailed"
+                  },
+                  {
+                    "name": "diagnostic"
+                  }
+                ]
+              }
+            }
+          ],
+          "args": {
+            "name": "package-path",
+            "description": "Specifies the file path to the package(s) to be verified. Multiple position arguments can be passed in to verify multiple packages",
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "(p,g,w)=>pe(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:S,searchTerm:h}=w,k=(f=(0,v.getCurrentInsertedDirectory)(u??S,h,w))!==null&&f!==void 0?f:\"/\";try{let P=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:k}),te=K(P.stdout.split(`\n`),[\".DS_Store\"]),R=[];for(let j of te)if(j){let F=j.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&l!==\"only\"||F===\"folders\"&&l!==\"never\")&&R.push({type:F===\"filepaths\"?\"file\":\"folder\",name:j,insertValue:j,isDangerous:b,context:{templateType:F}})}return T(m(R))}catch{return[]}})"
+              }
+            ]
+          }
+        },
+        {
+          "name": "trust",
+          "description": "The dotnet nuget trust command manages the trusted signers. By default, NuGet accepts all authors and repositories. These commands allow you to specify only a specific subset of signers whose signatures will be accepted, while rejecting all others",
+          "subcommands": [
+            {
+              "name": "list",
+              "description": "Lists all the trusted signers in the configuration. This option will include all the certificates (with fingerprint and fingerprint algorithm) each signer has. If a certificate has a preceding [U], it means that certificate entry has allowUntrustedRoot set as true",
+              "options": [
+                {
+                  "name": [
+                    "--configfile"
+                  ],
+                  "description": "The NuGet configuration file (nuget.config) to use. If specified, only the settings from this file will be used. If not specified, the hierarchy of configuration files from the current directory will be used",
+                  "args": {
+                    "name": "file",
+                    "generators": [
+                      {
+                        "requires_js": true,
+                        "js_source": "(p,g,w)=>pe(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:S,searchTerm:h}=w,k=(f=(0,v.getCurrentInsertedDirectory)(u??S,h,w))!==null&&f!==void 0?f:\"/\";try{let P=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:k}),te=K(P.stdout.split(`\n`),[\".DS_Store\"]),R=[];for(let j of te)if(j){let F=j.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&l!==\"only\"||F===\"folders\"&&l!==\"never\")&&R.push({type:F===\"filepaths\"?\"file\":\"folder\",name:j,insertValue:j,isDangerous:b,context:{templateType:F}})}return T(m(R))}catch{return[]}})"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": [
+                    "-v",
+                    "--verbosity"
+                  ],
+                  "description": "Sets the verbosity level of the command. Allowed values are q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]. The default is minimal",
+                  "args": {
+                    "name": "verbosity",
+                    "suggestions": [
+                      {
+                        "name": "quiet"
+                      },
+                      {
+                        "name": "minimal"
+                      },
+                      {
+                        "name": "normal"
+                      },
+                      {
+                        "name": "detailed"
+                      },
+                      {
+                        "name": "diagnostic"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "sync",
+              "description": "Deletes the current list of certificates and replaces them with an up-to-date list from the repository",
+              "options": [
+                {
+                  "name": [
+                    "--configfile"
+                  ],
+                  "description": "The NuGet configuration file (nuget.config) to use. If specified, only the settings from this file will be used. If not specified, the hierarchy of configuration files from the current directory will be used",
+                  "args": {
+                    "name": "file",
+                    "generators": [
+                      {
+                        "requires_js": true,
+                        "js_source": "(p,g,w)=>pe(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:S,searchTerm:h}=w,k=(f=(0,v.getCurrentInsertedDirectory)(u??S,h,w))!==null&&f!==void 0?f:\"/\";try{let P=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:k}),te=K(P.stdout.split(`\n`),[\".DS_Store\"]),R=[];for(let j of te)if(j){let F=j.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&l!==\"only\"||F===\"folders\"&&l!==\"never\")&&R.push({type:F===\"filepaths\"?\"file\":\"folder\",name:j,insertValue:j,isDangerous:b,context:{templateType:F}})}return T(m(R))}catch{return[]}})"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": [
+                    "-v",
+                    "--verbosity"
+                  ],
+                  "description": "Sets the verbosity level of the command. Allowed values are q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]. The default is minimal",
+                  "args": {
+                    "name": "verbosity",
+                    "suggestions": [
+                      {
+                        "name": "quiet"
+                      },
+                      {
+                        "name": "minimal"
+                      },
+                      {
+                        "name": "normal"
+                      },
+                      {
+                        "name": "detailed"
+                      },
+                      {
+                        "name": "diagnostic"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "remove",
+              "description": "Removes any trusted signers that match the given name",
+              "options": [
+                {
+                  "name": [
+                    "--configfile"
+                  ],
+                  "description": "The NuGet configuration file (nuget.config) to use. If specified, only the settings from this file will be used. If not specified, the hierarchy of configuration files from the current directory will be used",
+                  "args": {
+                    "name": "file",
+                    "generators": [
+                      {
+                        "requires_js": true,
+                        "js_source": "(p,g,w)=>pe(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:S,searchTerm:h}=w,k=(f=(0,v.getCurrentInsertedDirectory)(u??S,h,w))!==null&&f!==void 0?f:\"/\";try{let P=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:k}),te=K(P.stdout.split(`\n`),[\".DS_Store\"]),R=[];for(let j of te)if(j){let F=j.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&l!==\"only\"||F===\"folders\"&&l!==\"never\")&&R.push({type:F===\"filepaths\"?\"file\":\"folder\",name:j,insertValue:j,isDangerous:b,context:{templateType:F}})}return T(m(R))}catch{return[]}})"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": [
+                    "-v",
+                    "--verbosity"
+                  ],
+                  "description": "Sets the verbosity level of the command. Allowed values are q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]. The default is minimal",
+                  "args": {
+                    "name": "verbosity",
+                    "suggestions": [
+                      {
+                        "name": "quiet"
+                      },
+                      {
+                        "name": "minimal"
+                      },
+                      {
+                        "name": "normal"
+                      },
+                      {
+                        "name": "detailed"
+                      },
+                      {
+                        "name": "diagnostic"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "args": {
+                "name": "name",
+                "description": "The name of the existing trusted signer to remove"
+              }
+            },
+            {
+              "name": "author",
+              "description": "Adds a trusted signer with the given name, based on the author signature of the package",
+              "options": [
+                {
+                  "name": [
+                    "--allow-untrusted-root"
+                  ],
+                  "description": "Specifies if the certificate for the trusted signer should be allowed to chain to an untrusted root. This is not recommended"
+                },
+                {
+                  "name": [
+                    "--configfile"
+                  ],
+                  "description": "The NuGet configuration file (nuget.config) to use. If specified, only the settings from this file will be used. If not specified, the hierarchy of configuration files from the current directory will be used",
+                  "args": {
+                    "name": "file",
+                    "generators": [
+                      {
+                        "requires_js": true,
+                        "js_source": "(p,g,w)=>pe(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:S,searchTerm:h}=w,k=(f=(0,v.getCurrentInsertedDirectory)(u??S,h,w))!==null&&f!==void 0?f:\"/\";try{let P=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:k}),te=K(P.stdout.split(`\n`),[\".DS_Store\"]),R=[];for(let j of te)if(j){let F=j.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&l!==\"only\"||F===\"folders\"&&l!==\"never\")&&R.push({type:F===\"filepaths\"?\"file\":\"folder\",name:j,insertValue:j,isDangerous:b,context:{templateType:F}})}return T(m(R))}catch{return[]}})"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": [
+                    "-v",
+                    "--verbosity"
+                  ],
+                  "description": "Sets the verbosity level of the command. Allowed values are q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]. The default is minimal",
+                  "args": {
+                    "name": "verbosity",
+                    "suggestions": [
+                      {
+                        "name": "quiet"
+                      },
+                      {
+                        "name": "minimal"
+                      },
+                      {
+                        "name": "normal"
+                      },
+                      {
+                        "name": "detailed"
+                      },
+                      {
+                        "name": "diagnostic"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "args": [
+                {
+                  "name": "name",
+                  "description": "The name of the trusted signer to add. If NAME already exists in the configuration, the signature is appended"
+                },
+                {
+                  "name": "package",
+                  "description": "The given PACKAGE should be a local path to the signed .nupkg file"
+                }
+              ]
+            },
+            {
+              "name": "repository",
+              "description": "Adds a trusted signer with the given name, based on the repository signature or countersignature of a signed package",
+              "options": [
+                {
+                  "name": [
+                    "--allow-untrusted-root"
+                  ],
+                  "description": "Specifies if the certificate for the trusted signer should be allowed to chain to an untrusted root. This is not recommended"
+                },
+                {
+                  "name": [
+                    "--owners"
+                  ],
+                  "description": "Semicolon-separated list of trusted owners to further restrict the trust of a repository"
+                },
+                {
+                  "name": [
+                    "--configfile"
+                  ],
+                  "description": "The NuGet configuration file (nuget.config) to use. If specified, only the settings from this file will be used. If not specified, the hierarchy of configuration files from the current directory will be used",
+                  "args": {
+                    "name": "file",
+                    "generators": [
+                      {
+                        "requires_js": true,
+                        "js_source": "(p,g,w)=>pe(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:S,searchTerm:h}=w,k=(f=(0,v.getCurrentInsertedDirectory)(u??S,h,w))!==null&&f!==void 0?f:\"/\";try{let P=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:k}),te=K(P.stdout.split(`\n`),[\".DS_Store\"]),R=[];for(let j of te)if(j){let F=j.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&l!==\"only\"||F===\"folders\"&&l!==\"never\")&&R.push({type:F===\"filepaths\"?\"file\":\"folder\",name:j,insertValue:j,isDangerous:b,context:{templateType:F}})}return T(m(R))}catch{return[]}})"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": [
+                    "-v",
+                    "--verbosity"
+                  ],
+                  "description": "Sets the verbosity level of the command. Allowed values are q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]. The default is minimal",
+                  "args": {
+                    "name": "verbosity",
+                    "suggestions": [
+                      {
+                        "name": "quiet"
+                      },
+                      {
+                        "name": "minimal"
+                      },
+                      {
+                        "name": "normal"
+                      },
+                      {
+                        "name": "detailed"
+                      },
+                      {
+                        "name": "diagnostic"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "args": [
+                {
+                  "name": "name",
+                  "description": "The name of the trusted signer to add. If NAME already exists in the configuration, the signature is appended"
+                },
+                {
+                  "name": "package",
+                  "description": "The given PACKAGE should be a local path to the signed .nupkg file"
+                }
+              ]
+            },
+            {
+              "name": "certificate",
+              "description": "Adds a trusted signer with the given name, based on a certificate fingerprint",
+              "options": [
+                {
+                  "name": [
+                    "--algorithm"
+                  ],
+                  "description": "Specifies the hash algorithm used to calculate the certificate fingerprint. Defaults to SHA256. Values supported are SHA256, SHA384 and SHA512"
+                },
+                {
+                  "name": [
+                    "--configfile"
+                  ],
+                  "description": "The NuGet configuration file (nuget.config) to use. If specified, only the settings from this file will be used. If not specified, the hierarchy of configuration files from the current directory will be used",
+                  "args": {
+                    "name": "file",
+                    "generators": [
+                      {
+                        "requires_js": true,
+                        "js_source": "(p,g,w)=>pe(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:S,searchTerm:h}=w,k=(f=(0,v.getCurrentInsertedDirectory)(u??S,h,w))!==null&&f!==void 0?f:\"/\";try{let P=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:k}),te=K(P.stdout.split(`\n`),[\".DS_Store\"]),R=[];for(let j of te)if(j){let F=j.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&l!==\"only\"||F===\"folders\"&&l!==\"never\")&&R.push({type:F===\"filepaths\"?\"file\":\"folder\",name:j,insertValue:j,isDangerous:b,context:{templateType:F}})}return T(m(R))}catch{return[]}})"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": [
+                    "-v",
+                    "--verbosity"
+                  ],
+                  "description": "Sets the verbosity level of the command. Allowed values are q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]. The default is minimal",
+                  "args": {
+                    "name": "verbosity",
+                    "suggestions": [
+                      {
+                        "name": "quiet"
+                      },
+                      {
+                        "name": "minimal"
+                      },
+                      {
+                        "name": "normal"
+                      },
+                      {
+                        "name": "detailed"
+                      },
+                      {
+                        "name": "diagnostic"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "args": [
+                {
+                  "name": "name",
+                  "description": "The name of the trusted signer to add. If a trusted signer with the given name already exists, the certificate item is added to that signer. Otherwise a trusted author is created with a certificate item from the given certificate information"
+                },
+                {
+                  "name": "fingerprint",
+                  "description": "The fingerprint of the certificate"
+                }
+              ]
+            },
+            {
+              "name": "source",
+              "description": "Adds a trusted signer based on a given package source",
+              "options": [
+                {
+                  "name": [
+                    "owners"
+                  ],
+                  "description": "Semicolon-separated list of trusted owners to further restrict the trust of a repository"
+                },
+                {
+                  "name": [
+                    "--source-url"
+                  ],
+                  "description": "If a source-url is provided, it must be a v3 package source URL (like https://api.nuget.org/v3/index.json). Other package source types are not supported",
+                  "args": {
+                    "name": "source-url"
+                  }
+                },
+                {
+                  "name": [
+                    "--configfile"
+                  ],
+                  "description": "The NuGet configuration file (nuget.config) to use. If specified, only the settings from this file will be used. If not specified, the hierarchy of configuration files from the current directory will be used",
+                  "args": {
+                    "name": "file",
+                    "generators": [
+                      {
+                        "requires_js": true,
+                        "js_source": "(p,g,w)=>pe(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:S,searchTerm:h}=w,k=(f=(0,v.getCurrentInsertedDirectory)(u??S,h,w))!==null&&f!==void 0?f:\"/\";try{let P=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:k}),te=K(P.stdout.split(`\n`),[\".DS_Store\"]),R=[];for(let j of te)if(j){let F=j.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&l!==\"only\"||F===\"folders\"&&l!==\"never\")&&R.push({type:F===\"filepaths\"?\"file\":\"folder\",name:j,insertValue:j,isDangerous:b,context:{templateType:F}})}return T(m(R))}catch{return[]}})"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": [
+                    "-v",
+                    "--verbosity"
+                  ],
+                  "description": "Sets the verbosity level of the command. Allowed values are q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]. The default is minimal",
+                  "args": {
+                    "name": "verbosity",
+                    "suggestions": [
+                      {
+                        "name": "quiet"
+                      },
+                      {
+                        "name": "minimal"
+                      },
+                      {
+                        "name": "normal"
+                      },
+                      {
+                        "name": "detailed"
+                      },
+                      {
+                        "name": "diagnostic"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "args": {
+                "name": "name"
+              }
+            }
+          ]
+        },
+        {
+          "name": "sign",
+          "description": "The dotnet nuget sign command signs all the packages matching the first argument with a certificate. The certificate with the private key can be obtained from a file or from a certificate installed in a certificate store by providing a subject name or a SHA-1 fingerprint",
+          "options": [
+            {
+              "name": [
+                "--certificate-path"
+              ],
+              "description": "Specifies the file path to the certificate to be used in signing the package",
+              "args": {
+                "name": "path",
+                "generators": [
+                  {
+                    "requires_js": true,
+                    "js_source": "(p,g,w)=>pe(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:S,searchTerm:h}=w,k=(f=(0,v.getCurrentInsertedDirectory)(u??S,h,w))!==null&&f!==void 0?f:\"/\";try{let P=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:k}),te=K(P.stdout.split(`\n`),[\".DS_Store\"]),R=[];for(let j of te)if(j){let F=j.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&l!==\"only\"||F===\"folders\"&&l!==\"never\")&&R.push({type:F===\"filepaths\"?\"file\":\"folder\",name:j,insertValue:j,isDangerous:b,context:{templateType:F}})}return T(m(R))}catch{return[]}})"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "--certificate-store-name"
+              ],
+              "description": "Specifies the name of the X.509 certificate store to use to search for the certificate. Defaults to \"My\", the X.509 certificate store for personal certificates. This option should be used when specifying the certificate via --certificate-subject-name or --certificate-fingerprint options",
+              "args": {
+                "name": "storename"
+              }
+            },
+            {
+              "name": [
+                "--certificate-store-location"
+              ],
+              "description": "Specifies the name of the X.509 certificate store use to search for the certificate. Defaults to \"CurrentUser\", the X.509 certificate store used by the current user. This option should be used when specifying the certificate via --certificate-subject-name or --certificate-fingerprint options",
+              "args": {
+                "name": "location"
+              }
+            },
+            {
+              "name": [
+                "--certificate-subject-name"
+              ],
+              "description": "Specifies the subject name of the certificate used to search a local certificate store for the certificate. The search is a case-insensitive string comparison using the supplied value, which will find all certificates with the subject name containing that string, regardless of other subject values. The certificate store can be specified by --certificate-store-name and --certificate-store-location options",
+              "args": {
+                "name": "subjectname"
+              }
+            },
+            {
+              "name": [
+                "--certificate-fingerprint"
+              ],
+              "description": "SHA-1 fingerprint of the certificate used to search a local certificate store for the certificate",
+              "args": {
+                "name": "fingerprint"
+              }
+            },
+            {
+              "name": [
+                "--certificate-password"
+              ],
+              "description": "Specifies the certificate password, if needed. If a certificate is password protected but no password is provided, the sign command will fail",
+              "args": {
+                "name": "password"
+              }
+            },
+            {
+              "name": [
+                "--hash-algorithm"
+              ],
+              "description": "Hash algorithm to be used to sign the package. Defaults to SHA256. Possible values are SHA256, SHA384, and SHA512",
+              "args": {
+                "name": "algorithm",
+                "suggestions": [
+                  {
+                    "name": "SHA256"
+                  },
+                  {
+                    "name": "SHA384"
+                  },
+                  {
+                    "name": "SHA512"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "-o",
+                "--output"
+              ],
+              "description": "Specifies the directory where the signed package should be saved. If this option is not specified, by default the original package is overwritten by the signed package",
+              "args": {
+                "name": "directory",
+                "template": "folders"
+              }
+            },
+            {
+              "name": [
+                "--overwrite"
+              ],
+              "description": "Indicate that the current signature should be overwritten. By default the command will fail if the package already has a signature"
+            },
+            {
+              "name": [
+                "--timestamp-hash-algorithm"
+              ],
+              "description": "Hash algorithm to be used by the RFC 3161 timestamp server. Defaults to SHA256",
+              "args": {
+                "name": "algorithm",
+                "suggestions": [
+                  {
+                    "name": "SHA256"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "--timestamper"
+              ],
+              "description": "URL to an RFC 3161 timestamping server",
+              "args": {
+                "name": "url"
+              }
+            },
+            {
+              "name": [
+                "-v",
+                "--verbosity"
+              ],
+              "description": "Sets the verbosity level of the command. Allowed values are q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]. The default is minimal",
+              "args": {
+                "name": "verbosity",
+                "suggestions": [
+                  {
+                    "name": "quiet"
+                  },
+                  {
+                    "name": "minimal"
+                  },
+                  {
+                    "name": "normal"
+                  },
+                  {
+                    "name": "detailed"
+                  },
+                  {
+                    "name": "diagnostic"
+                  }
+                ]
+              }
+            }
+          ],
+          "args": {
+            "name": "package-paths",
+            "description": "Specifies the file path to the package(s) to be signed. Multiple arguments can be passed in to sign multiple packages",
+            "isVariadic": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "pack",
+      "options": [
+        {
+          "name": [
+            "-c",
+            "--configuration"
+          ],
+          "description": "Defines the build configuration. The default for most projects is Debug, but you can override the build configuration settings in your project",
+          "args": {
+            "name": "configuration",
+            "suggestions": [
+              {
+                "name": "Debug"
+              },
+              {
+                "name": "Release"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--force"
+          ],
+          "description": "Forces all dependencies to be resolved even if the last restore was successful. Specifying this flag is the same as deleting the project.assets.json file"
+        },
+        {
+          "name": [
+            "--include-source"
+          ],
+          "description": "Includes the debug symbols NuGet packages in addition to the regular NuGet packages in the output directory. The sources files are included in the src folder within the symbols package"
+        },
+        {
+          "name": [
+            "--include-symbols"
+          ],
+          "description": "Includes the debug symbols NuGet packages in addition to the regular NuGet packages in the output directory"
+        },
+        {
+          "name": [
+            "--interactive"
+          ],
+          "description": "Allows the command to stop and wait for user input or action. For example, to complete authentication. Available since .NET Core 3.0 SDK"
+        },
+        {
+          "name": [
+            "--no-build"
+          ],
+          "description": "Doesn't build the project before packing. It also implicitly sets the --no-restore flag"
+        },
+        {
+          "name": [
+            "--no-dependencies"
+          ],
+          "description": "Ignores project-to-project references and only restores the root project"
+        },
+        {
+          "name": [
+            "--no-restore"
+          ],
+          "description": "Doesn't execute an implicit restore when running the command"
+        },
+        {
+          "name": [
+            "--nologo"
+          ],
+          "description": "Doesn't display the startup banner or the copyright message. Available since .NET Core 3.0 SDK"
+        },
+        {
+          "name": [
+            "-o",
+            "--output"
+          ],
+          "description": "Places the built packages in the directory specified",
+          "args": {
+            "name": "directory",
+            "template": "folders"
+          }
+        },
+        {
+          "name": [
+            "--runtime"
+          ],
+          "description": "Specifies the target runtime to restore packages for. For a list of Runtime Identifiers (RIDs), see the RID catalog",
+          "args": {
+            "name": "runtime"
+          }
+        },
+        {
+          "name": [
+            "-s",
+            "--serviceable"
+          ],
+          "description": "Sets the serviceable flag in the package"
+        },
+        {
+          "name": [
+            "--version-suffix"
+          ],
+          "description": "Defines the value for the $(VersionSuffix) MSBuild property in the project",
+          "args": {
+            "name": "suffix"
+          }
+        },
+        {
+          "name": [
+            "-v",
+            "--verbosity"
+          ],
+          "description": "Sets the verbosity level of the command. Allowed values are q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]. For more information, see LoggerVerbosity",
+          "args": {
+            "name": "verbosity",
+            "suggestions": [
+              {
+                "name": "quiet"
+              },
+              {
+                "name": "minimal"
+              },
+              {
+                "name": "normal"
+              },
+              {
+                "name": "detailed"
+              },
+              {
+                "name": "diagnostic"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "project",
+        "description": "The project or solution to pack. It's either a path to a csproj, vbproj, or fsproj file, or to a solution file or directory. If not specified, the command searches the current directory for a project or solution file",
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "(p,g,_)=>ce(this,void 0,void 0,function*(){var d;let{isDangerous:b,currentWorkingDirectory:O,searchTerm:h}=_,j=(d=(0,v.getCurrentInsertedDirectory)(c??O,h,_))!==null&&d!==void 0?d:\"/\";try{let E=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:j}),Z=P(E.stdout.split(`\n`),[\".DS_Store\"]),q=[];for(let D of Z)if(D){let F=D.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&u!==\"only\"||F===\"folders\"&&u!==\"never\")&&q.push({type:F===\"filepaths\"?\"file\":\"folder\",name:D,insertValue:D,isDangerous:b,context:{templateType:F}})}return S(y(q))}catch{return[]}})"
+          }
+        ]
+      }
+    },
+    {
+      "name": "publish",
+      "options": [
+        {
+          "name": [
+            "-a",
+            "--arch"
+          ],
+          "description": "Specifies the target architecture. This is a shorthand syntax for setting the Runtime Identifier (RID), where the provided value is combined with the default RID. For example, on a win-x64 machine, specifying --arch x86 sets the RID to win-x86. If you use this option, don't use the -r|--runtime option. Available since .NET 6 Preview 7",
+          "args": {
+            "name": "arch",
+            "suggestions": [
+              {
+                "name": "x86"
+              },
+              {
+                "name": "x64"
+              },
+              {
+                "name": "arm"
+              },
+              {
+                "name": "arm64"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-c",
+            "--configuration"
+          ],
+          "description": "Defines the build configuration. The default for most projects is Debug, but you can override the build configuration settings in your project",
+          "args": {
+            "name": "configuration",
+            "suggestions": [
+              {
+                "name": "Debug"
+              },
+              {
+                "name": "Release"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-f",
+            "--framework"
+          ],
+          "description": "Publishes the application for the specified target framework. You must specify the target framework in the project file",
+          "args": {
+            "name": "framework"
+          }
+        },
+        {
+          "name": [
+            "--force"
+          ],
+          "description": "Forces all dependencies to be resolved even if the last restore was successful. Specifying this flag is the same as deleting the project.assets.json file"
+        },
+        {
+          "name": [
+            "--interactive"
+          ],
+          "description": "Allows the command to stop and wait for user input or action. For example, to complete authentication. Available since .NET Core 3.0 SDK"
+        },
+        {
+          "name": [
+            "--manifest"
+          ],
+          "description": "Specifies one or several target manifests to use to trim the set of packages published with the app. The manifest file is part of the output of the dotnet store command. To specify multiple manifests, add a --manifest option for each manifest",
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          }
+        },
+        {
+          "name": [
+            "--no-build"
+          ],
+          "description": "Doesn't build the project before publishing. It also implicitly sets the --no-restore flag"
+        },
+        {
+          "name": [
+            "--no-dependencies"
+          ],
+          "description": "Ignores project-to-project references and only restores the root project"
+        },
+        {
+          "name": [
+            "--nologo"
+          ],
+          "description": "Doesn't display the startup banner or the copyright message. Available since .NET Core 3.0 SDK"
+        },
+        {
+          "name": [
+            "--no-restore"
+          ],
+          "description": "Doesn't execute an implicit restore when running the command"
+        },
+        {
+          "name": [
+            "-o",
+            "--output"
+          ],
+          "description": "Specifies the path for the output directory",
+          "args": {
+            "name": "path",
+            "template": "folders"
+          }
+        },
+        {
+          "name": [
+            "--os"
+          ],
+          "description": "Specifies the target operating system (OS). This is a shorthand syntax for setting the Runtime Identifier (RID), where the provided value is combined with the default RID. For example, on a win-x64 machine, specifying --os os sets the RID to os-x64. If you use this option, don't use the -r|--runtime option. Available since .NET 6 Preview 7",
+          "args": {
+            "name": "os"
+          }
+        },
+        {
+          "name": [
+            "--self-contained"
+          ],
+          "description": "Publishes the .NET runtime with your application so the runtime doesn't need to be installed on the target machine. Default is true if a runtime identifier is specified and the project is an executable project (not a library project)",
+          "args": {
+            "name": "self-contained",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "true"
+              },
+              {
+                "name": "false"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--no-self-contained"
+          ],
+          "description": "Equivalent to --self-contained false. Available since .NET Core 3.0 SDK"
+        },
+        {
+          "name": [
+            "-r",
+            "--runtime"
+          ],
+          "description": "Publishes the application for a given runtime. For a list of Runtime Identifiers (RIDs), see the RID catalog",
+          "args": {
+            "name": "runtime"
+          }
+        },
+        {
+          "name": [
+            "-v",
+            "--verbosity"
+          ],
+          "description": "Sets the verbosity level of the command. Allowed values are q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]. The default is minimal. For more information, see LoggerVerbosity",
+          "args": {
+            "name": "verbosity",
+            "suggestions": [
+              {
+                "name": "quiet"
+              },
+              {
+                "name": "minimal"
+              },
+              {
+                "name": "normal"
+              },
+              {
+                "name": "detailed"
+              },
+              {
+                "name": "diagnostic"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--version-suffix"
+          ],
+          "description": "Defines the version suffix to replace the asterisk (*) in the version field of the project file",
+          "args": {
+            "name": "suffix"
+          }
+        }
+      ],
+      "args": {
+        "name": "project",
+        "description": "The project or solution to publish",
+        "isOptional": true,
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "(h,m,_)=>ue(this,void 0,void 0,function*(){var d;let{isDangerous:b,currentWorkingDirectory:w,searchTerm:p}=_,S=(d=(0,v.getCurrentInsertedDirectory)(u??w,p,_))!==null&&d!==void 0?d:\"/\";try{let N=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:S}),Z=K(N.stdout.split(`\n`),[\".DS_Store\"]),P=[];for(let A of Z)if(A){let F=A.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&c!==\"only\"||F===\"folders\"&&c!==\"never\")&&P.push({type:F===\"filepaths\"?\"file\":\"folder\",name:A,insertValue:A,isDangerous:b,context:{templateType:F}})}return O(g(P))}catch{return[]}})"
+          }
+        ]
+      }
+    },
+    {
+      "name": "restore",
+      "options": [
+        {
+          "name": [
+            "--configfile"
+          ],
+          "description": "The NuGet configuration file (nuget.config) to use. If specified, only the settings from this file will be used. If not specified, the hierarchy of configuration files from the current directory will be used",
+          "args": {
+            "name": "file",
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "(p,g,_)=>ce(this,void 0,void 0,function*(){var d;let{isDangerous:b,currentWorkingDirectory:O,searchTerm:h}=_,S=(d=(0,v.getCurrentInsertedDirectory)(c??O,h,_))!==null&&d!==void 0?d:\"/\";try{let P=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:S}),X=$(P.stdout.split(`\n`),[\".DS_Store\"]),N=[];for(let F of X)if(F){let V=F.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&u!==\"only\"||V===\"folders\"&&u!==\"never\")&&N.push({type:V===\"filepaths\"?\"file\":\"folder\",name:F,insertValue:F,isDangerous:b,context:{templateType:V}})}return w(m(N))}catch{return[]}})"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--disable-parallel"
+          ],
+          "description": "Disables restoring multiple projects in parallel"
+        },
+        {
+          "name": [
+            "--force"
+          ],
+          "description": "Forces all dependencies to be resolved even if the last restore was successful. Specifying this flag is the same as deleting the project.assets.json file"
+        },
+        {
+          "name": [
+            "-force-evaluate"
+          ],
+          "description": "Forces restore to reevaluate all dependencies even if a lock file already exists"
+        },
+        {
+          "name": [
+            "--ignore-failed-sources"
+          ],
+          "description": "Only warn about failed sources if there are packages meeting the version requirement"
+        },
+        {
+          "name": [
+            "--interactive"
+          ],
+          "description": "Allows the command to stop and wait for user input or action. For example, to complete authentication"
+        },
+        {
+          "name": [
+            "--lock-file-path"
+          ],
+          "description": "Output location where project lock file is written. By default, this is PROJECT_ROOTpackages.lock.json",
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          }
+        },
+        {
+          "name": [
+            "--locked-mode"
+          ],
+          "description": "Don't allow updating project lock file"
+        },
+        {
+          "name": [
+            "--no-cache"
+          ],
+          "description": "Specifies to not cache HTTP requests"
+        },
+        {
+          "name": [
+            "--no-dependencies"
+          ],
+          "description": "When restoring a project with project-to-project (P2P) references, restores the root project and not the references"
+        },
+        {
+          "name": [
+            "--packages"
+          ],
+          "description": "Specifies the directory for restored packages",
+          "args": {
+            "name": "directory",
+            "template": "folders"
+          }
+        },
+        {
+          "name": [
+            "-r",
+            "--runtime"
+          ],
+          "description": "Specifies a runtime for the package restore. This is used to restore packages for runtimes not explicitly listed in the <RuntimeIdentifiers> tag in the .csproj file",
+          "args": {
+            "name": "runtime"
+          }
+        },
+        {
+          "name": [
+            "-s",
+            "--source"
+          ],
+          "description": "Specifies the URI of the NuGet package source to use during the restore operation. This setting overrides all of the sources specified in the nuget.config files. Multiple sources can be provided by specifying this option multiple times",
+          "args": {
+            "name": "source"
+          }
+        },
+        {
+          "name": [
+            "--use-lock-file"
+          ],
+          "description": "Enables project lock file to be generated and used with restore"
+        },
+        {
+          "name": [
+            "-v",
+            "--verbosity"
+          ],
+          "description": "Sets the verbosity level of the command. Allowed values are q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]. The default is minimal. For more information, see LoggerVerbosity",
+          "args": {
+            "name": "verbosity",
+            "suggestions": [
+              {
+                "name": "quiet"
+              },
+              {
+                "name": "minimal"
+              },
+              {
+                "name": "normal"
+              },
+              {
+                "name": "detailed"
+              },
+              {
+                "name": "diagnostic"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "root",
+        "description": "Optional path to the project file to restore",
+        "isOptional": true,
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "(p,g,_)=>ce(this,void 0,void 0,function*(){var d;let{isDangerous:b,currentWorkingDirectory:O,searchTerm:h}=_,S=(d=(0,v.getCurrentInsertedDirectory)(c??O,h,_))!==null&&d!==void 0?d:\"/\";try{let P=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:S}),X=$(P.stdout.split(`\n`),[\".DS_Store\"]),N=[];for(let F of X)if(F){let V=F.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&u!==\"only\"||V===\"folders\"&&u!==\"never\")&&N.push({type:V===\"filepaths\"?\"file\":\"folder\",name:F,insertValue:F,isDangerous:b,context:{templateType:V}})}return w(m(N))}catch{return[]}})"
+          }
+        ]
+      }
+    },
+    {
+      "name": "run",
+      "options": [
+        {
+          "name": [
+            "--"
+          ],
+          "description": "Delimits arguments to dotnet run from arguments for the application being run. All arguments after this delimiter are passed to the application run"
+        },
+        {
+          "name": [
+            "-a",
+            "--arch"
+          ],
+          "description": "Specifies the target architecture. This is a shorthand syntax for setting the Runtime Identifier (RID), where the provided value is combined with the default RID. For example, on a win-x64 machine, specifying --arch x86 sets the RID to win-x86. If you use this option, don't use the -r|--runtime option. Available since .NET 6 Preview 7",
+          "args": {
+            "name": "arch",
+            "suggestions": [
+              {
+                "name": "x86"
+              },
+              {
+                "name": "x64"
+              },
+              {
+                "name": "arm"
+              },
+              {
+                "name": "arm64"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-c",
+            "--configuration"
+          ],
+          "description": "Defines the build configuration. The default for most projects is Debug, but you can override the build configuration settings in your project",
+          "args": {
+            "name": "configuration",
+            "suggestions": [
+              {
+                "name": "Debug"
+              },
+              {
+                "name": "Release"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-f",
+            "--framework"
+          ],
+          "description": "Builds and runs the app using the specified framework. The framework must be specified in the project file",
+          "args": {
+            "name": "framework"
+          }
+        },
+        {
+          "name": [
+            "--force"
+          ],
+          "description": "Forces all dependencies to be resolved even if the last restore was successful. Specifying this flag is the same as deleting the project.assets.json file"
+        },
+        {
+          "name": [
+            "--interactive"
+          ],
+          "description": "Allows the command to stop and wait for user input or action. For example, to complete authentication. Available since .NET Core 3.0 SDK"
+        },
+        {
+          "name": [
+            "--launch-profile"
+          ],
+          "description": "The name of the launch profile (if any) to use when launching the application. Launch profiles are defined in the launchSettings.json file and are typically called Development, Staging, and Production",
+          "args": {
+            "name": "name",
+            "suggestions": [
+              {
+                "name": "Development"
+              },
+              {
+                "name": "Staging"
+              },
+              {
+                "name": "Production"
+              }
+            ],
+            "generators": [
+              {
+                "script": [
+                  "cat",
+                  "Properties/launchSettings.json"
+                ],
+                "requires_js": true,
+                "js_source": "postProcess(e){let t=JSON.parse(e).profiles;return Object.keys(t).map(i=>({name:i,priority:100}))}"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--no-build"
+          ],
+          "description": "Doesn't build the project before running. It also implicit sets the --no-restore flag"
+        },
+        {
+          "name": [
+            "--no-dependencies"
+          ],
+          "description": "When restoring a project with project-to-project (P2P) references, restores the root project and not the references"
+        },
+        {
+          "name": [
+            "--no-launch-profile"
+          ],
+          "description": "Doesn't try to use launchSettings.json to configure the application"
+        },
+        {
+          "name": [
+            "--no-restore"
+          ],
+          "description": "Doesn't execute an implicit restore when running the command"
+        },
+        {
+          "name": [
+            "--os"
+          ],
+          "description": "Specifies the target operating system (OS). This is a shorthand syntax for setting the Runtime Identifier (RID), where the provided value is combined with the default RID. For example, on a win-x64 machine, specifying --os os sets the RID to os-x64. If you use this option, don't use the -r|--runtime option. Available since .NET 6 Preview 7",
+          "args": {
+            "name": "os"
+          }
+        },
+        {
+          "name": [
+            "--project"
+          ],
+          "description": "Specifies the path of the project file to run (folder name or full path). If not specified, it defaults to the current directory. The -p abbreviation for --project is deprecated starting in .NET 6 Preview SDK",
+          "args": {
+            "name": "path",
+            "template": [
+              "folders",
+              "filepaths"
+            ]
+          }
+        },
+        {
+          "name": [
+            "-r",
+            "--runtime"
+          ],
+          "description": "Specifies the target runtime to restore packages for. For a list of Runtime Identifiers (RIDs), see the RID catalog. -r short option available since .NET Core 3.0 SDK",
+          "args": {
+            "name": "runtime"
+          }
+        },
+        {
+          "name": [
+            "-v",
+            "--verbosity"
+          ],
+          "description": "Sets the verbosity level of the command. Allowed values are q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]. The default is minimal. For more information, see LoggerVerbosity",
+          "args": {
+            "name": "verbosity",
+            "suggestions": [
+              {
+                "name": "quiet"
+              },
+              {
+                "name": "minimal"
+              },
+              {
+                "name": "normal"
+              },
+              {
+                "name": "detailed"
+              },
+              {
+                "name": "diagnostic"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "sln",
+      "subcommands": [
+        {
+          "name": "list",
+          "description": "Lists all projects in a solution file"
+        },
+        {
+          "name": "add",
+          "description": "Adds one or more projects to the solution file",
+          "options": [
+            {
+              "name": [
+                "--in-root"
+              ],
+              "description": "Places the projects in the root of the solution, rather than creating a solution folder. Can't be used with -s|--solution-folder. Available since .NET Core 3.0 SDK"
+            },
+            {
+              "name": [
+                "-s",
+                "--solution-folder"
+              ],
+              "description": "The destination solution folder path to add the projects to. Can't be used with --in-root. Available since .NET Core 3.0 SDK",
+              "args": {
+                "name": "path",
+                "description": "The destination solution folder path to add the projects to. Can't be used with --in-root. Available since .NET Core 3.0 SDK",
+                "template": "folders"
+              }
+            }
+          ],
+          "args": {
+            "name": "path",
+            "description": "The path to the project or projects to add to the solution. Unix/Linux shell globbing pattern expansions are processed correctly by the dotnet sln command",
+            "template": "folders"
+          }
+        },
+        {
+          "name": "remove",
+          "description": "Removes a project or multiple projects from the solution file",
+          "args": {
+            "name": "path",
+            "description": "The path to the project or projects to add to the solution. Unix/Linux shell globbing pattern expansions are processed correctly by the dotnet sln command",
+            "template": "folders"
+          }
+        }
+      ],
+      "args": {
+        "name": "solution",
+        "description": "The solution file to use. If this argument is omitted, the command searches the current directory for one. If it finds no solution file or multiple solution files, the command fails",
+        "isOptional": true,
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "(h,v,_)=>ue(this,void 0,void 0,function*(){var d;let{isDangerous:b,currentWorkingDirectory:O,searchTerm:p}=_,x=(d=(0,g.getCurrentInsertedDirectory)(u??O,p,_))!==null&&d!==void 0?d:\"/\";try{let q=yield v({command:\"ls\",args:[\"-1ApL\"],cwd:x}),X=W(q.stdout.split(`\n`),[\".DS_Store\"]),K=[];for(let C of X)if(C){let V=C.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&c!==\"only\"||V===\"folders\"&&c!==\"never\")&&K.push({type:V===\"filepaths\"?\"file\":\"folder\",name:C,insertValue:C,isDangerous:b,context:{templateType:V}})}return S(y(K))}catch{return[]}})"
+          }
+        ]
+      }
+    },
+    {
+      "name": "store",
+      "options": [
+        {
+          "name": [
+            "-f",
+            "--framework"
+          ],
+          "description": "Specifies the target framework. The target framework has to be specified in the project file",
+          "args": {
+            "name": "framework"
+          }
+        },
+        {
+          "name": [
+            "-m",
+            "--manifest"
+          ],
+          "description": "The package store manifest file is an XML file that contains the list of packages to store. The format of the manifest file is compatible with the SDK-style project format. So, a project file that references the desired packages can be used with the -m|--manifest option to store assemblies in the runtime package store",
+          "args": {
+            "name": "manifest",
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "(h,m,_)=>ue(this,void 0,void 0,function*(){var d;let{isDangerous:b,currentWorkingDirectory:O,searchTerm:p}=_,S=(d=(0,y.getCurrentInsertedDirectory)(u??O,p,_))!==null&&d!==void 0?d:\"/\";try{let E=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:S}),Z=z(E.stdout.split(`\n`),[\".DS_Store\"]),R=[];for(let A of Z)if(A){let V=A.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&c!==\"only\"||V===\"folders\"&&c!==\"never\")&&R.push({type:V===\"filepaths\"?\"file\":\"folder\",name:A,insertValue:A,isDangerous:b,context:{templateType:V}})}return w(g(R))}catch{return[]}})"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-r",
+            "--runtime"
+          ],
+          "description": "The runtime identifier to target",
+          "args": {
+            "name": "runtime"
+          }
+        },
+        {
+          "name": [
+            "--framework-version"
+          ],
+          "description": "Specifies the .NET SDK version. This option enables you to select a specific framework version beyond the framework specified by the -f|--framework option",
+          "args": {
+            "name": "version"
+          }
+        },
+        {
+          "name": [
+            "-o",
+            "--output"
+          ],
+          "description": "Specifies the path to the runtime package store. If not specified, it defaults to the store subdirectory of the user profile .NET installation directory",
+          "args": {
+            "name": "path",
+            "template": "folders"
+          }
+        },
+        {
+          "name": [
+            "--skip-optimization"
+          ],
+          "description": "Skips the optimization phase"
+        },
+        {
+          "name": [
+            "--skip-symbols"
+          ],
+          "description": "Skips symbol generation. Currently, you can only generate symbols on Windows and Linux"
+        },
+        {
+          "name": [
+            "-v",
+            "--verbosity"
+          ],
+          "description": "Sets the verbosity level of the command. Allowed values are q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]. For more information, see LoggerVerbosity",
+          "args": {
+            "name": "verbosity",
+            "suggestions": [
+              {
+                "name": "quiet"
+              },
+              {
+                "name": "minimal"
+              },
+              {
+                "name": "normal"
+              },
+              {
+                "name": "detailed"
+              },
+              {
+                "name": "diagnostic"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-w",
+            "--working-dir"
+          ],
+          "description": "The working directory used by the command. If not specified, it uses the obj subdirectory of the current directory",
+          "args": {
+            "name": "directory",
+            "template": "folders"
+          }
+        }
+      ]
+    },
+    {
+      "name": "test",
+      "options": [
+        {
+          "name": [
+            "-a",
+            "--test-adapter-path"
+          ],
+          "description": "Path to a directory to be searched for additional test adapters. Only .dll files with suffix .TestAdapter.dll are inspected. If not specified, the directory of the test .dll is searched",
+          "args": {
+            "name": "path",
+            "template": "folders"
+          }
+        },
+        {
+          "name": [
+            "--arch"
+          ],
+          "description": "Specifies the target architecture. This is a shorthand syntax for setting the Runtime Identifier (RID), where the provided value is combined with the default RID. For example, on a win-x64 machine, specifying --arch x86 sets the RID to win-x86. If you use this option, don't use the -r|--runtime option. Available since .NET 6 Preview 7",
+          "args": {
+            "name": "architecture"
+          }
+        },
+        {
+          "name": [
+            "--blame"
+          ],
+          "description": "Runs the tests in blame mode. This option is helpful in isolating problematic tests that cause the test host to crash. When a crash is detected, it creates a sequence file in TestResults/<Guid>/<Guid>_Sequence.xml that captures the order of tests that were run before the crash"
+        },
+        {
+          "name": [
+            "--blame-crash"
+          ],
+          "description": "Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly. This option depends on the version of .NET used, the type of error, and the operating system"
+        },
+        {
+          "name": [
+            "--blame-crash-dump-type"
+          ],
+          "description": "The type of crash dump to be collected. Implies --blame-crash",
+          "args": {
+            "name": "type"
+          }
+        },
+        {
+          "name": [
+            "--blame-crash-collect-always"
+          ],
+          "description": "Collects a crash dump on expected as well as unexpected test host exit"
+        },
+        {
+          "name": [
+            "--blame-hang"
+          ],
+          "description": "Run the tests in blame mode and collects a hang dump when a test exceeds the given timeout"
+        },
+        {
+          "name": [
+            "--blame-hang-timeout"
+          ],
+          "description": "Per-test timeout, after which a hang dump is triggered and the test host process and all of its child processes are dumped and terminated",
+          "args": {
+            "name": "timeout"
+          }
+        },
+        {
+          "name": [
+            "-c",
+            "--configuration"
+          ],
+          "description": "Defines the build configuration. The default for most projects is Debug, but you can override the build configuration settings in your project",
+          "args": {
+            "name": "configuration",
+            "suggestions": [
+              {
+                "name": "Debug"
+              },
+              {
+                "name": "Release"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--collect"
+          ],
+          "description": "Enables data collector for the test run",
+          "args": {
+            "name": "name"
+          }
+        },
+        {
+          "name": [
+            "-d",
+            "--diag"
+          ],
+          "description": "Enables diagnostic mode for the test platform and writes diagnostic messages to the specified file and to files next to it. The process that is logging the messages determines which files are created, such as *.host_<date>.txt for test host log, and *.datacollector_<date>.txt for data collector log",
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          }
+        },
+        {
+          "name": [
+            "-f",
+            "--framework"
+          ],
+          "description": "Forces the use of dotnet or .NET Framework test host for the test binaries. This option only determines which type of host to use. The actual framework version to be used is determined by the runtimeconfig.json of the test project. When not specified, the TargetFramework assembly attribute is used to determine the type of host. When that attribute is stripped from the .dll, the .NET Framework host is used",
+          "args": {
+            "name": "framework"
+          }
+        },
+        {
+          "name": [
+            "--filter"
+          ],
+          "description": "Filters out tests in the current project using the given expression. For more information, see the Filter option details section. For more information and examples on how to use selective unit test filtering, see Running selective unit tests",
+          "args": {
+            "name": "expression"
+          }
+        },
+        {
+          "name": [
+            "--interactive"
+          ],
+          "description": "Allows the command to stop and wait for user input or action. For example, to complete authentication. Available since .NET Core 3.0 SDK"
+        },
+        {
+          "name": [
+            "-l",
+            "--logger"
+          ],
+          "description": "Specifies a logger for test results. Unlike MSBuild, dotnet test doesn't accept abbreviations: instead of -l \"console;v=d\" use -l \"console;verbosity=detailed\". Specify the parameter multiple times to enable multiple loggers"
+        },
+        {
+          "name": [
+            "--no-build"
+          ],
+          "description": "Doesn't build the test project before running it. It also implicitly sets the - --no-restore flag"
+        },
+        {
+          "name": [
+            "--nologo"
+          ],
+          "description": "Run tests without displaying the Microsoft TestPlatform banner. Available since .NET Core 3.0 SDK"
+        },
+        {
+          "name": [
+            "-o",
+            "--output"
+          ],
+          "description": "Directory in which to find the binaries to run. If not specified, the default path is ./bin/<configuration>/<framework>/. For projects with multiple target frameworks (via the TargetFrameworks property), you also need to define --framework when you specify this option. dotnet test always runs tests from the output directory. You can use AppDomain.BaseDirectory to consume test assets in the output directory",
+          "args": {
+            "name": "directory",
+            "template": "folders"
+          }
+        },
+        {
+          "name": [
+            "--os"
+          ],
+          "description": "Specifies the target operating system (OS). This is a shorthand syntax for setting the Runtime Identifier (RID), where the provided value is combined with the default RID. For example, on a win-x64 machine, specifying --os os sets the RID to os-x64. If you use this option, don't use the -r|--runtime option. Available since .NET 6 Preview 7",
+          "args": {
+            "name": "os"
+          }
+        },
+        {
+          "name": [
+            "-r",
+            "--results-directory"
+          ],
+          "description": "The directory where the test results are going to be placed. If the specified directory doesn't exist, it's created. The default is TestResults in the directory that contains the project file",
+          "args": {
+            "name": "directory",
+            "template": "folders"
+          }
+        },
+        {
+          "name": [
+            "--runtime"
+          ],
+          "description": "The target runtime to test for",
+          "args": {
+            "name": "runtime"
+          }
+        },
+        {
+          "name": [
+            "-s",
+            "--settings"
+          ],
+          "description": "The .runsettings file to use for running the tests. The TargetPlatform element (x86|x64) has no effect for dotnet test. To run tests that target x86, install the x86 version of .NET Core. The bitness of the dotnet.exe that is on the path is what will be used for running tests",
+          "args": {
+            "name": "file",
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "(h,m,w)=>ce(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:x,searchTerm:p}=w,_=(f=(0,y.getCurrentInsertedDirectory)(c??x,p,w))!==null&&f!==void 0?f:\"/\";try{let k=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:_}),X=K(k.stdout.split(`\n`),[\".DS_Store\"]),P=[];for(let A of X)if(A){let D=A.endsWith(\"/\")?\"folders\":\"filepaths\";(D===\"filepaths\"&&u!==\"only\"||D===\"folders\"&&u!==\"never\")&&P.push({type:D===\"filepaths\"?\"file\":\"folder\",name:A,insertValue:A,isDangerous:b,context:{templateType:D}})}return T(g(P))}catch{return[]}})"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-t",
+            "--list-tests"
+          ],
+          "description": "List the discovered tests instead of running the tests"
+        },
+        {
+          "name": [
+            "-v",
+            "--verbosity"
+          ],
+          "description": "Sets the verbosity level of the command. Allowed values are q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]. The default is minimal. For more information, see LoggerVerbosity",
+          "args": {
+            "name": "verbosity",
+            "suggestions": [
+              {
+                "name": "quiet"
+              },
+              {
+                "name": "minimal"
+              },
+              {
+                "name": "normal"
+              },
+              {
+                "name": "detailed"
+              },
+              {
+                "name": "diagnostic"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--"
+          ],
+          "args": {
+            "name": "args"
+          }
+        }
+      ],
+      "args": {
+        "name": "PROJECT | SOLUTION | DIRECTORY | DLL",
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "(h,m,w)=>ce(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:x,searchTerm:p}=w,_=(f=(0,y.getCurrentInsertedDirectory)(c??x,p,w))!==null&&f!==void 0?f:\"/\";try{let k=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:_}),X=K(k.stdout.split(`\n`),[\".DS_Store\"]),P=[];for(let A of X)if(A){let D=A.endsWith(\"/\")?\"folders\":\"filepaths\";(D===\"filepaths\"&&u!==\"only\"||D===\"folders\"&&u!==\"never\")&&P.push({type:D===\"filepaths\"?\"file\":\"folder\",name:A,insertValue:A,isDangerous:b,context:{templateType:D}})}return T(g(P))}catch{return[]}})"
+          }
+        ]
+      }
+    },
+    {
+      "name": "tool",
+      "subcommands": [
+        {
+          "name": "install",
+          "options": [
+            {
+              "name": [
+                "--add-source"
+              ],
+              "description": "Adds an additional NuGet package source to use during installation. Feeds are accessed in parallel, not sequentially in some order of precedence. If the same package and version is in multiple feeds, the fastest feed wins",
+              "args": {
+                "name": "source"
+              }
+            },
+            {
+              "name": [
+                "--configfile"
+              ],
+              "description": "The NuGet configuration file (nuget.config) to use. If specified, only the settings from this file will be used. If not specified, the hierarchy of configuration files from the current directory will be used",
+              "args": {
+                "name": "file",
+                "generators": [
+                  {
+                    "requires_js": true,
+                    "js_source": "(h,m,w)=>fe(this,void 0,void 0,function*(){var f;let{isDangerous:y,currentWorkingDirectory:O,searchTerm:p}=w,S=(f=(0,v.getCurrentInsertedDirectory)(c??O,p,w))!==null&&f!==void 0?f:\"/\";try{let E=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:S}),ee=H(E.stdout.split(`\n`),[\".DS_Store\"]),G=[];for(let F of ee)if(F){let j=F.endsWith(\"/\")?\"folders\":\"filepaths\";(j===\"filepaths\"&&u!==\"only\"||j===\"folders\"&&u!==\"never\")&&G.push({type:j===\"filepaths\"?\"file\":\"folder\",name:F,insertValue:F,isDangerous:y,context:{templateType:j}})}return T(g(G))}catch{return[]}})"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "--disable-parallel"
+              ],
+              "description": "Prevent restoring multiple projects in parallel"
+            },
+            {
+              "name": [
+                "--framework"
+              ],
+              "description": "Specifies the target framework to install the tool for. By default, the .NET SDK tries to choose the most appropriate target framework",
+              "args": {
+                "name": "framework"
+              }
+            },
+            {
+              "name": [
+                "-g",
+                "--global"
+              ],
+              "description": "Specifies that the installation is user wide. Can't be combined with the --tool-path option. Omitting both --global and --tool-path specifies a local tool installation"
+            },
+            {
+              "name": [
+                "--ignore-failed-sources"
+              ],
+              "description": "Treat package source failures as warnings"
+            },
+            {
+              "name": [
+                "--interactive"
+              ],
+              "description": "Allows the command to stop and wait for user input or action. For example, to complete authentication"
+            },
+            {
+              "name": [
+                "--local"
+              ],
+              "description": "Update the tool and the local tool manifest. Can't be combined with the --global option or the --tool-path option"
+            },
+            {
+              "name": [
+                "--no-cache"
+              ],
+              "description": "Do not cache packages and HTTP requests"
+            },
+            {
+              "name": [
+                "--tool-manifest"
+              ],
+              "description": "Path to the manifest file",
+              "args": {
+                "name": "path",
+                "template": "filepaths"
+              }
+            },
+            {
+              "name": [
+                "-v",
+                "--verbosity"
+              ],
+              "description": "Sets the verbosity level of the command. Allowed values are q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]. The default is minimal",
+              "args": {
+                "name": "verbosity",
+                "suggestions": [
+                  {
+                    "name": "quiet"
+                  },
+                  {
+                    "name": "minimal"
+                  },
+                  {
+                    "name": "normal"
+                  },
+                  {
+                    "name": "detailed"
+                  },
+                  {
+                    "name": "diagnostic"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "--version"
+              ],
+              "description": "The version of the tool to install. By default, the latest stable package version is installed. Use this option to install preview or older versions of the tool",
+              "args": {
+                "name": "version",
+                "generators": [
+                  {
+                    "requires_js": true,
+                    "js_source": "script(e){let t=[\"install\",\"update\"],n=e.filter(s=>!s.startsWith(\"-\")),o=n.findIndex(s=>t.includes(s));return[\"curl\",\"-s\",\"-H\",\"Accept: application/json\",`https://api.nuget.org/v3-flatcontainer/${n[o+1].toLowerCase()}/index.json`]}"
+                  }
+                ]
+              }
+            }
+          ],
+          "args": {
+            "name": "package",
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "script(e){return[\"curl\",\"-s\",\"-H\",\"Accept: application/json\",`https://azuresearch-usnc.nuget.org/query?packageType=DotnetTool&q=${e[e.length-1]}`]}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "list",
+          "description": "The dotnet tool list command provides a way for you to list all .NET global, tool-path, or local tools installed on your machine. The command lists the package name, version installed, and the tool command",
+          "options": [
+            {
+              "name": [
+                "-g",
+                "--global"
+              ],
+              "description": "Lists user-wide global tools. Can't be combined with the --tool-path option. Omitting both --global and --tool-path lists local tools"
+            },
+            {
+              "name": [
+                "--local"
+              ],
+              "description": "Lists local tools for the current directory. Can't be combined with the --global or --tool-path options. Omitting both --global and --tool-path lists local tools even if --local is not specified"
+            },
+            {
+              "name": [
+                "--tool-path"
+              ],
+              "description": "Specifies a custom location where to find global tools. PATH can be absolute or relative. Can't be combined with the --global option. Omitting both --global and --tool-path lists local tools"
+            }
+          ]
+        },
+        {
+          "name": "restore",
+          "description": "The dotnet tool restore command finds the tool manifest file that is in scope for the current directory and installs the tools that are listed in it. For information about manifest files, see Install a local tool and Invoke a local tool",
+          "options": [
+            {
+              "name": [
+                "--configfile"
+              ],
+              "description": "The NuGet configuration file (nuget.config) to use. If specified, only the settings from this file will be used. If not specified, the hierarchy of configuration files from the current directory will be used",
+              "args": {
+                "name": "file",
+                "generators": [
+                  {
+                    "requires_js": true,
+                    "js_source": "(h,m,w)=>fe(this,void 0,void 0,function*(){var f;let{isDangerous:y,currentWorkingDirectory:O,searchTerm:p}=w,S=(f=(0,v.getCurrentInsertedDirectory)(c??O,p,w))!==null&&f!==void 0?f:\"/\";try{let E=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:S}),ee=H(E.stdout.split(`\n`),[\".DS_Store\"]),G=[];for(let F of ee)if(F){let j=F.endsWith(\"/\")?\"folders\":\"filepaths\";(j===\"filepaths\"&&u!==\"only\"||j===\"folders\"&&u!==\"never\")&&G.push({type:j===\"filepaths\"?\"file\":\"folder\",name:F,insertValue:F,isDangerous:y,context:{templateType:j}})}return T(g(G))}catch{return[]}})"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "--add-source"
+              ],
+              "description": "Adds an additional NuGet package source to use during installation. Feeds are accessed in parallel, not sequentially in some order of precedence. If the same package and version is in multiple feeds, the fastest feed wins",
+              "args": {
+                "name": "source"
+              }
+            },
+            {
+              "name": [
+                "--tool-manifest"
+              ],
+              "description": "Path to the manifest file",
+              "args": {
+                "name": "path",
+                "template": "filepaths"
+              }
+            },
+            {
+              "name": [
+                "--ignore-failed-sources"
+              ],
+              "description": "Treat package source failures as warnings"
+            },
+            {
+              "name": [
+                "--no-cache"
+              ],
+              "description": "Do not cache packages and HTTP requests"
+            },
+            {
+              "name": [
+                "--interactive"
+              ],
+              "description": "Allows the command to stop and wait for user input or action. For example, to complete authentication"
+            },
+            {
+              "name": [
+                "-v",
+                "--verbosity"
+              ],
+              "description": "Sets the verbosity level of the command. Allowed values are q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]. The default is minimal",
+              "args": {
+                "name": "verbosity",
+                "suggestions": [
+                  {
+                    "name": "quiet"
+                  },
+                  {
+                    "name": "minimal"
+                  },
+                  {
+                    "name": "normal"
+                  },
+                  {
+                    "name": "detailed"
+                  },
+                  {
+                    "name": "diagnostic"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "run",
+          "description": "The dotnet tool run command searches tool manifest files that are in scope for the current directory. When it finds a reference to the specified tool, it runs the tool",
+          "args": {
+            "name": "command",
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "script(e){let t=[\"-g\",\"--global\"];return e.some(n=>t.includes(n))?[\"dotnet\",\"tool\",\"list\",\"--global\"]:[\"dotnet\",\"tool\",\"list\"]}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "search",
+          "description": "The dotnet tool search command provides a way for you to search NuGet for tools that can be used as .NET global, tool-path, or local tools. The command searches the tool names and metadata such as titles, descriptions, and tags",
+          "options": [
+            {
+              "name": [
+                "--detail"
+              ],
+              "description": "Shows detailed results from the query"
+            },
+            {
+              "name": [
+                "--prerelease"
+              ],
+              "description": "Includes pre-release packages"
+            },
+            {
+              "name": [
+                "--skip"
+              ],
+              "description": "Specifies the number of query results to skip. Used for pagination",
+              "args": {
+                "name": "number"
+              }
+            },
+            {
+              "name": [
+                "--take"
+              ],
+              "description": "Specifies the number of query results to show. Used for pagination",
+              "args": {
+                "name": "number"
+              }
+            }
+          ]
+        },
+        {
+          "name": "uninstall",
+          "description": "The dotnet tool uninstall command provides a way for you to uninstall .NET tools from your machine",
+          "options": [
+            {
+              "name": [
+                "-g",
+                "--global"
+              ],
+              "description": "Specifies that the tool to be removed is from a user-wide installation. Can't be combined with the --tool-path option. Omitting both --global and --tool-path specifies that the tool to be removed is a local tool"
+            },
+            {
+              "name": [
+                "--tool-path"
+              ],
+              "description": "Specifies the location where to uninstall the tool. PATH can be absolute or relative. Can't be combined with the --global option. Omitting both --global and --tool-path specifies that the tool to be removed is a local tool"
+            }
+          ],
+          "args": {
+            "name": "package",
+            "description": "Name/ID of the NuGet package that contains the .NET tool to uninstall. You can find the package name using the dotnet tool list command",
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "script(e){let t=[\"-g\",\"--global\"];return e.some(n=>t.includes(n))?[\"dotnet\",\"tool\",\"list\",\"--global\"]:[\"dotnet\",\"tool\",\"list\"]}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "update",
+          "description": "The dotnet tool update command provides a way for you to update .NET tools on your machine to the latest stable version of the package",
+          "options": [
+            {
+              "name": [
+                "--add-source"
+              ],
+              "description": "Adds an additional NuGet package source to use during installation. Feeds are accessed in parallel, not sequentially in some order of precedence. If the same package and version is in multiple feeds, the fastest feed wins",
+              "args": {
+                "name": "source"
+              }
+            },
+            {
+              "name": [
+                "--configfile"
+              ],
+              "description": "The NuGet configuration file (nuget.config) to use. If specified, only the settings from this file will be used. If not specified, the hierarchy of configuration files from the current directory will be used",
+              "args": {
+                "name": "file",
+                "generators": [
+                  {
+                    "requires_js": true,
+                    "js_source": "(h,m,w)=>fe(this,void 0,void 0,function*(){var f;let{isDangerous:y,currentWorkingDirectory:O,searchTerm:p}=w,S=(f=(0,v.getCurrentInsertedDirectory)(c??O,p,w))!==null&&f!==void 0?f:\"/\";try{let E=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:S}),ee=H(E.stdout.split(`\n`),[\".DS_Store\"]),G=[];for(let F of ee)if(F){let j=F.endsWith(\"/\")?\"folders\":\"filepaths\";(j===\"filepaths\"&&u!==\"only\"||j===\"folders\"&&u!==\"never\")&&G.push({type:j===\"filepaths\"?\"file\":\"folder\",name:F,insertValue:F,isDangerous:y,context:{templateType:j}})}return T(g(G))}catch{return[]}})"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "--disable-parallel"
+              ],
+              "description": "Prevent restoring multiple projects in parallel"
+            },
+            {
+              "name": [
+                "--framework"
+              ],
+              "description": "Specifies the target framework to install the tool for. By default, the .NET SDK tries to choose the most appropriate target framework",
+              "args": {
+                "name": "framework"
+              }
+            },
+            {
+              "name": [
+                "-g",
+                "--global"
+              ],
+              "description": "Specifies that the installation is user wide. Can't be combined with the --tool-path option. Omitting both --global and --tool-path specifies a local tool installation"
+            },
+            {
+              "name": [
+                "--ignore-failed-sources"
+              ],
+              "description": "Treat package source failures as warnings"
+            },
+            {
+              "name": [
+                "--interactive"
+              ],
+              "description": "Allows the command to stop and wait for user input or action. For example, to complete authentication"
+            },
+            {
+              "name": [
+                "--local"
+              ],
+              "description": "Update the tool and the local tool manifest. Can't be combined with the --global option or the --tool-path option"
+            },
+            {
+              "name": [
+                "--no-cache"
+              ],
+              "description": "Do not cache packages and HTTP requests"
+            },
+            {
+              "name": [
+                "--tool-manifest"
+              ],
+              "description": "Path to the manifest file",
+              "args": {
+                "name": "path",
+                "template": "filepaths"
+              }
+            },
+            {
+              "name": [
+                "-v",
+                "--verbosity"
+              ],
+              "description": "Sets the verbosity level of the command. Allowed values are q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]. The default is minimal",
+              "args": {
+                "name": "verbosity",
+                "suggestions": [
+                  {
+                    "name": "quiet"
+                  },
+                  {
+                    "name": "minimal"
+                  },
+                  {
+                    "name": "normal"
+                  },
+                  {
+                    "name": "detailed"
+                  },
+                  {
+                    "name": "diagnostic"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "--version"
+              ],
+              "description": "The version of the tool to install. By default, the latest stable package version is installed. Use this option to install preview or older versions of the tool",
+              "args": {
+                "name": "version",
+                "generators": [
+                  {
+                    "requires_js": true,
+                    "js_source": "script(e){let t=[\"install\",\"update\"],n=e.filter(s=>!s.startsWith(\"-\")),o=n.findIndex(s=>t.includes(s));return[\"curl\",\"-s\",\"-H\",\"Accept: application/json\",`https://api.nuget.org/v3-flatcontainer/${n[o+1].toLowerCase()}/index.json`]}"
+                  }
+                ]
+              }
+            }
+          ],
+          "args": {
+            "name": "package",
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "script(e){let t=[\"-g\",\"--global\"];return e.some(n=>t.includes(n))?[\"dotnet\",\"tool\",\"list\",\"--global\"]:[\"dotnet\",\"tool\",\"list\"]}"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "--version"
+      ],
+      "description": "Prints out the version of the .NET SDK used by dotnet commands. Includes the effects of any global.json"
+    },
+    {
+      "name": [
+        "--info"
+      ],
+      "description": "Prints out detailed information about a .NET installation and the machine environment, such as the current operating system, and commit SHA of the .NET version"
+    },
+    {
+      "name": [
+        "--list-runtimes"
+      ],
+      "description": "Prints out a list of the installed .NET runtimes. An x86 version of the SDK lists only x86 runtimes, and an x64 version of the SDK lists only x64 runtimes"
+    },
+    {
+      "name": [
+        "--list-sdks"
+      ],
+      "description": "Prints out a list of the installed .NET SDKs"
+    },
+    {
+      "name": [
+        "-?",
+        "-h",
+        "--help"
+      ],
+      "description": "Prints out a list of available commands"
+    },
+    {
+      "name": [
+        "-d",
+        "--diagnostics"
+      ],
+      "description": "Enables diagnostic output"
+    },
+    {
+      "name": [
+        "-v",
+        "--verbosity"
+      ],
+      "description": "Sets the verbosity level of the command. Allowed values are q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]. Not supported in every command. See specific command page to determine if this option is available",
+      "args": {
+        "name": "verbosity",
+        "suggestions": [
+          {
+            "name": "quiet"
+          },
+          {
+            "name": "minimal"
+          },
+          {
+            "name": "normal"
+          },
+          {
+            "name": "detailed"
+          },
+          {
+            "name": "diagnostic"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--additionalprobingpath"
+      ],
+      "description": "Path containing probing policy and assemblies to probe",
+      "args": {
+        "name": "path",
+        "template": "folders"
+      }
+    },
+    {
+      "name": [
+        "--additional-deps"
+      ],
+      "description": "Path to an additional .deps.json file. A deps.json file contains a list of dependencies, compilation dependencies, and version information used to address assembly conflicts. For more information, see Runtime Configuration Files on GitHub",
+      "args": {
+        "name": "deps",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "-depsfile"
+      ],
+      "description": "Path to the deps.json file. A deps.json file is a configuration file that contains information about dependencies necessary to run the application. This file is generated by the .NET SDK",
+      "args": {
+        "name": "deps",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--runtimeconfig"
+      ],
+      "description": "Path to a runtimeconfig.json file. A runtimeconfig.json file is a configuration file that contains run-time settings",
+      "args": {
+        "name": "path",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--roll-forward"
+      ],
+      "description": "Controls how roll forward is applied to the app. The SETTING can be one of the following values. If not specified, Minor is the default",
+      "args": {
+        "name": "setting",
+        "suggestions": [
+          {
+            "name": "LatestPatch"
+          },
+          {
+            "name": "Minor"
+          },
+          {
+            "name": "Major"
+          },
+          {
+            "name": "LatestMinor"
+          },
+          {
+            "name": "LatestMajor"
+          },
+          {
+            "name": "Disable"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--fx-version"
+      ],
+      "description": "Version of the .NET runtime to use to run the application",
+      "args": {
+        "name": "version"
+      }
+    }
+  ],
+  "args": {
+    "name": "command",
+    "isOptional": true,
+    "generators": [
+      {
+        "requires_js": true,
+        "js_source": "(m,g,_)=>de(this,void 0,void 0,function*(){var p;let{isDangerous:S,currentWorkingDirectory:O,searchTerm:h}=_,T=(p=(0,y.getCurrentInsertedDirectory)(d??O,h,_))!==null&&p!==void 0?p:\"/\";try{let q=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:T}),U=W(q.stdout.split(`\n`),[\".DS_Store\"]),K=[];for(let F of U)if(F){let M=F.endsWith(\"/\")?\"folders\":\"filepaths\";(M===\"filepaths\"&&u!==\"only\"||M===\"folders\"&&u!==\"never\")&&K.push({type:M===\"filepaths\"?\"file\":\"folder\",name:F,insertValue:F,isDangerous:S,context:{templateType:M}})}return w(v(K))}catch{return[]}})"
+      }
+    ]
+  }
+}

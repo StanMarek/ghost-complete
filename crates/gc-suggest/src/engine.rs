@@ -603,14 +603,25 @@ mod tests {
 
     #[test]
     fn test_option_arg_folders_template_filters_files() {
-        // pip install -t <TAB> → should show only directories
-        let engine = make_engine();
+        // test-deploy -t <TAB> → should show only directories
+        // Uses an inline spec to avoid dependency on real specs
+        let spec_dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            spec_dir.path().join("test-deploy.json"),
+            r#"{"name":"test-deploy","subcommands":[{"name":"install","options":[{"name":["-t","--target"],"description":"Target directory","args":{"name":"dir","template":"folders"}}]}]}"#,
+        )
+        .unwrap();
+        let spec_store = SpecStore::load_from_dir(spec_dir.path()).unwrap().store;
+        let history = HistoryProvider::from_entries(vec![]);
+        let commands = CommandsProvider::from_list(vec![]);
+        let engine = SuggestionEngine::with_providers(spec_store, history, commands);
+
         let tmp = tempfile::TempDir::new().unwrap();
         std::fs::create_dir(tmp.path().join("target_dir")).unwrap();
         std::fs::write(tmp.path().join("not_a_dir.txt"), "").unwrap();
 
         let ctx = CommandContext {
-            command: Some("pip".into()),
+            command: Some("test-deploy".into()),
             args: vec!["install".into(), "-t".into()],
             current_word: String::new(),
             word_index: 3,
@@ -624,11 +635,11 @@ mod tests {
         let results = engine.suggest_sync(&ctx, tmp.path()).unwrap();
         assert!(
             results.iter().any(|s| s.text.contains("target_dir")),
-            "pip install -t should show directories: {results:?}"
+            "test-deploy install -t should show directories: {results:?}"
         );
         assert!(
             !results.iter().any(|s| s.text.contains("not_a_dir")),
-            "pip install -t should NOT show files: {results:?}"
+            "test-deploy install -t should NOT show files: {results:?}"
         );
     }
 

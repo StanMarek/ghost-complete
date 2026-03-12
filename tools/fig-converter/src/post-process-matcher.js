@@ -265,8 +265,7 @@ function matchColumnExtract(body) {
   if (substringMatch) {
     return {
       type: 'column_extract',
-      start: parseInt(substringMatch[1], 10),
-      end: parseInt(substringMatch[2], 10),
+      column: parseInt(substringMatch[1], 10),
     };
   }
   return null;

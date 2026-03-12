@@ -1,86 +1,54 @@
 {
   "name": "kill",
-  "description": "Send signals to processes",
-  "args": [
-    {
-      "name": "pid",
-      "description": "Process ID to signal"
-    }
-  ],
+  "description": "Terminate or signal a process",
   "options": [
     {
       "name": [
         "-s"
       ],
-      "description": "Specify the signal to send",
+      "description": "A symbolic signal name specifying the signal to be sent",
       "args": {
-        "name": "signal"
+        "name": "signal_name",
+        "generators": [
+          {
+            "script": [
+              "env",
+              "kill",
+              "-l"
+            ],
+            "requires_js": true,
+            "js_source": "e=>e.match(/\\w+/g)?.map(i=>({name:i,description:`Send ${i} instead of TERM`,icon:\"fig://icon?type=string\"}))"
+          }
+        ]
       }
     },
     {
       "name": [
         "-l"
       ],
-      "description": "List available signal names"
-    },
-    {
-      "name": [
-        "-9",
-        "-KILL"
-      ],
-      "description": "Force kill the process immediately"
-    },
-    {
-      "name": [
-        "-15",
-        "-TERM"
-      ],
-      "description": "Terminate the process gracefully"
-    },
-    {
-      "name": [
-        "-1",
-        "-HUP"
-      ],
-      "description": "Hang up the process"
-    },
-    {
-      "name": [
-        "-2",
-        "-INT"
-      ],
-      "description": "Interrupt the process"
-    },
-    {
-      "name": [
-        "-3",
-        "-QUIT"
-      ],
-      "description": "Quit the process with core dump"
-    },
-    {
-      "name": [
-        "-STOP"
-      ],
-      "description": "Stop (pause) the process"
-    },
-    {
-      "name": [
-        "-CONT"
-      ],
-      "description": "Continue a stopped process"
-    },
-    {
-      "name": [
-        "-USR1"
-      ],
-      "description": "Send user-defined signal 1"
-    },
-    {
-      "name": [
-        "-USR2"
-      ],
-      "description": "Send user-defined signal 2"
+      "description": "If no operand is given, list the signal names; otherwise, write the signal name corresponding to exit_status",
+      "args": {
+        "name": "exit_status",
+        "isOptional": true
+      }
     }
-  ]
+  ],
+  "args": {
+    "name": "pid",
+    "isVariadic": true,
+    "generators": [
+      {
+        "script": [
+          "bash",
+          "-c",
+          "ps axo pid,comm | sed 1d"
+        ],
+        "transforms": [
+          "split_lines",
+          "filter_empty",
+          "trim"
+        ]
+      }
+    ]
+  }
 }

@@ -1,0 +1,494 @@
+{
+  "name": "less",
+  "description": "Opposite of more",
+  "options": [
+    {
+      "name": [
+        "-?",
+        "--help"
+      ],
+      "description": "This option displays a summary of the commands accepted by less (the same as the h command).  (Depending on how your shell interprets the question mark, it may be necessary to quote the question mark, thus: \"-?\""
+    },
+    {
+      "name": [
+        "-a",
+        "--search-skip-screen"
+      ],
+      "description": "By default, forward searches start at the top of the displayed\nscreen and backwards searches start at the bottom of the\ndisplayed screen (except for repeated searches invoked by the n\nor N commands, which start after or before the \"target\" line\nrespectively; see the -j option for more about the target line).\nThe -a option causes forward searches to instead start at the\nbottom of the screen and backward searches to start at the top\nof the screen, thus skipping all lines displayed on the screen"
+    },
+    {
+      "name": [
+        "-A",
+        "--SEARCH-SKIP-SCREEN"
+      ],
+      "description": "Causes all forward searches (not just non-repeated searches) to\nstart just after the target line, and all backward searches to\nstart just before the target line.  Thus, forward searches will\nskip part of the displayed screen (from the first line up to and\nincluding the target line).  Similarly backwards searches will\nskip the displayed screen from the last line up to and including\nthe target line.  This was the default behavior in less versions\nprior to 441"
+    },
+    {
+      "name": [
+        "-b",
+        "--buffers"
+      ],
+      "description": "Specifies the amount of buffer space less will use for each\nfile, in units of kilobytes (1024 bytes).  By default 64 KB of\nbuffer space is used for each file (unless the file is a pipe;\nsee the -B option).  The -b option specifies instead that n\nkilobytes of buffer space should be used for each file.  If n is\n-1, buffer space is unlimited; that is, the entire file can be\nread into memory",
+      "args": {
+        "name": "n"
+      }
+    },
+    {
+      "name": [
+        "-B",
+        "--auto-buffers"
+      ],
+      "description": "By default, when data is read from a pipe, buffers are allocated\nautomatically as needed.  If a large amount of data is read from\nthe pipe, this can cause a large amount of memory to be\nallocated.  The -B option disables this automatic allocation of\nbuffers for pipes, so that only 64 KB (or the amount of space\nspecified by the -b option) is used for the pipe.  Warning: use\nof -B can result in erroneous display, since only the most\nrecently viewed part of the piped data is kept in memory; any\nearlier data is lost"
+    },
+    {
+      "name": [
+        "-c",
+        "--clear-screen"
+      ],
+      "description": "Causes full screen repaints to be painted from the top line\ndown.  By default, full screen repaints are done by scrolling\nfrom the bottom of the screen"
+    },
+    {
+      "name": [
+        "-C",
+        "--CLEAR-SCREEN"
+      ],
+      "description": "Same as -c, for compatibility with older versions of less"
+    },
+    {
+      "name": [
+        "-d",
+        "--dumb"
+      ],
+      "description": "The -d option suppresses the error message normally displayed if\nthe terminal is dumb; that is, lacks some important capability,\nsuch as the ability to clear the screen or scroll backward.  The\n-d option does not otherwise change the behavior of less on a\ndumb terminal"
+    },
+    {
+      "name": [
+        "-D",
+        "--color"
+      ],
+      "description": "Changes the color of different parts of the displayed text.  x\nis a single character which selects the type of text whose color\nis being set:\nB      Binary characters.\nC      Control characters.\nE      Errors and informational messages.\nM      Mark letters in the status column.\nN      Line numbers enabled via the -N option.\nP      Prompts.\nR      The rscroll character.\nS      Search results.\nW      The highlight enabled via the -w option.\nd      Bold text.\nk      Blinking text.\ns      Standout text.\nu      Underlined text.\nThe uppercase letters can be used only when the --use-color\noption is enabled.  When text color is specified by both an\nuppercase letter and a lowercase letter, the uppercase letter\ntakes precedence.  For example, error messages are normally\ndisplayed as standout text.  So if both \"s\" and \"E\" are given a\ncolor, the \"E\" color applies to error messages, and the \"s\"\ncolor applies to other standout text.  The \"d\" and \"u\" letters\nrefer to bold and underline text formed by overstriking with\nbackspaces (see the -u option), not to text using ANSI escape\nsequences with the -R option.\nA lowercase letter may be followed by a + to indicate that both\nthe normal format change and the specified color should both be\nused.  For example, -Dug displays underlined text as green\nwithout underlining; the green color has replaced the usual\nunderline formatting.  But -Du+g displays underlined text as\nboth green and in underlined format.\ncolor is either a 4-bit color string or an 8-bit color string:\nA 4-bit color string is zero, one or two characters, where the\nfirst character specifies the foreground color and the second\nspecifies the background color as follows:\nb      Blue\nc      Cyan\ng      Green\nk      Black\nm      Magenta\nr      Red\nw      White\ny      Yellow\nThe corresponding upper-case letter denotes a brighter shade of\nthe color.  For example, -DNGk displays line numbers as bright\ngreen text on a black background, and -DEbR displays error\nmessages as blue text on a bright red background.  If either\ncharacter is a \"-\" or is omitted, the corresponding color is set\nto that of normal text.\nAn 8-bit color string is one or two decimal integers separated\nby a dot, where the first integer specifies the foreground color\nand the second specifies the background color.  Each integer is\na value between 0 and 255 inclusive which selects a \"CSI 38;5\"\ncolor value (see\nhttps://en.wikipedia.org/wiki/ANSI_escape_code#SGR_parameters)\nIf either integer is a \"-\" or is omitted, the corresponding\ncolor is set to that of normal text.  On MS-DOS versions of\nless, 8-bit color is not supported; instead, decimal values are\ninterpreted as 4-bit CHAR_INFO.Attributes values (see\nhttps://docs.microsoft.com/en-us/windows/console/char-info-str)",
+      "args": {
+        "name": "xcolor"
+      }
+    },
+    {
+      "name": [
+        "-e",
+        "--quit-at-eof"
+      ],
+      "description": "Causes less to automatically exit the second time it reaches\nend-of-file.  By default, the only way to exit less is via the\n\"q\" command"
+    },
+    {
+      "name": [
+        "-E",
+        "--QUIT-AT-EOF"
+      ],
+      "description": "Causes less to automatically exit the first time it reaches end-\nof-file"
+    },
+    {
+      "name": [
+        "-f",
+        "--force"
+      ],
+      "description": "Forces non-regular files to be opened.  (A non-regular file is a\ndirectory or a device special file.)  Also suppresses the\nwarning message when a binary file is opened.  By default, less\nwill refuse to open non-regular files.  Note that some operating\nsystems will not allow directories to be read, even if -f is\nset"
+    },
+    {
+      "name": [
+        "-F",
+        "--quit-if-one-screen"
+      ],
+      "description": "Causes less to automatically exit if the entire file can be\ndisplayed on the first screen"
+    },
+    {
+      "name": [
+        "-g",
+        "--hilite-search"
+      ],
+      "description": "Normally, less will highlight ALL strings which match the last\nsearch command.  The -g option changes this behavior to\nhighlight only the particular string which was found by the last\nsearch command.  This can cause less to run somewhat faster than\nthe default"
+    },
+    {
+      "name": [
+        "-G",
+        "--HILITE-SEARCH"
+      ],
+      "description": "The -G option suppresses all highlighting of strings found by\nsearch commands"
+    },
+    {
+      "name": [
+        "-h",
+        "--max-back-scroll"
+      ],
+      "description": "Specifies a maximum number of lines to scroll backward.  If it\nis necessary to scroll backward more than n lines, the screen is\nrepainted in a forward direction instead.  (If the terminal does\nnot have the ability to scroll backward, -h0 is implied.)",
+      "args": {
+        "name": "n"
+      }
+    },
+    {
+      "name": [
+        "-i",
+        "--ignore-case"
+      ],
+      "description": "Causes searches to ignore case; that is, uppercase and lowercase\nare considered identical.  This option is ignored if any\nuppercase letters appear in the search pattern; in other words,\nif a pattern contains uppercase letters, then that search does\nnot ignore case"
+    },
+    {
+      "name": [
+        "-I",
+        "--IGNORE-CASE"
+      ],
+      "description": "Like -i, but searches ignore case even if the pattern contains\nuppercase letters"
+    },
+    {
+      "name": [
+        "-j",
+        "--jump-target"
+      ],
+      "description": "Specifies a line on the screen where the \"target\" line is to be\npositioned.  The target line is the line specified by any\ncommand to search for a pattern, jump to a line number, jump to\na file percentage or jump to a tag.  The screen line may be\nspecified by a number: the top line on the screen is 1, the next\nis 2, and so on.  The number may be negative to specify a line\nrelative to the bottom of the screen: the bottom line on the\nscreen is -1, the second to the bottom is -2, and so on.\nAlternately, the screen line may be specified as a fraction of\nthe height of the screen, starting with a decimal point: .5 is\nin the middle of the screen, .3 is three tenths down from the\nfirst line, and so on.  If the line is specified as a fraction,\nthe actual line number is recalculated if the terminal window is\nresized, so that the target line remains at the specified\nfraction of the screen height.  If any form of the -j option is\nused, repeated forward searches (invoked with \"n\" or \"N\") begin\nat the line immediately after the target line, and repeated\nbackward searches begin at the target line, unless changed by -a\nor -A.  For example, if \"-j4\" is used, the target line is the\nfourth line on the screen, so forward searches begin at the\nfifth line on the screen.  However nonrepeated searches (invoked\nwith \"/\" or \"?\") always begin at the start or end of the current\nscreen respectively",
+      "args": {
+        "name": "n"
+      }
+    },
+    {
+      "name": [
+        "-J",
+        "--status-column"
+      ],
+      "description": "Displays a status column at the left edge of the screen.  The\nstatus column shows the lines that matched the current search,\nand any lines that are marked (via the m or M command)"
+    },
+    {
+      "name": [
+        "-k",
+        "--lesskey-file"
+      ],
+      "description": "Causes less to open and interpret the named file as a lesskey(1)\nfile.  Multiple -k options may be specified.  If the LESSKEY or\nLESSKEY_SYSTEM environment variable is set, or if a lesskey file\nis found in a standard place (see KEY BINDINGS), it is also used\nas a lesskey file",
+      "args": {
+        "name": "filename",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "-K",
+        "--quit-on-intr"
+      ],
+      "description": "Causes less to exit immediately (with status 2) when an\ninterrupt character (usually ^C) is typed.  Normally, an\ninterrupt character causes less to stop whatever it is doing and\nreturn to its command prompt.  Note that use of this option\nmakes it impossible to return to the command prompt from the \"F\"\ncommand"
+    },
+    {
+      "name": [
+        "-L",
+        "--no-lessopen"
+      ],
+      "description": "Ignore the LESSOPEN environment variable (see the INPUT\nPREPROCESSOR section below).  This option can be set from within\nless, but it will apply only to files opened subsequently, not\nto the file which is currently open"
+    },
+    {
+      "name": [
+        "-m",
+        "--long-prompt"
+      ],
+      "description": "Causes less to prompt verbosely (like more), with the percent\ninto the file.  By default, less prompts with a colon"
+    },
+    {
+      "name": [
+        "-M",
+        "--LONG-PROMPT"
+      ],
+      "description": "Causes less to prompt even more verbosely than more"
+    },
+    {
+      "name": [
+        "-n",
+        "--line-numbers"
+      ],
+      "description": "Suppresses line numbers.  The default (to use line numbers) may\ncause less to run more slowly in some cases, especially with a\nvery large input file.  Suppressing line numbers with the -n\noption will avoid this problem.  Using line numbers means: the\nline number will be displayed in the verbose prompt and in the =\ncommand, and the v command will pass the current line number to\nthe editor (see also the discussion of LESSEDIT in PROMPTS\nbelow)"
+    },
+    {
+      "name": [
+        "-N",
+        "--LINE-NUMBERS"
+      ],
+      "description": "Causes a line number to be displayed at the beginning of each\nline in the display"
+    },
+    {
+      "name": [
+        "-o",
+        "--log-file"
+      ],
+      "description": "Causes less to copy its input to the named file as it is being\nviewed.  This applies only when the input file is a pipe, not an\nordinary file.  If the file already exists, less will ask for\nconfirmation before overwriting it",
+      "args": {
+        "name": "filename",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "-O",
+        "--LOG-FILE"
+      ],
+      "description": "The -O option is like -o, but it will overwrite an existing file\nwithout asking for confirmation.\nIf no log file has been specified, the -o and -O options can be\nused from within less to specify a log file.  Without a file\nname, they will simply report the name of the log file.  The \"s\"\ncommand is equivalent to specifying -o from within less",
+      "args": {
+        "name": "filename",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "-p",
+        "--pattern"
+      ],
+      "description": "The -p option on the command line is equivalent to specifying\n+/pattern; that is, it tells less to start at the first\noccurrence of pattern in the file",
+      "args": {
+        "name": "pattern"
+      }
+    },
+    {
+      "name": [
+        "-P",
+        "--prompt"
+      ],
+      "description": "Provides a way to tailor the three prompt styles to your own\npreference.  This option would normally be put in the LESS\nenvironment variable, rather than being typed in with each less\ncommand.  Such an option must either be the last option in the\nLESS variable, or be terminated by a dollar sign.\n-Ps followed by a string changes the default (short) prompt to\nthat string.\n-Pm changes the medium (-m) prompt.\n-PM changes the long (-M) prompt.\n-Ph changes the prompt for the help screen.\n-P= changes the message printed by the = command.\n-Pw changes the message printed while waiting for data (in the\nF command).\nAll prompt strings consist of a sequence of letters and special\nescape sequences.  See the section on PROMPTS for more details",
+      "args": {
+        "name": "prompt"
+      }
+    },
+    {
+      "name": [
+        "-q",
+        "--quiet",
+        "--silent"
+      ],
+      "description": "Causes moderately \"quiet\" operation: the terminal bell is not\nrung if an attempt is made to scroll past the end of the file or\nbefore the beginning of the file.  If the terminal has a \"visual\nbell\", it is used instead.  The bell will be rung on certain\nother errors, such as typing an invalid character.  The default\nis to ring the terminal bell in all such cases"
+    },
+    {
+      "name": [
+        "-Q",
+        "--QUIET",
+        "--SILENT"
+      ],
+      "description": "Causes totally \"quiet\" operation: the terminal bell is never\nrung.  If the terminal has a \"visual bell\", it is used in all\ncases where the terminal bell would have been rung"
+    },
+    {
+      "name": [
+        "-r",
+        "--raw-control-chars"
+      ],
+      "description": "Causes \"raw\" control characters to be displayed.  The default is\nto display control characters using the caret notation; for\nexample, a control-A (octal 001) is displayed as \"^A\".  Warning:\nwhen the -r option is used, less cannot keep track of the actual\nappearance of the screen (since this depends on how the screen\nresponds to each type of control character).  Thus, various\ndisplay problems may result, such as long lines being split in\nthe wrong place.\nUSE OF THE -r OPTION IS NOT RECOMMENDED"
+    },
+    {
+      "name": [
+        "-R",
+        "--RAW-CONTROL-CHARS"
+      ],
+      "description": "Like -r, but only ANSI \"color\" escape sequences and OSC 8\nhyperlink sequences are output in \"raw\" form.  Unlike -r, the\nscreen appearance is maintained correctly, provided that there\nare no escape sequences in the file other than these types of\nescape sequences.  Color escape sequences are only supported\nwhen the color is changed within one line, not across lines.  In\nother words, the beginning of each line is assumed to be normal\n(non-colored), regardless of any escape sequences in previous\nlines.  For the purpose of keeping track of screen appearance,\nthese escape sequences are assumed to not move the cursor.\nOSC 8 hyperlinks are sequences of the form:\nESC ] 8 ; \nANSI color escape sequences are sequences of the form:\nESC [ ... m\nwhere the \"...\" is zero or more color specification characters.\nYou can make less think that characters other than \"m\" can end\nANSI color escape sequences by setting the environment variable\nLESSANSIENDCHARS to the list of characters which can end a color\nescape sequence.  And you can make less think that characters\nother than the standard ones may appear between the ESC and the\nm by setting the environment variable LESSANSIMIDCHARS to the\nlist of characters which can appear"
+    },
+    {
+      "name": [
+        "-s",
+        "--squeeze-blank-lines"
+      ],
+      "description": "Causes consecutive blank lines to be squeezed into a single\nblank line.  This is useful when viewing nroff output"
+    },
+    {
+      "name": [
+        "-S",
+        "--chop-long-lines"
+      ],
+      "description": "Causes lines longer than the screen width to be chopped\n(truncated) rather than wrapped.  That is, the portion of a long\nline that does not fit in the screen width is not displayed\nuntil you press RIGHT-ARROW.  The default is to wrap long lines;\nthat is, display the remainder on the next line"
+    },
+    {
+      "name": [
+        "-t",
+        "--tag"
+      ],
+      "description": "The -t option, followed immediately by a TAG, will edit the file\ncontaining that tag.  For this to work, tag information must be\navailable; for example, there may be a file in the current\ndirectory called \"tags\", which was previously built by ctags(1)\nor an equivalent command.  If the environment variable\nLESSGLOBALTAGS is set, it is taken to be the name of a command\ncompatible with global(1), and that command is executed to find\nthe tag.  (See http://www.gnu.org/software/global/global.html).\nThe -t option may also be specified from within less (using the\n- command) as a way of examining a new file.  The command \":t\"\nis equivalent to specifying -t from within less",
+      "args": {
+        "name": "tag"
+      }
+    },
+    {
+      "name": [
+        "-T",
+        "--tag-file"
+      ],
+      "description": "Specifies a tags file to be used instead of \"tags\"",
+      "args": {
+        "name": "tagsfile"
+      }
+    },
+    {
+      "name": [
+        "-u",
+        "--underline-special"
+      ],
+      "description": "Causes backspaces and carriage returns to be treated as\nprintable characters; that is, they are sent to the terminal\nwhen they appear in the input"
+    },
+    {
+      "name": [
+        "-U",
+        "--UNDERLINE-SPECIAL"
+      ],
+      "description": "Causes backspaces, tabs, carriage returns and \"formatting\ncharacters\" (as defined by Unicode) to be treated as control\ncharacters; that is, they are handled as specified by the -r\noption.\nBy default, if neither -u nor -U is given, backspaces which\nappear adjacent to an underscore character are treated\nspecially: the underlined text is displayed using the terminal's\nhardware underlining capability.  Also, backspaces which appear\nbetween two identical characters are treated specially: the\noverstruck text is printed using the terminal's hardware\nboldface capability.  Other backspaces are deleted, along with\nthe preceding character.  Carriage returns immediately followed\nby a newline are deleted.  Other carriage returns are handled as\nspecified by the -r option.  Unicode formatting characters, such\nas the Byte Order Mark, are sent to the terminal.  Text which is\noverstruck or underlined can be searched for if neither -u nor\n-U is in effect"
+    },
+    {
+      "name": [
+        "-V",
+        "--version"
+      ],
+      "description": "Displays the version number of less"
+    },
+    {
+      "name": [
+        "-w",
+        "--hilite-unread"
+      ],
+      "description": "Temporarily highlights the first \"new\" line after a forward\nmovement of a full page.  The first \"new\" line is the line\nimmediately following the line previously at the bottom of the\nscreen.  Also highlights the target line after a g or p command.\nThe highlight is removed at the next command which causes\nmovement.  The entire line is highlighted, unless the -J option\nis in effect, in which case only the status column is\nhighlighted"
+    },
+    {
+      "name": [
+        "-W",
+        "--HILITE-UNREAD"
+      ],
+      "description": "Like -w, but temporarily highlights the first new line after any\nforward movement command larger than one line"
+    },
+    {
+      "name": [
+        "-x",
+        "--tabs="
+      ],
+      "description": "Sets tab stops.  If only one n is specified, tab stops are set\nat multiples of n.  If multiple values separated by commas are\nspecified, tab stops are set at those positions, and then\ncontinue with the same spacing as the last two.  For example,\n-x9,17 will set tabs at positions 9, 17, 25, 33, etc.  The\ndefault for n is 8",
+      "args": {
+        "name": "n,..."
+      }
+    },
+    {
+      "name": [
+        "-X",
+        "--no-init"
+      ],
+      "description": "Disables sending the termcap initialization and deinitialization\nstrings to the terminal.  This is sometimes desirable if the\ndeinitialization string does something unnecessary, like\nclearing the screen"
+    },
+    {
+      "name": [
+        "-y",
+        "--max-forw-scroll"
+      ],
+      "description": "Specifies a maximum number of lines to scroll forward.  If it is\nnecessary to scroll forward more than n lines, the screen is\nrepainted instead.  The -c or -C option may be used to repaint\nfrom the top of the screen if desired.  By default, any forward\nmovement causes scrolling",
+      "args": {
+        "name": "n"
+      }
+    },
+    {
+      "name": [
+        "-z",
+        "--window"
+      ],
+      "description": "Changes the default scrolling window size to n lines.  The\ndefault is one screenful.  The z and w commands can also be used\nto change the window size.  The \"z\" may be omitted for\ncompatibility with some versions of more.  If the number n is\nnegative, it indicates n lines less than the current screen\nsize.  For example, if the screen is 24 lines, -z-4 sets the\nscrolling window to 20 lines.  If the screen is resized to 40\nlines, the scrolling window automatically changes to 36 lines",
+      "args": {
+        "name": "n"
+      }
+    },
+    {
+      "name": [
+        "--quotes"
+      ],
+      "description": "Changes the filename quoting character.  This may be necessary\nif you are trying to name a file which contains both spaces and\nquote characters.  Followed by a single character, this changes\nthe quote character to that character.  Filenames containing a\nspace should then be surrounded by that character rather than by\ndouble quotes.  Followed by two characters, changes the open\nquote to the first character, and the close quote to the second\ncharacter.  Filenames containing a space should then be preceded\nby the open quote character and followed by the close quote\ncharacter.  Note that even after the quote characters are\nchanged, this option remains -\" (a dash followed by a double\nquote)"
+    },
+    {
+      "name": [
+        "-~",
+        "--tilde"
+      ],
+      "description": "Normally lines after end of file are displayed as a single tilde\n(~).  This option causes lines after end of file to be displayed\nas blank lines"
+    },
+    {
+      "name": [
+        "-#",
+        "--shift"
+      ],
+      "description": "Specifies the default number of positions to scroll horizontally\nin the RIGHTARROW and LEFTARROW commands.  If the number\nspecified is zero, it sets the default number of positions to\none half of the screen width.  Alternately, the number may be\nspecified as a fraction of the width of the screen, starting\nwith a decimal point: .5 is half of the screen width, .3 is\nthree tenths of the screen width, and so on.  If the number is\nspecified as a fraction, the actual number of scroll positions\nis recalculated if the terminal window is resized, so that the\nactual scroll remains at the specified fraction of the screen\nwidth"
+    },
+    {
+      "name": [
+        "--follow-name"
+      ],
+      "description": "Normally, if the input file is renamed while an F command is\nexecuting, less will continue to display the contents of the\noriginal file despite its name change.  If --follow-name is\nspecified, during an F command less will periodically attempt to\nreopen the file by name.  If the reopen succeeds and the file is\na different file from the original (which means that a new file\nhas been created with the same name as the original (now\nrenamed) file), less will display the contents of that new file"
+    },
+    {
+      "name": [
+        "--incsearch"
+      ],
+      "description": "Subsequent search commands will be \"incremental\"; that is, less\nwill advance to the next line containing the search pattern as\neach character of the pattern is typed in"
+    },
+    {
+      "name": [
+        "--line-num-width"
+      ],
+      "description": "Sets the minimum width of the line number field when the -N\noption is in effect.  The default is 7 characters"
+    },
+    {
+      "name": [
+        "--mouse"
+      ],
+      "description": "Enables mouse input: scrolling the mouse wheel down moves\nforward in the file, scrolling the mouse wheel up moves\nbackwards in the file, and clicking the mouse sets the \"#\" mark\nto the line where the mouse is clicked.  The number of lines to\nscroll when the wheel is moved can be set by the --wheel-lines\noption.  Mouse input works only on terminals which support X11\nmouse reporting, and on the Windows version of less"
+    },
+    {
+      "name": [
+        "--MOUSE"
+      ],
+      "description": "Like --mouse, except the direction scrolled on mouse wheel\nmovement is reversed"
+    },
+    {
+      "name": [
+        "--no-keypad"
+      ],
+      "description": "Disables sending the keypad initialization and deinitialization\nstrings to the terminal.  This is sometimes useful if the keypad\nstrings make the numeric keypad behave in an undesirable manner"
+    },
+    {
+      "name": [
+        "--no-histdups"
+      ],
+      "description": "This option changes the behavior so that if a search string or\nfile name is typed in, and the same string is already in the\nhistory list, the existing copy is removed from the history list\nbefore the new one is added.  Thus, a given string will appear\nonly once in the history list.  Normally, a string may appear\nmultiple times"
+    },
+    {
+      "name": [
+        "--rscroll"
+      ],
+      "description": "This option changes the character used to mark truncated lines.\nIt may begin with a two-character attribute indicator like\nLESSBINFMT does.  If there is no attribute indicator, standout\nis used.  If set to \"-\", truncated lines are not marked"
+    },
+    {
+      "name": [
+        "--save-marks"
+      ],
+      "description": "Save marks in the history file, so marks are retained across\ndifferent invocations of less"
+    },
+    {
+      "name": [
+        "--status-col-width"
+      ],
+      "description": "Sets the width of the status column when the -J option is in\neffect.  The default is 2 characters"
+    },
+    {
+      "name": [
+        "--use-backslash"
+      ],
+      "description": "This option changes the interpretations of options which follow\nthis one.  After the --use-backslash option, any backslash in an\noption string is removed and the following character is taken\nliterally.  This allows a dollar sign to be included in option\nstrings"
+    },
+    {
+      "name": [
+        "--use-color"
+      ],
+      "description": "Enables the colored text in various places.  The -D option can\nbe used to change the colors.  Colored text works only if the\nterminal supports ANSI color escape sequences (as defined in\nECMA-48 SGR; see\nhttps://www.ecma-international.org/publications-and-\nstandards/standards/ecma-48)"
+    },
+    {
+      "name": [
+        "--wheel-lines"
+      ],
+      "description": "Set the number of lines to scroll when the mouse wheel is rolled",
+      "args": {
+        "name": "n"
+      }
+    }
+  ],
+  "args": {
+    "template": "filepaths",
+    "isVariadic": true
+  }
+}

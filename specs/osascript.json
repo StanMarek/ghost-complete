@@ -1,0 +1,68 @@
+{
+  "name": "osascript",
+  "description": "Execute OSA scripts (AppleScript, JavaScript, etc.)",
+  "options": [
+    {
+      "name": [
+        "-e"
+      ],
+      "description": "Enter one line of a script",
+      "args": {
+        "name": "statement"
+      }
+    },
+    {
+      "name": [
+        "-i"
+      ],
+      "description": "Interactive mode"
+    },
+    {
+      "name": [
+        "-l"
+      ],
+      "description": "Override the language for any plain text files",
+      "args": {
+        "name": "language"
+      }
+    },
+    {
+      "name": [
+        "-s"
+      ],
+      "description": "Modify the output style",
+      "args": {
+        "name": "flags",
+        "isVariadic": true,
+        "suggestions": [
+          {
+            "name": "h",
+            "description": "Print values in human-readable form (default)"
+          },
+          {
+            "name": "s",
+            "description": "Print values in recompilable source form"
+          },
+          {
+            "name": "e",
+            "description": "Print script errors to stderr (default)"
+          },
+          {
+            "name": "o",
+            "description": "Print script errors to stdout"
+          }
+        ]
+      }
+    }
+  ],
+  "args": {
+    "name": "script",
+    "isOptional": true,
+    "generators": [
+      {
+        "requires_js": true,
+        "js_source": "(p,v,O)=>ae(this,void 0,void 0,function*(){var d;let{isDangerous:_,currentWorkingDirectory:b,searchTerm:h}=O,w=(d=(0,y.getCurrentInsertedDirectory)(a??b,h,O))!==null&&d!==void 0?d:\"/\";try{let q=yield v({command:\"ls\",args:[\"-1ApL\"],cwd:w}),Z=$(q.stdout.split(`\n`),[\".DS_Store\"]),N=[];for(let V of Z)if(V){let F=V.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&c!==\"only\"||F===\"folders\"&&c!==\"never\")&&N.push({type:F===\"filepaths\"?\"file\":\"folder\",name:V,insertValue:V,isDangerous:_,context:{templateType:F}})}return S(g(N))}catch{return[]}})"
+      }
+    ]
+  }
+}

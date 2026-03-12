@@ -1,0 +1,213 @@
+{
+  "name": "shortcuts",
+  "description": "Command-line utility for running shortcuts",
+  "subcommands": [
+    {
+      "name": "run",
+      "description": "Run a shortcut",
+      "options": [
+        {
+          "name": [
+            "-i",
+            "--input-path"
+          ],
+          "description": "The input to provide to the shortcut",
+          "args": {
+            "name": "input-path",
+            "template": "filepaths"
+          }
+        },
+        {
+          "name": [
+            "-o",
+            "--output-path"
+          ],
+          "description": "Where to write the shortcut output, if applicable",
+          "args": {
+            "name": "output-path",
+            "template": "filepaths"
+          }
+        },
+        {
+          "name": [
+            "--output-type"
+          ],
+          "description": "What type to output data in, in Universal Type Identifier format",
+          "args": {
+            "name": "output-type",
+            "suggestions": [
+              {
+                "name": "public.json",
+                "description": "JavaScript Object Notation (JSON)"
+              },
+              {
+                "name": "public.plain-text",
+                "description": "Plain text"
+              },
+              {
+                "name": "public.html",
+                "description": "HTML"
+              },
+              {
+                "name": "public.xml",
+                "description": "XML"
+              },
+              {
+                "name": "com.adobe.pdf",
+                "description": "Adobe PDF"
+              },
+              {
+                "name": "public.vcard",
+                "description": "VCard"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "shortcut-name",
+        "description": "The name of the shortcut to run",
+        "generators": [
+          {
+            "script": [
+              "shortcuts",
+              "list"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "list",
+      "description": "List your shortcuts",
+      "options": [
+        {
+          "name": [
+            "--folder-name",
+            "-f"
+          ],
+          "description": "The name of the folder to list",
+          "args": {
+            "name": "folder-name",
+            "generators": [
+              {
+                "script": [
+                  "shortcuts",
+                  "list",
+                  "--folders"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--folders"
+          ],
+          "description": "List folders instead of shortcuts"
+        }
+      ]
+    },
+    {
+      "name": "view",
+      "description": "View a shortcut in Shortcuts",
+      "args": {
+        "name": "shortcut-name",
+        "description": "The name of the shortcut to view",
+        "generators": [
+          {
+            "script": [
+              "shortcuts",
+              "list"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "sign",
+      "description": "Sign a shortcut file",
+      "options": [
+        {
+          "name": [
+            "--input",
+            "-i"
+          ],
+          "description": "The shortcut file to sign",
+          "args": {
+            "name": "input",
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "(p,m,_)=>fe(this,void 0,void 0,function*(){var d;let{isDangerous:b,currentWorkingDirectory:O,searchTerm:h}=_,w=(d=(0,v.getCurrentInsertedDirectory)(l??O,h,_))!==null&&d!==void 0?d:\"/\";try{let N=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:w}),Y=J(N.stdout.split(`\n`),[\".DS_Store\"]),W=[];for(let V of Y)if(V){let F=V.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&c!==\"only\"||F===\"folders\"&&c!==\"never\")&&W.push({type:F===\"filepaths\"?\"file\":\"folder\",name:V,insertValue:V,isDangerous:b,context:{templateType:F}})}return S(g(W))}catch{return[]}})"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--output",
+            "-o"
+          ],
+          "description": "Output path for the signed shortcut file",
+          "args": {
+            "name": "output",
+            "template": "filepaths"
+          }
+        },
+        {
+          "name": [
+            "--mode",
+            "-m"
+          ],
+          "description": "The signing mode. (default: people-who-know-me)",
+          "args": {
+            "name": "mode",
+            "suggestions": [
+              {
+                "name": "people-who-know-me"
+              },
+              {
+                "name": "anyone"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "help",
+      "description": "Show help information",
+      "subcommands": [
+        {
+          "name": "run",
+          "description": "Run a shortcut"
+        },
+        {
+          "name": "list",
+          "description": "List your shortcuts"
+        },
+        {
+          "name": "view",
+          "description": "View a shortcut in Shortcuts"
+        },
+        {
+          "name": "sign",
+          "description": "Sign a shortcut file"
+        }
+      ]
+    }
+  ]
+}

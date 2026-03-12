@@ -1,0 +1,287 @@
+{
+  "name": "file",
+  "description": "Determine file type",
+  "options": [
+    {
+      "name": [
+        "--help"
+      ],
+      "description": "Print a help message and exit"
+    },
+    {
+      "name": [
+        "--apple"
+      ],
+      "description": "Causes the file command to output the file type and creator code\nas used by older MacOS versions.  The code consists of eight\nletters, the first describing the file type, the latter the\ncreator.  This option works properly only for file formats that\nhave the apple-style output defined"
+    },
+    {
+      "name": [
+        "--brief",
+        "-b"
+      ],
+      "description": "Do not prepend filenames to output lines (brief mode)"
+    },
+    {
+      "name": [
+        "--checking-printoug",
+        "-c"
+      ],
+      "description": "Cause a checking printout of the parsed form of the magic file.\nThis is usually used in conjunction with the -m option to debug a\nnew magic file before installing it"
+    },
+    {
+      "name": [
+        "--compile",
+        "-C"
+      ],
+      "description": "Write a magic.mgc output file that contains a pre-parsed version\nof the magic file or directory"
+    },
+    {
+      "name": [
+        "-d"
+      ],
+      "description": "Apply the default system tests; this is the default behavior\nunless -M is specified"
+    },
+    {
+      "name": [
+        "-D"
+      ],
+      "description": "Print debugging messages"
+    },
+    {
+      "name": [
+        "-E"
+      ],
+      "description": "On filesystem errors (file not found etc), instead of handling\nthe error as regular output as POSIX mandates and keep going,\nissue an error message and exit"
+    },
+    {
+      "name": [
+        "--exclude",
+        "-e"
+      ],
+      "description": "Exclude the test named in testname from the list of tests made to\ndetermine the file type",
+      "args": {
+        "name": "testname",
+        "suggestions": [
+          {
+            "name": "apptype"
+          },
+          {
+            "name": "ascii"
+          },
+          {
+            "name": "encoding"
+          },
+          {
+            "name": "token"
+          },
+          {
+            "name": "cdf"
+          },
+          {
+            "name": "compress"
+          },
+          {
+            "name": "csv"
+          },
+          {
+            "name": "elf"
+          },
+          {
+            "name": "json"
+          },
+          {
+            "name": "soft"
+          },
+          {
+            "name": "tar"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--exclude-quiet"
+      ],
+      "description": "Like --exclude but ignore tests that file does not know about.\nThis is intended for compatibility with older versions of file"
+    },
+    {
+      "name": [
+        "--extension"
+      ],
+      "description": "Print a slash-separated list of valid extensions for the file\ntype found"
+    },
+    {
+      "name": [
+        "--separator",
+        "-F"
+      ],
+      "description": "Use the specified string as the separator between the filename\nand the file result returned",
+      "args": {
+        "name": "separator",
+        "suggestions": [
+          {
+            "name": "."
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--files-from",
+        "-f"
+      ],
+      "description": "Read the names of the files to be examined from namefile (one per\nline) before the argument list.  Either namefile or at least one\nfilename argument must be present; to test the standard input,\nuse ‘-’ as a filename argument.  Please note that namefile is\nunwrapped and the enclosed filenames are processed when this\noption is encountered and before any further options processing\nis done.  This allows one to process multiple lists of files with\ndifferent command line arguments on the same file invocation.\nThus if you want to set the delimiter, you need to do it before\nyou specify the list of files, like: \"-F @ -f namefile\", instead\nof: \"-f namefile -F @\"",
+      "args": {
+        "name": "namefile"
+      }
+    },
+    {
+      "name": [
+        "--no-dereference",
+        "-h"
+      ],
+      "description": "This option causes symlinks not to be followed (on systems that\nsupport symbolic links)"
+    },
+    {
+      "name": [
+        "-i"
+      ],
+      "description": "If the file is a regular file, do not classify its contents"
+    },
+    {
+      "name": [
+        "--mime",
+        "-I"
+      ],
+      "description": "Causes the file command to output mime type strings rather than\nthe more traditional human readable ones.  Thus it may say\n'text/plain; charset=us-ascii' rather than \"ASCII text\""
+    },
+    {
+      "name": [
+        "--mime-type",
+        "--mime-encoding"
+      ],
+      "description": "Like -I, but print only the specified element(s)"
+    },
+    {
+      "name": [
+        "--keep-going",
+        "-k"
+      ],
+      "description": "Don't stop at the first match, keep going.  Subsequent matches\nwill be have the string '\\012- ' prepended.  (If you want a\nnewline, see the -r option.)  The magic pattern with the highest\nstrength (see the -l option) comes first"
+    },
+    {
+      "name": [
+        "--list",
+        "-l"
+      ],
+      "description": "Shows a list of patterns and their strength sorted descending by\nmagic(5) strength which is used for the matching (see also the -k\noption)"
+    },
+    {
+      "name": [
+        "--dereference",
+        "-L"
+      ],
+      "description": "This option causes symlinks to be followed, as the like-named\noption in ls(1) (on systems that support symbolic links).  This\nis the default behavior"
+    },
+    {
+      "name": [
+        "--magic-file",
+        "-m"
+      ],
+      "description": "Specify an alternate list of files and directories containing\nmagic.  This can be a single item, or a colon-separated list.  If\na compiled magic file is found alongside a file or directory, it\nwill be used instead",
+      "args": {
+        "name": "list",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "-M"
+      ],
+      "description": "Like -m, except that the default rules are not applied unless -d\nis specified",
+      "args": {
+        "name": "list",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--no-buffer",
+        "-n"
+      ],
+      "description": "Force stdout to be flushed after checking each file.  This is\nonly useful if checking a list of files.  It is intended to be\nused by programs that want filetype output from a pipe"
+    },
+    {
+      "name": [
+        "--preserve-data",
+        "-p"
+      ],
+      "description": "On systems that support utime(3) or utimes(2), attempt to\npreserve the access time of files analyzed, to pretend that file\nnever read them"
+    },
+    {
+      "name": [
+        "--parameter",
+        "-P"
+      ],
+      "description": "Set various parameter limits",
+      "args": {
+        "name": "name=value",
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "(...r)=>j(this,void 0,void 0,function*(){let[a]=r,u=!a[a.length-1].includes(e),l=u?t:n,o=J(u,i);return P(l,u&&s?e:\"\",o,r)})"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--raw",
+        "-r"
+      ],
+      "description": "No operation, included for historical compatibility"
+    },
+    {
+      "name": [
+        "--special-files",
+        "s"
+      ],
+      "description": "Normally, file only attempts to read and determine the type of\nargument files which stat(2) reports are ordinary files.  This\nprevents problems, because reading special files may have\npeculiar consequences.  Specifying the -s option causes file to\nalso read argument files which are block or character special\nfiles.  This is useful for determining the filesystem types of\nthe data in raw disk partitions, which are block special files.\nThis option also causes file to disregard the file size as\nreported by stat(2) since on some systems it reports a zero size\nfor raw disk partitions"
+    },
+    {
+      "name": [
+        "--version",
+        "-v"
+      ],
+      "description": "Print the version of the program and exit"
+    },
+    {
+      "name": [
+        "--uncompress",
+        "-z"
+      ],
+      "description": "Try to look inside compressed files"
+    },
+    {
+      "name": [
+        "--uncompress-noreport",
+        "-Z"
+      ],
+      "description": "Try to look inside compressed files, but report information about\nthe contents only not the compression"
+    },
+    {
+      "name": [
+        "--print0",
+        "-0"
+      ],
+      "description": "Output a null character '\u0000' after the end of the filename.  Nice\nto cut(1) the output.  This does not affect the separator, which\nis still printed"
+    }
+  ],
+  "args": {
+    "name": "file",
+    "description": "File name(s)",
+    "template": "filepaths",
+    "isVariadic": true,
+    "isOptional": true
+  }
+}

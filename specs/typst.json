@@ -1,0 +1,468 @@
+{
+  "name": "typst",
+  "description": "The Typst compiler",
+  "subcommands": [
+    {
+      "name": "compile",
+      "description": "Compiles an input file into a supported output format",
+      "options": [
+        {
+          "name": [
+            "--root"
+          ],
+          "description": "Configures the project root (for absolute paths)",
+          "args": {
+            "name": "root",
+            "template": "folders"
+          }
+        },
+        {
+          "name": [
+            "--font-path"
+          ],
+          "description": "Adds additional directories to search for fonts",
+          "args": {
+            "name": "font_paths",
+            "template": "filepaths"
+          }
+        },
+        {
+          "name": [
+            "--diagnostic-format"
+          ],
+          "description": "The format to emit diagnostics in",
+          "args": {
+            "name": "diagnostic_format",
+            "suggestions": [
+              {
+                "name": "human"
+              },
+              {
+                "name": "short"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-f",
+            "--format"
+          ],
+          "description": "The format of the output file, inferred from the extension by default",
+          "args": {
+            "name": "format",
+            "suggestions": [
+              {
+                "name": "pdf"
+              },
+              {
+                "name": "png"
+              },
+              {
+                "name": "svg"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--open"
+          ],
+          "description": "Opens the output file using the default viewer after compilation",
+          "args": {
+            "name": "open",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--ppi"
+          ],
+          "description": "The PPI (pixels per inch) to use for PNG export",
+          "args": {
+            "name": "ppi"
+          }
+        },
+        {
+          "name": [
+            "--flamegraph"
+          ],
+          "description": "Produces a flamegraph of the compilation process",
+          "args": {
+            "name": "flamegraph",
+            "template": "filepaths",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help"
+        }
+      ],
+      "args": [
+        {
+          "name": "input",
+          "description": "Path to input Typst file",
+          "generators": [
+            {
+              "requires_js": true,
+              "js_source": "(p,m,_)=>ce(this,void 0,void 0,function*(){var d;let{isDangerous:b,currentWorkingDirectory:O,searchTerm:h}=_,w=(d=(0,v.getCurrentInsertedDirectory)(c??O,h,_))!==null&&d!==void 0?d:\"/\";try{let E=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:w}),Z=$(E.stdout.split(`\n`),[\".DS_Store\"]),N=[];for(let A of Z)if(A){let V=A.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&u!==\"only\"||V===\"folders\"&&u!==\"never\")&&N.push({type:V===\"filepaths\"?\"file\":\"folder\",name:A,insertValue:A,isDangerous:b,context:{templateType:V}})}return x(g(N))}catch{return[]}})"
+            }
+          ]
+        },
+        {
+          "name": "output",
+          "description": "Path to output file (PDF, PNG, or SVG)",
+          "template": "filepaths",
+          "isOptional": true
+        }
+      ]
+    },
+    {
+      "name": "watch",
+      "description": "Watches an input file and recompiles on changes",
+      "options": [
+        {
+          "name": [
+            "--root"
+          ],
+          "description": "Configures the project root (for absolute paths)",
+          "args": {
+            "name": "root",
+            "template": "folders"
+          }
+        },
+        {
+          "name": [
+            "--font-path"
+          ],
+          "description": "Adds additional directories to search for fonts",
+          "args": {
+            "name": "font_paths",
+            "template": "filepaths"
+          }
+        },
+        {
+          "name": [
+            "--diagnostic-format"
+          ],
+          "description": "The format to emit diagnostics in",
+          "args": {
+            "name": "diagnostic_format",
+            "suggestions": [
+              {
+                "name": "human"
+              },
+              {
+                "name": "short"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-f",
+            "--format"
+          ],
+          "description": "The format of the output file, inferred from the extension by default",
+          "args": {
+            "name": "format",
+            "suggestions": [
+              {
+                "name": "pdf"
+              },
+              {
+                "name": "png"
+              },
+              {
+                "name": "svg"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--open"
+          ],
+          "description": "Opens the output file using the default viewer after compilation",
+          "args": {
+            "name": "open",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--ppi"
+          ],
+          "description": "The PPI (pixels per inch) to use for PNG export",
+          "args": {
+            "name": "ppi"
+          }
+        },
+        {
+          "name": [
+            "--flamegraph"
+          ],
+          "description": "Produces a flamegraph of the compilation process",
+          "args": {
+            "name": "flamegraph",
+            "template": "filepaths",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help"
+        }
+      ],
+      "args": [
+        {
+          "name": "input",
+          "description": "Path to input Typst file",
+          "generators": [
+            {
+              "requires_js": true,
+              "js_source": "(p,m,_)=>ce(this,void 0,void 0,function*(){var d;let{isDangerous:b,currentWorkingDirectory:O,searchTerm:h}=_,w=(d=(0,v.getCurrentInsertedDirectory)(c??O,h,_))!==null&&d!==void 0?d:\"/\";try{let E=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:w}),Z=$(E.stdout.split(`\n`),[\".DS_Store\"]),N=[];for(let A of Z)if(A){let V=A.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&u!==\"only\"||V===\"folders\"&&u!==\"never\")&&N.push({type:V===\"filepaths\"?\"file\":\"folder\",name:A,insertValue:A,isDangerous:b,context:{templateType:V}})}return x(g(N))}catch{return[]}})"
+            }
+          ]
+        },
+        {
+          "name": "output",
+          "description": "Path to output file (PDF, PNG, or SVG)",
+          "template": "filepaths",
+          "isOptional": true
+        }
+      ]
+    },
+    {
+      "name": "query",
+      "description": "Processes an input file to extract provided metadata",
+      "options": [
+        {
+          "name": [
+            "--root"
+          ],
+          "description": "Configures the project root (for absolute paths)",
+          "args": {
+            "name": "root",
+            "template": "folders"
+          }
+        },
+        {
+          "name": [
+            "--font-path"
+          ],
+          "description": "Adds additional directories to search for fonts",
+          "args": {
+            "name": "font_paths",
+            "template": "filepaths"
+          }
+        },
+        {
+          "name": [
+            "--diagnostic-format"
+          ],
+          "description": "The format to emit diagnostics in",
+          "args": {
+            "name": "diagnostic_format",
+            "suggestions": [
+              {
+                "name": "human"
+              },
+              {
+                "name": "short"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--field"
+          ],
+          "description": "Extracts just one field from all retrieved elements",
+          "args": {
+            "name": "field"
+          }
+        },
+        {
+          "name": [
+            "--format"
+          ],
+          "description": "The format to serialize in",
+          "args": {
+            "name": "format",
+            "suggestions": [
+              {
+                "name": "json"
+              },
+              {
+                "name": "yaml"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--one"
+          ],
+          "description": "Expects and retrieves exactly one element"
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help"
+        }
+      ],
+      "args": [
+        {
+          "name": "input",
+          "description": "Path to input Typst file",
+          "generators": [
+            {
+              "requires_js": true,
+              "js_source": "(p,m,_)=>ce(this,void 0,void 0,function*(){var d;let{isDangerous:b,currentWorkingDirectory:O,searchTerm:h}=_,w=(d=(0,v.getCurrentInsertedDirectory)(c??O,h,_))!==null&&d!==void 0?d:\"/\";try{let E=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:w}),Z=$(E.stdout.split(`\n`),[\".DS_Store\"]),N=[];for(let A of Z)if(A){let V=A.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&u!==\"only\"||V===\"folders\"&&u!==\"never\")&&N.push({type:V===\"filepaths\"?\"file\":\"folder\",name:A,insertValue:A,isDangerous:b,context:{templateType:V}})}return x(g(N))}catch{return[]}})"
+            }
+          ]
+        },
+        {
+          "name": "selector",
+          "description": "Defines which elements to retrieve"
+        }
+      ]
+    },
+    {
+      "name": "fonts",
+      "description": "Lists all discovered fonts in system and custom font paths",
+      "options": [
+        {
+          "name": [
+            "--font-path"
+          ],
+          "description": "Adds additional directories to search for fonts",
+          "args": {
+            "name": "font_paths",
+            "template": "filepaths"
+          }
+        },
+        {
+          "name": [
+            "--variants"
+          ],
+          "description": "Also lists style variants of each font family"
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help"
+        }
+      ]
+    },
+    {
+      "name": "update",
+      "description": "Self update the Typst CLI (disabled)",
+      "options": [
+        {
+          "name": [
+            "--force"
+          ],
+          "description": "Forces a downgrade to an older version (required for downgrading)"
+        },
+        {
+          "name": [
+            "--revert"
+          ],
+          "description": "Reverts to the version from before the last update (only possible if `typst update` has previously ran)"
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help"
+        }
+      ],
+      "args": {
+        "name": "version",
+        "description": "Which version to update to (defaults to latest)",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "help",
+      "description": "Print this message or the help of the given subcommand(s)",
+      "subcommands": [
+        {
+          "name": "compile",
+          "description": "Compiles an input file into a supported output format"
+        },
+        {
+          "name": "watch",
+          "description": "Watches an input file and recompiles on changes"
+        },
+        {
+          "name": "query",
+          "description": "Processes an input file to extract provided metadata"
+        },
+        {
+          "name": "fonts",
+          "description": "Lists all discovered fonts in system and custom font paths"
+        },
+        {
+          "name": "update",
+          "description": "Self update the Typst CLI (disabled)"
+        },
+        {
+          "name": "help",
+          "description": "Print this message or the help of the given subcommand(s)"
+        }
+      ]
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "--cert"
+      ],
+      "description": "Path to a custom CA certificate to use when making network requests",
+      "args": {
+        "name": "cert",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "-v",
+        "--verbosity"
+      ],
+      "description": "Sets the level of logging verbosity: -v = warning & error, -vv = info, -vvv = debug, -vvvv = trace"
+    },
+    {
+      "name": [
+        "-h",
+        "--help"
+      ],
+      "description": "Print help"
+    },
+    {
+      "name": [
+        "-V",
+        "--version"
+      ],
+      "description": "Print version"
+    }
+  ]
+}

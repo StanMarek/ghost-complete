@@ -8,6 +8,47 @@ use crate::transform::Transform;
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 use gc_buffer::CommandContext;
 
+/// Deserialize `args` as either a single object or an array of objects.
+fn deserialize_args_one_or_many<'de, D>(
+    deserializer: D,
+) -> std::result::Result<Vec<ArgSpec>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum OneOrMany {
+        One(ArgSpec),
+        Many(Vec<ArgSpec>),
+    }
+
+    match OneOrMany::deserialize(deserializer)? {
+        OneOrMany::One(single) => Ok(vec![single]),
+        OneOrMany::Many(vec) => Ok(vec),
+    }
+}
+
+/// Deserialize option `args` as either a single object or an array (taking the first).
+fn deserialize_option_args<'de, D>(
+    deserializer: D,
+) -> std::result::Result<Option<ArgSpec>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum OneOrMany {
+        One(ArgSpec),
+        Many(Vec<ArgSpec>),
+    }
+
+    match Option::<OneOrMany>::deserialize(deserializer)? {
+        Some(OneOrMany::One(single)) => Ok(Some(single)),
+        Some(OneOrMany::Many(vec)) => Ok(vec.into_iter().next()),
+        None => Ok(None),
+    }
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct CompletionSpec {
     pub name: String,
@@ -16,7 +57,7 @@ pub struct CompletionSpec {
     pub subcommands: Vec<SubcommandSpec>,
     #[serde(default)]
     pub options: Vec<OptionSpec>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "deserialize_args_one_or_many")]
     pub args: Vec<ArgSpec>,
 }
 
@@ -28,7 +69,7 @@ pub struct SubcommandSpec {
     pub subcommands: Vec<SubcommandSpec>,
     #[serde(default)]
     pub options: Vec<OptionSpec>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "deserialize_args_one_or_many")]
     pub args: Vec<ArgSpec>,
 }
 
@@ -36,8 +77,35 @@ pub struct SubcommandSpec {
 pub struct OptionSpec {
     pub name: Vec<String>,
     pub description: Option<String>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "deserialize_option_args")]
     pub args: Option<ArgSpec>,
+}
+
+/// Deserialize template as either a single string or an array of strings.
+/// When an array, takes the most useful entry: "filepaths" > "folders" > first.
+fn deserialize_template<'de, D>(deserializer: D) -> std::result::Result<Option<String>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum OneOrMany {
+        One(String),
+        Many(Vec<String>),
+    }
+
+    match Option::<OneOrMany>::deserialize(deserializer)? {
+        Some(OneOrMany::One(s)) => Ok(Some(s)),
+        Some(OneOrMany::Many(vec)) => {
+            // Prefer "filepaths" over "folders" when both present
+            if vec.iter().any(|t| t == "filepaths") {
+                Ok(Some("filepaths".to_string()))
+            } else {
+                Ok(vec.into_iter().next())
+            }
+        }
+        None => Ok(None),
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -46,7 +114,11 @@ pub struct ArgSpec {
     pub description: Option<String>,
     #[serde(default)]
     pub generators: Vec<GeneratorSpec>,
+    #[serde(default, deserialize_with = "deserialize_template")]
     pub template: Option<String>,
+    /// Static suggestions — accepted from specs but not yet used at runtime.
+    #[serde(default)]
+    pub suggestions: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -138,6 +210,18 @@ impl SpecStore {
 
     pub fn get(&self, command: &str) -> Option<&CompletionSpec> {
         self.specs.get(command)
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (&str, &CompletionSpec)> {
+        self.specs.iter().map(|(k, v)| (k.as_str(), v))
+    }
+
+    pub fn len(&self) -> usize {
+        self.specs.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.specs.is_empty()
     }
 }
 

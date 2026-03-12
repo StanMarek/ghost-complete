@@ -1,0 +1,104 @@
+{
+  "name": "goto",
+  "options": [
+    {
+      "name": [
+        "--help",
+        "-h"
+      ],
+      "description": "Show help for goto"
+    },
+    {
+      "name": [
+        "--register",
+        "-r"
+      ],
+      "description": "Registers an alias",
+      "args": [
+        {
+          "name": "alias"
+        },
+        {
+          "name": "target",
+          "template": "folders"
+        }
+      ]
+    },
+    {
+      "name": [
+        "--unregister",
+        "-u"
+      ],
+      "description": "Unregister an alias",
+      "args": {
+        "name": "alias",
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "async(c,a,r)=>{let{stdout:n}=await a({command:\"cat\",args:[`${r.environmentVariables.HOME}/.config/goto`]}),t=new Map;for(let s of n.split(`\n`)){let o=s.split(\" \");t.set(s,{name:o[0],description:\"Goto \"+o[1],icon:\"\\u{1F516}\",priority:80})}return[...t.values()]}"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--push",
+        "-p"
+      ],
+      "description": "Pushes the current directory onto the stack, then performs goto"
+    },
+    {
+      "name": [
+        "--pop",
+        "-o"
+      ],
+      "description": "Pops the top directory from the stack, then changes to that directory"
+    },
+    {
+      "name": [
+        "--list",
+        "-l"
+      ],
+      "description": "Pops the top directory from the stack, then changes to that directory"
+    },
+    {
+      "name": [
+        "--expand",
+        "-x"
+      ],
+      "description": "Expands an alias",
+      "args": {
+        "name": "alias",
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "async(c,a,r)=>{let{stdout:n}=await a({command:\"cat\",args:[`${r.environmentVariables.HOME}/.config/goto`]}),t=new Map;for(let s of n.split(`\n`)){let o=s.split(\" \");t.set(s,{name:o[0],description:\"Goto \"+o[1],icon:\"\\u{1F516}\",priority:80})}return[...t.values()]}"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--cleanup",
+        "-c"
+      ],
+      "description": "Cleans up non existent directory aliases"
+    },
+    {
+      "name": [
+        "--version",
+        "-v"
+      ],
+      "description": "Displays the version of the goto script"
+    }
+  ],
+  "args": {
+    "name": "alias",
+    "generators": [
+      {
+        "requires_js": true,
+        "js_source": "async(c,a,r)=>{let{stdout:n}=await a({command:\"cat\",args:[`${r.environmentVariables.HOME}/.config/goto`]}),t=new Map;for(let s of n.split(`\n`)){let o=s.split(\" \");t.set(s,{name:o[0],description:\"Goto \"+o[1],icon:\"\\u{1F516}\",priority:80})}return[...t.values()]}"
+      }
+    ]
+  }
+}

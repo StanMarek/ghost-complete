@@ -1,0 +1,533 @@
+{
+  "name": "rancher",
+  "description": "The Rancher CLI (Command Line Interface) is a unified tool that you can use to interact with Rancher",
+  "subcommands": [
+    {
+      "name": "apps",
+      "description": "Operations with apps. Uses helm. Flags are prepended with 'helm' can also be accurately described by helm documentation",
+      "subcommands": [
+        {
+          "name": "ls",
+          "description": "List all apps in the current Rancher server"
+        },
+        {
+          "name": "delete",
+          "description": "Delete an app",
+          "args": {
+            "name": "APP_NAME/APP_ID",
+            "description": "The name of the app to delete"
+          }
+        },
+        {
+          "name": "install",
+          "description": "Install an app template",
+          "options": [
+            {
+              "name": [
+                "--answers",
+                "-a"
+              ],
+              "description": "Path to an answers file, the format of the file is a map with key:value. This supports JSON and YAML",
+              "args": {
+                "name": "answers-file-path",
+                "generators": [
+                  {
+                    "requires_js": true,
+                    "js_source": "(f,h,w)=>de(this,void 0,void 0,function*(){var p;let{isDangerous:b,currentWorkingDirectory:_,searchTerm:m}=w,S=(p=(0,v.getCurrentInsertedDirectory)(c??_,m,w))!==null&&p!==void 0?p:\"/\";try{let D=yield h({command:\"ls\",args:[\"-1ApL\"],cwd:S}),Y=H(D.stdout.split(`\n`),[\".DS_Store\"]),F=[];for(let R of Y)if(R){let L=R.endsWith(\"/\")?\"folders\":\"filepaths\";(L===\"filepaths\"&&u!==\"only\"||L===\"folders\"&&u!==\"never\")&&F.push({type:L===\"filepaths\"?\"file\":\"folder\",name:R,insertValue:R,isDangerous:b,context:{templateType:L}})}return O(g(F))}catch{return[]}})"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "--values",
+                "-v"
+              ],
+              "description": "Path to a helm values file",
+              "args": {
+                "name": "values-file-path",
+                "template": "filepaths"
+              }
+            },
+            {
+              "name": [
+                "--namespace",
+                "-n"
+              ],
+              "description": "Namespace to install the app into",
+              "args": {
+                "name": "namespace"
+              }
+            },
+            {
+              "name": [
+                "--set"
+              ],
+              "description": "Set answers for the template, can be used multiple times. Example: --set foo=bar",
+              "args": {
+                "name": "key=value"
+              }
+            },
+            {
+              "name": [
+                "--set-string"
+              ],
+              "description": "Set string answers for the template (Skips Helm's type conversion), can be used multiple times. Example: --set-string foo=bar",
+              "args": {
+                "name": "key=value"
+              }
+            },
+            {
+              "name": [
+                "--version"
+              ],
+              "description": "Version of the template to use",
+              "args": {
+                "name": "version"
+              }
+            },
+            {
+              "name": [
+                "--no-prompt"
+              ],
+              "description": "Suppress asking questions and use the default values when required answers are not provided"
+            },
+            {
+              "name": [
+                "--helm-timeout"
+              ],
+              "description": "Amount of time for helm to wait for k8s commands (default is 300 secs). Example: --helm-timeout 600 (default: 300)",
+              "args": {
+                "name": "seconds"
+              }
+            },
+            {
+              "name": [
+                "--helm-wait"
+              ],
+              "description": "Helm will wait for as long as timeout value, for installed resources to be ready (pods, PVCs, deployments, etc.). Example: --helm-wait"
+            }
+          ],
+          "args": [
+            {
+              "name": "TEMPLATE_NAME/TEMPLATE_PATH",
+              "description": "Install an app template in the current Rancher server"
+            },
+            {
+              "name": "APP_NAME",
+              "description": "The name of the app to install"
+            }
+          ]
+        },
+        {
+          "name": "rollback",
+          "description": "Rollback an app to a previous version",
+          "args": [
+            {
+              "name": "APP_NAME/APP_ID",
+              "description": "The name/id of the app to rollback"
+            },
+            {
+              "name": "REVISION_ID/REVISION_NAME",
+              "description": "The name/id of the revision to rollback"
+            }
+          ]
+        },
+        {
+          "name": "upgrade",
+          "description": "Upgrade an existing app to a newer version"
+        },
+        {
+          "name": "list-templates",
+          "description": "List templates available for installation"
+        },
+        {
+          "name": "show-tempate",
+          "description": "Show versions available to install for an app template"
+        },
+        {
+          "name": "show-app",
+          "description": "Show an app's available versions and revisions"
+        },
+        {
+          "name": "show-notes",
+          "description": "Show contents of apps notes.txt"
+        }
+      ],
+      "options": [
+        {
+          "name": [
+            "--format",
+            "-o"
+          ],
+          "description": "Output format: 'json', 'yaml' or custom format",
+          "args": {
+            "name": "format",
+            "suggestions": [
+              {
+                "name": "json"
+              },
+              {
+                "name": "yaml"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Only display IDs or suppress help text"
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Show help"
+        }
+      ]
+    },
+    {
+      "name": "catalog",
+      "description": "Operations with catalogs",
+      "subcommands": [
+        {
+          "name": "ls",
+          "description": "List all catalogs in the current Rancher server",
+          "options": [
+            {
+              "name": [
+                "--format",
+                "-o"
+              ],
+              "description": "Output format: 'json', 'yaml' or custom format",
+              "args": {
+                "name": "format",
+                "suggestions": [
+                  {
+                    "name": "json"
+                  },
+                  {
+                    "name": "yaml"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "--quiet",
+                "-q"
+              ],
+              "description": "Only display IDs or suppress help text"
+            },
+            {
+              "name": [
+                "--help",
+                "-h"
+              ],
+              "description": "Show help"
+            },
+            {
+              "name": [
+                "--verbose",
+                "-v"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "add",
+          "description": "Add a catalog",
+          "options": [
+            {
+              "name": [
+                "--branch"
+              ],
+              "description": "Branch from the url to use (default: 'master')",
+              "args": {
+                "name": "branch name"
+              }
+            },
+            {
+              "name": [
+                "--helm-version"
+              ],
+              "description": "Version of helm the app(s) in your catalog will use for deployment. Use 'v2' for helm 2 or 'v3' for helm 3 (default: 'v2')",
+              "args": {
+                "name": "version"
+              }
+            }
+          ],
+          "args": [
+            {
+              "name": "CATALOG_NAME",
+              "description": "The name of the catalog to add"
+            },
+            {
+              "name": "CATALOG_URL",
+              "description": "The URL of the catalog to add"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "clusters",
+      "description": "Operations on clusters"
+    },
+    {
+      "name": "context",
+      "description": "Operations for the context"
+    },
+    {
+      "name": "globaldns",
+      "description": "Operations on global DNS providers and entries"
+    },
+    {
+      "name": "inspect",
+      "description": "View details of resources"
+    },
+    {
+      "name": "kubectl",
+      "description": "Run kubectl commands"
+    },
+    {
+      "name": "login",
+      "description": "Login to a Rancher server",
+      "options": [
+        {
+          "name": [
+            "--token"
+          ],
+          "description": "API Bearer Token to authenticate Rancher CLI to your Rancher server",
+          "args": {
+            "name": "BEARER_TOKEN",
+            "description": "The bearer token you want to use"
+          }
+        }
+      ],
+      "args": {
+        "name": "SERVER_URL",
+        "description": "The server url you want to login to"
+      }
+    },
+    {
+      "name": "machines",
+      "description": "Operations on machines"
+    },
+    {
+      "name": "multiclusterapps",
+      "description": "Operations with multi-cluster apps"
+    },
+    {
+      "name": "namespaces",
+      "description": "Operations on namespaces"
+    },
+    {
+      "name": "nodes",
+      "description": "Operations on nodes"
+    },
+    {
+      "name": "projects",
+      "description": "Operations on projects"
+    },
+    {
+      "name": "ps",
+      "description": "Show workloads in a project"
+    },
+    {
+      "name": "server",
+      "description": "Operations for the server",
+      "subcommands": [
+        {
+          "name": "current",
+          "description": "Display the current server"
+        },
+        {
+          "name": "delete",
+          "description": "⚠️ Delete a server from the local config",
+          "args": {
+            "name": "SERVER_NAME",
+            "description": "The name of server you want to delete",
+            "generators": [
+              {
+                "script": [
+                  "rancher",
+                  "server",
+                  "ls"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty",
+                  {
+                    "type": "regex_extract",
+                    "pattern": "\\S+",
+                    "name": 1
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "ls",
+          "description": "List all servers"
+        },
+        {
+          "name": "switch",
+          "description": "Switch to a new server",
+          "args": {
+            "name": "SERVER_NAME",
+            "description": "The name of server you want to switch to",
+            "generators": [
+              {
+                "script": [
+                  "rancher",
+                  "server",
+                  "ls"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty",
+                  {
+                    "type": "regex_extract",
+                    "pattern": "\\S+",
+                    "name": 1
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "settings",
+      "description": "Show settings for the current server",
+      "subcommands": [
+        {
+          "name": "ls",
+          "description": "List settings"
+        },
+        {
+          "name": "get",
+          "description": "Print a setting",
+          "args": {
+            "name": "SETTING_NAME",
+            "description": "The name of setting you want to get"
+          }
+        },
+        {
+          "name": "set",
+          "description": "Set the value for a setting",
+          "options": [
+            {
+              "name": [
+                "--format",
+                "-o"
+              ],
+              "description": "Output format: 'json', 'yaml' or custom format",
+              "args": {
+                "name": "format",
+                "suggestions": [
+                  {
+                    "name": "json"
+                  },
+                  {
+                    "name": "yaml"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "--quiet",
+                "-q"
+              ],
+              "description": "Only display IDs or suppress help text"
+            },
+            {
+              "name": [
+                "--help",
+                "-h"
+              ],
+              "description": "Show help"
+            },
+            {
+              "name": [
+                "--default"
+              ],
+              "description": "Reset the setting back to it's default value. If the default value is (blank) it will be set to that"
+            }
+          ],
+          "args": [
+            {
+              "name": "SETTINGNAME",
+              "description": "The name of setting you want to set"
+            },
+            {
+              "name": "SETTING_VALUE",
+              "description": "The value of setting you want to set"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ssh",
+      "description": "SSH into a node"
+    },
+    {
+      "name": "up",
+      "description": "Apply compose config"
+    },
+    {
+      "name": "wait",
+      "description": "Wait for resources cluster, app, project, multiClusterApp"
+    },
+    {
+      "name": "token",
+      "description": "Authenticate and generate new kubeconfig token"
+    },
+    {
+      "name": "help",
+      "description": "Shows a list of commands or help for one command"
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "--debug"
+      ],
+      "description": "Debug logging"
+    },
+    {
+      "name": [
+        "--config",
+        "-c"
+      ],
+      "description": "Path to rancher config (default: `$home/.rancher`) [$RANCHER_CONFIG_DIR]",
+      "args": {
+        "name": "RANCHER_CONFIG_PATH",
+        "description": "The path to the rancher config",
+        "template": "folders"
+      }
+    },
+    {
+      "name": [
+        "--help",
+        "-h"
+      ],
+      "description": "Show help for rancher cli"
+    },
+    {
+      "name": [
+        "--version",
+        "-v"
+      ],
+      "description": "Print the version"
+    }
+  ]
+}

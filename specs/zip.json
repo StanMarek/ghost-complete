@@ -1,137 +1,50 @@
 {
   "name": "zip",
-  "description": "Package and compress files into a zip archive",
-  "args": [
-    {
-      "name": "zipfile",
-      "description": "Name of the zip archive",
-      "template": "filepaths"
-    },
-    {
-      "name": "sources",
-      "description": "Files and directories to add",
-      "template": "filepaths"
-    }
-  ],
+  "description": "Package and compress (archive) files into zip file",
   "options": [
     {
       "name": [
-        "-r",
-        "--recurse-paths"
+        "-r"
       ],
-      "description": "Recursively include directory contents"
+      "description": "Package and compress a directory and its contents, recursively"
     },
     {
       "name": [
-        "-j",
-        "--junk-paths"
-      ],
-      "description": "Store just the file name, discard directory structure"
+        "-e"
+      ]
     },
     {
       "name": [
-        "-u",
-        "--update"
+        "-s"
       ],
-      "description": "Update existing entries if newer on filesystem"
+      "args": {
+        "name": "split size"
+      }
     },
     {
       "name": [
-        "-d",
-        "--delete"
+        "-d"
       ],
-      "description": "Delete entries from the zip archive"
-    },
-    {
-      "name": [
-        "-m",
-        "--move"
-      ],
-      "description": "Move files into the archive (delete originals)"
-    },
-    {
-      "name": [
-        "-e",
-        "--encrypt"
-      ],
-      "description": "Encrypt the archive with a password"
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      }
     },
     {
       "name": [
         "-9"
       ],
-      "description": "Best compression"
+      "description": "Archive a directory and its contents with the highest level [9] of compression"
+    }
+  ],
+  "args": [
+    {
+      "name": "name",
+      "description": "Name of archive"
     },
     {
-      "name": [
-        "-0"
-      ],
-      "description": "Store only (no compression)"
-    },
-    {
-      "name": [
-        "-q",
-        "--quiet"
-      ],
-      "description": "Quiet mode, suppress informational messages"
-    },
-    {
-      "name": [
-        "-v",
-        "--verbose"
-      ],
-      "description": "Verbose mode, show detailed progress"
-    },
-    {
-      "name": [
-        "-x",
-        "--exclude"
-      ],
-      "description": "Exclude files matching the pattern",
-      "args": {
-        "name": "pattern"
-      }
-    },
-    {
-      "name": [
-        "-i",
-        "--include"
-      ],
-      "description": "Include only files matching the pattern",
-      "args": {
-        "name": "pattern"
-      }
-    },
-    {
-      "name": [
-        "-f",
-        "--freshen"
-      ],
-      "description": "Freshen existing archive entries only"
-    },
-    {
-      "name": [
-        "-P",
-        "--password"
-      ],
-      "description": "Use the specified password for encryption",
-      "args": {
-        "name": "password"
-      }
-    },
-    {
-      "name": [
-        "-T",
-        "--test"
-      ],
-      "description": "Test the integrity of the archive"
-    },
-    {
-      "name": [
-        "-y",
-        "--symlinks"
-      ],
-      "description": "Store symbolic links as links instead of files"
+      "name": "dir",
+      "template": "folders"
     }
   ]
 }

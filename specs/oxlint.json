@@ -1,0 +1,305 @@
+{
+  "name": "oxlint",
+  "description": "A high performance linter for the Oxidation Compiler",
+  "options": [
+    {
+      "name": [
+        "-c",
+        "--config"
+      ],
+      "description": "Path to Oxlint JSON configuration file",
+      "args": {
+        "name": "file",
+        "generators": [
+          {
+            "template": [
+              "filepaths",
+              "history"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--tsconfig"
+      ],
+      "description": "Path to tsconfig.json path for reading path aliases and project references for import plugin",
+      "args": {
+        "name": "file",
+        "generators": [
+          {
+            "script": [
+              "ls"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--ignore-path"
+      ],
+      "description": "Specify the file to use as your .eslintignore",
+      "args": {
+        "name": "file",
+        "template": "filepaths",
+        "suggestions": [
+          {
+            "name": ".eslintignore"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--ignore-pattern"
+      ],
+      "description": "Specify file patterns to ignore (in addition to those in .eslintignore)",
+      "args": {
+        "name": "pattern",
+        "description": "Glob pattern"
+      }
+    },
+    {
+      "name": [
+        "--no-ignore"
+      ],
+      "description": "Disable exluding of files from .eslintignore files, --ignore-path, and --ignore-pattern"
+    },
+    {
+      "name": [
+        "--symlinks"
+      ],
+      "description": "Follow symlinks when linting, which are ignored by default"
+    },
+    {
+      "name": [
+        "--jsdoc-plugin"
+      ],
+      "description": "Enable the JSDoc plugin"
+    },
+    {
+      "name": [
+        "--jest-plugin"
+      ],
+      "description": "Enable the Jest plugin"
+    },
+    {
+      "name": [
+        "--vitest-plugin"
+      ],
+      "description": "Enable the Vitest plugin"
+    },
+    {
+      "name": [
+        "--nextjs-plugin"
+      ],
+      "description": "Enable the Next.js plugin"
+    },
+    {
+      "name": [
+        "--react-perf-plugin"
+      ],
+      "description": "Enable the React Performance plugin"
+    },
+    {
+      "name": [
+        "--promise-plugin"
+      ],
+      "description": "Enable the Promise plugin"
+    },
+    {
+      "name": [
+        "--disable-react-plugin"
+      ],
+      "description": "Disable the React plugin, which is turned on by default"
+    },
+    {
+      "name": [
+        "--disable-unicorn-plugin"
+      ],
+      "description": "Disable the Unicorn plugin, which is turned on by default"
+    },
+    {
+      "name": [
+        "--disable-oxc-plugin"
+      ],
+      "description": "Disable the Oxc plugin, which is turned on by default"
+    },
+    {
+      "name": [
+        "--disable-typescript-plugin"
+      ],
+      "description": "Disable the TypeScript plugin, which is turned on by default"
+    },
+    {
+      "name": [
+        "--disable-import-plugin"
+      ],
+      "description": "Disable the Import plugin, which is turned on by default"
+    },
+    {
+      "name": [
+        "-D",
+        "--deny"
+      ],
+      "description": "Deny a lint rule or category (enable a lint as an error)",
+      "args": {
+        "name": "lint",
+        "description": "Lint rule or category",
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "()=>Promise.resolve(d)"
+          },
+          {
+            "requires_js": true,
+            "js_source": "async custom(i,e){let o;if(i.length&&i[0].startsWith(\"npx\")){let t=await e({command:\"npx\",args:[\"oxlint\",\"--rules\"]});if(t.status!==0)return[];o=t.stdout}else{if((await e({command:\"which\",args:[\"oxlint\"]})).status!==0)return[];o=(await e({command:\"oxlint\",args:[\"--rules\"]})).stdout}return o.split(`\n`).map(t=>t.trim()).filter(t=>t.startsWith(\"| \")).map(t=>t.split(\"|\").map(n=>n.trim())).filter(t=>{if(t.length<3)return!1;let n=t[1].charCodeAt(0);return n>=97&&n<=122}).map(t=>{let[,n,l,c]=t,p=c!=\"\";return{name:n,description:`${l} plugin`+(p?\" (enabled by default)\":\"\"),icon:m}})}"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "-W",
+        "--warn"
+      ],
+      "description": "Warn about a lint rule or category (enable a lint as a warning)",
+      "args": {
+        "name": "lint",
+        "description": "Lint rule or category",
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "()=>Promise.resolve(d)"
+          },
+          {
+            "requires_js": true,
+            "js_source": "async custom(i,e){let o;if(i.length&&i[0].startsWith(\"npx\")){let t=await e({command:\"npx\",args:[\"oxlint\",\"--rules\"]});if(t.status!==0)return[];o=t.stdout}else{if((await e({command:\"which\",args:[\"oxlint\"]})).status!==0)return[];o=(await e({command:\"oxlint\",args:[\"--rules\"]})).stdout}return o.split(`\n`).map(t=>t.trim()).filter(t=>t.startsWith(\"| \")).map(t=>t.split(\"|\").map(n=>n.trim())).filter(t=>{if(t.length<3)return!1;let n=t[1].charCodeAt(0);return n>=97&&n<=122}).map(t=>{let[,n,l,c]=t,p=c!=\"\";return{name:n,description:`${l} plugin`+(p?\" (enabled by default)\":\"\"),icon:m}})}"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "-A",
+        "--allow"
+      ],
+      "description": "Allow a lint rule or category (suppress a lint)",
+      "args": {
+        "name": "lint",
+        "description": "Lint rule or category",
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "()=>Promise.resolve(d)"
+          },
+          {
+            "requires_js": true,
+            "js_source": "async custom(i,e){let o;if(i.length&&i[0].startsWith(\"npx\")){let t=await e({command:\"npx\",args:[\"oxlint\",\"--rules\"]});if(t.status!==0)return[];o=t.stdout}else{if((await e({command:\"which\",args:[\"oxlint\"]})).status!==0)return[];o=(await e({command:\"oxlint\",args:[\"--rules\"]})).stdout}return o.split(`\n`).map(t=>t.trim()).filter(t=>t.startsWith(\"| \")).map(t=>t.split(\"|\").map(n=>n.trim())).filter(t=>{if(t.length<3)return!1;let n=t[1].charCodeAt(0);return n>=97&&n<=122}).map(t=>{let[,n,l,c]=t,p=c!=\"\";return{name:n,description:`${l} plugin`+(p?\" (enabled by default)\":\"\"),icon:m}})}"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--fix"
+      ],
+      "description": "Fix as many issues as possible. Only unfixed issues are reported in the output"
+    },
+    {
+      "name": [
+        "--silent"
+      ],
+      "description": "Do not display any diagnostics"
+    },
+    {
+      "name": [
+        "--deny-warnings"
+      ],
+      "description": "Exit with a non-zero code if there are any warnings"
+    },
+    {
+      "name": [
+        "--max-warnings"
+      ],
+      "description": "Exit with a non-zero code if there are more than `max` warnings",
+      "args": {
+        "name": "max",
+        "description": "The maximum number of warnings"
+      }
+    },
+    {
+      "name": [
+        "-f",
+        "--format"
+      ],
+      "description": "Use a specific output format",
+      "args": {
+        "name": "format",
+        "suggestions": [
+          {
+            "name": "default"
+          },
+          {
+            "name": "json"
+          },
+          {
+            "name": "unix"
+          },
+          {
+            "name": "checkstyle"
+          },
+          {
+            "name": "github",
+            "description": "GitHub Actions Annotations"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--threads"
+      ],
+      "description": "Number of threads to use. Set to 1 to use only 1 CPU core",
+      "args": {
+        "name": "int",
+        "description": "Number of threads (positive int)"
+      }
+    },
+    {
+      "name": [
+        "--rules"
+      ],
+      "description": "List all available rules"
+    },
+    {
+      "name": [
+        "-h",
+        "--help"
+      ],
+      "description": "Show help"
+    },
+    {
+      "name": [
+        "-V",
+        "--version"
+      ],
+      "description": "Show version"
+    }
+  ],
+  "args": {
+    "name": "file|dir|glob",
+    "description": "File(s) to lint",
+    "template": [
+      "filepaths",
+      "folders"
+    ],
+    "isVariadic": true
+  }
+}
