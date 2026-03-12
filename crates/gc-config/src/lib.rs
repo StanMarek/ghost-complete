@@ -6,14 +6,14 @@
 use std::path::PathBuf;
 
 use anyhow::{Context, Result};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 /// Returns `~/.config/ghost-complete`, ignoring macOS `~/Library/Application Support/`.
 pub fn config_dir() -> Option<PathBuf> {
     dirs::home_dir().map(|h| h.join(".config").join("ghost-complete"))
 }
 
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct GhostConfig {
     pub trigger: TriggerConfig,
@@ -24,7 +24,7 @@ pub struct GhostConfig {
     pub theme: ThemeConfig,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct KeybindingsConfig {
     pub accept: String,
@@ -48,7 +48,7 @@ impl Default for KeybindingsConfig {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct TriggerConfig {
     pub auto_chars: Vec<char>,
@@ -64,7 +64,7 @@ impl Default for TriggerConfig {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct PopupConfig {
     pub max_visible: usize,
@@ -82,7 +82,7 @@ impl Default for PopupConfig {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct SuggestConfig {
     pub max_results: usize,
@@ -102,7 +102,7 @@ impl Default for SuggestConfig {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ProvidersConfig {
     pub commands: bool,
@@ -124,7 +124,7 @@ impl Default for ProvidersConfig {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ThemeConfig {
     pub selected: String,
@@ -140,7 +140,7 @@ impl Default for ThemeConfig {
     }
 }
 
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct PathsConfig {
     pub spec_dirs: Vec<String>,
