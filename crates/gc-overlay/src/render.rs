@@ -185,6 +185,28 @@ pub fn render_popup(
         };
     }
 
+    let needs_scrollbar = suggestions.len() > effective_max;
+    let (thumb_pos, thumb_size) = if needs_scrollbar {
+        let total = suggestions.len();
+        let visible = layout.height as usize;
+        let ts = std::cmp::max(1, visible * visible / total).min(visible);
+        let tp = if total > visible {
+            (state.scroll_offset * (visible - ts) / (total - visible))
+                .min(visible.saturating_sub(ts))
+        } else {
+            0
+        };
+        (tp, ts)
+    } else {
+        (0, 0)
+    };
+    let item_width = if needs_scrollbar {
+        layout.width - 1
+    } else {
+        layout.width
+    };
+
+
     let end = (state.scroll_offset + layout.height as usize).min(suggestions.len());
     let visible = &suggestions[state.scroll_offset..end];
 
@@ -200,7 +222,32 @@ pub fn render_popup(
             buf.extend_from_slice(&theme.item_text_on);
         }
 
-        format_item(buf, suggestion, layout.width, is_selected, theme);
+        format_item(buf, suggestion, item_width, is_selected, theme);
+
+        if needs_scrollbar {
+            let row_idx = i;
+            if is_selected {
+                // Scrollbar inherits selected style (already active)
+                if row_idx >= thumb_pos && row_idx < thumb_pos + thumb_size {
+                    let _ = buf.write_all("█".as_bytes());
+                } else {
+                    let _ = buf.write_all("│".as_bytes());
+                }
+            } else if row_idx >= thumb_pos && row_idx < thumb_pos + thumb_size {
+                // Thumb — reset dim first if item_text was active
+                if !theme.item_text_on.is_empty() {
+                    ansi::reset(buf);
+                }
+                let _ = buf.write_all("█".as_bytes());
+            } else {
+                // Track — use scrollbar style
+                ansi::reset(buf);
+                if !theme.scrollbar_on.is_empty() {
+                    buf.extend_from_slice(&theme.scrollbar_on);
+                }
+                let _ = buf.write_all("│".as_bytes());
+            }
+        }
 
         ansi::reset(buf);
     }
@@ -1040,6 +1087,7 @@ mod tests {
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
             &theme,
+            0,
         );
         let output = String::from_utf8_lossy(&buf);
         // Count occurrences of dim (\x1b[2m) — should appear for non-selected rows
@@ -1075,6 +1123,7 @@ mod tests {
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
             &theme,
+            0,
         );
         let output = String::from_utf8_lossy(&buf);
         // Selected row should have reverse, not dim
@@ -1102,6 +1151,7 @@ mod tests {
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
             &theme,
+            0,
         );
         let output = String::from_utf8_lossy(&buf);
         // Should NOT contain dim sequence (item_text is empty)
@@ -1242,6 +1292,195 @@ mod tests {
         assert!(
             !output.contains("\x1b[1m"),
             "indices beyond truncation should not highlight: {output}"
+        );
+    }
+
+    #[test]
+    fn test_scrollbar_visible_when_items_exceed_max_visible() {
+        let mut buf = Vec::new();
+        let suggestions: Vec<Suggestion> = (0..15)
+            .map(|i| make(&format!("item{i}"), None, SuggestionKind::Command))
+            .collect();
+        let state = OverlayState::new();
+        render_popup(
+            &mut buf,
+            &suggestions,
+            &state,
+            5,
+            0,
+            24,
+            80,
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &PopupTheme::default(),
+            0,
+        );
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            output.contains('█') || output.contains('│'),
+            "scrollbar should be visible with 15 items: {output}"
+        );
+    }
+
+    #[test]
+    fn test_no_scrollbar_when_items_fit() {
+        let mut buf = Vec::new();
+        let suggestions = make_suggestions(); // 3 items
+        let state = OverlayState::new();
+        render_popup(
+            &mut buf,
+            &suggestions,
+            &state,
+            5,
+            0,
+            24,
+            80,
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &PopupTheme::default(),
+            0,
+        );
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            !output.contains('█') && !output.contains('│'),
+            "no scrollbar when items fit: {output}"
+        );
+    }
+
+    #[test]
+    fn test_scrollbar_thumb_at_top_when_scroll_zero() {
+        let mut buf = Vec::new();
+        let suggestions: Vec<Suggestion> = (0..20)
+            .map(|i| make(&format!("item{i}"), None, SuggestionKind::Command))
+            .collect();
+        let state = OverlayState::new(); // scroll_offset = 0
+        render_popup(
+            &mut buf,
+            &suggestions,
+            &state,
+            5,
+            0,
+            24,
+            80,
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &PopupTheme::default(),
+            0,
+        );
+        let output = String::from_utf8_lossy(&buf);
+        assert!(output.contains('█'), "should have thumb indicator");
+        assert!(output.contains('│'), "should have track indicator");
+    }
+
+    #[test]
+    fn test_scrollbar_thumb_at_bottom_when_scrolled_to_end() {
+        let mut buf = Vec::new();
+        let suggestions: Vec<Suggestion> = (0..20)
+            .map(|i| make(&format!("item{i}"), None, SuggestionKind::Command))
+            .collect();
+        let mut state = OverlayState::new();
+        state.scroll_offset = 10; // scrolled to bottom (20 - 10 max_visible)
+        state.selected = Some(19);
+        render_popup(
+            &mut buf,
+            &suggestions,
+            &state,
+            5,
+            0,
+            24,
+            80,
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &PopupTheme::default(),
+            0,
+        );
+        let output = String::from_utf8_lossy(&buf);
+        assert!(output.contains('█'), "should have thumb at bottom");
+    }
+
+    #[test]
+    fn test_scrollbar_item_text_width_reduced() {
+        let suggestions_few: Vec<Suggestion> = (0..3)
+            .map(|i| make(&format!("item{i}"), None, SuggestionKind::Command))
+            .collect();
+        let suggestions_many: Vec<Suggestion> = (0..15)
+            .map(|i| make(&format!("item{i}"), None, SuggestionKind::Command))
+            .collect();
+
+        let mut buf_no_scroll = Vec::new();
+        let state = OverlayState::new();
+        render_popup(
+            &mut buf_no_scroll,
+            &suggestions_few,
+            &state,
+            5,
+            0,
+            24,
+            80,
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &PopupTheme::default(),
+            0,
+        );
+
+        let mut buf_scroll = Vec::new();
+        render_popup(
+            &mut buf_scroll,
+            &suggestions_many,
+            &state,
+            5,
+            0,
+            24,
+            80,
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &PopupTheme::default(),
+            0,
+        );
+
+        let output = String::from_utf8_lossy(&buf_scroll);
+        assert!(
+            output.contains('│') || output.contains('█'),
+            "scrollbar popup should have scrollbar chars"
+        );
+    }
+
+    #[test]
+    fn test_scrollbar_selected_row_uses_selected_style() {
+        let mut buf = Vec::new();
+        let suggestions: Vec<Suggestion> = (0..15)
+            .map(|i| make(&format!("item{i}"), None, SuggestionKind::Command))
+            .collect();
+        let mut state = OverlayState::new();
+        state.selected = Some(0);
+        let theme = PopupTheme {
+            selected_on: b"\x1b[7m".to_vec(),
+            ..PopupTheme::default()
+        };
+        render_popup(
+            &mut buf,
+            &suggestions,
+            &state,
+            5,
+            0,
+            24,
+            80,
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &theme,
+            0,
+        );
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            output.contains("\x1b[7m"),
+            "selected row should have reverse video"
         );
     }
 }
