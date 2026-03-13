@@ -206,7 +206,6 @@ pub fn render_popup(
         layout.width
     };
 
-
     let end = (state.scroll_offset + layout.height as usize).min(suggestions.len());
     let visible = &suggestions[state.scroll_offset..end];
 
