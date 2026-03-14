@@ -141,6 +141,10 @@ pub struct GeneratorSpec {
     #[serde(default)]
     pub requires_js: bool,
     pub js_source: Option<String>,
+    /// Fig-compatible template field on generators (e.g., "filepaths", "folders",
+    /// or ["filepaths", "folders"]). Treated the same as `ArgSpec.template`.
+    #[serde(default, deserialize_with = "deserialize_template")]
+    pub template: Option<String>,
 }
 
 pub struct SpecStore {
@@ -315,6 +319,8 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
                     &arg_spec.generators,
                     &mut native_generators,
                     &mut script_generators,
+                    &mut wants_filepaths,
+                    &mut wants_folders_only,
                 );
                 match arg_spec.template.as_deref() {
                     Some("filepaths") => wants_filepaths = true,
@@ -331,6 +337,8 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
             &arg_spec.generators,
             &mut native_generators,
             &mut script_generators,
+            &mut wants_filepaths,
+            &mut wants_folders_only,
         );
         match arg_spec.template.as_deref() {
             Some("filepaths") => wants_filepaths = true,
@@ -353,6 +361,8 @@ fn collect_generators(
     generators: &[GeneratorSpec],
     native: &mut Vec<String>,
     script: &mut Vec<GeneratorSpec>,
+    wants_filepaths: &mut bool,
+    wants_folders_only: &mut bool,
 ) {
     for gen in generators {
         if gen.requires_js {
@@ -364,6 +374,13 @@ fn collect_generators(
         }
         if gen.script.is_some() || gen.script_template.is_some() {
             script.push(gen.clone());
+        }
+        // Fig specs put template on generators too (e.g., git checkout's
+        // `{"template": ["filepaths", "folders"]}`).
+        match gen.template.as_deref() {
+            Some("filepaths") => *wants_filepaths = true,
+            Some("folders") => *wants_folders_only = true,
+            _ => {}
         }
     }
 }

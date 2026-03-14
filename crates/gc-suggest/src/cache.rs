@@ -54,20 +54,23 @@ impl GeneratorCache {
     }
 
     /// Look up a cache entry. Returns `None` if the key is absent or expired.
+    /// Expired entries are removed on access to prevent unbounded memory growth.
     pub fn get(&self, key: &CacheKey) -> Option<Vec<Suggestion>> {
-        let entries = self.entries.lock().unwrap();
-        entries.get(key).and_then(|entry| {
-            if Instant::now() < entry.expires_at {
-                Some(entry.suggestions.clone())
-            } else {
+        let mut entries = self.entries.lock().unwrap_or_else(|e| e.into_inner());
+        match entries.get(key) {
+            Some(entry) if Instant::now() < entry.expires_at => Some(entry.suggestions.clone()),
+            Some(_) => {
+                // Expired — evict
+                entries.remove(key);
                 None
             }
-        })
+            None => None,
+        }
     }
 
     /// Insert (or replace) a cache entry with the given TTL.
     pub fn insert(&self, key: CacheKey, suggestions: Vec<Suggestion>, ttl: Duration) {
-        let mut entries = self.entries.lock().unwrap();
+        let mut entries = self.entries.lock().unwrap_or_else(|e| e.into_inner());
         entries.insert(
             key,
             CacheEntry {

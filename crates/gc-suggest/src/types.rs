@@ -11,6 +11,24 @@ pub enum SuggestionKind {
     History,
 }
 
+impl SuggestionKind {
+    /// Display priority for popup ordering (lower = shown first).
+    /// Branches/tags before subcommands/flags, flags before filesystem.
+    pub fn sort_priority(self) -> u8 {
+        match self {
+            Self::GitBranch => 0,
+            Self::GitTag => 1,
+            Self::GitRemote => 2,
+            Self::Subcommand => 3,
+            Self::Flag => 4,
+            Self::Command => 5,
+            Self::Directory => 6,
+            Self::FilePath => 7,
+            Self::History => 8,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SuggestionSource {
     Filesystem,

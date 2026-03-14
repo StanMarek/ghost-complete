@@ -103,6 +103,24 @@ impl SuggestionEngine {
         }
     }
 
+    /// Quick check: does the current command context have any script generators?
+    /// Used to avoid spawning async tasks when there's nothing to run.
+    pub fn has_script_generators(&self, ctx: &CommandContext) -> bool {
+        if !self.providers_specs || ctx.word_index == 0 || ctx.in_redirect {
+            return false;
+        }
+        let command = match &ctx.command {
+            Some(c) => c,
+            None => return false,
+        };
+        let spec = match self.spec_store.get(command) {
+            Some(s) => s,
+            None => return false,
+        };
+        let resolution = specs::resolve_spec(spec, ctx);
+        resolution.script_generators.iter().any(|g| !g.requires_js)
+    }
+
     /// Run script-based generators for the current command context.
     ///
     /// Resolves the spec, finds script generators, runs each (with caching and
@@ -237,13 +255,15 @@ impl SuggestionEngine {
         // Command position: commands + history
         if ctx.word_index == 0 {
             if self.providers_commands {
-                if let Ok(cmds) = self.commands_provider.provide(ctx, cwd) {
-                    candidates.extend(cmds);
+                match self.commands_provider.provide(ctx, cwd) {
+                    Ok(cmds) => candidates.extend(cmds),
+                    Err(e) => tracing::debug!("commands provider error: {e}"),
                 }
             }
             if self.providers_history {
-                if let Ok(hist) = self.history_provider.provide(ctx, cwd) {
-                    candidates.extend(hist);
+                match self.history_provider.provide(ctx, cwd) {
+                    Ok(hist) => candidates.extend(hist),
+                    Err(e) => tracing::debug!("history provider error: {e}"),
                 }
             }
             return Ok(fuzzy::rank(&ctx.current_word, candidates, self.max_results));
@@ -252,8 +272,9 @@ impl SuggestionEngine {
         // Redirect: always filesystem
         if ctx.in_redirect {
             if self.providers_filesystem {
-                if let Ok(fs) = self.filesystem_provider.provide(ctx, cwd) {
-                    candidates.extend(fs);
+                match self.filesystem_provider.provide(ctx, cwd) {
+                    Ok(fs) => candidates.extend(fs),
+                    Err(e) => tracing::debug!("filesystem provider error (redirect): {e}"),
                 }
             }
             return Ok(fuzzy::rank(&ctx.current_word, candidates, self.max_results));
@@ -285,8 +306,11 @@ impl SuggestionEngine {
                     if self.providers_git {
                         for gen_type in &resolution.native_generators {
                             if let Some(kind) = git::generator_to_query_kind(gen_type) {
-                                if let Ok(git_suggestions) = git::git_suggestions(cwd, kind) {
-                                    candidates.extend(git_suggestions);
+                                match git::git_suggestions(cwd, kind) {
+                                    Ok(suggestions) => candidates.extend(suggestions),
+                                    Err(e) => {
+                                        tracing::debug!("git provider error ({gen_type}): {e}")
+                                    }
                                 }
                             }
                         }
@@ -321,15 +345,19 @@ impl SuggestionEngine {
                                 });
                             }
                         }
-                        if let Ok(fs) = self.filesystem_provider.provide(ctx, cwd) {
-                            candidates.extend(
-                                fs.into_iter()
-                                    .filter(|s| s.kind == SuggestionKind::Directory),
-                            );
+                        match self.filesystem_provider.provide(ctx, cwd) {
+                            Ok(fs) => {
+                                candidates.extend(
+                                    fs.into_iter()
+                                        .filter(|s| s.kind == SuggestionKind::Directory),
+                                );
+                            }
+                            Err(e) => tracing::debug!("filesystem provider error (folders): {e}"),
                         }
                     } else if resolution.wants_filepaths && self.providers_filesystem {
-                        if let Ok(fs) = self.filesystem_provider.provide(ctx, cwd) {
-                            candidates.extend(fs);
+                        match self.filesystem_provider.provide(ctx, cwd) {
+                            Ok(fs) => candidates.extend(fs),
+                            Err(e) => tracing::debug!("filesystem provider error: {e}"),
                         }
                     }
 
@@ -341,8 +369,9 @@ impl SuggestionEngine {
         // Path-like current_word without a spec: filesystem
         if looks_like_path(&ctx.current_word) {
             if self.providers_filesystem {
-                if let Ok(fs) = self.filesystem_provider.provide(ctx, cwd) {
-                    candidates.extend(fs);
+                match self.filesystem_provider.provide(ctx, cwd) {
+                    Ok(fs) => candidates.extend(fs),
+                    Err(e) => tracing::debug!("filesystem provider error (path): {e}"),
                 }
             }
             return Ok(fuzzy::rank(&ctx.current_word, candidates, self.max_results));
@@ -350,8 +379,9 @@ impl SuggestionEngine {
 
         // No spec, no path — fallback to filesystem
         if self.providers_filesystem {
-            if let Ok(fs) = self.filesystem_provider.provide(ctx, cwd) {
-                candidates.extend(fs);
+            match self.filesystem_provider.provide(ctx, cwd) {
+                Ok(fs) => candidates.extend(fs),
+                Err(e) => tracing::debug!("filesystem provider error (fallback): {e}"),
             }
         }
         Ok(fuzzy::rank(&ctx.current_word, candidates, self.max_results))
@@ -783,11 +813,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_suggest_dynamic_caches_results() {
+        // Use date +%s%N to produce a non-deterministic value. If the cache
+        // works, the second call returns the SAME stale result.
         let spec_json = r#"{
             "name": "test-cached",
             "args": [{
                 "generators": [{
-                    "script": ["printf", "cached_result"],
+                    "script": ["date", "+%s%N"],
                     "transforms": ["split_lines", "filter_empty"],
                     "cache": {"ttl_seconds": 300}
                 }]
@@ -804,14 +836,24 @@ mod tests {
             .suggest_dynamic(&ctx, Path::new("/tmp"), 5000)
             .await
             .unwrap();
-        assert!(results.iter().any(|s| s.text == "cached_result"));
+        assert!(
+            !results.is_empty(),
+            "expected at least one result from date"
+        );
+        let first_value = results[0].text.clone();
 
-        // Second call should hit cache (even though script would still work)
+        // Brief sleep so date would produce a different value if re-executed
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+
+        // Second call should hit cache — returns the SAME value, proving cache hit
         let results2 = engine
             .suggest_dynamic(&ctx, Path::new("/tmp"), 5000)
             .await
             .unwrap();
-        assert!(results2.iter().any(|s| s.text == "cached_result"));
+        assert_eq!(
+            results2[0].text, first_value,
+            "second call should return cached (stale) value"
+        );
     }
 
     #[tokio::test]
@@ -837,6 +879,7 @@ mod tests {
             cache: None,
             requires_js: false,
             js_source: None,
+            template: None,
         };
         let ctx = make_ctx(Some("test"), vec![], "", 1);
         let argv = super::resolve_script_argv(&gen, &ctx);
@@ -853,6 +896,7 @@ mod tests {
             cache: None,
             requires_js: false,
             js_source: None,
+            template: None,
         };
         let ctx = make_ctx(Some("test"), vec!["arg1"], "", 2);
         let argv = super::resolve_script_argv(&gen, &ctx);

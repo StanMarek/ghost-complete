@@ -377,7 +377,10 @@ pub fn apply_regex_extract(
 ) -> Vec<Suggestion> {
     let re = match Regex::new(pattern) {
         Ok(re) => re,
-        Err(_) => return Vec::new(),
+        Err(e) => {
+            tracing::warn!("invalid regex in regex_extract: {:?}: {e}", pattern);
+            return Vec::new();
+        }
     };
 
     lines

@@ -35,6 +35,19 @@ impl Default for PopupTheme {
 /// (where N is a 256-color index).
 ///
 /// Example: `"bold fg:196"` -> `b"\x1b[1;38;5;196m"`
+fn parse_hex_rgb(hex: &str, token: &str) -> Result<(u8, u8, u8)> {
+    if hex.len() != 6 {
+        bail!("invalid hex color (need 6 chars): {}", token);
+    }
+    let r = u8::from_str_radix(&hex[0..2], 16)
+        .map_err(|_| anyhow::anyhow!("invalid hex color: {}", token))?;
+    let g = u8::from_str_radix(&hex[2..4], 16)
+        .map_err(|_| anyhow::anyhow!("invalid hex color: {}", token))?;
+    let b = u8::from_str_radix(&hex[4..6], 16)
+        .map_err(|_| anyhow::anyhow!("invalid hex color: {}", token))?;
+    Ok((r, g, b))
+}
+
 pub fn parse_style(style_str: &str) -> Result<Vec<u8>> {
     let mut params: Vec<String> = Vec::new();
 
@@ -45,16 +58,7 @@ pub fn parse_style(style_str: &str) -> Result<Vec<u8>> {
             "bold" => params.push("1".to_string()),
             "underline" => params.push("4".to_string()),
             _ if token.starts_with("fg:#") => {
-                let hex = &token[4..];
-                if hex.len() != 6 {
-                    bail!("invalid hex color (need 6 chars): {}", token);
-                }
-                let r = u8::from_str_radix(&hex[0..2], 16)
-                    .map_err(|_| anyhow::anyhow!("invalid hex color: {}", token))?;
-                let g = u8::from_str_radix(&hex[2..4], 16)
-                    .map_err(|_| anyhow::anyhow!("invalid hex color: {}", token))?;
-                let b = u8::from_str_radix(&hex[4..6], 16)
-                    .map_err(|_| anyhow::anyhow!("invalid hex color: {}", token))?;
+                let (r, g, b) = parse_hex_rgb(&token[4..], token)?;
                 params.push(format!("38;2;{r};{g};{b}"));
             }
             _ if token.starts_with("fg:") => {
@@ -64,16 +68,7 @@ pub fn parse_style(style_str: &str) -> Result<Vec<u8>> {
                 params.push(format!("38;5;{n}"));
             }
             _ if token.starts_with("bg:#") => {
-                let hex = &token[4..];
-                if hex.len() != 6 {
-                    bail!("invalid hex color (need 6 chars): {}", token);
-                }
-                let r = u8::from_str_radix(&hex[0..2], 16)
-                    .map_err(|_| anyhow::anyhow!("invalid hex color: {}", token))?;
-                let g = u8::from_str_radix(&hex[2..4], 16)
-                    .map_err(|_| anyhow::anyhow!("invalid hex color: {}", token))?;
-                let b = u8::from_str_radix(&hex[4..6], 16)
-                    .map_err(|_| anyhow::anyhow!("invalid hex color: {}", token))?;
+                let (r, g, b) = parse_hex_rgb(&token[4..], token)?;
                 params.push(format!("48;2;{r};{g};{b}"));
             }
             _ if token.starts_with("bg:") => {

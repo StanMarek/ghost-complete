@@ -7,6 +7,13 @@ pub const DEFAULT_MAX_RESULTS: usize = 50;
 
 pub fn rank(query: &str, mut suggestions: Vec<Suggestion>, max_results: usize) -> Vec<Suggestion> {
     if query.is_empty() {
+        // Sort by kind priority (branches before flags before files, etc.)
+        suggestions.sort_by(|a, b| {
+            a.kind
+                .sort_priority()
+                .cmp(&b.kind.sort_priority())
+                .then_with(|| a.text.cmp(&b.text))
+        });
         suggestions.truncate(max_results);
         return suggestions;
     }
@@ -41,6 +48,7 @@ pub fn rank(query: &str, mut suggestions: Vec<Suggestion>, max_results: usize) -
         a_hist
             .cmp(&b_hist)
             .then_with(|| b.score.cmp(&a.score))
+            .then_with(|| a.kind.sort_priority().cmp(&b.kind.sort_priority()))
             .then_with(|| a.text.cmp(&b.text))
     });
     suggestions.truncate(max_results);

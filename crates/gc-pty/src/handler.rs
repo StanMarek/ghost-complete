@@ -405,28 +405,35 @@ impl InputHandler {
             }
         }
 
-        // Spawn async task for script-based generators.
-        // Results arrive later and get merged by try_merge_dynamic().
-        let (tx, rx) = mpsc::channel::<Vec<Suggestion>>(1);
-        self.dynamic_rx = Some(rx);
-        let engine = Arc::clone(&self.engine);
-        let ctx_clone = ctx.clone();
-        let cwd_clone = cwd.clone();
-        let timeout = self.generator_timeout_ms;
-        tokio::spawn(async move {
-            match engine
-                .suggest_dynamic(&ctx_clone, &cwd_clone, timeout)
-                .await
-            {
-                Ok(results) if !results.is_empty() => {
-                    let _ = tx.send(results).await;
+        // Spawn async task for script-based generators only if the command
+        // actually has any. Avoids wasted channel + task spawn on every trigger.
+        // NOTE: dynamic results are blocked on PTY read — try_merge_dynamic()
+        // only runs when Task B reads output. If the shell goes idle after the
+        // trigger, results won't render until the next keystroke. This is a
+        // known architectural limitation; a dedicated polling task or
+        // tokio::select! combining PTY read with the dynamic channel is needed.
+        if self.engine.has_script_generators(&ctx) {
+            let (tx, rx) = mpsc::channel::<Vec<Suggestion>>(1);
+            self.dynamic_rx = Some(rx);
+            let engine = Arc::clone(&self.engine);
+            let ctx_clone = ctx.clone();
+            let cwd_clone = cwd.clone();
+            let timeout = self.generator_timeout_ms;
+            tokio::spawn(async move {
+                match engine
+                    .suggest_dynamic(&ctx_clone, &cwd_clone, timeout)
+                    .await
+                {
+                    Ok(results) if !results.is_empty() => {
+                        let _ = tx.send(results).await;
+                    }
+                    Ok(_) => {} // empty results, nothing to send
+                    Err(e) => {
+                        tracing::debug!("dynamic suggestions failed: {e}");
+                    }
                 }
-                Ok(_) => {} // empty results, nothing to send
-                Err(e) => {
-                    tracing::debug!("dynamic suggestions failed: {e}");
-                }
-            }
-        });
+            });
+        }
     }
 
     /// Check for pending dynamic (script generator) results and merge them
