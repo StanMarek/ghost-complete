@@ -84,6 +84,12 @@ Specs are loaded from `~/.config/ghost-complete/specs/`. The file name should ma
 
 ### GeneratorSpec
 
+Generators produce dynamic suggestion candidates. Ghost Complete supports several generator types, described below.
+
+#### Rust-native generators
+
+Built-in generators that run natively without spawning external processes:
+
 ```json
 {
   "type": "git_branches"
@@ -94,7 +100,7 @@ Specs are loaded from `~/.config/ghost-complete/specs/`. The file name should ma
 |-------|------|----------|-------------|
 | `type` | string | Yes | Generator type identifier |
 
-#### Available Generator Types
+**Available native generator types:**
 
 | Type | Produces |
 |------|----------|
@@ -103,12 +109,107 @@ Specs are loaded from `~/.config/ghost-complete/specs/`. The file name should ma
 | `git_tags` | Git tag names |
 | `git_files` | Tracked files in the git repo |
 
+#### Script generators
+
+Execute an external command and turn its stdout into suggestions. The command is executed directly (no shell expansion via `sh -c`).
+
+```json
+{
+  "script": ["brew", "list", "-1"],
+  "transforms": ["split_lines", "filter_empty", "trim"],
+  "cache": { "ttl_seconds": 300, "cache_by_directory": false }
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `script` | string[] | Yes | Command and arguments, executed without shell expansion |
+| `transforms` | string[] | No | Transform pipeline applied to stdout (see [Transforms](#transforms)) |
+| `cache` | CacheConfig | No | TTL caching configuration (see [Cache](#cache)) |
+
+#### Script template generators
+
+Like script generators, but with token interpolation. `{current_token}` is replaced with the user's current input before execution.
+
+```json
+{
+  "script_template": ["docker", "inspect", "{current_token}"],
+  "transforms": ["split_lines"]
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `script_template` | string[] | Yes | Command with `{current_token}` placeholders |
+| `transforms` | string[] | No | Transform pipeline applied to stdout |
+| `cache` | CacheConfig | No | TTL caching configuration |
+
+#### Deferred JS generators
+
+Some Fig specs contain generators that require JavaScript execution. Ghost Complete does not implement a JS runtime. When a generator is flagged as requiring JS, the static portions of the spec (subcommands, options, simple args) still work normally — only the JS-dependent generator is skipped.
+
+```json
+{
+  "requires_js": true,
+  "script": ["fallback", "command"]
+}
+```
+
+If a `script` field is present alongside `requires_js`, the script is executed as a regular script generator (without JS evaluation).
+
 #### Available Templates
 
 | Template | Behavior |
 |----------|----------|
 | `filepaths` | Complete with files and directories |
 | `folders` | Complete with directories only |
+
+### Transforms
+
+Transforms process the raw stdout of a script generator into individual suggestion strings. They are specified as an ordered array in the `transforms` field and are applied left-to-right.
+
+**Simple transforms:**
+
+| Transform | Effect |
+|-----------|--------|
+| `split_lines` | Split stdout on newlines into individual suggestions |
+| `filter_empty` | Remove empty strings |
+| `trim` | Trim whitespace from each suggestion |
+| `skip_first` | Skip the first line (e.g., header rows) |
+| `dedup` | Remove duplicate suggestions |
+
+**Parameterized transforms:**
+
+| Transform | Effect |
+|-----------|--------|
+| `split_on(delim)` | Split on a custom delimiter instead of newlines |
+| `skip(n)` | Skip the first N lines |
+| `take(n)` | Keep only the first N lines |
+| `regex_extract(pattern, name_group, desc_group?)` | Extract suggestion name (and optional description) via regex capture groups |
+| `json_extract(name_field, desc_field?)` | Parse each line as JSON and extract fields |
+| `column_extract(column, desc_column?)` | Extract whitespace-separated columns by position (0-indexed) |
+| `error_guard(starts_with\|contains)` | Return empty results if stdout matches the given error pattern |
+
+**Ordering rules:** Transforms are validated at spec load time. A splitting transform (`split_lines` or `split_on`) must appear before any per-line transforms like `trim`, `filter_empty`, or `dedup`. Placing a per-line transform before a splitter is a validation error.
+
+### Cache
+
+Script generators can cache their results to avoid re-executing slow commands on every keystroke. Cache is configured per-generator via the `cache` field.
+
+```json
+{
+  "script": ["kubectl", "get", "pods", "-o", "name"],
+  "transforms": ["split_lines", "trim"],
+  "cache": { "ttl_seconds": 60, "cache_by_directory": true }
+}
+```
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `ttl_seconds` | integer | none | How long (in seconds) to cache results before re-executing |
+| `cache_by_directory` | boolean | `false` | Key the cache by the current working directory. Enable this for commands whose output depends on CWD (e.g., `kubectl` with context, `make` targets) |
+
+When `cache_by_directory` is `false`, the cache key is the generator's script command alone. When `true`, the CWD is appended to the key so that switching directories produces fresh results.
 
 ## Examples
 
@@ -198,3 +299,4 @@ When you type a command, Ghost Complete:
 3. At the deepest matched position, collects available subcommands, options, and generators
 4. If the preceding word was a flag that takes an argument, uses that flag's `args` spec for templates/generators
 5. Feeds all candidates into the fuzzy ranker with your current input as the query
+6. Script generators execute asynchronously — the popup appears immediately with any static candidates (subcommands, options, templates) and script results merge into the popup progressively as they complete

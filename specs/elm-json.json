@@ -1,0 +1,289 @@
+{
+  "name": "elm-json",
+  "description": "Deal with your elm.json",
+  "subcommands": [
+    {
+      "name": "help",
+      "description": "Prints help information or the help of the given subcommand(s)",
+      "args": {
+        "name": "subcommand",
+        "template": "help"
+      }
+    },
+    {
+      "name": "install",
+      "description": "Install a package",
+      "options": [
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Prints help information"
+        },
+        {
+          "name": [
+            "--test"
+          ],
+          "description": "Install as a test-dependency"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Prints version information"
+        },
+        {
+          "name": [
+            "--yes"
+          ],
+          "description": "Answer \"yes\" to all questions"
+        }
+      ],
+      "args": [
+        {
+          "name": "PACKAGE",
+          "description": "Package to install, e.g. elm/core or elm/core@1.0.2 or elm/core@1",
+          "generators": [
+            {
+              "script": [
+                "curl",
+                "-sH",
+                "accept-encoding: gzip",
+                "--compressed",
+                "https://package.elm-lang.org/search.json"
+              ],
+              "requires_js": true,
+              "js_source": "e=>JSON.parse(e).map(n=>({name:n.name,description:n.summary}))",
+              "cache": {
+                "ttl_seconds": 259200
+              }
+            }
+          ]
+        },
+        {
+          "name": "-- INPUT",
+          "description": "The elm.json file to upgrade [default: elm.json]",
+          "isOptional": true,
+          "generators": [
+            {
+              "requires_js": true,
+              "js_source": "(p,m,b)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:_,currentWorkingDirectory:O,searchTerm:h}=b,j=(f=(0,v.getCurrentInsertedDirectory)(c??O,h,b))!==null&&f!==void 0?f:\"/\";try{let K=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:j}),Z=R(K.stdout.split(`\n`),[\".DS_Store\"]),k=[];for(let V of Z)if(V){let F=V.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&u!==\"only\"||F===\"folders\"&&u!==\"never\")&&k.push({type:F===\"filepaths\"?\"file\":\"folder\",name:V,insertValue:V,isDangerous:_,context:{templateType:F}})}return w(g(k))}catch{return[]}})"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "new",
+      "description": "Create a new elm.json file",
+      "options": [
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Prints help information"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Prints version information"
+        }
+      ]
+    },
+    {
+      "name": "tree",
+      "description": "List entire dependency graph as a tree",
+      "options": [
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Prints help information"
+        },
+        {
+          "name": [
+            "--test"
+          ],
+          "description": "Promote test-dependencies to top-level dependencies"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Prints version information"
+        }
+      ],
+      "args": [
+        {
+          "name": "PACKAGE",
+          "description": "Limit output to show path to some (indirect) dependency",
+          "generators": [
+            {
+              "script": [
+                "curl",
+                "-sH",
+                "accept-encoding: gzip",
+                "--compressed",
+                "https://package.elm-lang.org/search.json"
+              ],
+              "requires_js": true,
+              "js_source": "e=>JSON.parse(e).map(n=>({name:n.name,description:n.summary}))",
+              "cache": {
+                "ttl_seconds": 259200
+              }
+            }
+          ]
+        },
+        {
+          "name": "-- INPUT",
+          "description": "The elm.json file to solve [default: elm.json]",
+          "isOptional": true,
+          "generators": [
+            {
+              "requires_js": true,
+              "js_source": "(p,m,b)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:_,currentWorkingDirectory:O,searchTerm:h}=b,j=(f=(0,v.getCurrentInsertedDirectory)(c??O,h,b))!==null&&f!==void 0?f:\"/\";try{let K=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:j}),Z=R(K.stdout.split(`\n`),[\".DS_Store\"]),k=[];for(let V of Z)if(V){let F=V.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&u!==\"only\"||F===\"folders\"&&u!==\"never\")&&k.push({type:F===\"filepaths\"?\"file\":\"folder\",name:V,insertValue:V,isDangerous:_,context:{templateType:F}})}return w(g(k))}catch{return[]}})"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "uninstall",
+      "description": "Uninstall a package",
+      "options": [
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Prints help information"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Prints version information"
+        },
+        {
+          "name": [
+            "--yes"
+          ],
+          "description": "Answer \"yes\" to all questions"
+        }
+      ],
+      "args": [
+        {
+          "name": "PACKAGE",
+          "description": "Package to uninstall, e.g. elm/html",
+          "generators": [
+            {
+              "script": [
+                "curl",
+                "-sH",
+                "accept-encoding: gzip",
+                "--compressed",
+                "https://package.elm-lang.org/search.json"
+              ],
+              "requires_js": true,
+              "js_source": "e=>JSON.parse(e).map(n=>({name:n.name,description:n.summary}))",
+              "cache": {
+                "ttl_seconds": 259200
+              }
+            }
+          ]
+        },
+        {
+          "name": "-- INPUT",
+          "description": "The elm.json file to upgrade [default: elm.json]",
+          "isOptional": true,
+          "generators": [
+            {
+              "requires_js": true,
+              "js_source": "(p,m,b)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:_,currentWorkingDirectory:O,searchTerm:h}=b,j=(f=(0,v.getCurrentInsertedDirectory)(c??O,h,b))!==null&&f!==void 0?f:\"/\";try{let K=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:j}),Z=R(K.stdout.split(`\n`),[\".DS_Store\"]),k=[];for(let V of Z)if(V){let F=V.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&u!==\"only\"||F===\"folders\"&&u!==\"never\")&&k.push({type:F===\"filepaths\"?\"file\":\"folder\",name:V,insertValue:V,isDangerous:_,context:{templateType:F}})}return w(g(k))}catch{return[]}})"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "upgrade",
+      "description": "Bring your dependencies up to date",
+      "options": [
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Prints help information"
+        },
+        {
+          "name": [
+            "--unsafe"
+          ],
+          "description": "Allow major versions bumps"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Prints version information"
+        },
+        {
+          "name": [
+            "--yes"
+          ],
+          "description": "Answer \"yes\" to all questions"
+        }
+      ],
+      "args": {
+        "name": "INPUT",
+        "description": "The elm.json file to upgrade [default: elm.json]",
+        "isOptional": true,
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "(p,m,b)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:_,currentWorkingDirectory:O,searchTerm:h}=b,j=(f=(0,v.getCurrentInsertedDirectory)(c??O,h,b))!==null&&f!==void 0?f:\"/\";try{let K=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:j}),Z=R(K.stdout.split(`\n`),[\".DS_Store\"]),k=[];for(let V of Z)if(V){let F=V.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&u!==\"only\"||F===\"folders\"&&u!==\"never\")&&k.push({type:F===\"filepaths\"?\"file\":\"folder\",name:V,insertValue:V,isDangerous:_,context:{templateType:F}})}return w(g(k))}catch{return[]}})"
+          }
+        ]
+      }
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "--help",
+        "-h"
+      ],
+      "description": "Prints help information"
+    },
+    {
+      "name": [
+        "--offline"
+      ],
+      "description": "Enable offline mode, which means no HTTP traffic will happen"
+    },
+    {
+      "name": [
+        "--version",
+        "-V"
+      ],
+      "description": "Prints version information"
+    },
+    {
+      "name": [
+        "--verbose",
+        "-v"
+      ],
+      "description": "Sets the level of verbosity"
+    }
+  ]
+}

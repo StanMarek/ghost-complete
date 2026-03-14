@@ -1,0 +1,113 @@
+{
+  "name": "sidekiq",
+  "description": "Background job framework for Ruby",
+  "options": [
+    {
+      "name": [
+        "--concurrency",
+        "-c"
+      ],
+      "description": "Processor threads to use",
+      "args": {
+        "name": "INT"
+      }
+    },
+    {
+      "name": [
+        "--environment",
+        "-e"
+      ],
+      "description": "Application environment",
+      "args": {
+        "name": "ENV"
+      }
+    },
+    {
+      "name": [
+        "--tag",
+        "-g"
+      ],
+      "description": "Process tag for procline",
+      "args": {
+        "name": "TAG"
+      }
+    },
+    {
+      "name": [
+        "--queue",
+        "-q"
+      ],
+      "description": "Queues to process with optional weights",
+      "args": [
+        {
+          "name": "QUEUE"
+        },
+        {
+          "name": "WEIGHT",
+          "isOptional": true
+        }
+      ]
+    },
+    {
+      "name": [
+        "--require",
+        "-r"
+      ],
+      "description": "Location of Rails application with jobs or file to require",
+      "args": {
+        "name": "PATH|DIR",
+        "template": [
+          "folders",
+          "filepaths"
+        ]
+      }
+    },
+    {
+      "name": [
+        "--timeout",
+        "-t"
+      ],
+      "description": "Shutdown timeout",
+      "args": {
+        "name": "NUM"
+      }
+    },
+    {
+      "name": [
+        "--verbose",
+        "-v"
+      ],
+      "description": "Print more verbose output"
+    },
+    {
+      "name": [
+        "--config",
+        "-C"
+      ],
+      "description": "Path to YAML config file",
+      "args": {
+        "name": "PATH",
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "(h,v,O)=>ae(this,void 0,void 0,function*(){var d;let{isDangerous:_,currentWorkingDirectory:b,searchTerm:p}=O,w=(d=(0,y.getCurrentInsertedDirectory)(a??b,p,O))!==null&&d!==void 0?d:\"/\";try{let D=yield v({command:\"ls\",args:[\"-1ApL\"],cwd:w}),X=k(D.stdout.split(`\n`),[\".DS_Store\"]),N=[];for(let V of X)if(V){let F=V.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&c!==\"only\"||F===\"folders\"&&c!==\"never\")&&N.push({type:F===\"filepaths\"?\"file\":\"folder\",name:V,insertValue:V,isDangerous:_,context:{templateType:F}})}return S(g(N))}catch{return[]}})"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--help",
+        "-h"
+      ],
+      "description": "Show help for sidekiq run"
+    },
+    {
+      "name": [
+        "--version",
+        "-V"
+      ],
+      "description": "Print version and exit"
+    }
+  ]
+}

@@ -122,10 +122,9 @@ fn list_entries(dir: &Path, prefix: &str, current_word: &str) -> Result<Vec<Sugg
 
         suggestions.push(Suggestion {
             text: display,
-            description: None,
             kind,
             source: SuggestionSource::Filesystem,
-            score: 0,
+            ..Default::default()
         });
     }
 

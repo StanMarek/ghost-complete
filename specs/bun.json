@@ -1,0 +1,2346 @@
+{
+  "name": "bun",
+  "description": "A fast bundler, transpiler, JavaScript Runtime and package manager for web software",
+  "subcommands": [
+    {
+      "name": "c",
+      "description": "Start a new project from a template",
+      "options": [
+        {
+          "name": [
+            "--force"
+          ],
+          "description": "Overwrite existing files"
+        },
+        {
+          "name": [
+            "--no-install"
+          ],
+          "description": "Don't install node_modules"
+        },
+        {
+          "name": [
+            "--no-git"
+          ],
+          "description": "Don't create a git repository"
+        },
+        {
+          "name": [
+            "--verbose"
+          ],
+          "description": "Too many logs"
+        },
+        {
+          "name": [
+            "--no-package-json"
+          ],
+          "description": "Disable package.json transforms"
+        },
+        {
+          "name": [
+            "--open"
+          ],
+          "description": "On finish, start bun and open in browser"
+        }
+      ],
+      "args": [
+        {
+          "name": "template",
+          "description": "Package from @bun-examples, GitHub repo, or local file",
+          "suggestions": [
+            {
+              "name": "react"
+            },
+            {
+              "name": "next"
+            },
+            {
+              "name": "hono"
+            },
+            {
+              "name": "discord-interactions"
+            },
+            {
+              "name": "blank"
+            },
+            {
+              "name": "bun-bakery"
+            },
+            {
+              "name": "react-native-app"
+            },
+            {
+              "name": "completion-spec"
+            },
+            {
+              "name": "next-app"
+            },
+            {
+              "name": "t3-app"
+            },
+            {
+              "name": "discord-bot"
+            },
+            {
+              "name": "video"
+            },
+            {
+              "name": "remix"
+            }
+          ],
+          "generators": [
+            {
+              "template": "folders"
+            },
+            {
+              "requires_js": true,
+              "js_source": "async(e,n,t)=>{let{stdout:a}=await n({command:\"ls\",args:[\"-1\",`${t.environmentVariables.HOME}/.bun-create`]});return a.split(`\n`).map(i=>({name:i}))}"
+            },
+            {
+              "script": [
+                "command",
+                "ls",
+                "-1",
+                ".bun-create"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty"
+              ]
+            },
+            {
+              "requires_js": true,
+              "js_source": "function(e){return e[e.length-1]===\"\"?void 0:[\"curl\",\"-s\",\"-H\",\"Accept: application/json\",`https://api.npms.io/v2/search?q=${\"create-\"+e[e.length-1]}&size=20`]}"
+            }
+          ]
+        },
+        {
+          "name": "name",
+          "template": "folders"
+        }
+      ]
+    },
+    {
+      "name": "run",
+      "description": "Run a package.json script or executable",
+      "args": {
+        "name": "script",
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "(g,w,x)=>Fe(this,void 0,void 0,function*(){var f;let{isDangerous:S,currentWorkingDirectory:N,searchTerm:k}=x,O=(f=(0,M.getCurrentInsertedDirectory)(c??N,k,x))!==null&&f!==void 0?f:\"/\";try{let ce=yield w({command:\"ls\",args:[\"-1ApL\"],cwd:O}),xe=me(ce.stdout.split(`\n`),[\".DS_Store\"]),pe=[];for(let W of xe)if(W){let Z=W.endsWith(\"/\")?\"folders\":\"filepaths\";(Z===\"filepaths\"&&p!==\"only\"||Z===\"folders\"&&p!==\"never\")&&pe.push({type:Z===\"filepaths\"?\"file\":\"folder\",name:W,insertValue:W,isDangerous:S,context:{templateType:Z}})}return h(y(pe))}catch{return[]}})"
+          },
+          {
+            "script": [
+              "bash",
+              "-c",
+              "until [[ -f package.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat package.json"
+            ],
+            "requires_js": true,
+            "js_source": "function(e,[n]){if(e.trim()==\"\")return[];try{let t=JSON.parse(e),a=t.scripts,i=t.fig||{};if(a)return Object.entries(a).map(([s,o])=>{let c=n===\"yarn\"?\"fig://icon?type=yarn\":\"fig://icon?type=npm\",p=i[s];return{name:s,icon:c,description:o,priority:51,...p}})}catch(t){console.error(t)}return[]}",
+            "cache": {
+              "cache_by_directory": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "i",
+      "description": "Install dependencies for a package.json",
+      "options": [
+        {
+          "name": [
+            "-c",
+            "--config"
+          ],
+          "description": "Load config (bunfig.toml)",
+          "args": {
+            "name": "path",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-y",
+            "--yarn"
+          ],
+          "description": "Write a yarn.lock file (yarn v1)"
+        },
+        {
+          "name": [
+            "-p",
+            "--production"
+          ],
+          "description": "Don't install devDependencies"
+        },
+        {
+          "name": [
+            "--no-save"
+          ],
+          "description": "Don't save a lockfile"
+        },
+        {
+          "name": [
+            "--save"
+          ],
+          "description": "Save to package.json"
+        },
+        {
+          "name": [
+            "--dry-run"
+          ],
+          "description": "Don't install anything"
+        },
+        {
+          "name": [
+            "--frozen-lockfile"
+          ],
+          "description": "Disallow changes to lockfile"
+        },
+        {
+          "name": [
+            "-f",
+            "--force"
+          ],
+          "description": "Always request the latest versions from the registry & reinstall all dependencies"
+        },
+        {
+          "name": [
+            "--cache-dir"
+          ],
+          "description": "Store & load cached data from a specific directory path",
+          "args": {
+            "name": "path",
+            "template": "folders"
+          }
+        },
+        {
+          "name": [
+            "--no-cache"
+          ],
+          "description": "Ignore manifest cache entirely"
+        },
+        {
+          "name": [
+            "--silent"
+          ],
+          "description": "Don't log anything"
+        },
+        {
+          "name": [
+            "--verbose"
+          ],
+          "description": "Excessively verbose logging"
+        },
+        {
+          "name": [
+            "-g",
+            "--global"
+          ],
+          "description": "Install globally"
+        },
+        {
+          "name": [
+            "--cwd"
+          ],
+          "description": "Set a specific cwd",
+          "args": {
+            "name": "path",
+            "template": "folders"
+          }
+        },
+        {
+          "name": [
+            "--backend"
+          ],
+          "description": "Platform-specific optimizations for installing dependencies. For macOS, 'clonefile' (default), 'copyfile'",
+          "args": {
+            "name": "syscall",
+            "suggestions": [
+              {
+                "name": "clonefile"
+              },
+              {
+                "name": "copyfile"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--link-native-bins"
+          ],
+          "description": "Link 'bin' from a matching platform-specific 'optionalDependencies' instead. Default: esbuild, turbo",
+          "args": {
+            "name": "str",
+            "isVariadic": true
+          }
+        },
+        {
+          "name": [
+            "--help"
+          ],
+          "description": "Print the help menu"
+        },
+        {
+          "name": [
+            "--no-progress"
+          ],
+          "description": "Disable the progress bar"
+        },
+        {
+          "name": [
+            "--no-summary"
+          ],
+          "description": "Don't print a summary"
+        },
+        {
+          "name": [
+            "--no-verify"
+          ],
+          "description": "Skip verifying integrity of newly downloaded packages"
+        },
+        {
+          "name": [
+            "--ignore-scripts"
+          ],
+          "description": "Skip lifecycle scripts in the project's package.json (dependency scripts are never run)"
+        },
+        {
+          "name": [
+            "-d",
+            "--dev",
+            "-D",
+            "--development"
+          ],
+          "description": "Install as devDependency"
+        },
+        {
+          "name": [
+            "--exact"
+          ],
+          "description": "Install exact version"
+        },
+        {
+          "name": [
+            "--optional"
+          ],
+          "description": "Install as optionalDependency"
+        }
+      ]
+    },
+    {
+      "name": "a",
+      "description": "Add a dependency to package.json",
+      "options": [
+        {
+          "name": [
+            "-c",
+            "--config"
+          ],
+          "description": "Load config (bunfig.toml)",
+          "args": {
+            "name": "path",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-y",
+            "--yarn"
+          ],
+          "description": "Write a yarn.lock file (yarn v1)"
+        },
+        {
+          "name": [
+            "-p",
+            "--production"
+          ],
+          "description": "Don't install devDependencies"
+        },
+        {
+          "name": [
+            "--no-save"
+          ],
+          "description": "Don't save a lockfile"
+        },
+        {
+          "name": [
+            "--save"
+          ],
+          "description": "Save to package.json"
+        },
+        {
+          "name": [
+            "--dry-run"
+          ],
+          "description": "Don't install anything"
+        },
+        {
+          "name": [
+            "--frozen-lockfile"
+          ],
+          "description": "Disallow changes to lockfile"
+        },
+        {
+          "name": [
+            "-f",
+            "--force"
+          ],
+          "description": "Always request the latest versions from the registry & reinstall all dependencies"
+        },
+        {
+          "name": [
+            "--cache-dir"
+          ],
+          "description": "Store & load cached data from a specific directory path",
+          "args": {
+            "name": "path",
+            "template": "folders"
+          }
+        },
+        {
+          "name": [
+            "--no-cache"
+          ],
+          "description": "Ignore manifest cache entirely"
+        },
+        {
+          "name": [
+            "--silent"
+          ],
+          "description": "Don't log anything"
+        },
+        {
+          "name": [
+            "--verbose"
+          ],
+          "description": "Excessively verbose logging"
+        },
+        {
+          "name": [
+            "-g",
+            "--global"
+          ],
+          "description": "Install globally"
+        },
+        {
+          "name": [
+            "--cwd"
+          ],
+          "description": "Set a specific cwd",
+          "args": {
+            "name": "path",
+            "template": "folders"
+          }
+        },
+        {
+          "name": [
+            "--backend"
+          ],
+          "description": "Platform-specific optimizations for installing dependencies. For macOS, 'clonefile' (default), 'copyfile'",
+          "args": {
+            "name": "syscall",
+            "suggestions": [
+              {
+                "name": "clonefile"
+              },
+              {
+                "name": "copyfile"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--link-native-bins"
+          ],
+          "description": "Link 'bin' from a matching platform-specific 'optionalDependencies' instead. Default: esbuild, turbo",
+          "args": {
+            "name": "str",
+            "isVariadic": true
+          }
+        },
+        {
+          "name": [
+            "--help"
+          ],
+          "description": "Print the help menu"
+        },
+        {
+          "name": [
+            "--no-progress"
+          ],
+          "description": "Disable the progress bar"
+        },
+        {
+          "name": [
+            "--no-summary"
+          ],
+          "description": "Don't print a summary"
+        },
+        {
+          "name": [
+            "--no-verify"
+          ],
+          "description": "Skip verifying integrity of newly downloaded packages"
+        },
+        {
+          "name": [
+            "--ignore-scripts"
+          ],
+          "description": "Skip lifecycle scripts in the project's package.json (dependency scripts are never run)"
+        },
+        {
+          "name": [
+            "-d",
+            "--dev",
+            "-D",
+            "--development"
+          ],
+          "description": "Install as devDependency"
+        },
+        {
+          "name": [
+            "--exact"
+          ],
+          "description": "Install exact version"
+        },
+        {
+          "name": [
+            "--optional"
+          ],
+          "description": "Install as optionalDependency"
+        }
+      ],
+      "args": {
+        "name": "package",
+        "isVariadic": true,
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "async(n,t,a)=>{let i=n[n.length-1];if(i===\"\")return[];let s=e&&e.length>0?`+keywords:${e.join(\",\")}`:\"\",c=[\"-s\",\"-H\",\"Accept: application/json\",s?`https://api.npms.io/v2/search?size=20&q=${i}${s}`:`https://api.npms.io/v2/search/suggestions?q=${i}&size=20`],p=[\"-s\",\"-H\",\"Accept: application/vnd.npm.install-v1+json\",`https://registry.npmjs.org/${i.slice(0,-1)}`],d=l=>t({command:\"curl\",args:l[l.length-1]===\"@\"?p:c}),r=i.startsWith(\"@\")?ae(i)>1:i.includes(\"@\");try{let l=JSON.parse((await d(i)).stdout);if(r){let h=Object.entries(l[\"dist-tags\"]||{}).map(([g,w])=>({name:g,description:w}));return h.push(...Object.keys(l.versions).map(g=>({name:g})).reverse()),h}return(s?l.results:l).map(h=>({name:h.package.name,description:h.package.description}))}catch(l){return console.error({error:l}),[]}}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "rm",
+      "description": "Remove a dependency from package.json",
+      "options": [
+        {
+          "name": [
+            "-c",
+            "--config"
+          ],
+          "description": "Load config (bunfig.toml)",
+          "args": {
+            "name": "path",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-y",
+            "--yarn"
+          ],
+          "description": "Write a yarn.lock file (yarn v1)"
+        },
+        {
+          "name": [
+            "-p",
+            "--production"
+          ],
+          "description": "Don't install devDependencies"
+        },
+        {
+          "name": [
+            "--no-save"
+          ],
+          "description": "Don't save a lockfile"
+        },
+        {
+          "name": [
+            "--save"
+          ],
+          "description": "Save to package.json"
+        },
+        {
+          "name": [
+            "--dry-run"
+          ],
+          "description": "Don't install anything"
+        },
+        {
+          "name": [
+            "--frozen-lockfile"
+          ],
+          "description": "Disallow changes to lockfile"
+        },
+        {
+          "name": [
+            "-f",
+            "--force"
+          ],
+          "description": "Always request the latest versions from the registry & reinstall all dependencies"
+        },
+        {
+          "name": [
+            "--cache-dir"
+          ],
+          "description": "Store & load cached data from a specific directory path",
+          "args": {
+            "name": "path",
+            "template": "folders"
+          }
+        },
+        {
+          "name": [
+            "--no-cache"
+          ],
+          "description": "Ignore manifest cache entirely"
+        },
+        {
+          "name": [
+            "--silent"
+          ],
+          "description": "Don't log anything"
+        },
+        {
+          "name": [
+            "--verbose"
+          ],
+          "description": "Excessively verbose logging"
+        },
+        {
+          "name": [
+            "-g",
+            "--global"
+          ],
+          "description": "Install globally"
+        },
+        {
+          "name": [
+            "--cwd"
+          ],
+          "description": "Set a specific cwd",
+          "args": {
+            "name": "path",
+            "template": "folders"
+          }
+        },
+        {
+          "name": [
+            "--backend"
+          ],
+          "description": "Platform-specific optimizations for installing dependencies. For macOS, 'clonefile' (default), 'copyfile'",
+          "args": {
+            "name": "syscall",
+            "suggestions": [
+              {
+                "name": "clonefile"
+              },
+              {
+                "name": "copyfile"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--link-native-bins"
+          ],
+          "description": "Link 'bin' from a matching platform-specific 'optionalDependencies' instead. Default: esbuild, turbo",
+          "args": {
+            "name": "str",
+            "isVariadic": true
+          }
+        },
+        {
+          "name": [
+            "--help"
+          ],
+          "description": "Print the help menu"
+        },
+        {
+          "name": [
+            "--no-progress"
+          ],
+          "description": "Disable the progress bar"
+        },
+        {
+          "name": [
+            "--no-summary"
+          ],
+          "description": "Don't print a summary"
+        },
+        {
+          "name": [
+            "--no-verify"
+          ],
+          "description": "Skip verifying integrity of newly downloaded packages"
+        },
+        {
+          "name": [
+            "--ignore-scripts"
+          ],
+          "description": "Skip lifecycle scripts in the project's package.json (dependency scripts are never run)"
+        },
+        {
+          "name": [
+            "-d",
+            "--dev",
+            "-D",
+            "--development"
+          ],
+          "description": "Install as devDependency"
+        },
+        {
+          "name": [
+            "--exact"
+          ],
+          "description": "Install exact version"
+        },
+        {
+          "name": [
+            "--optional"
+          ],
+          "description": "Install as optionalDependency"
+        }
+      ],
+      "args": {
+        "name": "package",
+        "isVariadic": true,
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "async function(e,n){if(!e.includes(\"-g\")&&!e.includes(\"--global\")){let{stdout:t}=await n({command:\"npm\",args:[\"prefix\"]}),{stdout:a}=await n({command:\"cat\",args:[`${t}/package.json`]}),i=JSON.parse(a),s=i.dependencies??{},o=i.devDependencies,c=i.optionalDependencies??{};return Object.assign(s,o,c),Object.keys(s).filter(p=>!e.some(r=>r===p)).map(p=>({name:p,icon:\"\\u{1F4E6}\",description:s[p]?\"dependency\":c[p]?\"optionalDependency\":\"devDependency\"}))}else{let{stdout:t}=await n({command:\"bash\",args:[\"-c\",\"ls -1 `npm root -g`\"]});return t.split(`\n`).map(a=>({name:a,icon:\"\\u{1F4E6}\",description:\"Global dependency\"}))}}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "build",
+      "description": "Bundle files using Bun's native bundler",
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display this help and exit"
+        },
+        {
+          "name": [
+            "-b",
+            "--bun"
+          ],
+          "description": "Force a script or package to use Bun's runtime instead of Node.js (via symlinking node)"
+        },
+        {
+          "name": [
+            "--cwd"
+          ],
+          "args": {
+            "name": "path",
+            "description": "Absolute path to resolve files & entry points from. This just changes the process' cwd"
+          }
+        },
+        {
+          "name": [
+            "-c",
+            "--config"
+          ],
+          "description": "Load config (bunfig.toml)",
+          "args": {
+            "name": "path",
+            "description": "Config file to load Bun from (e.g. -c bunfig.toml)",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--extension-order"
+          ],
+          "args": {
+            "name": "order",
+            "description": "Defaults to: .tsx,.ts,.jsx,.js,.json",
+            "isVariadic": true
+          }
+        },
+        {
+          "name": [
+            "--jsx-factory"
+          ],
+          "description": "Changes the function called when compiling JSX elements using the classic JSX runtime",
+          "args": {
+            "name": "name",
+            "suggestions": [
+              {
+                "name": "React.createElement"
+              },
+              {
+                "name": "h"
+              },
+              {
+                "name": "preact.h"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--jsx-fragment"
+          ],
+          "description": "Changes the function called when compiling JSX fragments",
+          "args": {
+            "name": "string",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--jsx-import-source"
+          ],
+          "description": "Declares the module specifier to be used for importing the jsx and jsxs factory functions. Default: \"react\"",
+          "args": {
+            "name": "module",
+            "suggestions": [
+              {
+                "name": "react"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--jsx-runtime"
+          ],
+          "description": "\"automatic\" (default) or \"classic\"",
+          "args": {
+            "name": "name",
+            "suggestions": [
+              {
+                "name": "automatic"
+              },
+              {
+                "name": "classic"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-r",
+            "--preload"
+          ],
+          "args": {
+            "name": "args",
+            "description": "Import a module before other modules are loaded",
+            "isVariadic": true
+          }
+        },
+        {
+          "name": [
+            "--main-fields"
+          ],
+          "args": {
+            "name": "args",
+            "description": "Main fields to lookup in package.json. Defaults to --target dependent",
+            "isVariadic": true
+          }
+        },
+        {
+          "name": [
+            "--no-summary"
+          ],
+          "description": "Don't print a summary (when generating .bun)"
+        },
+        {
+          "name": [
+            "-v",
+            "--version"
+          ],
+          "description": "Print version and exit"
+        },
+        {
+          "name": [
+            "--revision"
+          ],
+          "description": "Print version with revision and exit"
+        },
+        {
+          "name": [
+            "--tsconfig-override"
+          ],
+          "args": {
+            "name": "overrides",
+            "description": "Load tsconfig from path instead of cwd/tsconfig.json"
+          }
+        },
+        {
+          "name": [
+            "-d",
+            "--define"
+          ],
+          "args": {
+            "name": "k=v",
+            "description": "Substitute key=value while parsing, e.g. --define process.env.NODE_ENV=development",
+            "isVariadic": true
+          }
+        },
+        {
+          "name": [
+            "-e",
+            "--external"
+          ],
+          "args": {
+            "name": "args",
+            "description": "Exclude module from transpilation (can use * wildcards). ex: -e react",
+            "isVariadic": true
+          }
+        },
+        {
+          "name": [
+            "-l",
+            "--loader"
+          ],
+          "args": {
+            "name": "args",
+            "description": "Parse files with .ext:loader, e.g. --loader .js:jsx. Valid loaders: js, jsx, ts, tsx, json, toml, text, file, wasm, napi",
+            "isVariadic": true,
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "(...d)=>G(this,void 0,void 0,function*(){let[r]=d,l=r[r.length-1],y=J(l,e,n),h=y===-1||l.slice(y,y+e.length)!==e,g=h?t:a,w=he(h,i),f=yield ie(g,h?s?e:\"\":o?n:\"\",w,d);if(h){if(c)return f;let N=l.split(n).map(k=>k.slice(0,k.indexOf(e)));return te(N,f)}if(p)return f;let S=l.split(n).map(N=>N.slice(N.indexOf(e)+e.length));return te(S,f)})"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-u",
+            "--origin"
+          ],
+          "args": {
+            "name": "args",
+            "description": "Rewrite import URLs to start with --origin. Default: \"\""
+          }
+        },
+        {
+          "name": [
+            "-p",
+            "--port"
+          ],
+          "args": {
+            "name": "args",
+            "description": "Port to serve Bun's dev server on. Default: \"3000\""
+          }
+        },
+        {
+          "name": [
+            "--smol"
+          ],
+          "description": "Use less memory, but run garbage collection more often"
+        },
+        {
+          "name": [
+            "--minify"
+          ],
+          "description": "Minify (experimental)"
+        },
+        {
+          "name": [
+            "--minify-syntax"
+          ],
+          "description": "Minify syntax and inline data (experimental)"
+        },
+        {
+          "name": [
+            "--minify-whitespace"
+          ],
+          "description": "Minify whitespace (experimental)"
+        },
+        {
+          "name": [
+            "--minify-identifiers"
+          ],
+          "description": "Minify identifiers"
+        },
+        {
+          "name": [
+            "--no-macros"
+          ],
+          "description": "Disable macros from being executed in the bundler, transpiler and runtime"
+        },
+        {
+          "name": [
+            "--target"
+          ],
+          "description": "Target environment",
+          "args": {
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "(...s)=>G(this,void 0,void 0,function*(){var o;let c=yield ie(n,a?e:\"\",t,s);if(i)return c;let[p]=s,d=(o=p[p.length-1])===null||o===void 0?void 0:o.split(e);return te(d,c)})"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--inspect"
+          ],
+          "description": "Activate Bun's debugger for a file",
+          "args": {
+            "name": "[host:]port",
+            "description": "Activate inspector on particular port and/or hostname",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "3000",
+                "description": "Serve on port 3000"
+              },
+              {
+                "name": "8080",
+                "description": "Serve on port 8080"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--inspect-wait"
+          ],
+          "description": "Activate Bun's Debugger, wait for a connection before executing",
+          "args": {
+            "name": "[host:]port",
+            "description": "Activate inspector on particular port and/or hostname",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "3000",
+                "description": "Serve on port 3000"
+              },
+              {
+                "name": "8080",
+                "description": "Serve on port 8080"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--inspect-brk"
+          ],
+          "description": "Activate Bun's Debugger, set breakpoint on first line of code and wait",
+          "args": {
+            "name": "[host:]port",
+            "description": "Activate inspector on particular port and/or hostname",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "3000",
+                "description": "Serve on port 3000"
+              },
+              {
+                "name": "8080",
+                "description": "Serve on port 8080"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--if-present"
+          ],
+          "description": "Exit if the entrypoint does not exist"
+        },
+        {
+          "name": [
+            "--hot"
+          ],
+          "description": "Enable auto reload in the Bun runtime, test runner, or bundler"
+        },
+        {
+          "name": [
+            "--watch"
+          ],
+          "description": "Automatically restart the process on file change"
+        },
+        {
+          "name": [
+            "--no-install"
+          ],
+          "description": "Disable auto install in the Bun runtime"
+        },
+        {
+          "name": [
+            "-i"
+          ],
+          "description": "Automatically install dependencies and use global cache in Bun's runtime, equivalent to --install=fallback"
+        },
+        {
+          "name": [
+            "--install"
+          ],
+          "args": {
+            "name": "arg",
+            "description": "Install dependencies automatically when no node_modules are present, default: \"auto\". \"force\" to ignore node_modules, fallback to install any missing",
+            "suggestions": [
+              {
+                "name": "auto"
+              },
+              {
+                "name": "force"
+              },
+              {
+                "name": "fallback"
+              },
+              {
+                "name": "disable"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--prefer-offline"
+          ],
+          "description": "Skip staleness checks for packages in the Bun runtime and resolve from disk"
+        },
+        {
+          "name": [
+            "--prefer-latest"
+          ],
+          "description": "Use the latest matching versions of packages in the Bun runtime, always checking npm"
+        },
+        {
+          "name": [
+            "--silent"
+          ],
+          "description": "Don't repeat the command for bun run"
+        },
+        {
+          "name": [
+            "compile"
+          ],
+          "description": "Generate a standalone Bun executable containing your bundled code"
+        },
+        {
+          "name": [
+            "--format"
+          ],
+          "description": "Specifies the module format to build to. Only esm is supported currently",
+          "args": {
+            "name": "args",
+            "suggestions": [
+              {
+                "name": "esm"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--outdir"
+          ],
+          "description": "Default to \"dist\" if multiple files",
+          "args": {
+            "name": "path"
+          }
+        },
+        {
+          "name": [
+            "--outfile"
+          ],
+          "description": "Write to a file",
+          "args": {
+            "name": "path"
+          }
+        },
+        {
+          "name": [
+            "--root"
+          ],
+          "description": "Root directory used for multiple entry points",
+          "args": {
+            "name": "path"
+          }
+        },
+        {
+          "name": [
+            "--splitting"
+          ],
+          "description": "Enable code splitting"
+        },
+        {
+          "name": [
+            "--public-path"
+          ],
+          "description": "A prefix to be appended to any import paths in bundled code",
+          "args": {
+            "name": "args"
+          }
+        },
+        {
+          "name": [
+            "--sourcemap"
+          ],
+          "description": "Build with sourcemaps - 'inline', 'external', or 'none'",
+          "args": {
+            "name": "args",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "inline"
+              },
+              {
+                "name": "external"
+              },
+              {
+                "name": "none"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--entry-naming"
+          ],
+          "description": "Customize entry point filenames. Defaults to \"[dir]/[name].[ext]\"",
+          "args": {
+            "name": "args"
+          }
+        },
+        {
+          "name": [
+            "--chunk-naming"
+          ],
+          "description": "Customize chunk filenames. Defaults to \"[name]-[hash].[ext]\"",
+          "args": {
+            "name": "args"
+          }
+        },
+        {
+          "name": [
+            "--asset-naming"
+          ],
+          "description": "Customize asset filenames. Defaults to \"[name]-[hash].[ext]\"",
+          "args": {
+            "name": "args"
+          }
+        },
+        {
+          "name": [
+            "--server-components"
+          ],
+          "description": "Enable React Server Components (experimental)"
+        },
+        {
+          "name": [
+            "--no-bundle"
+          ],
+          "description": "Transpile file only, do not bundle"
+        },
+        {
+          "name": [
+            "--dump-environment-variables"
+          ],
+          "description": "Dump environment variables from .env and process as JSON and quit. Useful for debugging"
+        },
+        {
+          "name": [
+            "--dump-limits"
+          ],
+          "description": "Dump system limits. Useful for debugging"
+        }
+      ],
+      "args": {
+        "name": "entrypoints",
+        "description": "Entrypoint to bundle. If multiple entrypoints provided, must specify --outdir",
+        "isVariadic": true,
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "(g,w,x)=>Fe(this,void 0,void 0,function*(){var f;let{isDangerous:S,currentWorkingDirectory:N,searchTerm:k}=x,O=(f=(0,M.getCurrentInsertedDirectory)(c??N,k,x))!==null&&f!==void 0?f:\"/\";try{let ce=yield w({command:\"ls\",args:[\"-1ApL\"],cwd:O}),xe=me(ce.stdout.split(`\n`),[\".DS_Store\"]),pe=[];for(let W of xe)if(W){let Z=W.endsWith(\"/\")?\"folders\":\"filepaths\";(Z===\"filepaths\"&&p!==\"only\"||Z===\"folders\"&&p!==\"never\")&&pe.push({type:Z===\"filepaths\"?\"file\":\"folder\",name:W,insertValue:W,isDangerous:S,context:{templateType:Z}})}return h(y(pe))}catch{return[]}})"
+          }
+        ]
+      }
+    },
+    {
+      "name": "update",
+      "description": "Update outdated dependencies",
+      "options": [
+        {
+          "name": [
+            "-c",
+            "--config"
+          ],
+          "description": "Load config (bunfig.toml)",
+          "args": {
+            "name": "path",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-y",
+            "--yarn"
+          ],
+          "description": "Write a yarn.lock file (yarn v1)"
+        },
+        {
+          "name": [
+            "-p",
+            "--production"
+          ],
+          "description": "Don't install devDependencies"
+        },
+        {
+          "name": [
+            "--no-save"
+          ],
+          "description": "Don't save a lockfile"
+        },
+        {
+          "name": [
+            "--save"
+          ],
+          "description": "Save to package.json"
+        },
+        {
+          "name": [
+            "--dry-run"
+          ],
+          "description": "Don't install anything"
+        },
+        {
+          "name": [
+            "--frozen-lockfile"
+          ],
+          "description": "Disallow changes to lockfile"
+        },
+        {
+          "name": [
+            "-f",
+            "--force"
+          ],
+          "description": "Always request the latest versions from the registry & reinstall all dependencies"
+        },
+        {
+          "name": [
+            "--cache-dir"
+          ],
+          "description": "Store & load cached data from a specific directory path",
+          "args": {
+            "name": "path",
+            "template": "folders"
+          }
+        },
+        {
+          "name": [
+            "--no-cache"
+          ],
+          "description": "Ignore manifest cache entirely"
+        },
+        {
+          "name": [
+            "--silent"
+          ],
+          "description": "Don't log anything"
+        },
+        {
+          "name": [
+            "--verbose"
+          ],
+          "description": "Excessively verbose logging"
+        },
+        {
+          "name": [
+            "-g",
+            "--global"
+          ],
+          "description": "Install globally"
+        },
+        {
+          "name": [
+            "--cwd"
+          ],
+          "description": "Set a specific cwd",
+          "args": {
+            "name": "path",
+            "template": "folders"
+          }
+        },
+        {
+          "name": [
+            "--backend"
+          ],
+          "description": "Platform-specific optimizations for installing dependencies. For macOS, 'clonefile' (default), 'copyfile'",
+          "args": {
+            "name": "syscall",
+            "suggestions": [
+              {
+                "name": "clonefile"
+              },
+              {
+                "name": "copyfile"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--link-native-bins"
+          ],
+          "description": "Link 'bin' from a matching platform-specific 'optionalDependencies' instead. Default: esbuild, turbo",
+          "args": {
+            "name": "str",
+            "isVariadic": true
+          }
+        },
+        {
+          "name": [
+            "--help"
+          ],
+          "description": "Print the help menu"
+        },
+        {
+          "name": [
+            "--no-progress"
+          ],
+          "description": "Disable the progress bar"
+        },
+        {
+          "name": [
+            "--no-summary"
+          ],
+          "description": "Don't print a summary"
+        },
+        {
+          "name": [
+            "--no-verify"
+          ],
+          "description": "Skip verifying integrity of newly downloaded packages"
+        },
+        {
+          "name": [
+            "--ignore-scripts"
+          ],
+          "description": "Skip lifecycle scripts in the project's package.json (dependency scripts are never run)"
+        },
+        {
+          "name": [
+            "-d",
+            "--dev",
+            "-D",
+            "--development"
+          ],
+          "description": "Install as devDependency"
+        },
+        {
+          "name": [
+            "--exact"
+          ],
+          "description": "Install exact version"
+        },
+        {
+          "name": [
+            "--optional"
+          ],
+          "description": "Install as optionalDependency"
+        }
+      ],
+      "args": {
+        "name": "package",
+        "isVariadic": true,
+        "isOptional": true,
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "async function(e,n){if(!e.includes(\"-g\")&&!e.includes(\"--global\")){let{stdout:t}=await n({command:\"npm\",args:[\"prefix\"]}),{stdout:a}=await n({command:\"cat\",args:[`${t}/package.json`]}),i=JSON.parse(a),s=i.dependencies??{},o=i.devDependencies,c=i.optionalDependencies??{};return Object.assign(s,o,c),Object.keys(s).filter(p=>!e.some(r=>r===p)).map(p=>({name:p,icon:\"\\u{1F4E6}\",description:s[p]?\"dependency\":c[p]?\"optionalDependency\":\"devDependency\"}))}else{let{stdout:t}=await n({command:\"bash\",args:[\"-c\",\"ls -1 `npm root -g`\"]});return t.split(`\n`).map(a=>({name:a,icon:\"\\u{1F4E6}\",description:\"Global dependency\"}))}}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "link",
+      "description": "Run without an argument to register this package to the global package registry. Uses the name field from package.json",
+      "options": [
+        {
+          "name": [
+            "--save"
+          ],
+          "description": "Save to package.json"
+        }
+      ],
+      "args": {
+        "name": "package",
+        "description": "Install a package from the global package registry",
+        "isOptional": true,
+        "generators": [
+          {
+            "script": [
+              "command",
+              "sh",
+              "-c",
+              "find $BUN_INSTALL/install/global/node_modules -type l -o -type d -maxdepth 2 | awk -F 'node_modules/' '{print $2}'"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ],
+            "cache": {
+              "ttl_seconds": 87
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "unlink",
+      "description": "Unlink this package from the global package registry"
+    },
+    {
+      "name": "upgrade",
+      "description": "Get the latest version of bun",
+      "options": [
+        {
+          "name": [
+            "--canary"
+          ],
+          "description": "Install the latest canary release"
+        }
+      ]
+    },
+    {
+      "name": "test",
+      "description": "Run unit tests with Bun",
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Display this help and exit"
+        },
+        {
+          "name": [
+            "-b",
+            "--bun"
+          ],
+          "description": "Force a script or package to use Bun's runtime instead of Node.js (via symlinking node)"
+        },
+        {
+          "name": [
+            "--cwd"
+          ],
+          "args": {
+            "name": "path",
+            "description": "Absolute path to resolve files & entry points from. This just changes the process' cwd"
+          }
+        },
+        {
+          "name": [
+            "-c",
+            "--config"
+          ],
+          "description": "Load config (bunfig.toml)",
+          "args": {
+            "name": "path",
+            "description": "Config file to load Bun from (e.g. -c bunfig.toml)",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--extension-order"
+          ],
+          "args": {
+            "name": "order",
+            "description": "Defaults to: .tsx,.ts,.jsx,.js,.json",
+            "isVariadic": true
+          }
+        },
+        {
+          "name": [
+            "--jsx-factory"
+          ],
+          "description": "Changes the function called when compiling JSX elements using the classic JSX runtime",
+          "args": {
+            "name": "name",
+            "suggestions": [
+              {
+                "name": "React.createElement"
+              },
+              {
+                "name": "h"
+              },
+              {
+                "name": "preact.h"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--jsx-fragment"
+          ],
+          "description": "Changes the function called when compiling JSX fragments",
+          "args": {
+            "name": "string",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--jsx-import-source"
+          ],
+          "description": "Declares the module specifier to be used for importing the jsx and jsxs factory functions. Default: \"react\"",
+          "args": {
+            "name": "module",
+            "suggestions": [
+              {
+                "name": "react"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--jsx-runtime"
+          ],
+          "description": "\"automatic\" (default) or \"classic\"",
+          "args": {
+            "name": "name",
+            "suggestions": [
+              {
+                "name": "automatic"
+              },
+              {
+                "name": "classic"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-r",
+            "--preload"
+          ],
+          "args": {
+            "name": "args",
+            "description": "Import a module before other modules are loaded",
+            "isVariadic": true
+          }
+        },
+        {
+          "name": [
+            "--main-fields"
+          ],
+          "args": {
+            "name": "args",
+            "description": "Main fields to lookup in package.json. Defaults to --target dependent",
+            "isVariadic": true
+          }
+        },
+        {
+          "name": [
+            "--no-summary"
+          ],
+          "description": "Don't print a summary (when generating .bun)"
+        },
+        {
+          "name": [
+            "-v",
+            "--version"
+          ],
+          "description": "Print version and exit"
+        },
+        {
+          "name": [
+            "--revision"
+          ],
+          "description": "Print version with revision and exit"
+        },
+        {
+          "name": [
+            "--tsconfig-override"
+          ],
+          "args": {
+            "name": "overrides",
+            "description": "Load tsconfig from path instead of cwd/tsconfig.json"
+          }
+        },
+        {
+          "name": [
+            "-d",
+            "--define"
+          ],
+          "args": {
+            "name": "k=v",
+            "description": "Substitute key=value while parsing, e.g. --define process.env.NODE_ENV=development",
+            "isVariadic": true
+          }
+        },
+        {
+          "name": [
+            "-e",
+            "--external"
+          ],
+          "args": {
+            "name": "args",
+            "description": "Exclude module from transpilation (can use * wildcards). ex: -e react",
+            "isVariadic": true
+          }
+        },
+        {
+          "name": [
+            "-l",
+            "--loader"
+          ],
+          "args": {
+            "name": "args",
+            "description": "Parse files with .ext:loader, e.g. --loader .js:jsx. Valid loaders: js, jsx, ts, tsx, json, toml, text, file, wasm, napi",
+            "isVariadic": true,
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "(...d)=>G(this,void 0,void 0,function*(){let[r]=d,l=r[r.length-1],y=J(l,e,n),h=y===-1||l.slice(y,y+e.length)!==e,g=h?t:a,w=he(h,i),f=yield ie(g,h?s?e:\"\":o?n:\"\",w,d);if(h){if(c)return f;let N=l.split(n).map(k=>k.slice(0,k.indexOf(e)));return te(N,f)}if(p)return f;let S=l.split(n).map(N=>N.slice(N.indexOf(e)+e.length));return te(S,f)})"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-u",
+            "--origin"
+          ],
+          "args": {
+            "name": "args",
+            "description": "Rewrite import URLs to start with --origin. Default: \"\""
+          }
+        },
+        {
+          "name": [
+            "-p",
+            "--port"
+          ],
+          "args": {
+            "name": "args",
+            "description": "Port to serve Bun's dev server on. Default: \"3000\""
+          }
+        },
+        {
+          "name": [
+            "--smol"
+          ],
+          "description": "Use less memory, but run garbage collection more often"
+        },
+        {
+          "name": [
+            "--minify"
+          ],
+          "description": "Minify (experimental)"
+        },
+        {
+          "name": [
+            "--minify-syntax"
+          ],
+          "description": "Minify syntax and inline data (experimental)"
+        },
+        {
+          "name": [
+            "--minify-whitespace"
+          ],
+          "description": "Minify whitespace (experimental)"
+        },
+        {
+          "name": [
+            "--minify-identifiers"
+          ],
+          "description": "Minify identifiers"
+        },
+        {
+          "name": [
+            "--no-macros"
+          ],
+          "description": "Disable macros from being executed in the bundler, transpiler and runtime"
+        },
+        {
+          "name": [
+            "--target"
+          ],
+          "description": "Target environment",
+          "args": {
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "(...s)=>G(this,void 0,void 0,function*(){var o;let c=yield ie(n,a?e:\"\",t,s);if(i)return c;let[p]=s,d=(o=p[p.length-1])===null||o===void 0?void 0:o.split(e);return te(d,c)})"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--inspect"
+          ],
+          "description": "Activate Bun's debugger for a file",
+          "args": {
+            "name": "[host:]port",
+            "description": "Activate inspector on particular port and/or hostname",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "3000",
+                "description": "Serve on port 3000"
+              },
+              {
+                "name": "8080",
+                "description": "Serve on port 8080"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--inspect-wait"
+          ],
+          "description": "Activate Bun's Debugger, wait for a connection before executing",
+          "args": {
+            "name": "[host:]port",
+            "description": "Activate inspector on particular port and/or hostname",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "3000",
+                "description": "Serve on port 3000"
+              },
+              {
+                "name": "8080",
+                "description": "Serve on port 8080"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--inspect-brk"
+          ],
+          "description": "Activate Bun's Debugger, set breakpoint on first line of code and wait",
+          "args": {
+            "name": "[host:]port",
+            "description": "Activate inspector on particular port and/or hostname",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "3000",
+                "description": "Serve on port 3000"
+              },
+              {
+                "name": "8080",
+                "description": "Serve on port 8080"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--if-present"
+          ],
+          "description": "Exit if the entrypoint does not exist"
+        },
+        {
+          "name": [
+            "--hot"
+          ],
+          "description": "Enable auto reload in the Bun runtime, test runner, or bundler"
+        },
+        {
+          "name": [
+            "--watch"
+          ],
+          "description": "Automatically restart the process on file change"
+        },
+        {
+          "name": [
+            "--no-install"
+          ],
+          "description": "Disable auto install in the Bun runtime"
+        },
+        {
+          "name": [
+            "-i"
+          ],
+          "description": "Automatically install dependencies and use global cache in Bun's runtime, equivalent to --install=fallback"
+        },
+        {
+          "name": [
+            "--install"
+          ],
+          "args": {
+            "name": "arg",
+            "description": "Install dependencies automatically when no node_modules are present, default: \"auto\". \"force\" to ignore node_modules, fallback to install any missing",
+            "suggestions": [
+              {
+                "name": "auto"
+              },
+              {
+                "name": "force"
+              },
+              {
+                "name": "fallback"
+              },
+              {
+                "name": "disable"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--prefer-offline"
+          ],
+          "description": "Skip staleness checks for packages in the Bun runtime and resolve from disk"
+        },
+        {
+          "name": [
+            "--prefer-latest"
+          ],
+          "description": "Use the latest matching versions of packages in the Bun runtime, always checking npm"
+        },
+        {
+          "name": [
+            "--silent"
+          ],
+          "description": "Don't repeat the command for bun run"
+        },
+        {
+          "name": [
+            "--timeout"
+          ],
+          "description": "Set the per-test timeout in milliseconds, default is 5000",
+          "args": {
+            "name": "number"
+          }
+        },
+        {
+          "name": [
+            "--update-snapshots"
+          ],
+          "description": "Update snapshot files"
+        },
+        {
+          "name": [
+            "--rerun-each"
+          ],
+          "description": "Re-run each test file <NUMBER> times, helps catch certain bugs",
+          "args": {
+            "name": "number"
+          }
+        },
+        {
+          "name": [
+            "--only"
+          ],
+          "description": "Only run tests that are marked with \"test.only()\""
+        },
+        {
+          "name": [
+            "--todo"
+          ],
+          "description": "Include tests that are marked with \"test.todo()\""
+        },
+        {
+          "name": [
+            "--coverage"
+          ],
+          "description": "Generate a coverage profile"
+        },
+        {
+          "name": [
+            "--bail"
+          ],
+          "description": "Exit the test suite after <NUMBER> failures. If you do not specify a number, it defaults to 1",
+          "args": {
+            "name": "number",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-t",
+            "--test-name-pattern"
+          ],
+          "description": "Run only tests with a name that matches the given regex",
+          "args": {
+            "name": "pattern"
+          }
+        },
+        {
+          "name": [
+            "--dump-environment-variables"
+          ],
+          "description": "Dump environment variables from .env and process as JSON and quit. Useful for debugging"
+        },
+        {
+          "name": [
+            "--dump-limits"
+          ],
+          "description": "Dump system limits. Useful for debugging"
+        }
+      ],
+      "args": {
+        "name": "files",
+        "description": "Test files to run",
+        "isVariadic": true,
+        "isOptional": true,
+        "generators": [
+          {
+            "script": [
+              "command",
+              "sh",
+              "-c",
+              "find $(npm prefix) | grep -E \".*.(test|_test|spec|_spec).(ts|tsx|js|jsx)$\" | grep -vE \".*/node_modules/.*\" | sed \"s|$(npm prefix)/||\""
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ],
+            "cache": {
+              "ttl_seconds": 87
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "pm",
+      "description": "Set of utilities for working with Bun's package manager",
+      "options": [
+        {
+          "name": [
+            "bin"
+          ],
+          "description": "Print the path to bin folder"
+        },
+        {
+          "name": [
+            "cache"
+          ],
+          "description": "Print the path to the cache folder"
+        },
+        {
+          "name": [
+            "hash"
+          ],
+          "description": "Generate & print the hash of the current lockfile"
+        },
+        {
+          "name": [
+            "hash-print"
+          ],
+          "description": "Print the hash stored in the current lockfile"
+        },
+        {
+          "name": [
+            "hash-string"
+          ],
+          "description": "Print the string used to hash the lockfile"
+        },
+        {
+          "name": [
+            "ls"
+          ],
+          "description": "List the dependency tree according to the current lockfile"
+        }
+      ]
+    },
+    {
+      "name": "completions",
+      "description": "Install shell completions"
+    },
+    {
+      "name": "discord",
+      "description": "Open bun's Discord server"
+    },
+    {
+      "name": "help",
+      "description": "Print the help menu"
+    },
+    {
+      "name": "x",
+      "description": "Run an npx command",
+      "args": {
+        "name": "command",
+        "description": "The command to run",
+        "suggestions": [
+          {
+            "name": "autocannon"
+          },
+          {
+            "name": "vite"
+          },
+          {
+            "name": "babel"
+          },
+          {
+            "name": "create-react-native-app"
+          },
+          {
+            "name": "react-native"
+          },
+          {
+            "name": "tailwindcss"
+          },
+          {
+            "name": "next"
+          },
+          {
+            "name": "nuxi"
+          },
+          {
+            "name": "gltfjsx"
+          },
+          {
+            "name": "prisma"
+          },
+          {
+            "name": "eslint"
+          },
+          {
+            "name": "prettier"
+          },
+          {
+            "name": "tsc"
+          },
+          {
+            "name": "typeorm"
+          },
+          {
+            "name": "@withfig/autocomplete-tools"
+          },
+          {
+            "name": "create-completion-spec"
+          },
+          {
+            "name": "@fig/publish-spec-to-team"
+          },
+          {
+            "name": "fig-teams@latest"
+          },
+          {
+            "name": "create-next-app"
+          },
+          {
+            "name": "create-t3-app"
+          },
+          {
+            "name": "create-discord-bot"
+          },
+          {
+            "name": "create-video"
+          },
+          {
+            "name": "remotion"
+          },
+          {
+            "name": "create-remix"
+          },
+          {
+            "name": "remix"
+          },
+          {
+            "name": "playwright"
+          },
+          {
+            "name": "ignite-cli"
+          },
+          {
+            "name": "vsce"
+          },
+          {
+            "name": "degit"
+          },
+          {
+            "name": "@preset/cli"
+          },
+          {
+            "name": "mikro-orm"
+          },
+          {
+            "name": "pod-install"
+          },
+          {
+            "name": "capacitor"
+          },
+          {
+            "name": "cap"
+          },
+          {
+            "name": "@magnolia/cli"
+          },
+          {
+            "name": "stencil"
+          },
+          {
+            "name": "swagger-typescript-api"
+          },
+          {
+            "name": "sta"
+          },
+          {
+            "name": "@wordpress/create-block"
+          },
+          {
+            "name": "astro"
+          },
+          {
+            "name": "ampx"
+          }
+        ],
+        "generators": [
+          {
+            "script": [
+              "bash",
+              "-c",
+              "until [[ -d node_modules/ ]] || [[ $PWD = '/' ]]; do cd ..; done; ls -1 node_modules/.bin/`"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "repl",
+      "description": "Run a REPL (read eval print loop) with the Bun runtime.(experimental)"
+    },
+    {
+      "name": "init",
+      "description": "Initialize a new bun project",
+      "options": [
+        {
+          "name": [
+            "-y",
+            "--yes"
+          ],
+          "description": "Answer yes to all prompts"
+        }
+      ]
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "--inspect"
+      ],
+      "description": "Activate Bun's debugger for a file",
+      "args": {
+        "name": "[host:]port",
+        "description": "Activate inspector on particular port and/or hostname",
+        "isOptional": true,
+        "suggestions": [
+          {
+            "name": "3000",
+            "description": "Serve on port 3000"
+          },
+          {
+            "name": "8080",
+            "description": "Serve on port 8080"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--inspect-wait"
+      ],
+      "description": "Activate Bun's Debugger, wait for a connection before executing",
+      "args": {
+        "name": "[host:]port",
+        "description": "Activate inspector on particular port and/or hostname",
+        "isOptional": true,
+        "suggestions": [
+          {
+            "name": "3000",
+            "description": "Serve on port 3000"
+          },
+          {
+            "name": "8080",
+            "description": "Serve on port 8080"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--inspect-brk"
+      ],
+      "description": "Activate Bun's Debugger, set breakpoint on first line of code and wait",
+      "args": {
+        "name": "[host:]port",
+        "description": "Activate inspector on particular port and/or hostname",
+        "isOptional": true,
+        "suggestions": [
+          {
+            "name": "3000",
+            "description": "Serve on port 3000"
+          },
+          {
+            "name": "8080",
+            "description": "Serve on port 8080"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--hot"
+      ],
+      "description": "Enable auto reload in the Bun runtime, test runner, or bundler"
+    },
+    {
+      "name": [
+        "--watch"
+      ],
+      "description": "Automatically restart the process on file change"
+    }
+  ],
+  "args": [
+    {
+      "name": "file",
+      "generators": [
+        {
+          "requires_js": true,
+          "js_source": "(g,w,x)=>Fe(this,void 0,void 0,function*(){var f;let{isDangerous:S,currentWorkingDirectory:N,searchTerm:k}=x,O=(f=(0,M.getCurrentInsertedDirectory)(c??N,k,x))!==null&&f!==void 0?f:\"/\";try{let ce=yield w({command:\"ls\",args:[\"-1ApL\"],cwd:O}),xe=me(ce.stdout.split(`\n`),[\".DS_Store\"]),pe=[];for(let W of xe)if(W){let Z=W.endsWith(\"/\")?\"folders\":\"filepaths\";(Z===\"filepaths\"&&p!==\"only\"||Z===\"folders\"&&p!==\"never\")&&pe.push({type:Z===\"filepaths\"?\"file\":\"folder\",name:W,insertValue:W,isDangerous:S,context:{templateType:Z}})}return h(y(pe))}catch{return[]}})"
+        },
+        {
+          "script": [
+            "bash",
+            "-c",
+            "until [[ -f package.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat package.json"
+          ],
+          "requires_js": true,
+          "js_source": "function(e,[n]){if(e.trim()==\"\")return[];try{let t=JSON.parse(e),a=t.scripts,i=t.fig||{};if(a)return Object.entries(a).map(([s,o])=>{let c=n===\"yarn\"?\"fig://icon?type=yarn\":\"fig://icon?type=npm\",p=i[s];return{name:s,icon:c,description:o,priority:51,...p}})}catch(t){console.error(t)}return[]}",
+          "cache": {
+            "cache_by_directory": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "args"
+    }
+  ]
+}

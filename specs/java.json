@@ -1,0 +1,76 @@
+{
+  "name": "java",
+  "description": "Launch a Java application",
+  "options": [
+    {
+      "name": [
+        "-jar"
+      ],
+      "description": "To launch the main class in a JAR file",
+      "args": {
+        "name": "JAR file",
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "(h,v,O)=>ue(this,void 0,void 0,function*(){var d;let{isDangerous:_,currentWorkingDirectory:b,searchTerm:p}=O,w=(d=(0,g.getCurrentInsertedDirectory)(u??b,p,O))!==null&&d!==void 0?d:\"/\";try{let q=yield v({command:\"ls\",args:[\"-1ApL\"],cwd:w}),X=$(q.stdout.split(`\n`),[\".DS_Store\"]),R=[];for(let V of X)if(V){let F=V.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&c!==\"only\"||F===\"folders\"&&c!==\"never\")&&R.push({type:F===\"filepaths\"?\"file\":\"folder\",name:V,insertValue:V,isDangerous:_,context:{templateType:F}})}return S(y(R))}catch{return[]}})"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "-D"
+      ],
+      "description": "Set a system property, -D<NAME>=<VALUE>"
+    },
+    {
+      "name": [
+        "--help",
+        "-h",
+        "-?"
+      ],
+      "description": "Show help for java"
+    },
+    {
+      "name": [
+        "--version",
+        "-version"
+      ],
+      "description": "Print product version to the error stream and exit"
+    },
+    {
+      "name": [
+        "-showversion",
+        "--show-version"
+      ],
+      "description": "Print product version to the output stream and continue"
+    },
+    {
+      "name": [
+        "--dry-run"
+      ],
+      "description": "Create VM and load main class but do not execute main method"
+    },
+    {
+      "name": [
+        "--classpath",
+        "-cp"
+      ],
+      "description": "Class search path of directories and zip/jar files",
+      "args": {
+        "name": "search files",
+        "template": "filepaths"
+      }
+    }
+  ],
+  "args": {
+    "name": "mainclass",
+    "description": "To launch a class file",
+    "generators": [
+      {
+        "requires_js": true,
+        "js_source": "(h,v,O)=>ue(this,void 0,void 0,function*(){var d;let{isDangerous:_,currentWorkingDirectory:b,searchTerm:p}=O,w=(d=(0,g.getCurrentInsertedDirectory)(u??b,p,O))!==null&&d!==void 0?d:\"/\";try{let q=yield v({command:\"ls\",args:[\"-1ApL\"],cwd:w}),X=$(q.stdout.split(`\n`),[\".DS_Store\"]),R=[];for(let V of X)if(V){let F=V.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&c!==\"only\"||F===\"folders\"&&c!==\"never\")&&R.push({type:F===\"filepaths\"?\"file\":\"folder\",name:V,insertValue:V,isDangerous:_,context:{templateType:F}})}return S(y(R))}catch{return[]}})"
+      }
+    ]
+  }
+}

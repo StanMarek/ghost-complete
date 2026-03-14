@@ -1,89 +1,173 @@
 {
   "name": "man",
-  "description": "Display manual pages",
-  "args": [
-    {
-      "name": "section",
-      "description": "Manual section number (1-9)"
-    },
-    {
-      "name": "page",
-      "description": "Name of the manual page to display"
-    }
-  ],
+  "description": "Format and display the on-line manual pages",
   "options": [
     {
       "name": [
-        "-k",
-        "--apropos"
+        "-C"
       ],
-      "description": "Search manual page names and descriptions",
+      "description": "Specify the configuration file to use",
       "args": {
-        "name": "keyword"
+        "name": "config_file"
       }
     },
     {
       "name": [
-        "-f",
-        "--whatis"
+        "-M"
       ],
-      "description": "Display one-line manual page descriptions",
+      "description": "Specify the list of directories to search (colon separated)",
       "args": {
-        "name": "page"
+        "name": "path",
+        "generators": [
+          {
+            "template": "folders"
+          }
+        ]
       }
     },
     {
       "name": [
-        "-a",
-        "--all"
+        "-P"
       ],
-      "description": "Display all matching manual pages"
+      "description": "Specify the pager program",
+      "args": {
+        "name": "pager"
+      }
+    },
+    {
+      "name": [
+        "-B"
+      ],
+      "description": "Specify which browser to use for HTML files",
+      "args": {
+        "name": "browser"
+      }
+    },
+    {
+      "name": [
+        "-H"
+      ],
+      "description": "Specify a command that renders HTML files as text",
+      "args": {
+        "name": "command"
+      }
+    },
+    {
+      "name": [
+        "-S"
+      ],
+      "description": "Specify a colon-separated list of manual sections to search",
+      "args": {
+        "name": "sections",
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "(...r)=>F(this,void 0,void 0,function*(){var o;let c=yield N(t,s?e:\"\",n,r);if(i)return c;let[f]=r,l=(o=f[f.length-1])===null||o===void 0?void 0:o.split(e);return E(l,c)})"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "-a"
+      ],
+      "description": "Open every matching page instead of just the first"
+    },
+    {
+      "name": [
+        "-c"
+      ],
+      "description": "Reformat the source page, even when an up-to-date cat-page exists"
+    },
+    {
+      "name": [
+        "-d"
+      ],
+      "description": "Don't actually display the pages (dry run)"
+    },
+    {
+      "name": [
+        "-D"
+      ],
+      "description": "Both display and print debugging info"
+    },
+    {
+      "name": [
+        "-f"
+      ],
+      "description": "Equivalent to `whatis`"
+    },
+    {
+      "name": [
+        "-F",
+        "--preformat"
+      ],
+      "description": "Format only, do not display"
+    },
+    {
+      "name": [
+        "-h"
+      ],
+      "description": "Print a help message and exit"
+    },
+    {
+      "name": [
+        "-k"
+      ],
+      "description": "Equivalent to apropos"
+    },
+    {
+      "name": [
+        "-K"
+      ],
+      "description": "Search for a given string in all pages"
+    },
+    {
+      "name": [
+        "-m"
+      ],
+      "description": "Specify an alternate set of pages to search based on the system name given",
+      "args": {
+        "name": "system"
+      }
+    },
+    {
+      "name": [
+        "-p"
+      ],
+      "description": "Specify the sequence of preprocessors to run before nroff or troff",
+      "args": {
+        "name": "preprocessors"
+      }
+    },
+    {
+      "name": [
+        "-t"
+      ],
+      "description": "Use `/usr/bin/groff -Tps -mandoc -c` to format the page"
     },
     {
       "name": [
         "-w",
-        "--where",
         "--path"
       ],
-      "description": "Print location of manual page file"
+      "description": "Print the location of files that would be displayed"
     },
     {
       "name": [
-        "-K",
-        "--global-apropos"
+        "-W"
       ],
-      "description": "Search all manual pages for text"
-    },
-    {
-      "name": [
-        "-M",
-        "--manpath"
-      ],
-      "description": "Set the search path for manual pages",
-      "args": {
-        "name": "path",
-        "template": "folders"
-      }
-    },
-    {
-      "name": [
-        "-S",
-        "--sections"
-      ],
-      "description": "Colon-separated list of sections to search",
-      "args": {
-        "name": "sections"
-      }
-    },
-    {
-      "name": [
-        "-s",
-        "--section"
-      ],
-      "description": "Search only the specified section",
-      "args": {
-        "name": "section"
-      }
+      "description": "Print file locations, one per line"
     }
-  ]
+  ],
+  "args": {
+    "isVariadic": true,
+    "isOptional": true,
+    "generators": [
+      {
+        "requires_js": true,
+        "js_source": "async(e,t)=>{let n=e[e.length-1],s=Date.now();if(s-Z>je&&(A.clear(),Z=s),!D&&A.size===0){D=!0;let{stdout:i}=await t({command:\"man\",args:[\"-k\",\".\"]}),r=new Set;for(let o of i.split(`\n`)){let c=o.indexOf(\" - \"),f=o.slice(0,c),l=o.slice(c+3)||\"Manual page\";l=l[0].toLocaleUpperCase()+l.slice(1);let a=f.split(\", \");for(let u of a){let h=u.lastIndexOf(\"(\"),m=u.slice(0,h),p=u.slice(h);if(r.has(m))continue;r.add(m);let g={name:m,description:`${p} ${l}`,icon:\"fig://icon?type=string\"},v=A.get(m[0]);v?v.push(g):A.set(m[0],[g])}}D=!1}else D&&await new Promise(i=>setTimeout(()=>i(),4e3));return A.get(n[0]||\"a\")||[]}"
+      }
+    ]
+  }
 }

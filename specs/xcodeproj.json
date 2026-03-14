@@ -1,0 +1,180 @@
+{
+  "name": "xcodeproj",
+  "description": "Xcodeproj lets you create and modify Xcode projects",
+  "subcommands": [
+    {
+      "name": "config-dump",
+      "description": "Dumps the build settings of all project targets for all configurations in directories named by the target in the given output directory",
+      "args": [
+        {
+          "name": "PROJECT",
+          "isOptional": true,
+          "generators": [
+            {
+              "template": "folders"
+            }
+          ]
+        },
+        {
+          "name": "OUTPUT",
+          "template": "folders",
+          "isOptional": true
+        }
+      ]
+    },
+    {
+      "name": "project-diff",
+      "description": "Shows the difference between two projects",
+      "options": [
+        {
+          "name": [
+            "--ignore"
+          ],
+          "description": "A key to ignore in the comparison. Can be specified multiple times",
+          "args": {
+            "name": "KEY"
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "PROJECT1",
+          "generators": [
+            {
+              "template": "folders"
+            }
+          ]
+        },
+        {
+          "name": "PROJECT2",
+          "generators": [
+            {
+              "template": "folders"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "show",
+      "description": "Shows an overview of a project in a YAML representation",
+      "options": [
+        {
+          "name": [
+            "--format"
+          ],
+          "description": "YAML output format",
+          "args": {
+            "name": "FORMAT",
+            "suggestions": [
+              {
+                "name": "hash"
+              },
+              {
+                "name": "tree_hash"
+              },
+              {
+                "name": "raw"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "PROJECT",
+        "isOptional": true,
+        "generators": [
+          {
+            "template": "folders"
+          }
+        ]
+      }
+    },
+    {
+      "name": "sort",
+      "description": "Sorts the given project",
+      "options": [
+        {
+          "name": [
+            "--group-option"
+          ],
+          "description": "The position of the groups when sorting. If no option is specified sorting will interleave groups and files",
+          "args": {
+            "name": "POSITION",
+            "suggestions": [
+              {
+                "name": "above"
+              },
+              {
+                "name": "below"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "PROJECT",
+        "isOptional": true,
+        "generators": [
+          {
+            "template": "folders"
+          }
+        ]
+      }
+    },
+    {
+      "name": "target-diff",
+      "description": "Shows the difference between two targets",
+      "options": [
+        {
+          "name": [
+            "--project"
+          ],
+          "description": "The Xcode project document to use",
+          "args": {
+            "name": "PATH",
+            "generators": [
+              {
+                "template": "folders"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "TARGET1"
+        },
+        {
+          "name": "TARGET2"
+        }
+      ]
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "--verbose"
+      ],
+      "description": "Show more debugging information"
+    },
+    {
+      "name": [
+        "--version"
+      ],
+      "description": "Show the version of the tool"
+    },
+    {
+      "name": [
+        "--no-ansi"
+      ],
+      "description": "Show output without ANSI codes"
+    },
+    {
+      "name": [
+        "--help"
+      ],
+      "description": "Show help banner of specified command"
+    }
+  ]
+}

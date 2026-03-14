@@ -1,0 +1,232 @@
+{
+  "name": "sqlite3",
+  "description": "A command line interface for SQLite version 3",
+  "options": [
+    {
+      "name": [
+        "-append"
+      ],
+      "description": "Append the database to the end of the file"
+    },
+    {
+      "name": [
+        "-ascii"
+      ],
+      "description": "Set output mode to 'ascii'"
+    },
+    {
+      "name": [
+        "-bail"
+      ],
+      "description": "Stop after hitting an error"
+    },
+    {
+      "name": [
+        "-batch"
+      ],
+      "description": "Force batch I/O"
+    },
+    {
+      "name": [
+        "-column"
+      ],
+      "description": "Set output mode to 'column'"
+    },
+    {
+      "name": [
+        "-cmd"
+      ],
+      "description": "Run \"COMMAND\" before reading stdin",
+      "args": {
+        "name": "COMMAND"
+      }
+    },
+    {
+      "name": [
+        "-csv"
+      ],
+      "description": "Set output mode to 'csv'"
+    },
+    {
+      "name": [
+        "-echo"
+      ],
+      "description": "Print commands before execution"
+    },
+    {
+      "name": [
+        "-init"
+      ],
+      "description": "Read/process named file",
+      "args": {
+        "name": "FILENAME",
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "(p,m,b)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:S,currentWorkingDirectory:_,searchTerm:h}=b,w=(f=(0,g.getCurrentInsertedDirectory)(c??_,h,b))!==null&&f!==void 0?f:\"/\";try{let C=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:w}),G=z(C.stdout.split(`\n`),[\".DS_Store\"]),P=[];for(let M of G)if(M){let F=M.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&u!==\"only\"||F===\"folders\"&&u!==\"never\")&&P.push({type:F===\"filepaths\"?\"file\":\"folder\",name:M,insertValue:M,isDangerous:S,context:{templateType:F}})}return O(v(P))}catch{return[]}})"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "-header"
+      ],
+      "description": "Turn headers on"
+    },
+    {
+      "name": [
+        "-noheader"
+      ],
+      "description": "Turn headers off"
+    },
+    {
+      "name": [
+        "-help"
+      ],
+      "description": "Show help message"
+    },
+    {
+      "name": [
+        "-html"
+      ],
+      "description": "Set output mode to HTML"
+    },
+    {
+      "name": [
+        "-interactive"
+      ],
+      "description": "Force interactive I/O"
+    },
+    {
+      "name": [
+        "-line"
+      ],
+      "description": "Set output mode to 'line'"
+    },
+    {
+      "name": [
+        "-list"
+      ],
+      "description": "Set output mode to 'list'"
+    },
+    {
+      "name": [
+        "-lookaside"
+      ],
+      "description": "Use N entries of SZ bytes for lookaside memory",
+      "args": [
+        {
+          "name": "SIZE"
+        },
+        {
+          "name": "N"
+        }
+      ]
+    },
+    {
+      "name": [
+        "-memtrace"
+      ],
+      "description": "Trace all memory allocations and deallocations"
+    },
+    {
+      "name": [
+        "-mmap"
+      ],
+      "description": "Default mmap size set to N",
+      "args": {
+        "name": "N"
+      }
+    },
+    {
+      "name": [
+        "-newline"
+      ],
+      "description": "Set output row separator",
+      "args": {
+        "name": "SEP"
+      }
+    },
+    {
+      "name": [
+        "-nofollow"
+      ],
+      "description": "Refuse to open symbolic links to database files"
+    },
+    {
+      "name": [
+        "-nullvalue"
+      ],
+      "description": "Set text string for NULL values",
+      "args": {
+        "name": "TEXT"
+      }
+    },
+    {
+      "name": [
+        "-pagecache"
+      ],
+      "description": "Use N slots of SZ bytes each for page cache memory",
+      "args": [
+        {
+          "name": "SIZE"
+        },
+        {
+          "name": "N"
+        }
+      ]
+    },
+    {
+      "name": [
+        "-quote"
+      ],
+      "description": "Set output mode to 'quote'"
+    },
+    {
+      "name": [
+        "-readonly"
+      ],
+      "description": "Open the database read-only"
+    },
+    {
+      "name": [
+        "-separator"
+      ],
+      "description": "Set output column separator",
+      "args": {
+        "name": "SEP"
+      }
+    },
+    {
+      "name": [
+        "-stats"
+      ],
+      "description": "Print memory stats before each finalize"
+    },
+    {
+      "name": [
+        "-version"
+      ],
+      "description": "Show SQLite version"
+    },
+    {
+      "name": [
+        "-vfs"
+      ],
+      "description": "Use NAME as the default VFS",
+      "args": {
+        "name": "NAME"
+      }
+    }
+  ],
+  "args": {
+    "name": "FILENAME",
+    "generators": [
+      {
+        "requires_js": true,
+        "js_source": "(p,m,b)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:S,currentWorkingDirectory:_,searchTerm:h}=b,w=(f=(0,g.getCurrentInsertedDirectory)(c??_,h,b))!==null&&f!==void 0?f:\"/\";try{let C=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:w}),G=z(C.stdout.split(`\n`),[\".DS_Store\"]),P=[];for(let M of G)if(M){let F=M.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&u!==\"only\"||F===\"folders\"&&u!==\"never\")&&P.push({type:F===\"filepaths\"?\"file\":\"folder\",name:M,insertValue:M,isDangerous:S,context:{templateType:F}})}return O(v(P))}catch{return[]}})"
+      }
+    ]
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "name": "mdfind",
+  "description": "Finds files matching a given query",
+  "options": [
+    {
+      "name": [
+        "--help",
+        "-h"
+      ],
+      "description": "Show help for mdfind"
+    },
+    {
+      "name": [
+        "-0"
+      ],
+      "description": "Prints an ASCII NUL character after each result path"
+    },
+    {
+      "name": [
+        "-live"
+      ],
+      "description": "Provide live-updates to the number of files matching the query"
+    },
+    {
+      "name": [
+        "-count"
+      ],
+      "description": "Output the total number of matches, instead of the path to the matching items"
+    },
+    {
+      "name": [
+        "-onlyin"
+      ],
+      "description": "Limit the scope of the search to <dir>",
+      "args": {
+        "name": "dir",
+        "description": "Directory",
+        "template": "folders"
+      }
+    },
+    {
+      "name": [
+        "-name"
+      ],
+      "description": "Search for matching file names to <filename> only",
+      "args": {
+        "name": "filename"
+      }
+    },
+    {
+      "name": [
+        "-reprint"
+      ],
+      "description": "Reprint results on live update"
+    },
+    {
+      "name": [
+        "-s"
+      ],
+      "description": "Show contents of smart folder ~/Library/Saved Searches/<folder>.savedSearch",
+      "args": {
+        "name": "folder",
+        "description": "Smart folder in  ~/Library/Saved Searches",
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "async(c,i,n)=>{let{stdout:a}=await i({command:\"ls\",args:[\"-1A\",`${n.environmentVariables.HOME}/Library/Saved Searches/`]});return a.split(`\n`).filter(e=>e.endsWith(\"savedSearch\")).map(e=>{let r=e.split(\"/\"),t=r[r.length-1];return{name:t.substring(0,t.indexOf(\".\")),displayName:t,icon:\"fig://\"+e,description:\"Smart folder\"}})}"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "-literal"
+      ],
+      "description": "Force the provided query string to be taken as a literal query string, without interpretation"
+    },
+    {
+      "name": [
+        "-interpret"
+      ],
+      "description": "Force the provided query string to be interpreted as if it had been typed into the Spotlight menu"
+    }
+  ],
+  "args": {
+    "name": "query"
+  }
+}

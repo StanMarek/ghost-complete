@@ -1,0 +1,4290 @@
+{
+  "name": "deno",
+  "description": "A modern JavaScript and TypeScript runtime",
+  "subcommands": [
+    {
+      "name": "bench",
+      "description": "Run benchmarks",
+      "options": [
+        {
+          "name": [
+            "--import-map"
+          ],
+          "description": "Load import map file",
+          "args": {
+            "name": "import-map",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-c",
+            "--config"
+          ],
+          "description": "Specify the configuration file",
+          "args": {
+            "name": "config",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--no-check"
+          ],
+          "description": "Skip type-checking modules",
+          "args": {
+            "name": "no-check",
+            "isVariadic": true,
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "remote"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--check"
+          ],
+          "description": "Type-check modules",
+          "args": {
+            "name": "check",
+            "isVariadic": true,
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "all"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-r",
+            "--reload"
+          ],
+          "description": "Reload source code cache (recompile TypeScript)",
+          "args": {
+            "name": "reload",
+            "template": "filepaths",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--lock"
+          ],
+          "description": "Check the specified lock file",
+          "args": {
+            "name": "lock",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--cert"
+          ],
+          "description": "Load certificate authority from PEM encoded file",
+          "args": {
+            "name": "cert",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--allow-read"
+          ],
+          "description": "Allow file system read access",
+          "args": {
+            "name": "allow-read",
+            "template": "filepaths",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--allow-write"
+          ],
+          "description": "Allow file system write access",
+          "args": {
+            "name": "allow-write",
+            "template": "filepaths",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--allow-net"
+          ],
+          "description": "Allow network access",
+          "args": {
+            "name": "allow-net",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--unsafely-ignore-certificate-errors"
+          ],
+          "description": "DANGER: Disables verification of TLS certificates",
+          "args": {
+            "name": "unsafely-ignore-certificate-errors",
+            "description": "Scope ignoring certificate errors to these hosts",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--allow-env"
+          ],
+          "description": "Allow environment access",
+          "args": {
+            "name": "allow-env",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--allow-run"
+          ],
+          "description": "Allow running subprocesses",
+          "args": {
+            "name": "allow-run",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--allow-ffi"
+          ],
+          "description": "Allow loading dynamic libraries",
+          "args": {
+            "name": "allow-ffi",
+            "template": "filepaths",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--location"
+          ],
+          "description": "Value of 'globalThis.location' used by some web APIs",
+          "args": {
+            "name": "location",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--v8-flags"
+          ],
+          "description": "Set V8 command line options",
+          "args": {
+            "name": "v8-flags",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--seed"
+          ],
+          "description": "Set the random number generator seed",
+          "args": {
+            "name": "seed",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--ignore"
+          ],
+          "description": "Ignore files",
+          "args": {
+            "name": "ignore",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--filter"
+          ],
+          "description": "Run benchmarks with this string or pattern in the bench name",
+          "args": {
+            "name": "filter",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-L",
+            "--log-level"
+          ],
+          "description": "Set log level",
+          "args": {
+            "name": "log-level",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "debug"
+              },
+              {
+                "name": "info"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--no-remote"
+          ],
+          "description": "Do not resolve remote modules"
+        },
+        {
+          "name": [
+            "--no-config"
+          ],
+          "description": "Disable automatic loading of the configuration file"
+        },
+        {
+          "name": [
+            "--lock-write"
+          ],
+          "description": "Write lock file (use with --lock)"
+        },
+        {
+          "name": [
+            "--allow-hrtime"
+          ],
+          "description": "Allow high resolution time measurement"
+        },
+        {
+          "name": [
+            "-A",
+            "--allow-all"
+          ],
+          "description": "Allow all permissions"
+        },
+        {
+          "name": [
+            "--prompt"
+          ],
+          "description": "Deprecated: Fallback to prompt if required permission wasn't passed"
+        },
+        {
+          "name": [
+            "--no-prompt"
+          ],
+          "description": "Always throw if required permission wasn't passed"
+        },
+        {
+          "name": [
+            "--cached-only"
+          ],
+          "description": "Require that remote dependencies are already cached"
+        },
+        {
+          "name": [
+            "--enable-testing-features-do-not-use"
+          ],
+          "description": "INTERNAL: Enable internal features used during integration testing"
+        },
+        {
+          "name": [
+            "--compat"
+          ],
+          "description": "UNSTABLE: Node compatibility mode"
+        },
+        {
+          "name": [
+            "--watch"
+          ],
+          "description": "Watch for file changes and restart automatically"
+        },
+        {
+          "name": [
+            "--no-clear-screen"
+          ],
+          "description": "Do not clear terminal screen when under watch mode"
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help information"
+        },
+        {
+          "name": [
+            "--unstable"
+          ],
+          "description": "Enable unstable features and APIs"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Suppress diagnostic output"
+        }
+      ],
+      "args": [
+        {
+          "name": "files",
+          "template": "filepaths",
+          "isVariadic": true,
+          "isOptional": true
+        },
+        {
+          "name": "script_arg",
+          "template": "filepaths",
+          "isVariadic": true,
+          "isOptional": true
+        }
+      ]
+    },
+    {
+      "name": "bundle",
+      "description": "Bundle module and dependencies into single file",
+      "options": [
+        {
+          "name": [
+            "--import-map"
+          ],
+          "description": "Load import map file",
+          "args": {
+            "name": "import-map",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-c",
+            "--config"
+          ],
+          "description": "Specify the configuration file",
+          "args": {
+            "name": "config",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--no-check"
+          ],
+          "description": "Skip type-checking modules",
+          "args": {
+            "name": "no-check",
+            "isVariadic": true,
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "remote"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--check"
+          ],
+          "description": "Type-check modules",
+          "args": {
+            "name": "check",
+            "isVariadic": true,
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "all"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-r",
+            "--reload"
+          ],
+          "description": "Reload source code cache (recompile TypeScript)",
+          "args": {
+            "name": "reload",
+            "template": "filepaths",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--lock"
+          ],
+          "description": "Check the specified lock file",
+          "args": {
+            "name": "lock",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--cert"
+          ],
+          "description": "Load certificate authority from PEM encoded file",
+          "args": {
+            "name": "cert",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-L",
+            "--log-level"
+          ],
+          "description": "Set log level",
+          "args": {
+            "name": "log-level",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "debug"
+              },
+              {
+                "name": "info"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--no-remote"
+          ],
+          "description": "Do not resolve remote modules"
+        },
+        {
+          "name": [
+            "--no-config"
+          ],
+          "description": "Disable automatic loading of the configuration file"
+        },
+        {
+          "name": [
+            "--lock-write"
+          ],
+          "description": "Write lock file (use with --lock)"
+        },
+        {
+          "name": [
+            "--watch"
+          ],
+          "description": "Watch for file changes and restart automatically"
+        },
+        {
+          "name": [
+            "--no-clear-screen"
+          ],
+          "description": "Do not clear terminal screen when under watch mode"
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help information"
+        },
+        {
+          "name": [
+            "--unstable"
+          ],
+          "description": "Enable unstable features and APIs"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Suppress diagnostic output"
+        }
+      ],
+      "args": [
+        {
+          "name": "source_file",
+          "template": "filepaths"
+        },
+        {
+          "name": "out_file",
+          "template": "filepaths",
+          "isOptional": true
+        }
+      ]
+    },
+    {
+      "name": "cache",
+      "description": "Cache the dependencies",
+      "options": [
+        {
+          "name": [
+            "--import-map"
+          ],
+          "description": "Load import map file",
+          "args": {
+            "name": "import-map",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-c",
+            "--config"
+          ],
+          "description": "Specify the configuration file",
+          "args": {
+            "name": "config",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--no-check"
+          ],
+          "description": "Skip type-checking modules",
+          "args": {
+            "name": "no-check",
+            "isVariadic": true,
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "remote"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--check"
+          ],
+          "description": "Type-check modules",
+          "args": {
+            "name": "check",
+            "isVariadic": true,
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "all"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-r",
+            "--reload"
+          ],
+          "description": "Reload source code cache (recompile TypeScript)",
+          "args": {
+            "name": "reload",
+            "template": "filepaths",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--lock"
+          ],
+          "description": "Check the specified lock file",
+          "args": {
+            "name": "lock",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--cert"
+          ],
+          "description": "Load certificate authority from PEM encoded file",
+          "args": {
+            "name": "cert",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-L",
+            "--log-level"
+          ],
+          "description": "Set log level",
+          "args": {
+            "name": "log-level",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "debug"
+              },
+              {
+                "name": "info"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--no-remote"
+          ],
+          "description": "Do not resolve remote modules"
+        },
+        {
+          "name": [
+            "--no-config"
+          ],
+          "description": "Disable automatic loading of the configuration file"
+        },
+        {
+          "name": [
+            "--lock-write"
+          ],
+          "description": "Write lock file (use with --lock)"
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help information"
+        },
+        {
+          "name": [
+            "--unstable"
+          ],
+          "description": "Enable unstable features and APIs"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Suppress diagnostic output"
+        }
+      ],
+      "args": {
+        "name": "file",
+        "template": "filepaths",
+        "isVariadic": true
+      }
+    },
+    {
+      "name": "check",
+      "description": "Type-check the dependencies",
+      "options": [
+        {
+          "name": [
+            "--import-map"
+          ],
+          "description": "Load import map file",
+          "args": {
+            "name": "import-map",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-c",
+            "--config"
+          ],
+          "description": "Specify the configuration file",
+          "args": {
+            "name": "config",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-r",
+            "--reload"
+          ],
+          "description": "Reload source code cache (recompile TypeScript)",
+          "args": {
+            "name": "reload",
+            "template": "filepaths",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--lock"
+          ],
+          "description": "Check the specified lock file",
+          "args": {
+            "name": "lock",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--cert"
+          ],
+          "description": "Load certificate authority from PEM encoded file",
+          "args": {
+            "name": "cert",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-L",
+            "--log-level"
+          ],
+          "description": "Set log level",
+          "args": {
+            "name": "log-level",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "debug"
+              },
+              {
+                "name": "info"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--no-remote"
+          ],
+          "description": "Do not resolve remote modules"
+        },
+        {
+          "name": [
+            "--no-config"
+          ],
+          "description": "Disable automatic loading of the configuration file"
+        },
+        {
+          "name": [
+            "--lock-write"
+          ],
+          "description": "Write lock file (use with --lock)"
+        },
+        {
+          "name": [
+            "--remote"
+          ],
+          "description": "Type-check all modules, including remote"
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help information"
+        },
+        {
+          "name": [
+            "--unstable"
+          ],
+          "description": "Enable unstable features and APIs"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Suppress diagnostic output"
+        }
+      ],
+      "args": {
+        "name": "file",
+        "template": "filepaths",
+        "isVariadic": true
+      }
+    },
+    {
+      "name": "compile",
+      "description": "UNSTABLE: Compile the script into a self contained executable",
+      "options": [
+        {
+          "name": [
+            "--import-map"
+          ],
+          "description": "Load import map file",
+          "args": {
+            "name": "import-map",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-c",
+            "--config"
+          ],
+          "description": "Specify the configuration file",
+          "args": {
+            "name": "config",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--no-check"
+          ],
+          "description": "Skip type-checking modules",
+          "args": {
+            "name": "no-check",
+            "isVariadic": true,
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "remote"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--check"
+          ],
+          "description": "Type-check modules",
+          "args": {
+            "name": "check",
+            "isVariadic": true,
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "all"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-r",
+            "--reload"
+          ],
+          "description": "Reload source code cache (recompile TypeScript)",
+          "args": {
+            "name": "reload",
+            "template": "filepaths",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--lock"
+          ],
+          "description": "Check the specified lock file",
+          "args": {
+            "name": "lock",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--cert"
+          ],
+          "description": "Load certificate authority from PEM encoded file",
+          "args": {
+            "name": "cert",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--allow-read"
+          ],
+          "description": "Allow file system read access",
+          "args": {
+            "name": "allow-read",
+            "template": "filepaths",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--allow-write"
+          ],
+          "description": "Allow file system write access",
+          "args": {
+            "name": "allow-write",
+            "template": "filepaths",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--allow-net"
+          ],
+          "description": "Allow network access",
+          "args": {
+            "name": "allow-net",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--unsafely-ignore-certificate-errors"
+          ],
+          "description": "DANGER: Disables verification of TLS certificates",
+          "args": {
+            "name": "unsafely-ignore-certificate-errors",
+            "description": "Scope ignoring certificate errors to these hosts",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--allow-env"
+          ],
+          "description": "Allow environment access",
+          "args": {
+            "name": "allow-env",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--allow-run"
+          ],
+          "description": "Allow running subprocesses",
+          "args": {
+            "name": "allow-run",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--allow-ffi"
+          ],
+          "description": "Allow loading dynamic libraries",
+          "args": {
+            "name": "allow-ffi",
+            "template": "filepaths",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--location"
+          ],
+          "description": "Value of 'globalThis.location' used by some web APIs",
+          "args": {
+            "name": "location",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--v8-flags"
+          ],
+          "description": "Set V8 command line options",
+          "args": {
+            "name": "v8-flags",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--seed"
+          ],
+          "description": "Set the random number generator seed",
+          "args": {
+            "name": "seed",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-o",
+            "--output"
+          ],
+          "description": "Output file (defaults to $PWD/<inferred-name>)",
+          "args": {
+            "name": "output",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--target"
+          ],
+          "description": "Target OS architecture",
+          "args": {
+            "name": "target",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "x86_64-unknown-linux-gnu"
+              },
+              {
+                "name": "x86_64-pc-windows-msvc"
+              },
+              {
+                "name": "x86_64-apple-darwin"
+              },
+              {
+                "name": "aarch64-apple-darwin"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-L",
+            "--log-level"
+          ],
+          "description": "Set log level",
+          "args": {
+            "name": "log-level",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "debug"
+              },
+              {
+                "name": "info"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--no-remote"
+          ],
+          "description": "Do not resolve remote modules"
+        },
+        {
+          "name": [
+            "--no-config"
+          ],
+          "description": "Disable automatic loading of the configuration file"
+        },
+        {
+          "name": [
+            "--lock-write"
+          ],
+          "description": "Write lock file (use with --lock)"
+        },
+        {
+          "name": [
+            "--allow-hrtime"
+          ],
+          "description": "Allow high resolution time measurement"
+        },
+        {
+          "name": [
+            "-A",
+            "--allow-all"
+          ],
+          "description": "Allow all permissions"
+        },
+        {
+          "name": [
+            "--prompt"
+          ],
+          "description": "Deprecated: Fallback to prompt if required permission wasn't passed"
+        },
+        {
+          "name": [
+            "--no-prompt"
+          ],
+          "description": "Always throw if required permission wasn't passed"
+        },
+        {
+          "name": [
+            "--cached-only"
+          ],
+          "description": "Require that remote dependencies are already cached"
+        },
+        {
+          "name": [
+            "--enable-testing-features-do-not-use"
+          ],
+          "description": "INTERNAL: Enable internal features used during integration testing"
+        },
+        {
+          "name": [
+            "--compat"
+          ],
+          "description": "UNSTABLE: Node compatibility mode"
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help information"
+        },
+        {
+          "name": [
+            "--unstable"
+          ],
+          "description": "Enable unstable features and APIs"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Suppress diagnostic output"
+        }
+      ],
+      "args": {
+        "name": "script_arg",
+        "isVariadic": true,
+        "generators": [
+          {
+            "template": "filepaths"
+          },
+          {
+            "script": [
+              "pbpaste"
+            ],
+            "requires_js": true,
+            "js_source": "e=>{if(e=e.trim(),!e)return[];for(let t of Ge){let i=t(e);if(i)return[{name:i===!0?e:i,icon:\"fig://template?badge=\\u{1F4CB}&color=000000\",priority:100}]}}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "completions",
+      "description": "Generate shell completions",
+      "options": [
+        {
+          "name": [
+            "-L",
+            "--log-level"
+          ],
+          "description": "Set log level",
+          "args": {
+            "name": "log-level",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "debug"
+              },
+              {
+                "name": "info"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help information"
+        },
+        {
+          "name": [
+            "--unstable"
+          ],
+          "description": "Enable unstable features and APIs"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Suppress diagnostic output"
+        }
+      ],
+      "args": {
+        "name": "shell",
+        "suggestions": [
+          {
+            "name": "bash"
+          },
+          {
+            "name": "fish"
+          },
+          {
+            "name": "powershell"
+          },
+          {
+            "name": "zsh"
+          },
+          {
+            "name": "fig"
+          }
+        ]
+      }
+    },
+    {
+      "name": "coverage",
+      "description": "Print coverage reports",
+      "options": [
+        {
+          "name": [
+            "--ignore"
+          ],
+          "description": "Ignore coverage files",
+          "args": {
+            "name": "ignore",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--include"
+          ],
+          "description": "Include source files in the report",
+          "args": {
+            "name": "include",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--exclude"
+          ],
+          "description": "Exclude source files from the report",
+          "args": {
+            "name": "exclude",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--output"
+          ],
+          "description": "Output file (defaults to stdout) for lcov",
+          "args": {
+            "name": "output",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-L",
+            "--log-level"
+          ],
+          "description": "Set log level",
+          "args": {
+            "name": "log-level",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "debug"
+              },
+              {
+                "name": "info"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--lcov"
+          ],
+          "description": "Output coverage report in lcov format"
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help information"
+        },
+        {
+          "name": [
+            "--unstable"
+          ],
+          "description": "Enable unstable features and APIs"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Suppress diagnostic output"
+        }
+      ],
+      "args": {
+        "name": "files",
+        "template": "filepaths",
+        "isVariadic": true
+      }
+    },
+    {
+      "name": "doc",
+      "description": "Show documentation for a module",
+      "options": [
+        {
+          "name": [
+            "--import-map"
+          ],
+          "description": "Load import map file",
+          "args": {
+            "name": "import-map",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-r",
+            "--reload"
+          ],
+          "description": "Reload source code cache (recompile TypeScript)",
+          "args": {
+            "name": "reload",
+            "template": "filepaths",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-L",
+            "--log-level"
+          ],
+          "description": "Set log level",
+          "args": {
+            "name": "log-level",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "debug"
+              },
+              {
+                "name": "info"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--json"
+          ],
+          "description": "Output documentation in JSON format"
+        },
+        {
+          "name": [
+            "--private"
+          ],
+          "description": "Output private documentation"
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help information"
+        },
+        {
+          "name": [
+            "--unstable"
+          ],
+          "description": "Enable unstable features and APIs"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Suppress diagnostic output"
+        }
+      ],
+      "args": [
+        {
+          "name": "source_file",
+          "isOptional": true,
+          "suggestions": [
+            {
+              "name": "--builtin",
+              "description": "Get documentation for built-in symbols"
+            }
+          ],
+          "generators": [
+            {
+              "template": "filepaths"
+            },
+            {
+              "script": [
+                "pbpaste"
+              ],
+              "requires_js": true,
+              "js_source": "e=>{if(e=e.trim(),!e)return[];for(let t of Ge){let i=t(e);if(i)return[{name:i===!0?e:i,icon:\"fig://template?badge=\\u{1F4CB}&color=000000\",priority:100}]}}"
+            }
+          ]
+        },
+        {
+          "name": "filter",
+          "isOptional": true,
+          "generators": [
+            {
+              "requires_js": true,
+              "js_source": "e=>{let t=new Set([\"--private\",\"--builtin\",\"--unstable\"]),i=e.slice(0,-1).filter(n=>!(n.startsWith(\"-\")&&!t.has(n))&&!n.startsWith(\"$\")&&!n.startsWith(\"(\"));return i.push(\"--json\"),i}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "eval",
+      "description": "Eval script",
+      "options": [
+        {
+          "name": [
+            "--import-map"
+          ],
+          "description": "Load import map file",
+          "args": {
+            "name": "import-map",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-c",
+            "--config"
+          ],
+          "description": "Specify the configuration file",
+          "args": {
+            "name": "config",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--no-check"
+          ],
+          "description": "Skip type-checking modules",
+          "args": {
+            "name": "no-check",
+            "isVariadic": true,
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "remote"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--check"
+          ],
+          "description": "Type-check modules",
+          "args": {
+            "name": "check",
+            "isVariadic": true,
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "all"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-r",
+            "--reload"
+          ],
+          "description": "Reload source code cache (recompile TypeScript)",
+          "args": {
+            "name": "reload",
+            "template": "filepaths",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--lock"
+          ],
+          "description": "Check the specified lock file",
+          "args": {
+            "name": "lock",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--cert"
+          ],
+          "description": "Load certificate authority from PEM encoded file",
+          "args": {
+            "name": "cert",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--inspect"
+          ],
+          "description": "Activate inspector on host:port (default: 127.0.0.1:9229)",
+          "args": {
+            "name": "inspect",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--inspect-brk"
+          ],
+          "description": "Activate inspector on host:port and break at start of user script",
+          "args": {
+            "name": "inspect-brk",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--location"
+          ],
+          "description": "Value of 'globalThis.location' used by some web APIs",
+          "args": {
+            "name": "location",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--v8-flags"
+          ],
+          "description": "Set V8 command line options",
+          "args": {
+            "name": "v8-flags",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--seed"
+          ],
+          "description": "Set the random number generator seed",
+          "args": {
+            "name": "seed",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--ext"
+          ],
+          "description": "Set standard input (stdin) content type",
+          "args": {
+            "name": "ext",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "ts"
+              },
+              {
+                "name": "tsx"
+              },
+              {
+                "name": "js"
+              },
+              {
+                "name": "jsx"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-L",
+            "--log-level"
+          ],
+          "description": "Set log level",
+          "args": {
+            "name": "log-level",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "debug"
+              },
+              {
+                "name": "info"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--no-remote"
+          ],
+          "description": "Do not resolve remote modules"
+        },
+        {
+          "name": [
+            "--no-config"
+          ],
+          "description": "Disable automatic loading of the configuration file"
+        },
+        {
+          "name": [
+            "--lock-write"
+          ],
+          "description": "Write lock file (use with --lock)"
+        },
+        {
+          "name": [
+            "--cached-only"
+          ],
+          "description": "Require that remote dependencies are already cached"
+        },
+        {
+          "name": [
+            "--enable-testing-features-do-not-use"
+          ],
+          "description": "INTERNAL: Enable internal features used during integration testing"
+        },
+        {
+          "name": [
+            "--compat"
+          ],
+          "description": "UNSTABLE: Node compatibility mode"
+        },
+        {
+          "name": [
+            "-T",
+            "--ts"
+          ],
+          "description": "Treat eval input as TypeScript"
+        },
+        {
+          "name": [
+            "-p",
+            "--print"
+          ],
+          "description": "Print result to stdout"
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help information"
+        },
+        {
+          "name": [
+            "--unstable"
+          ],
+          "description": "Enable unstable features and APIs"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Suppress diagnostic output"
+        }
+      ],
+      "args": {
+        "name": "code_arg",
+        "isVariadic": true
+      }
+    },
+    {
+      "name": "fmt",
+      "description": "Format source files",
+      "options": [
+        {
+          "name": [
+            "-c",
+            "--config"
+          ],
+          "description": "Specify the configuration file",
+          "args": {
+            "name": "config",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--ext"
+          ],
+          "description": "Set standard input (stdin) content type",
+          "args": {
+            "name": "ext",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "ts"
+              },
+              {
+                "name": "tsx"
+              },
+              {
+                "name": "js"
+              },
+              {
+                "name": "jsx"
+              },
+              {
+                "name": "md"
+              },
+              {
+                "name": "json"
+              },
+              {
+                "name": "jsonc"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--ignore"
+          ],
+          "description": "Ignore formatting particular source files",
+          "args": {
+            "name": "ignore",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--options-line-width"
+          ],
+          "description": "Define maximum line width. Defaults to 80",
+          "args": {
+            "name": "options-line-width",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--options-indent-width"
+          ],
+          "description": "Define indentation width. Defaults to 2",
+          "args": {
+            "name": "options-indent-width",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--options-prose-wrap"
+          ],
+          "description": "Define how prose should be wrapped. Defaults to always",
+          "args": {
+            "name": "options-prose-wrap",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "always"
+              },
+              {
+                "name": "never"
+              },
+              {
+                "name": "preserve"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-L",
+            "--log-level"
+          ],
+          "description": "Set log level",
+          "args": {
+            "name": "log-level",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "debug"
+              },
+              {
+                "name": "info"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--no-config"
+          ],
+          "description": "Disable automatic loading of the configuration file"
+        },
+        {
+          "name": [
+            "--check"
+          ],
+          "description": "Check if the source files are formatted"
+        },
+        {
+          "name": [
+            "--watch"
+          ],
+          "description": "Watch for file changes and restart automatically"
+        },
+        {
+          "name": [
+            "--no-clear-screen"
+          ],
+          "description": "Do not clear terminal screen when under watch mode"
+        },
+        {
+          "name": [
+            "--options-use-tabs"
+          ],
+          "description": "Use tabs instead of spaces for indentation. Defaults to false"
+        },
+        {
+          "name": [
+            "--options-single-quote"
+          ],
+          "description": "Use single quotes. Defaults to false"
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help information"
+        },
+        {
+          "name": [
+            "--unstable"
+          ],
+          "description": "Enable unstable features and APIs"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Suppress diagnostic output"
+        }
+      ],
+      "args": {
+        "name": "files",
+        "template": "filepaths",
+        "isVariadic": true,
+        "isOptional": true,
+        "suggestions": [
+          {
+            "name": "-",
+            "description": "Read from standard input"
+          }
+        ]
+      }
+    },
+    {
+      "name": "init",
+      "description": "Initialize a new project",
+      "options": [
+        {
+          "name": [
+            "-L",
+            "--log-level"
+          ],
+          "description": "Set log level",
+          "args": {
+            "name": "log-level",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "debug"
+              },
+              {
+                "name": "info"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help information"
+        },
+        {
+          "name": [
+            "--unstable"
+          ],
+          "description": "Enable unstable features and APIs"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Suppress diagnostic output"
+        }
+      ],
+      "args": {
+        "name": "dir",
+        "template": "folders",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "info",
+      "description": "Show info about cache or info related to source file",
+      "options": [
+        {
+          "name": [
+            "-r",
+            "--reload"
+          ],
+          "description": "Reload source code cache (recompile TypeScript)",
+          "args": {
+            "name": "reload",
+            "template": "filepaths",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--cert"
+          ],
+          "description": "Load certificate authority from PEM encoded file",
+          "args": {
+            "name": "cert",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--location"
+          ],
+          "description": "Show files used for origin bound APIs like the Web Storage API when running a script with '--location=<HREF>'",
+          "args": {
+            "name": "location",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--no-check"
+          ],
+          "description": "Skip type-checking modules",
+          "args": {
+            "name": "no-check",
+            "isVariadic": true,
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "remote"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-c",
+            "--config"
+          ],
+          "description": "Specify the configuration file",
+          "args": {
+            "name": "config",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--import-map"
+          ],
+          "description": "Load import map file",
+          "args": {
+            "name": "import-map",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-L",
+            "--log-level"
+          ],
+          "description": "Set log level",
+          "args": {
+            "name": "log-level",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "debug"
+              },
+              {
+                "name": "info"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--no-config"
+          ],
+          "description": "Disable automatic loading of the configuration file"
+        },
+        {
+          "name": [
+            "--json"
+          ],
+          "description": "UNSTABLE: Outputs the information in JSON format"
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help information"
+        },
+        {
+          "name": [
+            "--unstable"
+          ],
+          "description": "Enable unstable features and APIs"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Suppress diagnostic output"
+        }
+      ],
+      "args": {
+        "name": "file",
+        "template": "filepaths",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "install",
+      "description": "Install script as an executable",
+      "options": [
+        {
+          "name": [
+            "--import-map"
+          ],
+          "description": "Load import map file",
+          "args": {
+            "name": "import-map",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-c",
+            "--config"
+          ],
+          "description": "Specify the configuration file",
+          "args": {
+            "name": "config",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--no-check"
+          ],
+          "description": "Skip type-checking modules",
+          "args": {
+            "name": "no-check",
+            "isVariadic": true,
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "remote"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--check"
+          ],
+          "description": "Type-check modules",
+          "args": {
+            "name": "check",
+            "isVariadic": true,
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "all"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-r",
+            "--reload"
+          ],
+          "description": "Reload source code cache (recompile TypeScript)",
+          "args": {
+            "name": "reload",
+            "template": "filepaths",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--lock"
+          ],
+          "description": "Check the specified lock file",
+          "args": {
+            "name": "lock",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--cert"
+          ],
+          "description": "Load certificate authority from PEM encoded file",
+          "args": {
+            "name": "cert",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--allow-read"
+          ],
+          "description": "Allow file system read access",
+          "args": {
+            "name": "allow-read",
+            "template": "filepaths",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--allow-write"
+          ],
+          "description": "Allow file system write access",
+          "args": {
+            "name": "allow-write",
+            "template": "filepaths",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--allow-net"
+          ],
+          "description": "Allow network access",
+          "args": {
+            "name": "allow-net",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--unsafely-ignore-certificate-errors"
+          ],
+          "description": "DANGER: Disables verification of TLS certificates",
+          "args": {
+            "name": "unsafely-ignore-certificate-errors",
+            "description": "Scope ignoring certificate errors to these hosts",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--allow-env"
+          ],
+          "description": "Allow environment access",
+          "args": {
+            "name": "allow-env",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--allow-run"
+          ],
+          "description": "Allow running subprocesses",
+          "args": {
+            "name": "allow-run",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--allow-ffi"
+          ],
+          "description": "Allow loading dynamic libraries",
+          "args": {
+            "name": "allow-ffi",
+            "template": "filepaths",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--inspect"
+          ],
+          "description": "Activate inspector on host:port (default: 127.0.0.1:9229)",
+          "args": {
+            "name": "inspect",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--inspect-brk"
+          ],
+          "description": "Activate inspector on host:port and break at start of user script",
+          "args": {
+            "name": "inspect-brk",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--location"
+          ],
+          "description": "Value of 'globalThis.location' used by some web APIs",
+          "args": {
+            "name": "location",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--v8-flags"
+          ],
+          "description": "Set V8 command line options",
+          "args": {
+            "name": "v8-flags",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--seed"
+          ],
+          "description": "Set the random number generator seed",
+          "args": {
+            "name": "seed",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-n",
+            "--name"
+          ],
+          "description": "Executable file name",
+          "args": {
+            "name": "name",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--root"
+          ],
+          "description": "Installation root",
+          "args": {
+            "name": "root",
+            "template": "folders",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-L",
+            "--log-level"
+          ],
+          "description": "Set log level",
+          "args": {
+            "name": "log-level",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "debug"
+              },
+              {
+                "name": "info"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--no-remote"
+          ],
+          "description": "Do not resolve remote modules"
+        },
+        {
+          "name": [
+            "--no-config"
+          ],
+          "description": "Disable automatic loading of the configuration file"
+        },
+        {
+          "name": [
+            "--lock-write"
+          ],
+          "description": "Write lock file (use with --lock)"
+        },
+        {
+          "name": [
+            "--allow-hrtime"
+          ],
+          "description": "Allow high resolution time measurement"
+        },
+        {
+          "name": [
+            "-A",
+            "--allow-all"
+          ],
+          "description": "Allow all permissions"
+        },
+        {
+          "name": [
+            "--prompt"
+          ],
+          "description": "Deprecated: Fallback to prompt if required permission wasn't passed"
+        },
+        {
+          "name": [
+            "--no-prompt"
+          ],
+          "description": "Always throw if required permission wasn't passed"
+        },
+        {
+          "name": [
+            "--cached-only"
+          ],
+          "description": "Require that remote dependencies are already cached"
+        },
+        {
+          "name": [
+            "--enable-testing-features-do-not-use"
+          ],
+          "description": "INTERNAL: Enable internal features used during integration testing"
+        },
+        {
+          "name": [
+            "--compat"
+          ],
+          "description": "UNSTABLE: Node compatibility mode"
+        },
+        {
+          "name": [
+            "-f",
+            "--force"
+          ],
+          "description": "Forcefully overwrite existing installation"
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help information"
+        },
+        {
+          "name": [
+            "--unstable"
+          ],
+          "description": "Enable unstable features and APIs"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Suppress diagnostic output"
+        }
+      ],
+      "args": {
+        "name": "cmd",
+        "isVariadic": true,
+        "generators": [
+          {
+            "template": "filepaths"
+          },
+          {
+            "script": [
+              "pbpaste"
+            ],
+            "requires_js": true,
+            "js_source": "e=>{if(e=e.trim(),!e)return[];for(let t of Ge){let i=t(e);if(i)return[{name:i===!0?e:i,icon:\"fig://template?badge=\\u{1F4CB}&color=000000\",priority:100}]}}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "uninstall",
+      "description": "Uninstall a script previously installed with deno install",
+      "options": [
+        {
+          "name": [
+            "--root"
+          ],
+          "description": "Installation root",
+          "args": {
+            "name": "root",
+            "template": "folders",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-L",
+            "--log-level"
+          ],
+          "description": "Set log level",
+          "args": {
+            "name": "log-level",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "debug"
+              },
+              {
+                "name": "info"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help information"
+        },
+        {
+          "name": [
+            "--unstable"
+          ],
+          "description": "Enable unstable features and APIs"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Suppress diagnostic output"
+        }
+      ],
+      "args": {
+        "name": "name",
+        "generators": [
+          {
+            "script": [
+              "bash",
+              "-c",
+              "command find ~/.deno/bin -maxdepth 1 -perm -111 -type f"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "lsp",
+      "description": "Start the language server",
+      "options": [
+        {
+          "name": [
+            "-L",
+            "--log-level"
+          ],
+          "description": "Set log level",
+          "args": {
+            "name": "log-level",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "debug"
+              },
+              {
+                "name": "info"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help information"
+        },
+        {
+          "name": [
+            "--unstable"
+          ],
+          "description": "Enable unstable features and APIs"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Suppress diagnostic output"
+        }
+      ]
+    },
+    {
+      "name": "lint",
+      "description": "Lint source files",
+      "options": [
+        {
+          "name": [
+            "--rules-tags"
+          ],
+          "description": "Use set of rules with a tag",
+          "args": {
+            "name": "rules-tags",
+            "isOptional": true,
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "(...a)=>x(this,void 0,void 0,function*(){var o;let l=yield W(t,n?e:\"\",i,a);if(r)return l;let[u]=a,p=(o=u[u.length-1])===null||o===void 0?void 0:o.split(e);return j(p,l)})"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--rules-include"
+          ],
+          "description": "Include lint rules",
+          "args": {
+            "name": "rules-include",
+            "isOptional": true,
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "(...a)=>x(this,void 0,void 0,function*(){var o;let l=yield W(t,n?e:\"\",i,a);if(r)return l;let[u]=a,p=(o=u[u.length-1])===null||o===void 0?void 0:o.split(e);return j(p,l)})"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--rules-exclude"
+          ],
+          "description": "Exclude lint rules",
+          "args": {
+            "name": "rules-exclude",
+            "isOptional": true,
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "(...a)=>x(this,void 0,void 0,function*(){var o;let l=yield W(t,n?e:\"\",i,a);if(r)return l;let[u]=a,p=(o=u[u.length-1])===null||o===void 0?void 0:o.split(e);return j(p,l)})"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-c",
+            "--config"
+          ],
+          "description": "Specify the configuration file",
+          "args": {
+            "name": "config",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--ignore"
+          ],
+          "description": "Ignore linting particular source files",
+          "args": {
+            "name": "ignore",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-L",
+            "--log-level"
+          ],
+          "description": "Set log level",
+          "args": {
+            "name": "log-level",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "debug"
+              },
+              {
+                "name": "info"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--rules"
+          ],
+          "description": "List available rules"
+        },
+        {
+          "name": [
+            "--no-config"
+          ],
+          "description": "Disable automatic loading of the configuration file"
+        },
+        {
+          "name": [
+            "--json"
+          ],
+          "description": "Output lint result in JSON format"
+        },
+        {
+          "name": [
+            "--watch"
+          ],
+          "description": "Watch for file changes and restart automatically"
+        },
+        {
+          "name": [
+            "--no-clear-screen"
+          ],
+          "description": "Do not clear terminal screen when under watch mode"
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help information"
+        },
+        {
+          "name": [
+            "--unstable"
+          ],
+          "description": "Enable unstable features and APIs"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Suppress diagnostic output"
+        }
+      ],
+      "args": {
+        "name": "files",
+        "template": "filepaths",
+        "isVariadic": true,
+        "isOptional": true
+      }
+    },
+    {
+      "name": "repl",
+      "description": "Read Eval Print Loop",
+      "options": [
+        {
+          "name": [
+            "--import-map"
+          ],
+          "description": "Load import map file",
+          "args": {
+            "name": "import-map",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-c",
+            "--config"
+          ],
+          "description": "Specify the configuration file",
+          "args": {
+            "name": "config",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--no-check"
+          ],
+          "description": "Skip type-checking modules",
+          "args": {
+            "name": "no-check",
+            "isVariadic": true,
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "remote"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--check"
+          ],
+          "description": "Type-check modules",
+          "args": {
+            "name": "check",
+            "isVariadic": true,
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "all"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-r",
+            "--reload"
+          ],
+          "description": "Reload source code cache (recompile TypeScript)",
+          "args": {
+            "name": "reload",
+            "template": "filepaths",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--lock"
+          ],
+          "description": "Check the specified lock file",
+          "args": {
+            "name": "lock",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--cert"
+          ],
+          "description": "Load certificate authority from PEM encoded file",
+          "args": {
+            "name": "cert",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--inspect"
+          ],
+          "description": "Activate inspector on host:port (default: 127.0.0.1:9229)",
+          "args": {
+            "name": "inspect",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--inspect-brk"
+          ],
+          "description": "Activate inspector on host:port and break at start of user script",
+          "args": {
+            "name": "inspect-brk",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--location"
+          ],
+          "description": "Value of 'globalThis.location' used by some web APIs",
+          "args": {
+            "name": "location",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--v8-flags"
+          ],
+          "description": "Set V8 command line options",
+          "args": {
+            "name": "v8-flags",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--seed"
+          ],
+          "description": "Set the random number generator seed",
+          "args": {
+            "name": "seed",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--eval-file"
+          ],
+          "description": "Evaluates the provided file(s) as scripts when the REPL starts. Accepts file paths and URLs",
+          "args": {
+            "name": "eval-file",
+            "template": "filepaths",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--eval"
+          ],
+          "description": "Evaluates the provided code when the REPL starts",
+          "args": {
+            "name": "eval",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--unsafely-ignore-certificate-errors"
+          ],
+          "description": "DANGER: Disables verification of TLS certificates",
+          "args": {
+            "name": "unsafely-ignore-certificate-errors",
+            "description": "Scope ignoring certificate errors to these hosts",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-L",
+            "--log-level"
+          ],
+          "description": "Set log level",
+          "args": {
+            "name": "log-level",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "debug"
+              },
+              {
+                "name": "info"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--no-remote"
+          ],
+          "description": "Do not resolve remote modules"
+        },
+        {
+          "name": [
+            "--no-config"
+          ],
+          "description": "Disable automatic loading of the configuration file"
+        },
+        {
+          "name": [
+            "--lock-write"
+          ],
+          "description": "Write lock file (use with --lock)"
+        },
+        {
+          "name": [
+            "--cached-only"
+          ],
+          "description": "Require that remote dependencies are already cached"
+        },
+        {
+          "name": [
+            "--enable-testing-features-do-not-use"
+          ],
+          "description": "INTERNAL: Enable internal features used during integration testing"
+        },
+        {
+          "name": [
+            "--compat"
+          ],
+          "description": "UNSTABLE: Node compatibility mode"
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help information"
+        },
+        {
+          "name": [
+            "--unstable"
+          ],
+          "description": "Enable unstable features and APIs"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Suppress diagnostic output"
+        }
+      ]
+    },
+    {
+      "name": "run",
+      "description": "Run a JavaScript or TypeScript program",
+      "options": [
+        {
+          "name": [
+            "--import-map"
+          ],
+          "description": "Load import map file",
+          "args": {
+            "name": "import-map",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-c",
+            "--config"
+          ],
+          "description": "Specify the configuration file",
+          "args": {
+            "name": "config",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--no-check"
+          ],
+          "description": "Skip type-checking modules",
+          "args": {
+            "name": "no-check",
+            "isVariadic": true,
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "remote"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--check"
+          ],
+          "description": "Type-check modules",
+          "args": {
+            "name": "check",
+            "isVariadic": true,
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "all"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-r",
+            "--reload"
+          ],
+          "description": "Reload source code cache (recompile TypeScript)",
+          "args": {
+            "name": "reload",
+            "template": "filepaths",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--lock"
+          ],
+          "description": "Check the specified lock file",
+          "args": {
+            "name": "lock",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--cert"
+          ],
+          "description": "Load certificate authority from PEM encoded file",
+          "args": {
+            "name": "cert",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--allow-read"
+          ],
+          "description": "Allow file system read access",
+          "args": {
+            "name": "allow-read",
+            "template": "filepaths",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--allow-write"
+          ],
+          "description": "Allow file system write access",
+          "args": {
+            "name": "allow-write",
+            "template": "filepaths",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--allow-net"
+          ],
+          "description": "Allow network access",
+          "args": {
+            "name": "allow-net",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--unsafely-ignore-certificate-errors"
+          ],
+          "description": "DANGER: Disables verification of TLS certificates",
+          "args": {
+            "name": "unsafely-ignore-certificate-errors",
+            "description": "Scope ignoring certificate errors to these hosts",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--allow-env"
+          ],
+          "description": "Allow environment access",
+          "args": {
+            "name": "allow-env",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--allow-run"
+          ],
+          "description": "Allow running subprocesses",
+          "args": {
+            "name": "allow-run",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--allow-ffi"
+          ],
+          "description": "Allow loading dynamic libraries",
+          "args": {
+            "name": "allow-ffi",
+            "template": "filepaths",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--inspect"
+          ],
+          "description": "Activate inspector on host:port (default: 127.0.0.1:9229)",
+          "args": {
+            "name": "inspect",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--inspect-brk"
+          ],
+          "description": "Activate inspector on host:port and break at start of user script",
+          "args": {
+            "name": "inspect-brk",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--location"
+          ],
+          "description": "Value of 'globalThis.location' used by some web APIs",
+          "args": {
+            "name": "location",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--v8-flags"
+          ],
+          "description": "Set V8 command line options",
+          "args": {
+            "name": "v8-flags",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--seed"
+          ],
+          "description": "Set the random number generator seed",
+          "args": {
+            "name": "seed",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--watch"
+          ],
+          "description": "Watch for file changes and restart automatically",
+          "args": {
+            "name": "watch",
+            "template": "filepaths",
+            "isVariadic": true,
+            "isOptional": true,
+            "generators": [
+              {
+                "template": "filepaths"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-L",
+            "--log-level"
+          ],
+          "description": "Set log level",
+          "args": {
+            "name": "log-level",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "debug"
+              },
+              {
+                "name": "info"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--no-remote"
+          ],
+          "description": "Do not resolve remote modules"
+        },
+        {
+          "name": [
+            "--no-config"
+          ],
+          "description": "Disable automatic loading of the configuration file"
+        },
+        {
+          "name": [
+            "--lock-write"
+          ],
+          "description": "Write lock file (use with --lock)"
+        },
+        {
+          "name": [
+            "--allow-hrtime"
+          ],
+          "description": "Allow high resolution time measurement"
+        },
+        {
+          "name": [
+            "-A",
+            "--allow-all"
+          ],
+          "description": "Allow all permissions"
+        },
+        {
+          "name": [
+            "--prompt"
+          ],
+          "description": "Deprecated: Fallback to prompt if required permission wasn't passed"
+        },
+        {
+          "name": [
+            "--no-prompt"
+          ],
+          "description": "Always throw if required permission wasn't passed"
+        },
+        {
+          "name": [
+            "--cached-only"
+          ],
+          "description": "Require that remote dependencies are already cached"
+        },
+        {
+          "name": [
+            "--enable-testing-features-do-not-use"
+          ],
+          "description": "INTERNAL: Enable internal features used during integration testing"
+        },
+        {
+          "name": [
+            "--compat"
+          ],
+          "description": "UNSTABLE: Node compatibility mode"
+        },
+        {
+          "name": [
+            "--no-clear-screen"
+          ],
+          "description": "Do not clear terminal screen when under watch mode"
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help information"
+        },
+        {
+          "name": [
+            "--unstable"
+          ],
+          "description": "Enable unstable features and APIs"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Suppress diagnostic output"
+        }
+      ],
+      "args": {
+        "name": "script_arg",
+        "isVariadic": true,
+        "suggestions": [
+          {
+            "name": "-",
+            "description": "Read from standard input"
+          }
+        ],
+        "generators": [
+          {
+            "template": "filepaths"
+          },
+          {
+            "script": [
+              "pbpaste"
+            ],
+            "requires_js": true,
+            "js_source": "e=>{if(e=e.trim(),!e)return[];for(let t of Ge){let i=t(e);if(i)return[{name:i===!0?e:i,icon:\"fig://template?badge=\\u{1F4CB}&color=000000\",priority:100}]}}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "task",
+      "description": "Run a task defined in the configuration file",
+      "options": [
+        {
+          "name": [
+            "-c",
+            "--config"
+          ],
+          "description": "Specify the configuration file",
+          "args": {
+            "name": "config",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--cwd"
+          ],
+          "description": "Specify the directory to run the task in",
+          "args": {
+            "name": "cwd",
+            "template": "folders",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-L",
+            "--log-level"
+          ],
+          "description": "Set log level",
+          "args": {
+            "name": "log-level",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "debug"
+              },
+              {
+                "name": "info"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help information"
+        },
+        {
+          "name": [
+            "--unstable"
+          ],
+          "description": "Enable unstable features and APIs"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Suppress diagnostic output"
+        }
+      ],
+      "args": [
+        {
+          "name": "task_name",
+          "generators": [
+            {
+              "requires_js": true,
+              "js_source": "async(e,t)=>{let i=await Be(e,t);return i===null?[]:Object.entries(i.tasks||{}).map(([n,r])=>{let a=i.fig?.[n]||{};return{name:n,displayName:a.displayName,description:a.description||r,icon:a.icon||\"\\u2699\\uFE0F\",priority:a.priority,hidden:a.hidden}})}"
+            }
+          ]
+        },
+        {
+          "name": "task_args",
+          "isVariadic": true,
+          "isOptional": true
+        }
+      ]
+    },
+    {
+      "name": "test",
+      "description": "Run tests",
+      "options": [
+        {
+          "name": [
+            "--import-map"
+          ],
+          "description": "Load import map file",
+          "args": {
+            "name": "import-map",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-c",
+            "--config"
+          ],
+          "description": "Specify the configuration file",
+          "args": {
+            "name": "config",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--no-check"
+          ],
+          "description": "Skip type-checking modules",
+          "args": {
+            "name": "no-check",
+            "isVariadic": true,
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "remote"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--check"
+          ],
+          "description": "Type-check modules",
+          "args": {
+            "name": "check",
+            "isVariadic": true,
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "all"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-r",
+            "--reload"
+          ],
+          "description": "Reload source code cache (recompile TypeScript)",
+          "args": {
+            "name": "reload",
+            "template": "filepaths",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--lock"
+          ],
+          "description": "Check the specified lock file",
+          "args": {
+            "name": "lock",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--cert"
+          ],
+          "description": "Load certificate authority from PEM encoded file",
+          "args": {
+            "name": "cert",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--allow-read"
+          ],
+          "description": "Allow file system read access",
+          "args": {
+            "name": "allow-read",
+            "template": "filepaths",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--allow-write"
+          ],
+          "description": "Allow file system write access",
+          "args": {
+            "name": "allow-write",
+            "template": "filepaths",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--allow-net"
+          ],
+          "description": "Allow network access",
+          "args": {
+            "name": "allow-net",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--unsafely-ignore-certificate-errors"
+          ],
+          "description": "DANGER: Disables verification of TLS certificates",
+          "args": {
+            "name": "unsafely-ignore-certificate-errors",
+            "description": "Scope ignoring certificate errors to these hosts",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--allow-env"
+          ],
+          "description": "Allow environment access",
+          "args": {
+            "name": "allow-env",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--allow-run"
+          ],
+          "description": "Allow running subprocesses",
+          "args": {
+            "name": "allow-run",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--allow-ffi"
+          ],
+          "description": "Allow loading dynamic libraries",
+          "args": {
+            "name": "allow-ffi",
+            "template": "filepaths",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--inspect"
+          ],
+          "description": "Activate inspector on host:port (default: 127.0.0.1:9229)",
+          "args": {
+            "name": "inspect",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--inspect-brk"
+          ],
+          "description": "Activate inspector on host:port and break at start of user script",
+          "args": {
+            "name": "inspect-brk",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--location"
+          ],
+          "description": "Value of 'globalThis.location' used by some web APIs",
+          "args": {
+            "name": "location",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--v8-flags"
+          ],
+          "description": "Set V8 command line options",
+          "args": {
+            "name": "v8-flags",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--seed"
+          ],
+          "description": "Set the random number generator seed",
+          "args": {
+            "name": "seed",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--ignore"
+          ],
+          "description": "Ignore files",
+          "args": {
+            "name": "ignore",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--fail-fast"
+          ],
+          "description": "Stop after N errors. Defaults to stopping after first failure",
+          "args": {
+            "name": "fail-fast",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--filter"
+          ],
+          "description": "Run tests with this string or pattern in the test name",
+          "args": {
+            "name": "filter",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--shuffle"
+          ],
+          "description": "(UNSTABLE): Shuffle the order in which the tests are run",
+          "args": {
+            "name": "shuffle",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--coverage"
+          ],
+          "description": "UNSTABLE: Collect coverage profile data into DIR",
+          "args": {
+            "name": "coverage",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-j",
+            "--jobs"
+          ],
+          "description": "Deprecated: Number of parallel workers, defaults to number of available CPUs when no value is provided. Defaults to 1 when the option is not present",
+          "args": {
+            "name": "jobs",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-L",
+            "--log-level"
+          ],
+          "description": "Set log level",
+          "args": {
+            "name": "log-level",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "debug"
+              },
+              {
+                "name": "info"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--no-remote"
+          ],
+          "description": "Do not resolve remote modules"
+        },
+        {
+          "name": [
+            "--no-config"
+          ],
+          "description": "Disable automatic loading of the configuration file"
+        },
+        {
+          "name": [
+            "--lock-write"
+          ],
+          "description": "Write lock file (use with --lock)"
+        },
+        {
+          "name": [
+            "--allow-hrtime"
+          ],
+          "description": "Allow high resolution time measurement"
+        },
+        {
+          "name": [
+            "-A",
+            "--allow-all"
+          ],
+          "description": "Allow all permissions"
+        },
+        {
+          "name": [
+            "--prompt"
+          ],
+          "description": "Deprecated: Fallback to prompt if required permission wasn't passed"
+        },
+        {
+          "name": [
+            "--no-prompt"
+          ],
+          "description": "Always throw if required permission wasn't passed"
+        },
+        {
+          "name": [
+            "--cached-only"
+          ],
+          "description": "Require that remote dependencies are already cached"
+        },
+        {
+          "name": [
+            "--enable-testing-features-do-not-use"
+          ],
+          "description": "INTERNAL: Enable internal features used during integration testing"
+        },
+        {
+          "name": [
+            "--compat"
+          ],
+          "description": "UNSTABLE: Node compatibility mode"
+        },
+        {
+          "name": [
+            "--no-run"
+          ],
+          "description": "Cache test modules, but don't run tests"
+        },
+        {
+          "name": [
+            "--trace-ops"
+          ],
+          "description": "Enable tracing of async ops. Useful when debugging leaking ops in test, but impacts test execution time"
+        },
+        {
+          "name": [
+            "--doc"
+          ],
+          "description": "UNSTABLE: type-check code blocks"
+        },
+        {
+          "name": [
+            "--allow-none"
+          ],
+          "description": "Don't return error code if no test files are found"
+        },
+        {
+          "name": [
+            "--parallel"
+          ],
+          "description": "Run test modules in parallel. Parallelism defaults to the number of available CPUs or the value in the DENO_JOBS environment variable"
+        },
+        {
+          "name": [
+            "--watch"
+          ],
+          "description": "Watch for file changes and restart automatically"
+        },
+        {
+          "name": [
+            "--no-clear-screen"
+          ],
+          "description": "Do not clear terminal screen when under watch mode"
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help information"
+        },
+        {
+          "name": [
+            "--unstable"
+          ],
+          "description": "Enable unstable features and APIs"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Suppress diagnostic output"
+        }
+      ],
+      "args": [
+        {
+          "name": "files",
+          "template": "filepaths",
+          "isVariadic": true,
+          "isOptional": true
+        },
+        {
+          "name": "script_arg",
+          "template": "filepaths",
+          "isVariadic": true,
+          "isOptional": true
+        }
+      ]
+    },
+    {
+      "name": "types",
+      "description": "Print runtime TypeScript declarations",
+      "options": [
+        {
+          "name": [
+            "-L",
+            "--log-level"
+          ],
+          "description": "Set log level",
+          "args": {
+            "name": "log-level",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "debug"
+              },
+              {
+                "name": "info"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help information"
+        },
+        {
+          "name": [
+            "--unstable"
+          ],
+          "description": "Enable unstable features and APIs"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Suppress diagnostic output"
+        }
+      ]
+    },
+    {
+      "name": "upgrade",
+      "description": "Upgrade deno executable to given version",
+      "options": [
+        {
+          "name": [
+            "--version"
+          ],
+          "description": "The version to upgrade to",
+          "args": {
+            "name": "version",
+            "isOptional": true,
+            "generators": [
+              {
+                "script": [
+                  "curl",
+                  "-sL",
+                  "https://cdn.deno.land/deno/meta/versions.json"
+                ],
+                "requires_js": true,
+                "js_source": "e=>JSON.parse(e).versions.map(i=>({name:i.startsWith(\"v\")?i.slice(1):i}))",
+                "cache": {
+                  "ttl_seconds": 86400
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--output"
+          ],
+          "description": "The path to output the updated version to",
+          "args": {
+            "name": "output",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--cert"
+          ],
+          "description": "Load certificate authority from PEM encoded file",
+          "args": {
+            "name": "cert",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-L",
+            "--log-level"
+          ],
+          "description": "Set log level",
+          "args": {
+            "name": "log-level",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "debug"
+              },
+              {
+                "name": "info"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--dry-run"
+          ],
+          "description": "Perform all checks without replacing old exe"
+        },
+        {
+          "name": [
+            "-f",
+            "--force"
+          ],
+          "description": "Replace current exe even if not out-of-date"
+        },
+        {
+          "name": [
+            "--canary"
+          ],
+          "description": "Upgrade to canary builds"
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help information"
+        },
+        {
+          "name": [
+            "--unstable"
+          ],
+          "description": "Enable unstable features and APIs"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Suppress diagnostic output"
+        }
+      ]
+    },
+    {
+      "name": "vendor",
+      "description": "Vendor remote modules into a local directory",
+      "options": [
+        {
+          "name": [
+            "--output"
+          ],
+          "description": "The directory to output the vendored modules to",
+          "args": {
+            "name": "output",
+            "template": "folders",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-c",
+            "--config"
+          ],
+          "description": "Specify the configuration file",
+          "args": {
+            "name": "config",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--import-map"
+          ],
+          "description": "Load import map file",
+          "args": {
+            "name": "import-map",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--lock"
+          ],
+          "description": "Check the specified lock file",
+          "args": {
+            "name": "lock",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-r",
+            "--reload"
+          ],
+          "description": "Reload source code cache (recompile TypeScript)",
+          "args": {
+            "name": "reload",
+            "template": "filepaths",
+            "isVariadic": true,
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--cert"
+          ],
+          "description": "Load certificate authority from PEM encoded file",
+          "args": {
+            "name": "cert",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "-L",
+            "--log-level"
+          ],
+          "description": "Set log level",
+          "args": {
+            "name": "log-level",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "debug"
+              },
+              {
+                "name": "info"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-f",
+            "--force"
+          ],
+          "description": "Forcefully overwrite conflicting files in existing output directory"
+        },
+        {
+          "name": [
+            "--no-config"
+          ],
+          "description": "Disable automatic loading of the configuration file"
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help information"
+        },
+        {
+          "name": [
+            "--unstable"
+          ],
+          "description": "Enable unstable features and APIs"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Suppress diagnostic output"
+        }
+      ],
+      "args": {
+        "name": "specifiers",
+        "template": "filepaths",
+        "isVariadic": true
+      }
+    },
+    {
+      "name": "help",
+      "description": "Print this message or the help of the given subcommand(s)",
+      "options": [
+        {
+          "name": [
+            "-L",
+            "--log-level"
+          ],
+          "description": "Set log level",
+          "args": {
+            "name": "log-level",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "debug"
+              },
+              {
+                "name": "info"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--unstable"
+          ],
+          "description": "Enable unstable features and APIs"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Suppress diagnostic output"
+        }
+      ],
+      "args": {
+        "name": "subcommand",
+        "template": "help",
+        "isOptional": true
+      }
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "-L",
+        "--log-level"
+      ],
+      "description": "Set log level",
+      "args": {
+        "name": "log-level",
+        "isOptional": true,
+        "suggestions": [
+          {
+            "name": "debug"
+          },
+          {
+            "name": "info"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "-h",
+        "--help"
+      ],
+      "description": "Print help information"
+    },
+    {
+      "name": [
+        "-V",
+        "--version"
+      ],
+      "description": "Print version information"
+    },
+    {
+      "name": [
+        "--unstable"
+      ],
+      "description": "Enable unstable features and APIs"
+    },
+    {
+      "name": [
+        "-q",
+        "--quiet"
+      ],
+      "description": "Suppress diagnostic output"
+    }
+  ]
+}

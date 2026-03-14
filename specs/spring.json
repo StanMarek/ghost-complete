@@ -1,0 +1,294 @@
+{
+  "name": "spring",
+  "description": "The Spring Boot CLI is a command line tool that you can use to bootstrap a new project from start.spring.io or encode a password",
+  "subcommands": [
+    {
+      "name": "init",
+      "description": "Initialize a new project using Spring Initializr",
+      "options": [
+        {
+          "name": [
+            "-a",
+            "---artifact-id"
+          ],
+          "description": "Project coordinates",
+          "args": {
+            "name": "Name"
+          }
+        },
+        {
+          "name": [
+            "-b",
+            "--boot-version"
+          ],
+          "description": "Spring Boot version",
+          "args": {
+            "name": "Version",
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "async(e,t)=>{let n=await o(t);return n?n.bootVersion.values.map(i=>({name:i.id,displayName:i.name})):[]}"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--build"
+          ],
+          "description": "Build system to use",
+          "args": {
+            "name": "System",
+            "suggestions": [
+              {
+                "name": "maven"
+              },
+              {
+                "name": "gradle"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-d",
+            "--dependencies"
+          ],
+          "description": "Comma-separated list of dependency identifiers to include in the generated project",
+          "args": {
+            "name": "Dependencies",
+            "isVariadic": true,
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "async(e,t)=>{let n=await o(t);if(!n)return[];let i=new Set(e[e.length-1]?.split(r));return n.dependencies.values.flatMap(({values:a})=>a).filter(({id:a})=>!i.has(a)).sort((a,c)=>a.name.localeCompare(c.name)).map(a=>({name:a.id,displayName:a.name,description:a.description}))}"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--description"
+          ],
+          "description": "Project description",
+          "args": {
+            "name": "description"
+          }
+        },
+        {
+          "name": [
+            "-f",
+            "--force"
+          ],
+          "description": "Force overwrite of existing files"
+        },
+        {
+          "name": [
+            "--format"
+          ],
+          "description": "Format of the generated content",
+          "args": {
+            "name": "Format",
+            "suggestions": [
+              {
+                "name": "build"
+              },
+              {
+                "name": "project"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-g",
+            "--group-id"
+          ],
+          "description": "Project coordinates",
+          "args": {
+            "name": "Group ID"
+          }
+        },
+        {
+          "name": [
+            "-j",
+            "--java-version"
+          ],
+          "description": "Language level",
+          "args": {
+            "name": "Version",
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "async(e,t)=>{let n=await o(t);return n?n.javaVersion.values.map(i=>({name:i.id,displayName:i.name})):[]}"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--list"
+          ],
+          "description": "List the capabilities of the service"
+        },
+        {
+          "name": [
+            "-n",
+            "--name"
+          ],
+          "description": "Project name",
+          "args": {
+            "name": "Name"
+          }
+        },
+        {
+          "name": [
+            "-p",
+            "--packaging"
+          ],
+          "description": "Project packaging",
+          "args": {
+            "name": "Packaging",
+            "suggestions": [
+              {
+                "name": "jar"
+              },
+              {
+                "name": "war"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--package-name"
+          ],
+          "description": "Package name",
+          "args": {
+            "name": "Name"
+          }
+        },
+        {
+          "name": [
+            "-t",
+            "--type"
+          ],
+          "description": "Project type",
+          "args": {
+            "name": "Type",
+            "suggestions": [
+              {
+                "name": "gradle-build",
+                "description": "Generate a Gradle build file"
+              },
+              {
+                "name": "gradle-project",
+                "description": "Generate a Gradle based project archive using the Groovy DSL"
+              },
+              {
+                "name": "gradle-project-kotlin",
+                "description": "Generate a Gradle based project archive using the Kotlin DSL"
+              },
+              {
+                "name": "maven-build",
+                "description": "Generate a Maven pom.xml"
+              },
+              {
+                "name": "maven-project",
+                "description": "Generate a Maven based project archive"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--target"
+          ],
+          "description": "URL of the service to use",
+          "args": {
+            "name": "URL"
+          }
+        },
+        {
+          "name": [
+            "-v",
+            "--version"
+          ],
+          "description": "Project version",
+          "args": {
+            "name": "Version"
+          }
+        },
+        {
+          "name": [
+            "-x",
+            "--extract"
+          ],
+          "description": "Extract the project archive. Inferred if a location is specified without an extension"
+        }
+      ]
+    },
+    {
+      "name": "encodepassword",
+      "description": "Encode a password for use with Spring Security",
+      "options": [
+        {
+          "name": [
+            "-a",
+            "--algorithm"
+          ],
+          "description": "The algorithm to use",
+          "args": {
+            "name": "Algorithm",
+            "suggestions": [
+              {
+                "name": "default"
+              },
+              {
+                "name": "bcrypt"
+              },
+              {
+                "name": "pbkdf2"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "Password"
+      }
+    },
+    {
+      "name": "shell",
+      "description": "Start a nested shell"
+    },
+    {
+      "name": "help",
+      "description": "Show help for other commands",
+      "args": {
+        "name": "Command",
+        "template": "help"
+      }
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "--help"
+      ],
+      "description": "Show help for spring"
+    },
+    {
+      "name": [
+        "--version"
+      ],
+      "description": "Get spring CLI version"
+    },
+    {
+      "name": [
+        "--debug"
+      ],
+      "description": "Print additional status information for the command you are running"
+    }
+  ]
+}

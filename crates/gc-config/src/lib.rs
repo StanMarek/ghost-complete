@@ -5,15 +5,15 @@
 
 use std::path::PathBuf;
 
-use anyhow::{Context, Result};
-use serde::Deserialize;
+use anyhow::{bail, Context, Result};
+use serde::{Deserialize, Serialize};
 
 /// Returns `~/.config/ghost-complete`, ignoring macOS `~/Library/Application Support/`.
 pub fn config_dir() -> Option<PathBuf> {
     dirs::home_dir().map(|h| h.join(".config").join("ghost-complete"))
 }
 
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct GhostConfig {
     pub trigger: TriggerConfig,
@@ -24,7 +24,7 @@ pub struct GhostConfig {
     pub theme: ThemeConfig,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct KeybindingsConfig {
     pub accept: String,
@@ -48,7 +48,7 @@ impl Default for KeybindingsConfig {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct TriggerConfig {
     pub auto_chars: Vec<char>,
@@ -64,7 +64,7 @@ impl Default for TriggerConfig {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct PopupConfig {
     pub max_visible: usize,
@@ -82,11 +82,12 @@ impl Default for PopupConfig {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct SuggestConfig {
     pub max_results: usize,
     pub max_history_entries: usize,
+    pub generator_timeout_ms: u64,
     pub providers: ProvidersConfig,
 }
 
@@ -95,12 +96,13 @@ impl Default for SuggestConfig {
         Self {
             max_results: 50,
             max_history_entries: 10_000,
+            generator_timeout_ms: 5000,
             providers: ProvidersConfig::default(),
         }
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ProvidersConfig {
     pub commands: bool,
@@ -122,23 +124,96 @@ impl Default for ProvidersConfig {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ThemeConfig {
+    pub preset: String,
     pub selected: String,
     pub description: String,
+    pub match_highlight: String,
+    pub item_text: String,
+    pub scrollbar: String,
 }
 
-impl Default for ThemeConfig {
-    fn default() -> Self {
-        Self {
-            selected: "reverse".to_string(),
-            description: "dim".to_string(),
-        }
+impl ThemeConfig {
+    /// Resolve preset base + field overrides into a fully populated ThemeConfig.
+    pub fn resolve(&self) -> Result<ThemeConfig> {
+        let preset_name = if self.preset.is_empty() {
+            "dark"
+        } else {
+            &self.preset
+        };
+        let base = preset_values(preset_name)?;
+        Ok(ThemeConfig {
+            preset: self.preset.clone(),
+            selected: if self.selected.is_empty() {
+                base.selected
+            } else {
+                self.selected.clone()
+            },
+            description: if self.description.is_empty() {
+                base.description
+            } else {
+                self.description.clone()
+            },
+            match_highlight: if self.match_highlight.is_empty() {
+                base.match_highlight
+            } else {
+                self.match_highlight.clone()
+            },
+            item_text: if self.item_text.is_empty() {
+                base.item_text
+            } else {
+                self.item_text.clone()
+            },
+            scrollbar: if self.scrollbar.is_empty() {
+                base.scrollbar
+            } else {
+                self.scrollbar.clone()
+            },
+        })
     }
 }
 
-#[derive(Debug, Clone, Default, Deserialize)]
+fn preset_values(name: &str) -> Result<ThemeConfig> {
+    let theme = match name {
+        "dark" => ThemeConfig {
+            selected: "reverse".into(),
+            description: "dim".into(),
+            match_highlight: "bold".into(),
+            scrollbar: "dim".into(),
+            ..Default::default()
+        },
+        "light" => ThemeConfig {
+            selected: "reverse".into(),
+            description: "dim".into(),
+            match_highlight: "bold".into(),
+            scrollbar: "dim".into(),
+            ..Default::default()
+        },
+        "catppuccin" => ThemeConfig {
+            selected: "fg:#cdd6f4 bg:#585b70 bold".into(),
+            description: "fg:#6c7086".into(),
+            match_highlight: "fg:#f9e2af bold".into(),
+            scrollbar: "fg:#585b70".into(),
+            ..Default::default()
+        },
+        "material-darker" => ThemeConfig {
+            selected: "fg:#eeffff bg:#424242 bold".into(),
+            description: "fg:#616161".into(),
+            match_highlight: "fg:#ffcb6b bold".into(),
+            scrollbar: "fg:#424242".into(),
+            ..Default::default()
+        },
+        _ => bail!(
+            "unknown theme preset: {:?} (valid: dark, light, catppuccin, material-darker)",
+            name
+        ),
+    };
+    Ok(theme)
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct PathsConfig {
     pub spec_dirs: Vec<String>,
@@ -183,6 +258,7 @@ mod tests {
         assert_eq!(config.popup.max_width, 60);
         assert_eq!(config.suggest.max_results, 50);
         assert_eq!(config.suggest.max_history_entries, 10_000);
+        assert_eq!(config.suggest.generator_timeout_ms, 5000);
         assert!(config.suggest.providers.commands);
         assert!(config.suggest.providers.history);
         assert!(config.suggest.providers.filesystem);
@@ -195,8 +271,12 @@ mod tests {
         assert_eq!(config.keybindings.navigate_up, "arrow_up");
         assert_eq!(config.keybindings.navigate_down, "arrow_down");
         assert_eq!(config.keybindings.trigger, "ctrl+/");
-        assert_eq!(config.theme.selected, "reverse");
-        assert_eq!(config.theme.description, "dim");
+        assert_eq!(config.theme.preset, "");
+        assert_eq!(config.theme.selected, "");
+        assert_eq!(config.theme.description, "");
+        assert_eq!(config.theme.match_highlight, "");
+        assert_eq!(config.theme.item_text, "");
+        assert_eq!(config.theme.scrollbar, "");
     }
 
     #[test]
@@ -313,7 +393,7 @@ selected = "bold fg:255"
         let config: GhostConfig = toml::from_str(toml_str).unwrap();
         assert_eq!(config.theme.selected, "bold fg:255");
         // Unset field keeps default
-        assert_eq!(config.theme.description, "dim");
+        assert_eq!(config.theme.description, "");
     }
 
     #[test]
@@ -326,5 +406,90 @@ description = "dim underline"
         let config: GhostConfig = toml::from_str(toml_str).unwrap();
         assert_eq!(config.theme.selected, "fg:255 bg:236");
         assert_eq!(config.theme.description, "dim underline");
+    }
+
+    #[test]
+    fn test_theme_new_field_defaults() {
+        let config = GhostConfig::default();
+        assert_eq!(config.theme.match_highlight, "");
+        assert_eq!(config.theme.item_text, "");
+        assert_eq!(config.theme.scrollbar, "");
+    }
+
+    #[test]
+    fn test_partial_theme_new_fields() {
+        let toml_str = r#"
+[theme]
+match_highlight = "underline"
+scrollbar = "fg:#555555"
+"#;
+        let config: GhostConfig = toml::from_str(toml_str).unwrap();
+        assert_eq!(config.theme.match_highlight, "underline");
+        assert_eq!(config.theme.scrollbar, "fg:#555555");
+        assert_eq!(config.theme.selected, "");
+        assert_eq!(config.theme.description, "");
+        assert_eq!(config.theme.item_text, "");
+    }
+
+    #[test]
+    fn test_resolve_no_preset_uses_dark() {
+        let config = ThemeConfig::default();
+        let resolved = config.resolve().unwrap();
+        assert_eq!(resolved.selected, "reverse");
+        assert_eq!(resolved.description, "dim");
+        assert_eq!(resolved.match_highlight, "bold");
+        assert_eq!(resolved.item_text, "");
+        assert_eq!(resolved.scrollbar, "dim");
+    }
+
+    #[test]
+    fn test_resolve_catppuccin_preset() {
+        let config = ThemeConfig {
+            preset: "catppuccin".into(),
+            ..Default::default()
+        };
+        let resolved = config.resolve().unwrap();
+        assert_eq!(resolved.selected, "fg:#cdd6f4 bg:#585b70 bold");
+        assert_eq!(resolved.description, "fg:#6c7086");
+        assert_eq!(resolved.match_highlight, "fg:#f9e2af bold");
+        assert_eq!(resolved.item_text, "");
+        assert_eq!(resolved.scrollbar, "fg:#585b70");
+    }
+
+    #[test]
+    fn test_resolve_preset_with_field_override() {
+        let config = ThemeConfig {
+            preset: "catppuccin".into(),
+            match_highlight: "underline".into(),
+            ..Default::default()
+        };
+        let resolved = config.resolve().unwrap();
+        // Override wins
+        assert_eq!(resolved.match_highlight, "underline");
+        // Rest from preset
+        assert_eq!(resolved.selected, "fg:#cdd6f4 bg:#585b70 bold");
+        assert_eq!(resolved.description, "fg:#6c7086");
+    }
+
+    #[test]
+    fn test_resolve_invalid_preset_errors() {
+        let config = ThemeConfig {
+            preset: "nonexistent".into(),
+            ..Default::default()
+        };
+        assert!(config.resolve().is_err());
+    }
+
+    #[test]
+    fn test_resolve_material_darker_preset() {
+        let config = ThemeConfig {
+            preset: "material-darker".into(),
+            ..Default::default()
+        };
+        let resolved = config.resolve().unwrap();
+        assert_eq!(resolved.selected, "fg:#eeffff bg:#424242 bold");
+        assert_eq!(resolved.description, "fg:#616161");
+        assert_eq!(resolved.match_highlight, "fg:#ffcb6b bold");
+        assert_eq!(resolved.scrollbar, "fg:#424242");
     }
 }

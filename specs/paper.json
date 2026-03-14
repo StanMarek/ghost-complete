@@ -1,0 +1,1755 @@
+{
+  "name": "paper",
+  "description": "The Paper CLI",
+  "subcommands": [
+    {
+      "name": "bench",
+      "description": "Benchmark a Paper query",
+      "options": [
+        {
+          "name": [
+            "--benchmem"
+          ],
+          "description": "Report memory allocations with benchmark results"
+        },
+        {
+          "name": [
+            "--bundle",
+            "-b"
+          ],
+          "description": "Set bundle file(s) or directory path(s). This flag can be repeated",
+          "args": {
+            "name": "bundle"
+          }
+        },
+        {
+          "name": [
+            "--count"
+          ],
+          "description": "Number of times to repeat each benchmark",
+          "args": {
+            "name": "count"
+          }
+        },
+        {
+          "name": [
+            "--data",
+            "-d"
+          ],
+          "description": "Set policy or data file(s). This flag can be repeated",
+          "args": {
+            "name": "data"
+          }
+        },
+        {
+          "name": [
+            "--fail"
+          ],
+          "description": "Exits with non-zero exit code on undefined/empty result and errors"
+        },
+        {
+          "name": [
+            "--format",
+            "-f"
+          ],
+          "description": "Set output format",
+          "args": {
+            "name": "format"
+          }
+        },
+        {
+          "name": [
+            "--ignore"
+          ],
+          "description": "Set file and directory names to ignore during loading (e.g., '.*' excludes hidden files)",
+          "args": {
+            "name": "ignore"
+          }
+        },
+        {
+          "name": [
+            "--import"
+          ],
+          "description": "Set query import(s). This flag can be repeated",
+          "args": {
+            "name": "import"
+          }
+        },
+        {
+          "name": [
+            "--input",
+            "-i"
+          ],
+          "description": "Set input file path",
+          "args": {
+            "name": "input"
+          }
+        },
+        {
+          "name": [
+            "--metrics"
+          ],
+          "description": "Report query performance metrics"
+        },
+        {
+          "name": [
+            "--package"
+          ],
+          "description": "Set query package",
+          "args": {
+            "name": "package"
+          }
+        },
+        {
+          "name": [
+            "--partial",
+            "-p"
+          ],
+          "description": "Perform partial evaluation"
+        },
+        {
+          "name": [
+            "--schema",
+            "-s"
+          ],
+          "description": "Set schema file path or directory path",
+          "args": {
+            "name": "schema"
+          }
+        },
+        {
+          "name": [
+            "--stdin"
+          ],
+          "description": "Read query from stdin"
+        },
+        {
+          "name": [
+            "--stdin-input",
+            "-I"
+          ],
+          "description": "Read input document from stdin"
+        },
+        {
+          "name": [
+            "--target",
+            "-t"
+          ],
+          "description": "Set the runtime to exercise",
+          "args": {
+            "name": "target"
+          }
+        },
+        {
+          "name": [
+            "--unknowns",
+            "-u"
+          ],
+          "description": "Set paths to treat as unknown during partial evaluation",
+          "args": {
+            "name": "unknowns"
+          }
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Help for bench"
+        }
+      ]
+    },
+    {
+      "name": "build",
+      "description": "Build an Paper bundle",
+      "options": [
+        {
+          "name": [
+            "--bundle",
+            "-b"
+          ],
+          "description": "Load paths as bundle files or root directories"
+        },
+        {
+          "name": [
+            "--capabilities"
+          ],
+          "description": "Set capabilities.json file path",
+          "args": {
+            "name": "capabilities"
+          }
+        },
+        {
+          "name": [
+            "--debug"
+          ],
+          "description": "Enable debug output"
+        },
+        {
+          "name": [
+            "--entrypoint",
+            "-e"
+          ],
+          "description": "Set slash separated entrypoint path",
+          "args": {
+            "name": "entrypoint"
+          }
+        },
+        {
+          "name": [
+            "--exclude-files-verify"
+          ],
+          "description": "Set file names to exclude during bundle verification",
+          "args": {
+            "name": "exclude-files-verify"
+          }
+        },
+        {
+          "name": [
+            "--ignore"
+          ],
+          "description": "Set file and directory names to ignore during loading (e.g., '.*' excludes hidden files)",
+          "args": {
+            "name": "ignore"
+          }
+        },
+        {
+          "name": [
+            "--optimize",
+            "-O"
+          ],
+          "description": "Set optimization level",
+          "args": {
+            "name": "optimize"
+          }
+        },
+        {
+          "name": [
+            "--output",
+            "-o"
+          ],
+          "description": "Set the output filename",
+          "args": {
+            "name": "output"
+          }
+        },
+        {
+          "name": [
+            "--revision",
+            "-r"
+          ],
+          "description": "Set output bundle revision",
+          "args": {
+            "name": "revision"
+          }
+        },
+        {
+          "name": [
+            "--scope"
+          ],
+          "description": "Scope to use for bundle signature verification",
+          "args": {
+            "name": "scope"
+          }
+        },
+        {
+          "name": [
+            "--signing-alg"
+          ],
+          "description": "Name of the signing algorithm",
+          "args": {
+            "name": "signing-alg"
+          }
+        },
+        {
+          "name": [
+            "--signing-key"
+          ],
+          "description": "Set the secret (HMAC) or path of the PEM file containing the private key (RSA and ECDSA)",
+          "args": {
+            "name": "signing-key"
+          }
+        },
+        {
+          "name": [
+            "--target",
+            "-t"
+          ],
+          "description": "Set the output bundle target type",
+          "args": {
+            "name": "target"
+          }
+        },
+        {
+          "name": [
+            "--verification-key"
+          ],
+          "description": "Set the secret (HMAC) or path of the PEM file containing the public key (RSA and ECDSA)",
+          "args": {
+            "name": "verification-key"
+          }
+        },
+        {
+          "name": [
+            "--verification-key-id"
+          ],
+          "description": "Name assigned to the verification key used for bundle verification",
+          "args": {
+            "name": "verification-key-id"
+          }
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Help for build"
+        }
+      ]
+    },
+    {
+      "name": "check",
+      "description": "Check Paper source files",
+      "options": [
+        {
+          "name": [
+            "--bundle",
+            "-b"
+          ],
+          "description": "Load paths as bundle files or root directories"
+        },
+        {
+          "name": [
+            "--capabilities"
+          ],
+          "description": "Set capabilities.json file path",
+          "args": {
+            "name": "capabilities"
+          }
+        },
+        {
+          "name": [
+            "--format",
+            "-f"
+          ],
+          "description": "Set output format",
+          "args": {
+            "name": "format"
+          }
+        },
+        {
+          "name": [
+            "--ignore"
+          ],
+          "description": "Set file and directory names to ignore during loading (e.g., '.*' excludes hidden files)",
+          "args": {
+            "name": "ignore"
+          }
+        },
+        {
+          "name": [
+            "--max-errors",
+            "-m"
+          ],
+          "description": "Set the number of errors to allow before compilation fails early",
+          "args": {
+            "name": "max-errors"
+          }
+        },
+        {
+          "name": [
+            "--schema",
+            "-s"
+          ],
+          "description": "Set schema file path or directory path",
+          "args": {
+            "name": "schema"
+          }
+        },
+        {
+          "name": [
+            "--strict",
+            "-S"
+          ],
+          "description": "Enable compiler strict mode"
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Help for check"
+        }
+      ]
+    },
+    {
+      "name": "completion",
+      "description": "Generate the autocompletion script for the specified shell",
+      "subcommands": [
+        {
+          "name": "bash",
+          "description": "Generate the autocompletion script for bash",
+          "options": [
+            {
+              "name": [
+                "--no-descriptions"
+              ],
+              "description": "Disable completion descriptions"
+            },
+            {
+              "name": [
+                "--help",
+                "-h"
+              ],
+              "description": "Help for bash"
+            }
+          ]
+        },
+        {
+          "name": "fish",
+          "description": "Generate the autocompletion script for fish",
+          "options": [
+            {
+              "name": [
+                "--no-descriptions"
+              ],
+              "description": "Disable completion descriptions"
+            },
+            {
+              "name": [
+                "--help",
+                "-h"
+              ],
+              "description": "Help for fish"
+            }
+          ]
+        },
+        {
+          "name": "powershell",
+          "description": "Generate the autocompletion script for powershell",
+          "options": [
+            {
+              "name": [
+                "--no-descriptions"
+              ],
+              "description": "Disable completion descriptions"
+            },
+            {
+              "name": [
+                "--help",
+                "-h"
+              ],
+              "description": "Help for powershell"
+            }
+          ]
+        },
+        {
+          "name": "zsh",
+          "description": "Generate the autocompletion script for zsh",
+          "options": [
+            {
+              "name": [
+                "--no-descriptions"
+              ],
+              "description": "Disable completion descriptions"
+            },
+            {
+              "name": [
+                "--help",
+                "-h"
+              ],
+              "description": "Help for zsh"
+            }
+          ]
+        }
+      ],
+      "options": [
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Help for completion"
+        }
+      ]
+    },
+    {
+      "name": "deps",
+      "description": "Analyze Paper query dependencies",
+      "options": [
+        {
+          "name": [
+            "--bundle",
+            "-b"
+          ],
+          "description": "Set bundle file(s) or directory path(s). This flag can be repeated",
+          "args": {
+            "name": "bundle"
+          }
+        },
+        {
+          "name": [
+            "--data",
+            "-d"
+          ],
+          "description": "Set policy or data file(s). This flag can be repeated",
+          "args": {
+            "name": "data"
+          }
+        },
+        {
+          "name": [
+            "--format",
+            "-f"
+          ],
+          "description": "Set output format",
+          "args": {
+            "name": "format"
+          }
+        },
+        {
+          "name": [
+            "--ignore"
+          ],
+          "description": "Set file and directory names to ignore during loading (e.g., '.*' excludes hidden files)",
+          "args": {
+            "name": "ignore"
+          }
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Help for deps"
+        }
+      ]
+    },
+    {
+      "name": "eval",
+      "description": "Evaluate a Paper query",
+      "options": [
+        {
+          "name": [
+            "--bundle",
+            "-b"
+          ],
+          "description": "Set bundle file(s) or directory path(s). This flag can be repeated",
+          "args": {
+            "name": "bundle"
+          }
+        },
+        {
+          "name": [
+            "--capabilities"
+          ],
+          "description": "Set capabilities.json file path",
+          "args": {
+            "name": "capabilities"
+          }
+        },
+        {
+          "name": [
+            "--count"
+          ],
+          "description": "Number of times to repeat each benchmark",
+          "args": {
+            "name": "count"
+          }
+        },
+        {
+          "name": [
+            "--coverage"
+          ],
+          "description": "Report coverage"
+        },
+        {
+          "name": [
+            "--data",
+            "-d"
+          ],
+          "description": "Set policy or data file(s). This flag can be repeated",
+          "args": {
+            "name": "data"
+          }
+        },
+        {
+          "name": [
+            "--disable-early-exit"
+          ],
+          "description": "Disable 'early exit' optimizations"
+        },
+        {
+          "name": [
+            "--disable-indexing"
+          ],
+          "description": "Disable indexing optimizations"
+        },
+        {
+          "name": [
+            "--disable-inlining"
+          ],
+          "description": "Set paths of documents to exclude from inlining",
+          "args": {
+            "name": "disable-inlining"
+          }
+        },
+        {
+          "name": [
+            "--explain"
+          ],
+          "description": "Enable query explanations",
+          "args": {
+            "name": "explain"
+          }
+        },
+        {
+          "name": [
+            "--fail"
+          ],
+          "description": "Exits with non-zero exit code on undefined/empty result and errors"
+        },
+        {
+          "name": [
+            "--fail-defined"
+          ],
+          "description": "Exits with non-zero exit code on defined/non-empty result and errors"
+        },
+        {
+          "name": [
+            "--format",
+            "-f"
+          ],
+          "description": "Set output format",
+          "args": {
+            "name": "format"
+          }
+        },
+        {
+          "name": [
+            "--ignore"
+          ],
+          "description": "Set file and directory names to ignore during loading (e.g., '.*' excludes hidden files)",
+          "args": {
+            "name": "ignore"
+          }
+        },
+        {
+          "name": [
+            "--import"
+          ],
+          "description": "Set query import(s). This flag can be repeated",
+          "args": {
+            "name": "import"
+          }
+        },
+        {
+          "name": [
+            "--input",
+            "-i"
+          ],
+          "description": "Set input file path",
+          "args": {
+            "name": "input"
+          }
+        },
+        {
+          "name": [
+            "--instrument"
+          ],
+          "description": "Enable query instrumentation metrics (implies --metrics)"
+        },
+        {
+          "name": [
+            "--metrics"
+          ],
+          "description": "Report query performance metrics"
+        },
+        {
+          "name": [
+            "--package"
+          ],
+          "description": "Set query package",
+          "args": {
+            "name": "package"
+          }
+        },
+        {
+          "name": [
+            "--partial",
+            "-p"
+          ],
+          "description": "Perform partial evaluation"
+        },
+        {
+          "name": [
+            "--pretty-limit"
+          ],
+          "description": "Set limit after which pretty output gets truncated",
+          "args": {
+            "name": "pretty-limit"
+          }
+        },
+        {
+          "name": [
+            "--profile"
+          ],
+          "description": "Perform expression profiling"
+        },
+        {
+          "name": [
+            "--profile-limit"
+          ],
+          "description": "Set number of profiling results to show",
+          "args": {
+            "name": "profile-limit"
+          }
+        },
+        {
+          "name": [
+            "--profile-sort"
+          ],
+          "description": "Set sort order of expression profiler results",
+          "args": {
+            "name": "profile-sort"
+          }
+        },
+        {
+          "name": [
+            "--schema",
+            "-s"
+          ],
+          "description": "Set schema file path or directory path",
+          "args": {
+            "name": "schema"
+          }
+        },
+        {
+          "name": [
+            "--shallow-inlining"
+          ],
+          "description": "Disable inlining of rules that depend on unknowns"
+        },
+        {
+          "name": [
+            "--stdin"
+          ],
+          "description": "Read query from stdin"
+        },
+        {
+          "name": [
+            "--stdin-input",
+            "-I"
+          ],
+          "description": "Read input document from stdin"
+        },
+        {
+          "name": [
+            "--strict-builtin-errors"
+          ],
+          "description": "Treat built-in function errors as fatal"
+        },
+        {
+          "name": [
+            "--target",
+            "-t"
+          ],
+          "description": "Set the runtime to exercise",
+          "args": {
+            "name": "target"
+          }
+        },
+        {
+          "name": [
+            "--timeout"
+          ],
+          "description": "Set eval timeout (default unlimited)",
+          "args": {
+            "name": "timeout"
+          }
+        },
+        {
+          "name": [
+            "--unknowns",
+            "-u"
+          ],
+          "description": "Set paths to treat as unknown during partial evaluation",
+          "args": {
+            "name": "unknowns"
+          }
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Help for eval"
+        }
+      ]
+    },
+    {
+      "name": "exec",
+      "description": "Execute against input files",
+      "options": [
+        {
+          "name": [
+            "--bundle",
+            "-b"
+          ],
+          "description": "Set bundle file(s) or directory path(s). This flag can be repeated",
+          "args": {
+            "name": "bundle"
+          }
+        },
+        {
+          "name": [
+            "--config-file",
+            "-c"
+          ],
+          "description": "Set path of configuration file",
+          "args": {
+            "name": "config-file"
+          }
+        },
+        {
+          "name": [
+            "--decision"
+          ],
+          "description": "Set decision to evaluate",
+          "args": {
+            "name": "decision"
+          }
+        },
+        {
+          "name": [
+            "--format",
+            "-f"
+          ],
+          "description": "Set output format",
+          "args": {
+            "name": "format"
+          }
+        },
+        {
+          "name": [
+            "--log-format"
+          ],
+          "description": "Set log format",
+          "args": {
+            "name": "log-format"
+          }
+        },
+        {
+          "name": [
+            "--log-level",
+            "-l"
+          ],
+          "description": "Set log level",
+          "args": {
+            "name": "log-level"
+          }
+        },
+        {
+          "name": [
+            "--set"
+          ],
+          "description": "Override config values on the command line (use commas to specify multiple values)",
+          "args": {
+            "name": "set"
+          }
+        },
+        {
+          "name": [
+            "--set-file"
+          ],
+          "description": "Override config values with files on the command line (use commas to specify multiple values)",
+          "args": {
+            "name": "set-file"
+          }
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Help for exec"
+        }
+      ]
+    },
+    {
+      "name": "fmt",
+      "description": "Format Paper source files",
+      "options": [
+        {
+          "name": [
+            "--diff",
+            "-d"
+          ],
+          "description": "Only display a diff of the changes"
+        },
+        {
+          "name": [
+            "--fail"
+          ],
+          "description": "Non zero exit code on reformat"
+        },
+        {
+          "name": [
+            "--list",
+            "-l"
+          ],
+          "description": "List all files who would change when formatted"
+        },
+        {
+          "name": [
+            "--write",
+            "-w"
+          ],
+          "description": "Overwrite the original source file"
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Help for fmt"
+        }
+      ]
+    },
+    {
+      "name": "inspect",
+      "description": "Inspect Paper bundle(s)",
+      "options": [
+        {
+          "name": [
+            "--format",
+            "-f"
+          ],
+          "description": "Set output format",
+          "args": {
+            "name": "format"
+          }
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Help for inspect"
+        }
+      ]
+    },
+    {
+      "name": "parse",
+      "description": "Parse Paper source file",
+      "options": [
+        {
+          "name": [
+            "--format",
+            "-f"
+          ],
+          "description": "Set output format",
+          "args": {
+            "name": "format"
+          }
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Help for parse"
+        }
+      ]
+    },
+    {
+      "name": "run",
+      "description": "Start Paper in interactive or server mode",
+      "options": [
+        {
+          "name": [
+            "--addr",
+            "-a"
+          ],
+          "description": "Set listening address of the server (e.g., [ip]:<port> for TCP, unix://<path> for UNIX domain socket)",
+          "args": {
+            "name": "addr"
+          }
+        },
+        {
+          "name": [
+            "--authentication"
+          ],
+          "description": "Set authentication scheme",
+          "args": {
+            "name": "authentication"
+          }
+        },
+        {
+          "name": [
+            "--authorization"
+          ],
+          "description": "Set authorization scheme",
+          "args": {
+            "name": "authorization"
+          }
+        },
+        {
+          "name": [
+            "--bundle",
+            "-b"
+          ],
+          "description": "Load paths as bundle files or root directories"
+        },
+        {
+          "name": [
+            "--config-file",
+            "-c"
+          ],
+          "description": "Set path of configuration file",
+          "args": {
+            "name": "config-file"
+          }
+        },
+        {
+          "name": [
+            "--diagnostic-addr"
+          ],
+          "description": "Set read-only diagnostic listening address of the server for /health and /metric APIs (e.g., [ip]:<port> for TCP, unix://<path> for UNIX domain socket)",
+          "args": {
+            "name": "diagnostic-addr"
+          }
+        },
+        {
+          "name": [
+            "--exclude-files-verify"
+          ],
+          "description": "Set file names to exclude during bundle verification",
+          "args": {
+            "name": "exclude-files-verify"
+          }
+        },
+        {
+          "name": [
+            "--format",
+            "-f"
+          ],
+          "description": "Set shell output format, i.e, pretty, json",
+          "args": {
+            "name": "format"
+          }
+        },
+        {
+          "name": [
+            "--h2c"
+          ],
+          "description": "Enable H2C for HTTP listeners"
+        },
+        {
+          "name": [
+            "--history",
+            "-H"
+          ],
+          "description": "Set path of history file",
+          "args": {
+            "name": "history"
+          }
+        },
+        {
+          "name": [
+            "--ignore"
+          ],
+          "description": "Set file and directory names to ignore during loading (e.g., '.*' excludes hidden files)",
+          "args": {
+            "name": "ignore"
+          }
+        },
+        {
+          "name": [
+            "--log-format"
+          ],
+          "description": "Set log format",
+          "args": {
+            "name": "log-format"
+          }
+        },
+        {
+          "name": [
+            "--log-level",
+            "-l"
+          ],
+          "description": "Set log level",
+          "args": {
+            "name": "log-level"
+          }
+        },
+        {
+          "name": [
+            "--max-errors",
+            "-m"
+          ],
+          "description": "Set the number of errors to allow before compilation fails early",
+          "args": {
+            "name": "max-errors"
+          }
+        },
+        {
+          "name": [
+            "--min-tls-version"
+          ],
+          "description": "Set minimum TLS version to be used by Paper's server",
+          "args": {
+            "name": "min-tls-version"
+          }
+        },
+        {
+          "name": [
+            "--pprof"
+          ],
+          "description": "Enables pprof endpoints"
+        },
+        {
+          "name": [
+            "--ready-timeout"
+          ],
+          "description": "Wait (in seconds) for configured plugins before starting server (value <= 0 disables ready check)",
+          "args": {
+            "name": "ready-timeout"
+          }
+        },
+        {
+          "name": [
+            "--scope"
+          ],
+          "description": "Scope to use for bundle signature verification",
+          "args": {
+            "name": "scope"
+          }
+        },
+        {
+          "name": [
+            "--server",
+            "-s"
+          ],
+          "description": "Start the runtime in server mode"
+        },
+        {
+          "name": [
+            "--set"
+          ],
+          "description": "Override config values on the command line (use commas to specify multiple values)",
+          "args": {
+            "name": "set"
+          }
+        },
+        {
+          "name": [
+            "--set-file"
+          ],
+          "description": "Override config values with files on the command line (use commas to specify multiple values)",
+          "args": {
+            "name": "set-file"
+          }
+        },
+        {
+          "name": [
+            "--shutdown-grace-period"
+          ],
+          "description": "Set the time (in seconds) that the server will wait to gracefully shut down",
+          "args": {
+            "name": "shutdown-grace-period"
+          }
+        },
+        {
+          "name": [
+            "--shutdown-wait-period"
+          ],
+          "description": "Set the time (in seconds) that the server will wait before initiating shutdown",
+          "args": {
+            "name": "shutdown-wait-period"
+          }
+        },
+        {
+          "name": [
+            "--signing-alg"
+          ],
+          "description": "Name of the signing algorithm",
+          "args": {
+            "name": "signing-alg"
+          }
+        },
+        {
+          "name": [
+            "--skip-verify"
+          ],
+          "description": "Disables bundle signature verification"
+        },
+        {
+          "name": [
+            "--tls-ca-cert-file"
+          ],
+          "description": "Set path of TLS CA cert file",
+          "args": {
+            "name": "tls-ca-cert-file"
+          }
+        },
+        {
+          "name": [
+            "--tls-cert-file"
+          ],
+          "description": "Set path of TLS certificate file",
+          "args": {
+            "name": "tls-cert-file"
+          }
+        },
+        {
+          "name": [
+            "--tls-cert-refresh-period"
+          ],
+          "description": "Set certificate refresh period",
+          "args": {
+            "name": "tls-cert-refresh-period"
+          }
+        },
+        {
+          "name": [
+            "--tls-private-key-file"
+          ],
+          "description": "Set path of TLS private key file",
+          "args": {
+            "name": "tls-private-key-file"
+          }
+        },
+        {
+          "name": [
+            "--verification-key"
+          ],
+          "description": "Set the secret (HMAC) or path of the PEM file containing the public key (RSA and ECDSA)",
+          "args": {
+            "name": "verification-key"
+          }
+        },
+        {
+          "name": [
+            "--verification-key-id"
+          ],
+          "description": "Name assigned to the verification key used for bundle verification",
+          "args": {
+            "name": "verification-key-id"
+          }
+        },
+        {
+          "name": [
+            "--watch",
+            "-w"
+          ],
+          "description": "Watch command line files for changes"
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Help for run"
+        }
+      ]
+    },
+    {
+      "name": "sign",
+      "description": "Generate an Paper bundle signature",
+      "options": [
+        {
+          "name": [
+            "--bundle",
+            "-b"
+          ],
+          "description": "Load paths as bundle files or root directories"
+        },
+        {
+          "name": [
+            "--output-file-path",
+            "-o"
+          ],
+          "description": "Set the location for the .signatures.json file",
+          "args": {
+            "name": "output-file-path"
+          }
+        },
+        {
+          "name": [
+            "--signing-alg"
+          ],
+          "description": "Name of the signing algorithm",
+          "args": {
+            "name": "signing-alg"
+          }
+        },
+        {
+          "name": [
+            "--signing-key"
+          ],
+          "description": "Set the secret (HMAC) or path of the PEM file containing the private key (RSA and ECDSA)",
+          "args": {
+            "name": "signing-key"
+          }
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Help for sign"
+        }
+      ]
+    },
+    {
+      "name": "test",
+      "description": "Execute Paper test cases",
+      "options": [
+        {
+          "name": [
+            "--bench"
+          ],
+          "description": "Benchmark the unit tests"
+        },
+        {
+          "name": [
+            "--benchmem"
+          ],
+          "description": "Report memory allocations with benchmark results"
+        },
+        {
+          "name": [
+            "--bundle",
+            "-b"
+          ],
+          "description": "Load paths as bundle files or root directories"
+        },
+        {
+          "name": [
+            "--count"
+          ],
+          "description": "Number of times to repeat each test",
+          "args": {
+            "name": "count"
+          }
+        },
+        {
+          "name": [
+            "--coverage",
+            "-c"
+          ],
+          "description": "Report coverage (overrides debug tracing)"
+        },
+        {
+          "name": [
+            "--exit-zero-on-skipped",
+            "-z"
+          ],
+          "description": "Skipped tests return status 0"
+        },
+        {
+          "name": [
+            "--explain"
+          ],
+          "description": "Enable query explanations",
+          "args": {
+            "name": "explain"
+          }
+        },
+        {
+          "name": [
+            "--format",
+            "-f"
+          ],
+          "description": "Set output format",
+          "args": {
+            "name": "format"
+          }
+        },
+        {
+          "name": [
+            "--ignore"
+          ],
+          "description": "Set file and directory names to ignore during loading (e.g., '.*' excludes hidden files)",
+          "args": {
+            "name": "ignore"
+          }
+        },
+        {
+          "name": [
+            "--max-errors",
+            "-m"
+          ],
+          "description": "Set the number of errors to allow before compilation fails early",
+          "args": {
+            "name": "max-errors"
+          }
+        },
+        {
+          "name": [
+            "--run",
+            "-r"
+          ],
+          "description": "Run only test cases matching the regular expression",
+          "args": {
+            "name": "run"
+          }
+        },
+        {
+          "name": [
+            "--show-failure-line",
+            "-l"
+          ],
+          "description": "Show test failure line"
+        },
+        {
+          "name": [
+            "--target",
+            "-t"
+          ],
+          "description": "Set the runtime to exercise",
+          "args": {
+            "name": "target"
+          }
+        },
+        {
+          "name": [
+            "--threshold"
+          ],
+          "description": "Set coverage threshold and exit with non-zero status if coverage is less than threshold %",
+          "args": {
+            "name": "threshold"
+          }
+        },
+        {
+          "name": [
+            "--timeout"
+          ],
+          "description": "Set test timeout (default 5s, 30s when benchmarking)",
+          "args": {
+            "name": "timeout"
+          }
+        },
+        {
+          "name": [
+            "--verbose",
+            "-v"
+          ],
+          "description": "Set verbose reporting mode"
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Help for test"
+        }
+      ]
+    },
+    {
+      "name": "version",
+      "description": "Print the version of Paper",
+      "options": [
+        {
+          "name": [
+            "--check",
+            "-c"
+          ],
+          "description": "Check for latest Paper release"
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Help for version"
+        }
+      ]
+    },
+    {
+      "name": "help",
+      "description": "Help about any command",
+      "subcommands": [
+        {
+          "name": "bench",
+          "description": "Benchmark a Paper query",
+          "options": [
+            {
+              "name": [
+                "--help",
+                "-h"
+              ],
+              "description": "Help for bench"
+            }
+          ]
+        },
+        {
+          "name": "build",
+          "description": "Build an Paper bundle",
+          "options": [
+            {
+              "name": [
+                "--help",
+                "-h"
+              ],
+              "description": "Help for build"
+            }
+          ]
+        },
+        {
+          "name": "check",
+          "description": "Check Paper source files",
+          "options": [
+            {
+              "name": [
+                "--help",
+                "-h"
+              ],
+              "description": "Help for check"
+            }
+          ]
+        },
+        {
+          "name": "completion",
+          "description": "Generate the autocompletion script for the specified shell",
+          "subcommands": [
+            {
+              "name": "bash",
+              "description": "Generate the autocompletion script for bash",
+              "options": [
+                {
+                  "name": [
+                    "--no-descriptions"
+                  ],
+                  "description": "Disable completion descriptions"
+                },
+                {
+                  "name": [
+                    "--help",
+                    "-h"
+                  ],
+                  "description": "Help for bash"
+                }
+              ]
+            },
+            {
+              "name": "fish",
+              "description": "Generate the autocompletion script for fish",
+              "options": [
+                {
+                  "name": [
+                    "--no-descriptions"
+                  ],
+                  "description": "Disable completion descriptions"
+                },
+                {
+                  "name": [
+                    "--help",
+                    "-h"
+                  ],
+                  "description": "Help for fish"
+                }
+              ]
+            },
+            {
+              "name": "powershell",
+              "description": "Generate the autocompletion script for powershell",
+              "options": [
+                {
+                  "name": [
+                    "--no-descriptions"
+                  ],
+                  "description": "Disable completion descriptions"
+                },
+                {
+                  "name": [
+                    "--help",
+                    "-h"
+                  ],
+                  "description": "Help for powershell"
+                }
+              ]
+            },
+            {
+              "name": "zsh",
+              "description": "Generate the autocompletion script for zsh",
+              "options": [
+                {
+                  "name": [
+                    "--no-descriptions"
+                  ],
+                  "description": "Disable completion descriptions"
+                },
+                {
+                  "name": [
+                    "--help",
+                    "-h"
+                  ],
+                  "description": "Help for zsh"
+                }
+              ]
+            }
+          ],
+          "options": [
+            {
+              "name": [
+                "--help",
+                "-h"
+              ],
+              "description": "Help for completion"
+            }
+          ]
+        },
+        {
+          "name": "deps",
+          "description": "Analyze Paper query dependencies",
+          "options": [
+            {
+              "name": [
+                "--help",
+                "-h"
+              ],
+              "description": "Help for deps"
+            }
+          ]
+        },
+        {
+          "name": "eval",
+          "description": "Evaluate a Paper query",
+          "options": [
+            {
+              "name": [
+                "--help",
+                "-h"
+              ],
+              "description": "Help for eval"
+            }
+          ]
+        },
+        {
+          "name": "exec",
+          "description": "Execute against input files",
+          "options": [
+            {
+              "name": [
+                "--help",
+                "-h"
+              ],
+              "description": "Help for exec"
+            }
+          ]
+        },
+        {
+          "name": "fmt",
+          "description": "Format Paper source files",
+          "options": [
+            {
+              "name": [
+                "--help",
+                "-h"
+              ],
+              "description": "Help for fmt"
+            }
+          ]
+        },
+        {
+          "name": "inspect",
+          "description": "Inspect Paper bundle(s)",
+          "options": [
+            {
+              "name": [
+                "--help",
+                "-h"
+              ],
+              "description": "Help for inspect"
+            }
+          ]
+        },
+        {
+          "name": "parse",
+          "description": "Parse Paper source file",
+          "options": [
+            {
+              "name": [
+                "--help",
+                "-h"
+              ],
+              "description": "Help for parse"
+            }
+          ]
+        },
+        {
+          "name": "run",
+          "description": "Start Paper in interactive or server mode",
+          "options": [
+            {
+              "name": [
+                "--help",
+                "-h"
+              ],
+              "description": "Help for run"
+            }
+          ]
+        },
+        {
+          "name": "sign",
+          "description": "Generate an Paper bundle signature",
+          "options": [
+            {
+              "name": [
+                "--help",
+                "-h"
+              ],
+              "description": "Help for sign"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "description": "Execute Paper test cases",
+          "options": [
+            {
+              "name": [
+                "--help",
+                "-h"
+              ],
+              "description": "Help for test"
+            }
+          ]
+        },
+        {
+          "name": "version",
+          "description": "Print the version of Paper",
+          "options": [
+            {
+              "name": [
+                "--help",
+                "-h"
+              ],
+              "description": "Help for version"
+            }
+          ]
+        }
+      ],
+      "options": [
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Help for help"
+        }
+      ]
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "--help",
+        "-h"
+      ],
+      "description": "Help for Paper"
+    }
+  ]
+}

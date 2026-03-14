@@ -1,0 +1,40 @@
+{
+  "name": "trap",
+  "description": "Automatically execute commands after receiving signals by processes or the operating system",
+  "options": [
+    {
+      "name": [
+        "--print",
+        "-p"
+      ],
+      "description": "Prints all defined signal handlers"
+    },
+    {
+      "name": [
+        "--help",
+        "-h"
+      ],
+      "description": "Displays help about using this command"
+    }
+  ],
+  "args": [
+    {
+      "name": "function name",
+      "isOptional": true
+    },
+    {
+      "name": "reason",
+      "generators": [
+        {
+          "script": [
+            "command",
+            "kill",
+            "-l"
+          ],
+          "requires_js": true,
+          "js_source": "e=>[...e.matchAll(a)].map(n=>({name:n[2]}))"
+        }
+      ]
+    }
+  ]
+}

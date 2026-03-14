@@ -1,392 +1,79 @@
 {
   "name": "find",
-  "description": "Walk a file hierarchy and evaluate expressions",
-  "args": [
-    {
-      "name": "path",
-      "description": "Starting directory for the search",
-      "template": "folders"
-    }
-  ],
+  "description": "Walk a file hierarchy",
   "options": [
     {
       "name": [
-        "-name"
+        "-E"
       ],
-      "description": "Match filename against shell pattern (case-sensitive)",
-      "args": {
-        "name": "pattern"
-      }
+      "description": "Interpret regular expressions followed by -regex and -iregex primaries as extended"
     },
     {
       "name": [
-        "-iname"
+        "-H"
       ],
-      "description": "Match filename against shell pattern (case-insensitive)",
-      "args": {
-        "name": "pattern"
-      }
+      "description": "Cause the file information and file type returned for each symbolic link specified to be those referenced by the link"
     },
     {
       "name": [
-        "-type"
-      ],
-      "description": "Match file type (f=file, d=dir, l=symlink, b/c/p/s)",
-      "args": {
-        "name": "type"
-      }
-    },
-    {
-      "name": [
-        "-size"
-      ],
-      "description": "Match file size (+/-N with suffix c/k/M/G)",
-      "args": {
-        "name": "n"
-      }
-    },
-    {
-      "name": [
-        "-mtime"
-      ],
-      "description": "Match files modified N*24 hours ago (+N/-N/N)",
-      "args": {
-        "name": "n"
-      }
-    },
-    {
-      "name": [
-        "-atime"
-      ],
-      "description": "Match files accessed N*24 hours ago (+N/-N/N)",
-      "args": {
-        "name": "n"
-      }
-    },
-    {
-      "name": [
-        "-ctime"
-      ],
-      "description": "Match files changed N*24 hours ago (+N/-N/N)",
-      "args": {
-        "name": "n"
-      }
-    },
-    {
-      "name": [
-        "-mmin"
-      ],
-      "description": "Match files modified N minutes ago",
-      "args": {
-        "name": "n"
-      }
-    },
-    {
-      "name": [
-        "-amin"
-      ],
-      "description": "Match files accessed N minutes ago",
-      "args": {
-        "name": "n"
-      }
-    },
-    {
-      "name": [
-        "-cmin"
-      ],
-      "description": "Match files changed N minutes ago",
-      "args": {
-        "name": "n"
-      }
-    },
-    {
-      "name": [
-        "-newer"
-      ],
-      "description": "Match files modified more recently than FILE",
-      "args": {
-        "name": "file",
-        "template": "filepaths"
-      }
-    },
-    {
-      "name": [
-        "-exec"
-      ],
-      "description": "Execute command on each matched file (terminate with \\;)",
-      "args": {
-        "name": "command"
-      }
-    },
-    {
-      "name": [
-        "-execdir"
-      ],
-      "description": "Like -exec but run command from file's directory",
-      "args": {
-        "name": "command"
-      }
-    },
-    {
-      "name": [
-        "-ok"
-      ],
-      "description": "Like -exec but ask user for confirmation first",
-      "args": {
-        "name": "command"
-      }
-    },
-    {
-      "name": [
-        "-print"
-      ],
-      "description": "Print the full file name followed by a newline"
-    },
-    {
-      "name": [
-        "-print0"
-      ],
-      "description": "Print the full file name followed by a null character"
-    },
-    {
-      "name": [
-        "-printf"
-      ],
-      "description": "Print format string for each matched file",
-      "args": {
-        "name": "format"
-      }
-    },
-    {
-      "name": [
-        "-delete"
-      ],
-      "description": "Delete matched files"
-    },
-    {
-      "name": [
-        "-maxdepth"
-      ],
-      "description": "Descend at most N levels of directories below the starting point",
-      "args": {
-        "name": "levels"
-      }
-    },
-    {
-      "name": [
-        "-mindepth"
-      ],
-      "description": "Do not apply tests or actions at levels less than N",
-      "args": {
-        "name": "levels"
-      }
-    },
-    {
-      "name": [
-        "-perm"
-      ],
-      "description": "Match file permission bits",
-      "args": {
-        "name": "mode"
-      }
-    },
-    {
-      "name": [
-        "-user"
-      ],
-      "description": "Match files owned by user name or ID",
-      "args": {
-        "name": "uname"
-      }
-    },
-    {
-      "name": [
-        "-group"
-      ],
-      "description": "Match files owned by group name or ID",
-      "args": {
-        "name": "gname"
-      }
-    },
-    {
-      "name": [
-        "-empty"
-      ],
-      "description": "Match empty files and directories"
-    },
-    {
-      "name": [
-        "-path"
-      ],
-      "description": "Match full path against shell pattern",
-      "args": {
-        "name": "pattern"
-      }
-    },
-    {
-      "name": [
-        "-ipath"
-      ],
-      "description": "Match full path against pattern (case-insensitive)",
-      "args": {
-        "name": "pattern"
-      }
-    },
-    {
-      "name": [
-        "-regex"
-      ],
-      "description": "Match full path against regular expression",
-      "args": {
-        "name": "pattern"
-      }
-    },
-    {
-      "name": [
-        "-iregex"
-      ],
-      "description": "Match full path against regex (case-insensitive)",
-      "args": {
-        "name": "pattern"
-      }
-    },
-    {
-      "name": [
-        "-not"
-      ],
-      "description": "Negate the following expression"
-    },
-    {
-      "name": [
-        "-and",
-        "-a"
-      ],
-      "description": "Logical AND of expressions (implicit between tests)"
-    },
-    {
-      "name": [
-        "-or",
-        "-o"
-      ],
-      "description": "Logical OR of expressions"
-    },
-    {
-      "name": [
-        "-prune"
-      ],
-      "description": "Do not descend into the current directory"
-    },
-    {
-      "name": [
-        "-ls"
-      ],
-      "description": "List matched files in ls -dils format"
-    },
-    {
-      "name": [
-        "-depth"
-      ],
-      "description": "Process directory contents before the directory itself"
-    },
-    {
-      "name": [
-        "-follow",
         "-L"
       ],
-      "description": "Follow symbolic links"
+      "description": "Cause the file information and file type returned for each symbolic link to be those of the file referenced by the link"
     },
     {
       "name": [
-        "-xdev"
+        "-P"
       ],
-      "description": "Do not descend into directories on other filesystems"
+      "description": "Cause the file information and file type returned for each symbolic link to be those for the link itself"
     },
     {
       "name": [
-        "-mount"
+        "-X"
       ],
-      "description": "Do not descend into directories on other filesystems (same as -xdev)"
+      "description": "Permit find to be safely used in conjunction with xargs"
     },
     {
       "name": [
-        "-readable"
+        "-d"
       ],
-      "description": "Match files which are readable"
+      "description": "Cause find to perform a depth-first traversal"
     },
     {
       "name": [
-        "-writable"
+        "-f"
       ],
-      "description": "Match files which are writable"
-    },
-    {
-      "name": [
-        "-executable"
-      ],
-      "description": "Match files which are executable"
-    },
-    {
-      "name": [
-        "-samefile"
-      ],
-      "description": "Match files that refer to the same inode as FILE",
+      "description": "Specify a file hierarch for find to traverse",
       "args": {
-        "name": "file",
-        "template": "filepaths"
+        "name": "path"
       }
     },
     {
       "name": [
-        "-links"
+        "-s"
       ],
-      "description": "Match files with N hard links",
-      "args": {
-        "name": "n"
-      }
+      "description": "Cause find to traverse the file hierarchies in lexicographical order"
     },
     {
       "name": [
-        "-inum"
+        "-x"
       ],
-      "description": "Match files with inode number N",
-      "args": {
-        "name": "n"
-      }
+      "description": "Prevent find from descending into directories that have a device number different than that of the file from which the descent began"
+    }
+  ],
+  "args": [
+    {
+      "name": "path",
+      "template": [
+        "folders"
+      ],
+      "isVariadic": true,
+      "isOptional": true
     },
     {
-      "name": [
-        "-regextype"
-      ],
-      "description": "Set regular expression syntax (emacs, posix-awk, etc.)",
-      "args": {
-        "name": "type"
-      }
-    },
-    {
-      "name": [
-        "-fprint"
-      ],
-      "description": "Print full file names to FILE",
-      "args": {
-        "name": "file",
-        "template": "filepaths"
-      }
-    },
-    {
-      "name": [
-        "-fprint0"
-      ],
-      "description": "Print full file names to FILE, null-separated",
-      "args": {
-        "name": "file",
-        "template": "filepaths"
-      }
-    },
-    {
-      "name": [
-        "-quit"
-      ],
-      "description": "Exit immediately (no further processing)"
+      "name": "expression",
+      "description": "Composition of primaries and operands",
+      "isVariadic": true,
+      "isOptional": true
     }
   ]
 }

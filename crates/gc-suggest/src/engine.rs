@@ -1,22 +1,32 @@
 use std::path::Path;
+use std::sync::Arc;
+use std::time::Duration;
 
 use anyhow::Result;
 use gc_buffer::CommandContext;
+use tokio::sync::Semaphore;
 
+use crate::cache::{CacheKey, GeneratorCache};
 use crate::commands::CommandsProvider;
 use crate::filesystem::FilesystemProvider;
 use crate::fuzzy;
 use crate::git;
 use crate::history::{HistoryProvider, DEFAULT_MAX_HISTORY_ENTRIES};
 use crate::provider::Provider;
-use crate::specs::{self, SpecStore};
+use crate::script::{run_script, substitute_template};
+use crate::specs::{self, GeneratorSpec, SpecStore};
+use crate::transform::execute_pipeline;
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
+
+/// Maximum number of concurrent script generators.
+const MAX_CONCURRENT_GENERATORS: usize = 3;
 
 pub struct SuggestionEngine {
     spec_store: SpecStore,
     filesystem_provider: FilesystemProvider,
     history_provider: HistoryProvider,
     commands_provider: CommandsProvider,
+    generator_cache: Arc<GeneratorCache>,
     max_results: usize,
     providers_commands: bool,
     providers_history: bool,
@@ -40,6 +50,7 @@ impl SuggestionEngine {
             filesystem_provider: FilesystemProvider::new(),
             history_provider: HistoryProvider::load(DEFAULT_MAX_HISTORY_ENTRIES),
             commands_provider: CommandsProvider::from_path_env(),
+            generator_cache: Arc::new(GeneratorCache::new()),
             max_results: fuzzy::DEFAULT_MAX_RESULTS,
             providers_commands: true,
             providers_history: true,
@@ -71,8 +82,8 @@ impl SuggestionEngine {
         self
     }
 
-    #[cfg(test)]
-    fn with_providers(
+    /// Test/bench constructor — inject providers directly for deterministic setup.
+    pub fn with_providers(
         spec_store: SpecStore,
         history_provider: HistoryProvider,
         commands_provider: CommandsProvider,
@@ -82,6 +93,7 @@ impl SuggestionEngine {
             filesystem_provider: FilesystemProvider::new(),
             history_provider,
             commands_provider,
+            generator_cache: Arc::new(GeneratorCache::new()),
             max_results: fuzzy::DEFAULT_MAX_RESULTS,
             providers_commands: true,
             providers_history: true,
@@ -91,19 +103,167 @@ impl SuggestionEngine {
         }
     }
 
+    /// Quick check: does the current command context have any script generators?
+    /// Used to avoid spawning async tasks when there's nothing to run.
+    pub fn has_script_generators(&self, ctx: &CommandContext) -> bool {
+        if !self.providers_specs || ctx.word_index == 0 || ctx.in_redirect {
+            return false;
+        }
+        let command = match &ctx.command {
+            Some(c) => c,
+            None => return false,
+        };
+        let spec = match self.spec_store.get(command) {
+            Some(s) => s,
+            None => return false,
+        };
+        let resolution = specs::resolve_spec(spec, ctx);
+        resolution.script_generators.iter().any(|g| !g.requires_js)
+    }
+
+    /// Run script-based generators for the current command context.
+    ///
+    /// Resolves the spec, finds script generators, runs each (with caching and
+    /// concurrency limiting), applies transform pipelines, and returns all results.
+    pub async fn suggest_dynamic(
+        &self,
+        ctx: &CommandContext,
+        cwd: &Path,
+        timeout_ms: u64,
+    ) -> Result<Vec<Suggestion>> {
+        if !self.providers_specs || ctx.word_index == 0 || ctx.in_redirect {
+            return Ok(Vec::new());
+        }
+
+        let command = match &ctx.command {
+            Some(c) => c,
+            None => return Ok(Vec::new()),
+        };
+
+        let spec = match self.spec_store.get(command) {
+            Some(s) => s,
+            None => return Ok(Vec::new()),
+        };
+
+        let resolution = specs::resolve_spec(spec, ctx);
+        if resolution.script_generators.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let semaphore = Arc::new(Semaphore::new(MAX_CONCURRENT_GENERATORS));
+        let mut handles = Vec::new();
+
+        for gen in &resolution.script_generators {
+            if gen.requires_js {
+                continue;
+            }
+
+            let argv = resolve_script_argv(gen, ctx);
+            if argv.is_empty() {
+                continue;
+            }
+
+            // Check cache
+            let cache_cwd = gen
+                .cache
+                .as_ref()
+                .filter(|c| c.cache_by_directory)
+                .map(|_| cwd);
+            let cache_key = CacheKey::from_strings(command, &argv, cache_cwd);
+
+            if let Some(cached) = self.generator_cache.get(&cache_key) {
+                tracing::debug!("cache hit for generator {:?}", argv);
+                handles.push(tokio::spawn(async move { Ok::<_, anyhow::Error>(cached) }));
+                continue;
+            }
+
+            let permit = Arc::clone(&semaphore);
+            let cwd = cwd.to_path_buf();
+            let transforms = gen.transforms.clone();
+            let cache = gen.cache.clone();
+            let cache_store = Arc::clone(&self.generator_cache);
+            let cmd_name = command.to_string();
+
+            handles.push(tokio::spawn(async move {
+                let _permit = permit
+                    .acquire()
+                    .await
+                    .map_err(|e| anyhow::anyhow!("semaphore error: {e}"))?;
+
+                let argv_refs: Vec<&str> = argv.iter().map(|s| s.as_str()).collect();
+                let output = run_script(&argv_refs, &cwd, timeout_ms).await?;
+
+                let suggestions = if transforms.is_empty() {
+                    // Default: split on newlines, filter empty, produce plain suggestions
+                    output
+                        .lines()
+                        .filter(|l| !l.trim().is_empty())
+                        .map(|l| Suggestion {
+                            text: l.to_string(),
+                            source: SuggestionSource::Script,
+                            ..Default::default()
+                        })
+                        .collect()
+                } else {
+                    execute_pipeline(&output, &transforms).map_err(|e| anyhow::anyhow!("{e}"))?
+                };
+
+                // Cache if configured
+                if let Some(ref cache_cfg) = cache {
+                    if cache_cfg.ttl_seconds > 0 {
+                        let cache_cwd = if cache_cfg.cache_by_directory {
+                            Some(cwd.as_path())
+                        } else {
+                            None
+                        };
+                        let key = CacheKey::from_strings(&cmd_name, &argv, cache_cwd);
+                        cache_store.insert(
+                            key,
+                            suggestions.clone(),
+                            Duration::from_secs(cache_cfg.ttl_seconds),
+                        );
+                    }
+                }
+
+                Ok(suggestions)
+            }));
+        }
+
+        let mut all_results = Vec::new();
+        for handle in handles {
+            match handle.await {
+                Ok(Ok(suggestions)) => all_results.extend(suggestions),
+                Ok(Err(e)) => {
+                    tracing::warn!("script generator failed: {e}");
+                }
+                Err(e) => {
+                    tracing::warn!("script generator task panicked: {e}");
+                }
+            }
+        }
+
+        Ok(fuzzy::rank(
+            &ctx.current_word,
+            all_results,
+            self.max_results,
+        ))
+    }
+
     pub fn suggest_sync(&self, ctx: &CommandContext, cwd: &Path) -> Result<Vec<Suggestion>> {
         let mut candidates = Vec::new();
 
         // Command position: commands + history
         if ctx.word_index == 0 {
             if self.providers_commands {
-                if let Ok(cmds) = self.commands_provider.provide(ctx, cwd) {
-                    candidates.extend(cmds);
+                match self.commands_provider.provide(ctx, cwd) {
+                    Ok(cmds) => candidates.extend(cmds),
+                    Err(e) => tracing::debug!("commands provider error: {e}"),
                 }
             }
             if self.providers_history {
-                if let Ok(hist) = self.history_provider.provide(ctx, cwd) {
-                    candidates.extend(hist);
+                match self.history_provider.provide(ctx, cwd) {
+                    Ok(hist) => candidates.extend(hist),
+                    Err(e) => tracing::debug!("history provider error: {e}"),
                 }
             }
             return Ok(fuzzy::rank(&ctx.current_word, candidates, self.max_results));
@@ -112,8 +272,9 @@ impl SuggestionEngine {
         // Redirect: always filesystem
         if ctx.in_redirect {
             if self.providers_filesystem {
-                if let Ok(fs) = self.filesystem_provider.provide(ctx, cwd) {
-                    candidates.extend(fs);
+                match self.filesystem_provider.provide(ctx, cwd) {
+                    Ok(fs) => candidates.extend(fs),
+                    Err(e) => tracing::debug!("filesystem provider error (redirect): {e}"),
                 }
             }
             return Ok(fuzzy::rank(&ctx.current_word, candidates, self.max_results));
@@ -134,7 +295,7 @@ impl SuggestionEngine {
                     let in_option_arg = ctx.preceding_flag.is_some()
                         && (resolution.wants_filepaths
                             || resolution.wants_folders_only
-                            || !resolution.generators.is_empty());
+                            || !resolution.native_generators.is_empty());
 
                     if !in_option_arg {
                         candidates.extend(resolution.subcommands);
@@ -143,10 +304,13 @@ impl SuggestionEngine {
 
                     // Handle generators (e.g., git branches/tags/remotes)
                     if self.providers_git {
-                        for gen_type in &resolution.generators {
+                        for gen_type in &resolution.native_generators {
                             if let Some(kind) = git::generator_to_query_kind(gen_type) {
-                                if let Ok(git_suggestions) = git::git_suggestions(cwd, kind) {
-                                    candidates.extend(git_suggestions);
+                                match git::git_suggestions(cwd, kind) {
+                                    Ok(suggestions) => candidates.extend(suggestions),
+                                    Err(e) => {
+                                        tracing::debug!("git provider error ({gen_type}): {e}")
+                                    }
                                 }
                             }
                         }
@@ -177,19 +341,23 @@ impl SuggestionEngine {
                                     description: Some("Parent directory".to_string()),
                                     kind: SuggestionKind::Directory,
                                     source: SuggestionSource::Filesystem,
-                                    score: 0,
+                                    ..Default::default()
                                 });
                             }
                         }
-                        if let Ok(fs) = self.filesystem_provider.provide(ctx, cwd) {
-                            candidates.extend(
-                                fs.into_iter()
-                                    .filter(|s| s.kind == SuggestionKind::Directory),
-                            );
+                        match self.filesystem_provider.provide(ctx, cwd) {
+                            Ok(fs) => {
+                                candidates.extend(
+                                    fs.into_iter()
+                                        .filter(|s| s.kind == SuggestionKind::Directory),
+                                );
+                            }
+                            Err(e) => tracing::debug!("filesystem provider error (folders): {e}"),
                         }
                     } else if resolution.wants_filepaths && self.providers_filesystem {
-                        if let Ok(fs) = self.filesystem_provider.provide(ctx, cwd) {
-                            candidates.extend(fs);
+                        match self.filesystem_provider.provide(ctx, cwd) {
+                            Ok(fs) => candidates.extend(fs),
+                            Err(e) => tracing::debug!("filesystem provider error: {e}"),
                         }
                     }
 
@@ -201,8 +369,9 @@ impl SuggestionEngine {
         // Path-like current_word without a spec: filesystem
         if looks_like_path(&ctx.current_word) {
             if self.providers_filesystem {
-                if let Ok(fs) = self.filesystem_provider.provide(ctx, cwd) {
-                    candidates.extend(fs);
+                match self.filesystem_provider.provide(ctx, cwd) {
+                    Ok(fs) => candidates.extend(fs),
+                    Err(e) => tracing::debug!("filesystem provider error (path): {e}"),
                 }
             }
             return Ok(fuzzy::rank(&ctx.current_word, candidates, self.max_results));
@@ -210,12 +379,30 @@ impl SuggestionEngine {
 
         // No spec, no path — fallback to filesystem
         if self.providers_filesystem {
-            if let Ok(fs) = self.filesystem_provider.provide(ctx, cwd) {
-                candidates.extend(fs);
+            match self.filesystem_provider.provide(ctx, cwd) {
+                Ok(fs) => candidates.extend(fs),
+                Err(e) => tracing::debug!("filesystem provider error (fallback): {e}"),
             }
         }
         Ok(fuzzy::rank(&ctx.current_word, candidates, self.max_results))
     }
+}
+
+/// Resolve the argv for a script generator, applying template substitution if needed.
+fn resolve_script_argv(gen: &GeneratorSpec, ctx: &CommandContext) -> Vec<String> {
+    if let Some(ref script) = gen.script {
+        return script.clone();
+    }
+    if let Some(ref template) = gen.script_template {
+        let prev_token = ctx.args.last().map(|s| s.as_str());
+        let current_token = if ctx.current_word.is_empty() {
+            None
+        } else {
+            Some(ctx.current_word.as_str())
+        };
+        return substitute_template(template, prev_token, current_token);
+    }
+    Vec::new()
 }
 
 fn looks_like_path(word: &str) -> bool {
@@ -444,14 +631,25 @@ mod tests {
 
     #[test]
     fn test_option_arg_folders_template_filters_files() {
-        // pip install -t <TAB> → should show only directories
-        let engine = make_engine();
+        // test-deploy -t <TAB> → should show only directories
+        // Uses an inline spec to avoid dependency on real specs
+        let spec_dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            spec_dir.path().join("test-deploy.json"),
+            r#"{"name":"test-deploy","subcommands":[{"name":"install","options":[{"name":["-t","--target"],"description":"Target directory","args":{"name":"dir","template":"folders"}}]}]}"#,
+        )
+        .unwrap();
+        let spec_store = SpecStore::load_from_dir(spec_dir.path()).unwrap().store;
+        let history = HistoryProvider::from_entries(vec![]);
+        let commands = CommandsProvider::from_list(vec![]);
+        let engine = SuggestionEngine::with_providers(spec_store, history, commands);
+
         let tmp = tempfile::TempDir::new().unwrap();
         std::fs::create_dir(tmp.path().join("target_dir")).unwrap();
         std::fs::write(tmp.path().join("not_a_dir.txt"), "").unwrap();
 
         let ctx = CommandContext {
-            command: Some("pip".into()),
+            command: Some("test-deploy".into()),
             args: vec!["install".into(), "-t".into()],
             current_word: String::new(),
             word_index: 3,
@@ -465,11 +663,11 @@ mod tests {
         let results = engine.suggest_sync(&ctx, tmp.path()).unwrap();
         assert!(
             results.iter().any(|s| s.text.contains("target_dir")),
-            "pip install -t should show directories: {results:?}"
+            "test-deploy install -t should show directories: {results:?}"
         );
         assert!(
             !results.iter().any(|s| s.text.contains("not_a_dir")),
-            "pip install -t should NOT show files: {results:?}"
+            "test-deploy install -t should NOT show files: {results:?}"
         );
     }
 
@@ -558,5 +756,150 @@ mod tests {
                 .any(|s| s.source == crate::types::SuggestionSource::Commands),
             "should not have commands when provider disabled"
         );
+    }
+
+    #[tokio::test]
+    async fn test_suggest_dynamic_with_script_generator() {
+        let spec_json = r#"{
+            "name": "test-dynamic",
+            "args": [{
+                "generators": [{
+                    "script": ["printf", "alpha\nbeta\ngamma"],
+                    "transforms": ["split_lines", "filter_empty"]
+                }]
+            }]
+        }"#;
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(dir.path().join("test-dynamic.json"), spec_json).unwrap();
+
+        let engine = SuggestionEngine::new(dir.path()).unwrap();
+        let ctx = make_ctx(Some("test-dynamic"), vec![], "", 1);
+        let results = engine
+            .suggest_dynamic(&ctx, Path::new("/tmp"), 5000)
+            .await
+            .unwrap();
+        assert!(
+            results.iter().any(|s| s.text == "alpha"),
+            "expected 'alpha' in results: {results:?}"
+        );
+        assert!(
+            results.iter().any(|s| s.text == "beta"),
+            "expected 'beta' in results: {results:?}"
+        );
+        assert!(
+            results.iter().any(|s| s.text == "gamma"),
+            "expected 'gamma' in results: {results:?}"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_suggest_dynamic_no_script_generators() {
+        // A spec with only native generators should return empty from suggest_dynamic
+        let spec_json = r#"{
+            "name": "test-native-only",
+            "args": [{"generators": [{"type": "git_branches"}]}]
+        }"#;
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(dir.path().join("test-native-only.json"), spec_json).unwrap();
+
+        let engine = SuggestionEngine::new(dir.path()).unwrap();
+        let ctx = make_ctx(Some("test-native-only"), vec![], "", 1);
+        let results = engine
+            .suggest_dynamic(&ctx, Path::new("/tmp"), 5000)
+            .await
+            .unwrap();
+        assert!(results.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_suggest_dynamic_caches_results() {
+        // Use date +%s%N to produce a non-deterministic value. If the cache
+        // works, the second call returns the SAME stale result.
+        let spec_json = r#"{
+            "name": "test-cached",
+            "args": [{
+                "generators": [{
+                    "script": ["date", "+%s%N"],
+                    "transforms": ["split_lines", "filter_empty"],
+                    "cache": {"ttl_seconds": 300}
+                }]
+            }]
+        }"#;
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(dir.path().join("test-cached.json"), spec_json).unwrap();
+
+        let engine = SuggestionEngine::new(dir.path()).unwrap();
+        let ctx = make_ctx(Some("test-cached"), vec![], "", 1);
+
+        // First call populates cache
+        let results = engine
+            .suggest_dynamic(&ctx, Path::new("/tmp"), 5000)
+            .await
+            .unwrap();
+        assert!(
+            !results.is_empty(),
+            "expected at least one result from date"
+        );
+        let first_value = results[0].text.clone();
+
+        // Brief sleep so date would produce a different value if re-executed
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+
+        // Second call should hit cache — returns the SAME value, proving cache hit
+        let results2 = engine
+            .suggest_dynamic(&ctx, Path::new("/tmp"), 5000)
+            .await
+            .unwrap();
+        assert_eq!(
+            results2[0].text, first_value,
+            "second call should return cached (stale) value"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_suggest_dynamic_command_position_returns_empty() {
+        // word_index == 0 means command position — no dynamic suggestions
+        let dir = tempfile::TempDir::new().unwrap();
+        let engine = SuggestionEngine::new(dir.path()).unwrap();
+        let ctx = make_ctx(None, vec![], "gi", 0);
+        let results = engine
+            .suggest_dynamic(&ctx, Path::new("/tmp"), 5000)
+            .await
+            .unwrap();
+        assert!(results.is_empty());
+    }
+
+    #[test]
+    fn test_resolve_script_argv_static() {
+        let gen = crate::specs::GeneratorSpec {
+            generator_type: None,
+            script: Some(vec!["echo".into(), "hello".into()]),
+            script_template: None,
+            transforms: vec![],
+            cache: None,
+            requires_js: false,
+            js_source: None,
+            template: None,
+        };
+        let ctx = make_ctx(Some("test"), vec![], "", 1);
+        let argv = super::resolve_script_argv(&gen, &ctx);
+        assert_eq!(argv, vec!["echo", "hello"]);
+    }
+
+    #[test]
+    fn test_resolve_script_argv_template() {
+        let gen = crate::specs::GeneratorSpec {
+            generator_type: None,
+            script: None,
+            script_template: Some(vec!["cmd".into(), "{prev_token}".into()]),
+            transforms: vec![],
+            cache: None,
+            requires_js: false,
+            js_source: None,
+            template: None,
+        };
+        let ctx = make_ctx(Some("test"), vec!["arg1"], "", 2);
+        let argv = super::resolve_script_argv(&gen, &ctx);
+        assert_eq!(argv, vec!["cmd", "arg1"]);
     }
 }

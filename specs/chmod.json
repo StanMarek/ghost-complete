@@ -1,75 +1,78 @@
 {
   "name": "chmod",
-  "description": "Change file mode bits",
-  "args": [
-    {
-      "name": "mode",
-      "description": "Permission mode (octal or symbolic, e.g. 755, u+x, go-w)"
-    },
-    {
-      "name": "file",
-      "description": "File(s) to change permissions on",
-      "template": "filepaths"
-    }
-  ],
+  "description": "Change file modes or Access Control Lists",
   "options": [
     {
       "name": [
-        "-R",
-        "--recursive"
+        "-f"
       ],
-      "description": "Change files and directories recursively"
+      "description": "Do not display a diagnostic message if chmod could not modify the mode for file, nor modify the exit status to reflect such failures"
     },
     {
       "name": [
-        "-v",
-        "--verbose"
+        "-H"
       ],
-      "description": "Output a diagnostic for every file processed"
+      "description": "If the -R option is specified, symbolic links on the command line are followed and hence unaffected by the command.  (Symbolic links encountered during tree traversal are not followed.)"
     },
     {
       "name": [
-        "-f",
-        "--silent",
-        "--quiet"
+        "-h"
       ],
-      "description": "Suppress most error messages"
+      "description": "If the file is a symbolic link, change the mode of the link itself rather than the file that the link points to"
     },
     {
       "name": [
-        "-c",
-        "--changes"
+        "-L"
       ],
-      "description": "Report only when a change is made"
+      "description": "If the -R option is specified, all symbolic links are followed"
     },
     {
       "name": [
-        "--reference"
+        "-P"
       ],
-      "description": "Use RFILE's mode instead of specifying MODE values",
-      "args": {
-        "name": "rfile",
-        "template": "filepaths"
-      }
+      "description": "If the -R option is specified, no symbolic links are followed. This is the default"
     },
     {
       "name": [
-        "--preserve-root"
+        "-R"
       ],
-      "description": "Fail to operate recursively on '/'"
+      "description": "Change the modes of the file hierarchies rooted in the files, instead of just the files themselves. Beware of unintentionally matching the ``..'' hard link to the parent directory when using wildcards like ``.*''"
     },
     {
       "name": [
-        "--no-preserve-root"
+        "-v"
       ],
-      "description": "Do not treat '/' specially (the default)"
+      "description": "Cause chmod to be verbose, showing filenames as the mode is modified. If the -v flag is specified more than once, the old and new modes of the file will also be printed, in both octal and symbolic notation"
+    }
+  ],
+  "args": [
+    {
+      "name": "mode",
+      "suggestions": [
+        {
+          "name": "u+x",
+          "description": "Give execute permission for the user"
+        },
+        {
+          "name": "a+rx",
+          "description": "Adds read and execute permissions for all classes"
+        },
+        {
+          "name": "744",
+          "description": "Sets read, write, and execute permissions for user, and sets read permission for Group and Others"
+        },
+        {
+          "name": "664",
+          "description": "Sets read and write permissions for user and Group, and provides read to Others"
+        },
+        {
+          "name": "777",
+          "description": "⚠️ allows all actions for all users"
+        }
+      ]
     },
     {
-      "name": [
-        "-h",
-        "--no-dereference"
-      ],
-      "description": "Affect symbolic links instead of referenced files"
+      "template": "filepaths"
     }
   ]
 }

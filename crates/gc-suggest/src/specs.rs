@@ -4,8 +4,50 @@ use std::path::Path;
 use anyhow::{Context, Result};
 use serde::Deserialize;
 
+use crate::transform::Transform;
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 use gc_buffer::CommandContext;
+
+/// Deserialize `args` as either a single object or an array of objects.
+fn deserialize_args_one_or_many<'de, D>(
+    deserializer: D,
+) -> std::result::Result<Vec<ArgSpec>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum OneOrMany {
+        One(ArgSpec),
+        Many(Vec<ArgSpec>),
+    }
+
+    match OneOrMany::deserialize(deserializer)? {
+        OneOrMany::One(single) => Ok(vec![single]),
+        OneOrMany::Many(vec) => Ok(vec),
+    }
+}
+
+/// Deserialize option `args` as either a single object or an array (taking the first).
+fn deserialize_option_args<'de, D>(
+    deserializer: D,
+) -> std::result::Result<Option<ArgSpec>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum OneOrMany {
+        One(ArgSpec),
+        Many(Vec<ArgSpec>),
+    }
+
+    match Option::<OneOrMany>::deserialize(deserializer)? {
+        Some(OneOrMany::One(single)) => Ok(Some(single)),
+        Some(OneOrMany::Many(vec)) => Ok(vec.into_iter().next()),
+        None => Ok(None),
+    }
+}
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct CompletionSpec {
@@ -15,7 +57,7 @@ pub struct CompletionSpec {
     pub subcommands: Vec<SubcommandSpec>,
     #[serde(default)]
     pub options: Vec<OptionSpec>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "deserialize_args_one_or_many")]
     pub args: Vec<ArgSpec>,
 }
 
@@ -27,7 +69,7 @@ pub struct SubcommandSpec {
     pub subcommands: Vec<SubcommandSpec>,
     #[serde(default)]
     pub options: Vec<OptionSpec>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "deserialize_args_one_or_many")]
     pub args: Vec<ArgSpec>,
 }
 
@@ -35,8 +77,35 @@ pub struct SubcommandSpec {
 pub struct OptionSpec {
     pub name: Vec<String>,
     pub description: Option<String>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "deserialize_option_args")]
     pub args: Option<ArgSpec>,
+}
+
+/// Deserialize template as either a single string or an array of strings.
+/// When an array, takes the most useful entry: "filepaths" > "folders" > first.
+fn deserialize_template<'de, D>(deserializer: D) -> std::result::Result<Option<String>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum OneOrMany {
+        One(String),
+        Many(Vec<String>),
+    }
+
+    match Option::<OneOrMany>::deserialize(deserializer)? {
+        Some(OneOrMany::One(s)) => Ok(Some(s)),
+        Some(OneOrMany::Many(vec)) => {
+            // Prefer "filepaths" over "folders" when both present
+            if vec.iter().any(|t| t == "filepaths") {
+                Ok(Some("filepaths".to_string()))
+            } else {
+                Ok(vec.into_iter().next())
+            }
+        }
+        None => Ok(None),
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -45,13 +114,37 @@ pub struct ArgSpec {
     pub description: Option<String>,
     #[serde(default)]
     pub generators: Vec<GeneratorSpec>,
+    #[serde(default, deserialize_with = "deserialize_template")]
     pub template: Option<String>,
+    /// Static suggestions — accepted from specs but not yet used at runtime.
+    #[serde(default)]
+    pub suggestions: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct CacheConfig {
+    #[serde(default)]
+    pub ttl_seconds: u64,
+    #[serde(default)]
+    pub cache_by_directory: bool,
 }
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct GeneratorSpec {
     #[serde(rename = "type")]
-    pub generator_type: String,
+    pub generator_type: Option<String>,
+    pub script: Option<Vec<String>>,
+    pub script_template: Option<Vec<String>>,
+    #[serde(default)]
+    pub transforms: Vec<Transform>,
+    pub cache: Option<CacheConfig>,
+    #[serde(default)]
+    pub requires_js: bool,
+    pub js_source: Option<String>,
+    /// Fig-compatible template field on generators (e.g., "filepaths", "folders",
+    /// or ["filepaths", "folders"]). Treated the same as `ArgSpec.template`.
+    #[serde(default, deserialize_with = "deserialize_template")]
+    pub template: Option<String>,
 }
 
 pub struct SpecStore {
@@ -110,20 +203,37 @@ impl SpecStore {
     fn load_spec(path: &Path) -> Result<CompletionSpec> {
         let contents = std::fs::read_to_string(path)
             .with_context(|| format!("failed to read spec file: {}", path.display()))?;
-        let spec: CompletionSpec = serde_json::from_str(&contents)
+        let mut spec: CompletionSpec = serde_json::from_str(&contents)
             .with_context(|| format!("failed to parse spec file: {}", path.display()))?;
+        let warnings = validate_spec_generators(&mut spec);
+        for w in &warnings {
+            tracing::warn!("{}: {w}", spec.name);
+        }
         Ok(spec)
     }
 
     pub fn get(&self, command: &str) -> Option<&CompletionSpec> {
         self.specs.get(command)
     }
+
+    pub fn iter(&self) -> impl Iterator<Item = (&str, &CompletionSpec)> {
+        self.specs.iter().map(|(k, v)| (k.as_str(), v))
+    }
+
+    pub fn len(&self) -> usize {
+        self.specs.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.specs.is_empty()
+    }
 }
 
 pub struct SpecResolution {
     pub subcommands: Vec<Suggestion>,
     pub options: Vec<Suggestion>,
-    pub generators: Vec<String>,
+    pub native_generators: Vec<String>,
+    pub script_generators: Vec<GeneratorSpec>,
     pub wants_filepaths: bool,
     pub wants_folders_only: bool,
 }
@@ -176,7 +286,7 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
             description: s.description.clone(),
             kind: SuggestionKind::Subcommand,
             source: SuggestionSource::Spec,
-            score: 0,
+            ..Default::default()
         })
         .collect();
 
@@ -188,13 +298,14 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
                 description: o.description.clone(),
                 kind: SuggestionKind::Flag,
                 source: SuggestionSource::Spec,
-                score: 0,
+                ..Default::default()
             })
         })
         .collect();
 
     // Collect generator types from args at the resolved position
-    let mut generators = Vec::new();
+    let mut native_generators = Vec::new();
+    let mut script_generators = Vec::new();
     let mut wants_filepaths = false;
     let mut wants_folders_only = false;
 
@@ -204,9 +315,13 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
     if let Some(flag) = &ctx.preceding_flag {
         if let Some(opt) = find_option(current_options, flag) {
             if let Some(arg_spec) = &opt.args {
-                for gen in &arg_spec.generators {
-                    generators.push(gen.generator_type.clone());
-                }
+                collect_generators(
+                    &arg_spec.generators,
+                    &mut native_generators,
+                    &mut script_generators,
+                    &mut wants_filepaths,
+                    &mut wants_folders_only,
+                );
                 match arg_spec.template.as_deref() {
                     Some("filepaths") => wants_filepaths = true,
                     Some("folders") => wants_folders_only = true,
@@ -218,9 +333,13 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
 
     // Also check positional arg specs at the resolved position
     for arg_spec in current_args {
-        for gen in &arg_spec.generators {
-            generators.push(gen.generator_type.clone());
-        }
+        collect_generators(
+            &arg_spec.generators,
+            &mut native_generators,
+            &mut script_generators,
+            &mut wants_filepaths,
+            &mut wants_folders_only,
+        );
         match arg_spec.template.as_deref() {
             Some("filepaths") => wants_filepaths = true,
             Some("folders") => wants_folders_only = true,
@@ -231,14 +350,108 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
     SpecResolution {
         subcommands: subcommand_suggestions,
         options: option_suggestions,
-        generators,
+        native_generators,
+        script_generators,
         wants_filepaths,
         wants_folders_only,
     }
 }
 
+fn collect_generators(
+    generators: &[GeneratorSpec],
+    native: &mut Vec<String>,
+    script: &mut Vec<GeneratorSpec>,
+    wants_filepaths: &mut bool,
+    wants_folders_only: &mut bool,
+) {
+    for gen in generators {
+        if gen.requires_js {
+            tracing::info!("skipping generator requiring JS runtime");
+            continue;
+        }
+        if let Some(ref gen_type) = gen.generator_type {
+            native.push(gen_type.clone());
+        }
+        if gen.script.is_some() || gen.script_template.is_some() {
+            script.push(gen.clone());
+        }
+        // Fig specs put template on generators too (e.g., git checkout's
+        // `{"template": ["filepaths", "folders"]}`).
+        match gen.template.as_deref() {
+            Some("filepaths") => *wants_filepaths = true,
+            Some("folders") => *wants_folders_only = true,
+            _ => {}
+        }
+    }
+}
+
 fn find_option<'a>(options: &'a [OptionSpec], flag: &str) -> Option<&'a OptionSpec> {
     options.iter().find(|o| o.name.iter().any(|n| n == flag))
+}
+
+/// Walk all generators in a spec tree, validate their transform pipelines,
+/// and remove generators with invalid pipelines. Returns warnings for each
+/// removed generator.
+fn validate_spec_generators(spec: &mut CompletionSpec) -> Vec<String> {
+    let mut warnings = Vec::new();
+    validate_args_generators(&mut spec.args, &spec.name, &mut warnings);
+    for opt in &mut spec.options {
+        if let Some(ref mut arg_spec) = opt.args {
+            validate_arg_generators(arg_spec, &spec.name, &mut warnings);
+        }
+    }
+    for sub in &mut spec.subcommands {
+        validate_subcommand_generators(sub, &spec.name, &mut warnings);
+    }
+    warnings
+}
+
+fn validate_subcommand_generators(
+    sub: &mut SubcommandSpec,
+    spec_name: &str,
+    warnings: &mut Vec<String>,
+) {
+    validate_args_generators(&mut sub.args, spec_name, warnings);
+    for opt in &mut sub.options {
+        if let Some(ref mut arg_spec) = opt.args {
+            validate_arg_generators(arg_spec, spec_name, warnings);
+        }
+    }
+    for nested_sub in &mut sub.subcommands {
+        validate_subcommand_generators(nested_sub, spec_name, warnings);
+    }
+}
+
+fn validate_args_generators(args: &mut [ArgSpec], spec_name: &str, warnings: &mut Vec<String>) {
+    for arg_spec in args.iter_mut() {
+        validate_arg_generators(arg_spec, spec_name, warnings);
+    }
+}
+
+fn validate_arg_generators(arg_spec: &mut ArgSpec, spec_name: &str, warnings: &mut Vec<String>) {
+    use crate::transform::validate_pipeline;
+
+    let original_len = arg_spec.generators.len();
+    arg_spec.generators.retain(|gen| {
+        if gen.transforms.is_empty() {
+            return true;
+        }
+        match validate_pipeline(&gen.transforms) {
+            Ok(()) => true,
+            Err(e) => {
+                warnings.push(format!(
+                    "generator in {spec_name} has invalid transform pipeline: {e}"
+                ));
+                false
+            }
+        }
+    });
+    if arg_spec.generators.len() < original_len {
+        tracing::debug!(
+            "{spec_name}: removed {} generator(s) with invalid transform pipelines",
+            original_len - arg_spec.generators.len()
+        );
+    }
 }
 
 #[cfg(test)]
@@ -303,7 +516,7 @@ mod tests {
         let res = resolve_spec(&spec, &ctx);
         eprintln!(
             "wants_filepaths={}, wants_folders_only={}, generators={:?}",
-            res.wants_filepaths, res.wants_folders_only, res.generators
+            res.wants_filepaths, res.wants_folders_only, res.native_generators
         );
         assert!(
             res.wants_filepaths,
@@ -380,7 +593,7 @@ mod tests {
             quote_state: gc_buffer::QuoteState::None,
         };
         let res = resolve_spec(&spec, &ctx);
-        assert!(res.generators.contains(&"git_branches".to_string()));
+        assert!(res.native_generators.contains(&"git_branches".to_string()));
     }
 
     #[test]
@@ -582,7 +795,7 @@ mod tests {
         };
         let res = resolve_spec(&spec, &ctx);
         assert!(
-            res.generators.contains(&"git_branches".to_string()),
+            res.native_generators.contains(&"git_branches".to_string()),
             "option arg generators should be collected via preceding_flag"
         );
     }
@@ -671,5 +884,257 @@ mod tests {
         let result = SpecStore::load_from_dir(Path::new("/nonexistent/path/specs")).unwrap();
         assert!(result.errors.is_empty());
         assert!(result.store.get("anything").is_none());
+    }
+
+    #[test]
+    fn test_deserialize_native_generator() {
+        let gen: GeneratorSpec = serde_json::from_str(r#"{"type": "git_branches"}"#).unwrap();
+        assert_eq!(gen.generator_type.as_deref(), Some("git_branches"));
+        assert!(gen.script.is_none());
+        assert!(gen.script_template.is_none());
+        assert!(gen.transforms.is_empty());
+        assert!(gen.cache.is_none());
+        assert!(!gen.requires_js);
+        assert!(gen.js_source.is_none());
+    }
+
+    #[test]
+    fn test_deserialize_script_generator() {
+        let gen: GeneratorSpec = serde_json::from_str(
+            r#"{"script": ["brew", "formulae"], "cache": {"ttl_seconds": 300}}"#,
+        )
+        .unwrap();
+        assert!(gen.generator_type.is_none());
+        assert_eq!(
+            gen.script.as_deref(),
+            Some(&["brew".to_string(), "formulae".to_string()][..])
+        );
+        assert!(gen.script_template.is_none());
+        assert!(gen.transforms.is_empty());
+        let cache = gen.cache.unwrap();
+        assert_eq!(cache.ttl_seconds, 300);
+        assert!(!cache.cache_by_directory);
+    }
+
+    #[test]
+    fn test_deserialize_script_generator_with_transforms() {
+        let gen: GeneratorSpec = serde_json::from_str(
+            r#"{
+                "script": ["brew", "formulae"],
+                "transforms": ["split_lines", "filter_empty", "trim"],
+                "cache": {"ttl_seconds": 300}
+            }"#,
+        )
+        .unwrap();
+        assert_eq!(gen.transforms.len(), 3);
+    }
+
+    #[test]
+    fn test_deserialize_script_template_generator() {
+        let gen: GeneratorSpec = serde_json::from_str(
+            r#"{"script_template": ["cmd", "{prev_token}"], "transforms": ["split_lines"]}"#,
+        )
+        .unwrap();
+        assert!(gen.generator_type.is_none());
+        assert!(gen.script.is_none());
+        assert_eq!(
+            gen.script_template.as_deref(),
+            Some(&["cmd".to_string(), "{prev_token}".to_string()][..])
+        );
+        assert_eq!(gen.transforms.len(), 1);
+    }
+
+    #[test]
+    fn test_deserialize_requires_js_generator() {
+        let gen: GeneratorSpec = serde_json::from_str(
+            r#"{"requires_js": true, "js_source": "module.exports = { ... }"}"#,
+        )
+        .unwrap();
+        assert!(gen.requires_js);
+        assert_eq!(gen.js_source.as_deref(), Some("module.exports = { ... }"));
+    }
+
+    #[test]
+    fn test_resolve_spec_splits_generators() {
+        let spec: CompletionSpec = serde_json::from_str(
+            r#"{
+                "name": "test-mixed",
+                "args": [{
+                    "name": "target",
+                    "generators": [
+                        {"type": "git_branches"},
+                        {"script": ["some-cmd"], "transforms": ["split_lines"]},
+                        {"requires_js": true, "js_source": "..."}
+                    ]
+                }]
+            }"#,
+        )
+        .unwrap();
+        let ctx = CommandContext {
+            command: Some("test-mixed".into()),
+            args: vec![],
+            current_word: String::new(),
+            word_index: 1,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: None,
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: gc_buffer::QuoteState::None,
+        };
+        let res = resolve_spec(&spec, &ctx);
+        assert_eq!(res.native_generators, vec!["git_branches"]);
+        assert_eq!(res.script_generators.len(), 1);
+        assert!(res.script_generators[0].script.is_some());
+    }
+
+    #[test]
+    fn test_validate_spec_strips_invalid_generator_pipeline() {
+        // A spec with one valid generator and one with an invalid pipeline
+        // (post-split transform before split). The invalid one should be
+        // stripped during load_spec.
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("test.json"),
+            r#"{
+                "name": "test",
+                "args": [{
+                    "name": "target",
+                    "generators": [
+                        {"type": "git_branches"},
+                        {"script": ["cmd"], "transforms": ["filter_empty", "split_lines"]}
+                    ]
+                }]
+            }"#,
+        )
+        .unwrap();
+
+        let result = SpecStore::load_from_dir(dir.path()).unwrap();
+        let spec = result.store.get("test").unwrap();
+        // The second generator should have been removed
+        assert_eq!(
+            spec.args[0].generators.len(),
+            1,
+            "invalid generator should be removed; remaining: {:?}",
+            spec.args[0].generators
+        );
+        assert_eq!(
+            spec.args[0].generators[0].generator_type.as_deref(),
+            Some("git_branches"),
+        );
+    }
+
+    #[test]
+    fn test_validate_spec_keeps_valid_pipeline() {
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("test.json"),
+            r#"{
+                "name": "test",
+                "args": [{
+                    "name": "target",
+                    "generators": [
+                        {"script": ["cmd"], "transforms": ["split_lines", "filter_empty", "trim"]}
+                    ]
+                }]
+            }"#,
+        )
+        .unwrap();
+
+        let result = SpecStore::load_from_dir(dir.path()).unwrap();
+        let spec = result.store.get("test").unwrap();
+        assert_eq!(
+            spec.args[0].generators.len(),
+            1,
+            "valid generator should be kept"
+        );
+    }
+
+    #[test]
+    fn test_validate_spec_empty_transforms_kept() {
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("test.json"),
+            r#"{
+                "name": "test",
+                "args": [{
+                    "name": "target",
+                    "generators": [
+                        {"type": "git_branches"},
+                        {"script": ["cmd"]}
+                    ]
+                }]
+            }"#,
+        )
+        .unwrap();
+
+        let result = SpecStore::load_from_dir(dir.path()).unwrap();
+        let spec = result.store.get("test").unwrap();
+        assert_eq!(
+            spec.args[0].generators.len(),
+            2,
+            "generators with empty transforms should be kept"
+        );
+    }
+
+    #[test]
+    fn test_validate_spec_recursive_subcommands() {
+        // Ensure validation walks into nested subcommands
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("test.json"),
+            r#"{
+                "name": "test",
+                "subcommands": [{
+                    "name": "sub",
+                    "args": [{
+                        "name": "target",
+                        "generators": [
+                            {"script": ["cmd"], "transforms": ["trim", "split_lines"]}
+                        ]
+                    }]
+                }]
+            }"#,
+        )
+        .unwrap();
+
+        let result = SpecStore::load_from_dir(dir.path()).unwrap();
+        let spec = result.store.get("test").unwrap();
+        assert_eq!(
+            spec.subcommands[0].args[0].generators.len(),
+            0,
+            "invalid generator in subcommand should be removed"
+        );
+    }
+
+    #[test]
+    fn test_validate_spec_option_args() {
+        // Ensure validation walks into option arg specs
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("test.json"),
+            r#"{
+                "name": "test",
+                "options": [{
+                    "name": ["-f"],
+                    "description": "flag",
+                    "args": {
+                        "name": "val",
+                        "generators": [
+                            {"script": ["cmd"], "transforms": ["split_lines", "split_lines"]}
+                        ]
+                    }
+                }]
+            }"#,
+        )
+        .unwrap();
+
+        let result = SpecStore::load_from_dir(dir.path()).unwrap();
+        let spec = result.store.get("test").unwrap();
+        assert_eq!(
+            spec.options[0].args.as_ref().unwrap().generators.len(),
+            0,
+            "double-split generator in option args should be removed"
+        );
     }
 }

@@ -1,0 +1,67 @@
+{
+  "name": "degit",
+  "description": "Straightforward project scaffolding",
+  "options": [
+    {
+      "name": [
+        "--help"
+      ],
+      "description": "Print help"
+    },
+    {
+      "name": [
+        "-f",
+        "--force"
+      ],
+      "description": "Overwrite existing files"
+    },
+    {
+      "name": [
+        "-c",
+        "--cache"
+      ],
+      "description": "Use a cache"
+    },
+    {
+      "name": [
+        "-v",
+        "--verbose"
+      ],
+      "description": "Be verbose?"
+    },
+    {
+      "name": [
+        "-m",
+        "--mode"
+      ],
+      "description": "Clone mode",
+      "args": {
+        "name": "mode",
+        "suggestions": [
+          {
+            "name": "git"
+          },
+          {
+            "name": "tar"
+          }
+        ]
+      }
+    }
+  ],
+  "args": [
+    {
+      "name": "user/repo",
+      "generators": [
+        {
+          "requires_js": true,
+          "js_source": "async(r,e)=>{let n=r[r.length-1];if(n.includes(\":\"))return[];let t=n.slice(0,n.indexOf(\"/\")),{stdout:i}=await e({command:\"curl\",args:[\"-sL\",`https://api.github.com/users/${t}/repos`]});return JSON.parse(i).map(s=>({name:s.full_name,description:s.description??\"Repository\",priority:s.is_template?51:50,displayName:s.name,icon:\"fig://icon?type=git\"}))}"
+        }
+      ]
+    },
+    {
+      "name": "location",
+      "template": "folders",
+      "isOptional": true
+    }
+  ]
+}

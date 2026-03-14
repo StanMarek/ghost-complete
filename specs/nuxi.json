@@ -1,0 +1,320 @@
+{
+  "name": "nuxi",
+  "description": "Nuxt 3 CLI",
+  "subcommands": [
+    {
+      "name": "info",
+      "description": "The info command logs information about the current or specified Nuxt project",
+      "args": {
+        "name": "rootDir",
+        "description": "The directory of the target application",
+        "template": "folders",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "init",
+      "description": "The init command initializes a fresh Nuxt project",
+      "options": [
+        {
+          "name": [
+            "--verbose",
+            "-v"
+          ],
+          "description": "Log information about the installation process"
+        },
+        {
+          "name": [
+            "--template",
+            "-t"
+          ],
+          "description": "Specify a Git repository to use as a template"
+        },
+        {
+          "name": [
+            "--force"
+          ],
+          "description": "Force clone to any existing directory"
+        },
+        {
+          "name": [
+            "--prefer-offline"
+          ],
+          "description": "Try local cache first to download templates"
+        },
+        {
+          "name": [
+            "--shell"
+          ],
+          "description": "Open shell in cloned directory (experimental)"
+        }
+      ],
+      "args": {
+        "name": "dir",
+        "description": "Name of the install directory"
+      }
+    },
+    {
+      "name": "add",
+      "description": "Generate a entity into your Nuxt application",
+      "options": [
+        {
+          "name": [
+            "--cwd"
+          ],
+          "description": "The current working directory of the target application"
+        },
+        {
+          "name": [
+            "--force"
+          ],
+          "description": "Force override file if it already exists"
+        }
+      ],
+      "args": [
+        {
+          "name": "TEMPLATE",
+          "description": "Specify a template of the file to be generated",
+          "suggestions": [
+            {
+              "name": "component",
+              "description": "Generate a nuxt component"
+            },
+            {
+              "name": "composable",
+              "description": "Generate a nuxt composable"
+            },
+            {
+              "name": "layout",
+              "description": "Generate a nuxt layout"
+            },
+            {
+              "name": "plugin",
+              "description": "Generate a nuxt plugin"
+            },
+            {
+              "name": "page",
+              "description": "Generate a nuxt page"
+            },
+            {
+              "name": "middleware",
+              "description": "Generate a nuxt middleware"
+            },
+            {
+              "name": "api",
+              "description": "Generate a nuxt api"
+            }
+          ]
+        },
+        {
+          "name": "NAME",
+          "description": "Specify a name of the file that will be created"
+        }
+      ]
+    },
+    {
+      "name": "analyze",
+      "description": "The analyze command builds Nuxt and analyzes the production bundle (experimental)",
+      "args": {
+        "name": "rootDir",
+        "description": "The directory of the target application",
+        "template": "folders",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "build",
+      "description": "The build command creates a .output directory with all your application, server and dependencies ready for production",
+      "options": [
+        {
+          "name": [
+            "--dotenv"
+          ],
+          "description": "Point to another .env file to load, relative to the root directory"
+        },
+        {
+          "name": [
+            "--prerender"
+          ],
+          "description": "Pre-render every route of your application. (note: This is an experimental flag. The behavior might be changed)"
+        }
+      ],
+      "args": {
+        "name": "rootDir",
+        "description": "The directory of the target application",
+        "template": "folders",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "dev",
+      "description": "The dev command starts a development server with hot module replacement at http://localhost:3000",
+      "options": [
+        {
+          "name": [
+            "--dotenv"
+          ],
+          "description": "Point to another .env file to load, relative to the root directory"
+        },
+        {
+          "name": [
+            "--clipboard"
+          ],
+          "description": "Copy URL to clipboard"
+        },
+        {
+          "name": [
+            "--open",
+            "-o"
+          ],
+          "description": "Open URL in browser"
+        },
+        {
+          "name": [
+            "--no-clear"
+          ],
+          "description": "Does not clear the console after startup"
+        },
+        {
+          "name": [
+            "--port",
+            "-p"
+          ],
+          "description": "Port to listen"
+        },
+        {
+          "name": [
+            "--host",
+            "-h"
+          ],
+          "description": "Hostname of the server"
+        },
+        {
+          "name": [
+            "--https"
+          ],
+          "description": "Listen with https protocol with a self-signed certificate by default"
+        },
+        {
+          "name": [
+            "--ssl-cert"
+          ],
+          "description": "Specify a certificate for https"
+        },
+        {
+          "name": [
+            "--ssl-key"
+          ],
+          "description": "Specify the key for the https certificate"
+        }
+      ],
+      "args": {
+        "name": "rootDir",
+        "description": "The directory of the target application",
+        "template": "folders",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "prepare",
+      "description": "The prepare command creates a .nuxt directory in your application and generates ts types"
+    },
+    {
+      "name": "preview",
+      "description": "The preview command starts a server to preview your Nuxt application after running the build command",
+      "options": [
+        {
+          "name": [
+            "--dotenv"
+          ],
+          "description": "Point to another .env file to load, relative to the root directory"
+        }
+      ],
+      "args": {
+        "name": "rootDir",
+        "description": "The directory of the target application",
+        "template": "folders",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "generate",
+      "description": "Build Nuxt and prerender static routes",
+      "args": {
+        "name": "rootDir",
+        "description": "The directory of the target application",
+        "template": "folders",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "clean",
+      "description": "The cleanup command removes common generated Nuxt files and caches including .nuxt/, .output/, node_modules/.vite and node_modules/.cache",
+      "args": {
+        "name": "rootDir",
+        "description": "The directory of the target application",
+        "template": "folders",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "test",
+      "description": "Run the test files for your Nuxt application",
+      "options": [
+        {
+          "name": [
+            "--dev"
+          ],
+          "description": "Run tests in development mode"
+        },
+        {
+          "name": [
+            "--watch"
+          ],
+          "description": "Actively watch for changes and rerun tests"
+        }
+      ],
+      "args": {
+        "name": "rootDir",
+        "description": "The directory of the target application",
+        "template": "folders",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "upgrade",
+      "description": "The upgrade command upgrades Nuxt 3 to the latest version",
+      "options": [
+        {
+          "name": [
+            "--force",
+            "-f"
+          ],
+          "description": "Removes node_modules and lock files before upgrade"
+        }
+      ]
+    },
+    {
+      "name": "typecheck",
+      "description": "The typecheck command runs vue-tsc to check types throughout your app",
+      "args": {
+        "name": "rootDir",
+        "description": "The directory of the target application",
+        "template": "folders",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "usage",
+      "description": "The usage command shows the usage of the Nuxt CLI"
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "--help"
+      ],
+      "description": "Show help"
+    }
+  ]
+}

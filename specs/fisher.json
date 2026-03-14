@@ -1,0 +1,123 @@
+{
+  "name": "fisher",
+  "description": "A plugin manager for Fish",
+  "subcommands": [
+    {
+      "name": "install",
+      "description": "Install plugin",
+      "subcommands": [
+        {
+          "name": "IlanCosman/tide@v5",
+          "description": "[Prompt] - 🌊 The ultimate Fish prompt"
+        },
+        {
+          "name": "pure-fish/pure",
+          "description": "[Prompt] - Pretty, minimal, and fast prompt for Fish from Zsh"
+        },
+        {
+          "name": "jorgebucaran/hydro",
+          "description": "[Prompt] - Minimal, lag-free prompt with async Git status"
+        },
+        {
+          "name": "jethrokuan/z",
+          "description": "[Plugin] - Pure-fish z directory jumping"
+        },
+        {
+          "name": "PatrickF1/fzf.fish",
+          "description": "[Plugin] - Augment your fish command line with fzf key bindings"
+        },
+        {
+          "name": "jorgebucaran/nvm.fish",
+          "description": "[Plugin] -  Node.js version manager lovingly made for Fish"
+        },
+        {
+          "name": "franciscolourenco/done",
+          "description": "[Plugin] - A fish-shell package to automatically receive notifications when long processes finish"
+        },
+        {
+          "name": "jorgebucaran/replay.fish",
+          "description": "[Plugin] - Run Bash commands replaying changes in Fish. 🍤"
+        },
+        {
+          "name": "jorgebucaran/spark.fish",
+          "description": "[Plugin] - Visualize a range of numbers right in your terminal"
+        },
+        {
+          "name": "joseluisq/gitnow@2.10.0",
+          "description": "[Plugin] - Speed up your Git workflow. 🐠"
+        }
+      ]
+    },
+    {
+      "name": "remove",
+      "description": "Remove plugins",
+      "args": {
+        "name": "installed plugins",
+        "description": "The plugin you want to remove",
+        "isVariadic": true,
+        "generators": [
+          {
+            "script": [
+              "fish",
+              "-c",
+              "fisher list"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "update",
+      "description": "Update plugins",
+      "args": {
+        "name": "installed plugins",
+        "description": "The plugin you want to update",
+        "isVariadic": true,
+        "generators": [
+          {
+            "script": [
+              "fish",
+              "-c",
+              "fisher list"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "list",
+      "description": "List plugins",
+      "args": {
+        "name": "RegEx",
+        "description": "Search in list with regular expression",
+        "isOptional": true
+      }
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "--help",
+        "-h"
+      ],
+      "description": "Show help for fisher"
+    },
+    {
+      "name": [
+        "--version",
+        "-v"
+      ],
+      "description": "Show fisher version"
+    }
+  ]
+}

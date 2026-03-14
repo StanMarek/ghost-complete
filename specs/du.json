@@ -1,0 +1,116 @@
+{
+  "name": "du",
+  "description": "Display disk usage statistics",
+  "options": [
+    {
+      "name": [
+        "-a"
+      ],
+      "description": "Display an entry for each file in a file hierarchy"
+    },
+    {
+      "name": [
+        "-c"
+      ],
+      "description": "Display a grand total"
+    },
+    {
+      "name": [
+        "-H"
+      ],
+      "description": "Symbolic links on the command line are followed, symbolic links in file hierarchies are not followed"
+    },
+    {
+      "name": [
+        "-h"
+      ],
+      "description": "\"Human-readable\" output.  Use unit suffixes: Byte, Kilobyte, Megabyte, Gigabyte, Terabyte and Petabyte"
+    },
+    {
+      "name": [
+        "-g"
+      ],
+      "description": "Display block counts in 1073741824-byte (1-Gbyte) blocks"
+    },
+    {
+      "name": [
+        "-k"
+      ],
+      "description": "Display block counts in 1024-byte (1-Kbyte) blocks"
+    },
+    {
+      "name": [
+        "-m"
+      ],
+      "description": "Display block counts in 1048576-byte (1-Mbyte) blocks"
+    },
+    {
+      "name": [
+        "-I"
+      ],
+      "description": "Ignore files and directories matching the specified mask",
+      "args": {
+        "name": "mask"
+      }
+    },
+    {
+      "name": [
+        "-L"
+      ],
+      "description": "Symbolic links on the command line and in file hierarchies are followed"
+    },
+    {
+      "name": [
+        "-r"
+      ],
+      "description": "Generate messages about directories that cannot be read, files that cannot be opened, and so on.  This is the default case.  This option exists solely for conformance with X/Open Portability Guide Issue 4 (``XPG4'')"
+    },
+    {
+      "name": [
+        "-P"
+      ],
+      "description": "No symbolic links are followed.  This is the default"
+    },
+    {
+      "name": [
+        "-d"
+      ],
+      "description": "Display an entry for all files and directories depth directories deep",
+      "args": {
+        "name": "depth",
+        "suggestions": [
+          {
+            "name": "0"
+          },
+          {
+            "name": "1"
+          },
+          {
+            "name": "2"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "-s"
+      ],
+      "description": "Display an entry for each specified file.  (Equivalent to -d 0)"
+    },
+    {
+      "name": [
+        "-x"
+      ],
+      "description": "Display an entry for each specified file.  (Equivalent to -d 0)"
+    }
+  ],
+  "args": {
+    "name": "files",
+    "template": [
+      "filepaths",
+      "folders"
+    ],
+    "isVariadic": true,
+    "isOptional": true
+  }
+}

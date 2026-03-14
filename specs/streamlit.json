@@ -1,0 +1,96 @@
+{
+  "name": "streamlit",
+  "description": "Streamlit",
+  "subcommands": [
+    {
+      "name": "activate",
+      "description": "Activate Streamlit by entering your email"
+    },
+    {
+      "name": "cache",
+      "description": "Manage the Streamlit cache",
+      "subcommands": [
+        {
+          "name": "clear",
+          "description": "Clear st.cache, st.memo, and st.singleton caches"
+        }
+      ]
+    },
+    {
+      "name": "config",
+      "description": "Manage Streamlit's config settings",
+      "subcommands": [
+        {
+          "name": "show",
+          "description": "Show all of Streamlit's config settings"
+        }
+      ]
+    },
+    {
+      "name": "docs",
+      "description": "Show help in browser"
+    },
+    {
+      "name": "hello",
+      "description": "Runs the Hello World script"
+    },
+    {
+      "name": "help",
+      "description": "Print the help message"
+    },
+    {
+      "name": "run",
+      "description": "Run a Python script, piping stderr to Streamlit",
+      "args": {
+        "name": "file",
+        "description": "The Python script to run",
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "(h,g,b)=>ae(this,void 0,void 0,function*(){var d;let{isDangerous:_,currentWorkingDirectory:S,searchTerm:p}=b,w=(d=(0,y.getCurrentInsertedDirectory)(a??S,p,b))!==null&&d!==void 0?d:\"/\";try{let q=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:w}),Z=$(q.stdout.split(`\n`),[\".DS_Store\"]),R=[];for(let V of Z)if(V){let F=V.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&u!==\"only\"||F===\"folders\"&&u!==\"never\")&&R.push({type:F===\"filepaths\"?\"file\":\"folder\",name:V,insertValue:V,isDangerous:_,context:{templateType:F}})}return O(v(R))}catch{return[]}})"
+          }
+        ]
+      }
+    },
+    {
+      "name": "version",
+      "description": "Print Streamlit's version number"
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "--log_level"
+      ],
+      "description": "Set the log level",
+      "args": {
+        "suggestions": [
+          {
+            "name": "error"
+          },
+          {
+            "name": "warning"
+          },
+          {
+            "name": "info"
+          },
+          {
+            "name": "debug"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--help"
+      ],
+      "description": "Show a help message and exit"
+    },
+    {
+      "name": [
+        "--version"
+      ],
+      "description": "Show the version and exit"
+    }
+  ]
+}

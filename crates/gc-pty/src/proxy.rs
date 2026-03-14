@@ -69,11 +69,19 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     // Resolve keybindings from config (fail fast on invalid key names)
     let keybindings = Keybindings::from_config(&config.keybindings)?;
 
-    // Resolve theme from config (fail fast on invalid style strings)
+    // Resolve theme from config (fail fast on invalid preset or style strings)
+    let resolved_theme = config.theme.resolve().context("invalid theme preset")?;
     let theme = PopupTheme {
-        selected_on: parse_style(&config.theme.selected).context("invalid theme.selected style")?,
-        description_on: parse_style(&config.theme.description)
+        selected_on: parse_style(&resolved_theme.selected)
+            .context("invalid theme.selected style")?,
+        description_on: parse_style(&resolved_theme.description)
             .context("invalid theme.description style")?,
+        match_highlight_on: parse_style(&resolved_theme.match_highlight)
+            .context("invalid theme.match_highlight style")?,
+        item_text_on: parse_style(&resolved_theme.item_text)
+            .context("invalid theme.item_text style")?,
+        scrollbar_on: parse_style(&resolved_theme.scrollbar)
+            .context("invalid theme.scrollbar style")?,
     };
 
     // Initialize suggestion handler with config
@@ -93,6 +101,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 config.popup.max_width,
             )
             .with_trigger_chars(&config.trigger.auto_chars)
+            .with_generator_timeout(config.suggest.generator_timeout_ms)
             .with_suggest_config(
                 config.suggest.max_results,
                 config.suggest.max_history_entries,
@@ -257,6 +266,20 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 {
                     let mut h = handler_for_stdout.lock().unwrap();
                     h.trigger(&parser_for_stdout, &mut render_buf);
+                }
+                if !render_buf.is_empty() {
+                    let mut stdout = std::io::stdout().lock();
+                    let _ = stdout.write_all(&render_buf);
+                    let _ = stdout.flush();
+                }
+            }
+
+            // Poll for dynamic (script generator) results — non-blocking.
+            {
+                let mut render_buf = Vec::new();
+                {
+                    let mut h = handler_for_stdout.lock().unwrap();
+                    h.try_merge_dynamic(&parser_for_stdout, &mut render_buf);
                 }
                 if !render_buf.is_empty() {
                     let mut stdout = std::io::stdout().lock();

@@ -1,0 +1,267 @@
+{
+  "name": "tr",
+  "description": "Translate characters",
+  "options": [
+    {
+      "name": [
+        "-C"
+      ],
+      "description": "Complement the set of characters in string1, that is '-C ab' includes every character except for 'a' and 'b'"
+    },
+    {
+      "name": [
+        "-c"
+      ],
+      "description": "Same as '-C' but complement the set of values in string1"
+    },
+    {
+      "name": [
+        "-d"
+      ],
+      "description": "Delete characters in string1 from the input"
+    },
+    {
+      "name": [
+        "-s"
+      ],
+      "description": "Squeeze multiple occurrences of the characters listed in the last operand (either string1 or string2) in the input into a single instance of the character. This occurs after all deletion and translation is completed"
+    },
+    {
+      "name": [
+        "-u"
+      ],
+      "description": "Guarantee that any output is unbuffered"
+    }
+  ],
+  "args": [
+    {
+      "name": "string1",
+      "description": "Candidate string",
+      "suggestions": [
+        {
+          "name": "a",
+          "description": "Any single character"
+        },
+        {
+          "name": "\\a",
+          "description": "Alert character"
+        },
+        {
+          "name": "\\b",
+          "description": "Backspace character"
+        },
+        {
+          "name": "\\f",
+          "description": "Form feed character"
+        },
+        {
+          "name": "\\n",
+          "description": "Newline character"
+        },
+        {
+          "name": "\\r",
+          "description": "Carriage return character"
+        },
+        {
+          "name": "\\t",
+          "description": "Tab character"
+        },
+        {
+          "name": "\\v",
+          "description": "Vertical tab character"
+        },
+        {
+          "name": "c-c",
+          "description": "For non-octal range endpoints represents the range of characters between the range endpoints, inclusive, in ascending order, as defined by the collation sequence"
+        },
+        {
+          "name": "[:alnum:]",
+          "description": "Alphanumeric characters"
+        },
+        {
+          "name": "[:alpha:]",
+          "description": "Alphabetic characters"
+        },
+        {
+          "name": "[:blank:]",
+          "description": "Blank characters"
+        },
+        {
+          "name": "[:cntrl:]",
+          "description": "Control characters"
+        },
+        {
+          "name": "[:digit:]",
+          "description": "Digit characters"
+        },
+        {
+          "name": "[:graph:]",
+          "description": "Graphic characters"
+        },
+        {
+          "name": "[:ideogram:]",
+          "description": "Ideographic characters"
+        },
+        {
+          "name": "[:lower:]",
+          "description": "Lower-case characters"
+        },
+        {
+          "name": "[:phonogram:]",
+          "description": "Phonographic characters"
+        },
+        {
+          "name": "[:print:]",
+          "description": "Printable characters"
+        },
+        {
+          "name": "[:punct:]",
+          "description": "Punctuation characters"
+        },
+        {
+          "name": "[:rune:]",
+          "description": "Valid characters"
+        },
+        {
+          "name": "[:space:]",
+          "description": "Space characters"
+        },
+        {
+          "name": "[:special:]",
+          "description": "Special characters"
+        },
+        {
+          "name": "[:upper:]",
+          "description": "Upper-case characters"
+        },
+        {
+          "name": "[:xdigit:]",
+          "description": "Hexadecimal characters"
+        },
+        {
+          "name": "[=equiv=]",
+          "description": "Represents all characters belonging to the same equivalence class as 'equiv', ordered by their encoded values"
+        },
+        {
+          "name": "[#*n]",
+          "description": "Represents 'n' repeated occurrences of the character represented by '#'"
+        }
+      ]
+    },
+    {
+      "name": "string2",
+      "description": "Replacment string",
+      "isOptional": true,
+      "suggestions": [
+        {
+          "name": "a",
+          "description": "Any single character"
+        },
+        {
+          "name": "\\a",
+          "description": "Alert character"
+        },
+        {
+          "name": "\\b",
+          "description": "Backspace character"
+        },
+        {
+          "name": "\\f",
+          "description": "Form feed character"
+        },
+        {
+          "name": "\\n",
+          "description": "Newline character"
+        },
+        {
+          "name": "\\r",
+          "description": "Carriage return character"
+        },
+        {
+          "name": "\\t",
+          "description": "Tab character"
+        },
+        {
+          "name": "\\v",
+          "description": "Vertical tab character"
+        },
+        {
+          "name": "c-c",
+          "description": "For non-octal range endpoints represents the range of characters between the range endpoints, inclusive, in ascending order, as defined by the collation sequence"
+        },
+        {
+          "name": "[:alnum:]",
+          "description": "Alphanumeric characters"
+        },
+        {
+          "name": "[:alpha:]",
+          "description": "Alphabetic characters"
+        },
+        {
+          "name": "[:blank:]",
+          "description": "Blank characters"
+        },
+        {
+          "name": "[:cntrl:]",
+          "description": "Control characters"
+        },
+        {
+          "name": "[:digit:]",
+          "description": "Digit characters"
+        },
+        {
+          "name": "[:graph:]",
+          "description": "Graphic characters"
+        },
+        {
+          "name": "[:ideogram:]",
+          "description": "Ideographic characters"
+        },
+        {
+          "name": "[:lower:]",
+          "description": "Lower-case characters"
+        },
+        {
+          "name": "[:phonogram:]",
+          "description": "Phonographic characters"
+        },
+        {
+          "name": "[:print:]",
+          "description": "Printable characters"
+        },
+        {
+          "name": "[:punct:]",
+          "description": "Punctuation characters"
+        },
+        {
+          "name": "[:rune:]",
+          "description": "Valid characters"
+        },
+        {
+          "name": "[:space:]",
+          "description": "Space characters"
+        },
+        {
+          "name": "[:special:]",
+          "description": "Special characters"
+        },
+        {
+          "name": "[:upper:]",
+          "description": "Upper-case characters"
+        },
+        {
+          "name": "[:xdigit:]",
+          "description": "Hexadecimal characters"
+        },
+        {
+          "name": "[=equiv=]",
+          "description": "Represents all characters belonging to the same equivalence class as 'equiv', ordered by their encoded values"
+        },
+        {
+          "name": "[#*n]",
+          "description": "Represents 'n' repeated occurrences of the character represented by '#'"
+        }
+      ]
+    }
+  ]
+}

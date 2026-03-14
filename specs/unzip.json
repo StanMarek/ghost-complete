@@ -1,83 +1,53 @@
 {
   "name": "unzip",
-  "description": "Extract files from a zip archive",
-  "args": [
-    {
-      "name": "zipfile",
-      "description": "Zip archive to extract",
-      "template": "filepaths"
-    }
-  ],
+  "description": "Extract compressed files in a ZIP archive",
   "options": [
     {
       "name": [
         "-l"
       ],
-      "description": "List archive contents without extracting"
+      "description": "List the contents of a zip file without extracting",
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      }
     },
     {
       "name": [
-        "-t"
+        "-c"
       ],
-      "description": "Test archive integrity"
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      }
     },
     {
       "name": [
-        "-o"
+        "-0"
       ],
-      "description": "Overwrite existing files without prompting"
-    },
-    {
-      "name": [
-        "-n"
-      ],
-      "description": "Never overwrite existing files"
+      "description": "Extract a zip file created in windows, containing files with non-ascii (chinese) filenames",
+      "args": [
+        {
+          "name": "gbk"
+        },
+        {
+          "name": "file",
+          "template": "filepaths"
+        }
+      ]
     },
     {
       "name": [
         "-d"
       ],
-      "description": "Extract files into the specified directory",
       "args": {
-        "name": "directory",
+        "name": "destination",
         "template": "folders"
       }
-    },
-    {
-      "name": [
-        "-q"
-      ],
-      "description": "Quiet mode, suppress output"
-    },
-    {
-      "name": [
-        "-v"
-      ],
-      "description": "Verbose mode, show detailed information"
-    },
-    {
-      "name": [
-        "-x"
-      ],
-      "description": "Exclude files matching the pattern",
-      "args": {
-        "name": "pattern"
-      }
-    },
-    {
-      "name": [
-        "-j"
-      ],
-      "description": "Junk paths, extract without directory structure"
-    },
-    {
-      "name": [
-        "-P"
-      ],
-      "description": "Use the specified password for decryption",
-      "args": {
-        "name": "password"
-      }
     }
-  ]
+  ],
+  "args": {
+    "name": "file",
+    "template": "filepaths"
+  }
 }

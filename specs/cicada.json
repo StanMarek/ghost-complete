@@ -1,0 +1,478 @@
+{
+  "name": "cicada",
+  "description": "Write CI/CD Pipelines in TypeScript",
+  "subcommands": [
+    {
+      "name": "run",
+      "description": "Run a cicada pipeline",
+      "options": [
+        {
+          "name": [
+            "-s",
+            "--secret"
+          ],
+          "description": "Name of the secret to use, these come from environment variables",
+          "args": {
+            "name": "secret",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--dotenv"
+          ],
+          "description": "Load a custom .env file",
+          "args": {
+            "name": "dotenv",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--secrets-json"
+          ],
+          "description": "Load secrets from a json file",
+          "args": {
+            "name": "secrets_json",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--cicada-dockerfile"
+          ],
+          "description": "A custom dockerfile to load the cicada bin from",
+          "args": {
+            "name": "cicada_dockerfile",
+            "template": "filepaths",
+            "isOptional": true
+          }
+        },
+        {
+          "name": [
+            "--oci-backend"
+          ],
+          "description": "The OCI backend to use",
+          "args": {
+            "name": "oci_backend",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "docker"
+              },
+              {
+                "name": "podman"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "--no-dotenv"
+          ],
+          "description": "Do not load .env file"
+        },
+        {
+          "name": [
+            "--no-cache"
+          ],
+          "description": "Disable caching"
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help (see more with '--help')"
+        }
+      ],
+      "args": {
+        "name": "pipeline",
+        "template": "filepaths",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "step",
+      "description": "Run a step in a cicada workflow",
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help"
+        }
+      ],
+      "args": [
+        {
+          "name": "workflow"
+        },
+        {
+          "name": "step"
+        }
+      ]
+    },
+    {
+      "name": "init",
+      "description": "Initialize a cicada project, you can optionally specify a pipeline to create",
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help"
+        }
+      ],
+      "args": {
+        "name": "pipeline",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "new",
+      "description": "Create a cicada pipeline",
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help"
+        }
+      ],
+      "args": {
+        "name": "pipeline"
+      }
+    },
+    {
+      "name": "update",
+      "description": "Update cicada",
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help"
+        }
+      ]
+    },
+    {
+      "name": "completions",
+      "description": "List all available completions",
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help"
+        }
+      ],
+      "args": {
+        "name": "shell",
+        "suggestions": [
+          {
+            "name": "bash"
+          },
+          {
+            "name": "elvish"
+          },
+          {
+            "name": "fish"
+          },
+          {
+            "name": "powershell"
+          },
+          {
+            "name": "zsh"
+          }
+        ]
+      }
+    },
+    {
+      "name": "fig-completion",
+      "description": "Create fig completions",
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help"
+        }
+      ]
+    },
+    {
+      "name": "open",
+      "description": "Open a pipeline in your editor",
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help"
+        }
+      ],
+      "args": {
+        "name": "pipeline",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": "doctor",
+      "description": "Check for common issues",
+      "options": [
+        {
+          "name": [
+            "--oci-backend"
+          ],
+          "description": "The OCI backend to use",
+          "args": {
+            "name": "oci_backend",
+            "isOptional": true,
+            "suggestions": [
+              {
+                "name": "docker"
+              },
+              {
+                "name": "podman"
+              }
+            ]
+          }
+        },
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help"
+        }
+      ]
+    },
+    {
+      "name": "debug",
+      "description": "Debug commands",
+      "subcommands": [
+        {
+          "name": "daemon-info",
+          "options": [
+            {
+              "name": [
+                "--oci-backend"
+              ],
+              "description": "The OCI backend to use",
+              "args": {
+                "name": "oci_backend",
+                "isOptional": true,
+                "suggestions": [
+                  {
+                    "name": "docker"
+                  },
+                  {
+                    "name": "podman"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "-j",
+                "--json"
+              ]
+            },
+            {
+              "name": [
+                "-h",
+                "--help"
+              ],
+              "description": "Print help"
+            }
+          ]
+        },
+        {
+          "name": "disk-usage",
+          "options": [
+            {
+              "name": [
+                "--oci-backend"
+              ],
+              "description": "The OCI backend to use",
+              "args": {
+                "name": "oci_backend",
+                "isOptional": true,
+                "suggestions": [
+                  {
+                    "name": "docker"
+                  },
+                  {
+                    "name": "podman"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "-j",
+                "--json"
+              ]
+            },
+            {
+              "name": [
+                "-h",
+                "--help"
+              ],
+              "description": "Print help"
+            }
+          ]
+        },
+        {
+          "name": "workers",
+          "options": [
+            {
+              "name": [
+                "--oci-backend"
+              ],
+              "description": "The OCI backend to use",
+              "args": {
+                "name": "oci_backend",
+                "isOptional": true,
+                "suggestions": [
+                  {
+                    "name": "docker"
+                  },
+                  {
+                    "name": "podman"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "-j",
+                "--json"
+              ]
+            },
+            {
+              "name": [
+                "-h",
+                "--help"
+              ],
+              "description": "Print help"
+            }
+          ]
+        },
+        {
+          "name": "help",
+          "description": "Print this message or the help of the given subcommand(s)",
+          "subcommands": [
+            {
+              "name": "daemon-info"
+            },
+            {
+              "name": "disk-usage"
+            },
+            {
+              "name": "workers"
+            },
+            {
+              "name": "help",
+              "description": "Print this message or the help of the given subcommand(s)"
+            }
+          ]
+        }
+      ],
+      "options": [
+        {
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "description": "Print help"
+        }
+      ]
+    },
+    {
+      "name": "help",
+      "description": "Print this message or the help of the given subcommand(s)",
+      "subcommands": [
+        {
+          "name": "run",
+          "description": "Run a cicada pipeline"
+        },
+        {
+          "name": "step",
+          "description": "Run a step in a cicada workflow"
+        },
+        {
+          "name": "init",
+          "description": "Initialize a cicada project, you can optionally specify a pipeline to create"
+        },
+        {
+          "name": "new",
+          "description": "Create a cicada pipeline"
+        },
+        {
+          "name": "update",
+          "description": "Update cicada"
+        },
+        {
+          "name": "completions",
+          "description": "List all available completions"
+        },
+        {
+          "name": "fig-completion",
+          "description": "Create fig completions"
+        },
+        {
+          "name": "open",
+          "description": "Open a pipeline in your editor"
+        },
+        {
+          "name": "doctor",
+          "description": "Check for common issues"
+        },
+        {
+          "name": "debug",
+          "description": "Debug commands",
+          "subcommands": [
+            {
+              "name": "daemon-info"
+            },
+            {
+              "name": "disk-usage"
+            },
+            {
+              "name": "workers"
+            }
+          ]
+        },
+        {
+          "name": "help",
+          "description": "Print this message or the help of the given subcommand(s)"
+        }
+      ]
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "-h",
+        "--help"
+      ],
+      "description": "Print help"
+    },
+    {
+      "name": [
+        "-V",
+        "--version"
+      ],
+      "description": "Print version"
+    }
+  ]
+}

@@ -6,7 +6,7 @@ use anyhow::Result;
 use gc_buffer::CommandContext;
 
 use crate::provider::Provider;
-use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
+use crate::types::{Suggestion, SuggestionSource};
 
 pub struct CommandsProvider {
     commands: Vec<String>,
@@ -24,8 +24,7 @@ impl CommandsProvider {
         Self { commands }
     }
 
-    /// Test constructor — inject command list directly.
-    #[cfg(test)]
+    /// Test/bench constructor — inject command list directly.
     pub fn from_list(commands: Vec<String>) -> Self {
         Self { commands }
     }
@@ -85,10 +84,8 @@ impl Provider for CommandsProvider {
             .iter()
             .map(|cmd| Suggestion {
                 text: cmd.clone(),
-                description: None,
-                kind: SuggestionKind::Command,
                 source: SuggestionSource::Commands,
-                score: 0,
+                ..Default::default()
             })
             .collect();
 

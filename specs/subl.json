@@ -1,0 +1,100 @@
+{
+  "name": "subl",
+  "description": "Sublime Text",
+  "options": [
+    {
+      "name": [
+        "--project"
+      ],
+      "description": "Load the given project",
+      "args": {
+        "name": "project",
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "(h,v,O)=>ue(this,void 0,void 0,function*(){var d;let{isDangerous:_,currentWorkingDirectory:b,searchTerm:p}=O,S=(d=(0,y.getCurrentInsertedDirectory)(u??b,p,O))!==null&&d!==void 0?d:\"/\";try{let P=yield v({command:\"ls\",args:[\"-1ApL\"],cwd:S}),Z=K(P.stdout.split(`\n`),[\".DS_Store\"]),W=[];for(let V of Z)if(V){let F=V.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&c!==\"only\"||F===\"folders\"&&c!==\"never\")&&W.push({type:F===\"filepaths\"?\"file\":\"folder\",name:V,insertValue:V,isDangerous:_,context:{templateType:F}})}return w(g(W))}catch{return[]}})"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--command"
+      ],
+      "description": "Run the given command",
+      "args": {
+        "name": "command"
+      }
+    },
+    {
+      "name": [
+        "-n",
+        "--new-window"
+      ],
+      "description": "Open a new window"
+    },
+    {
+      "name": [
+        "-a",
+        "--add"
+      ],
+      "description": "Add folders to the current window"
+    },
+    {
+      "name": [
+        "--launch-or-new-window"
+      ],
+      "description": "Only open a new window if the application is open"
+    },
+    {
+      "name": [
+        "-w",
+        "--wait"
+      ],
+      "description": "Wait for the files to be closed before returning"
+    },
+    {
+      "name": [
+        "-b",
+        "--background"
+      ],
+      "description": "Don't activate the application"
+    },
+    {
+      "name": [
+        "-s",
+        "--stay"
+      ],
+      "description": "Keep the application activated after closing the file"
+    },
+    {
+      "name": [
+        "--safe-mode"
+      ],
+      "description": "Launch using a clean environment"
+    },
+    {
+      "name": [
+        "-h",
+        "--help"
+      ],
+      "description": "Show a help message and exit"
+    },
+    {
+      "name": [
+        "-v",
+        "--version"
+      ],
+      "description": "Show the version and exit"
+    }
+  ],
+  "args": {
+    "name": "files|directories",
+    "template": [
+      "folders",
+      "filepaths"
+    ],
+    "isVariadic": true,
+    "isOptional": true
+  }
+}

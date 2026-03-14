@@ -1,0 +1,153 @@
+{
+  "name": "mdls",
+  "description": "Lists the metadata attributes for the specified file",
+  "options": [
+    {
+      "name": [
+        "--name",
+        "-name"
+      ],
+      "description": "Print only the matching metadata attribute value.  Can be used multiple times",
+      "args": {
+        "name": "attributeName",
+        "description": "Metadata attribute name",
+        "suggestions": [
+          {
+            "name": "_kMDItemDisplayNameWithExtensions"
+          },
+          {
+            "name": "kMDItemContentCreationDate"
+          },
+          {
+            "name": "kMDItemContentCreationDate_Ranking"
+          },
+          {
+            "name": "kMDItemContentModificationDate"
+          },
+          {
+            "name": "kMDItemContentModificationDate_Ranking"
+          },
+          {
+            "name": "kMDItemContentType"
+          },
+          {
+            "name": "kMDItemContentTypeTree"
+          },
+          {
+            "name": "kMDItemDateAdded"
+          },
+          {
+            "name": "kMDItemDateAdded_Ranking"
+          },
+          {
+            "name": "kMDItemDisplayName"
+          },
+          {
+            "name": "kMDItemDocumentIdentifier"
+          },
+          {
+            "name": "kMDItemFSContentChangeDate"
+          },
+          {
+            "name": "kMDItemFSCreationDate"
+          },
+          {
+            "name": "kMDItemFSCreatorCode"
+          },
+          {
+            "name": "kMDItemFSFinderFlags"
+          },
+          {
+            "name": "kMDItemFSHasCustomIcon"
+          },
+          {
+            "name": "kMDItemFSInvisible"
+          },
+          {
+            "name": "kMDItemFSIsExtensionHidden"
+          },
+          {
+            "name": "kMDItemFSIsStationery"
+          },
+          {
+            "name": "kMDItemFSLabel"
+          },
+          {
+            "name": "kMDItemFSName"
+          },
+          {
+            "name": "kMDItemFSNodeCount"
+          },
+          {
+            "name": "kMDItemFSOwnerGroupID"
+          },
+          {
+            "name": "kMDItemFSOwnerUserID"
+          },
+          {
+            "name": "kMDItemFSSize"
+          },
+          {
+            "name": "kMDItemFSTypeCode"
+          },
+          {
+            "name": "kMDItemInterestingDate_Ranking"
+          },
+          {
+            "name": "kMDItemKind"
+          },
+          {
+            "name": "kMDItemLogicalSize"
+          },
+          {
+            "name": "kMDItemPhysicalSize"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--raw",
+        "-raw"
+      ],
+      "description": "Print raw attribute data in the order that was requested. Fields will be separated with a ASCII NUL character, suitable for piping to xargs(1) -0"
+    },
+    {
+      "name": [
+        "--nullMarker",
+        "-nullMarker"
+      ],
+      "description": "Sets a marker string to be used when a requested attribute is null. Only used in -raw mode.  Default is '(null)'"
+    },
+    {
+      "name": [
+        "--plist",
+        "-plist"
+      ],
+      "description": "Output attributes in XML format to file. Use - to write to stdout option. Incompatible with options -raw, -nullMarker, and -name",
+      "args": [
+        {
+          "name": "stdout or file",
+          "description": "XML output location",
+          "template": "filepaths",
+          "suggestions": [
+            {
+              "name": "-",
+              "description": "Writes to stdout"
+            }
+          ]
+        },
+        {
+          "name": "file",
+          "description": "File to read from",
+          "template": "filepaths"
+        }
+      ]
+    }
+  ],
+  "args": {
+    "name": "file",
+    "template": "filepaths",
+    "isVariadic": true
+  }
+}

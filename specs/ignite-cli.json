@@ -1,0 +1,119 @@
+{
+  "name": "ignite-cli",
+  "description": "Ignite is a CLI that helps you spin up a new React Native app using a battle-tested tech stack",
+  "subcommands": [
+    {
+      "name": "new",
+      "description": "Create a new React Native app",
+      "options": [
+        {
+          "name": [
+            "--expo"
+          ],
+          "description": "Use Expo"
+        },
+        {
+          "name": [
+            "--bundle"
+          ],
+          "description": "Set the bundle ID of the app",
+          "args": {
+            "name": "bundle"
+          }
+        }
+      ],
+      "args": {
+        "name": "name"
+      }
+    },
+    {
+      "name": "g",
+      "description": "Generate components and other app features",
+      "options": [
+        {
+          "name": [
+            "--list"
+          ],
+          "description": "List installed generators"
+        },
+        {
+          "name": [
+            "--update"
+          ],
+          "description": "Update installed generators"
+        }
+      ],
+      "args": [
+        {
+          "name": "generator",
+          "isOptional": true,
+          "generators": [
+            {
+              "script": [
+                "ls",
+                "ignite/templates"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty",
+                "trim"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "name",
+          "isOptional": true
+        }
+      ]
+    },
+    {
+      "name": "update",
+      "description": "Update installed generators",
+      "options": [
+        {
+          "name": [
+            "--all"
+          ],
+          "description": "Update all installed generators"
+        }
+      ],
+      "args": {
+        "name": "generator",
+        "generators": [
+          {
+            "script": [
+              "ls",
+              "ignite/templates"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "doctor",
+      "description": "Check your environment & display versions of installed dependencies"
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "-h",
+        "--help"
+      ],
+      "description": "Output usage information"
+    },
+    {
+      "name": [
+        "-v",
+        "--version"
+      ],
+      "description": "Output the version number"
+    }
+  ]
+}

@@ -1,0 +1,676 @@
+{
+  "name": "asdf",
+  "description": "Extendable version manager with support for Ruby, Node.js, Elixir, Erlang & more",
+  "subcommands": [
+    {
+      "name": "plugin",
+      "description": "Plugin management sub-commands",
+      "subcommands": [
+        {
+          "name": "add",
+          "description": "Add a plugin from the plugin repo OR, add a Git repo as a plugin by specifying the name and repo url",
+          "args": [
+            {
+              "name": "name",
+              "generators": [
+                {
+                  "requires_js": true,
+                  "js_source": "async(r,e,i)=>{let{stdout:o}=await e({command:\"ls\",args:[\"-1\",`${i.environmentVariables.HOME}/.asdf/repository/plugins`]});return o.split(`\n`).map(m=>({name:`${m}`,description:\"Plugin name\",priority:76,icon:\"fig://icon?type=package\",...n}))}"
+                }
+              ]
+            },
+            {
+              "name": "git-url",
+              "isOptional": true
+            }
+          ]
+        },
+        {
+          "name": "list",
+          "description": "List installed plugins. Optionally show git urls and git-ref",
+          "subcommands": [
+            {
+              "name": "all",
+              "description": "List plugins registered on asdf-plugins repository with URLs"
+            }
+          ],
+          "options": [
+            {
+              "name": [
+                "--urls"
+              ],
+              "description": "Show git urls"
+            },
+            {
+              "name": [
+                "--refs"
+              ],
+              "description": "Show git refs"
+            }
+          ]
+        },
+        {
+          "name": "remove",
+          "description": "Remove plugin and package versions",
+          "args": {
+            "name": "name",
+            "generators": [
+              {
+                "script": [
+                  "asdf",
+                  "plugin-list"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "update",
+          "description": "Update a plugin to latest commit on default branch or a particular git-ref",
+          "options": [
+            {
+              "name": [
+                "--all"
+              ],
+              "description": "Update all plugins to latest commit on default branch"
+            }
+          ],
+          "args": [
+            {
+              "name": "name",
+              "isOptional": true
+            },
+            {
+              "name": "git-ref",
+              "isOptional": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "plugin-add",
+      "description": "Add a plugin from the plugin repo OR, add a Git repo as a plugin by specifying the name and repo url",
+      "args": [
+        {
+          "name": "name",
+          "generators": [
+            {
+              "requires_js": true,
+              "js_source": "async(r,e,i)=>{let{stdout:o}=await e({command:\"ls\",args:[\"-1\",`${i.environmentVariables.HOME}/.asdf/repository/plugins`]});return o.split(`\n`).map(m=>({name:`${m}`,description:\"Plugin name\",priority:76,icon:\"fig://icon?type=package\",...n}))}"
+            }
+          ]
+        },
+        {
+          "name": "git-url",
+          "isOptional": true
+        }
+      ]
+    },
+    {
+      "name": "plugin-list",
+      "description": "List installed plugins. Optionally show git urls and git-ref",
+      "subcommands": [
+        {
+          "name": "all",
+          "description": "List plugins registered on asdf-plugins repository with URLs"
+        }
+      ],
+      "options": [
+        {
+          "name": [
+            "--urls"
+          ],
+          "description": "Show git urls"
+        },
+        {
+          "name": [
+            "--refs"
+          ],
+          "description": "Show git refs"
+        }
+      ]
+    },
+    {
+      "name": "plugin-list-all",
+      "description": "List plugins registered on asdf-plugins repository with URLs"
+    },
+    {
+      "name": "plugin-remove",
+      "description": "Remove plugin and package versions",
+      "args": {
+        "name": "name",
+        "generators": [
+          {
+            "script": [
+              "asdf",
+              "plugin-list"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "plugin-update",
+      "description": "Update a plugin to latest commit on default branch or a particular git-ref",
+      "options": [
+        {
+          "name": [
+            "--all"
+          ],
+          "description": "Update all plugins to latest commit on default branch"
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "isOptional": true
+        },
+        {
+          "name": "git-ref",
+          "isOptional": true
+        }
+      ]
+    },
+    {
+      "name": "install",
+      "description": "Install plugin at stated version, or all from .tools-versions",
+      "args": [
+        {
+          "name": "name",
+          "isOptional": true,
+          "generators": [
+            {
+              "script": [
+                "asdf",
+                "plugin-list"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "version",
+          "isOptional": true,
+          "suggestions": [
+            {
+              "name": "latest"
+            }
+          ],
+          "generators": [
+            {
+              "requires_js": true,
+              "js_source": "e=>[\"asdf\",\"list-all\",e[e.length-2]]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "uninstall",
+      "description": "Remove a specific version of a package",
+      "args": [
+        {
+          "name": "name",
+          "generators": [
+            {
+              "script": [
+                "asdf",
+                "plugin-list"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "version",
+          "isOptional": true,
+          "generators": [
+            {
+              "requires_js": true,
+              "js_source": "e=>[\"asdf\",\"list\",e[e.length-2]]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "current",
+      "description": "Display current versions for named package (else all)",
+      "args": {
+        "name": "name",
+        "isOptional": true,
+        "generators": [
+          {
+            "script": [
+              "asdf",
+              "plugin-list"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "where",
+      "description": "Display install path for given package at optional specified version",
+      "args": [
+        {
+          "name": "name",
+          "generators": [
+            {
+              "script": [
+                "asdf",
+                "plugin-list"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "version",
+          "isOptional": true,
+          "generators": [
+            {
+              "requires_js": true,
+              "js_source": "e=>[\"asdf\",\"list\",e[e.length-2]]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "which",
+      "description": "Display path to an executable",
+      "args": {
+        "name": "command",
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "async(r,e,i)=>{let{stdout:o}=await e({command:\"ls\",args:[\"-1\",`${i.environmentVariables.HOME}/.asdf/shims`]});return o.split(`\n`).map(m=>({name:`${m}`,description:\"Shim name\",priority:76,icon:\"fig://icon?type=command\",...n}))}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "local",
+      "description": "Set package local version",
+      "args": [
+        {
+          "name": "name",
+          "generators": [
+            {
+              "script": [
+                "asdf",
+                "plugin-list"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "version",
+          "generators": [
+            {
+              "requires_js": true,
+              "js_source": "e=>[\"asdf\",\"list\",e[e.length-2]]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "global",
+      "description": "Set package global version",
+      "args": [
+        {
+          "name": "name",
+          "generators": [
+            {
+              "script": [
+                "asdf",
+                "plugin-list"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "version",
+          "generators": [
+            {
+              "requires_js": true,
+              "js_source": "e=>[\"asdf\",\"list\",e[e.length-2]]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "shell",
+      "description": "Set the package version to ASDF_${LANG}_VERSION` in the current shell",
+      "args": [
+        {
+          "name": "name",
+          "generators": [
+            {
+              "script": [
+                "asdf",
+                "plugin-list"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "version",
+          "generators": [
+            {
+              "requires_js": true,
+              "js_source": "e=>[\"asdf\",\"list\",e[e.length-2]]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "latest",
+      "description": "Display latest version available to install for a named package",
+      "args": [
+        {
+          "name": "name",
+          "generators": [
+            {
+              "script": [
+                "asdf",
+                "plugin-list"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "version",
+          "isOptional": true,
+          "generators": [
+            {
+              "requires_js": true,
+              "js_source": "e=>[\"asdf\",\"list\",e[e.length-2]]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "list",
+      "description": "List installed versions of a package",
+      "subcommands": [
+        {
+          "name": "all",
+          "description": "List all available (remote) versions of a package",
+          "args": [
+            {
+              "name": "name",
+              "generators": [
+                {
+                  "script": [
+                    "asdf",
+                    "plugin-list"
+                  ],
+                  "transforms": [
+                    "split_lines",
+                    "filter_empty"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "version",
+              "isOptional": true,
+              "generators": [
+                {
+                  "requires_js": true,
+                  "js_source": "e=>[\"asdf\",\"list\",e[e.length-2]]"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "args": {
+        "name": "name",
+        "generators": [
+          {
+            "script": [
+              "asdf",
+              "plugin-list"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "list-all",
+      "description": "List all available (remote) versions of a package",
+      "args": [
+        {
+          "name": "name",
+          "generators": [
+            {
+              "script": [
+                "asdf",
+                "plugin-list"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "version",
+          "isOptional": true,
+          "generators": [
+            {
+              "requires_js": true,
+              "js_source": "e=>[\"asdf\",\"list\",e[e.length-2]]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "help",
+      "description": "Output documentation for plugin and tool",
+      "args": [
+        {
+          "name": "name",
+          "generators": [
+            {
+              "script": [
+                "asdf",
+                "plugin-list"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "version",
+          "isOptional": true,
+          "generators": [
+            {
+              "requires_js": true,
+              "js_source": "e=>[\"asdf\",\"list\",e[e.length-2]]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "exec",
+      "description": "Executes the command shim for the current version",
+      "args": {
+        "name": "command",
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "async(r,e,i)=>{let{stdout:o}=await e({command:\"ls\",args:[\"-1\",`${i.environmentVariables.HOME}/.asdf/shims`]});return o.split(`\n`).map(m=>({name:`${m}`,description:\"Shim name\",priority:76,icon:\"fig://icon?type=command\",...n}))}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "env",
+      "description": "Prints or runs an executable under a command environment",
+      "args": {
+        "name": "command",
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "async(r,e,i)=>{let{stdout:o}=await e({command:\"ls\",args:[\"-1\",`${i.environmentVariables.HOME}/.asdf/shims`]});return o.split(`\n`).map(m=>({name:`${m}`,description:\"Shim name\",priority:76,icon:\"fig://icon?type=command\",...n}))}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "info",
+      "description": "Print os, shell and asdf debug information"
+    },
+    {
+      "name": "reshim",
+      "description": "Recreate shims for version of a package",
+      "args": [
+        {
+          "name": "name",
+          "isOptional": true,
+          "generators": [
+            {
+              "script": [
+                "asdf",
+                "plugin-list"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "version",
+          "isOptional": true,
+          "generators": [
+            {
+              "requires_js": true,
+              "js_source": "e=>[\"asdf\",\"list\",e[e.length-2]]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "shim",
+      "description": "Shim management sub-commands",
+      "subcommands": [
+        {
+          "name": "versions",
+          "description": "List for given command which plugins and versions provide it",
+          "args": {
+            "name": "command",
+            "generators": [
+              {
+                "requires_js": true,
+                "js_source": "async(r,e,i)=>{let{stdout:o}=await e({command:\"ls\",args:[\"-1\",`${i.environmentVariables.HOME}/.asdf/shims`]});return o.split(`\n`).map(m=>({name:`${m}`,description:\"Shim name\",priority:76,icon:\"fig://icon?type=command\",...n}))}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "shim-versions",
+      "description": "List for given command which plugins and versions provide it",
+      "args": {
+        "name": "command",
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "async(r,e,i)=>{let{stdout:o}=await e({command:\"ls\",args:[\"-1\",`${i.environmentVariables.HOME}/.asdf/shims`]});return o.split(`\n`).map(m=>({name:`${m}`,description:\"Shim name\",priority:76,icon:\"fig://icon?type=command\",...n}))}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "update",
+      "description": "Update ASDF to the latest stable release (unless --head)",
+      "options": [
+        {
+          "name": [
+            "--head"
+          ],
+          "description": "Using HEAD commit"
+        }
+      ]
+    },
+    {
+      "name": "version",
+      "description": "Version for asdf"
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "--version"
+      ],
+      "description": "Version for asdf"
+    },
+    {
+      "name": [
+        "-h",
+        "--help"
+      ],
+      "description": "Help for asdf"
+    }
+  ]
+}

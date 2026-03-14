@@ -1,0 +1,209 @@
+{
+  "name": "create-nx-workspace",
+  "description": "Create a new Nx workspace",
+  "options": [
+    {
+      "name": [
+        "--name"
+      ],
+      "description": "Workspace name (e.g., org name)",
+      "args": {
+        "name": "workspace",
+        "description": "The name of the workspace"
+      }
+    },
+    {
+      "name": [
+        "--preset"
+      ],
+      "description": "What to create in a new workspace (options: \"empty\", \"npm\", \"web-components\", \"angular\", \"angular-nest\", \"react\", \"react-express\", \"react-native\", \"next\", \"gatsby\", \"nest\", \"express\")",
+      "args": {
+        "name": "preset",
+        "suggestions": [
+          {
+            "name": "empty",
+            "description": "Empty [an empty workspace with a layout that works best for building apps]"
+          },
+          {
+            "name": "npm",
+            "description": "Npm [an empty workspace set up to publish npm packages (similar to and compatible with yarn workspaces)]"
+          },
+          {
+            "name": "web-components",
+            "description": "Web components [a workspace with a single app built using web components]"
+          },
+          {
+            "name": "angular",
+            "description": "Angular [a workspace with a single Angular application]"
+          },
+          {
+            "name": "angular-nest",
+            "description": "Angular-nest [a workspace with a full stack application (Angular + Nest)]"
+          },
+          {
+            "name": "react",
+            "description": "React [a workspace with a single React application]"
+          },
+          {
+            "name": "react-express",
+            "description": "React-express [a workspace with a full stack application (React + Express)]"
+          },
+          {
+            "name": "react-native",
+            "description": "React-native [a workspace with a single React Native application]"
+          },
+          {
+            "name": "next",
+            "description": "Next.js [a workspace with a single Next.js application]"
+          },
+          {
+            "name": "gatsby",
+            "description": "Gatsby [a workspace with a single Gatsby application]"
+          },
+          {
+            "name": "nest",
+            "description": "Nest [a workspace with a single Nest application]"
+          },
+          {
+            "name": "express",
+            "description": "Express [a workspace with a single Express application]"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--appName"
+      ],
+      "description": "The name of the application created by some presets",
+      "args": {
+        "name": "appName",
+        "isOptional": true
+      }
+    },
+    {
+      "name": [
+        "--cli"
+      ],
+      "description": "CLI to power the Nx workspace (options: \"nx\", \"angular\")",
+      "args": {
+        "name": "cli",
+        "suggestions": [
+          {
+            "name": "nx"
+          },
+          {
+            "name": "angular"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--style"
+      ],
+      "description": "Default style option to be used when a non-empty preset is selected options: (\"css\", \"scss\", \"less\") plus (\"styl\") for all non-Angular and (\"styled-components\", \"@emotion/styled\", \"styled-jsx\") for React, Next.js, Gatsby",
+      "args": {
+        "name": "style",
+        "suggestions": [
+          {
+            "name": "css",
+            "description": "CSS"
+          },
+          {
+            "name": "scss",
+            "description": "SASS(.scss) [ http://sass-lang.com ]"
+          },
+          {
+            "name": "less",
+            "description": "LESS [ http://lesscss.org ]"
+          },
+          {
+            "name": "styl",
+            "description": "Stylus(.styl) [ http://stylus-lang.com ]"
+          },
+          {
+            "name": "styled-components",
+            "description": "Styled-components [ https://styled-components.com ]"
+          },
+          {
+            "name": "@emotion/styled",
+            "description": "Emotion [ https://emotion.sh ]"
+          },
+          {
+            "name": "styled-jsx",
+            "description": "Styled-jsx [ https://www.npmjs.com/package/styled-jsx ]"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--interactive"
+      ],
+      "description": "Enable interactive mode when using presets (boolean)",
+      "args": {
+        "name": "interactive",
+        "isOptional": true,
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--packageManager",
+        "--pm"
+      ],
+      "description": "Package manager to use (npm, yarn, pnpm)",
+      "args": {
+        "name": "packageManager",
+        "suggestions": [
+          {
+            "name": "npm"
+          },
+          {
+            "name": "yarn"
+          },
+          {
+            "name": "pnpm"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--nx-cloud"
+      ],
+      "description": "Use Nx Cloud (boolean)",
+      "args": {
+        "name": "nx-cloud",
+        "isOptional": true,
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--help",
+        "-h"
+      ],
+      "description": "Show help for create-nx-workspace"
+    }
+  ],
+  "args": {
+    "name": "workspace",
+    "description": "The name of the workspace"
+  }
+}

@@ -1,0 +1,188 @@
+{
+  "name": "defaults",
+  "description": "Command line interface to a user's defaults",
+  "subcommands": [
+    {
+      "name": "read",
+      "description": "Shows defaults",
+      "args": [
+        {
+          "name": "domain",
+          "suggestions": [
+            {
+              "name": "-globalDomain",
+              "description": "Global domain"
+            },
+            {
+              "name": "-app",
+              "description": "Application name"
+            }
+          ],
+          "generators": [
+            {
+              "script": [
+                "defaults",
+                "domains"
+              ],
+              "requires_js": true,
+              "js_source": "function(n){return n.split(\",\").map(i=>({name:i.trim()}))}"
+            }
+          ]
+        },
+        {
+          "name": "key"
+        }
+      ]
+    },
+    {
+      "name": "write",
+      "description": "Writes key for domain",
+      "args": [
+        {
+          "name": "domain",
+          "suggestions": [
+            {
+              "name": "-globalDomain",
+              "description": "Global domain"
+            },
+            {
+              "name": "-app",
+              "description": "Application name"
+            }
+          ],
+          "generators": [
+            {
+              "script": [
+                "defaults",
+                "domains"
+              ],
+              "requires_js": true,
+              "js_source": "function(n){return n.split(\",\").map(i=>({name:i.trim()}))}"
+            }
+          ]
+        },
+        {
+          "name": "key"
+        },
+        {
+          "name": "value"
+        }
+      ]
+    },
+    {
+      "name": "delete",
+      "description": "Deletes domain or key in domain",
+      "args": [
+        {
+          "name": "domain",
+          "suggestions": [
+            {
+              "name": "-globalDomain",
+              "description": "Global domain"
+            },
+            {
+              "name": "-app",
+              "description": "Application name"
+            }
+          ],
+          "generators": [
+            {
+              "script": [
+                "defaults",
+                "domains"
+              ],
+              "requires_js": true,
+              "js_source": "function(n){return n.split(\",\").map(i=>({name:i.trim()}))}"
+            }
+          ]
+        },
+        {
+          "name": "key"
+        }
+      ]
+    },
+    {
+      "name": "rename",
+      "description": "Renames old_key to new_key",
+      "args": [
+        {
+          "name": "domain",
+          "suggestions": [
+            {
+              "name": "-globalDomain",
+              "description": "Global domain"
+            },
+            {
+              "name": "-app",
+              "description": "Application name"
+            }
+          ],
+          "generators": [
+            {
+              "script": [
+                "defaults",
+                "domains"
+              ],
+              "requires_js": true,
+              "js_source": "function(n){return n.split(\",\").map(i=>({name:i.trim()}))}"
+            }
+          ]
+        },
+        {
+          "name": "old_key"
+        },
+        {
+          "name": "new_key"
+        }
+      ]
+    },
+    {
+      "name": "domains",
+      "description": "Lists all domains"
+    },
+    {
+      "name": "find",
+      "description": "Lists all entries containing word",
+      "args": {
+        "name": "word",
+        "description": "The word to search for"
+      }
+    },
+    {
+      "name": "help",
+      "description": "Show help text"
+    },
+    {
+      "name": "read-type",
+      "description": "Shows the type for the given domain, key",
+      "args": [
+        {
+          "name": "domain",
+          "suggestions": [
+            {
+              "name": "-globalDomain",
+              "description": "Global domain"
+            },
+            {
+              "name": "-app",
+              "description": "Application name"
+            }
+          ],
+          "generators": [
+            {
+              "script": [
+                "defaults",
+                "domains"
+              ],
+              "requires_js": true,
+              "js_source": "function(n){return n.split(\",\").map(i=>({name:i.trim()}))}"
+            }
+          ]
+        },
+        {
+          "name": "key"
+        }
+      ]
+    }
+  ]
+}

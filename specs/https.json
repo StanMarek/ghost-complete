@@ -1,0 +1,604 @@
+{
+  "name": "https",
+  "description": "HTTPie: command-line HTTP client for the API era",
+  "options": [
+    {
+      "name": [
+        "--json",
+        "-j"
+      ],
+      "description": "Data items from the command line are serialized as a JSON object. The Content-Type and Accept headers are set to application/json"
+    },
+    {
+      "name": [
+        "--form",
+        "-f"
+      ],
+      "description": "FData items from the command line are serialized as form fields.\nThe Content-Type is set to application/x-www-form-urlencoded (if not\nspecified). The presence of any file fields results in a\nmultipart/form-data request"
+    },
+    {
+      "name": [
+        "--multipart"
+      ],
+      "description": "Similar to --form, but always sends a multipart/form-data request (i.e., even without files)"
+    },
+    {
+      "name": [
+        "--boundary"
+      ],
+      "description": "Specify a custom boundary string for multipart/form-data requests. Has effect only together with --form"
+    },
+    {
+      "name": [
+        "--compress",
+        "-x"
+      ],
+      "description": "Content compressed (encoded) with Deflate algorithm. The Content-Encoding header is set to deflate"
+    },
+    {
+      "name": [
+        "--pretty"
+      ],
+      "description": "Controls output processing. The value can be \"none\" to not prettify\nthe output (default for redirected output), \"all\" to apply both colors\nand formatting (default for terminal output), \"colors\", or \"format\"",
+      "args": {
+        "suggestions": [
+          {
+            "name": "all"
+          },
+          {
+            "name": "colors"
+          },
+          {
+            "name": "format"
+          },
+          {
+            "name": "none"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--style",
+        "-s"
+      ],
+      "args": {
+        "name": "STYLE",
+        "suggestions": [
+          {
+            "name": "abap"
+          },
+          {
+            "name": "algol"
+          },
+          {
+            "name": "algol_nu"
+          },
+          {
+            "name": "arduino"
+          },
+          {
+            "name": "auto"
+          },
+          {
+            "name": "autumn"
+          },
+          {
+            "name": "borland"
+          },
+          {
+            "name": "bw"
+          },
+          {
+            "name": "colorful"
+          },
+          {
+            "name": "default"
+          },
+          {
+            "name": "emacs"
+          },
+          {
+            "name": "friendly"
+          },
+          {
+            "name": "fruity"
+          },
+          {
+            "name": "igor"
+          },
+          {
+            "name": "inkpot"
+          },
+          {
+            "name": "lovelace"
+          },
+          {
+            "name": "manni"
+          },
+          {
+            "name": "monokai"
+          },
+          {
+            "name": "murphy"
+          },
+          {
+            "name": "native"
+          },
+          {
+            "name": "paraiso-dark"
+          },
+          {
+            "name": "paraiso-light"
+          },
+          {
+            "name": "pastie"
+          },
+          {
+            "name": "perldoc"
+          },
+          {
+            "name": "rainbow_dash"
+          },
+          {
+            "name": "rrt"
+          },
+          {
+            "name": "sas"
+          },
+          {
+            "name": "solarized"
+          },
+          {
+            "name": "solarized-dark"
+          },
+          {
+            "name": "solarized-light"
+          },
+          {
+            "name": "stata"
+          },
+          {
+            "name": "stata-dark"
+          },
+          {
+            "name": "stata-light"
+          },
+          {
+            "name": "tango"
+          },
+          {
+            "name": "trac"
+          },
+          {
+            "name": "vim"
+          },
+          {
+            "name": "vs"
+          },
+          {
+            "name": "xcode"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--unsorted"
+      ],
+      "description": "Disables all sorting while formatting output"
+    },
+    {
+      "name": [
+        "--sorted"
+      ],
+      "description": "Re-enables all sorting options while formatting output"
+    },
+    {
+      "name": [
+        "--format-options"
+      ],
+      "description": "Controls output formatting",
+      "args": {
+        "name": "FORMAT_OPTIONS",
+        "suggestions": [
+          {
+            "name": "headers.sort:true"
+          },
+          {
+            "name": "json.format:true"
+          },
+          {
+            "name": "json.indent:4"
+          },
+          {
+            "name": "json.sort_keys:true"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--print",
+        "-p"
+      ],
+      "description": "String specifying what the output should contain",
+      "args": {
+        "name": "WHAT",
+        "suggestions": [
+          {
+            "name": "H",
+            "description": "Request headers"
+          },
+          {
+            "name": "B",
+            "description": "Request body"
+          },
+          {
+            "name": "h",
+            "description": "Response headers"
+          },
+          {
+            "name": "b",
+            "description": "Response body"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--headers",
+        "-h"
+      ],
+      "description": "Print only the response headers. Shortcut for --print=h"
+    },
+    {
+      "name": [
+        "--body",
+        "-b"
+      ],
+      "description": "Print only the response body. Shortcut for --print=b"
+    },
+    {
+      "name": [
+        "--verbose",
+        "-v"
+      ],
+      "description": "Verbose output. Print the whole request as well as the response. Also print\nany intermediary requests/responses (such as redirects).\nIt's a shortcut for: --all --print=BHbh"
+    },
+    {
+      "name": [
+        "--all"
+      ],
+      "description": "By default, only the final request/response is shown. Use this flag to show\nany intermediary requests/responses as well. Intermediary requests include\nfollowed redirects (with --follow), the first unauthorized request when\nDigest auth is used (--auth=digest), etc"
+    },
+    {
+      "name": [
+        "--history-print",
+        "-P"
+      ],
+      "description": "The same as --print, -p but applies only to intermediary requests/responses\n(such as redirects) when their inclusion is enabled with --all. If this\noptions is not specified, then they are formatted the same way as the final\nresponse",
+      "args": {
+        "name": "WHAT",
+        "suggestions": [
+          {
+            "name": "H",
+            "description": "Request headers"
+          },
+          {
+            "name": "B",
+            "description": "Request body"
+          },
+          {
+            "name": "h",
+            "description": "Response headers"
+          },
+          {
+            "name": "b",
+            "description": "Response body"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--stream",
+        "-S"
+      ],
+      "description": "Always stream the response body by line, i.e., behave like `tail -f'"
+    },
+    {
+      "name": [
+        "--output",
+        "-o"
+      ],
+      "description": "Save output to FILE instead of stdout. If --download is also set, then only\nthe response body is saved to FILE. Other parts of the HTTP exchange are\nprinted to stderr",
+      "args": {
+        "name": "FILE",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--download",
+        "-d"
+      ],
+      "description": "Do not print the response body to stdout. Rather, download it and store it\nin a file. The filename is guessed unless specified with --output\n[filename]. This action is similar to the default behaviour of wget"
+    },
+    {
+      "name": [
+        "--continue",
+        "-c"
+      ],
+      "description": "Resume an interrupted download. Note that the --output option needs to be specified as well"
+    },
+    {
+      "name": [
+        "--quiet",
+        "-q"
+      ],
+      "description": "Do not print to stdout or stderr.\nstdout is still redirected if --output is specified.\nFlag doesn't affect behaviour of download beyond not printing to terminal"
+    },
+    {
+      "name": [
+        "--session"
+      ],
+      "description": "Create, or reuse and update a session. Within a session, custom headers,\nauth credential, as well as any cookies sent by the server persist between\nrequests",
+      "args": {
+        "name": "SESSION_NAME_OR_PATH",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--session-read-only"
+      ],
+      "description": "Create or read a session without updating it form the request/response exchange",
+      "args": {
+        "name": "SESSION_NAME_OR_PATH",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--auth",
+        "-a"
+      ],
+      "description": "If only the username is provided (-a username), HTTPie will prompt for the password",
+      "args": {
+        "name": "USER[:PASS]"
+      }
+    },
+    {
+      "name": [
+        "--auth-type",
+        "-A"
+      ],
+      "description": "The authentication mechanism to be used. Defaults to \"basic\"",
+      "args": {
+        "suggestions": [
+          {
+            "name": "basic",
+            "description": "Basic HTTP auth"
+          },
+          {
+            "name": "digest",
+            "description": "Digest HTTP auth"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--ignore-netrc"
+      ],
+      "description": "Ignore credentials from .netrc"
+    },
+    {
+      "name": [
+        "--offline"
+      ],
+      "description": "Build the request and print it but don’t actually send it"
+    },
+    {
+      "name": [
+        "--proxy"
+      ],
+      "description": "String mapping protocol to the URL of the proxy\n(e.g. http:http://foo.bar:3128). You can specify multiple proxies with\ndifferent protocols. The environment variables $ALL_PROXY, $HTTP_PROXY,\nand $HTTPS_proxy are supported as well",
+      "args": {
+        "name": "PROTOCOL:PROXY_URL"
+      }
+    },
+    {
+      "name": [
+        "--follow",
+        "-F"
+      ],
+      "description": "Follow 30x Location redirects"
+    },
+    {
+      "name": [
+        "--max-redirects"
+      ],
+      "description": "By default, requests have a limit of 30 redirects (works with --follow)",
+      "args": {
+        "name": "MAX_REDIRECTS"
+      }
+    },
+    {
+      "name": [
+        "--max-headers"
+      ],
+      "description": "The maximum number of response headers to be read before giving up (default 0, i.e., no limit)",
+      "args": {
+        "name": "MAX_HEADERS"
+      }
+    },
+    {
+      "name": [
+        "--timeout"
+      ],
+      "description": "The connection timeout of the request in seconds.\nThe default value is 0, i.e., there is no timeout limit",
+      "args": {
+        "name": "SECONDS"
+      }
+    },
+    {
+      "name": [
+        "--check-status"
+      ],
+      "description": "By default, HTTPie exits with 0 when no network or other fatal errors\noccur. This flag instructs HTTPie to also check the HTTP status code and\nexit with an error if the status indicates one"
+    },
+    {
+      "name": [
+        "--path-as-is"
+      ],
+      "description": "Bypass dot segment (/../ or /./) URL squashing"
+    },
+    {
+      "name": [
+        "--chunked"
+      ],
+      "description": "Enable streaming via chunked transfer encoding"
+    },
+    {
+      "name": [
+        "--verify"
+      ],
+      "description": "Set to \"no\" (or \"false\") to skip checking the host's SSL certificate.\nDefaults to \"yes\" (\"true\"). You can also pass the path to a CA_BUNDLE file\nfor private certs",
+      "args": {
+        "name": "VERIFY",
+        "template": "filepaths",
+        "suggestions": [
+          {
+            "name": "no"
+          },
+          {
+            "name": "yes"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--ssl"
+      ],
+      "description": "The desired protocol version to use. This will default to\nSSL v2.3 which will negotiate the highest protocol that both\nthe server and your installation of OpenSSL support",
+      "args": {
+        "suggestions": [
+          {
+            "name": "ssl2.3"
+          },
+          {
+            "name": "tls1"
+          },
+          {
+            "name": "tls1.1"
+          },
+          {
+            "name": "tls1.2"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--ciphers"
+      ],
+      "description": "A string in the OpenSSL cipher list format",
+      "args": {}
+    },
+    {
+      "name": [
+        "--cert"
+      ],
+      "description": "You can specify a local cert to use as client side SSL certificate.\nThis file may either contain both private key and certificate or you may\nspecify --cert-key separately",
+      "args": {
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--cert-key"
+      ],
+      "description": "The private key to use with SSL. Only needed if --cert is given and the certificate file does not contain the private key",
+      "args": {
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--ignore-stdin",
+        "-I"
+      ],
+      "description": "Do not attempt to read stdin"
+    },
+    {
+      "name": [
+        "--help"
+      ],
+      "description": "Show the help message and exit"
+    },
+    {
+      "name": [
+        "--version"
+      ],
+      "description": "Show version and exit"
+    },
+    {
+      "name": [
+        "--traceback"
+      ],
+      "description": "Prints the exception traceback should one occur"
+    },
+    {
+      "name": [
+        "--default-scheme"
+      ],
+      "description": "The default scheme to use if not specified in the URL",
+      "args": {
+        "name": "DEFAULT_SCHEME"
+      }
+    },
+    {
+      "name": [
+        "--debug"
+      ],
+      "description": "Prints the exception traceback should one occur, as well as other\ninformation useful for debugging HTTPie itself and for reporting bugs"
+    }
+  ],
+  "args": [
+    {
+      "name": "METHOD",
+      "description": "The HTTP method to be used for the request (GET, POST, PUT, DELETE, ...)",
+      "isOptional": true,
+      "suggestions": [
+        {
+          "name": "GET"
+        },
+        {
+          "name": "POST"
+        },
+        {
+          "name": "PUT"
+        },
+        {
+          "name": "DELETE"
+        },
+        {
+          "name": "HEAD"
+        }
+      ]
+    },
+    {
+      "name": "URL",
+      "description": "The scheme defaults to 'http://' if the URL does not include one"
+    },
+    {
+      "name": "REQUEST_ITEM",
+      "description": "Optional key-value pairs to be included in the request. The separator used determines the type",
+      "isVariadic": true,
+      "isOptional": true
+    }
+  ]
+}

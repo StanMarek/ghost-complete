@@ -1,0 +1,85 @@
+{
+  "name": "autojump",
+  "description": "A faster way to navigate your filesystem",
+  "options": [
+    {
+      "name": [
+        "-h",
+        "--help"
+      ],
+      "description": "Show the help message and exit"
+    },
+    {
+      "name": [
+        "-a",
+        "--add"
+      ],
+      "description": "Add path",
+      "args": {
+        "name": "directory",
+        "template": [
+          "folders"
+        ]
+      }
+    },
+    {
+      "name": [
+        "-i",
+        "--increase"
+      ],
+      "description": "Increase current directory weight",
+      "args": {
+        "name": "weight",
+        "isOptional": true
+      }
+    },
+    {
+      "name": [
+        "-d",
+        "--decrease"
+      ],
+      "description": "Decrease current directory weight",
+      "args": {
+        "name": "weight",
+        "isOptional": true
+      }
+    },
+    {
+      "name": [
+        "--complete"
+      ],
+      "description": "Used for tab completion"
+    },
+    {
+      "name": [
+        "--purge"
+      ],
+      "description": "Remove non-existent paths from database"
+    },
+    {
+      "name": [
+        "-s",
+        "--stat"
+      ],
+      "description": "Show database entries and their key weights"
+    },
+    {
+      "name": [
+        "-v",
+        "--version"
+      ],
+      "description": "Show version information"
+    }
+  ],
+  "args": {
+    "name": "directory",
+    "description": "Directory to jump to",
+    "isVariadic": true,
+    "generators": [
+      {
+        "requires_js": true,
+        "js_source": "async(r,s,c)=>{let{stdout:p}=await s({command:\"cat\",args:[`${c.environmentVariables.HOME}/Library/autojump/autojump.txt`]}),m=p.split(`\n`).map(t=>{let[e,i]=t.split(\"\t\");return{weight:Number(e),dir:i}}),n=r.slice(1,r.length-1);return m.filter(({dir:t})=>n.every(e=>t.includes(e))).map(({weight:t,dir:e})=>{let i=e.split(\"/\"),a=i[i.length-1];if(!n.includes(a))return{name:a,description:e,priority:75+t}})}"
+      }
+    ]
+  }
+}

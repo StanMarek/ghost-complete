@@ -1,0 +1,1513 @@
+{
+  "name": "osqueryi",
+  "description": "Your OS as a high-performance relational database",
+  "options": [
+    {
+      "name": [
+        "--flagfile"
+      ],
+      "description": "Line-delimited file of additional flags",
+      "args": {
+        "name": "path",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--D"
+      ],
+      "description": "Run as a daemon process"
+    },
+    {
+      "name": [
+        "--S"
+      ],
+      "description": "Run as a shell process"
+    },
+    {
+      "name": [
+        "--alarm_timeout"
+      ],
+      "description": "Seconds to allow for shutdown. Minimum is 10",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--carver_block_size"
+      ],
+      "description": "Size of blocks used for POSTing data back to remote endpoints",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--carver_compression"
+      ],
+      "description": "Compress archives using zstd prior to upload (default false)"
+    },
+    {
+      "name": [
+        "--carver_continue_endpoint"
+      ],
+      "description": "TLS/HTTPS endpoint that receives carved content after session creation",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--carver_disable_function"
+      ],
+      "description": "Disable the osquery file carver function (default true)"
+    },
+    {
+      "name": [
+        "--carver_expiry"
+      ],
+      "description": "Seconds to store successful carve result metadata (in carves table)",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--carver_start_endpoint"
+      ],
+      "description": "TLS/HTTPS init endpoint for forensic carver",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--config_accelerated_refresh"
+      ],
+      "description": "Interval to wait if reading a configuration fails",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--config_check"
+      ],
+      "description": "Check the format of an osquery config and exit"
+    },
+    {
+      "name": [
+        "--config_dump"
+      ],
+      "description": "Dump the contents of the configuration, then exit"
+    },
+    {
+      "name": [
+        "--config_enable_backup"
+      ],
+      "description": "Backup config and use it when refresh fails"
+    },
+    {
+      "name": [
+        "--config_path"
+      ],
+      "description": "Path to JSON config file",
+      "args": {
+        "name": "value",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--config_plugin"
+      ],
+      "description": "Config plugin name",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--config_refresh"
+      ],
+      "description": "Optional interval in seconds to re-read configuration",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--config_tls_endpoint"
+      ],
+      "description": "TLS/HTTPS endpoint for config retrieval",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--config_tls_max_attempts"
+      ],
+      "description": "Number of attempts to retry a TLS config request",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--daemonize"
+      ],
+      "description": "Attempt to daemonize (POSIX only)"
+    },
+    {
+      "name": [
+        "--database_dump"
+      ],
+      "description": "Dump the contents of the backing store"
+    },
+    {
+      "name": [
+        "--database_path"
+      ],
+      "description": "If using a disk-based backing store, specify a path",
+      "args": {
+        "name": "value",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--disable_carver"
+      ],
+      "description": "Disable the osquery file carver (default true)"
+    },
+    {
+      "name": [
+        "--disable_enrollment"
+      ],
+      "description": "Disable enrollment functions on related config/logger plugins"
+    },
+    {
+      "name": [
+        "--disable_extensions"
+      ],
+      "description": "Disable extension API"
+    },
+    {
+      "name": [
+        "--disable_reenrollment"
+      ],
+      "description": "Disable re-enrollment attempts if related plugins return invalid"
+    },
+    {
+      "name": [
+        "--disable_tables"
+      ],
+      "description": "Comma-delimited list of table names to be disabled",
+      "args": {
+        "name": "value",
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "(...a)=>q(this,void 0,void 0,function*(){var o;let c=yield z(n,s?e:\"\",t,a);if(i)return c;let[d]=a,l=(o=d[d.length-1])===null||o===void 0?void 0:o.split(e);return j(l,c)})"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--disable_watchdog"
+      ],
+      "description": "Disable userland watchdog process"
+    },
+    {
+      "name": [
+        "--enable_extensions_watchdog"
+      ],
+      "description": "Enable userland watchdog for extensions processes"
+    },
+    {
+      "name": [
+        "--enable_tables"
+      ],
+      "description": "Comma-delimited list of table names to be enabled",
+      "args": {
+        "name": "value",
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "(...a)=>q(this,void 0,void 0,function*(){var o;let c=yield z(n,s?e:\"\",t,a);if(i)return c;let[d]=a,l=(o=d[d.length-1])===null||o===void 0?void 0:o.split(e);return j(l,c)})"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--enroll_always"
+      ],
+      "description": "On startup, send a new enrollment request"
+    },
+    {
+      "name": [
+        "--enroll_secret_env"
+      ],
+      "description": "Name of environment variable holding enrollment-auth secret",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--enroll_secret_path"
+      ],
+      "description": "Path to an optional client enrollment-auth secret",
+      "args": {
+        "name": "value",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--enroll_tls_endpoint"
+      ],
+      "description": "TLS/HTTPS endpoint for client enrollment",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--extensions_autoload"
+      ],
+      "description": "Optional path to a list of autoloaded & managed extensions",
+      "args": {
+        "name": "value",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--extensions_interval"
+      ],
+      "description": "Seconds delay between connectivity checks",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--extensions_require"
+      ],
+      "description": "Comma-separated list of required extensions",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--extensions_socket"
+      ],
+      "description": "Path to the extensions UNIX domain socket",
+      "args": {
+        "name": "value",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--extensions_timeout"
+      ],
+      "description": "Seconds to wait for autoloaded extensions",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--force"
+      ],
+      "description": "Force osqueryd to kill previously-running daemons"
+    },
+    {
+      "name": [
+        "--install"
+      ],
+      "description": "Install osqueryd as a service"
+    },
+    {
+      "name": [
+        "--logger_mode"
+      ],
+      "description": "Octal mode for log files (default '0640')",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--logger_plugin"
+      ],
+      "description": "Logger plugin name",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--logger_stderr"
+      ],
+      "description": "Write status logs to stderr"
+    },
+    {
+      "name": [
+        "--logtostderr"
+      ],
+      "description": "Log messages to stderr in addition to the logger plugin(s)"
+    },
+    {
+      "name": [
+        "--pidfile"
+      ],
+      "description": "Path to the daemon pidfile mutex",
+      "args": {
+        "name": "value",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--proxy_hostname"
+      ],
+      "description": "Optional HTTP proxy hostname",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--stderrthreshold"
+      ],
+      "description": "Stderr log level threshold",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--tls_client_cert"
+      ],
+      "description": "Optional path to a TLS client-auth PEM certificate",
+      "args": {
+        "name": "value",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--tls_client_key"
+      ],
+      "description": "Optional path to a TLS client-auth PEM private key",
+      "args": {
+        "name": "value",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--tls_enroll_max_attempts"
+      ],
+      "description": "The total number of attempts that will be made to the enroll endpoint if a request fails, 0 for infinite",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--tls_enroll_max_interval"
+      ],
+      "description": "Maximum wait time in seconds between enroll retry attempts",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--tls_hostname"
+      ],
+      "description": "TLS/HTTPS hostname for Config, Logger, and Enroll plugins",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--tls_server_certs"
+      ],
+      "description": "Optional path to a TLS server PEM certificate(s) bundle",
+      "args": {
+        "name": "value",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--tls_session_reuse"
+      ],
+      "description": "Reuse TLS session sockets"
+    },
+    {
+      "name": [
+        "--tls_session_timeout"
+      ],
+      "description": "TLS session keep alive timeout in seconds",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--uninstall"
+      ],
+      "description": "Uninstall osqueryd as a service"
+    },
+    {
+      "name": [
+        "--watchdog_delay"
+      ],
+      "description": "Initial delay in seconds before watchdog starts",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--watchdog_forced_shutdown_delay"
+      ],
+      "description": "Seconds that the watchdog will wait to do a forced shutdown after a graceful shutdown request, when a resource limit is hit",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--watchdog_latency_limit"
+      ],
+      "description": "Override watchdog profile CPU utilization latency limit",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--watchdog_level"
+      ],
+      "description": "Performance limit level",
+      "args": {
+        "name": "value",
+        "suggestions": [
+          {
+            "name": "0",
+            "description": "Normal"
+          },
+          {
+            "name": "1",
+            "description": "Restrictive"
+          },
+          {
+            "name": "-1",
+            "description": "Off"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--watchdog_memory_limit"
+      ],
+      "description": "Override watchdog profile memory limit (e.g., 300, for 300MB)",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--watchdog_utilization_limit"
+      ],
+      "description": "Override watchdog profile CPU utilization limit",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--audit_allow_config"
+      ],
+      "description": "Allow the audit publisher to change auditing configuration"
+    },
+    {
+      "name": [
+        "--audit_allow_fim_events"
+      ],
+      "description": "Allow the audit publisher to install filesystem-related rules"
+    },
+    {
+      "name": [
+        "--audit_allow_process_events"
+      ],
+      "description": "Allow the audit publisher to install process-related rules"
+    },
+    {
+      "name": [
+        "--audit_allow_sockets"
+      ],
+      "description": "Allow the audit publisher to install socket-related rules"
+    },
+    {
+      "name": [
+        "--audit_allow_user_events"
+      ],
+      "description": "Allow the audit publisher to install user-related rules"
+    },
+    {
+      "name": [
+        "--augeas_lenses"
+      ],
+      "description": "Directory that contains augeas lenses files",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--aws_access_key_id"
+      ],
+      "description": "AWS access key ID",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--aws_debug"
+      ],
+      "description": "Enable AWS SDK debug logging"
+    },
+    {
+      "name": [
+        "--aws_enable_proxy"
+      ],
+      "description": "Enable proxying of HTTP/HTTPS requests in AWS client config"
+    },
+    {
+      "name": [
+        "--aws_firehose_endpoint"
+      ],
+      "description": "Custom Firehose endpoint",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--aws_firehose_period"
+      ],
+      "description": "Seconds between flushing logs to Firehose (default 10)",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--aws_firehose_stream"
+      ],
+      "description": "Name of Firehose stream for logging",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--aws_kinesis_disable_log_status"
+      ],
+      "description": "Disable status logs processing"
+    },
+    {
+      "name": [
+        "--aws_kinesis_endpoint"
+      ],
+      "description": "Custom Kinesis endpoint",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--aws_kinesis_period"
+      ],
+      "description": "Seconds between flushing logs to Kinesis (default 10)",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--aws_kinesis_random_partition_key"
+      ],
+      "description": "Enable random kinesis partition keys"
+    },
+    {
+      "name": [
+        "--aws_kinesis_stream"
+      ],
+      "description": "Name of Kinesis stream for logging",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--aws_profile_name"
+      ],
+      "description": "AWS profile for authentication and region configuration",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--aws_proxy_host"
+      ],
+      "description": "Proxy host for use in AWS client config",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--aws_proxy_password"
+      ],
+      "description": "Proxy password for use in AWS client config",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--aws_proxy_port"
+      ],
+      "description": "Proxy port for use in AWS client config",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--aws_proxy_scheme"
+      ],
+      "description": "Proxy HTTP scheme for use in AWS client config (http or https, default https)",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--aws_proxy_username"
+      ],
+      "description": "Proxy username for use in AWS client config",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--aws_region"
+      ],
+      "description": "AWS region",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--aws_secret_access_key"
+      ],
+      "description": "AWS secret access key",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--aws_session_token"
+      ],
+      "description": "AWS STS session token",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--aws_sts_arn_role"
+      ],
+      "description": "AWS STS ARN role",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--aws_sts_region"
+      ],
+      "description": "AWS STS region",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--aws_sts_session_name"
+      ],
+      "description": "AWS STS session name",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--aws_sts_timeout"
+      ],
+      "description": "AWS STS assume role credential validity in seconds (default 3600)",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--buffered_log_max"
+      ],
+      "description": "Maximum number of logs in buffered output plugins (0 = unlimited)",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--decorations_top_level"
+      ],
+      "description": "Add decorators as top level JSON objects"
+    },
+    {
+      "name": [
+        "--disable_audit"
+      ],
+      "description": "Disable receiving events from the audit subsystem"
+    },
+    {
+      "name": [
+        "--disable_caching"
+      ],
+      "description": "Disable scheduled query caching"
+    },
+    {
+      "name": [
+        "--disable_database"
+      ],
+      "description": "Disable the persistent RocksDB storage"
+    },
+    {
+      "name": [
+        "--disable_decorators"
+      ],
+      "description": "Disable log result decoration"
+    },
+    {
+      "name": [
+        "--disable_distributed"
+      ],
+      "description": "Disable distributed queries (default true)"
+    },
+    {
+      "name": [
+        "--disable_endpointsecurity"
+      ],
+      "description": "Disable receiving events from the EndpointSecurity subsystem"
+    },
+    {
+      "name": [
+        "--disable_endpointsecurity_fim"
+      ],
+      "description": "Disable file events from the EndpointSecurity subsystem"
+    },
+    {
+      "name": [
+        "--disable_events"
+      ],
+      "description": "Disable osquery publish/subscribe system"
+    },
+    {
+      "name": [
+        "--disable_hash_cache"
+      ],
+      "description": "Cache calculated file hashes, re-calculate only if inode times change"
+    },
+    {
+      "name": [
+        "--disable_logging"
+      ],
+      "description": "Disable ERROR/INFO logging"
+    },
+    {
+      "name": [
+        "--distributed_interval"
+      ],
+      "description": "Seconds between polling for new queries (default 60)",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--distributed_loginfo"
+      ],
+      "description": "Log the running distributed queries name at INFO level"
+    },
+    {
+      "name": [
+        "--distributed_plugin"
+      ],
+      "description": "Distributed plugin name",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--distributed_tls_max_attempts"
+      ],
+      "description": "Number of times to attempt a request",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--distributed_tls_read_endpoint"
+      ],
+      "description": "TLS/HTTPS endpoint for distributed query retrieval",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--distributed_tls_write_endpoint"
+      ],
+      "description": "TLS/HTTPS endpoint for distributed query results",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--docker_socket"
+      ],
+      "description": "Docker UNIX domain socket path",
+      "args": {
+        "name": "value",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--enable_file_events"
+      ],
+      "description": "Enables the file_events publisher"
+    },
+    {
+      "name": [
+        "--enable_foreign"
+      ],
+      "description": "Enable no-op foreign virtual tables"
+    },
+    {
+      "name": [
+        "--enable_keyboard_events"
+      ],
+      "description": "Enable listening for keyboard events"
+    },
+    {
+      "name": [
+        "--enable_mouse_events"
+      ],
+      "description": "Enable listening for mouse events"
+    },
+    {
+      "name": [
+        "--enable_numeric_monitoring"
+      ],
+      "description": "Enable numeric monitoring system"
+    },
+    {
+      "name": [
+        "--ephemeral"
+      ],
+      "description": "Skip pidfile and database state checks"
+    },
+    {
+      "name": [
+        "--es_fim_mute_path_literal"
+      ],
+      "description": "Comma delimited list of path literals to be muted for FIM",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--es_fim_mute_path_prefix"
+      ],
+      "description": "Comma delimited list of path prefxes to be muted for FIM",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--events_expiry"
+      ],
+      "description": "Timeout to expire event subscriber results",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--events_max"
+      ],
+      "description": "Maximum number of event batches per type to buffer",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--events_optimize"
+      ],
+      "description": "Optimize subscriber select queries (scheduler only)"
+    },
+    {
+      "name": [
+        "--extensions_default_index"
+      ],
+      "description": "Enable INDEX on all extension table columns (default true)"
+    },
+    {
+      "name": [
+        "--hash_cache_max"
+      ],
+      "description": "Size of LRU file hash cache",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--host_identifier"
+      ],
+      "description": "Field used to identify the host running osquery (hostname, uuid, instance, ephemeral, specified)",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--logger_event_type"
+      ],
+      "description": "Log scheduled results as events"
+    },
+    {
+      "name": [
+        "--logger_kafka_acks"
+      ],
+      "description": "The number of acknowledgments the leader has to receive (0, 1, 'all')",
+      "args": {
+        "name": "value",
+        "suggestions": [
+          {
+            "name": "0"
+          },
+          {
+            "name": "1"
+          },
+          {
+            "name": "all"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--logger_kafka_brokers"
+      ],
+      "description": "Bootstrap broker(s) as a comma-separated list of host or host:port (default port 9092)",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--logger_kafka_compression"
+      ],
+      "description": "Compression codec to use for compressing message sets ('none' or 'gzip')",
+      "args": {
+        "name": "value",
+        "suggestions": [
+          {
+            "name": "none"
+          },
+          {
+            "name": "gzip"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--logger_kafka_topic"
+      ],
+      "description": "Kafka topic to publish logs under",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--logger_min_status"
+      ],
+      "description": "Minimum level for status log recording",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--logger_min_stderr"
+      ],
+      "description": "Minimum level for statuses written to stderr",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--logger_numerics"
+      ],
+      "description": "Use numeric JSON syntax for numeric values"
+    },
+    {
+      "name": [
+        "--logger_path"
+      ],
+      "description": "Directory path for ERROR/WARN/INFO and results logging",
+      "args": {
+        "name": "value",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--logger_rotate"
+      ],
+      "description": "Use filesystem log rotation"
+    },
+    {
+      "name": [
+        "--logger_rotate_max_files"
+      ],
+      "description": "Max number of files to keep in rotation",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--logger_rotate_size"
+      ],
+      "description": "Size for each filesystem log in bytes",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--logger_snapshot_event_type"
+      ],
+      "description": "Log scheduled snapshot results as events"
+    },
+    {
+      "name": [
+        "--logger_syslog_facility"
+      ],
+      "description": "Syslog facility for status and results logs (0-23, default 19)",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--logger_syslog_prepend_cee"
+      ],
+      "description": "Prepend @cee: tag to logged JSON messages"
+    },
+    {
+      "name": [
+        "--logger_tls_compress"
+      ],
+      "description": "GZip compress TLS/HTTPS request body"
+    },
+    {
+      "name": [
+        "--logger_tls_endpoint"
+      ],
+      "description": "TLS/HTTPS endpoint for results logging",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--logger_tls_max_lines"
+      ],
+      "description": "Max number of logs to send per period",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--logger_tls_max_linesize"
+      ],
+      "description": "Max size in bytes allowed per log line",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--logger_tls_period"
+      ],
+      "description": "Seconds between flushing logs over TLS/HTTPS",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--nullvalue"
+      ],
+      "description": "Set string for NULL values, default ''",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--numeric_monitoring_filesystem_path"
+      ],
+      "description": "File to dump numeric monitoring records one per line. The format of the line is <PATH><TAB><VALUE><TAB><TIMESTAMP>",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--numeric_monitoring_plugins"
+      ],
+      "description": "Comma separated numeric monitoring plugins names",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--numeric_monitoring_pre_aggregation_time"
+      ],
+      "description": "Time period in seconds for numeric monitoring pre-aggregation buffer",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--pack_delimiter"
+      ],
+      "description": "Delimiter for pack and query names",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--pack_refresh_interval"
+      ],
+      "description": "Cache expiration for a packs discovery queries",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--read_max"
+      ],
+      "description": "Maximum file read size",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--schedule_default_interval"
+      ],
+      "description": "Query interval to use if none is provided",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--schedule_epoch"
+      ],
+      "description": "Epoch for scheduled queries",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--schedule_lognames"
+      ],
+      "description": "Log the running scheduled query name at INFO level"
+    },
+    {
+      "name": [
+        "--schedule_max_drift"
+      ],
+      "description": "Max time drift in seconds",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--schedule_reload"
+      ],
+      "description": "Interval in seconds to reload database arenas",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--schedule_splay_percent"
+      ],
+      "description": "Percent to splay config times",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--schedule_timeout"
+      ],
+      "description": "Limit the schedule to a duration in seconds, 0 for no limit",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--specified_identifier"
+      ],
+      "description": "Field used to specify the host_identifier when set to 'specified'",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--table_delay"
+      ],
+      "description": "Add an optional microsecond delay between table scans",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--table_exceptions"
+      ],
+      "description": "Allow tables to throw exceptions"
+    },
+    {
+      "name": [
+        "--thrift_string_size_limit"
+      ],
+      "description": "Sets the maximum string size allowed in a thrift message, use 0 for unlimited",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--thrift_timeout"
+      ],
+      "description": "Timeout for thrift socket operations",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--thrift_verbose"
+      ],
+      "description": "Enable the thrift log handler"
+    },
+    {
+      "name": [
+        "--tls_disable_status_log"
+      ],
+      "description": "Disable sending status logs"
+    },
+    {
+      "name": [
+        "--verbose"
+      ],
+      "description": "Enable verbose informational messages"
+    },
+    {
+      "name": [
+        "--worker_threads"
+      ],
+      "description": "Number of work dispatch threads",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--yara_delay"
+      ],
+      "description": "Time in ms to sleep after scan of each file (default 50) to reduce memory spikes",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--A"
+      ],
+      "description": "Select all from a table",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--L"
+      ],
+      "description": "List all table names"
+    },
+    {
+      "name": [
+        "--connect"
+      ],
+      "description": "Connect to an extension socket",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--csv"
+      ],
+      "description": "Set output mode to 'csv'"
+    },
+    {
+      "name": [
+        "--extension"
+      ],
+      "description": "Path to a single extension to autoload",
+      "args": {
+        "name": "value",
+        "template": [
+          "filepaths",
+          "folders"
+        ]
+      }
+    },
+    {
+      "name": [
+        "--header"
+      ],
+      "description": "Toggle column headers true/false"
+    },
+    {
+      "name": [
+        "--json"
+      ],
+      "description": "Set output mode to 'json'"
+    },
+    {
+      "name": [
+        "--json_pretty"
+      ],
+      "description": "Set output mode to 'json_pretty'"
+    },
+    {
+      "name": [
+        "--line"
+      ],
+      "description": "Set output mode to 'line'"
+    },
+    {
+      "name": [
+        "--list"
+      ],
+      "description": "Set output mode to 'list'"
+    },
+    {
+      "name": [
+        "--pack"
+      ],
+      "description": "Run all queries in a pack",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--planner"
+      ],
+      "description": "Enable osquery runtime planner output"
+    },
+    {
+      "name": [
+        "--profile"
+      ],
+      "description": "Enable profile mode when non-0, set number of iterations",
+      "args": {
+        "name": "value"
+      }
+    },
+    {
+      "name": [
+        "--separator"
+      ],
+      "description": "Set output field separator, default '|'",
+      "args": {
+        "name": "value"
+      }
+    }
+  ]
+}

@@ -20,6 +20,7 @@ pub struct TerminalState {
     buffer_dirty: bool,
     cwd_dirty: bool,
     cursor_sync_requested: bool,
+    cpr_synced: bool,
 }
 
 impl TerminalState {
@@ -38,6 +39,7 @@ impl TerminalState {
             buffer_dirty: false,
             cwd_dirty: false,
             cursor_sync_requested: false,
+            cpr_synced: false,
         }
     }
 
@@ -110,6 +112,17 @@ impl TerminalState {
         self.cursor_row = row_1.saturating_sub(1);
         self.cursor_col = col_1.saturating_sub(1);
         self.clamp_cursor();
+        self.cpr_synced = true;
+    }
+
+    /// Returns true if a CPR sync completed since the last check,
+    /// and clears the flag atomically. Used by the handler to know
+    /// when the parser's cursor position has been corrected to match
+    /// the real terminal, making any accumulated scroll deficit stale.
+    pub fn take_cpr_synced(&mut self) -> bool {
+        let synced = self.cpr_synced;
+        self.cpr_synced = false;
+        synced
     }
 
     /// Override the command buffer with a predicted value (e.g., after Tab

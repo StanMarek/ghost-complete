@@ -1,0 +1,2729 @@
+{
+  "name": "herd",
+  "description": "Herd is a blazing fast, native Laravel and PHP development environment for macOS. It provides everything that you need to get started with Laravel development",
+  "subcommands": [
+    {
+      "name": "completion",
+      "description": "Dump the shell completion script",
+      "options": [
+        {
+          "name": [
+            "--debug"
+          ],
+          "description": "Tail the completion debug log"
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ],
+      "args": {
+        "name": "shell",
+        "description": "The shell type (e.g. \"bash\"), the value of the \"$SHELL\" env var will be used if this is not given",
+        "isOptional": true,
+        "suggestions": [
+          {
+            "name": "bash"
+          },
+          {
+            "name": "fish"
+          },
+          {
+            "name": "powershell"
+          },
+          {
+            "name": "zsh"
+          }
+        ]
+      }
+    },
+    {
+      "name": "composer",
+      "description": "Proxy Composer commands with isolated site's PHP executable"
+    },
+    {
+      "name": "coverage",
+      "description": "Proxy PHP commands with isolated sith Xdebug code coverage enabled",
+      "options": [
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ]
+    },
+    {
+      "name": "debug",
+      "description": "Proxy PHP commands with isolated site's PHP executable and debug.ini loaded"
+    },
+    {
+      "name": "directory-listing",
+      "description": "Determine directory-listing behavior. Default is off, which means a 404 will display",
+      "options": [
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ],
+      "args": {
+        "name": "status",
+        "description": "On or off. (default=off) will show a 404 page; [on] will display a listing if project folder exists but requested URI not found",
+        "isOptional": true,
+        "suggestions": [
+          {
+            "name": "on"
+          },
+          {
+            "name": "off"
+          }
+        ]
+      }
+    },
+    {
+      "name": "edit",
+      "description": "Open the site in your favorite IDE",
+      "options": [
+        {
+          "name": [
+            "--path"
+          ]
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ]
+    },
+    {
+      "name": "fetch-share-url",
+      "description": "Get the URL to the current share tunnel for Expose",
+      "options": [
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ],
+      "args": {
+        "name": "domain",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "forget",
+      "description": "Remove the current working (or specified) directory from Herd's list of paths",
+      "options": [
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ],
+      "args": {
+        "name": "path",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "help",
+      "description": "Display help for a command",
+      "options": [
+        {
+          "name": [
+            "--format"
+          ],
+          "description": "The output format (txt, xml, json, or md) [default: \"txt\"]"
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ],
+      "args": {
+        "name": "command_name",
+        "description": "The command name [default: \"help\"]",
+        "isOptional": true,
+        "generators": [
+          {
+            "script": [
+              "herd",
+              "list",
+              "--raw"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "init",
+      "description": "Start the services defined in the Herd manifest file, and apply the configuration",
+      "options": [
+        {
+          "name": [
+            "--fresh"
+          ],
+          "description": "The output format (txt, xml, json, or md) [default: \"txt\"]"
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ]
+    },
+    {
+      "name": "isolate",
+      "description": "Change the version of PHP used by Herd to serve the current working directory",
+      "options": [
+        {
+          "name": [
+            "--site"
+          ],
+          "description": "Specify the site to isolate (e.g. if the site isn't linked as its directory name)"
+        },
+        {
+          "name": [
+            "--silent"
+          ]
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ],
+      "args": {
+        "name": "phpVersion",
+        "description": "The PHP version you want to use; e.g 8.1"
+      }
+    },
+    {
+      "name": "isolate-node",
+      "description": "Change the version of Node used by the CLI for the current working directory",
+      "options": [
+        {
+          "name": [
+            "--site"
+          ],
+          "description": "Specify the site to isolate (e.g. if the site isn't linked as its directory name)"
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ],
+      "args": {
+        "name": "nodeVersion",
+        "description": "The Node version you want to use; e.g 21"
+      }
+    },
+    {
+      "name": "isolated",
+      "description": "List all sites using isolated versions of PHP",
+      "options": [
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ]
+    },
+    {
+      "name": "isolated-node",
+      "description": "List all sites using isolated versions of Nodes",
+      "options": [
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ]
+    },
+    {
+      "name": "link",
+      "description": "Link the current working directory to Herd",
+      "options": [
+        {
+          "name": [
+            "--secure"
+          ],
+          "description": "Link the site with a trusted TLS certificate"
+        },
+        {
+          "name": [
+            "--isolate"
+          ],
+          "description": "Isolate the site to the PHP version specified, for example 8.3"
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ],
+      "args": {
+        "name": "name",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "links",
+      "description": "Display all of the registered Herd links",
+      "options": [
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ]
+    },
+    {
+      "name": "list",
+      "description": "List commands",
+      "options": [
+        {
+          "name": [
+            "--raw"
+          ],
+          "description": "To output raw command list"
+        },
+        {
+          "name": [
+            "--format"
+          ],
+          "description": "The output format (txt, xml, json, or md) [default: \"txt\"]"
+        },
+        {
+          "name": [
+            "--short"
+          ],
+          "description": "To skip describing commands' arguments"
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ],
+      "args": {
+        "name": "namespace",
+        "description": "The namespace name",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "log",
+      "description": "Tail log file",
+      "options": [
+        {
+          "name": [
+            "--lines",
+            "-n"
+          ]
+        },
+        {
+          "name": [
+            "--follow",
+            "-f"
+          ]
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ],
+      "args": {
+        "name": "key"
+      }
+    },
+    {
+      "name": "logs",
+      "description": "Show the log viewer UI for the given site",
+      "options": [
+        {
+          "name": [
+            "--sites"
+          ],
+          "description": "Specify the site to tinker with (e.g. if the site isn't linked as its directory name)"
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ]
+    },
+    {
+      "name": "loopback",
+      "description": "Get or set the loopback address used for Herd sites",
+      "options": [
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ],
+      "args": {
+        "name": "loopback",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "open",
+      "description": "Open the site for the current (or specified) directory in your browser",
+      "options": [
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ],
+      "args": {
+        "name": "domain",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "park",
+      "description": "Register the current working (or specified) directory with Herd",
+      "options": [
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ],
+      "args": {
+        "name": "path",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "parked",
+      "description": "Display all the current sites within parked paths",
+      "options": [
+        {
+          "name": [
+            "--json"
+          ]
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ]
+    },
+    {
+      "name": "paths",
+      "description": "Get all of the paths registered with Herd",
+      "options": [
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ]
+    },
+    {
+      "name": "php",
+      "description": "Proxy PHP commands with isolated site's PHP executable",
+      "options": [
+        {
+          "name": [
+            "--site"
+          ],
+          "description": "Specify the site to use to get the PHP version (e.g. if the site isn't linked as its directory name)"
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ],
+      "args": {
+        "name": "command"
+      }
+    },
+    {
+      "name": "proxies",
+      "description": "Display all of the proxy sites",
+      "options": [
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ]
+    },
+    {
+      "name": "proxy",
+      "description": "Create an Nginx proxy site for the specified host. Useful for Reverb, Docker, etc",
+      "options": [
+        {
+          "name": [
+            "--secure"
+          ],
+          "description": "Create a proxy with a trusted TLS certificate"
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ],
+      "args": [
+        {
+          "name": "domain"
+        },
+        {
+          "name": "host"
+        }
+      ]
+    },
+    {
+      "name": "restart",
+      "description": "Restart the Herd services",
+      "options": [
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ],
+      "args": {
+        "name": "service",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "secure",
+      "description": "Secure the given domain with a trusted TLS certificate",
+      "options": [
+        {
+          "name": [
+            "--expireIn"
+          ],
+          "description": "The amount of days the self signed certificate is valid for. Default is set to \"368\" [default: 368]"
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ],
+      "args": {
+        "name": "domain",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "secured",
+      "description": "Secure the given domain with a trusted TLS certificate",
+      "options": [
+        {
+          "name": [
+            "--expiring"
+          ],
+          "description": "Limits the results to only sites expiring within the next 60 days"
+        },
+        {
+          "name": [
+            "--days"
+          ],
+          "description": "To be used with --expiring. Limits the results to only sites expiring within the next X days. Default is set to 60. [default: 60]"
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ]
+    },
+    {
+      "name": "share",
+      "description": "Share the current site via an Expose tunnel",
+      "options": [
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ]
+    },
+    {
+      "name": "site-information",
+      "description": "Display information about the specified site",
+      "options": [
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ],
+      "args": {
+        "name": "path",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "start",
+      "description": "Start the Herd services",
+      "options": [
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ],
+      "args": {
+        "name": "service",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "stop",
+      "description": "Stop the Herd services",
+      "options": [
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ],
+      "args": {
+        "name": "service",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "tinker",
+      "description": "Run tinker/Tinkerwell",
+      "options": [
+        {
+          "name": [
+            "--site"
+          ],
+          "description": "Specify the site to tinker with (e.g. if the site isn't linked as its directory name)"
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ]
+    },
+    {
+      "name": "tld",
+      "description": "[domain] Get or set the TLD used for Herd sites",
+      "options": [
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ],
+      "args": {
+        "name": "tld",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "unisolate",
+      "description": "Stop customizing the version of PHP used by Herd to serve the current working directory",
+      "options": [
+        {
+          "name": [
+            "--site"
+          ],
+          "description": "Specify the site to un-isolate (e.g. if the site isn't linked as its directory name)"
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ]
+    },
+    {
+      "name": "unisolate-node",
+      "description": "Stop customizing the version of Node used the CLI for the current working directory",
+      "options": [
+        {
+          "name": [
+            "--site"
+          ],
+          "description": "Specify the site to un-isolate (e.g. if the site isn't linked as its directory name)"
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ]
+    },
+    {
+      "name": "unlink",
+      "description": "Remove the specified Herd link",
+      "options": [
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ],
+      "args": {
+        "name": "name",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "unproxy",
+      "description": "Delete an Nginx proxy config",
+      "options": [
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ],
+      "args": {
+        "name": "domain",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "unsecure",
+      "description": "Stop serving the given domain over HTTPS and remove the trusted TLS certificate",
+      "options": [
+        {
+          "name": [
+            "--all"
+          ]
+        },
+        {
+          "name": [
+            "--silent"
+          ]
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ],
+      "args": {
+        "name": "domain",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "use",
+      "description": "Change the version of PHP used by Herd",
+      "options": [
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ],
+      "args": {
+        "name": "phpVersion",
+        "description": "The PHP version you want to use; e.g. 8.3",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "which",
+      "description": "Display which Herd driver serves the current working directory",
+      "options": [
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ]
+    },
+    {
+      "name": "which-php",
+      "description": "Get the PHP executable path for a given site",
+      "options": [
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ],
+      "args": {
+        "name": "site",
+        "description": "The site to get the PHP executable path for",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "init:fresh",
+      "description": "Initialize a Herd manifest file",
+      "options": [
+        {
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "description": "Display help for the given command. When no command is given display help for the list command"
+        },
+        {
+          "name": [
+            "--version",
+            "-V"
+          ],
+          "description": "Display this application version"
+        },
+        {
+          "name": [
+            "--quiet",
+            "-q"
+          ],
+          "description": "Do not output any message"
+        },
+        {
+          "name": [
+            "--verbose",
+            "-vv",
+            "-vvv",
+            "-v"
+          ],
+          "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+        },
+        {
+          "name": [
+            "--ansi"
+          ],
+          "description": "Force ANSI output"
+        },
+        {
+          "name": [
+            "--no-ansi"
+          ],
+          "description": "Disable ANSI output"
+        },
+        {
+          "name": [
+            "--no-interaction",
+            "-n"
+          ],
+          "description": "Do not ask any interactive question"
+        }
+      ]
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "--help",
+        "-h"
+      ],
+      "description": "Display help for the given command. When no command is given display help for the list command"
+    },
+    {
+      "name": [
+        "--version",
+        "-V"
+      ],
+      "description": "Display this application version"
+    },
+    {
+      "name": [
+        "--quiet",
+        "-q"
+      ],
+      "description": "Do not output any message"
+    },
+    {
+      "name": [
+        "--verbose",
+        "-vv",
+        "-vvv",
+        "-v"
+      ],
+      "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug"
+    },
+    {
+      "name": [
+        "--ansi"
+      ],
+      "description": "Force ANSI output"
+    },
+    {
+      "name": [
+        "--no-ansi"
+      ],
+      "description": "Disable ANSI output"
+    },
+    {
+      "name": [
+        "--no-interaction",
+        "-n"
+      ],
+      "description": "Do not ask any interactive question"
+    }
+  ]
+}

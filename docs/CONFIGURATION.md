@@ -46,11 +46,13 @@ Controls the suggestion engine behavior.
 |-------|------|---------|-------------|
 | `max_results` | integer | `50` | Maximum total candidates to consider |
 | `max_history_entries` | integer | `10000` | Maximum shell history entries to load |
+| `generator_timeout_ms` | integer | `5000` | Timeout in milliseconds for shell command generators. Commands that exceed this are killed. |
 
 ```toml
 [suggest]
 max_results = 50
 max_history_entries = 10000
+generator_timeout_ms = 5000
 ```
 
 ### `[suggest.providers]`
@@ -167,6 +169,7 @@ max_width = 50
 [suggest]
 max_results = 100
 max_history_entries = 5000
+generator_timeout_ms = 5000
 
 [suggest.providers]
 commands = true

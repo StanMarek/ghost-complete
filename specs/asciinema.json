@@ -1,0 +1,197 @@
+{
+  "name": "asciinema",
+  "description": "Terminal session recorder",
+  "subcommands": [
+    {
+      "name": "rec",
+      "description": "Start a recording",
+      "options": [
+        {
+          "name": [
+            "--stdin"
+          ],
+          "description": "Enable stdin (keyboard) recording"
+        },
+        {
+          "name": [
+            "--append"
+          ],
+          "description": "Append to existing recording"
+        },
+        {
+          "name": [
+            "--raw"
+          ],
+          "description": "Save raw output, without timing or other metadata"
+        },
+        {
+          "name": [
+            "--overwrite"
+          ],
+          "description": "Overwrite the recording if it already exists"
+        },
+        {
+          "name": [
+            "-c",
+            "--command"
+          ],
+          "description": "Specify command to record, defaults to $SHELL",
+          "args": {
+            "name": "command"
+          }
+        },
+        {
+          "name": [
+            "-e",
+            "--env"
+          ],
+          "description": "List of environment variables to capture",
+          "args": {
+            "name": "variables"
+          }
+        },
+        {
+          "name": [
+            "-t",
+            "--title"
+          ],
+          "description": "Specify the title of the asciicast",
+          "args": {
+            "name": "title"
+          }
+        },
+        {
+          "name": [
+            "-i",
+            "--idle-time-limit"
+          ],
+          "description": "Limit recorded terminal inactivity to max amount of seconds",
+          "args": {
+            "name": "seconds"
+          }
+        },
+        {
+          "name": [
+            "--cols"
+          ],
+          "description": "Override terminal columns for recorded process",
+          "args": {
+            "name": "cols"
+          }
+        },
+        {
+          "name": [
+            "--rows"
+          ],
+          "description": "Override terminal rows for recorded process",
+          "args": {
+            "name": "rows"
+          }
+        },
+        {
+          "name": [
+            "-y",
+            "--yes"
+          ],
+          "description": "Answer “yes” to all prompts (e.g. upload confirmation)"
+        },
+        {
+          "name": [
+            "-q",
+            "--quiet"
+          ],
+          "description": "Be quiet, suppress all notices/warnings (implies -y)"
+        }
+      ],
+      "args": {
+        "name": "filename",
+        "isOptional": true
+      }
+    },
+    {
+      "name": "play",
+      "description": "Replay recorded asciicast in a terminal",
+      "options": [
+        {
+          "name": [
+            "-i",
+            "--idle-time-linit"
+          ],
+          "description": "Limit replayed terminal inactivity",
+          "args": {
+            "name": "seconds",
+            "description": "Can be fractional"
+          }
+        },
+        {
+          "name": [
+            "-s",
+            "--speed"
+          ],
+          "description": "Playback speed",
+          "args": {
+            "name": "factor",
+            "description": "Can be fractional"
+          }
+        }
+      ],
+      "args": {
+        "name": "file or URL",
+        "template": "filepaths",
+        "suggestions": [
+          {
+            "name": "-",
+            "description": "Stdin"
+          }
+        ]
+      }
+    },
+    {
+      "name": "cat",
+      "description": "Print full output of recorded asciicast to a terminal",
+      "args": {
+        "name": "file or URL",
+        "template": "filepaths",
+        "suggestions": [
+          {
+            "name": "-",
+            "description": "Stdin"
+          }
+        ]
+      }
+    },
+    {
+      "name": "upload",
+      "description": "Upload recorded asciicast to asciinema.org site",
+      "args": {
+        "name": "file or URL",
+        "template": "filepaths",
+        "suggestions": [
+          {
+            "name": "-",
+            "description": "Stdin"
+          }
+        ]
+      }
+    },
+    {
+      "name": "auth",
+      "description": "Link and manage your install ID with your asciinema.org user account"
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "--version"
+      ],
+      "description": "Ouput version information and exit"
+    },
+    {
+      "name": [
+        "-h",
+        "--help"
+      ],
+      "description": "Output help message and exit"
+    }
+  ]
+}

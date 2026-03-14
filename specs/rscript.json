@@ -1,0 +1,109 @@
+{
+  "name": "Rscript",
+  "description": "Scripting Front-End for R",
+  "options": [
+    {
+      "name": [
+        "-e"
+      ],
+      "description": "R expression to run",
+      "args": {
+        "name": "expression",
+        "description": "R expression"
+      }
+    },
+    {
+      "name": [
+        "--help"
+      ],
+      "description": "Print usage and exit"
+    },
+    {
+      "name": [
+        "--version"
+      ],
+      "description": "Print version and exit"
+    },
+    {
+      "name": [
+        "--verbose"
+      ],
+      "description": "Print information on progress"
+    },
+    {
+      "name": [
+        "--no-echo"
+      ],
+      "description": "Run as quietly as possible"
+    },
+    {
+      "name": [
+        "--no-restore"
+      ],
+      "description": "Don't restore anything"
+    },
+    {
+      "name": [
+        "--save"
+      ],
+      "description": "Do save workspace at the end of the session"
+    },
+    {
+      "name": [
+        "--no-environ"
+      ],
+      "description": "Don't read the site and user environment files"
+    },
+    {
+      "name": [
+        "--no-site-file"
+      ],
+      "description": "Don't read the site-wide Rprofile"
+    },
+    {
+      "name": [
+        "--no-init-file"
+      ],
+      "description": "Don't read the user R profile"
+    },
+    {
+      "name": [
+        "--restore"
+      ],
+      "description": "Do restore previously saved objects at startup"
+    },
+    {
+      "name": [
+        "--vanilla"
+      ],
+      "description": "Combine --no-save, --no-restore, --no-site-file --no-init-file and --no-environ"
+    },
+    {
+      "name": [
+        "--default-packages"
+      ],
+      "description": "Comma separated list of default packages",
+      "args": {
+        "name": "packages",
+        "description": "A comma-separated set of package names, or 'NULL'"
+      }
+    }
+  ],
+  "args": [
+    {
+      "name": "file",
+      "description": "R script to run",
+      "generators": [
+        {
+          "requires_js": true,
+          "js_source": "(p,v,b)=>ce(this,void 0,void 0,function*(){var d;let{isDangerous:_,currentWorkingDirectory:O,searchTerm:h}=b,w=(d=(0,y.getCurrentInsertedDirectory)(c??O,h,b))!==null&&d!==void 0?d:\"/\";try{let E=yield v({command:\"ls\",args:[\"-1ApL\"],cwd:w}),X=W(E.stdout.split(`\n`),[\".DS_Store\"]),P=[];for(let V of X)if(V){let F=V.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&u!==\"only\"||F===\"folders\"&&u!==\"never\")&&P.push({type:F===\"filepaths\"?\"file\":\"folder\",name:V,insertValue:V,isDangerous:_,context:{templateType:F}})}return S(g(P))}catch{return[]}})"
+        }
+      ]
+    },
+    {
+      "name": "args",
+      "description": "Arguments to pass to the script",
+      "isVariadic": true
+    }
+  ]
+}

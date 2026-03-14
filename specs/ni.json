@@ -1,0 +1,71 @@
+{
+  "name": "ni",
+  "description": "Use the right package manager - install",
+  "options": [
+    {
+      "name": [
+        "-g"
+      ],
+      "description": "Operates in 'global' mode, so that packages are installed into the prefix folder instead of the current working directory"
+    },
+    {
+      "name": [
+        "-D"
+      ],
+      "description": "Package will appear in your `devDependencies`"
+    },
+    {
+      "name": [
+        "-P"
+      ],
+      "description": "Save package to your `peerDependencies`"
+    },
+    {
+      "name": [
+        "-O"
+      ],
+      "description": "Save package to your `optionalDependencies`"
+    },
+    {
+      "name": [
+        "--frozen"
+      ],
+      "description": "Don't generate a lockfile and fail if an update is needed"
+    },
+    {
+      "name": [
+        "-C"
+      ],
+      "description": "Change directory",
+      "args": [
+        {
+          "name": "directory",
+          "description": "The directory to move",
+          "template": "folders"
+        },
+        {
+          "name": "target",
+          "description": "The target directory",
+          "template": "folders"
+        }
+      ]
+    },
+    {
+      "name": [
+        "-h",
+        "--help"
+      ],
+      "description": "Output usage information"
+    }
+  ],
+  "args": {
+    "name": "package",
+    "isVariadic": true,
+    "generators": [
+      {
+        "requires_js": true,
+        "js_source": "async(s,c,p)=>{let t=s[s.length-1];if(t===\"\")return[];let r=n&&n.length>0?`+keywords:${n.join(\",\")}`:\"\",g=[\"-s\",\"-H\",\"Accept: application/json\",r?`https://api.npms.io/v2/search?size=20&q=${t}${r}`:`https://api.npms.io/v2/search/suggestions?q=${t}&size=20`],d=[\"-s\",\"-H\",\"Accept: application/vnd.npm.install-v1+json\",`https://registry.npmjs.org/${t.slice(0,-1)}`],P=m=>c({command:\"curl\",args:m[m.length-1]===\"@\"?d:g}),x=t.startsWith(\"@\")?j(t)>1:t.includes(\"@\");try{let m=JSON.parse((await P(t)).stdout);if(x){let w=Object.entries(m[\"dist-tags\"]||{}).map(([D,R])=>({name:D,description:R}));return w.push(...Object.keys(m.versions).map(D=>({name:D})).reverse()),w}return(r?m.results:m).map(w=>({name:w.package.name,description:w.package.description}))}catch(m){return console.error({error:m}),[]}}"
+      }
+    ]
+  }
+}

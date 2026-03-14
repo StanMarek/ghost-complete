@@ -1,7 +1,8 @@
 //! ANSI-based popup rendering for terminal autocomplete.
 //!
 //! Renders suggestion popups using cursor save/restore, synchronized output
-//! (DECSET 2026), and intelligent above/below positioning.
+//! (DECSET 2026), and viewport scrolling to ensure popups always render below
+//! the cursor without destroying scrollback content.
 
 pub mod ansi;
 mod layout;

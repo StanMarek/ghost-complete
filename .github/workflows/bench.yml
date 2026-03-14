@@ -1,0 +1,24 @@
+name: Benchmarks
+
+on:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  bench:
+    name: Run Benchmarks
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Run benchmarks
+        run: cargo bench --workspace
+      - name: Upload criterion reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: criterion-reports
+          path: target/criterion/
+          retention-days: 30

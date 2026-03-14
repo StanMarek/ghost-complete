@@ -1,0 +1,484 @@
+{
+  "name": "scc",
+  "description": "Sloc, Cloc and Code. Count lines of code in a directory with complexity estimation",
+  "options": [
+    {
+      "name": [
+        "--avg-wage"
+      ],
+      "description": "Average salary value used for COCOMO calculations",
+      "args": {
+        "name": "int"
+      }
+    },
+    {
+      "name": [
+        "--binary"
+      ],
+      "description": "Disable binary file detection"
+    },
+    {
+      "name": [
+        "--by-file"
+      ],
+      "description": "Display output for every file"
+    },
+    {
+      "name": [
+        "--ci"
+      ],
+      "description": "Enable CI output settings where stdout is ASCII"
+    },
+    {
+      "name": [
+        "--cocomo-project-type"
+      ],
+      "description": "Change the COCOMO model type (allows custom models, eg. \"name,1,1,1,1\")",
+      "args": {
+        "name": "string",
+        "suggestions": [
+          {
+            "name": "organic"
+          },
+          {
+            "name": "semi-detached"
+          },
+          {
+            "name": "embedded"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--count-as"
+      ],
+      "description": "Count a file extension as a language (comma-separated key:value list, eg. jst:js,tpl:Markdown)",
+      "args": {
+        "name": "string",
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "(...c)=>T(this,void 0,void 0,function*(){let[a]=c,d=a[a.length-1],y=M(d,e,n),x=y===-1||d.slice(y,y+e.length)!==e,g=x?t:s,p=J(x,i),f=yield E(g,x?r?e:\"\":o?n:\"\",p,c);if(x){if(l)return f;let _=d.split(n).map(m=>m.slice(0,m.indexOf(e)));return q(_,f)}if(u)return f;let b=d.split(n).map(_=>_.slice(_.indexOf(e)+e.length));return q(b,f)})"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--debug"
+      ],
+      "description": "Enable debug output"
+    },
+    {
+      "name": [
+        "--exclude-dir"
+      ],
+      "description": "Directories to exclude",
+      "args": {
+        "name": "strings",
+        "generators": [
+          {
+            "template": "folders"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--file-gc-count"
+      ],
+      "description": "Number of files to parse before turning the GC on",
+      "args": {
+        "name": "int"
+      }
+    },
+    {
+      "name": [
+        "-f",
+        "--format"
+      ],
+      "description": "Set output format",
+      "args": {
+        "name": "string",
+        "suggestions": [
+          {
+            "name": "tabular"
+          },
+          {
+            "name": "wide"
+          },
+          {
+            "name": "json"
+          },
+          {
+            "name": "csv"
+          },
+          {
+            "name": "csv-stream"
+          },
+          {
+            "name": "cloc-yaml"
+          },
+          {
+            "name": "html"
+          },
+          {
+            "name": "html-table"
+          },
+          {
+            "name": "sql"
+          },
+          {
+            "name": "sql-insert"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--format-multi"
+      ],
+      "description": "Multiple outputs with different formats (comma-separated key:value list, eg. tabular:stdout,csv:scc.csv)",
+      "args": {
+        "name": "string",
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "(...c)=>T(this,void 0,void 0,function*(){let[a]=c,d=a[a.length-1],y=M(d,e,n),x=y===-1||d.slice(y,y+e.length)!==e,g=x?t:s,p=J(x,i),f=yield E(g,x?r?e:\"\":o?n:\"\",p,c);if(x){if(l)return f;let _=d.split(n).map(m=>m.slice(0,m.indexOf(e)));return q(_,f)}if(u)return f;let b=d.split(n).map(_=>_.slice(_.indexOf(e)+e.length));return q(b,f)})"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--gen"
+      ],
+      "description": "Identify generated files"
+    },
+    {
+      "name": [
+        "--generated-markers"
+      ],
+      "description": "Identify generated files by the presence of a string (comma-separated list)",
+      "args": {
+        "name": "strings"
+      }
+    },
+    {
+      "name": [
+        "-h",
+        "--help"
+      ],
+      "description": "Help for scc"
+    },
+    {
+      "name": [
+        "-i",
+        "--include-ext"
+      ],
+      "description": "Limit to these file extensions (comma-separated list)",
+      "args": {
+        "name": "strings",
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "(...r)=>T(this,void 0,void 0,function*(){var o;let l=yield E(n,s?e:\"\",t,r);if(i)return l;let[u]=r,c=(o=u[u.length-1])===null||o===void 0?void 0:o.split(e);return q(c,l)})"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--include-symlinks"
+      ],
+      "description": "Count symbolic links"
+    },
+    {
+      "name": [
+        "-l",
+        "--languages"
+      ],
+      "description": "Print supported languages and extensions"
+    },
+    {
+      "name": [
+        "--large-byte-count"
+      ],
+      "description": "Number of bytes a file can contain before being omitted",
+      "args": {
+        "name": "int"
+      }
+    },
+    {
+      "name": [
+        "--large-line-count"
+      ],
+      "description": "Number of lines a file can contain before being omitted",
+      "args": {
+        "name": "int"
+      }
+    },
+    {
+      "name": [
+        "--min"
+      ],
+      "description": "Identify minified files"
+    },
+    {
+      "name": [
+        "-z",
+        "--min-gen"
+      ],
+      "description": "Identify minified or generated files"
+    },
+    {
+      "name": [
+        "--min-gen-line-length"
+      ],
+      "description": "Number of bytes per average line for file to be considered minified or generated",
+      "args": {
+        "name": "int"
+      }
+    },
+    {
+      "name": [
+        "--no-cocomo"
+      ],
+      "description": "Skip COCOMO calculation"
+    },
+    {
+      "name": [
+        "-c",
+        "--no-complexity"
+      ],
+      "description": "Skip code complexity calculation"
+    },
+    {
+      "name": [
+        "-d",
+        "--no-duplicates"
+      ],
+      "description": "Remove duplicate files from stats and output"
+    },
+    {
+      "name": [
+        "--no-gen"
+      ],
+      "description": "Ignore generated files in output (implies --gen)"
+    },
+    {
+      "name": [
+        "--no-gitignore"
+      ],
+      "description": "Disables .gitignore file logic"
+    },
+    {
+      "name": [
+        "--no-ignore"
+      ],
+      "description": "Disables .ignore file logic"
+    },
+    {
+      "name": [
+        "--no-large"
+      ],
+      "description": "Ignore files over certain byte and line size set by --max-line-count and --max-byte-count"
+    },
+    {
+      "name": [
+        "--no-min"
+      ],
+      "description": "Ignore minified files in output (implies --min)"
+    },
+    {
+      "name": [
+        "--no-min-gen"
+      ],
+      "description": "Ignore minified or generated files in output (implies --min-gen)"
+    },
+    {
+      "name": [
+        "--no-size"
+      ],
+      "description": "Remove size calculation output"
+    },
+    {
+      "name": [
+        "-M",
+        "--not-match"
+      ],
+      "description": "Ignore files and directories matching regular expression",
+      "args": {
+        "name": "regex"
+      }
+    },
+    {
+      "name": [
+        "-o",
+        "--output"
+      ],
+      "description": "Output filename (defaults to stdout if not provided)",
+      "args": {
+        "name": "string",
+        "template": "filepaths"
+      }
+    },
+    {
+      "name": [
+        "--remap-all"
+      ],
+      "description": "Inspect every file and set its type by checking for a string (comma-separated key:value list, eg. \"-*- C++ -*-\":\"C Header\")",
+      "args": {
+        "name": "string",
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "(...c)=>T(this,void 0,void 0,function*(){let[a]=c,d=a[a.length-1],y=M(d,e,n),x=y===-1||d.slice(y,y+e.length)!==e,g=x?t:s,p=J(x,i),f=yield E(g,x?r?e:\"\":o?n:\"\",p,c);if(x){if(l)return f;let _=d.split(n).map(m=>m.slice(0,m.indexOf(e)));return q(_,f)}if(u)return f;let b=d.split(n).map(_=>_.slice(_.indexOf(e)+e.length));return q(b,f)})"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--remap-unknown"
+      ],
+      "description": "Inspect files of unknown type and set its type by checking for a string (comma-separated key:value list, eg. \"-*- C++ -*-\":\"C Header\")",
+      "args": {
+        "name": "string",
+        "generators": [
+          {
+            "requires_js": true,
+            "js_source": "(...c)=>T(this,void 0,void 0,function*(){let[a]=c,d=a[a.length-1],y=M(d,e,n),x=y===-1||d.slice(y,y+e.length)!==e,g=x?t:s,p=J(x,i),f=yield E(g,x?r?e:\"\":o?n:\"\",p,c);if(x){if(l)return f;let _=d.split(n).map(m=>m.slice(0,m.indexOf(e)));return q(_,f)}if(u)return f;let b=d.split(n).map(_=>_.slice(_.indexOf(e)+e.length));return q(b,f)})"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--size-unit"
+      ],
+      "description": "Set the unit used for file size output",
+      "args": {
+        "name": "string",
+        "description": "See https://xkcd.com/394/",
+        "suggestions": [
+          {
+            "name": "si",
+            "description": "1000^2 bytes"
+          },
+          {
+            "name": "binary",
+            "description": "1024^2 bytes"
+          },
+          {
+            "name": "mixed",
+            "description": "1,024,000 bytes (Binary kilobytes, SI megabytes)"
+          },
+          {
+            "name": "xkcd-kb",
+            "description": "1000 bytes during leap years, 1024 otherwise"
+          },
+          {
+            "name": "xkcd-kelly",
+            "description": "1012 bytes (a compromise between 1000 and 1024 bytes)"
+          },
+          {
+            "name": "xkcd-imaginary",
+            "description": "1024*sqrt(-1) bytes (used in quantum computing)"
+          },
+          {
+            "name": "xkcd-intel",
+            "description": "1023.937528 bytes (calculated on Pentium FPU)"
+          },
+          {
+            "name": "xkcd-drive",
+            "description": "Currently 856 bytes (shrinks by 4 each year for marketing reasons)"
+          },
+          {
+            "name": "xkcd-bakers",
+            "description": "1152 bytes (9 bits per byte, because you're such a good customer)"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "-s",
+        "--sort"
+      ],
+      "description": "Column to sort by",
+      "args": {
+        "name": "string",
+        "suggestions": [
+          {
+            "name": "files"
+          },
+          {
+            "name": "name"
+          },
+          {
+            "name": "lines"
+          },
+          {
+            "name": "blanks"
+          },
+          {
+            "name": "code"
+          },
+          {
+            "name": "comments"
+          },
+          {
+            "name": "complexity"
+          }
+        ]
+      }
+    },
+    {
+      "name": [
+        "--sql-project"
+      ],
+      "description": "Use supplied name as the project identifier for the current run. Only valid with the '--format sql' or '--format sql-insert' option",
+      "args": {
+        "name": "string"
+      }
+    },
+    {
+      "name": [
+        "-t",
+        "--trace"
+      ],
+      "description": "Enable trace output (not recommended when processing multiple files)"
+    },
+    {
+      "name": [
+        "-v",
+        "--verbose"
+      ],
+      "description": "Verbose output"
+    },
+    {
+      "name": [
+        "--version"
+      ],
+      "description": "Version for scc"
+    },
+    {
+      "name": [
+        "-w",
+        "--wide"
+      ],
+      "description": "Wider output with additional statistics (implies --complexity)"
+    }
+  ],
+  "args": {
+    "name": "files or directories",
+    "template": [
+      "filepaths",
+      "folders"
+    ],
+    "isVariadic": true,
+    "isOptional": true
+  }
+}

@@ -76,7 +76,7 @@ ghost-complete install
 
 - Adds shell integration to `~/.zshrc` (auto-wraps your shell via PTY proxy)
 - Deploys shell scripts for bash/fish to `~/.config/ghost-complete/shell/`
-- Installs 34 completion specs to `~/.config/ghost-complete/specs/`
+- Installs 717 completion specs to `~/.config/ghost-complete/specs/`
 - Creates default config at `~/.config/ghost-complete/config.toml` (never overwrites existing)
 
 ### Uninstall
@@ -96,6 +96,8 @@ After installation, restart your terminal. Ghost Complete activates automaticall
 - **Arrow keys** to navigate the popup
 - **Escape** to dismiss
 - **Ctrl+/** to manually trigger completions
+
+Run `ghost-complete status` to see loaded specs and generator diagnostics.
 
 ## Configuration
 
@@ -119,15 +121,26 @@ trigger = "ctrl+/"
 [theme]
 selected = "reverse"
 description = "dim"
+
+[suggest]
+max_results = 50
+generator_timeout_ms = 5000
+
+[suggest.providers]
+commands = true
+history = true
+filesystem = true
+specs = true
+git = true
 ```
 
 See [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for the full reference.
 
 ## Completion Specs
 
-Ghost Complete ships with 34 Fig-compatible JSON completion specs:
+Ghost Complete ships with 717 Fig-compatible JSON completion specs. Covers most common CLI tools including git, docker, cargo, npm, kubectl, brew, curl, ssh, and 700+ more — converted from the [Fig](https://fig.io) autocomplete ecosystem.
 
-`brew` `cargo` `cd` `chmod` `curl` `docker` `find` `gh` `git` `gradle` `gradlew` `grep` `jq` `kill` `killall` `kubectl` `ln` `make` `man` `mvn` `node` `npm` `pip` `pip3` `python` `python3` `rsync` `rustup` `ssh` `tar` `tmux` `unzip` `wget` `zip`
+Many specs include dynamic generators that run shell commands for live results (e.g., `brew list`, `docker ps`, `kubectl get`). Generator results are cached with configurable TTL to keep things fast.
 
 Custom specs go in `~/.config/ghost-complete/specs/`. See [docs/COMPLETION_SPEC.md](docs/COMPLETION_SPEC.md) for the format reference.
 
@@ -168,7 +181,7 @@ The PTY proxy sits between the terminal and the shell, rendering popups via pure
 
 **Why custom JSON specs instead of using the shell's built-in completions?**
 
-Specs are declarative and fast — microsecond loads, no shell execution. They use the same format [Fig](https://fig.io) used, so there's a large existing ecosystem to draw from. The tradeoff is coverage: Ghost Complete ships with 34 specs today. Commands without a spec fall back to filesystem completions. Adding new specs is straightforward — see [docs/COMPLETION_SPEC.md](docs/COMPLETION_SPEC.md), and contributions are welcome.
+Specs are declarative and fast — microsecond loads, no shell execution. They use the same format [Fig](https://fig.io) used, so there's a large existing ecosystem to draw from. Ghost Complete ships with 717 specs today, and many include dynamic generators that execute shell commands for live results (e.g., listing running containers, git branches, installed packages). Commands without a spec fall back to filesystem completions. Adding new specs is straightforward — see [docs/COMPLETION_SPEC.md](docs/COMPLETION_SPEC.md), and contributions are welcome.
 
 **Where's the config documentation? I'm having popup alignment issues.**
 

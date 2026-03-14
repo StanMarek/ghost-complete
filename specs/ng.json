@@ -1,0 +1,208 @@
+{
+  "name": "ng",
+  "description": "CLI interface for Angular",
+  "subcommands": [
+    {
+      "name": "new",
+      "description": "Create a new Angular app",
+      "options": [
+        {
+          "name": [
+            "--create-application"
+          ],
+          "description": "Create a default application?",
+          "args": {
+            "name": "project",
+            "suggestions": [
+              {
+                "name": "true"
+              },
+              {
+                "name": "false"
+              }
+            ]
+          }
+        }
+      ],
+      "args": {
+        "name": "name"
+      }
+    },
+    {
+      "name": "generate",
+      "description": "Generate new files",
+      "subcommands": [
+        {
+          "name": "application",
+          "description": "Generates a new application",
+          "options": [
+            {
+              "name": [
+                "--style"
+              ],
+              "args": {
+                "name": "extension",
+                "suggestions": [
+                  {
+                    "name": "css"
+                  },
+                  {
+                    "name": "scss"
+                  },
+                  {
+                    "name": "sass"
+                  },
+                  {
+                    "name": "less"
+                  },
+                  {
+                    "name": "styl"
+                  }
+                ]
+              }
+            }
+          ],
+          "args": {
+            "name": "name",
+            "description": "Name of the new app"
+          }
+        },
+        {
+          "name": "component",
+          "description": "Generate a new component",
+          "options": [
+            {
+              "name": [
+                "--project"
+              ],
+              "description": "Project name",
+              "args": {
+                "generators": [
+                  {
+                    "script": [
+                      "ng",
+                      "config",
+                      "projects"
+                    ],
+                    "requires_js": true,
+                    "js_source": "function(a){try{let e=JSON.parse(a);return Object.entries(e).map(([t,s])=>({name:t,description:s.projectType}))}catch{}return[]}"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "--change-detection",
+                "-c"
+              ],
+              "description": "The change detection strategy to use",
+              "args": {
+                "name": "strategy",
+                "suggestions": [
+                  {
+                    "name": "Default"
+                  },
+                  {
+                    "name": "OnPush"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "--display-block",
+                "-b"
+              ],
+              "description": "Add :host block to styles",
+              "args": {
+                "name": "boolean",
+                "suggestions": [
+                  {
+                    "name": "true"
+                  },
+                  {
+                    "name": "false"
+                  }
+                ]
+              }
+            },
+            {
+              "name": [
+                "--flat"
+              ],
+              "description": "Create at the top level",
+              "args": {
+                "name": "boolean",
+                "suggestions": [
+                  {
+                    "name": "true"
+                  },
+                  {
+                    "name": "false"
+                  }
+                ]
+              }
+            }
+          ],
+          "args": {
+            "name": "name",
+            "description": "Component name",
+            "isOptional": true
+          }
+        },
+        {
+          "name": "library",
+          "description": "Generates a new library",
+          "args": {
+            "name": "name",
+            "isOptional": true
+          }
+        },
+        {
+          "name": "class",
+          "description": "Generates a class",
+          "options": [
+            {
+              "name": [
+                "--project"
+              ],
+              "description": "Project name",
+              "args": {
+                "generators": [
+                  {
+                    "script": [
+                      "ng",
+                      "config",
+                      "projects"
+                    ],
+                    "requires_js": true,
+                    "js_source": "function(a){try{let e=JSON.parse(a);return Object.entries(e).map(([t,s])=>({name:t,description:s.projectType}))}catch{}return[]}"
+                  }
+                ]
+              }
+            }
+          ],
+          "args": {
+            "name": "name",
+            "isOptional": true
+          }
+        }
+      ],
+      "args": {
+        "name": "schematic"
+      }
+    },
+    {
+      "name": "version",
+      "description": "View your Angular CLI version (update for Angular 14+)"
+    }
+  ],
+  "options": [
+    {
+      "name": [
+        "--version"
+      ],
+      "description": "View your Angular CLI version"
+    }
+  ]
+}

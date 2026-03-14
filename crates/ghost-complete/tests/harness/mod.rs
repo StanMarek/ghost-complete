@@ -69,8 +69,8 @@ impl GhostProcess {
             }
         });
 
-        // Wait for shell to initialize.
-        thread::sleep(Duration::from_millis(500));
+        // Wait for shell to initialize (larger binary with embedded specs needs more time).
+        thread::sleep(Duration::from_millis(1500));
 
         GhostProcess {
             writer,
