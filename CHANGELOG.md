@@ -5,21 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - v0.2.0
+## [0.2.0] - 2026-03-14
 
 ### Added
 
-- **717 Fig-compatible completion specs (34 → 717)** — converted from @withfig/autocomplete using offline Node.js converter (`tools/fig-converter/`). All specs embedded into the binary via `include_str!`.
+- **706 Fig-compatible completion specs (34 → 706)** — converted from @withfig/autocomplete using offline Node.js converter (`tools/fig-converter/`). All specs embedded into the binary via `include_str!`. ~450 pure static, ~190 with script generators, ~66 with `requires_js` (static portions functional).
 - **Script generators with async execution** — specs can define shell commands as generators (e.g., `["brew", "list", "-1"]`). Commands execute asynchronously with configurable timeout (default 5s). Results merge into the popup without resetting user's cursor position.
 - **Transform pipeline** — composable output transforms for script generators: `split_lines`, `filter_empty`, `trim`, `skip_first`, `dedup`, `split_on(delim)`, `skip(n)`, `take(n)`, `regex_extract(pattern, groups)`, `json_extract(fields)`, `column_extract(cols)`, `error_guard(pattern)`. Validated at spec load time.
 - **Generator result caching** — in-memory TTL cache for script generator results. Configurable per-generator with `cache_by_directory` option for CWD-scoped caching.
 - **`ghost-complete status` subcommand** — shows loaded spec count, fully/partially functional breakdown, and lists commands requiring JS generators.
+- **`ghost-complete doctor` subcommand** — health checks for shell integration, Ghostty detection, config validation (including all theme fields), and spec loading.
+- **`ghost-complete config` subcommand** — dumps resolved configuration as TOML for debugging.
+- **Scroll-to-make-room popup rendering** — popup always renders below the cursor. When near the bottom of the viewport, the terminal is scrolled to create space instead of rendering above. Scroll deficit persists across dismiss/re-trigger cycles. Popup dismissed on terminal resize.
+- **Theme expansion** — three new theme fields: `match_highlight` (style for fuzzy-matched characters), `item_text` (style for non-selected rows), `scrollbar` (scrollbar track/thumb style). All configurable via `[theme]` in config.
+- **Theme presets** — four built-in presets selectable via `preset = "dark"` in config: `dark` (default), `light`, `catppuccin`, `material-darker`.
+- **Hex truecolor support** — `fg:#RRGGBB` and `bg:#RRGGBB` style tokens in theme configuration.
+- **Fuzzy match character highlighting** — matched characters in popup items are visually highlighted using the `match_highlight` theme style.
+- **Scrollbar indicator** — scrollable popup lists display a scrollbar when content exceeds the visible area.
+- **ghost-complete self-completion spec** — autocomplete for ghost-complete's own subcommands and options.
+- **claude and codex completion specs** — added specs for AI CLI tools.
 - **Criterion benchmarks** — benchmark suites for `gc-suggest` (fuzzy ranking, spec loading, spec resolution, transform pipeline, engine) and `gc-parser` (VT parse throughput). Manually-triggered CI workflow for benchmark runs.
 
 ### Changed
 
-- **`generator_timeout_ms` config option** — global timeout for shell command generators (default 5000ms)
-- **`script_template` support** — generators can use `{current_token}` substitution in command arguments
+- **`generator_timeout_ms` config option** — global timeout for shell command generators (default 5000ms).
+- **`script_template` support** — generators can use `{current_token}` substitution in command arguments.
+- **Binary size reduced from 104MB to 25MB** — dropped 11 oversized/niche specs: `aws` (53MB), `gcloud` (22MB), `hub` (deprecated), `fin`, `northflank`, `cl`, `commercelayer`, `sfdx`, `twilio`, `doppler`, `mongocli`.
+- **`item_text` default changed from `dim` to empty** — non-selected rows now render with no extra styling by default.
+
+### Fixed
+
+- **Item text color bleed** — style is now reset before rendering descriptions, preventing `item_text` color from bleeding into description text.
+- **Scroll deficit lost on dismiss** — scroll deficit now persists across dismiss/re-trigger cycles so the popup doesn't jump.
+- **Doctor validates all theme fields** — `doctor` now checks all 5 theme fields (`selected`, `description`, `match_highlight`, `item_text`, `scrollbar`), not just the original 2.
 
 ## [0.1.4] - 2026-03-12
 
@@ -87,6 +105,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Shell integration** for zsh (full), bash (Ctrl+/), and fish (Ctrl+/)
 - **`validate-specs` subcommand** with colored output and item counts
 
+[0.2.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.2.0
 [0.1.4]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.1.4
 [0.1.3]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.1.3
 [0.1.2]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.1.2
