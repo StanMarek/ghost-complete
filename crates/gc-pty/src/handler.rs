@@ -281,7 +281,7 @@ impl InputHandler {
             // CD chaining: predict the buffer after acceptance and
             // immediately show next-level suggestions. Avoids timing
             // issues with the shell's OSC 7770 roundtrip.
-            let (cwd, predicted_ctx, cr, cc, sr, sc) = {
+            let (cwd, predicted_ctx, predicted_buffer, cr, cc, sr, sc) = {
                 let mut p = parser.lock().unwrap();
                 let state = p.state();
                 let buffer = state.command_buffer().unwrap_or("").to_string();
@@ -305,14 +305,16 @@ impl InputHandler {
                 let (cr, cc) = state.cursor_position();
                 let (sr, sc) = state.screen_dimensions();
 
+                let predicted_buf = predicted.clone();
+
                 // Update parser with predicted buffer so subsequent
                 // accept computes correct current_word
                 p.state_mut().predict_command_buffer(predicted, new_cursor);
 
-                (cwd, ctx, cr, cc, sr, sc)
+                (cwd, ctx, predicted_buf, cr, cc, sr, sc)
             };
 
-            match self.engine.suggest_sync(&predicted_ctx, &cwd) {
+            match self.engine.suggest_sync(&predicted_ctx, &cwd, &predicted_buffer) {
                 Ok(suggestions) if !suggestions.is_empty() => {
                     self.suggestions = suggestions;
                     self.overlay.reset();
@@ -391,7 +393,7 @@ impl InputHandler {
         // Drop any pending dynamic results from a previous trigger
         self.dynamic_rx = None;
 
-        match self.engine.suggest_sync(&ctx, &cwd) {
+        match self.engine.suggest_sync(&ctx, &cwd, &buffer) {
             Ok(suggestions) if !suggestions.is_empty() => {
                 self.suggestions = suggestions;
                 self.overlay.reset();

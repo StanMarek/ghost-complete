@@ -185,17 +185,17 @@ fn engine_benchmarks(c: &mut Criterion) {
 
     let cmd_ctx = make_ctx(None, vec![], "gi", 0);
     group.bench_function("command_position", |b| {
-        b.iter(|| engine.suggest_sync(&cmd_ctx, tmp.path()).unwrap());
+        b.iter(|| engine.suggest_sync(&cmd_ctx, tmp.path(), "gi").unwrap());
     });
 
     let sub_ctx = make_ctx(Some("git"), vec![], "ch", 1);
     group.bench_function("subcommand_with_spec", |b| {
-        b.iter(|| engine.suggest_sync(&sub_ctx, tmp.path()).unwrap());
+        b.iter(|| engine.suggest_sync(&sub_ctx, tmp.path(), "git ch").unwrap());
     });
 
     let fs_ctx = make_ctx(Some("unknown_cmd_xyz"), vec![], "", 1);
     group.bench_function("filesystem_fallback", |b| {
-        b.iter(|| engine.suggest_sync(&fs_ctx, tmp.path()).unwrap());
+        b.iter(|| engine.suggest_sync(&fs_ctx, tmp.path(), "unknown_cmd_xyz ").unwrap());
     });
 
     group.finish();
