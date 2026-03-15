@@ -1183,11 +1183,11 @@ const DEFAULT_CONFIG_TOML: &str = "\
 
 # [suggest]
 # max_results = 50
+# max_history_results = 5
 # max_history_entries = 10000
 
 # [suggest.providers]
 # commands = true
-# history = true
 # filesystem = true
 # specs = true
 # git = true

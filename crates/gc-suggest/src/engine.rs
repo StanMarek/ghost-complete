@@ -969,9 +969,7 @@ mod tests {
             .with_max_history_results(3);
 
         let ctx = make_ctx(None, vec![], "git", 0);
-        let results = engine
-            .suggest_sync(&ctx, Path::new("/tmp"), "git")
-            .unwrap();
+        let results = engine.suggest_sync(&ctx, Path::new("/tmp"), "git").unwrap();
         let hist_count = results
             .iter()
             .filter(|s| s.source == crate::types::SuggestionSource::History)
@@ -994,9 +992,7 @@ mod tests {
             .with_max_history_results(0);
 
         let ctx = make_ctx(None, vec![], "git", 0);
-        let results = engine
-            .suggest_sync(&ctx, Path::new("/tmp"), "git")
-            .unwrap();
+        let results = engine.suggest_sync(&ctx, Path::new("/tmp"), "git").unwrap();
         let hist_count = results
             .iter()
             .filter(|s| s.source == crate::types::SuggestionSource::History)
