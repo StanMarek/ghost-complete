@@ -15,12 +15,13 @@ When accepting a history entry from the popup, only the base command (first word
 
 ### 1. History Provider (`gc-suggest/src/history.rs`)
 
-- Remove the `word_index == 0` guard — history is available at any word position.
+- Replace the `word_index == 0` guard with `in_pipe` / `in_redirect` guard — history makes no sense inside pipes or redirects (full commands can't be pipe segments).
 - Change `text` from first-word-only to the **full command string**.
 - Set `description` to `None` — no point duplicating the full command in both fields.
 
 ```rust
 // Before
+if ctx.word_index != 0 { return Ok(Vec::new()); }
 let cmd_name = entry.split_whitespace().next().unwrap_or(entry);
 Suggestion {
     text: cmd_name.to_string(),
@@ -29,6 +30,7 @@ Suggestion {
 }
 
 // After
+if ctx.in_pipe || ctx.in_redirect { return Ok(Vec::new()); }
 Suggestion {
     text: entry.clone(),
     description: None,
@@ -39,19 +41,19 @@ Suggestion {
 ### 2. Engine (`gc-suggest/src/engine.rs`)
 
 - Add a `buffer: &str` parameter to `suggest_sync`.
-- Remove history from the `word_index == 0` block.
+- Remove history from the `word_index == 0` block (commands provider stays).
 - After the existing suggestion logic (commands/specs/filesystem), run a **separate history pass**:
-  1. Call `history_provider.provide()` (no longer gated by word_index).
+  1. Call `history_provider.provide()` (gated by `!in_pipe && !in_redirect`).
   2. Fuzzy-rank history candidates against the **full buffer** (not `current_word`).
   3. Append ranked history results to the main results.
-- Each pass applies its own `max_results` cap independently.
+- Each pass applies its own `max_results` cap independently. Combined result may exceed `max_results` (up to 2x), but popup's `max_visible` handles display; the extra memory/sorting is negligible.
 - `fuzzy::rank` is called twice: once for main candidates with `current_word`, once for history with the full buffer. No changes to `fuzzy::rank` itself.
 
 ```
 suggest_sync(ctx, cwd, buffer):
   1. candidates = existing logic (commands at word_index==0, specs, filesystem)
   2. results = fuzzy::rank(ctx.current_word, candidates, max_results)
-  3. if history enabled:
+  3. if history enabled && !ctx.in_pipe && !ctx.in_redirect:
        hist_candidates = history_provider.provide(ctx, cwd)
        hist_results = fuzzy::rank(buffer, hist_candidates, max_results)
        results.extend(hist_results)
@@ -63,9 +65,9 @@ suggest_sync(ctx, cwd, buffer):
 ### 3. Accept Logic (`gc-pty/src/handler.rs`)
 
 - `accept_suggestion` checks `selected.kind == SuggestionKind::History`:
-  - **History path:** Get the full buffer from the parser. Send `buffer.chars().count()` backspaces (0x7F), then type `selected.text` (the full command).
+  - **History path:** Get the full buffer and `buffer_cursor` (char offset) from the parser. Send `buffer_cursor` backspaces (0x7F) to delete everything before cursor, then type `selected.text` (the full command). Note: in practice the cursor is always at end-of-buffer when the popup is visible (arrow keys dismiss/forward the popup), but using `buffer_cursor` instead of `buffer.chars().count()` is defensive against edge cases.
   - **Non-history path:** Unchanged — delete `current_word` chars, type `selected.text`.
-- `accept_with_chaining` (directory Tab-chaining): history entries skip chaining entirely — plain accept + dismiss.
+- `accept_with_chaining` (directory Tab-chaining): history entries skip chaining entirely — plain accept + dismiss. History commands aren't directory paths.
 - Accept & Enter variant: works identically. Accept replaces buffer, `\r` appended to execute.
 
 ### 4. Display (`gc-overlay/src/render.rs`)
@@ -73,22 +75,34 @@ suggest_sync(ctx, cwd, buffer):
 - No code changes needed. `format_item` already handles `None` descriptions gracefully.
 - History entries display as: `H tmux source ~/.config/tmux/tmux.conf` (full command, no redundant description).
 - Fuzzy match highlighting works automatically — nucleo matches against `text` (the full command).
-- Long entries truncated by existing `max_text_chars` logic.
+- Long entries truncated by existing `max_text_chars` logic. History entries will be truncated more often than before (full commands vs first word) — this is acceptable, the important part is visible in the beginning of the entry.
 
 ### 5. Callers of `suggest_sync`
 
-All call sites in `handler.rs` that invoke `suggest_sync` must pass the buffer string. These callers already have access to the raw buffer from the parser state, so threading it through is trivial:
-- `trigger_suggestions` — has `buffer` from parser
-- `accept_with_chaining` — has `predicted` buffer
+All call sites that invoke `suggest_sync` must pass the buffer string:
+- `handler.rs: trigger_suggestions` — has `buffer` from parser state
+- `handler.rs: accept_with_chaining` — has `predicted` buffer (the predicted buffer after directory accept, not the parser's current buffer)
+- `benches/suggest_bench.rs` — benchmark call sites (3 invocations). Pass the buffer used to construct the `CommandContext` (e.g., `"gi"` for command-position benchmarks, `"git ch"` for subcommand benchmarks).
+
+### 6. Edge Cases
+
+**Pipes and chains (`|`, `;`, `&&`, `||`):** History is suppressed when `ctx.in_pipe` or `ctx.in_redirect` is true. Full commands don't make sense as pipe segments, and accepting one would require deleting only the current segment, not the full buffer. This is the simplest correct behavior.
+
+**Multi-byte characters:** `buffer_cursor` is already a char offset, and backspace (0x7F) deletes by character in the shell. No special handling needed.
+
+**Empty buffer:** History provider returns all entries, fuzzy matching with empty query returns them sorted by kind priority. Accepting replaces empty buffer with the full command. Works correctly.
+
+**History dedup with full text:** With full commands as `text`, entries like `git push` and `git push origin main` are now distinct (previously both collapsed to `text: "git"`). This is correct — they are different commands.
 
 ## Files Modified
 
 | File | Change |
 |------|--------|
-| `crates/gc-suggest/src/history.rs` | Full command in `text`, remove `word_index` gate |
+| `crates/gc-suggest/src/history.rs` | Full command in `text`, replace `word_index` gate with `in_pipe`/`in_redirect` gate |
 | `crates/gc-suggest/src/engine.rs` | Add `buffer` param to `suggest_sync`, separate history pass |
-| `crates/gc-pty/src/handler.rs` | History-aware accept (full buffer delete), pass buffer to engine |
-| Tests in all three files | Update assertions for new behavior |
+| `crates/gc-pty/src/handler.rs` | History-aware accept (full buffer delete via `buffer_cursor`), pass buffer to engine |
+| `crates/gc-suggest/benches/suggest_bench.rs` | Update `suggest_sync` call sites with buffer param |
+| Tests in history/engine/handler | Update assertions for new behavior |
 
 ## What Does NOT Change
 
