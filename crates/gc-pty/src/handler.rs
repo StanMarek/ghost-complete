@@ -562,7 +562,15 @@ impl InputHandler {
             let cursor = state.buffer_cursor();
 
             if selected.kind == gc_suggest::SuggestionKind::History {
-                // History: delete the entire buffer up to cursor, then type the full command
+                // History: delete the entire buffer up to cursor, then type the full command.
+                // Cursor is always at buffer end when popup is visible (arrow keys dismiss),
+                // but we use cursor (not buffer.chars().count()) because over-deleting past
+                // cursor into the prompt would be worse than leaving trailing chars.
+                debug_assert_eq!(
+                    cursor,
+                    buffer.chars().count(),
+                    "history accept assumes cursor at end of buffer"
+                );
                 (cursor, selected.text.clone())
             } else {
                 // Non-history: delete current_word, type suggestion text

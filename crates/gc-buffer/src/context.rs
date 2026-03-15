@@ -306,6 +306,12 @@ mod tests {
     }
 
     #[test]
+    fn test_is_first_segment_false_after_or() {
+        let ctx = parse_command_context("test || echo fail", 17);
+        assert!(!ctx.is_first_segment);
+    }
+
+    #[test]
     fn test_is_first_segment_true_empty() {
         let ctx = parse_command_context("", 0);
         assert!(ctx.is_first_segment);

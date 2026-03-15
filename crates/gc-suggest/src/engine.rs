@@ -397,14 +397,18 @@ impl SuggestionEngine {
     ) -> Vec<Suggestion> {
         let mut results = fuzzy::rank(&ctx.current_word, candidates, self.max_results);
 
-        if self.providers_history {
-            match self.history_provider.provide(ctx, cwd) {
-                Ok(hist) if !hist.is_empty() => {
-                    let hist_results = fuzzy::rank(buffer, hist, self.max_results);
-                    results.extend(hist_results);
+        // History doesn't belong in redirect context — user expects filenames, not commands
+        if self.providers_history && !ctx.in_redirect {
+            let remaining = self.max_results.saturating_sub(results.len());
+            if remaining > 0 {
+                match self.history_provider.provide(ctx, cwd) {
+                    Ok(hist) if !hist.is_empty() => {
+                        let hist_results = fuzzy::rank(buffer, hist, remaining);
+                        results.extend(hist_results);
+                    }
+                    Ok(_) => {}
+                    Err(e) => tracing::debug!("history provider error: {e}"),
                 }
-                Ok(_) => {}
-                Err(e) => tracing::debug!("history provider error: {e}"),
             }
         }
 
