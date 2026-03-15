@@ -20,7 +20,7 @@ Combine a config toggle with a display cap (options B + D from initial discussio
 **SuggestConfig:**
 - Add `max_history_results: usize` with default `5`
 - Keep `max_history_entries: usize` (default `10_000`) — controls how many lines to load from `$HISTFILE` (search pool depth, separate concern from display cap)
-- Remove `ProvidersConfig.history: bool` — replaced by `max_history_results > 0`
+- Remove `ProvidersConfig.history: bool` — replaced by `max_history_results > 0`. The `ProvidersConfig` struct and `[suggest.providers]` TOML table remain; only the `history` field is removed.
 
 The two fields serve distinct purposes:
 - `max_history_entries` = search depth (how many history lines to load for fuzzy matching)
@@ -43,9 +43,13 @@ Remove `# history = true` from the `[suggest.providers]` section.
 **SuggestEngine struct:**
 - Replace `providers_history: bool` with `max_history_results: usize`
 
+**`new()` constructor:**
+- Sets `max_history_results: 5` (matching the config default), loads history as before
+
 **`with_suggest_config()` constructor:**
 - Replace `history: bool` param with `max_history_results: usize`
 - Call `HistoryProvider::load()` only when `max_history_results > 0` (skip `$HISTFILE` read entirely when disabled)
+- Note: `new()` loads history unconditionally (since its default is 5 > 0). When `with_suggest_config()` is chained with `max_history_results = 0`, it overwrites the provider with an empty one. The redundant load from `new()` is acceptable — this matches the existing builder pattern and the cost is negligible (one-time startup).
 
 **`rank_with_history()` method:**
 - Guard: `self.max_history_results > 0 && !ctx.in_redirect` (was `self.providers_history && ...`)
@@ -70,7 +74,7 @@ Cap at ranking time (Approach 1). The cap is applied in `rank_with_history()` af
 
 | File | Change |
 |------|--------|
-| `crates/gc-config/src/lib.rs` | Add `max_history_results`, remove `ProvidersConfig.history` |
+| `crates/gc-config/src/lib.rs` | Add `max_history_results`, remove `ProvidersConfig.history`, update config tests (`test_full_config_parses`, `test_default_config_matches_hardcoded`) |
 | `crates/gc-suggest/src/engine.rs` | Replace bool with usize, cap history in `rank_with_history()` |
 | `crates/gc-pty/src/proxy.rs` | Update config passthrough |
 | `crates/ghost-complete/src/install.rs` | Update default config template |
@@ -82,3 +86,4 @@ Cap at ranking time (Approach 1). The cap is applied in `rank_with_history()` af
 - No separate history-only trigger keybinding (possible future work, not this change).
 - No changes to history sort priority (already lowest at 8).
 - No changes to fuzzy ranking logic in `fuzzy.rs`.
+- No changes to how sync and dynamic (async generator) results are merged in the proxy.
