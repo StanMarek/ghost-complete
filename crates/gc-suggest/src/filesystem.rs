@@ -150,6 +150,7 @@ mod tests {
             in_pipe: false,
             in_redirect: false,
             quote_state: QuoteState::None,
+            is_first_segment: true,
         }
     }
 

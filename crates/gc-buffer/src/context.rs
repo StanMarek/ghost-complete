@@ -24,6 +24,8 @@ pub struct CommandContext {
     pub in_redirect: bool,
     /// Whether the cursor is inside an unclosed quote.
     pub quote_state: QuoteState,
+    /// True when there are no preceding `|`, `&&`, `||`, or `;` operators.
+    pub is_first_segment: bool,
 }
 
 /// Parse a command buffer and cursor position into a `CommandContext`.
@@ -142,6 +144,7 @@ pub fn parse_command_context(buffer: &str, cursor: usize) -> CommandContext {
         in_pipe: found_pipe,
         in_redirect,
         quote_state: result.quote_state,
+        is_first_segment: segment_start == 0,
     }
 }
 
@@ -276,5 +279,35 @@ mod tests {
     fn test_cursor_beyond_end_clamps() {
         let ctx = parse_command_context("git", 999);
         assert_eq!(ctx.current_word, "git");
+    }
+
+    #[test]
+    fn test_is_first_segment_simple_command() {
+        let ctx = parse_command_context("git", 3);
+        assert!(ctx.is_first_segment);
+    }
+
+    #[test]
+    fn test_is_first_segment_false_after_pipe() {
+        let ctx = parse_command_context("cat f | grep ", 13);
+        assert!(!ctx.is_first_segment);
+    }
+
+    #[test]
+    fn test_is_first_segment_false_after_semicolon() {
+        let ctx = parse_command_context("cd /tmp; ls ", 12);
+        assert!(!ctx.is_first_segment);
+    }
+
+    #[test]
+    fn test_is_first_segment_false_after_and() {
+        let ctx = parse_command_context("make && ./run", 13);
+        assert!(!ctx.is_first_segment);
+    }
+
+    #[test]
+    fn test_is_first_segment_true_empty() {
+        let ctx = parse_command_context("", 0);
+        assert!(ctx.is_first_segment);
     }
 }
