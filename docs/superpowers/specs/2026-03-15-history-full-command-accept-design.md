@@ -119,7 +119,7 @@ All call sites that invoke `suggest_sync` must pass the buffer string:
 | `crates/gc-suggest/src/engine.rs` | Add `buffer` param to `suggest_sync`, separate history pass |
 | `crates/gc-pty/src/handler.rs` | History-aware accept (full buffer delete via `buffer_cursor`), pass buffer to engine |
 | `crates/gc-suggest/benches/suggest_bench.rs` | Update `suggest_sync` call sites with buffer param |
-| Tests in buffer/history/engine/handler | Update assertions for new behavior, add `is_first_segment` to test contexts |
+| Tests in buffer/history/engine/handler/commands/filesystem/specs | Update assertions for new behavior, add `is_first_segment: true` to all 15+ direct `CommandContext` struct constructions (no `Default` impl) |
 
 ## What Does NOT Change
 
