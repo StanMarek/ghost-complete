@@ -249,7 +249,12 @@ impl SuggestionEngine {
         ))
     }
 
-    pub fn suggest_sync(&self, ctx: &CommandContext, cwd: &Path, buffer: &str) -> Result<Vec<Suggestion>> {
+    pub fn suggest_sync(
+        &self,
+        ctx: &CommandContext,
+        cwd: &Path,
+        buffer: &str,
+    ) -> Result<Vec<Suggestion>> {
         let mut candidates = Vec::new();
 
         // Command position: commands (history handled by rank_with_history)
@@ -483,7 +488,9 @@ mod tests {
     fn test_spec_subcommands() {
         let engine = make_engine();
         let ctx = make_ctx(Some("git"), vec![], "ch", 1);
-        let results = engine.suggest_sync(&ctx, Path::new("/tmp"), "git ch").unwrap();
+        let results = engine
+            .suggest_sync(&ctx, Path::new("/tmp"), "git ch")
+            .unwrap();
         assert!(
             results.iter().any(|s| s.text == "checkout"),
             "expected 'checkout' in results: {results:?}"
@@ -495,7 +502,9 @@ mod tests {
         let engine = make_engine();
         // Query "--" should match long flags like --message, --amend, etc.
         let ctx = make_ctx(Some("git"), vec!["commit"], "--", 2);
-        let results = engine.suggest_sync(&ctx, Path::new("/tmp"), "git commit --").unwrap();
+        let results = engine
+            .suggest_sync(&ctx, Path::new("/tmp"), "git commit --")
+            .unwrap();
         assert!(
             results.iter().any(|s| s.text == "--message"),
             "expected '--message' in results: {results:?}"
@@ -507,7 +516,9 @@ mod tests {
 
         // Query "-" should match short flags like -m, -a
         let ctx = make_ctx(Some("git"), vec!["commit"], "-", 2);
-        let results = engine.suggest_sync(&ctx, Path::new("/tmp"), "git commit -").unwrap();
+        let results = engine
+            .suggest_sync(&ctx, Path::new("/tmp"), "git commit -")
+            .unwrap();
         assert!(
             results.iter().any(|s| s.text == "-m"),
             "expected '-m' in results: {results:?}"
@@ -521,7 +532,9 @@ mod tests {
         std::fs::write(tmp.path().join("output.txt"), "").unwrap();
         let mut ctx = make_ctx(Some("echo"), vec!["hello"], "", 2);
         ctx.in_redirect = true;
-        let results = engine.suggest_sync(&ctx, tmp.path(), "echo hello ").unwrap();
+        let results = engine
+            .suggest_sync(&ctx, tmp.path(), "echo hello ")
+            .unwrap();
         assert!(results.iter().any(|s| s.text == "output.txt"));
     }
 
@@ -545,7 +558,9 @@ mod tests {
         let tmp = tempfile::TempDir::new().unwrap();
         std::fs::write(tmp.path().join("data.csv"), "").unwrap();
         let ctx = make_ctx(Some("unknown_cmd"), vec![], "", 1);
-        let results = engine.suggest_sync(&ctx, tmp.path(), "unknown_cmd_xyz ").unwrap();
+        let results = engine
+            .suggest_sync(&ctx, tmp.path(), "unknown_cmd_xyz ")
+            .unwrap();
         assert!(results.iter().any(|s| s.text == "data.csv"));
     }
 
@@ -554,7 +569,9 @@ mod tests {
         let engine = make_engine();
         let tmp = tempfile::TempDir::new().unwrap();
         let ctx = make_ctx(Some("git"), vec![], "zzzzzzz_no_match", 1);
-        let results = engine.suggest_sync(&ctx, tmp.path(), "git zzzzzzz_no_match").unwrap();
+        let results = engine
+            .suggest_sync(&ctx, tmp.path(), "git zzzzzzz_no_match")
+            .unwrap();
         assert!(results.is_empty());
     }
 
@@ -597,7 +614,9 @@ mod tests {
             quote_state: QuoteState::None,
             is_first_segment: true,
         };
-        let results = engine.suggest_sync(&ctx, tmp.path(), "pip install -r ").unwrap();
+        let results = engine
+            .suggest_sync(&ctx, tmp.path(), "pip install -r ")
+            .unwrap();
         assert!(
             results.iter().any(|s| s.text == "requirements.txt"),
             "pip install -r should show files: {results:?}"
@@ -683,7 +702,9 @@ mod tests {
             quote_state: QuoteState::None,
             is_first_segment: true,
         };
-        let results = engine.suggest_sync(&ctx, tmp.path(), "test-deploy install -t ").unwrap();
+        let results = engine
+            .suggest_sync(&ctx, tmp.path(), "test-deploy install -t ")
+            .unwrap();
         assert!(
             results.iter().any(|s| s.text.contains("target_dir")),
             "test-deploy install -t should show directories: {results:?}"
@@ -792,7 +813,9 @@ mod tests {
         let engine = SuggestionEngine::with_providers(spec_store, history, commands);
 
         let ctx = make_ctx(Some("git"), vec!["push"], "", 2);
-        let results = engine.suggest_sync(&ctx, Path::new("/tmp"), "git push ").unwrap();
+        let results = engine
+            .suggest_sync(&ctx, Path::new("/tmp"), "git push ")
+            .unwrap();
         let hist: Vec<_> = results
             .iter()
             .filter(|s| s.source == crate::types::SuggestionSource::History)

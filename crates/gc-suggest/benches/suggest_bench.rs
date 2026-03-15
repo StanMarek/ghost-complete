@@ -195,7 +195,11 @@ fn engine_benchmarks(c: &mut Criterion) {
 
     let fs_ctx = make_ctx(Some("unknown_cmd_xyz"), vec![], "", 1);
     group.bench_function("filesystem_fallback", |b| {
-        b.iter(|| engine.suggest_sync(&fs_ctx, tmp.path(), "unknown_cmd_xyz ").unwrap());
+        b.iter(|| {
+            engine
+                .suggest_sync(&fs_ctx, tmp.path(), "unknown_cmd_xyz ")
+                .unwrap()
+        });
     });
 
     group.finish();

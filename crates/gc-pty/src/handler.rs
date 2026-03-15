@@ -321,7 +321,10 @@ impl InputHandler {
                 (cwd, ctx, predicted_buf, cr, cc, sr, sc)
             };
 
-            match self.engine.suggest_sync(&predicted_ctx, &cwd, &predicted_buffer) {
+            match self
+                .engine
+                .suggest_sync(&predicted_ctx, &cwd, &predicted_buffer)
+            {
                 Ok(suggestions) if !suggestions.is_empty() => {
                     self.suggestions = suggestions;
                     self.overlay.reset();

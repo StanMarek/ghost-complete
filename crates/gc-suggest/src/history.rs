@@ -97,14 +97,12 @@ impl Provider for HistoryProvider {
         let suggestions = self
             .entries
             .iter()
-            .map(|entry| {
-                Suggestion {
-                    text: entry.clone(),
-                    description: None,
-                    kind: SuggestionKind::History,
-                    source: SuggestionSource::History,
-                    ..Default::default()
-                }
+            .map(|entry| Suggestion {
+                text: entry.clone(),
+                description: None,
+                kind: SuggestionKind::History,
+                source: SuggestionSource::History,
+                ..Default::default()
             })
             .collect();
 
@@ -137,7 +135,7 @@ mod tests {
         }
     }
 
-#[test]
+    #[test]
     fn test_parse_extended_history() {
         let line = ": 1234567890:0;git push";
         assert_eq!(parse_history_line(line), "git push");
@@ -156,7 +154,10 @@ mod tests {
         ctx.in_pipe = true;
         ctx.is_first_segment = false;
         let results = provider.provide(&ctx, Path::new("/tmp")).unwrap();
-        assert!(results.is_empty(), "history should be empty in pipe segment");
+        assert!(
+            results.is_empty(),
+            "history should be empty in pipe segment"
+        );
     }
 
     #[test]
