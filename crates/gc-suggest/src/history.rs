@@ -89,25 +89,20 @@ fn parse_history_line(line: &str) -> &str {
 
 impl Provider for HistoryProvider {
     fn provide(&self, ctx: &CommandContext, _cwd: &Path) -> Result<Vec<Suggestion>> {
-        // History only makes sense at command position
-        if ctx.word_index != 0 {
+        // History only makes sense in the first segment — not after |, &&, ||, or ;
+        if !ctx.is_first_segment {
             return Ok(Vec::new());
         }
 
         let suggestions = self
             .entries
             .iter()
-            .map(|entry| {
-                // Use the first word as the suggestion text (command name),
-                // full command as description
-                let cmd_name = entry.split_whitespace().next().unwrap_or(entry);
-                Suggestion {
-                    text: cmd_name.to_string(),
-                    description: Some(entry.clone()),
-                    kind: SuggestionKind::History,
-                    source: SuggestionSource::History,
-                    ..Default::default()
-                }
+            .map(|entry| Suggestion {
+                text: entry.clone(),
+                description: None,
+                kind: SuggestionKind::History,
+                source: SuggestionSource::History,
+                ..Default::default()
             })
             .collect();
 
@@ -136,21 +131,7 @@ mod tests {
             in_pipe: false,
             in_redirect: false,
             quote_state: QuoteState::None,
-        }
-    }
-
-    fn arg_position_ctx() -> CommandContext {
-        CommandContext {
-            command: Some("git".into()),
-            args: vec![],
-            current_word: String::new(),
-            word_index: 1,
-            is_flag: false,
-            is_long_flag: false,
-            preceding_flag: None,
-            in_pipe: false,
-            in_redirect: false,
-            quote_state: QuoteState::None,
+            is_first_segment: true,
         }
     }
 
@@ -167,20 +148,38 @@ mod tests {
     }
 
     #[test]
-    fn test_history_only_at_command_position() {
+    fn test_history_suppressed_in_pipe() {
         let provider = HistoryProvider::from_entries(vec!["git push".into(), "ls -la".into()]);
-        let ctx = arg_position_ctx();
+        let mut ctx = cmd_position_ctx("");
+        ctx.in_pipe = true;
+        ctx.is_first_segment = false;
         let results = provider.provide(&ctx, Path::new("/tmp")).unwrap();
-        assert!(results.is_empty());
+        assert!(
+            results.is_empty(),
+            "history should be empty in pipe segment"
+        );
     }
 
     #[test]
-    fn test_history_at_command_position() {
+    fn test_history_returns_full_commands() {
         let provider = HistoryProvider::from_entries(vec!["git push".into(), "ls -la".into()]);
         let ctx = cmd_position_ctx("gi");
         let results = provider.provide(&ctx, Path::new("/tmp")).unwrap();
         assert_eq!(results.len(), 2);
-        assert!(results.iter().any(|s| s.text == "git"));
-        assert!(results.iter().any(|s| s.text == "ls"));
+        assert!(results.iter().any(|s| s.text == "git push"));
+        assert!(results.iter().any(|s| s.text == "ls -la"));
+        assert!(results.iter().all(|s| s.description.is_none()));
+    }
+
+    #[test]
+    fn test_history_available_at_arg_position_in_first_segment() {
+        let provider = HistoryProvider::from_entries(vec!["git push origin main".into()]);
+        let mut ctx = cmd_position_ctx("");
+        ctx.command = Some("git".into());
+        ctx.word_index = 1;
+        ctx.is_first_segment = true;
+        let results = provider.provide(&ctx, Path::new("/tmp")).unwrap();
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].text, "git push origin main");
     }
 }

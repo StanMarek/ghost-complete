@@ -274,14 +274,21 @@ impl InputHandler {
         };
 
         let selected_text = self.suggestions[selected_idx].text.clone();
+        let selected_kind = self.suggestions[selected_idx].kind;
         let is_dir = selected_text.ends_with('/');
         let forward = self.accept_suggestion(parser);
+
+        // History entries never chain — they're full commands, not directory paths
+        if selected_kind == gc_suggest::SuggestionKind::History {
+            self.dismiss(stdout);
+            return forward;
+        }
 
         if is_dir {
             // CD chaining: predict the buffer after acceptance and
             // immediately show next-level suggestions. Avoids timing
             // issues with the shell's OSC 7770 roundtrip.
-            let (cwd, predicted_ctx, cr, cc, sr, sc) = {
+            let (cwd, predicted_ctx, predicted_buffer, cr, cc, sr, sc) = {
                 let mut p = parser.lock().unwrap();
                 let state = p.state();
                 let buffer = state.command_buffer().unwrap_or("").to_string();
@@ -305,14 +312,19 @@ impl InputHandler {
                 let (cr, cc) = state.cursor_position();
                 let (sr, sc) = state.screen_dimensions();
 
+                let predicted_buf = predicted.clone();
+
                 // Update parser with predicted buffer so subsequent
                 // accept computes correct current_word
                 p.state_mut().predict_command_buffer(predicted, new_cursor);
 
-                (cwd, ctx, cr, cc, sr, sc)
+                (cwd, ctx, predicted_buf, cr, cc, sr, sc)
             };
 
-            match self.engine.suggest_sync(&predicted_ctx, &cwd) {
+            match self
+                .engine
+                .suggest_sync(&predicted_ctx, &cwd, &predicted_buffer)
+            {
                 Ok(suggestions) if !suggestions.is_empty() => {
                     self.suggestions = suggestions;
                     self.overlay.reset();
@@ -391,7 +403,7 @@ impl InputHandler {
         // Drop any pending dynamic results from a previous trigger
         self.dynamic_rx = None;
 
-        match self.engine.suggest_sync(&ctx, &cwd) {
+        match self.engine.suggest_sync(&ctx, &cwd, &buffer) {
             Ok(suggestions) if !suggestions.is_empty() => {
                 self.suggestions = suggestions;
                 self.overlay.reset();
@@ -543,20 +555,33 @@ impl InputHandler {
 
         let selected = &self.suggestions[selected_idx];
 
-        let current_word_chars = {
+        let (delete_chars, replacement) = {
             let p = parser.lock().unwrap();
             let state = p.state();
             let buffer = state.command_buffer().unwrap_or("");
             let cursor = state.buffer_cursor();
-            let ctx = parse_command_context(buffer, cursor);
-            ctx.current_word.chars().count()
+
+            if selected.kind == gc_suggest::SuggestionKind::History {
+                // History: delete the entire buffer up to cursor, then type the full command.
+                // Cursor is always at buffer end when popup is visible (arrow keys dismiss),
+                // but we use cursor (not buffer.chars().count()) because over-deleting past
+                // cursor into the prompt would be worse than leaving trailing chars.
+                debug_assert_eq!(
+                    cursor,
+                    buffer.chars().count(),
+                    "history accept assumes cursor at end of buffer"
+                );
+                (cursor, selected.text.clone())
+            } else {
+                // Non-history: delete current_word, type suggestion text
+                let ctx = parse_command_context(buffer, cursor);
+                (ctx.current_word.chars().count(), selected.text.clone())
+            }
         };
 
         // One 0x7F (backspace) per CHARACTER — the shell deletes by character, not byte
-        let mut bytes = vec![0x7F; current_word_chars];
-
-        // Type the suggestion text
-        bytes.extend_from_slice(selected.text.as_bytes());
+        let mut bytes = vec![0x7F; delete_chars];
+        bytes.extend_from_slice(replacement.as_bytes());
 
         bytes
     }

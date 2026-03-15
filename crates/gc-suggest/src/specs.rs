@@ -512,6 +512,7 @@ mod tests {
             in_pipe: false,
             in_redirect: false,
             quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
         };
         let res = resolve_spec(&spec, &ctx);
         eprintln!(
@@ -549,6 +550,7 @@ mod tests {
             in_pipe: false,
             in_redirect: false,
             quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
         };
         let res = resolve_spec(&spec, &ctx);
         let names: Vec<&str> = res.subcommands.iter().map(|s| s.text.as_str()).collect();
@@ -570,6 +572,7 @@ mod tests {
             in_pipe: false,
             in_redirect: false,
             quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
         };
         let res = resolve_spec(&spec, &ctx);
         let names: Vec<&str> = res.options.iter().map(|s| s.text.as_str()).collect();
@@ -591,6 +594,7 @@ mod tests {
             in_pipe: false,
             in_redirect: false,
             quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
         };
         let res = resolve_spec(&spec, &ctx);
         assert!(res.native_generators.contains(&"git_branches".to_string()));
@@ -610,6 +614,7 @@ mod tests {
             in_pipe: false,
             in_redirect: false,
             quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
         };
         let res = resolve_spec(&spec, &ctx);
         // Should not panic — returns top-level completions since "nonexistent"
@@ -638,6 +643,7 @@ mod tests {
             in_pipe: false,
             in_redirect: false,
             quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
         };
         let res = resolve_spec(&spec, &ctx);
         assert!(
@@ -671,6 +677,7 @@ mod tests {
             in_pipe: false,
             in_redirect: false,
             quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
         };
         let res = resolve_spec(&spec, &ctx);
         assert!(
@@ -713,6 +720,7 @@ mod tests {
             in_pipe: false,
             in_redirect: false,
             quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
         };
         let res = resolve_spec(&spec, &ctx);
         assert!(
@@ -751,6 +759,7 @@ mod tests {
             in_pipe: false,
             in_redirect: false,
             quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
         };
         let res = resolve_spec(&spec, &ctx);
         assert!(
@@ -792,6 +801,7 @@ mod tests {
             in_pipe: false,
             in_redirect: false,
             quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
         };
         let res = resolve_spec(&spec, &ctx);
         assert!(
@@ -830,6 +840,7 @@ mod tests {
             in_pipe: false,
             in_redirect: false,
             quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
         };
         let res = resolve_spec(&spec, &ctx);
         assert!(
@@ -981,6 +992,7 @@ mod tests {
             in_pipe: false,
             in_redirect: false,
             quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
         };
         let res = resolve_spec(&spec, &ctx);
         assert_eq!(res.native_generators, vec!["git_branches"]);
