@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2026-03-15
+
+### Added
+
+- **`max_history_results` config field** — controls how many history entries appear in the popup (default: 5). Set to `0` to disable history entirely, which also skips loading `$HISTFILE` at startup. Replaces the binary `providers.history` toggle with a single numeric knob.
+
+### Changed
+
+- **`providers.history` removed from config** — replaced by `max_history_results`. Existing configs with `providers.history` continue to parse without error (the field is silently ignored).
+- **History display cap** — history entries in the popup are now capped to `max_history_results` (default 5) after fuzzy scoring, regardless of how many slots remain in `max_results`. Previously, history could fill all remaining popup slots.
+
 ## [0.2.1] - 2026-03-15
 
 ### Changed
@@ -118,6 +129,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Shell integration** for zsh (full), bash (Ctrl+/), and fish (Ctrl+/)
 - **`validate-specs` subcommand** with colored output and item counts
 
+[0.2.2]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.2.2
+[0.2.1]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.2.1
 [0.2.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.2.0
 [0.1.4]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.1.4
 [0.1.3]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.1.3
