@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-03-15
+
+### Changed
+
+- **History entries insert full command on accept** — selecting a history entry from the popup now replaces the entire command buffer with the full historical command (e.g., `tmux source ~/.config/tmux/tmux.conf`), not just the first word (`tmux`).
+- **Buffer-wide history matching** — history entries are fuzzy-matched against the full typed buffer at any word position, not just at command position. Typing `git push` surfaces `git push origin main` from history.
+- **History suppressed in compound commands** — history entries no longer appear after pipe (`|`), chain (`&&`, `||`), or semicolon (`;`) operators. Full commands don't make sense as pipe/chain segments.
+- **History result cap** — history results are capped to remaining `max_results` slots after main suggestions, preventing unbounded combined result sets.
+
+### Added
+
+- **`is_first_segment` field on `CommandContext`** — tracks whether the cursor is in the first command segment (before any `|`, `&&`, `||`, `;`). Used to gate history suggestions.
+
 ## [0.2.0] - 2026-03-14
 
 ### Added
