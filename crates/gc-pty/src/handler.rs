@@ -274,8 +274,15 @@ impl InputHandler {
         };
 
         let selected_text = self.suggestions[selected_idx].text.clone();
+        let selected_kind = self.suggestions[selected_idx].kind;
         let is_dir = selected_text.ends_with('/');
         let forward = self.accept_suggestion(parser);
+
+        // History entries never chain — they're full commands, not directory paths
+        if selected_kind == gc_suggest::SuggestionKind::History {
+            self.dismiss(stdout);
+            return forward;
+        }
 
         if is_dir {
             // CD chaining: predict the buffer after acceptance and
@@ -545,20 +552,25 @@ impl InputHandler {
 
         let selected = &self.suggestions[selected_idx];
 
-        let current_word_chars = {
+        let (delete_chars, replacement) = {
             let p = parser.lock().unwrap();
             let state = p.state();
             let buffer = state.command_buffer().unwrap_or("");
             let cursor = state.buffer_cursor();
-            let ctx = parse_command_context(buffer, cursor);
-            ctx.current_word.chars().count()
+
+            if selected.kind == gc_suggest::SuggestionKind::History {
+                // History: delete the entire buffer up to cursor, then type the full command
+                (cursor, selected.text.clone())
+            } else {
+                // Non-history: delete current_word, type suggestion text
+                let ctx = parse_command_context(buffer, cursor);
+                (ctx.current_word.chars().count(), selected.text.clone())
+            }
         };
 
         // One 0x7F (backspace) per CHARACTER — the shell deletes by character, not byte
-        let mut bytes = vec![0x7F; current_word_chars];
-
-        // Type the suggestion text
-        bytes.extend_from_slice(selected.text.as_bytes());
+        let mut bytes = vec![0x7F; delete_chars];
+        bytes.extend_from_slice(replacement.as_bytes());
 
         bytes
     }
