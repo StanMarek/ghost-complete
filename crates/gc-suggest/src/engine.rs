@@ -28,8 +28,8 @@ pub struct SuggestionEngine {
     commands_provider: CommandsProvider,
     generator_cache: Arc<GeneratorCache>,
     max_results: usize,
+    max_history_results: usize,
     providers_commands: bool,
-    providers_history: bool,
     providers_filesystem: bool,
     providers_specs: bool,
     providers_git: bool,
@@ -52,8 +52,8 @@ impl SuggestionEngine {
             commands_provider: CommandsProvider::from_path_env(),
             generator_cache: Arc::new(GeneratorCache::new()),
             max_results: fuzzy::DEFAULT_MAX_RESULTS,
+            max_history_results: 5,
             providers_commands: true,
-            providers_history: true,
             providers_filesystem: true,
             providers_specs: true,
             providers_git: true,
@@ -66,19 +66,23 @@ impl SuggestionEngine {
         max_results: usize,
         max_history_entries: usize,
         commands: bool,
-        history: bool,
+        max_history_results: usize,
         filesystem: bool,
         specs: bool,
         git: bool,
     ) -> Self {
         self.max_results = max_results;
+        self.max_history_results = max_history_results;
         self.providers_commands = commands;
-        self.providers_history = history;
         self.providers_filesystem = filesystem;
         self.providers_specs = specs;
         self.providers_git = git;
-        // Reload history with new max
-        self.history_provider = HistoryProvider::load(max_history_entries);
+        // Reload history only if enabled
+        if max_history_results > 0 {
+            self.history_provider = HistoryProvider::load(max_history_entries);
+        } else {
+            self.history_provider = HistoryProvider::from_entries(vec![]);
+        }
         self
     }
 
@@ -95,12 +99,19 @@ impl SuggestionEngine {
             commands_provider,
             generator_cache: Arc::new(GeneratorCache::new()),
             max_results: fuzzy::DEFAULT_MAX_RESULTS,
+            max_history_results: 5,
             providers_commands: true,
-            providers_history: true,
             providers_filesystem: true,
             providers_specs: true,
             providers_git: true,
         }
+    }
+
+    /// Test helper — set the history results cap without reloading from disk.
+    #[cfg(test)]
+    pub fn with_max_history_results(mut self, n: usize) -> Self {
+        self.max_history_results = n;
+        self
     }
 
     /// Quick check: does the current command context have any script generators?
@@ -398,8 +409,10 @@ impl SuggestionEngine {
         let mut results = fuzzy::rank(&ctx.current_word, candidates, self.max_results);
 
         // History doesn't belong in redirect context — user expects filenames, not commands
-        if self.providers_history && !ctx.in_redirect {
-            let remaining = self.max_results.saturating_sub(results.len());
+        if self.max_history_results > 0 && !ctx.in_redirect {
+            let remaining = self
+                .max_history_results
+                .min(self.max_results.saturating_sub(results.len()));
             if remaining > 0 {
                 match self.history_provider.provide(ctx, cwd) {
                     Ok(hist) if !hist.is_empty() => {
@@ -793,7 +806,7 @@ mod tests {
         let history = HistoryProvider::from_entries(vec![]);
         let commands = CommandsProvider::from_list(vec!["git".into(), "ls".into()]);
         let engine = SuggestionEngine::with_providers(spec_store, history, commands)
-            .with_suggest_config(50, 10_000, false, true, true, true, true);
+            .with_suggest_config(50, 10_000, false, 5, true, true, true);
 
         let ctx = make_ctx(None, vec![], "gi", 0);
         let results = engine.suggest_sync(&ctx, Path::new("/tmp"), "gi").unwrap();
@@ -939,6 +952,52 @@ mod tests {
             .await
             .unwrap();
         assert!(results.is_empty());
+    }
+
+    #[test]
+    fn test_history_capped_to_max_history_results() {
+        let spec_store = SpecStore::load_from_dir(&spec_dir()).unwrap().store;
+        let history = HistoryProvider::from_entries(vec![
+            "git push origin main".into(),
+            "git pull origin main".into(),
+            "git fetch --all".into(),
+            "git status".into(),
+            "git log --oneline".into(),
+        ]);
+        let commands = CommandsProvider::from_list(vec!["git".into()]);
+        let engine = SuggestionEngine::with_providers(spec_store, history, commands)
+            .with_max_history_results(3);
+
+        let ctx = make_ctx(None, vec![], "git", 0);
+        let results = engine.suggest_sync(&ctx, Path::new("/tmp"), "git").unwrap();
+        let hist_count = results
+            .iter()
+            .filter(|s| s.source == crate::types::SuggestionSource::History)
+            .count();
+        assert_eq!(
+            hist_count, 3,
+            "history should be capped at 3, got {hist_count}"
+        );
+    }
+
+    #[test]
+    fn test_history_disabled_when_max_zero() {
+        let spec_store = SpecStore::load_from_dir(&spec_dir()).unwrap().store;
+        let history = HistoryProvider::from_entries(vec![
+            "git push origin main".into(),
+            "cargo build".into(),
+        ]);
+        let commands = CommandsProvider::from_list(vec!["git".into(), "cargo".into()]);
+        let engine = SuggestionEngine::with_providers(spec_store, history, commands)
+            .with_max_history_results(0);
+
+        let ctx = make_ctx(None, vec![], "git", 0);
+        let results = engine.suggest_sync(&ctx, Path::new("/tmp"), "git").unwrap();
+        let hist_count = results
+            .iter()
+            .filter(|s| s.source == crate::types::SuggestionSource::History)
+            .count();
+        assert_eq!(hist_count, 0, "history should be disabled when max is 0");
     }
 
     #[test]

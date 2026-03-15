@@ -86,6 +86,7 @@ impl Default for PopupConfig {
 #[serde(default)]
 pub struct SuggestConfig {
     pub max_results: usize,
+    pub max_history_results: usize,
     pub max_history_entries: usize,
     pub generator_timeout_ms: u64,
     pub providers: ProvidersConfig,
@@ -95,6 +96,7 @@ impl Default for SuggestConfig {
     fn default() -> Self {
         Self {
             max_results: 50,
+            max_history_results: 5,
             max_history_entries: 10_000,
             generator_timeout_ms: 5000,
             providers: ProvidersConfig::default(),
@@ -106,7 +108,6 @@ impl Default for SuggestConfig {
 #[serde(default)]
 pub struct ProvidersConfig {
     pub commands: bool,
-    pub history: bool,
     pub filesystem: bool,
     pub specs: bool,
     pub git: bool,
@@ -116,7 +117,6 @@ impl Default for ProvidersConfig {
     fn default() -> Self {
         Self {
             commands: true,
-            history: true,
             filesystem: true,
             specs: true,
             git: true,
@@ -257,10 +257,10 @@ mod tests {
         assert_eq!(config.popup.min_width, 20);
         assert_eq!(config.popup.max_width, 60);
         assert_eq!(config.suggest.max_results, 50);
+        assert_eq!(config.suggest.max_history_results, 5);
         assert_eq!(config.suggest.max_history_entries, 10_000);
         assert_eq!(config.suggest.generator_timeout_ms, 5000);
         assert!(config.suggest.providers.commands);
-        assert!(config.suggest.providers.history);
         assert!(config.suggest.providers.filesystem);
         assert!(config.suggest.providers.specs);
         assert!(config.suggest.providers.git);
@@ -339,11 +339,11 @@ max_width = 80
 
 [suggest]
 max_results = 100
+max_history_results = 3
 max_history_entries = 5000
 
 [suggest.providers]
 commands = true
-history = false
 filesystem = true
 specs = true
 git = false
@@ -372,9 +372,9 @@ description = "dim"
         assert_eq!(config.popup.min_width, 25);
         assert_eq!(config.popup.max_width, 80);
         assert_eq!(config.suggest.max_results, 100);
+        assert_eq!(config.suggest.max_history_results, 3);
         assert_eq!(config.suggest.max_history_entries, 5000);
         assert!(config.suggest.providers.commands);
-        assert!(!config.suggest.providers.history);
         assert!(!config.suggest.providers.git);
         assert_eq!(
             config.paths.spec_dirs,
@@ -491,5 +491,16 @@ scrollbar = "fg:#555555"
         assert_eq!(resolved.description, "fg:#616161");
         assert_eq!(resolved.match_highlight, "fg:#ffcb6b bold");
         assert_eq!(resolved.scrollbar, "fg:#424242");
+    }
+
+    #[test]
+    fn test_legacy_providers_history_field_ignored() {
+        let toml_str = r#"
+[suggest.providers]
+history = false
+"#;
+        let config: GhostConfig = toml::from_str(toml_str).unwrap();
+        // Field is silently ignored; max_history_results keeps its default
+        assert_eq!(config.suggest.max_history_results, 5);
     }
 }

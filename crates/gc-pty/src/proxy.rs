@@ -106,7 +106,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 config.suggest.max_results,
                 config.suggest.max_history_entries,
                 config.suggest.providers.commands,
-                config.suggest.providers.history,
+                config.suggest.max_history_results,
                 config.suggest.providers.filesystem,
                 config.suggest.providers.specs,
                 config.suggest.providers.git,
