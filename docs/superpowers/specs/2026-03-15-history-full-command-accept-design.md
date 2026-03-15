@@ -13,9 +13,25 @@ When accepting a history entry from the popup, only the base command (first word
 
 ## Design
 
+### 0. Buffer Context (`gc-buffer/src/context.rs`)
+
+- Add `is_first_segment: bool` to `CommandContext`. Computed as `segment_start == 0` — true when there are no preceding `|`, `&&`, `||`, or `;` operators.
+- `segment_start` is already computed (line 43) but not exposed. This makes it available for gating history.
+
+```rust
+// In CommandContext struct
+pub is_first_segment: bool,
+
+// In parse_command_context, at the end
+CommandContext {
+    ...
+    is_first_segment: segment_start == 0,
+}
+```
+
 ### 1. History Provider (`gc-suggest/src/history.rs`)
 
-- Replace the `word_index == 0` guard with `in_pipe` / `in_redirect` guard — history makes no sense inside pipes or redirects (full commands can't be pipe segments).
+- Replace the `word_index == 0` guard with `is_first_segment` guard — history only makes sense when the user is typing a standalone command, not inside a pipe, chain, or redirect.
 - Change `text` from first-word-only to the **full command string**.
 - Set `description` to `None` — no point duplicating the full command in both fields.
 
@@ -30,7 +46,7 @@ Suggestion {
 }
 
 // After
-if ctx.in_pipe || ctx.in_redirect { return Ok(Vec::new()); }
+if !ctx.is_first_segment { return Ok(Vec::new()); }
 Suggestion {
     text: entry.clone(),
     description: None,
@@ -43,7 +59,7 @@ Suggestion {
 - Add a `buffer: &str` parameter to `suggest_sync`.
 - Remove history from the `word_index == 0` block (commands provider stays).
 - After the existing suggestion logic (commands/specs/filesystem), run a **separate history pass**:
-  1. Call `history_provider.provide()` (gated by `!in_pipe && !in_redirect`).
+  1. Call `history_provider.provide()` (gated by `is_first_segment` inside the provider).
   2. Fuzzy-rank history candidates against the **full buffer** (not `current_word`).
   3. Append ranked history results to the main results.
 - Each pass applies its own `max_results` cap independently. Combined result may exceed `max_results` (up to 2x), but popup's `max_visible` handles display; the extra memory/sorting is negligible.
@@ -53,8 +69,8 @@ Suggestion {
 suggest_sync(ctx, cwd, buffer):
   1. candidates = existing logic (commands at word_index==0, specs, filesystem)
   2. results = fuzzy::rank(ctx.current_word, candidates, max_results)
-  3. if history enabled && !ctx.in_pipe && !ctx.in_redirect:
-       hist_candidates = history_provider.provide(ctx, cwd)
+  3. if history enabled:
+       hist_candidates = history_provider.provide(ctx, cwd)  // returns empty if !is_first_segment
        hist_results = fuzzy::rank(buffer, hist_candidates, max_results)
        results.extend(hist_results)
   4. return results
@@ -86,7 +102,7 @@ All call sites that invoke `suggest_sync` must pass the buffer string:
 
 ### 6. Edge Cases
 
-**Pipes and chains (`|`, `;`, `&&`, `||`):** History is suppressed when `ctx.in_pipe` or `ctx.in_redirect` is true. Full commands don't make sense as pipe segments, and accepting one would require deleting only the current segment, not the full buffer. This is the simplest correct behavior.
+**Pipes and chains (`|`, `;`, `&&`, `||`):** History is suppressed when `!ctx.is_first_segment`. The `is_first_segment` field is false after any pipe, chain, or semicolon operator. Full commands don't make sense as pipe/chain segments, and accepting one would require deleting only the current segment — which is complex and not useful. This covers all compound command cases.
 
 **Multi-byte characters:** `buffer_cursor` is already a char offset, and backspace (0x7F) deletes by character in the shell. No special handling needed.
 
@@ -98,11 +114,12 @@ All call sites that invoke `suggest_sync` must pass the buffer string:
 
 | File | Change |
 |------|--------|
-| `crates/gc-suggest/src/history.rs` | Full command in `text`, replace `word_index` gate with `in_pipe`/`in_redirect` gate |
+| `crates/gc-buffer/src/context.rs` | Add `is_first_segment` field to `CommandContext` |
+| `crates/gc-suggest/src/history.rs` | Full command in `text`, replace `word_index` gate with `is_first_segment` gate |
 | `crates/gc-suggest/src/engine.rs` | Add `buffer` param to `suggest_sync`, separate history pass |
 | `crates/gc-pty/src/handler.rs` | History-aware accept (full buffer delete via `buffer_cursor`), pass buffer to engine |
 | `crates/gc-suggest/benches/suggest_bench.rs` | Update `suggest_sync` call sites with buffer param |
-| Tests in history/engine/handler | Update assertions for new behavior |
+| Tests in buffer/history/engine/handler | Update assertions for new behavior, add `is_first_segment` to test contexts |
 
 ## What Does NOT Change
 
