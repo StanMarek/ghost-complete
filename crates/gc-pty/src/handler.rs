@@ -11,7 +11,7 @@ use gc_overlay::types::{
 use gc_overlay::{clear_popup, render_popup, PopupTheme};
 use gc_parser::TerminalParser;
 use gc_suggest::{Suggestion, SuggestionEngine};
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, Notify};
 
 use crate::input::KeyEvent;
 
@@ -87,6 +87,7 @@ pub struct InputHandler {
     keybindings: Keybindings,
     theme: PopupTheme,
     dynamic_rx: Option<mpsc::Receiver<Vec<Suggestion>>>,
+    dynamic_notify: Arc<Notify>,
     generator_timeout_ms: u64,
     /// Accumulated viewport scroll from popup rendering. Persists across
     /// dismiss/re-trigger cycles because viewport scroll is permanent.
@@ -110,9 +111,14 @@ impl InputHandler {
             keybindings: Keybindings::default(),
             theme: PopupTheme::default(),
             dynamic_rx: None,
+            dynamic_notify: Arc::new(Notify::new()),
             generator_timeout_ms: 5000,
             scroll_deficit: 0,
         })
+    }
+
+    pub fn dynamic_notify(&self) -> Arc<Notify> {
+        Arc::clone(&self.dynamic_notify)
     }
 
     pub fn with_popup_config(mut self, max_visible: usize, min_width: u16, max_width: u16) -> Self {
@@ -419,11 +425,8 @@ impl InputHandler {
 
         // Spawn async task for script-based generators only if the command
         // actually has any. Avoids wasted channel + task spawn on every trigger.
-        // NOTE: dynamic results are blocked on PTY read — try_merge_dynamic()
-        // only runs when Task B reads output. If the shell goes idle after the
-        // trigger, results won't render until the next keystroke. This is a
-        // known architectural limitation; a dedicated polling task or
-        // tokio::select! combining PTY read with the dynamic channel is needed.
+        // Task E (dynamic_merge_loop) awaits dynamic_notify and calls
+        // try_merge_dynamic() so results render even when the shell is idle.
         if self.engine.has_script_generators(&ctx) {
             let (tx, rx) = mpsc::channel::<Vec<Suggestion>>(1);
             self.dynamic_rx = Some(rx);
@@ -431,6 +434,7 @@ impl InputHandler {
             let ctx_clone = ctx.clone();
             let cwd_clone = cwd.clone();
             let timeout = self.generator_timeout_ms;
+            let notify = Arc::clone(&self.dynamic_notify);
             tokio::spawn(async move {
                 match engine
                     .suggest_dynamic(&ctx_clone, &cwd_clone, timeout)
@@ -438,6 +442,7 @@ impl InputHandler {
                 {
                     Ok(results) if !results.is_empty() => {
                         let _ = tx.send(results).await;
+                        notify.notify_one();
                     }
                     Ok(_) => {} // empty results, nothing to send
                     Err(e) => {
@@ -727,6 +732,7 @@ mod tests {
             keybindings: Keybindings::default(),
             theme: PopupTheme::default(),
             dynamic_rx: None,
+            dynamic_notify: Arc::new(Notify::new()),
             generator_timeout_ms: 5000,
             scroll_deficit: 0,
         };
@@ -755,6 +761,7 @@ mod tests {
             keybindings: Keybindings::default(),
             theme: PopupTheme::default(),
             dynamic_rx: None,
+            dynamic_notify: Arc::new(Notify::new()),
             generator_timeout_ms: 5000,
             scroll_deficit: 0,
         }
@@ -839,6 +846,7 @@ mod tests {
             keybindings: Keybindings::default(),
             theme: PopupTheme::default(),
             dynamic_rx: None,
+            dynamic_notify: Arc::new(Notify::new()),
             generator_timeout_ms: 5000,
             scroll_deficit: 0,
         };
@@ -896,6 +904,7 @@ mod tests {
             keybindings: Keybindings::default(),
             theme: PopupTheme::default(),
             dynamic_rx: None,
+            dynamic_notify: Arc::new(Notify::new()),
             generator_timeout_ms: 5000,
             scroll_deficit: 0,
         };
@@ -950,6 +959,7 @@ mod tests {
             keybindings: Keybindings::default(),
             theme: PopupTheme::default(),
             dynamic_rx: None,
+            dynamic_notify: Arc::new(Notify::new()),
             generator_timeout_ms: 5000,
             scroll_deficit: 0,
         };
@@ -991,6 +1001,7 @@ mod tests {
             keybindings: Keybindings::default(),
             theme: PopupTheme::default(),
             dynamic_rx: None,
+            dynamic_notify: Arc::new(Notify::new()),
             generator_timeout_ms: 5000,
             scroll_deficit: 0,
         };
