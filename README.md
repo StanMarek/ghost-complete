@@ -27,7 +27,7 @@ This is a personal project I built for my own workflow. I'm happy to share it an
 
 - **Ghostty + zsh is the tested path.** That's what I use daily — it's stable and reliable.
 - **Bash and fish support is experimental.** Manual trigger only (Ctrl+/), no auto-trigger on typing, and not actively tested.
-- **No stability guarantees.** This is v0.1.x — config format, spec format, and behavior may change between releases.
+- **No stability guarantees.** Config format, spec format, and behavior may change between releases.
 - **macOS only.** No Linux or Windows support planned at this time.
 
 If you hit a bug, [open an issue](https://github.com/StanMarek/ghost-complete/issues). I'll fix what I can.
@@ -119,28 +119,35 @@ dismiss = "escape"
 trigger = "ctrl+/"
 
 [theme]
-selected = "reverse"
-description = "dim"
+preset = "dark"  # dark, light, catppuccin, material-darker
 
 [suggest]
 max_results = 50
+max_history_results = 5
 generator_timeout_ms = 5000
 
 [suggest.providers]
 commands = true
-history = true
 filesystem = true
 specs = true
 git = true
 ```
 
+Config changes are applied live — no restart needed.
+
 See [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for the full reference.
 
 ## Completion Specs
 
-Ghost Complete ships with 717 Fig-compatible JSON completion specs. Covers most common CLI tools including git, docker, cargo, npm, kubectl, brew, curl, ssh, and 700+ more — converted from the [Fig](https://fig.io) autocomplete ecosystem.
+Ghost Complete ships with 709 Fig-compatible JSON completion specs covering git, docker, cargo, npm, kubectl, brew, curl, ssh, and 700+ more — converted from the [Fig](https://fig.io) autocomplete ecosystem.
 
-Many specs include dynamic generators that run shell commands for live results (e.g., `brew list`, `docker ps`, `kubectl get`). Generator results are cached with configurable TTL to keep things fast.
+Beyond specs, built-in providers offer:
+- **Environment variables** — `echo $HOM` → `$HOME`
+- **SSH hosts** — parsed from `~/.ssh/config` with mtime caching
+- **Shell alias resolution** — `alias g=git` → `g push` uses the git spec
+- **Frecency-ranked history** — frequently/recently used commands score higher
+
+Many specs include dynamic generators that run shell commands for live results (e.g., `brew list`, `docker ps`, `kubectl get`). Generator results are cached with configurable TTL. A loading indicator (`...`) appears while generators run.
 
 Custom specs go in `~/.config/ghost-complete/specs/`. See [docs/COMPLETION_SPEC.md](docs/COMPLETION_SPEC.md) for the format reference.
 

@@ -45,12 +45,14 @@ Controls the suggestion engine behavior.
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `max_results` | integer | `50` | Maximum total candidates to consider |
-| `max_history_entries` | integer | `10000` | Maximum shell history entries to load |
+| `max_history_results` | integer | `5` | Maximum history entries shown in popup. Set to `0` to disable history. |
+| `max_history_entries` | integer | `10000` | Maximum shell history entries to load from `$HISTFILE` |
 | `generator_timeout_ms` | integer | `5000` | Timeout in milliseconds for shell command generators. Commands that exceed this are killed. |
 
 ```toml
 [suggest]
 max_results = 50
+max_history_results = 5
 max_history_entries = 10000
 generator_timeout_ms = 5000
 ```
@@ -62,7 +64,6 @@ Enable or disable individual suggestion providers.
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `commands` | bool | `true` | `$PATH` command completions |
-| `history` | bool | `true` | Shell history completions |
 | `filesystem` | bool | `true` | File and directory completions |
 | `specs` | bool | `true` | Fig-compatible JSON spec completions |
 | `git` | bool | `true` | Git context completions (branches, tags, remotes) |
@@ -70,7 +71,6 @@ Enable or disable individual suggestion providers.
 ```toml
 [suggest.providers]
 commands = true
-history = true
 filesystem = true
 specs = true
 git = true
@@ -121,18 +121,32 @@ trigger = "ctrl+/"
 
 ### `[theme]`
 
-Customize popup colors and styles. Values are space-separated SGR token strings. Invalid styles cause a startup error (fail-fast).
+Customize popup colors and styles. Values are space-separated SGR token strings. Invalid styles cause a startup error (fail-fast). Changes are applied live when config hot-reload is active.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `selected` | string | `"reverse"` | Style for the selected (highlighted) item |
-| `description` | string | `"dim"` | Style for suggestion descriptions |
+| `preset` | string | `""` | Base preset: `dark`, `light`, `catppuccin`, `material-darker`. Empty uses `dark`. Field overrides below take priority over preset values. |
+| `selected` | string | (from preset) | Style for the selected (highlighted) item |
+| `description` | string | (from preset) | Style for suggestion descriptions |
+| `match_highlight` | string | (from preset) | Style for fuzzy-matched characters |
+| `item_text` | string | (from preset) | Style for non-selected item text |
+| `scrollbar` | string | (from preset) | Style for the scrollbar track |
 
 ```toml
 [theme]
-selected = "reverse"
-description = "dim"
+preset = "catppuccin"
+# Override individual fields from the preset:
+match_highlight = "underline"
 ```
+
+#### Presets
+
+| Preset | Selected | Description | Match Highlight | Scrollbar |
+|--------|----------|-------------|-----------------|-----------|
+| `dark` | `reverse` | `dim` | `bold` | `dim` |
+| `light` | `fg:#1e1e2e bg:#dce0e8 bold` | `fg:#6c6f85` | `fg:#d20f39 bold` | `fg:#9ca0b0` |
+| `catppuccin` | `fg:#cdd6f4 bg:#585b70 bold` | `fg:#6c7086` | `fg:#f9e2af bold` | `fg:#585b70` |
+| `material-darker` | `fg:#eeffff bg:#424242 bold` | `fg:#616161` | `fg:#ffcb6b bold` | `fg:#424242` |
 
 #### Style String Syntax
 
@@ -146,12 +160,14 @@ Styles are space-separated tokens:
 | `reverse` | Swap foreground/background |
 | `fg:N` | Set foreground to 256-color index N (0-255) |
 | `bg:N` | Set background to 256-color index N (0-255) |
+| `fg:#RRGGBB` | Set foreground to 24-bit truecolor |
+| `bg:#RRGGBB` | Set background to 24-bit truecolor |
 
 Examples:
 - `"reverse"` — inverted colors (default selected style)
 - `"bold fg:255"` — bold white text
 - `"dim"` — faint text (default description style)
-- `"fg:255 bg:236"` — white text on dark gray background
+- `"fg:#cdd6f4 bg:#585b70 bold"` — Catppuccin-style selection
 - `"bold underline fg:208"` — bold underlined orange text
 
 ## Full Example
@@ -168,12 +184,12 @@ max_width = 50
 
 [suggest]
 max_results = 100
+max_history_results = 3
 max_history_entries = 5000
 generator_timeout_ms = 5000
 
 [suggest.providers]
 commands = true
-history = true
 filesystem = true
 specs = true
 git = false
@@ -185,6 +201,12 @@ dismiss = "escape"
 trigger = "ctrl+/"
 
 [theme]
-selected = "fg:255 bg:236"
-description = "dim"
+preset = "catppuccin"
+match_highlight = "underline"
 ```
+
+## Notes
+
+- **Config hot-reload:** Changes to `config.toml` are applied live without restarting your shell. Theme, keybindings, trigger chars, and popup dimensions are all reloaded automatically.
+- **Nerd Font icons:** The popup gutter uses Nerd Font icons. If your terminal font doesn't include Nerd Font patches, you'll see placeholder characters. Use a [Nerd Font](https://www.nerdfonts.com/) for the best experience.
+- **History control:** Use `max_history_results` (not `providers.history`) to control history. Set to `0` to disable history entirely.

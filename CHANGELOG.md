@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.3] - 2026-03-16
+
+### Added
+
+- **Environment variable completion** — typing `$` in argument position suggests environment variables (`$HOME`, `$PATH`, etc.). Pre-filtered by typed prefix.
+- **SSH host completion** — `ssh` arguments suggest hosts parsed from `~/.ssh/config`. Mtime-cached, skips wildcards, handles multiple hosts per line.
+- **Shell alias resolution** — aliases like `alias g=git` are resolved before spec lookup, so `g push` uses the git spec. Reads dotfiles first (`.zsh_aliases`, `.aliases`, `.bash_aliases`), falls back to non-interactive subprocess with 2-second timeout.
+- **Frecency scoring infrastructure** — commands scored by `frequency × recency` (half-life ~1 week). JSON persistence at `~/.config/ghost-complete/frecency.json` with batched saves and pruning to 1000 entries. Recording hook not yet wired — scoring is read-only in this release.
+- **Config hot-reload** — watches `config.toml` via `notify` crate. Debounced (200ms), multi-stage validation (parse → theme → styles → keybindings). Invalid edits logged and ignored.
+- **Loading indicator** — dimmed `...` footer row in popup when async script generators are pending.
+- **Nerd Font icons** in popup gutter — terminal, chevron, flag, file, folder, branch, tag, link, history icons replace single-letter indicators.
+- **`display_text()` helper** in `gc-overlay/src/util.rs` — shared basename extraction for consistent width calculation and rendering.
+- **Test builders** — `make_visible_handler()` / `make_selected_handler()` in handler tests.
+
+### Changed
+
+- **Trailing space after accept** — accepting a non-directory suggestion appends a space so the user can immediately type the next argument. Skipped for `=`-terminated flags, history entries, and directories.
+- **Single spec resolution** per trigger — previously resolved the spec tree 3 times (suggest_sync, has_script_generators, suggest_dynamic). Now `SyncResult` carries pre-resolved generators.
+- **Dynamic merge re-ranking** — when async generators return, merged results are re-ranked against the current query.
+- **History mtime refresh** — re-reads `~/.zsh_history` when file mtime changes instead of loading once at startup.
+- **Unicode-width for popup sizing** — uses `unicode-width` crate for correct CJK/emoji terminal column width (2 columns per fullwidth character).
+- **Light theme preset** — distinct colors for light terminal backgrounds (`fg:#1e1e2e bg:#dce0e8` selection, `fg:#d20f39` match highlight).
+- **Basename in popup width** — width calculated from displayed basename, not full path.
+- **Graceful mutex handling** — all long-lived async task locks use `match` with `tracing` logging on poison. `.unwrap()` retained in `spawn_blocking` I/O tasks where panic = correct termination.
+- **Frecency error logging** — corrupt JSON logged at `warn`, unreadable file at `debug`, directory creation failure at `warn`.
+
+### Fixed
+
+- **Loading indicator stale on empty results** — Task E is now always notified when generators finish, even on empty or error results.
+- **Description padding with non-ASCII text** — description column padding uses `unicode-width` character width, not byte length.
+
 ## [0.2.2] - 2026-03-15
 
 ### Added
@@ -129,6 +160,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Shell integration** for zsh (full), bash (Ctrl+/), and fish (Ctrl+/)
 - **`validate-specs` subcommand** with colored output and item counts
 
+[0.2.3]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.2.3
 [0.2.2]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.2.2
 [0.2.1]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.2.1
 [0.2.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.2.0
