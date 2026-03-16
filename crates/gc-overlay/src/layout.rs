@@ -1,6 +1,8 @@
 use gc_suggest::Suggestion;
+use unicode_width::UnicodeWidthStr;
 
 use crate::types::PopupLayout;
+use crate::util::display_text;
 
 #[allow(clippy::too_many_arguments)]
 pub fn compute_layout(
@@ -51,11 +53,12 @@ pub fn compute_layout(
 /// Format: " K text  description " where K is kind char.
 fn item_display_width(suggestion: &Suggestion) -> usize {
     // gutter(" K ") = 3 chars, then text, then optional "  desc", then trailing space
-    let text_len = suggestion.text.len();
+    let (dt, _) = display_text(suggestion);
+    let text_len = UnicodeWidthStr::width(dt);
     let desc_len = suggestion
         .description
         .as_ref()
-        .map(|d| d.len() + 2) // 2 for gap before description
+        .map(|d| UnicodeWidthStr::width(d.as_str()) + 2) // 2 for gap before description
         .unwrap_or(0);
     3 + text_len + desc_len + 1
 }
@@ -64,10 +67,20 @@ fn item_display_width(suggestion: &Suggestion) -> usize {
 mod tests {
     use super::*;
     use crate::types::{DEFAULT_MAX_POPUP_WIDTH, DEFAULT_MAX_VISIBLE, DEFAULT_MIN_POPUP_WIDTH};
+    use gc_suggest::SuggestionKind;
 
     fn make(text: &str, desc: Option<&str>) -> Suggestion {
         Suggestion {
             text: text.to_string(),
+            description: desc.map(String::from),
+            ..Default::default()
+        }
+    }
+
+    fn make_path(text: &str, kind: SuggestionKind, desc: Option<&str>) -> Suggestion {
+        Suggestion {
+            text: text.to_string(),
+            kind,
             description: desc.map(String::from),
             ..Default::default()
         }
@@ -215,5 +228,61 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
         );
         assert_eq!(layout.height, 5);
+    }
+
+    // --- Bug B4: filepath width uses basename only ---
+
+    #[test]
+    fn test_filepath_width_uses_basename() {
+        // "src/deeply/nested/file.txt" as FilePath — display width should be
+        // based on "file.txt" (8 chars), not the full 25-byte path.
+        let deep = make_path("src/deeply/nested/file.txt", SuggestionKind::FilePath, None);
+        let shallow = make_path("file.txt", SuggestionKind::FilePath, None);
+        assert_eq!(item_display_width(&deep), item_display_width(&shallow));
+    }
+
+    #[test]
+    fn test_directory_width_uses_basename() {
+        // "path/to/mydir/" as Directory — display should be "mydir/" (6 chars).
+        let deep = make_path("path/to/mydir/", SuggestionKind::Directory, None);
+        // gutter(3) + "mydir/"(6) + trailing(1) = 10
+        assert_eq!(item_display_width(&deep), 3 + 6 + 1);
+    }
+
+    #[test]
+    fn test_filepath_no_slash_unchanged() {
+        let s = make_path("Cargo.toml", SuggestionKind::FilePath, None);
+        // gutter(3) + "Cargo.toml"(10) + trailing(1) = 14
+        assert_eq!(item_display_width(&s), 3 + 10 + 1);
+    }
+
+    // --- Bug B5: non-ASCII char counting ---
+
+    #[test]
+    fn test_non_ascii_text_width() {
+        // 3 CJK characters = 6 terminal columns (2 each via unicode-width)
+        let s = make("\u{65E5}\u{672C}\u{8A9E}", None);
+        // gutter(3) + text(6 cols) + trailing(1) = 10
+        assert_eq!(item_display_width(&s), 3 + 6 + 1);
+    }
+
+    #[test]
+    fn test_non_ascii_description_width() {
+        // 3 accented chars = 3 terminal columns (1 each, not fullwidth)
+        let s = make("cmd", Some("\u{00E9}\u{00E8}\u{00EA}"));
+        // gutter(3) + "cmd"(3) + gap(2) + desc(3 cols) + trailing(1) = 12
+        assert_eq!(item_display_width(&s), 3 + 3 + 2 + 3 + 1);
+    }
+
+    #[test]
+    fn test_non_ascii_filepath_width() {
+        // basename "ファイル.txt": 4 katakana (2 cols each = 8) + ".txt" (4) = 12 cols
+        let s = make_path(
+            "docs/\u{65E5}\u{672C}\u{8A9E}/\u{30D5}\u{30A1}\u{30A4}\u{30EB}.txt",
+            SuggestionKind::FilePath,
+            None,
+        );
+        // gutter(3) + basename(12 cols) + trailing(1) = 16
+        assert_eq!(item_display_width(&s), 3 + 12 + 1);
     }
 }

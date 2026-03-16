@@ -6,6 +6,7 @@ use gc_suggest::{Suggestion, SuggestionKind};
 use crate::ansi;
 use crate::layout;
 use crate::types::{OverlayState, PopupLayout};
+use crate::util::display_text;
 
 /// Precomputed ANSI sequences for popup styling.
 /// Keeps gc-overlay independent of gc-config.
@@ -109,6 +110,7 @@ pub fn render_popup(
     max_width: u16,
     theme: &PopupTheme,
     prior_deficit: u16,
+    loading: bool,
 ) -> PopupLayout {
     if suggestions.is_empty() {
         return PopupLayout {
@@ -139,7 +141,8 @@ pub fn render_popup(
     // Calculate how much more scrolling is needed
     let space_below = screen_rows.saturating_sub(adj_cursor_row + 1);
     let visible_count = suggestions.len().min(effective_max) as u16;
-    let new_deficit = visible_count.saturating_sub(space_below);
+    let loading_extra_deficit = if loading { 1u16 } else { 0 };
+    let new_deficit = (visible_count + loading_extra_deficit).saturating_sub(space_below);
     let total_deficit = prior_deficit + new_deficit;
     let final_cursor_row = cursor_row.saturating_sub(total_deficit);
 
@@ -246,10 +249,32 @@ pub fn render_popup(
         ansi::reset(buf);
     }
 
+    // Render loading indicator row when async generators are in flight
+    let loading_extra = if loading {
+        let loading_row = layout.start_row + layout.height;
+        if loading_row < screen_rows {
+            ansi::move_to(buf, loading_row, layout.start_col);
+            buf.extend_from_slice(&theme.description_on);
+            let label = b"  ...";
+            let _ = buf.write_all(label);
+            let pad = (layout.width as usize).saturating_sub(label.len());
+            for _ in 0..pad {
+                let _ = buf.write_all(b" ");
+            }
+            ansi::reset(buf);
+            1
+        } else {
+            0
+        }
+    } else {
+        0
+    };
+
     ansi::restore_cursor(buf);
     ansi::end_sync(buf);
 
     PopupLayout {
+        height: layout.height + loading_extra,
         scroll_deficit: total_deficit,
         ..layout
     }
@@ -284,15 +309,16 @@ fn format_item(
     theme: &PopupTheme,
 ) {
     let kind_char = match s.kind {
-        SuggestionKind::Command => 'C',
-        SuggestionKind::Subcommand => 'S',
-        SuggestionKind::Flag => 'F',
-        SuggestionKind::FilePath => 'f',
-        SuggestionKind::Directory => 'd',
-        SuggestionKind::GitBranch => 'B',
-        SuggestionKind::GitTag => 'T',
-        SuggestionKind::GitRemote => 'R',
-        SuggestionKind::History => 'H',
+        SuggestionKind::Command => '\u{F120}',    // nf-fa-terminal
+        SuggestionKind::Subcommand => '\u{F0DA}', // nf-fa-chevron_right
+        SuggestionKind::Flag => '\u{F024}',       // nf-fa-flag
+        SuggestionKind::FilePath => '\u{F15B}',   // nf-fa-file
+        SuggestionKind::Directory => '\u{F07B}',  // nf-fa-folder
+        SuggestionKind::GitBranch => '\u{E0A0}',  // nf-pl-branch
+        SuggestionKind::GitTag => '\u{F02B}',     // nf-fa-tag
+        SuggestionKind::GitRemote => '\u{F0C1}',  // nf-fa-link
+        SuggestionKind::History => '\u{F1DA}',    // nf-fa-history
+        SuggestionKind::EnvVar => '$',
     };
 
     // Gutter: " K "
@@ -304,19 +330,7 @@ fn format_item(
     // For filesystem entries, show just the last path component (the user
     // already typed the prefix, so repeating it wastes popup space).
     // Also compute the prefix char count for offsetting match indices.
-    let (display_text, prefix_char_count) = match s.kind {
-        SuggestionKind::FilePath | SuggestionKind::Directory => {
-            let trimmed = s.text.trim_end_matches('/');
-            match trimmed.rfind('/') {
-                Some(byte_idx) => (
-                    &s.text[byte_idx + 1..],
-                    s.text[..byte_idx + 1].chars().count(),
-                ),
-                None => (&s.text[..], 0),
-            }
-        }
-        _ => (&s.text[..], 0),
-    };
+    let (display_text, prefix_char_count) = display_text(s);
 
     // Build display-relative match index set (offset and filtered)
     let display_indices: Vec<u32> = s
@@ -331,18 +345,22 @@ fn format_item(
         })
         .collect();
 
-    // Write text with highlight transitions
+    // Write text with highlight transitions, tracking display columns
     let mut in_highlight = false;
-    for (char_idx, ch) in display_text.chars().take(max_text_chars).enumerate() {
+    let mut cols_written: usize = 0;
+    for (char_idx, ch) in display_text.chars().enumerate() {
+        let ch_width = unicode_width::UnicodeWidthChar::width(ch).unwrap_or(0);
+        if cols_written + ch_width > max_text_chars {
+            break;
+        }
+
         let should_highlight = !theme.match_highlight_on.is_empty()
             && display_indices.binary_search(&(char_idx as u32)).is_ok();
 
         if should_highlight && !in_highlight {
-            // Enter highlight
             buf.extend_from_slice(&theme.match_highlight_on);
             in_highlight = true;
         } else if !should_highlight && in_highlight {
-            // Leave highlight — reset and restore base style
             ansi::reset(buf);
             if is_selected {
                 buf.extend_from_slice(&theme.selected_on);
@@ -353,6 +371,7 @@ fn format_item(
         }
 
         let _ = write!(buf, "{ch}");
+        cols_written += ch_width;
     }
 
     // Close highlight if still active at end of text
@@ -365,37 +384,42 @@ fn format_item(
         }
     }
 
-    let chars_written = display_text.chars().count().min(max_text_chars);
-    let gutter_text_len = 3 + chars_written;
+    let gutter_text_len = 3 + cols_written;
 
     // Description (if room)
     let desc = s.description.as_deref().unwrap_or("");
-    // Need at least 2 chars gap + 2 chars desc to bother showing it
-    let max_desc_len = total_width.saturating_sub(gutter_text_len + 2 + 1);
+    let max_desc_cols = total_width.saturating_sub(gutter_text_len + 2 + 1);
 
-    if !desc.is_empty() && max_desc_len > 2 {
+    if !desc.is_empty() && max_desc_cols > 2 {
         let _ = buf.write_all(b"  ");
         if !is_selected {
             ansi::reset(buf);
             buf.extend_from_slice(&theme.description_on);
         }
-        let truncated: String = desc.chars().take(max_desc_len).collect();
+        // Truncate description by display columns, not char count
+        let mut desc_cols: usize = 0;
+        let mut truncated = String::new();
+        for ch in desc.chars() {
+            let w = unicode_width::UnicodeWidthChar::width(ch).unwrap_or(0);
+            if desc_cols + w > max_desc_cols {
+                break;
+            }
+            truncated.push(ch);
+            desc_cols += w;
+        }
         let _ = write!(buf, "{truncated}");
         if !is_selected {
             ansi::reset(buf);
-            // Re-emit item_text style for trailing padding
             if !theme.item_text_on.is_empty() {
                 buf.extend_from_slice(&theme.item_text_on);
             }
         }
-        // Pad remaining
-        let used = gutter_text_len + 2 + truncated.len();
+        let used = gutter_text_len + 2 + desc_cols;
         let pad = total_width.saturating_sub(used);
         for _ in 0..pad {
             let _ = buf.write_all(b" ");
         }
     } else {
-        // No description — just pad
         let pad = total_width.saturating_sub(gutter_text_len);
         for _ in 0..pad {
             let _ = buf.write_all(b" ");
@@ -449,6 +473,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &PopupTheme::default(),
             0,
+            false,
         );
         let output = String::from_utf8_lossy(&buf);
         assert!(
@@ -476,6 +501,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &PopupTheme::default(),
             0,
+            false,
         );
         let output = String::from_utf8_lossy(&buf);
         assert!(output.contains("\x1b7"), "should contain save cursor");
@@ -500,6 +526,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &PopupTheme::default(),
             0,
+            false,
         );
         let output = String::from_utf8_lossy(&buf);
         // Popup below cursor at row 5 → starts at row 6 (1-indexed: 7)
@@ -528,6 +555,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &PopupTheme::default(),
             0,
+            false,
         );
         let output = String::from_utf8_lossy(&buf);
         assert!(
@@ -543,8 +571,8 @@ mod tests {
         format_item(&mut buf, &s, 30, false, &PopupTheme::default());
         let output = String::from_utf8_lossy(&buf);
         assert!(
-            output.starts_with(" S checkout"),
-            "should show kind char S for subcommand: got '{output}'"
+            output.starts_with(" \u{F0DA} checkout"),
+            "should show kind icon for subcommand: got '{output}'"
         );
     }
 
@@ -609,10 +637,10 @@ mod tests {
             .chars()
             .filter(|c| !c.is_control() || *c == ' ')
             .collect();
+        let char_count = printable.chars().count();
         assert!(
-            printable.len() <= width as usize,
-            "printable chars ({}) must not exceed width ({width}): '{printable}'",
-            printable.len()
+            char_count <= width as usize,
+            "printable chars ({char_count}) must not exceed width ({width}): '{printable}'"
         );
     }
 
@@ -685,6 +713,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &PopupTheme::default(),
             0,
+            false,
         );
         let output = String::from_utf8_lossy(&buf);
         assert!(
@@ -716,6 +745,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &PopupTheme::default(),
             0,
+            false,
         );
         assert_eq!(layout.height, 0);
         assert!(
@@ -792,6 +822,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &PopupTheme::default(),
             0,
+            false,
         );
         let output = String::from_utf8_lossy(&buf);
         // Should CUP to last row before newlines
@@ -827,6 +858,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &PopupTheme::default(),
             0,
+            false,
         );
         // No newlines means no scrolling occurred (popup uses CUP, not newlines)
         assert!(
@@ -856,6 +888,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &PopupTheme::default(),
             2,
+            false,
         );
         // No newlines means no scrolling occurred (popup uses CUP, not newlines)
         assert!(
@@ -885,6 +918,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &PopupTheme::default(),
             0,
+            false,
         );
         assert_eq!(layout1.scroll_deficit, 2);
 
@@ -907,6 +941,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &PopupTheme::default(),
             2, // prior_deficit from first render
+            false,
         );
         let output2 = String::from_utf8_lossy(&buf2);
         // Should scroll 5 more (total = 2 + 5 = 7)
@@ -937,6 +972,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &PopupTheme::default(),
             0,
+            false,
         );
         let output = String::from_utf8_lossy(&buf);
         let cup_to_adjusted = "\x1b[21;1H"; // adj_row=20, ANSI row=21
@@ -971,6 +1007,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &PopupTheme::default(),
             0,
+            false,
         );
         // capped to screen_rows - 1 = 5
         assert!(
@@ -1005,6 +1042,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &PopupTheme::default(),
             0,
+            false,
         );
         // final_cursor = 0, start_row = 1
         assert_eq!(layout.start_row, 1);
@@ -1078,6 +1116,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &theme,
             0,
+            false,
         );
         let output = String::from_utf8_lossy(&buf);
         // Count occurrences of dim (\x1b[2m) — should appear for non-selected rows
@@ -1114,6 +1153,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &theme,
             0,
+            false,
         );
         let output = String::from_utf8_lossy(&buf);
         // Selected row should have reverse, not dim
@@ -1142,6 +1182,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &theme,
             0,
+            false,
         );
         let output = String::from_utf8_lossy(&buf);
         // Should NOT contain dim sequence (item_text is empty)
@@ -1305,6 +1346,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &PopupTheme::default(),
             0,
+            false,
         );
         let output = String::from_utf8_lossy(&buf);
         assert!(
@@ -1331,6 +1373,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &PopupTheme::default(),
             0,
+            false,
         );
         let output = String::from_utf8_lossy(&buf);
         assert!(
@@ -1359,6 +1402,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &PopupTheme::default(),
             0,
+            false,
         );
         let output = String::from_utf8_lossy(&buf);
         assert!(output.contains('█'), "should have thumb indicator");
@@ -1387,6 +1431,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &PopupTheme::default(),
             0,
+            false,
         );
         let output = String::from_utf8_lossy(&buf);
         assert!(output.contains('█'), "should have thumb at bottom");
@@ -1416,6 +1461,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &PopupTheme::default(),
             0,
+            false,
         );
 
         let mut buf_scroll = Vec::new();
@@ -1432,6 +1478,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &PopupTheme::default(),
             0,
+            false,
         );
 
         let output = String::from_utf8_lossy(&buf_scroll);
@@ -1466,11 +1513,73 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &theme,
             0,
+            false,
         );
         let output = String::from_utf8_lossy(&buf);
         assert!(
             output.contains("\x1b[7m"),
             "selected row should have reverse video"
+        );
+    }
+
+    #[test]
+    fn test_loading_true_shows_indicator() {
+        let mut buf = Vec::new();
+        let suggestions = make_suggestions();
+        let state = OverlayState::new();
+        let layout = render_popup(
+            &mut buf,
+            &suggestions,
+            &state,
+            5,
+            0,
+            24,
+            80,
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &PopupTheme::default(),
+            0,
+            true,
+        );
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            output.contains("..."),
+            "loading=true should produce '...' indicator: {output}"
+        );
+        // Height should be suggestions (3) + 1 loading row = 4
+        assert_eq!(layout.height, 4, "loading row should increase height by 1");
+    }
+
+    #[test]
+    fn test_loading_false_no_indicator() {
+        let mut buf = Vec::new();
+        let suggestions = make_suggestions();
+        let state = OverlayState::new();
+        let layout = render_popup(
+            &mut buf,
+            &suggestions,
+            &state,
+            5,
+            0,
+            24,
+            80,
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &PopupTheme::default(),
+            0,
+            false,
+        );
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            !output.contains("..."),
+            "loading=false should NOT produce '...' indicator: {output}"
+        );
+        // Height should be just the 3 suggestions
+        assert_eq!(
+            layout.height, 3,
+            "no loading row means height equals suggestion count"
         );
     }
 }

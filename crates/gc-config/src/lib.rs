@@ -185,10 +185,10 @@ fn preset_values(name: &str) -> Result<ThemeConfig> {
             ..Default::default()
         },
         "light" => ThemeConfig {
-            selected: "reverse".into(),
-            description: "dim".into(),
-            match_highlight: "bold".into(),
-            scrollbar: "dim".into(),
+            selected: "fg:#1e1e2e bg:#dce0e8 bold".into(),
+            description: "fg:#6c6f85".into(),
+            match_highlight: "fg:#d20f39 bold".into(),
+            scrollbar: "fg:#9ca0b0".into(),
             ..Default::default()
         },
         "catppuccin" => ThemeConfig {
@@ -491,6 +491,20 @@ scrollbar = "fg:#555555"
         assert_eq!(resolved.description, "fg:#616161");
         assert_eq!(resolved.match_highlight, "fg:#ffcb6b bold");
         assert_eq!(resolved.scrollbar, "fg:#424242");
+    }
+
+    #[test]
+    fn test_resolve_light_preset() {
+        let config = ThemeConfig {
+            preset: "light".into(),
+            ..Default::default()
+        };
+        let resolved = config.resolve().unwrap();
+        assert_eq!(resolved.selected, "fg:#1e1e2e bg:#dce0e8 bold");
+        assert_eq!(resolved.description, "fg:#6c6f85");
+        assert_eq!(resolved.match_highlight, "fg:#d20f39 bold");
+        assert_eq!(resolved.item_text, "");
+        assert_eq!(resolved.scrollbar, "fg:#9ca0b0");
     }
 
     #[test]
