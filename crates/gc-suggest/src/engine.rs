@@ -40,9 +40,10 @@ impl SyncResult {
         self.suggestions.iter()
     }
 
-    /// True when there are no ranked suggestions.
-    pub fn is_empty(&self) -> bool {
-        self.suggestions.is_empty()
+    /// True when there are ranked suggestions to display.
+    /// Note: script_generators may still be present even when this returns false.
+    pub fn has_suggestions(&self) -> bool {
+        !self.suggestions.is_empty()
     }
 }
 
@@ -698,7 +699,7 @@ mod tests {
         let results = engine
             .suggest_sync(&ctx, tmp.path(), "git zzzzzzz_no_match")
             .unwrap();
-        assert!(results.is_empty());
+        assert!(results.suggestions.is_empty());
     }
 
     #[test]
@@ -849,7 +850,10 @@ mod tests {
         std::fs::create_dir(tmp.path().join("bbb")).unwrap();
         let ctx = make_ctx(Some("cd"), vec![], "", 1);
         let results = engine.suggest_sync(&ctx, tmp.path(), "cd ").unwrap();
-        assert!(!results.is_empty(), "cd should return suggestions");
+        assert!(
+            !results.suggestions.is_empty(),
+            "cd should return suggestions"
+        );
         assert_eq!(
             results.suggestions[0].text, "../",
             "first cd suggestion should be ../, got: {:?}",

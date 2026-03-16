@@ -73,26 +73,58 @@ pub fn load_shell_aliases() -> HashMap<String, String> {
         }
     }
 
-    // Slow path: non-interactive subprocess (only gets .zshenv aliases)
+    // Slow path: non-interactive subprocess with 2-second timeout.
+    // Uses try_wait polling to avoid blocking indefinitely on a hanging .zshenv.
     for shell in &["zsh", "bash"] {
-        let result = std::process::Command::new(shell)
+        tracing::debug!("spawning {shell} -c alias");
+        let mut child = match std::process::Command::new(shell)
             .args(["-c", "alias"])
-            .output();
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::null())
+            .spawn()
+        {
+            Ok(c) => c,
+            Err(e) => {
+                tracing::debug!("failed to spawn {shell}: {e}");
+                continue;
+            }
+        };
 
-        match result {
-            Ok(output) if output.status.success() => {
-                let text = String::from_utf8_lossy(&output.stdout);
-                let aliases = parse_aliases(&text);
-                if !aliases.is_empty() {
-                    tracing::debug!("loaded {} aliases from {shell} -c", aliases.len());
-                    return aliases;
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+        let status = loop {
+            match child.try_wait() {
+                Ok(Some(s)) => break Some(s),
+                Ok(None) => {
+                    if std::time::Instant::now() >= deadline {
+                        tracing::debug!("{shell} alias timed out, killing");
+                        let _ = child.kill();
+                        let _ = child.wait();
+                        break None;
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(10));
+                }
+                Err(e) => {
+                    tracing::debug!("{shell} alias wait error: {e}");
+                    break None;
                 }
             }
-            Ok(output) => {
-                tracing::debug!("{shell} alias command failed: {:?}", output.status);
-            }
-            Err(e) => {
-                tracing::debug!("failed to run {shell}: {e}");
+        };
+
+        if let Some(s) = status {
+            if s.success() {
+                if let Some(mut stdout) = child.stdout.take() {
+                    use std::io::Read;
+                    let mut text = String::new();
+                    if stdout.read_to_string(&mut text).is_ok() {
+                        let aliases = parse_aliases(&text);
+                        if !aliases.is_empty() {
+                            tracing::debug!("loaded {} aliases from {shell} -c", aliases.len());
+                            return aliases;
+                        }
+                    }
+                }
+            } else {
+                tracing::debug!("{shell} alias command failed: {s}");
             }
         }
     }

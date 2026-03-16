@@ -451,7 +451,8 @@ impl InputHandler {
                     self.dismiss(stdout);
                 }
             }
-            Err(_) => {
+            Err(e) => {
+                tracing::debug!("suggest_sync failed: {e}");
                 if self.visible {
                     self.dismiss(stdout);
                 }
@@ -484,13 +485,15 @@ impl InputHandler {
             {
                 Ok(results) if !results.is_empty() => {
                     let _ = tx.send(results).await;
-                    notify.notify_one();
                 }
-                Ok(_) => {}
+                Ok(_) => {} // empty results — tx dropped, channel disconnects
                 Err(e) => {
                     tracing::debug!("dynamic suggestions failed: {e}");
                 }
             }
+            // Always notify so Task E clears the loading indicator,
+            // even when generators returned empty or errored.
+            notify.notify_one();
         });
     }
 
@@ -525,7 +528,13 @@ impl InputHandler {
                 // Re-rank against the current query — the user may have
                 // typed more characters while generators were running.
                 let current_word = {
-                    let p = parser.lock().unwrap();
+                    let p = match parser.lock() {
+                        Ok(p) => p,
+                        Err(_) => {
+                            self.render(parser, stdout);
+                            return true;
+                        }
+                    };
                     let state = p.state();
                     let buffer = state.command_buffer().unwrap_or("");
                     let cursor = state.buffer_cursor();

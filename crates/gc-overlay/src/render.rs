@@ -2,7 +2,6 @@ use std::io::Write;
 
 use anyhow::{bail, Result};
 use gc_suggest::{Suggestion, SuggestionKind};
-
 use crate::ansi;
 use crate::layout;
 use crate::types::{OverlayState, PopupLayout};
@@ -345,18 +344,22 @@ fn format_item(
         })
         .collect();
 
-    // Write text with highlight transitions
+    // Write text with highlight transitions, tracking display columns
     let mut in_highlight = false;
-    for (char_idx, ch) in display_text.chars().take(max_text_chars).enumerate() {
+    let mut cols_written: usize = 0;
+    for (char_idx, ch) in display_text.chars().enumerate() {
+        let ch_width = unicode_width::UnicodeWidthChar::width(ch).unwrap_or(0);
+        if cols_written + ch_width > max_text_chars {
+            break;
+        }
+
         let should_highlight = !theme.match_highlight_on.is_empty()
             && display_indices.binary_search(&(char_idx as u32)).is_ok();
 
         if should_highlight && !in_highlight {
-            // Enter highlight
             buf.extend_from_slice(&theme.match_highlight_on);
             in_highlight = true;
         } else if !should_highlight && in_highlight {
-            // Leave highlight — reset and restore base style
             ansi::reset(buf);
             if is_selected {
                 buf.extend_from_slice(&theme.selected_on);
@@ -367,6 +370,7 @@ fn format_item(
         }
 
         let _ = write!(buf, "{ch}");
+        cols_written += ch_width;
     }
 
     // Close highlight if still active at end of text
@@ -379,37 +383,42 @@ fn format_item(
         }
     }
 
-    let chars_written = display_text.chars().count().min(max_text_chars);
-    let gutter_text_len = 3 + chars_written;
+    let gutter_text_len = 3 + cols_written;
 
     // Description (if room)
     let desc = s.description.as_deref().unwrap_or("");
-    // Need at least 2 chars gap + 2 chars desc to bother showing it
-    let max_desc_len = total_width.saturating_sub(gutter_text_len + 2 + 1);
+    let max_desc_cols = total_width.saturating_sub(gutter_text_len + 2 + 1);
 
-    if !desc.is_empty() && max_desc_len > 2 {
+    if !desc.is_empty() && max_desc_cols > 2 {
         let _ = buf.write_all(b"  ");
         if !is_selected {
             ansi::reset(buf);
             buf.extend_from_slice(&theme.description_on);
         }
-        let truncated: String = desc.chars().take(max_desc_len).collect();
+        // Truncate description by display columns, not char count
+        let mut desc_cols: usize = 0;
+        let mut truncated = String::new();
+        for ch in desc.chars() {
+            let w = unicode_width::UnicodeWidthChar::width(ch).unwrap_or(0);
+            if desc_cols + w > max_desc_cols {
+                break;
+            }
+            truncated.push(ch);
+            desc_cols += w;
+        }
         let _ = write!(buf, "{truncated}");
         if !is_selected {
             ansi::reset(buf);
-            // Re-emit item_text style for trailing padding
             if !theme.item_text_on.is_empty() {
                 buf.extend_from_slice(&theme.item_text_on);
             }
         }
-        // Pad remaining
-        let used = gutter_text_len + 2 + truncated.chars().count();
+        let used = gutter_text_len + 2 + desc_cols;
         let pad = total_width.saturating_sub(used);
         for _ in 0..pad {
             let _ = buf.write_all(b" ");
         }
     } else {
-        // No description — just pad
         let pad = total_width.saturating_sub(gutter_text_len);
         for _ in 0..pad {
             let _ = buf.write_all(b" ");

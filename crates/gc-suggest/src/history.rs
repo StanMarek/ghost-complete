@@ -76,7 +76,10 @@ impl HistoryProvider {
 
         let mut state = match self.state.lock() {
             Ok(s) => s,
-            Err(_) => return, // poisoned — keep stale entries rather than panic
+            Err(e) => {
+                tracing::debug!("history lock poisoned in refresh: {e}");
+                return;
+            }
         };
         if state.mtime == Some(current_mtime) {
             return; // unchanged
@@ -162,7 +165,10 @@ impl Provider for HistoryProvider {
 
         let state = match self.state.lock() {
             Ok(s) => s,
-            Err(_) => return Ok(Vec::new()), // poisoned — return empty rather than panic
+            Err(e) => {
+                tracing::debug!("history lock poisoned in provide: {e}");
+                return Ok(Vec::new());
+            }
         };
         let suggestions = state
             .entries

@@ -52,11 +52,22 @@ impl FrecencyDb {
     /// any I/O or parse error so callers never have to handle failures.
     pub fn load() -> Self {
         let path = gc_config::config_dir().map(|d| d.join(FRECENCY_FILE));
-        let entries = path
-            .as_ref()
-            .and_then(|p| std::fs::read_to_string(p).ok())
-            .and_then(|s| serde_json::from_str::<HashMap<String, FrecencyEntry>>(&s).ok())
-            .unwrap_or_default();
+        let entries = match &path {
+            Some(p) if p.exists() => match std::fs::read_to_string(p) {
+                Ok(s) => match serde_json::from_str::<HashMap<String, FrecencyEntry>>(&s) {
+                    Ok(map) => map,
+                    Err(e) => {
+                        tracing::warn!("frecency data corrupt, starting fresh: {e}");
+                        HashMap::new()
+                    }
+                },
+                Err(e) => {
+                    tracing::debug!("frecency file unreadable: {e}");
+                    HashMap::new()
+                }
+            },
+            _ => HashMap::new(),
+        };
         Self {
             entries,
             path,
@@ -93,7 +104,10 @@ impl FrecencyDb {
     pub fn save(&self) {
         let Some(ref path) = self.path else { return };
         if let Some(parent) = path.parent() {
-            let _ = std::fs::create_dir_all(parent);
+            if let Err(e) = std::fs::create_dir_all(parent) {
+                tracing::warn!("frecency dir creation failed: {e}");
+                return;
+            }
         }
 
         // Prune if over the cap — keep the highest-scoring entries
@@ -124,7 +138,7 @@ impl FrecencyDb {
         match serde_json::to_string_pretty(&entries_to_save) {
             Ok(json) => {
                 if let Err(e) = std::fs::write(path, json) {
-                    tracing::debug!("frecency save error: {e}");
+                    tracing::warn!("frecency save error: {e}");
                 }
             }
             Err(e) => tracing::debug!("frecency serialize error: {e}"),

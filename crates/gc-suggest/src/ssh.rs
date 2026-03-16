@@ -41,7 +41,10 @@ impl SshHostCache {
         self.refresh_if_stale();
         match self.state.lock() {
             Ok(state) => state.hosts.clone(),
-            Err(_) => Vec::new(),
+            Err(e) => {
+                tracing::debug!("SSH host cache lock poisoned: {e}");
+                Vec::new()
+            }
         }
     }
 
@@ -62,7 +65,10 @@ impl SshHostCache {
                         .collect()
                 }
             }
-            Err(_) => Vec::new(),
+            Err(e) => {
+                tracing::debug!("SSH host cache lock poisoned: {e}");
+                Vec::new()
+            }
         }
     }
 
@@ -74,7 +80,10 @@ impl SshHostCache {
 
         let mut state = match self.state.lock() {
             Ok(s) => s,
-            Err(_) => return, // poisoned — don't crash
+            Err(e) => {
+                tracing::debug!("SSH host cache lock poisoned in refresh: {e}");
+                return;
+            }
         };
         if state.mtime == Some(current_mtime) {
             return; // unchanged
@@ -102,7 +111,10 @@ impl SshHostCache {
 pub fn parse_ssh_hosts(path: &Path) -> Vec<String> {
     match std::fs::read_to_string(path) {
         Ok(contents) => parse_ssh_hosts_from_str(&contents),
-        Err(_) => Vec::new(),
+        Err(e) => {
+            tracing::debug!("failed to read SSH config at {}: {e}", path.display());
+            Vec::new()
+        }
     }
 }
 
