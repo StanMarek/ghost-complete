@@ -9,6 +9,7 @@ pub enum SuggestionKind {
     GitTag,
     GitRemote,
     History,
+    EnvVar,
 }
 
 impl SuggestionKind {
@@ -21,6 +22,7 @@ impl SuggestionKind {
             Self::GitRemote => 2,
             Self::Subcommand => 3,
             Self::Flag => 4,
+            Self::EnvVar => 5,
             Self::Command => 5,
             Self::Directory => 6,
             Self::FilePath => 7,
@@ -37,6 +39,8 @@ pub enum SuggestionSource {
     Commands,
     Spec,
     Script,
+    Env,
+    SshConfig,
 }
 
 #[derive(Debug, Clone)]

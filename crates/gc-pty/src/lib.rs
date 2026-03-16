@@ -4,6 +4,7 @@
 //! `tokio::select!`, handles `SIGWINCH` resize, and intercepts keystrokes
 //! for popup navigation.
 
+mod config_watch;
 mod handler;
 pub mod input;
 mod proxy;

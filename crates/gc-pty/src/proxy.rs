@@ -11,6 +11,7 @@ use gc_config::GhostConfig;
 
 use gc_overlay::{parse_style, PopupTheme};
 
+use crate::config_watch::spawn_config_watcher;
 use crate::handler::{InputHandler, Keybindings};
 use crate::input::parse_keys;
 use crate::resize::{get_terminal_size, resize_pty};
@@ -112,6 +113,14 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 config.suggest.providers.git,
             )
     }));
+
+    // Config hot-reload: watch config.toml for changes
+    if let Some(config_dir) = gc_config::config_dir() {
+        let config_path = config_dir.join("config.toml");
+        if let Err(e) = spawn_config_watcher(config_path, Arc::clone(&handler)) {
+            tracing::warn!("failed to start config watcher: {e}");
+        }
+    }
 
     // Debounce task: fires suggestions after a typing pause
     let debounce_notify = Arc::new(Notify::new());
@@ -383,7 +392,13 @@ async fn debounce_loop(
         // Timer expired — fire trigger
         let mut render_buf = Vec::new();
         {
-            let mut h = handler.lock().unwrap();
+            let mut h = match handler.lock() {
+                Ok(h) => h,
+                Err(e) => {
+                    tracing::warn!("debounce skipped (handler lock poisoned): {e}");
+                    continue;
+                }
+            };
             h.trigger(&parser, &mut render_buf);
         }
         if !render_buf.is_empty() {
@@ -406,7 +421,13 @@ async fn dynamic_merge_loop(
         notify.notified().await;
         let mut render_buf = Vec::new();
         {
-            let mut h = handler.lock().unwrap();
+            let mut h = match handler.lock() {
+                Ok(h) => h,
+                Err(e) => {
+                    tracing::warn!("dynamic merge skipped (handler lock poisoned): {e}");
+                    continue;
+                }
+            };
             h.try_merge_dynamic(&parser, &mut render_buf);
         }
         if !render_buf.is_empty() {

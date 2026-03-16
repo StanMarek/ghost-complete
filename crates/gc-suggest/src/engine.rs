@@ -8,25 +8,54 @@ use tokio::sync::Semaphore;
 
 use crate::cache::{CacheKey, GeneratorCache};
 use crate::commands::CommandsProvider;
+use crate::env::EnvProvider;
 use crate::filesystem::FilesystemProvider;
+use crate::frecency::FrecencyDb;
 use crate::fuzzy;
 use crate::git;
 use crate::history::{HistoryProvider, DEFAULT_MAX_HISTORY_ENTRIES};
 use crate::provider::Provider;
 use crate::script::{run_script, substitute_template};
 use crate::specs::{self, GeneratorSpec, SpecStore};
+use crate::ssh::SshHostCache;
 use crate::transform::execute_pipeline;
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 
 /// Maximum number of concurrent script generators.
 const MAX_CONCURRENT_GENERATORS: usize = 3;
 
+/// Result from `suggest_sync` — includes ranked suggestions and any script
+/// generators that the caller should dispatch asynchronously.
+#[derive(Debug)]
+pub struct SyncResult {
+    pub suggestions: Vec<Suggestion>,
+    /// Script generators from the spec resolution, if any. The caller passes
+    /// these to `run_generators` to avoid re-resolving the spec tree.
+    pub script_generators: Vec<specs::GeneratorSpec>,
+}
+
+impl SyncResult {
+    /// Iterate over the ranked suggestions (convenience for callers and tests).
+    pub fn iter(&self) -> std::slice::Iter<'_, Suggestion> {
+        self.suggestions.iter()
+    }
+
+    /// True when there are no ranked suggestions.
+    pub fn is_empty(&self) -> bool {
+        self.suggestions.is_empty()
+    }
+}
+
 pub struct SuggestionEngine {
     spec_store: SpecStore,
     filesystem_provider: FilesystemProvider,
     history_provider: HistoryProvider,
     commands_provider: CommandsProvider,
+    env_provider: EnvProvider,
+    ssh_host_cache: Option<SshHostCache>,
+    alias_map: std::collections::HashMap<String, String>,
     generator_cache: Arc<GeneratorCache>,
+    frecency_db: FrecencyDb,
     max_results: usize,
     max_history_results: usize,
     providers_commands: bool,
@@ -50,7 +79,11 @@ impl SuggestionEngine {
             filesystem_provider: FilesystemProvider::new(),
             history_provider: HistoryProvider::load(DEFAULT_MAX_HISTORY_ENTRIES),
             commands_provider: CommandsProvider::from_path_env(),
+            env_provider: EnvProvider::new(),
+            ssh_host_cache: SshHostCache::default_path(),
+            alias_map: crate::alias::load_shell_aliases(),
             generator_cache: Arc::new(GeneratorCache::new()),
+            frecency_db: FrecencyDb::load(),
             max_results: fuzzy::DEFAULT_MAX_RESULTS,
             max_history_results: 5,
             providers_commands: true,
@@ -97,7 +130,11 @@ impl SuggestionEngine {
             filesystem_provider: FilesystemProvider::new(),
             history_provider,
             commands_provider,
+            env_provider: EnvProvider::new(),
+            ssh_host_cache: SshHostCache::default_path(),
+            alias_map: std::collections::HashMap::new(),
             generator_cache: Arc::new(GeneratorCache::new()),
+            frecency_db: FrecencyDb::empty(),
             max_results: fuzzy::DEFAULT_MAX_RESULTS,
             max_history_results: 5,
             providers_commands: true,
@@ -114,35 +151,24 @@ impl SuggestionEngine {
         self
     }
 
-    /// Quick check: does the current command context have any script generators?
-    /// Used to avoid spawning async tasks when there's nothing to run.
-    pub fn has_script_generators(&self, ctx: &CommandContext) -> bool {
-        if !self.providers_specs || ctx.word_index == 0 || ctx.in_redirect {
-            return false;
-        }
-        let command = match &ctx.command {
-            Some(c) => c,
-            None => return false,
-        };
-        let spec = match self.spec_store.get(command) {
-            Some(s) => s,
-            None => return false,
-        };
-        let resolution = specs::resolve_spec(spec, ctx);
-        resolution.script_generators.iter().any(|g| !g.requires_js)
+    /// Test helper — inject a custom SSH config path for deterministic tests.
+    #[cfg(test)]
+    pub fn with_ssh_config(mut self, path: std::path::PathBuf) -> Self {
+        self.ssh_host_cache = Some(SshHostCache::new(path));
+        self
     }
 
-    /// Run script-based generators for the current command context.
-    ///
-    /// Resolves the spec, finds script generators, runs each (with caching and
-    /// concurrency limiting), applies transform pipelines, and returns all results.
-    pub async fn suggest_dynamic(
+    /// Run pre-resolved script generators. Called by the handler with generators
+    /// obtained from `SyncResult::script_generators`, avoiding redundant spec
+    /// resolution.
+    pub async fn run_generators(
         &self,
+        generators: &[specs::GeneratorSpec],
         ctx: &CommandContext,
         cwd: &Path,
         timeout_ms: u64,
     ) -> Result<Vec<Suggestion>> {
-        if !self.providers_specs || ctx.word_index == 0 || ctx.in_redirect {
+        if generators.is_empty() {
             return Ok(Vec::new());
         }
 
@@ -151,24 +177,10 @@ impl SuggestionEngine {
             None => return Ok(Vec::new()),
         };
 
-        let spec = match self.spec_store.get(command) {
-            Some(s) => s,
-            None => return Ok(Vec::new()),
-        };
-
-        let resolution = specs::resolve_spec(spec, ctx);
-        if resolution.script_generators.is_empty() {
-            return Ok(Vec::new());
-        }
-
         let semaphore = Arc::new(Semaphore::new(MAX_CONCURRENT_GENERATORS));
         let mut handles = Vec::new();
 
-        for gen in &resolution.script_generators {
-            if gen.requires_js {
-                continue;
-            }
-
+        for gen in generators {
             let argv = resolve_script_argv(gen, ctx);
             if argv.is_empty() {
                 continue;
@@ -260,12 +272,43 @@ impl SuggestionEngine {
         ))
     }
 
+    /// Convenience method that resolves the spec and runs script generators.
+    /// Prefer `run_generators` in the handler to avoid redundant spec resolution.
+    pub async fn suggest_dynamic(
+        &self,
+        ctx: &CommandContext,
+        cwd: &Path,
+        timeout_ms: u64,
+    ) -> Result<Vec<Suggestion>> {
+        if !self.providers_specs || ctx.word_index == 0 || ctx.in_redirect {
+            return Ok(Vec::new());
+        }
+
+        let command = match &ctx.command {
+            Some(c) => c,
+            None => return Ok(Vec::new()),
+        };
+
+        let spec = match self.spec_store.get(command) {
+            Some(s) => s,
+            None => return Ok(Vec::new()),
+        };
+
+        let resolution = specs::resolve_spec(spec, ctx);
+        let generators: Vec<_> = resolution
+            .script_generators
+            .into_iter()
+            .filter(|g| !g.requires_js)
+            .collect();
+        self.run_generators(&generators, ctx, cwd, timeout_ms).await
+    }
+
     pub fn suggest_sync(
         &self,
         ctx: &CommandContext,
         cwd: &Path,
         buffer: &str,
-    ) -> Result<Vec<Suggestion>> {
+    ) -> Result<SyncResult> {
         let mut candidates = Vec::new();
 
         // Command position: commands (history handled by rank_with_history)
@@ -276,7 +319,10 @@ impl SuggestionEngine {
                     Err(e) => tracing::debug!("commands provider error: {e}"),
                 }
             }
-            return Ok(self.rank_with_history(ctx, cwd, buffer, candidates));
+            return Ok(SyncResult {
+                suggestions: self.rank_with_history(ctx, cwd, buffer, candidates),
+                script_generators: Vec::new(),
+            });
         }
 
         // Redirect: always filesystem
@@ -287,14 +333,53 @@ impl SuggestionEngine {
                     Err(e) => tracing::debug!("filesystem provider error (redirect): {e}"),
                 }
             }
-            return Ok(self.rank_with_history(ctx, cwd, buffer, candidates));
+            return Ok(SyncResult {
+                suggestions: self.rank_with_history(ctx, cwd, buffer, candidates),
+                script_generators: Vec::new(),
+            });
+        }
+
+        // Environment variable completion: when current_word starts with $
+        if ctx.current_word.starts_with('$') {
+            match self.env_provider.provide(ctx, cwd) {
+                Ok(env_vars) => candidates.extend(env_vars),
+                Err(e) => tracing::debug!("env provider error: {e}"),
+            }
+        }
+
+        // SSH host completion: inject configured hosts when completing ssh args
+        if let Some(ref cache) = self.ssh_host_cache {
+            if let Some(ref cmd) = ctx.command {
+                let resolved_cmd = self
+                    .alias_map
+                    .get(cmd.as_str())
+                    .map(|s| s.as_str())
+                    .unwrap_or(cmd.as_str());
+                if resolved_cmd == "ssh" && ctx.word_index > 0 && !ctx.is_flag {
+                    candidates.extend(cache.hosts_matching(&ctx.current_word).into_iter().map(
+                        |host| Suggestion {
+                            text: host,
+                            description: Some("SSH host".to_string()),
+                            kind: SuggestionKind::Command,
+                            source: SuggestionSource::SshConfig,
+                            ..Default::default()
+                        },
+                    ));
+                }
+            }
         }
 
         // Check for a spec for this command (before path heuristic — specs
         // know about folders-only vs all-filepaths and should take priority)
         if self.providers_specs {
             if let Some(command) = &ctx.command {
-                if let Some(spec) = self.spec_store.get(command) {
+                // Resolve alias: if "g" is aliased to "git", look up "git" spec
+                let resolved = self
+                    .alias_map
+                    .get(command.as_str())
+                    .map(|s| s.as_str())
+                    .unwrap_or(command.as_str());
+                if let Some(spec) = self.spec_store.get(resolved) {
                     let resolution = specs::resolve_spec(spec, ctx);
 
                     // When the preceding flag takes an argument (templates or
@@ -371,7 +456,17 @@ impl SuggestionEngine {
                         }
                     }
 
-                    return Ok(self.rank_with_history(ctx, cwd, buffer, candidates));
+                    // Extract script generators that the caller can dispatch async
+                    let script_generators: Vec<_> = resolution
+                        .script_generators
+                        .into_iter()
+                        .filter(|g| !g.requires_js)
+                        .collect();
+
+                    return Ok(SyncResult {
+                        suggestions: self.rank_with_history(ctx, cwd, buffer, candidates),
+                        script_generators,
+                    });
                 }
             }
         }
@@ -384,7 +479,10 @@ impl SuggestionEngine {
                     Err(e) => tracing::debug!("filesystem provider error (path): {e}"),
                 }
             }
-            return Ok(self.rank_with_history(ctx, cwd, buffer, candidates));
+            return Ok(SyncResult {
+                suggestions: self.rank_with_history(ctx, cwd, buffer, candidates),
+                script_generators: Vec::new(),
+            });
         }
 
         // No spec, no path — fallback to filesystem
@@ -394,11 +492,16 @@ impl SuggestionEngine {
                 Err(e) => tracing::debug!("filesystem provider error (fallback): {e}"),
             }
         }
-        Ok(self.rank_with_history(ctx, cwd, buffer, candidates))
+        Ok(SyncResult {
+            suggestions: self.rank_with_history(ctx, cwd, buffer, candidates),
+            script_generators: Vec::new(),
+        })
     }
 
     /// Rank main candidates with current_word, then separately rank history
     /// candidates with the full buffer, and append history results at the end.
+    /// History suggestions receive a frecency bonus so frequently/recently used
+    /// commands sort higher.
     fn rank_with_history(
         &self,
         ctx: &CommandContext,
@@ -416,7 +519,13 @@ impl SuggestionEngine {
             if remaining > 0 {
                 match self.history_provider.provide(ctx, cwd) {
                     Ok(hist) if !hist.is_empty() => {
-                        let hist_results = fuzzy::rank(buffer, hist, remaining);
+                        let mut hist_results = fuzzy::rank(buffer, hist, remaining);
+                        // Apply frecency boost to history suggestions
+                        for suggestion in &mut hist_results {
+                            if suggestion.source == SuggestionSource::History {
+                                self.frecency_db.boost_score(suggestion);
+                            }
+                        }
                         results.extend(hist_results);
                     }
                     Ok(_) => {}
@@ -742,9 +851,9 @@ mod tests {
         let results = engine.suggest_sync(&ctx, tmp.path(), "cd ").unwrap();
         assert!(!results.is_empty(), "cd should return suggestions");
         assert_eq!(
-            results[0].text, "../",
+            results.suggestions[0].text, "../",
             "first cd suggestion should be ../, got: {:?}",
-            results[0].text
+            results.suggestions[0].text
         );
     }
 
@@ -1032,5 +1141,95 @@ mod tests {
         let ctx = make_ctx(Some("test"), vec!["arg1"], "", 2);
         let argv = super::resolve_script_argv(&gen, &ctx);
         assert_eq!(argv, vec!["cmd", "arg1"]);
+    }
+
+    #[test]
+    fn test_ssh_host_completion_injected() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let ssh_config = dir.path().join("config");
+        std::fs::write(&ssh_config, "Host prod\n    HostName prod.example.com\n\nHost staging\n    HostName staging.example.com\n").unwrap();
+
+        let engine = make_engine().with_ssh_config(ssh_config);
+        let ctx = make_ctx(Some("ssh"), vec![], "", 1);
+        let results = engine
+            .suggest_sync(&ctx, Path::new("/tmp"), "ssh ")
+            .unwrap();
+        let ssh_results: Vec<_> = results
+            .iter()
+            .filter(|s| s.source == crate::types::SuggestionSource::SshConfig)
+            .collect();
+        assert!(
+            ssh_results.iter().any(|s| s.text == "prod"),
+            "expected 'prod' in SSH results: {ssh_results:?}"
+        );
+        assert!(
+            ssh_results.iter().any(|s| s.text == "staging"),
+            "expected 'staging' in SSH results: {ssh_results:?}"
+        );
+    }
+
+    #[test]
+    fn test_ssh_host_completion_not_for_flags() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let ssh_config = dir.path().join("config");
+        std::fs::write(&ssh_config, "Host myhost\n").unwrap();
+
+        let engine = make_engine().with_ssh_config(ssh_config);
+        // Typing a flag: ssh -p  — should not inject hosts
+        let ctx = make_ctx(Some("ssh"), vec![], "-p", 1);
+        let results = engine
+            .suggest_sync(&ctx, Path::new("/tmp"), "ssh -p")
+            .unwrap();
+        let ssh_results: Vec<_> = results
+            .iter()
+            .filter(|s| s.source == crate::types::SuggestionSource::SshConfig)
+            .collect();
+        assert!(
+            ssh_results.is_empty(),
+            "SSH hosts should not appear when typing a flag: {ssh_results:?}"
+        );
+    }
+
+    #[test]
+    fn test_ssh_host_completion_not_for_other_commands() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let ssh_config = dir.path().join("config");
+        std::fs::write(&ssh_config, "Host myhost\n").unwrap();
+
+        let engine = make_engine().with_ssh_config(ssh_config);
+        let ctx = make_ctx(Some("git"), vec![], "", 1);
+        let results = engine
+            .suggest_sync(&ctx, Path::new("/tmp"), "git ")
+            .unwrap();
+        let ssh_results: Vec<_> = results
+            .iter()
+            .filter(|s| s.source == crate::types::SuggestionSource::SshConfig)
+            .collect();
+        assert!(
+            ssh_results.is_empty(),
+            "SSH hosts should not appear for non-ssh commands: {ssh_results:?}"
+        );
+    }
+
+    #[test]
+    fn test_ssh_host_fuzzy_filtered() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let ssh_config = dir.path().join("config");
+        std::fs::write(&ssh_config, "Host prod staging dev\n").unwrap();
+
+        let engine = make_engine().with_ssh_config(ssh_config);
+        let ctx = make_ctx(Some("ssh"), vec![], "pro", 1);
+        let results = engine
+            .suggest_sync(&ctx, Path::new("/tmp"), "ssh pro")
+            .unwrap();
+        assert!(
+            results.iter().any(|s| s.text == "prod"),
+            "expected 'prod' to match fuzzy query 'pro': {results:?}"
+        );
+        // "staging" and "dev" should be filtered out by fuzzy ranking
+        assert!(
+            !results.iter().any(|s| s.text == "staging"),
+            "'staging' should not match 'pro': {results:?}"
+        );
     }
 }

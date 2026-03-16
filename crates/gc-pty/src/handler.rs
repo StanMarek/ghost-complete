@@ -177,6 +177,25 @@ impl InputHandler {
         }
     }
 
+    /// Update runtime-configurable fields without restarting the proxy.
+    /// Called by the config file watcher when config.toml changes on disk.
+    pub fn update_config(
+        &mut self,
+        theme: PopupTheme,
+        keybindings: Keybindings,
+        trigger_chars: &[char],
+        max_visible: usize,
+        min_width: u16,
+        max_width: u16,
+    ) {
+        self.theme = theme;
+        self.keybindings = keybindings;
+        self.trigger_chars = trigger_chars.iter().copied().collect();
+        self.max_visible = max_visible;
+        self.min_width = min_width;
+        self.max_width = max_width;
+    }
+
     #[allow(dead_code)]
     pub fn is_visible(&self) -> bool {
         self.visible
@@ -331,8 +350,8 @@ impl InputHandler {
                 .engine
                 .suggest_sync(&predicted_ctx, &cwd, &predicted_buffer)
             {
-                Ok(suggestions) if !suggestions.is_empty() => {
-                    self.suggestions = suggestions;
+                Ok(result) if !result.suggestions.is_empty() => {
+                    self.suggestions = result.suggestions;
                     self.overlay.reset();
                     self.visible = true;
                     self.render_at(stdout, cr, cc, sr, sc);
@@ -343,6 +362,12 @@ impl InputHandler {
             }
         } else {
             self.dismiss(stdout);
+            // Append trailing space so the user can immediately type the next
+            // argument. Skip for text ending in '=' (flag expecting value like
+            // --output=) since the user needs to type the value directly.
+            if !selected_text.ends_with('=') {
+                return [forward, vec![b' ']].concat();
+            }
         }
 
         forward
@@ -409,48 +434,64 @@ impl InputHandler {
         // Drop any pending dynamic results from a previous trigger
         self.dynamic_rx = None;
 
-        match self.engine.suggest_sync(&ctx, &cwd, &buffer) {
-            Ok(suggestions) if !suggestions.is_empty() => {
-                self.suggestions = suggestions;
+        let sync_result = self.engine.suggest_sync(&ctx, &cwd, &buffer);
+
+        match sync_result {
+            Ok(result) if !result.suggestions.is_empty() => {
+                self.suggestions = result.suggestions;
                 self.overlay.reset();
                 self.visible = true;
                 self.render_at(stdout, cursor_row, cursor_col, screen_rows, screen_cols);
+                self.spawn_generators(result.script_generators, &ctx, &cwd);
             }
-            _ => {
+            Ok(result) => {
+                if !result.script_generators.is_empty() {
+                    self.spawn_generators(result.script_generators, &ctx, &cwd);
+                } else if self.visible {
+                    self.dismiss(stdout);
+                }
+            }
+            Err(_) => {
                 if self.visible {
                     self.dismiss(stdout);
                 }
             }
         }
+    }
 
-        // Spawn async task for script-based generators only if the command
-        // actually has any. Avoids wasted channel + task spawn on every trigger.
-        // Task E (dynamic_merge_loop) awaits dynamic_notify and calls
-        // try_merge_dynamic() so results render even when the shell is idle.
-        if self.engine.has_script_generators(&ctx) {
-            let (tx, rx) = mpsc::channel::<Vec<Suggestion>>(1);
-            self.dynamic_rx = Some(rx);
-            let engine = Arc::clone(&self.engine);
-            let ctx_clone = ctx.clone();
-            let cwd_clone = cwd.clone();
-            let timeout = self.generator_timeout_ms;
-            let notify = Arc::clone(&self.dynamic_notify);
-            tokio::spawn(async move {
-                match engine
-                    .suggest_dynamic(&ctx_clone, &cwd_clone, timeout)
-                    .await
-                {
-                    Ok(results) if !results.is_empty() => {
-                        let _ = tx.send(results).await;
-                        notify.notify_one();
-                    }
-                    Ok(_) => {} // empty results, nothing to send
-                    Err(e) => {
-                        tracing::debug!("dynamic suggestions failed: {e}");
-                    }
-                }
-            });
+    /// Spawn an async task to run pre-resolved script generators. Results
+    /// arrive via `dynamic_rx` and Task E renders them via `dynamic_notify`.
+    fn spawn_generators(
+        &mut self,
+        generators: Vec<gc_suggest::specs::GeneratorSpec>,
+        ctx: &gc_buffer::CommandContext,
+        cwd: &std::path::Path,
+    ) {
+        if generators.is_empty() {
+            return;
         }
+        let (tx, rx) = mpsc::channel::<Vec<Suggestion>>(1);
+        self.dynamic_rx = Some(rx);
+        let engine = Arc::clone(&self.engine);
+        let ctx = ctx.clone();
+        let cwd = cwd.to_path_buf();
+        let timeout = self.generator_timeout_ms;
+        let notify = Arc::clone(&self.dynamic_notify);
+        tokio::spawn(async move {
+            match engine
+                .run_generators(&generators, &ctx, &cwd, timeout)
+                .await
+            {
+                Ok(results) if !results.is_empty() => {
+                    let _ = tx.send(results).await;
+                    notify.notify_one();
+                }
+                Ok(_) => {}
+                Err(e) => {
+                    tracing::debug!("dynamic suggestions failed: {e}");
+                }
+            }
+        });
     }
 
     /// Check for pending dynamic (script generator) results and merge them
@@ -479,6 +520,25 @@ impl InputHandler {
                     if seen.insert(s.text.clone()) {
                         self.suggestions.push(s);
                     }
+                }
+
+                // Re-rank against the current query — the user may have
+                // typed more characters while generators were running.
+                let current_word = {
+                    let p = parser.lock().unwrap();
+                    let state = p.state();
+                    let buffer = state.command_buffer().unwrap_or("");
+                    let cursor = state.buffer_cursor();
+                    let ctx = parse_command_context(buffer, cursor);
+                    ctx.current_word
+                };
+                let merged = std::mem::take(&mut self.suggestions);
+                self.suggestions =
+                    gc_suggest::fuzzy::rank(&current_word, merged, self.max_visible * 5);
+
+                if self.suggestions.is_empty() {
+                    self.dismiss(stdout);
+                    return true;
                 }
 
                 self.render(parser, stdout);
@@ -518,6 +578,7 @@ impl InputHandler {
         }
 
         let mut render_buf = Vec::new();
+        let loading = self.dynamic_rx.is_some();
         let layout = render_popup(
             &mut render_buf,
             &self.suggestions,
@@ -531,6 +592,7 @@ impl InputHandler {
             self.max_width,
             &self.theme,
             self.scroll_deficit,
+            loading,
         );
         let _ = stdout.write_all(&render_buf);
         let _ = stdout.flush();
@@ -709,33 +771,10 @@ mod tests {
 
     #[test]
     fn test_dismiss_clears_state() {
-        let mut handler = InputHandler {
-            engine: Arc::new(SuggestionEngine::new(Path::new(".")).unwrap()),
-            overlay: OverlayState::new(),
-            suggestions: vec![Suggestion {
-                text: "test".to_string(),
-                ..Default::default()
-            }],
-            last_layout: Some(PopupLayout {
-                start_row: 5,
-                start_col: 0,
-                width: 20,
-                height: 1,
-                scroll_deficit: 0,
-            }),
-            visible: true,
-            trigger_requested: false,
-            max_visible: DEFAULT_MAX_VISIBLE,
-            min_width: DEFAULT_MIN_POPUP_WIDTH,
-            max_width: DEFAULT_MAX_POPUP_WIDTH,
-            trigger_chars: DEFAULT_TRIGGER_CHARS.iter().copied().collect(),
-            keybindings: Keybindings::default(),
-            theme: PopupTheme::default(),
-            dynamic_rx: None,
-            dynamic_notify: Arc::new(Notify::new()),
-            generator_timeout_ms: 5000,
-            scroll_deficit: 0,
-        };
+        let mut handler = make_visible_handler(vec![Suggestion {
+            text: "test".to_string(),
+            ..Default::default()
+        }]);
 
         let mut stdout_buf = Vec::new();
         handler.dismiss(&mut stdout_buf);
@@ -765,6 +804,28 @@ mod tests {
             generator_timeout_ms: 5000,
             scroll_deficit: 0,
         }
+    }
+
+    /// Test builder: set up a visible popup with suggestions and a default layout.
+    fn make_visible_handler(suggestions: Vec<Suggestion>) -> InputHandler {
+        let mut h = make_handler();
+        h.suggestions = suggestions;
+        h.visible = true;
+        h.last_layout = Some(PopupLayout {
+            start_row: 5,
+            start_col: 0,
+            width: 20,
+            height: 1,
+            scroll_deficit: 0,
+        });
+        h
+    }
+
+    /// Test builder: visible handler with a single selected suggestion.
+    fn make_selected_handler(suggestion: Suggestion) -> InputHandler {
+        let mut h = make_visible_handler(vec![suggestion]);
+        h.overlay.selected = Some(0);
+        h
     }
 
     #[test]
@@ -818,38 +879,12 @@ mod tests {
 
     #[test]
     fn test_tab_accept_directory_predicts_buffer() {
-        let mut handler = InputHandler {
-            engine: Arc::new(SuggestionEngine::new(Path::new(".")).unwrap()),
-            overlay: OverlayState {
-                selected: Some(0),
-                scroll_offset: 0,
-            },
-            suggestions: vec![Suggestion {
-                text: "Desktop/".to_string(),
-                kind: SuggestionKind::Directory,
-                source: SuggestionSource::Filesystem,
-                ..Default::default()
-            }],
-            last_layout: Some(PopupLayout {
-                start_row: 5,
-                start_col: 0,
-                width: 20,
-                height: 1,
-                scroll_deficit: 0,
-            }),
-            visible: true,
-            trigger_requested: false,
-            max_visible: DEFAULT_MAX_VISIBLE,
-            min_width: DEFAULT_MIN_POPUP_WIDTH,
-            max_width: DEFAULT_MAX_POPUP_WIDTH,
-            trigger_chars: DEFAULT_TRIGGER_CHARS.iter().copied().collect(),
-            keybindings: Keybindings::default(),
-            theme: PopupTheme::default(),
-            dynamic_rx: None,
-            dynamic_notify: Arc::new(Notify::new()),
-            generator_timeout_ms: 5000,
-            scroll_deficit: 0,
-        };
+        let mut handler = make_selected_handler(Suggestion {
+            text: "Desktop/".to_string(),
+            kind: SuggestionKind::Directory,
+            source: SuggestionSource::Filesystem,
+            ..Default::default()
+        });
 
         // Simulate buffer "cd " with cursor at 3
         let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
@@ -876,45 +911,41 @@ mod tests {
 
     #[test]
     fn test_tab_accept_file_dismisses() {
-        let mut handler = InputHandler {
-            engine: Arc::new(SuggestionEngine::new(Path::new(".")).unwrap()),
-            overlay: OverlayState {
-                selected: Some(0),
-                scroll_offset: 0,
-            },
-            suggestions: vec![Suggestion {
-                text: "README.md".to_string(),
-                kind: SuggestionKind::FilePath,
-                source: SuggestionSource::Filesystem,
-                ..Default::default()
-            }],
-            last_layout: Some(PopupLayout {
-                start_row: 5,
-                start_col: 0,
-                width: 20,
-                height: 1,
-                scroll_deficit: 0,
-            }),
-            visible: true,
-            trigger_requested: false,
-            max_visible: DEFAULT_MAX_VISIBLE,
-            min_width: DEFAULT_MIN_POPUP_WIDTH,
-            max_width: DEFAULT_MAX_POPUP_WIDTH,
-            trigger_chars: DEFAULT_TRIGGER_CHARS.iter().copied().collect(),
-            keybindings: Keybindings::default(),
-            theme: PopupTheme::default(),
-            dynamic_rx: None,
-            dynamic_notify: Arc::new(Notify::new()),
-            generator_timeout_ms: 5000,
-            scroll_deficit: 0,
-        };
+        let mut handler = make_selected_handler(Suggestion {
+            text: "README.md".to_string(),
+            kind: SuggestionKind::FilePath,
+            source: SuggestionSource::Filesystem,
+            ..Default::default()
+        });
 
         let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
         let mut buf = Vec::new();
-        handler.process_key(&KeyEvent::Tab, &parser, &mut buf);
+        let result = handler.process_key(&KeyEvent::Tab, &parser, &mut buf);
         assert!(
             !handler.visible,
             "popup should dismiss after accepting a file"
+        );
+        assert!(
+            result.ends_with(b" "),
+            "accepting a file should append trailing space, got: {result:?}"
+        );
+    }
+
+    #[test]
+    fn test_tab_accept_flag_ending_with_equals_no_space() {
+        let mut handler = make_selected_handler(Suggestion {
+            text: "--output=".to_string(),
+            kind: SuggestionKind::Flag,
+            source: SuggestionSource::Spec,
+            ..Default::default()
+        });
+
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        let result = handler.process_key(&KeyEvent::Tab, &parser, &mut buf);
+        assert!(
+            !result.ends_with(b" "),
+            "flags ending with = should NOT get trailing space, got: {result:?}"
         );
     }
 
@@ -936,33 +967,10 @@ mod tests {
 
     #[test]
     fn test_enter_no_selection_forwards_enter() {
-        let mut handler = InputHandler {
-            engine: Arc::new(SuggestionEngine::new(Path::new(".")).unwrap()),
-            overlay: OverlayState::new(), // selected: None
-            suggestions: vec![Suggestion {
-                text: "test".to_string(),
-                ..Default::default()
-            }],
-            last_layout: Some(PopupLayout {
-                start_row: 5,
-                start_col: 0,
-                width: 20,
-                height: 1,
-                scroll_deficit: 0,
-            }),
-            visible: true,
-            trigger_requested: false,
-            max_visible: DEFAULT_MAX_VISIBLE,
-            min_width: DEFAULT_MIN_POPUP_WIDTH,
-            max_width: DEFAULT_MAX_POPUP_WIDTH,
-            trigger_chars: DEFAULT_TRIGGER_CHARS.iter().copied().collect(),
-            keybindings: Keybindings::default(),
-            theme: PopupTheme::default(),
-            dynamic_rx: None,
-            dynamic_notify: Arc::new(Notify::new()),
-            generator_timeout_ms: 5000,
-            scroll_deficit: 0,
-        };
+        let mut handler = make_visible_handler(vec![Suggestion {
+            text: "test".to_string(),
+            ..Default::default()
+        }]);
 
         let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
         let mut buf = Vec::new();
@@ -978,33 +986,10 @@ mod tests {
 
     #[test]
     fn test_tab_no_selection_forwards_tab() {
-        let mut handler = InputHandler {
-            engine: Arc::new(SuggestionEngine::new(Path::new(".")).unwrap()),
-            overlay: OverlayState::new(), // selected: None
-            suggestions: vec![Suggestion {
-                text: "test".to_string(),
-                ..Default::default()
-            }],
-            last_layout: Some(PopupLayout {
-                start_row: 5,
-                start_col: 0,
-                width: 20,
-                height: 1,
-                scroll_deficit: 0,
-            }),
-            visible: true,
-            trigger_requested: false,
-            max_visible: DEFAULT_MAX_VISIBLE,
-            min_width: DEFAULT_MIN_POPUP_WIDTH,
-            max_width: DEFAULT_MAX_POPUP_WIDTH,
-            trigger_chars: DEFAULT_TRIGGER_CHARS.iter().copied().collect(),
-            keybindings: Keybindings::default(),
-            theme: PopupTheme::default(),
-            dynamic_rx: None,
-            dynamic_notify: Arc::new(Notify::new()),
-            generator_timeout_ms: 5000,
-            scroll_deficit: 0,
-        };
+        let mut handler = make_visible_handler(vec![Suggestion {
+            text: "test".to_string(),
+            ..Default::default()
+        }]);
 
         let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
         let mut buf = Vec::new();
@@ -1115,5 +1100,87 @@ mod tests {
         // CtrlSpace should pass through as raw bytes since it's no longer trigger
         let result = handler.process_key(&KeyEvent::CtrlSpace, &parser, &mut buf);
         assert_eq!(result, vec![0x00]);
+    }
+
+    // --- update_config tests ---
+
+    #[test]
+    fn test_update_config_changes_theme() {
+        let mut handler = make_handler();
+        // Default theme uses \x1b[7m for selected (reverse video)
+        assert_eq!(handler.theme.selected_on, b"\x1b[7m".to_vec());
+
+        let new_theme = PopupTheme {
+            selected_on: vec![0x1B, b'[', b'1', b'm'],
+            description_on: vec![0x1B, b'[', b'2', b'm'],
+            match_highlight_on: vec![0x1B, b'[', b'4', b'm'],
+            item_text_on: vec![],
+            scrollbar_on: vec![0x1B, b'[', b'2', b'm'],
+        };
+
+        handler.update_config(new_theme, Keybindings::default(), &[' ', '/'], 15, 25, 80);
+
+        assert_eq!(handler.theme.selected_on, vec![0x1B, b'[', b'1', b'm']);
+        assert_eq!(handler.theme.description_on, vec![0x1B, b'[', b'2', b'm']);
+    }
+
+    #[test]
+    fn test_update_config_changes_keybindings() {
+        let mut handler = make_handler();
+
+        let new_kb = Keybindings {
+            accept: KeyEvent::Enter,
+            accept_and_enter: KeyEvent::Tab,
+            dismiss: KeyEvent::Backspace,
+            navigate_up: KeyEvent::CtrlSpace,
+            navigate_down: KeyEvent::ArrowRight,
+            trigger: KeyEvent::Tab,
+        };
+
+        handler.update_config(
+            PopupTheme::default(),
+            new_kb.clone(),
+            &[' ', '/'],
+            10,
+            20,
+            60,
+        );
+
+        assert_eq!(handler.keybindings, new_kb);
+    }
+
+    #[test]
+    fn test_update_config_changes_popup_dimensions() {
+        let mut handler = make_handler();
+
+        handler.update_config(
+            PopupTheme::default(),
+            Keybindings::default(),
+            &['@', '#'],
+            20,
+            30,
+            100,
+        );
+
+        assert_eq!(handler.max_visible, 20);
+        assert_eq!(handler.min_width, 30);
+        assert_eq!(handler.max_width, 100);
+    }
+
+    #[test]
+    fn test_update_config_changes_trigger_chars() {
+        let mut handler = make_handler();
+
+        handler.update_config(
+            PopupTheme::default(),
+            Keybindings::default(),
+            &['@', '#', '!'],
+            10,
+            20,
+            60,
+        );
+
+        let expected: HashSet<char> = ['@', '#', '!'].iter().copied().collect();
+        assert_eq!(handler.trigger_chars, expected);
     }
 }

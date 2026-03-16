@@ -8,6 +8,7 @@ pub mod ansi;
 mod layout;
 mod render;
 pub mod types;
+mod util;
 
 pub use render::{clear_popup, parse_style, render_popup, PopupTheme};
 pub use types::{
