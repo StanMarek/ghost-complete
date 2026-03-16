@@ -128,6 +128,17 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
         None
     };
 
+    // Task E: dynamic merge loop — renders script generator results when shell is idle.
+    let dynamic_notify = {
+        let h = handler.lock().unwrap();
+        h.dynamic_notify()
+    };
+    let handler_for_merge = Arc::clone(&handler);
+    let parser_for_merge = Arc::clone(&parser);
+    let merge_handle = tokio::spawn(async move {
+        dynamic_merge_loop(dynamic_notify, handler_for_merge, parser_for_merge).await;
+    });
+
     // Channel to signal that one of the I/O tasks has finished
     let (shutdown_tx, mut shutdown_rx) = mpsc::channel::<()>(1);
 
@@ -334,6 +345,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     // Clean up: abort I/O tasks (they'll be blocked on reads)
     stdin_handle.abort();
     stdout_handle.abort();
+    merge_handle.abort();
     if let Some(h) = debounce_handle {
         h.abort();
     }
@@ -373,6 +385,29 @@ async fn debounce_loop(
         {
             let mut h = handler.lock().unwrap();
             h.trigger(&parser, &mut render_buf);
+        }
+        if !render_buf.is_empty() {
+            let mut stdout = std::io::stdout().lock();
+            let _ = stdout.write_all(&render_buf);
+            let _ = stdout.flush();
+        }
+    }
+}
+
+/// Dynamic merge loop: awaits notification from script generator tasks and
+/// merges results into the popup. This ensures dynamic results render even
+/// when the shell is idle (no PTY output flowing through Task B).
+async fn dynamic_merge_loop(
+    notify: Arc<Notify>,
+    handler: Arc<Mutex<InputHandler>>,
+    parser: Arc<Mutex<TerminalParser>>,
+) {
+    loop {
+        notify.notified().await;
+        let mut render_buf = Vec::new();
+        {
+            let mut h = handler.lock().unwrap();
+            h.try_merge_dynamic(&parser, &mut render_buf);
         }
         if !render_buf.is_empty() {
             let mut stdout = std::io::stdout().lock();
