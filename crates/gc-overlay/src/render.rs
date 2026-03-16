@@ -2,6 +2,7 @@ use std::io::Write;
 
 use anyhow::{bail, Result};
 use gc_suggest::{Suggestion, SuggestionKind};
+
 use crate::ansi;
 use crate::layout;
 use crate::types::{OverlayState, PopupLayout};
