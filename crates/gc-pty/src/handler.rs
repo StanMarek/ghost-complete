@@ -84,6 +84,7 @@ pub struct InputHandler {
     min_width: u16,
     max_width: u16,
     trigger_chars: HashSet<char>,
+    debounce_suppressed: bool,
     keybindings: Keybindings,
     theme: PopupTheme,
     dynamic_rx: Option<mpsc::Receiver<Vec<Suggestion>>>,
@@ -108,6 +109,7 @@ impl InputHandler {
             min_width: DEFAULT_MIN_POPUP_WIDTH,
             max_width: DEFAULT_MAX_POPUP_WIDTH,
             trigger_chars: DEFAULT_TRIGGER_CHARS.iter().copied().collect(),
+            debounce_suppressed: false,
             keybindings: Keybindings::default(),
             theme: PopupTheme::default(),
             dynamic_rx: None,
@@ -207,6 +209,10 @@ impl InputHandler {
 
     pub fn clear_trigger_request(&mut self) {
         self.trigger_requested = false;
+    }
+
+    pub fn is_debounce_suppressed(&self) -> bool {
+        self.debounce_suppressed
     }
 
     /// Process a single key event. Returns the raw bytes to forward to the PTY,
@@ -381,17 +387,25 @@ impl InputHandler {
     ) -> Vec<u8> {
         if key == &self.keybindings.trigger {
             // Manual trigger — fire immediately (no PTY roundtrip needed)
+            self.debounce_suppressed = false;
             self.trigger(parser, stdout);
             return Vec::new();
         }
         match key {
             KeyEvent::Printable(c) => {
+                self.debounce_suppressed = false;
                 let forward = vec![*c as u8];
                 if self.trigger_chars.contains(c) {
                     // Defer trigger to Task B after shell processes the keystroke
                     self.trigger_requested = true;
                 }
                 forward
+            }
+            KeyEvent::ArrowUp | KeyEvent::ArrowDown => {
+                // History navigation — suppress debounce so the popup doesn't
+                // trigger on buffer changes from shell history recall.
+                self.debounce_suppressed = true;
+                key_to_bytes(key)
             }
             _ => key_to_bytes(key),
         }
@@ -806,6 +820,7 @@ mod tests {
             min_width: DEFAULT_MIN_POPUP_WIDTH,
             max_width: DEFAULT_MAX_POPUP_WIDTH,
             trigger_chars: DEFAULT_TRIGGER_CHARS.iter().copied().collect(),
+            debounce_suppressed: false,
             keybindings: Keybindings::default(),
             theme: PopupTheme::default(),
             dynamic_rx: None,
@@ -1191,5 +1206,52 @@ mod tests {
 
         let expected: HashSet<char> = ['@', '#', '!'].iter().copied().collect();
         assert_eq!(handler.trigger_chars, expected);
+    }
+
+    // --- Debounce suppression tests ---
+
+    #[test]
+    fn test_arrow_up_suppresses_debounce() {
+        let mut handler = make_handler();
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        assert!(!handler.is_debounce_suppressed());
+        handler.process_key(&KeyEvent::ArrowUp, &parser, &mut buf);
+        assert!(handler.is_debounce_suppressed());
+    }
+
+    #[test]
+    fn test_arrow_down_suppresses_debounce() {
+        let mut handler = make_handler();
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        handler.process_key(&KeyEvent::ArrowDown, &parser, &mut buf);
+        assert!(handler.is_debounce_suppressed());
+    }
+
+    #[test]
+    fn test_printable_clears_debounce_suppression() {
+        let mut handler = make_handler();
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        // Suppress via arrow
+        handler.process_key(&KeyEvent::ArrowUp, &parser, &mut buf);
+        assert!(handler.is_debounce_suppressed());
+        // Clear via typing
+        handler.process_key(&KeyEvent::Printable('a'), &parser, &mut buf);
+        assert!(!handler.is_debounce_suppressed());
+    }
+
+    #[test]
+    fn test_manual_trigger_clears_debounce_suppression() {
+        let mut handler = make_handler();
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        // Suppress via arrow
+        handler.process_key(&KeyEvent::ArrowUp, &parser, &mut buf);
+        assert!(handler.is_debounce_suppressed());
+        // Clear via manual trigger (Ctrl+/)
+        handler.process_key(&KeyEvent::CtrlSlash, &parser, &mut buf);
+        assert!(!handler.is_debounce_suppressed());
     }
 }

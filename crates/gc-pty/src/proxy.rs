@@ -263,7 +263,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                     if h.has_pending_trigger() {
                         h.clear_trigger_request();
                         h.trigger(&parser_for_stdout, &mut render_buf);
-                    } else if delay_ms > 0 {
+                    } else if delay_ms > 0 && !h.is_debounce_suppressed() {
                         debounce_notify_b.notify_one();
                     }
                 }
@@ -399,6 +399,9 @@ async fn debounce_loop(
                     continue;
                 }
             };
+            if h.is_debounce_suppressed() {
+                continue;
+            }
             h.trigger(&parser, &mut render_buf);
         }
         if !render_buf.is_empty() {
