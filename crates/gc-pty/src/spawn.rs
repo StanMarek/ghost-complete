@@ -18,6 +18,7 @@ pub fn spawn_shell(shell: &str, args: &[String]) -> Result<SpawnedShell> {
 
     let mut cmd = CommandBuilder::new(shell);
     cmd.args(args);
+    cmd.cwd(std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("/")));
 
     // Inherit the current environment
     for (key, value) in std::env::vars() {
