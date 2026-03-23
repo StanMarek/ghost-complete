@@ -6,13 +6,7 @@
 [![GitHub Release](https://img.shields.io/github/v/release/StanMarek/ghost-complete)](https://github.com/StanMarek/ghost-complete/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-<!-- TODO: add demo GIF -->
-
-
-
 https://github.com/user-attachments/assets/3679a74a-731d-468a-bdda-bec926bb2349
-
-
 
 
 ## What is this?
@@ -76,7 +70,7 @@ ghost-complete install
 
 - Adds shell integration to `~/.zshrc` (auto-wraps your shell via PTY proxy)
 - Deploys shell scripts for bash/fish to `~/.config/ghost-complete/shell/`
-- Installs 717 completion specs to `~/.config/ghost-complete/specs/`
+- Installs 709 completion specs to `~/.config/ghost-complete/specs/`
 - Creates default config at `~/.config/ghost-complete/config.toml` (never overwrites existing)
 
 ### Uninstall
@@ -188,7 +182,7 @@ The PTY proxy sits between the terminal and the shell, rendering popups via pure
 
 **Why custom JSON specs instead of using the shell's built-in completions?**
 
-Specs are declarative and fast — microsecond loads, no shell execution. They use the same format [Fig](https://fig.io) used, so there's a large existing ecosystem to draw from. Ghost Complete ships with 717 specs today, and many include dynamic generators that execute shell commands for live results (e.g., listing running containers, git branches, installed packages). Commands without a spec fall back to filesystem completions. Adding new specs is straightforward — see [docs/COMPLETION_SPEC.md](docs/COMPLETION_SPEC.md), and contributions are welcome.
+Specs are declarative and fast — microsecond loads, no shell execution. They use the same format [Fig](https://fig.io) used, so there's a large existing ecosystem to draw from. Ghost Complete ships with 709 specs today, and many include dynamic generators that execute shell commands for live results (e.g., listing running containers, git branches, installed packages). Commands without a spec fall back to filesystem completions. Adding new specs is straightforward — see [docs/COMPLETION_SPEC.md](docs/COMPLETION_SPEC.md), and contributions are welcome.
 
 **Where's the config documentation? I'm having popup alignment issues.**
 
