@@ -43,12 +43,19 @@ impl Drop for RawModeGuard {
 pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Result<i32> {
     // Detect terminal capabilities
     let terminal_profile = gc_terminal::TerminalProfile::detect();
-    tracing::info!(
-        terminal = %terminal_profile.terminal,
-        render = %terminal_profile.render_strategy,
-        prompt = %terminal_profile.prompt_detection,
-        "terminal profile detected"
-    );
+    if matches!(terminal_profile.terminal, gc_terminal::Terminal::Unknown(_)) {
+        tracing::warn!(
+            terminal = %terminal_profile.terminal,
+            "running on unsupported terminal — cursor save/restore may not work correctly"
+        );
+    } else {
+        tracing::info!(
+            terminal = %terminal_profile.terminal,
+            render = %terminal_profile.render_strategy,
+            prompt = %terminal_profile.prompt_detection,
+            "terminal profile detected"
+        );
+    }
 
     // Log tmux detection for debugging
     if std::env::var("TMUX").is_ok() {

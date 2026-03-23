@@ -118,13 +118,6 @@ impl TerminalProfile {
             ),
         };
 
-        tracing::info!(
-            terminal = %terminal,
-            render = %render_strategy,
-            prompt = %prompt_detection,
-            "detected terminal profile"
-        );
-
         Self {
             terminal,
             render_strategy,

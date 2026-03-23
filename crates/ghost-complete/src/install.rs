@@ -1231,8 +1231,10 @@ fn init_block() -> String {
          if [[ -n \"$TMUX\" && -z \"$GHOST_COMPLETE_ACTIVE\" && \\\n    \
            \"$(ps -o comm= -p $PPID 2>/dev/null)\" != \"ghost-complete\" ]]; then\n  \
            if [[ -n \"$GHOSTTY_RESOURCES_DIR\" ]]; then\n    \
+             export GHOST_COMPLETE_ACTIVE=1\n    \
              exec ghost-complete\n  \
            elif [[ -n \"$ITERM_SESSION_ID\" ]]; then\n    \
+             export GHOST_COMPLETE_ACTIVE=1\n    \
              exec ghost-complete\n  \
            fi\n\
          fi\n\
