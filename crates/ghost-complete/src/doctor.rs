@@ -184,7 +184,7 @@ fn check_terminal() -> CheckResult {
     let profile = gc_terminal::TerminalProfile::detect();
     let term_program = std::env::var("TERM_PROGRAM").unwrap_or_default();
 
-    if gc_terminal::is_supported(&term_program) || gc_terminal::is_supported(&profile.name) {
+    if gc_terminal::is_supported(&term_program) {
         CheckResult::ok(format!(
             "Running inside {} (render: {}, prompt: {})",
             profile.name, profile.render_strategy, profile.prompt_detection

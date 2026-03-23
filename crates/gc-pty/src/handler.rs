@@ -99,7 +99,7 @@ pub struct InputHandler {
 }
 
 impl InputHandler {
-    pub fn new(spec_dir: &Path) -> anyhow::Result<Self> {
+    pub fn new(spec_dir: &Path, terminal_profile: TerminalProfile) -> anyhow::Result<Self> {
         Ok(Self {
             engine: Arc::new(SuggestionEngine::new(spec_dir)?),
             overlay: OverlayState::new(),
@@ -117,7 +117,7 @@ impl InputHandler {
             dynamic_rx: None,
             dynamic_notify: Arc::new(Notify::new()),
             generator_timeout_ms: 5000,
-            terminal_profile: TerminalProfile::detect(),
+            terminal_profile,
             scroll_deficit: 0,
         })
     }
@@ -145,11 +145,6 @@ impl InputHandler {
 
     pub fn with_theme(mut self, theme: PopupTheme) -> Self {
         self.theme = theme;
-        self
-    }
-
-    pub fn with_terminal_profile(mut self, profile: TerminalProfile) -> Self {
-        self.terminal_profile = profile;
         self
     }
 

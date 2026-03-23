@@ -103,15 +103,15 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
 
     // Initialize suggestion handler with config
     let handler = Arc::new(Mutex::new({
-        let h = InputHandler::new(&spec_dirs[0]).unwrap_or_else(|e| {
+        let h = InputHandler::new(&spec_dirs[0], terminal_profile.clone()).unwrap_or_else(|e| {
             tracing::warn!(
                 "failed to init suggestion engine: {}, suggestions disabled",
                 e
             );
-            InputHandler::new(std::path::Path::new(".")).expect("fallback handler")
+            InputHandler::new(std::path::Path::new("."), terminal_profile)
+                .expect("fallback handler")
         });
-        h.with_terminal_profile(terminal_profile)
-            .with_keybindings(keybindings)
+        h.with_keybindings(keybindings)
             .with_theme(theme)
             .with_popup_config(
                 config.popup.max_visible,
