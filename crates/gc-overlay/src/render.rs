@@ -2,6 +2,7 @@ use std::io::Write;
 
 use anyhow::{bail, Result};
 use gc_suggest::{Suggestion, SuggestionKind};
+use gc_terminal::{RenderStrategy, TerminalProfile};
 
 use crate::ansi;
 use crate::layout;
@@ -111,6 +112,7 @@ pub fn render_popup(
     theme: &PopupTheme,
     prior_deficit: u16,
     loading: bool,
+    profile: &TerminalProfile,
 ) -> PopupLayout {
     if suggestions.is_empty() {
         return PopupLayout {
@@ -146,7 +148,10 @@ pub fn render_popup(
     let total_deficit = prior_deficit + new_deficit;
     let final_cursor_row = cursor_row.saturating_sub(total_deficit);
 
-    ansi::begin_sync(buf);
+    let use_sync = matches!(profile.render_strategy, RenderStrategy::Synchronized);
+    if use_sync {
+        ansi::begin_sync(buf);
+    }
 
     // Scroll viewport if we need more room
     if new_deficit > 0 {
@@ -176,7 +181,9 @@ pub fn render_popup(
 
     if layout.height == 0 {
         ansi::restore_cursor(buf);
-        ansi::end_sync(buf);
+        if use_sync {
+            ansi::end_sync(buf);
+        }
         return PopupLayout {
             scroll_deficit: total_deficit,
             ..layout
@@ -271,7 +278,9 @@ pub fn render_popup(
     };
 
     ansi::restore_cursor(buf);
-    ansi::end_sync(buf);
+    if use_sync {
+        ansi::end_sync(buf);
+    }
 
     PopupLayout {
         height: layout.height + loading_extra,
@@ -281,12 +290,15 @@ pub fn render_popup(
 }
 
 /// Clear the popup area by overwriting with spaces.
-pub fn clear_popup(buf: &mut Vec<u8>, layout: &PopupLayout) {
+pub fn clear_popup(buf: &mut Vec<u8>, layout: &PopupLayout, profile: &TerminalProfile) {
     if layout.height == 0 {
         return;
     }
 
-    ansi::begin_sync(buf);
+    let use_sync = matches!(profile.render_strategy, RenderStrategy::Synchronized);
+    if use_sync {
+        ansi::begin_sync(buf);
+    }
     ansi::save_cursor(buf);
 
     for row_offset in 0..layout.height {
@@ -298,7 +310,9 @@ pub fn clear_popup(buf: &mut Vec<u8>, layout: &PopupLayout) {
     }
 
     ansi::restore_cursor(buf);
-    ansi::end_sync(buf);
+    if use_sync {
+        ansi::end_sync(buf);
+    }
 }
 
 fn format_item(
@@ -432,6 +446,25 @@ mod tests {
     use super::*;
     use crate::types::{DEFAULT_MAX_POPUP_WIDTH, DEFAULT_MAX_VISIBLE, DEFAULT_MIN_POPUP_WIDTH};
     use gc_suggest::SuggestionSource;
+    use gc_terminal::Terminal;
+
+    fn ghostty_profile() -> TerminalProfile {
+        TerminalProfile {
+            terminal: Terminal::Ghostty,
+            render_strategy: RenderStrategy::Synchronized,
+            prompt_detection: gc_terminal::PromptDetection::Osc133,
+            name: "Ghostty".to_string(),
+        }
+    }
+
+    fn iterm2_profile() -> TerminalProfile {
+        TerminalProfile {
+            terminal: Terminal::ITerm2,
+            render_strategy: RenderStrategy::PreRenderBuffer,
+            prompt_detection: gc_terminal::PromptDetection::ShellIntegration,
+            name: "iTerm2".to_string(),
+        }
+    }
 
     fn make(text: &str, desc: Option<&str>, kind: SuggestionKind) -> Suggestion {
         Suggestion {
@@ -474,6 +507,7 @@ mod tests {
             &PopupTheme::default(),
             0,
             false,
+            &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
         assert!(
@@ -481,6 +515,63 @@ mod tests {
             "should start with begin_sync"
         );
         assert!(output.ends_with("\x1b[?2026l"), "should end with end_sync");
+    }
+
+    #[test]
+    fn test_render_pre_render_buffer_skips_sync() {
+        let mut buf = Vec::new();
+        let suggestions = make_suggestions();
+        let state = OverlayState::new();
+        render_popup(
+            &mut buf,
+            &suggestions,
+            &state,
+            5,
+            0,
+            24,
+            80,
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &PopupTheme::default(),
+            0,
+            false,
+            &iterm2_profile(),
+        );
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            !output.contains("\x1b[?2026h"),
+            "PreRenderBuffer should NOT contain begin_sync"
+        );
+        assert!(
+            !output.contains("\x1b[?2026l"),
+            "PreRenderBuffer should NOT contain end_sync"
+        );
+        // Should still have save/restore cursor
+        assert!(output.contains("\x1b7"), "should still save cursor");
+        assert!(output.contains("\x1b8"), "should still restore cursor");
+    }
+
+    #[test]
+    fn test_clear_pre_render_buffer_skips_sync() {
+        let mut buf = Vec::new();
+        let layout = PopupLayout {
+            start_row: 5,
+            start_col: 0,
+            width: 20,
+            height: 3,
+            scroll_deficit: 0,
+        };
+        clear_popup(&mut buf, &layout, &iterm2_profile());
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            !output.contains("\x1b[?2026h"),
+            "PreRenderBuffer clear should NOT contain begin_sync"
+        );
+        assert!(
+            !output.contains("\x1b[?2026l"),
+            "PreRenderBuffer clear should NOT contain end_sync"
+        );
     }
 
     #[test]
@@ -502,6 +593,7 @@ mod tests {
             &PopupTheme::default(),
             0,
             false,
+            &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
         assert!(output.contains("\x1b7"), "should contain save cursor");
@@ -527,6 +619,7 @@ mod tests {
             &PopupTheme::default(),
             0,
             false,
+            &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
         // Popup below cursor at row 5 → starts at row 6 (1-indexed: 7)
@@ -556,6 +649,7 @@ mod tests {
             &PopupTheme::default(),
             0,
             false,
+            &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
         assert!(
@@ -664,7 +758,7 @@ mod tests {
             height: 3,
             scroll_deficit: 0,
         };
-        clear_popup(&mut buf, &layout);
+        clear_popup(&mut buf, &layout, &ghostty_profile());
         let output = String::from_utf8_lossy(&buf);
         assert!(!output.contains("\x1b[K"), "should not use erase_to_eol");
         assert!(
@@ -683,7 +777,7 @@ mod tests {
             height: 4,
             scroll_deficit: 0,
         };
-        clear_popup(&mut buf, &layout);
+        clear_popup(&mut buf, &layout, &ghostty_profile());
         let output = String::from_utf8_lossy(&buf);
         assert!(output.contains("\x1b[11;6H"), "row 10 -> ANSI row 11");
         assert!(output.contains("\x1b[12;6H"), "row 11 -> ANSI row 12");
@@ -714,6 +808,7 @@ mod tests {
             &PopupTheme::default(),
             0,
             false,
+            &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
         assert!(
@@ -746,6 +841,7 @@ mod tests {
             &PopupTheme::default(),
             0,
             false,
+            &ghostty_profile(),
         );
         assert_eq!(layout.height, 0);
         assert!(
@@ -823,6 +919,7 @@ mod tests {
             &PopupTheme::default(),
             0,
             false,
+            &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
         // Should CUP to last row before newlines
@@ -859,6 +956,7 @@ mod tests {
             &PopupTheme::default(),
             0,
             false,
+            &ghostty_profile(),
         );
         // No newlines means no scrolling occurred (popup uses CUP, not newlines)
         assert!(
@@ -889,6 +987,7 @@ mod tests {
             &PopupTheme::default(),
             2,
             false,
+            &ghostty_profile(),
         );
         // No newlines means no scrolling occurred (popup uses CUP, not newlines)
         assert!(
@@ -919,6 +1018,7 @@ mod tests {
             &PopupTheme::default(),
             0,
             false,
+            &ghostty_profile(),
         );
         assert_eq!(layout1.scroll_deficit, 2);
 
@@ -942,6 +1042,7 @@ mod tests {
             &PopupTheme::default(),
             2, // prior_deficit from first render
             false,
+            &ghostty_profile(),
         );
         let output2 = String::from_utf8_lossy(&buf2);
         // Should scroll 5 more (total = 2 + 5 = 7)
@@ -973,6 +1074,7 @@ mod tests {
             &PopupTheme::default(),
             0,
             false,
+            &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
         let cup_to_adjusted = "\x1b[21;1H"; // adj_row=20, ANSI row=21
@@ -1008,6 +1110,7 @@ mod tests {
             &PopupTheme::default(),
             0,
             false,
+            &ghostty_profile(),
         );
         // capped to screen_rows - 1 = 5
         assert!(
@@ -1043,6 +1146,7 @@ mod tests {
             &PopupTheme::default(),
             0,
             false,
+            &ghostty_profile(),
         );
         // final_cursor = 0, start_row = 1
         assert_eq!(layout.start_row, 1);
@@ -1117,6 +1221,7 @@ mod tests {
             &theme,
             0,
             false,
+            &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
         // Count occurrences of dim (\x1b[2m) — should appear for non-selected rows
@@ -1154,6 +1259,7 @@ mod tests {
             &theme,
             0,
             false,
+            &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
         // Selected row should have reverse, not dim
@@ -1183,6 +1289,7 @@ mod tests {
             &theme,
             0,
             false,
+            &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
         // Should NOT contain dim sequence (item_text is empty)
@@ -1347,6 +1454,7 @@ mod tests {
             &PopupTheme::default(),
             0,
             false,
+            &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
         assert!(
@@ -1374,6 +1482,7 @@ mod tests {
             &PopupTheme::default(),
             0,
             false,
+            &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
         assert!(
@@ -1403,6 +1512,7 @@ mod tests {
             &PopupTheme::default(),
             0,
             false,
+            &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
         assert!(output.contains('█'), "should have thumb indicator");
@@ -1432,6 +1542,7 @@ mod tests {
             &PopupTheme::default(),
             0,
             false,
+            &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
         assert!(output.contains('█'), "should have thumb at bottom");
@@ -1462,6 +1573,7 @@ mod tests {
             &PopupTheme::default(),
             0,
             false,
+            &ghostty_profile(),
         );
 
         let mut buf_scroll = Vec::new();
@@ -1479,6 +1591,7 @@ mod tests {
             &PopupTheme::default(),
             0,
             false,
+            &ghostty_profile(),
         );
 
         let output = String::from_utf8_lossy(&buf_scroll);
@@ -1514,6 +1627,7 @@ mod tests {
             &theme,
             0,
             false,
+            &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
         assert!(
@@ -1541,6 +1655,7 @@ mod tests {
             &PopupTheme::default(),
             0,
             true,
+            &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
         assert!(
@@ -1570,6 +1685,7 @@ mod tests {
             &PopupTheme::default(),
             0,
             false,
+            &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
         assert!(

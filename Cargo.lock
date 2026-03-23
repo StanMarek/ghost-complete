@@ -422,14 +422,14 @@ dependencies = [
 
 [[package]]
 name = "gc-buffer"
-version = "0.2.4"
+version = "0.3.0"
 dependencies = [
  "anyhow",
 ]
 
 [[package]]
 name = "gc-config"
-version = "0.2.4"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "dirs",
@@ -440,16 +440,17 @@ dependencies = [
 
 [[package]]
 name = "gc-overlay"
-version = "0.2.4"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "gc-suggest",
+ "gc-terminal",
  "unicode-width",
 ]
 
 [[package]]
 name = "gc-parser"
-version = "0.2.4"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "criterion",
@@ -459,7 +460,7 @@ dependencies = [
 
 [[package]]
 name = "gc-pty"
-version = "0.2.4"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "crossterm",
@@ -469,6 +470,7 @@ dependencies = [
  "gc-overlay",
  "gc-parser",
  "gc-suggest",
+ "gc-terminal",
  "notify",
  "portable-pty",
  "tokio",
@@ -477,7 +479,7 @@ dependencies = [
 
 [[package]]
 name = "gc-suggest"
-version = "0.2.4"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "criterion",
@@ -491,6 +493,13 @@ dependencies = [
  "serde_json",
  "tempfile",
  "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "gc-terminal"
+version = "0.3.0"
+dependencies = [
  "tracing",
 ]
 
@@ -520,7 +529,7 @@ dependencies = [
 
 [[package]]
 name = "ghost-complete"
-version = "0.2.4"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -528,6 +537,7 @@ dependencies = [
  "gc-config",
  "gc-pty",
  "gc-suggest",
+ "gc-terminal",
  "portable-pty",
  "serde_json",
  "tempfile",

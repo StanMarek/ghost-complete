@@ -11,6 +11,7 @@ use gc_overlay::types::{
 use gc_overlay::{clear_popup, render_popup, PopupTheme};
 use gc_parser::TerminalParser;
 use gc_suggest::{Suggestion, SuggestionEngine};
+use gc_terminal::TerminalProfile;
 use tokio::sync::{mpsc, Notify};
 
 use crate::input::KeyEvent;
@@ -90,6 +91,7 @@ pub struct InputHandler {
     dynamic_rx: Option<mpsc::Receiver<Vec<Suggestion>>>,
     dynamic_notify: Arc<Notify>,
     generator_timeout_ms: u64,
+    terminal_profile: TerminalProfile,
     /// Accumulated viewport scroll from popup rendering. Persists across
     /// dismiss/re-trigger cycles because viewport scroll is permanent.
     /// Reset when a CPR sync corrects the parser's cursor position (new prompt).
@@ -115,6 +117,7 @@ impl InputHandler {
             dynamic_rx: None,
             dynamic_notify: Arc::new(Notify::new()),
             generator_timeout_ms: 5000,
+            terminal_profile: TerminalProfile::detect(),
             scroll_deficit: 0,
         })
     }
@@ -142,6 +145,11 @@ impl InputHandler {
 
     pub fn with_theme(mut self, theme: PopupTheme) -> Self {
         self.theme = theme;
+        self
+    }
+
+    pub fn with_terminal_profile(mut self, profile: TerminalProfile) -> Self {
+        self.terminal_profile = profile;
         self
     }
 
@@ -596,7 +604,7 @@ impl InputHandler {
     ) {
         if let Some(ref layout) = self.last_layout {
             let mut clear_buf = Vec::new();
-            clear_popup(&mut clear_buf, layout);
+            clear_popup(&mut clear_buf, layout, &self.terminal_profile);
             let _ = stdout.write_all(&clear_buf);
         }
 
@@ -616,6 +624,7 @@ impl InputHandler {
             &self.theme,
             self.scroll_deficit,
             loading,
+            &self.terminal_profile,
         );
         let _ = stdout.write_all(&render_buf);
         let _ = stdout.flush();
@@ -626,7 +635,7 @@ impl InputHandler {
     fn dismiss(&mut self, stdout: &mut dyn Write) {
         if let Some(ref layout) = self.last_layout {
             let mut buf = Vec::new();
-            clear_popup(&mut buf, layout);
+            clear_popup(&mut buf, layout, &self.terminal_profile);
             let _ = stdout.write_all(&buf);
             let _ = stdout.flush();
         }
@@ -826,6 +835,7 @@ mod tests {
             dynamic_rx: None,
             dynamic_notify: Arc::new(Notify::new()),
             generator_timeout_ms: 5000,
+            terminal_profile: TerminalProfile::detect(),
             scroll_deficit: 0,
         }
     }

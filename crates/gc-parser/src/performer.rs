@@ -148,6 +148,31 @@ impl Perform for TerminalState {
                     _ => {}
                 }
             }
+            // OSC 7771 — Ghost Complete prompt boundary (terminal-agnostic)
+            // Mirrors OSC 133 behavior but is emitted by our shell integration
+            // on all terminals, including those without native OSC 133 support.
+            b"7771" => {
+                if params.len() < 2 {
+                    return;
+                }
+                match params[1] {
+                    b"A" => {
+                        self.request_cursor_sync();
+                        self.set_prompt_row(self.cursor_row());
+                        self.set_in_prompt(true);
+                        tracing::debug!(
+                            row = self.cursor_row(),
+                            "OSC 7771;A — prompt start (shell integration)"
+                        );
+                    }
+                    b"C" => {
+                        self.set_in_prompt(false);
+                        self.clear_command_buffer();
+                        tracing::debug!("OSC 7771;C — command executing (shell integration)");
+                    }
+                    _ => {}
+                }
+            }
             // OSC 7770 — Ghost Complete buffer report
             b"7770" => {
                 if params.len() < 3 {
@@ -414,6 +439,36 @@ mod tests {
         assert!(p.state().in_prompt());
         p.process_bytes(b"\x1b]133;C\x07"); // command executing
         assert!(!p.state().in_prompt());
+    }
+
+    // -- OSC 7771 prompt boundary (terminal-agnostic) --
+
+    #[test]
+    fn test_osc7771_prompt_a() {
+        let mut p = make_parser();
+        p.process_bytes(b"\x1b[3;1H"); // row 3
+        p.process_bytes(b"\x1b]7771;A\x07");
+        assert_eq!(p.state().prompt_row(), Some(2));
+        assert!(p.state().in_prompt());
+    }
+
+    #[test]
+    fn test_osc7771_prompt_c() {
+        let mut p = make_parser();
+        p.process_bytes(b"\x1b]7771;A\x07"); // start prompt
+        assert!(p.state().in_prompt());
+        p.process_bytes(b"\x1b]7771;C\x07"); // command executing
+        assert!(!p.state().in_prompt());
+    }
+
+    #[test]
+    fn test_osc7771_clears_buffer_on_c() {
+        let mut p = make_parser();
+        p.process_bytes(b"\x1b]7770;3;git\x07");
+        assert_eq!(p.state().command_buffer(), Some("git"));
+        p.process_bytes(b"\x1b]7771;C\x07");
+        assert_eq!(p.state().command_buffer(), None);
+        assert_eq!(p.state().buffer_cursor(), 0);
     }
 
     // -- OSC 7770 buffer reporting --

@@ -3,6 +3,7 @@
 
 _gc_prompt_command() {
     printf '\e]133;A\a'
+    printf '\e]7771;A\a'
 }
 PROMPT_COMMAND="_gc_prompt_command${PROMPT_COMMAND:+;$PROMPT_COMMAND}"
 
@@ -12,6 +13,7 @@ _gc_debug_trap() {
     if [[ "$_gc_preexec_enabled" == true ]]; then
         _gc_preexec_enabled=false
         printf '\e]133;C\a'
+        printf '\e]7771;C\a'
     fi
 }
 trap '_gc_debug_trap' DEBUG

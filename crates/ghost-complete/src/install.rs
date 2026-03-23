@@ -1220,12 +1220,21 @@ fn init_block() -> String {
     format!(
         "{INIT_BEGIN}\n\
          {MANAGED_WARNING}\n\
-         if [[ \"$TERM_PROGRAM\" == \"ghostty\" && -z \"$GHOST_COMPLETE_ACTIVE\" ]]; then\n  \
-           export GHOST_COMPLETE_ACTIVE=1\n  \
-           exec ghost-complete\n\
-         elif [[ -n \"$TMUX\" && -n \"$GHOSTTY_RESOURCES_DIR\" && \\\n    \
+         case \"$TERM_PROGRAM\" in\n  \
+           ghostty|iTerm.app|Apple_Terminal)\n    \
+             if [[ -z \"$GHOST_COMPLETE_ACTIVE\" ]]; then\n      \
+               export GHOST_COMPLETE_ACTIVE=1\n      \
+               exec ghost-complete\n    \
+             fi\n    \
+             ;;\n\
+         esac\n\
+         if [[ -n \"$TMUX\" && -z \"$GHOST_COMPLETE_ACTIVE\" && \\\n    \
            \"$(ps -o comm= -p $PPID 2>/dev/null)\" != \"ghost-complete\" ]]; then\n  \
-           exec ghost-complete\n\
+           if [[ -n \"$GHOSTTY_RESOURCES_DIR\" ]]; then\n    \
+             exec ghost-complete\n  \
+           elif [[ -n \"$ITERM_SESSION_ID\" ]]; then\n    \
+             exec ghost-complete\n  \
+           fi\n\
          fi\n\
          {INIT_END}"
     )
@@ -1460,14 +1469,18 @@ mod tests {
         assert!(block.contains(INIT_END));
         assert!(block.contains(MANAGED_WARNING));
         assert!(block.contains("exec ghost-complete"));
-        // Pure Ghostty: TERM_PROGRAM + GHOST_COMPLETE_ACTIVE guard
-        assert!(block.contains("$TERM_PROGRAM"));
+        // Allowlist: case statement with supported terminals
+        assert!(block.contains("case \"$TERM_PROGRAM\""));
+        assert!(block.contains("ghostty|iTerm.app|Apple_Terminal"));
         assert!(block.contains("GHOST_COMPLETE_ACTIVE"));
-        // tmux-in-Ghostty: TMUX + GHOSTTY_RESOURCES_DIR + PPID guard
+        // tmux detection: TMUX + PPID guard
         assert!(block.contains("$TMUX"));
-        assert!(block.contains("$GHOSTTY_RESOURCES_DIR"));
         assert!(block.contains("$PPID"));
         assert!(block.contains("ghost-complete\""));
+        // tmux-in-Ghostty: GHOSTTY_RESOURCES_DIR
+        assert!(block.contains("$GHOSTTY_RESOURCES_DIR"));
+        // tmux-in-iTerm2: ITERM_SESSION_ID
+        assert!(block.contains("$ITERM_SESSION_ID"));
     }
 
     #[test]

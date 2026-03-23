@@ -41,6 +41,15 @@ impl Drop for RawModeGuard {
 ///
 /// Returns the shell's exit code.
 pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Result<i32> {
+    // Detect terminal capabilities
+    let terminal_profile = gc_terminal::TerminalProfile::detect();
+    tracing::info!(
+        terminal = %terminal_profile.terminal,
+        render = %terminal_profile.render_strategy,
+        prompt = %terminal_profile.prompt_detection,
+        "terminal profile detected"
+    );
+
     // Log tmux detection for debugging
     if std::env::var("TMUX").is_ok() {
         tracing::info!("tmux session detected — running inside tmux pane");
@@ -94,7 +103,8 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
             );
             InputHandler::new(std::path::Path::new(".")).expect("fallback handler")
         });
-        h.with_keybindings(keybindings)
+        h.with_terminal_profile(terminal_profile)
+            .with_keybindings(keybindings)
             .with_theme(theme)
             .with_popup_config(
                 config.popup.max_visible,

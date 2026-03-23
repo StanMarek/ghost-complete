@@ -176,28 +176,46 @@ fn check_shell_integration() -> CheckResult {
     }
 }
 
-/// Check 5: Running inside Ghostty
+/// Check 5: Running inside a supported terminal
 ///
-/// Note: The tmux detection is a heuristic (TMUX + GHOSTTY_RESOURCES_DIR).
-/// The shell init block uses a stricter PPID check to avoid env-var leakage,
-/// but that requires a process tree walk which is not appropriate here.
-fn check_ghostty() -> CheckResult {
+/// Detects the terminal using gc_terminal and reports the detected profile
+/// including render strategy and prompt detection method.
+fn check_terminal() -> CheckResult {
+    let profile = gc_terminal::TerminalProfile::detect();
     let term_program = std::env::var("TERM_PROGRAM").unwrap_or_default();
-    let in_tmux = std::env::var("TMUX").is_ok();
-    let has_ghostty_resources = std::env::var("GHOSTTY_RESOURCES_DIR").is_ok();
 
-    if term_program.eq_ignore_ascii_case("ghostty") {
-        CheckResult::ok("Running inside Ghostty")
-    } else if in_tmux && has_ghostty_resources {
-        CheckResult::ok("Running inside Ghostty (via tmux)")
-    } else {
-        let actual = if term_program.is_empty() {
-            "unknown".to_string()
+    if gc_terminal::is_supported(&term_program) || gc_terminal::is_supported(&profile.name) {
+        CheckResult::ok(format!(
+            "Running inside {} (render: {}, prompt: {})",
+            profile.name, profile.render_strategy, profile.prompt_detection
+        ))
+    } else if std::env::var("TMUX").is_ok() {
+        // In tmux, check if we detected a known terminal via env vars
+        if !matches!(profile.terminal, gc_terminal::Terminal::Unknown(_)) {
+            CheckResult::ok(format!(
+                "Running inside {} (render: {}, prompt: {})",
+                profile.name, profile.render_strategy, profile.prompt_detection
+            ))
         } else {
-            term_program
-        };
+            CheckResult::warn(format!(
+                "Unsupported terminal in tmux (TERM_PROGRAM={}) — supported: {}",
+                if term_program.is_empty() {
+                    "unknown"
+                } else {
+                    &term_program
+                },
+                gc_terminal::SUPPORTED_TERMINALS.join(", ")
+            ))
+        }
+    } else {
         CheckResult::warn(format!(
-            "Not running inside Ghostty (TERM_PROGRAM={actual})"
+            "Unsupported terminal (TERM_PROGRAM={}) — supported: {}",
+            if term_program.is_empty() {
+                "unknown"
+            } else {
+                &term_program
+            },
+            gc_terminal::SUPPORTED_TERMINALS.join(", ")
         ))
     }
 }
@@ -224,8 +242,8 @@ pub fn run_doctor(config_path: Option<&str>) -> Result<()> {
     // Check 4: Shell integration
     results.push(check_shell_integration());
 
-    // Check 5: Ghostty
-    results.push(check_ghostty());
+    // Check 5: Terminal support
+    results.push(check_terminal());
 
     print_results(&results);
 

@@ -1,6 +1,6 @@
 # Ghost Complete
 
-**Terminal-native autocomplete engine using PTY proxying, built for Ghostty.**
+**Terminal-native autocomplete engine using PTY proxying for macOS terminals.**
 
 [![CI](https://github.com/StanMarek/ghost-complete/actions/workflows/ci.yml/badge.svg)](https://github.com/StanMarek/ghost-complete/actions/workflows/ci.yml)
 [![GitHub Release](https://img.shields.io/github/v/release/StanMarek/ghost-complete)](https://github.com/StanMarek/ghost-complete/releases/latest)
@@ -11,7 +11,7 @@ https://github.com/user-attachments/assets/3679a74a-731d-468a-bdda-bec926bb2349
 
 ## What is this?
 
-Ghost Complete sits inside your terminal's data stream as a PTY proxy, intercepting I/O between Ghostty and your shell. When you type a command, it renders autocomplete suggestions as native ANSI popups — no macOS Accessibility API, no IME hacks, no Electron overlay. Just your terminal, your shell, and fast completions.
+Ghost Complete sits inside your terminal's data stream as a PTY proxy, intercepting I/O between your terminal emulator and your shell. When you type a command, it renders autocomplete suggestions as native ANSI popups — no macOS Accessibility API, no IME hacks, no Electron overlay. Just your terminal, your shell, and fast completions.
 
 Inspired by [Fig](https://fig.io) (RIP). Built from scratch in Rust.
 
@@ -19,7 +19,7 @@ Inspired by [Fig](https://fig.io) (RIP). Built from scratch in Rust.
 
 This is a personal project I built for my own workflow. I'm happy to share it and welcome contributions, but set your expectations accordingly:
 
-- **Ghostty + zsh is the tested path.** That's what I use daily — it's stable and reliable.
+- **Ghostty + zsh is the primary tested path.** iTerm2 and Terminal.app are supported as of v0.3.0.
 - **Bash and fish support is experimental.** Manual trigger only (Ctrl+/), no auto-trigger on typing, and not actively tested.
 - **No stability guarantees.** Config format, spec format, and behavior may change between releases.
 - **macOS only.** No Linux or Windows support planned at this time.
@@ -28,7 +28,7 @@ If you hit a bug, [open an issue](https://github.com/StanMarek/ghost-complete/is
 
 ## Requirements
 
-- **Terminal:** [Ghostty](https://ghostty.org)
+- **Terminal:** [Ghostty](https://ghostty.org), [iTerm2](https://iterm2.com), or Terminal.app
 - **OS:** macOS
 - **Shell:** zsh (primary), bash and fish (Ctrl+/ trigger only)
 - **Rust:** 1.75+ (for building from source)
