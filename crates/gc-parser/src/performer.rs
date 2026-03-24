@@ -430,6 +430,7 @@ mod tests {
         p.process_bytes(b"\x1b]133;A\x07"); // OSC 133;A (BEL terminated)
         assert_eq!(p.state().prompt_row(), Some(2));
         assert!(p.state().in_prompt());
+        assert!(p.state_mut().take_cursor_sync_requested());
     }
 
     #[test]
@@ -450,6 +451,7 @@ mod tests {
         p.process_bytes(b"\x1b]7771;A\x07");
         assert_eq!(p.state().prompt_row(), Some(2));
         assert!(p.state().in_prompt());
+        assert!(p.state_mut().take_cursor_sync_requested());
     }
 
     #[test]

@@ -178,57 +178,33 @@ fn check_shell_integration() -> CheckResult {
 
 /// Check 5: Running inside a supported terminal
 ///
-/// Detects the terminal using gc_terminal and reports the detected profile
-/// including render strategy and prompt detection method.
+/// Uses `TerminalProfile::detect()` as the single source of truth for which
+/// terminal is running, avoiding divergence between detect() and is_supported().
 fn check_terminal(config: &gc_config::GhostConfig) -> CheckResult {
     let profile = gc_terminal::TerminalProfile::detect();
-    let term_program = std::env::var("TERM_PROGRAM").unwrap_or_default();
-    let is_ghostty = matches!(profile.terminal, gc_terminal::Terminal::Ghostty);
 
-    if gc_terminal::is_supported(&term_program) {
-        let mut msg = format!(
-            "Running inside {} (render: {}, prompt: {})",
-            profile.name, profile.render_strategy, profile.prompt_detection
-        );
-        if !is_ghostty && !config.experimental.multi_terminal {
-            msg.push_str(" — multi-terminal disabled, set [experimental] multi_terminal = true to enable");
-            return CheckResult::warn(msg);
-        }
-        CheckResult::ok(msg)
-    } else if std::env::var("TMUX").is_ok() {
-        // In tmux, check if we detected a known terminal via env vars
-        if !matches!(profile.terminal, gc_terminal::Terminal::Unknown(_)) {
-            let mut msg = format!(
-                "Running inside {} (render: {}, prompt: {})",
-                profile.name, profile.render_strategy, profile.prompt_detection
-            );
-            if !is_ghostty && !config.experimental.multi_terminal {
-                msg.push_str(" — multi-terminal disabled, set [experimental] multi_terminal = true to enable");
-                return CheckResult::warn(msg);
-            }
-            CheckResult::ok(msg)
-        } else {
-            CheckResult::warn(format!(
-                "Unsupported terminal in tmux (TERM_PROGRAM={}) — supported: {}",
-                if term_program.is_empty() {
-                    "unknown"
-                } else {
-                    &term_program
-                },
-                gc_terminal::SUPPORTED_TERMINALS.join(", ")
-            ))
-        }
-    } else {
-        CheckResult::warn(format!(
-            "Unsupported terminal (TERM_PROGRAM={}) — supported: {}",
-            if term_program.is_empty() {
-                "unknown"
-            } else {
-                &term_program
-            },
+    if matches!(profile.terminal, gc_terminal::Terminal::Unknown(_)) {
+        return CheckResult::warn(format!(
+            "Unsupported terminal ({}) — supported: {}",
+            profile.name,
             gc_terminal::SUPPORTED_TERMINALS.join(", ")
-        ))
+        ));
     }
+
+    let mut msg = format!(
+        "Running inside {} (render: {}, prompt: {})",
+        profile.name, profile.render_strategy, profile.prompt_detection
+    );
+
+    let is_ghostty = matches!(profile.terminal, gc_terminal::Terminal::Ghostty);
+    if !is_ghostty && !config.experimental.multi_terminal {
+        msg.push_str(
+            " — multi-terminal disabled, set [experimental] multi_terminal = true to enable",
+        );
+        return CheckResult::warn(msg);
+    }
+
+    CheckResult::ok(msg)
 }
 
 pub fn run_doctor(config_path: Option<&str>) -> Result<()> {

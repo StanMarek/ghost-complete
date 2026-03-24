@@ -62,12 +62,17 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     // the shell process so the user gets a normal shell session.
     // Note: CommandExt::exec() is the Unix execvp() syscall — no shell
     // interpretation, no injection risk. `shell` comes from $SHELL or argv.
-    if !config.experimental.multi_terminal
-        && !matches!(terminal_profile.terminal, gc_terminal::Terminal::Ghostty)
-    {
+    if should_fallback_to_shell(&terminal_profile.terminal, config.experimental.multi_terminal) {
         tracing::warn!(
             terminal = %terminal_profile.terminal,
             "multi-terminal support requires [experimental] multi_terminal = true — falling back to plain shell"
+        );
+        eprintln!(
+            "ghost-complete: {} detected but multi-terminal support is disabled.\n\
+             To enable, add to ~/.config/ghost-complete/config.toml:\n\n  \
+             [experimental]\n  \
+             multi_terminal = true\n",
+            terminal_profile.terminal
         );
         use std::os::unix::process::CommandExt;
         let err = std::process::Command::new(shell).args(args).exec();
@@ -120,14 +125,17 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
 
     // Initialize suggestion handler with config
     let handler = Arc::new(Mutex::new({
-        let h = InputHandler::new(&spec_dirs[0], terminal_profile.clone()).unwrap_or_else(|e| {
-            tracing::warn!(
-                "failed to init suggestion engine: {}, suggestions disabled",
-                e
-            );
-            InputHandler::new(std::path::Path::new("."), terminal_profile)
-                .expect("fallback handler")
-        });
+        let h = match InputHandler::new(&spec_dirs[0], terminal_profile.clone()) {
+            Ok(h) => h,
+            Err(e) => {
+                tracing::warn!(
+                    "failed to init suggestion engine: {}, trying fallback",
+                    e
+                );
+                InputHandler::new(std::path::Path::new("."), terminal_profile)
+                    .context("fallback handler also failed — cannot start proxy")?
+            }
+        };
         h.with_keybindings(keybindings)
             .with_theme(theme)
             .with_popup_config(
@@ -526,4 +534,61 @@ fn expand_tilde(path: &str) -> PathBuf {
         }
     }
     PathBuf::from(path)
+}
+
+/// Returns true if ghost-complete should replace itself with a plain shell
+/// because multi-terminal support is disabled and we're not on Ghostty.
+pub fn should_fallback_to_shell(
+    terminal: &gc_terminal::Terminal,
+    multi_terminal_enabled: bool,
+) -> bool {
+    !multi_terminal_enabled && !matches!(terminal, gc_terminal::Terminal::Ghostty)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use gc_terminal::Terminal;
+
+    #[test]
+    fn test_ghostty_never_falls_back() {
+        assert!(!should_fallback_to_shell(&Terminal::Ghostty, false));
+        assert!(!should_fallback_to_shell(&Terminal::Ghostty, true));
+    }
+
+    #[test]
+    fn test_iterm2_falls_back_without_flag() {
+        assert!(should_fallback_to_shell(&Terminal::ITerm2, false));
+    }
+
+    #[test]
+    fn test_iterm2_runs_with_flag() {
+        assert!(!should_fallback_to_shell(&Terminal::ITerm2, true));
+    }
+
+    #[test]
+    fn test_terminal_app_falls_back_without_flag() {
+        assert!(should_fallback_to_shell(&Terminal::TerminalApp, false));
+    }
+
+    #[test]
+    fn test_terminal_app_runs_with_flag() {
+        assert!(!should_fallback_to_shell(&Terminal::TerminalApp, true));
+    }
+
+    #[test]
+    fn test_unknown_falls_back_without_flag() {
+        assert!(should_fallback_to_shell(
+            &Terminal::Unknown("alacritty".into()),
+            false
+        ));
+    }
+
+    #[test]
+    fn test_unknown_runs_with_flag() {
+        assert!(!should_fallback_to_shell(
+            &Terminal::Unknown("alacritty".into()),
+            true
+        ));
+    }
 }

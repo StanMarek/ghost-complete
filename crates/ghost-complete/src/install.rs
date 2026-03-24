@@ -1219,13 +1219,17 @@ const SHELL_END: &str = "# <<< ghost-complete shell integration <<<";
 const MANAGED_WARNING: &str =
     "# !! Contents within this block are managed by 'ghost-complete install' !!";
 
-/// Path to config file used in the grep check for experimental.multi_terminal.
-const CONFIG_PATH_EXPR: &str = "\"$HOME/.config/ghost-complete/config.toml\"";
+/// Shell variable holding the config file path (set once in the init block).
+const CONFIG_VAR: &str = "_gc_config";
+/// Condition: config file exists AND contains multi_terminal = true.
+/// File-existence check is silent; grep errors on an existing file are visible.
+const MULTI_TERMINAL_CHECK: &str = "[[ -f \"$_gc_config\" ]] && grep -qE '^multi_terminal[[:space:]]*=[[:space:]]*true' \"$_gc_config\"";
 
 fn init_block() -> String {
     format!(
         "{INIT_BEGIN}\n\
          {MANAGED_WARNING}\n\
+         {CONFIG_VAR}=\"$HOME/.config/ghost-complete/config.toml\"\n\
          case \"$TERM_PROGRAM\" in\n  \
            ghostty)\n    \
              if [[ -z \"$GHOST_COMPLETE_ACTIVE\" ]]; then\n      \
@@ -1234,8 +1238,7 @@ fn init_block() -> String {
              fi\n    \
              ;;\n  \
            iTerm.app|Apple_Terminal)\n    \
-             if [[ -z \"$GHOST_COMPLETE_ACTIVE\" ]] && \\\n       \
-               grep -qE '^multi_terminal\\s*=\\s*true' {CONFIG_PATH_EXPR} 2>/dev/null; then\n      \
+             if [[ -z \"$GHOST_COMPLETE_ACTIVE\" ]] && {MULTI_TERMINAL_CHECK}; then\n      \
                export GHOST_COMPLETE_ACTIVE=1\n      \
                exec ghost-complete\n    \
              fi\n    \
@@ -1246,12 +1249,12 @@ fn init_block() -> String {
            if [[ -n \"$GHOSTTY_RESOURCES_DIR\" ]]; then\n    \
              export GHOST_COMPLETE_ACTIVE=1\n    \
              exec ghost-complete\n  \
-           elif [[ -n \"$ITERM_SESSION_ID\" ]] && \\\n       \
-             grep -qE '^multi_terminal\\s*=\\s*true' {CONFIG_PATH_EXPR} 2>/dev/null; then\n    \
+           elif [[ -n \"$ITERM_SESSION_ID\" ]] && {MULTI_TERMINAL_CHECK}; then\n    \
              export GHOST_COMPLETE_ACTIVE=1\n    \
              exec ghost-complete\n  \
            fi\n\
          fi\n\
+         unset {CONFIG_VAR}\n\
          {INIT_END}"
     )
 }
@@ -1492,6 +1495,8 @@ mod tests {
         assert!(block.contains("iTerm.app|Apple_Terminal)"));
         assert!(block.contains("multi_terminal"));
         assert!(block.contains("config.toml"));
+        // File-existence check before grep (prevents silent permission errors)
+        assert!(block.contains("-f \"$_gc_config\""));
         assert!(block.contains("GHOST_COMPLETE_ACTIVE"));
         // tmux detection: TMUX + PPID guard
         assert!(block.contains("$TMUX"));
