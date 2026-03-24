@@ -180,22 +180,33 @@ fn check_shell_integration() -> CheckResult {
 ///
 /// Detects the terminal using gc_terminal and reports the detected profile
 /// including render strategy and prompt detection method.
-fn check_terminal() -> CheckResult {
+fn check_terminal(config: &gc_config::GhostConfig) -> CheckResult {
     let profile = gc_terminal::TerminalProfile::detect();
     let term_program = std::env::var("TERM_PROGRAM").unwrap_or_default();
+    let is_ghostty = matches!(profile.terminal, gc_terminal::Terminal::Ghostty);
 
     if gc_terminal::is_supported(&term_program) {
-        CheckResult::ok(format!(
+        let mut msg = format!(
             "Running inside {} (render: {}, prompt: {})",
             profile.name, profile.render_strategy, profile.prompt_detection
-        ))
+        );
+        if !is_ghostty && !config.experimental.multi_terminal {
+            msg.push_str(" — multi-terminal disabled, set [experimental] multi_terminal = true to enable");
+            return CheckResult::warn(msg);
+        }
+        CheckResult::ok(msg)
     } else if std::env::var("TMUX").is_ok() {
         // In tmux, check if we detected a known terminal via env vars
         if !matches!(profile.terminal, gc_terminal::Terminal::Unknown(_)) {
-            CheckResult::ok(format!(
+            let mut msg = format!(
                 "Running inside {} (render: {}, prompt: {})",
                 profile.name, profile.render_strategy, profile.prompt_detection
-            ))
+            );
+            if !is_ghostty && !config.experimental.multi_terminal {
+                msg.push_str(" — multi-terminal disabled, set [experimental] multi_terminal = true to enable");
+                return CheckResult::warn(msg);
+            }
+            CheckResult::ok(msg)
         } else {
             CheckResult::warn(format!(
                 "Unsupported terminal in tmux (TERM_PROGRAM={}) — supported: {}",
@@ -242,8 +253,9 @@ pub fn run_doctor(config_path: Option<&str>) -> Result<()> {
     // Check 4: Shell integration
     results.push(check_shell_integration());
 
-    // Check 5: Terminal support
-    results.push(check_terminal());
+    // Check 5: Terminal support (needs config for experimental flag)
+    let terminal_config = config.as_ref().cloned().unwrap_or_default();
+    results.push(check_terminal(&terminal_config));
 
     print_results(&results);
 

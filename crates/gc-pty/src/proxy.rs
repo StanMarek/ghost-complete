@@ -57,6 +57,23 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
         );
     }
 
+    // Gate non-Ghostty terminals behind experimental flag.
+    // If the flag is off and we're not on Ghostty, replace ourselves with
+    // the shell process so the user gets a normal shell session.
+    // Note: CommandExt::exec() is the Unix execvp() syscall — no shell
+    // interpretation, no injection risk. `shell` comes from $SHELL or argv.
+    if !config.experimental.multi_terminal
+        && !matches!(terminal_profile.terminal, gc_terminal::Terminal::Ghostty)
+    {
+        tracing::warn!(
+            terminal = %terminal_profile.terminal,
+            "multi-terminal support requires [experimental] multi_terminal = true — falling back to plain shell"
+        );
+        use std::os::unix::process::CommandExt;
+        let err = std::process::Command::new(shell).args(args).exec();
+        anyhow::bail!("failed to exec shell: {}", err);
+    }
+
     // Log tmux detection for debugging
     if std::env::var("TMUX").is_ok() {
         tracing::info!("tmux session detected — running inside tmux pane");
