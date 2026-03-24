@@ -6,7 +6,8 @@
 [![GitHub Release](https://img.shields.io/github/v/release/StanMarek/ghost-complete)](https://github.com/StanMarek/ghost-complete/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-https://github.com/user-attachments/assets/3679a74a-731d-468a-bdda-bec926bb2349
+https://github.com/user-attachments/assets/5b6a4384-7cf8-4088-9630-3ddf0ff0e93c
+
 
 
 ## What is this?
