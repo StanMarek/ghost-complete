@@ -19,7 +19,7 @@ Inspired by [Fig](https://fig.io) (RIP). Built from scratch in Rust.
 
 This is a personal project I built for my own workflow. I'm happy to share it and welcome contributions, but set your expectations accordingly:
 
-- **Ghostty + zsh is the primary tested path.** iTerm2 and Terminal.app are supported as of v0.3.0.
+- **Ghostty + zsh is the primary tested path.** iTerm2 and Terminal.app have experimental support as of v0.3.0 (opt-in via config flag).
 - **Bash and fish support is experimental.** Manual trigger only (Ctrl+/), no auto-trigger on typing, and not actively tested.
 - **No stability guarantees.** Config format, spec format, and behavior may change between releases.
 - **macOS only.** No Linux or Windows support planned at this time.
@@ -28,7 +28,7 @@ If you hit a bug, [open an issue](https://github.com/StanMarek/ghost-complete/is
 
 ## Requirements
 
-- **Terminal:** [Ghostty](https://ghostty.org), [iTerm2](https://iterm2.com), or Terminal.app
+- **Terminal:** [Ghostty](https://ghostty.org) (default), [iTerm2](https://iterm2.com) or Terminal.app (experimental — see below)
 - **OS:** macOS
 - **Shell:** zsh (primary), bash and fish (Ctrl+/ trigger only)
 - **Rust:** 1.75+ (for building from source)
@@ -93,6 +93,19 @@ After installation, restart your terminal. Ghost Complete activates automaticall
 
 Run `ghost-complete status` to see loaded specs and generator diagnostics.
 
+### iTerm2 / Terminal.app (experimental)
+
+Multi-terminal support is available but disabled by default. To enable it, add to `~/.config/ghost-complete/config.toml`:
+
+```toml
+[experimental]
+multi_terminal = true
+```
+
+Then restart your shell or run `source ~/.zshrc`. Ghost Complete will auto-detect your terminal and use the appropriate rendering strategy.
+
+**Known limitation:** Terminal.app inside tmux is not detected (Terminal.app sets no env var that leaks through tmux).
+
 ## Configuration
 
 Config lives at `~/.config/ghost-complete/config.toml`:
@@ -125,6 +138,9 @@ commands = true
 filesystem = true
 specs = true
 git = true
+
+[experimental]
+multi_terminal = false  # Set to true for iTerm2/Terminal.app
 ```
 
 Config changes are applied live — no restart needed.

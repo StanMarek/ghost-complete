@@ -170,6 +170,26 @@ Examples:
 - `"fg:#cdd6f4 bg:#585b70 bold"` — Catppuccin-style selection
 - `"bold underline fg:208"` — bold underlined orange text
 
+### `[experimental]`
+
+Opt-in features that are not yet considered stable.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `multi_terminal` | bool | `false` | Enable iTerm2 and Terminal.app support. When `false` (default), Ghost Complete only runs on Ghostty — on other terminals it transparently falls back to a plain shell. |
+
+```toml
+[experimental]
+multi_terminal = true
+```
+
+When enabled, Ghost Complete auto-detects the terminal via `TERM_PROGRAM` and selects the appropriate rendering strategy:
+
+- **Ghostty** — DECSET 2026 synchronized output, native OSC 133 prompt markers
+- **iTerm2 / Terminal.app** — pre-render buffer (single `write()` atomicity), OSC 7771 shell integration prompt markers
+
+**Known limitation:** Terminal.app inside tmux is not detected (Terminal.app sets no env var that leaks through tmux). Ghostty and iTerm2 in tmux work correctly.
+
 ## Full Example
 
 ```toml
@@ -203,6 +223,9 @@ trigger = "ctrl+/"
 [theme]
 preset = "catppuccin"
 match_highlight = "underline"
+
+[experimental]
+multi_terminal = false
 ```
 
 ## Notes

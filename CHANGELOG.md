@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Multi-terminal support** — Ghost Complete now runs on **iTerm2** and **Terminal.app** in addition to Ghostty. Terminal detection is automatic via `TERM_PROGRAM` allowlist.
+- **Multi-terminal support (experimental)** — Ghost Complete now runs on **iTerm2** and **Terminal.app** in addition to Ghostty. Disabled by default; enable with `multi_terminal = true` under `[experimental]` in config.toml. Terminal detection is automatic via `TERM_PROGRAM` allowlist.
 - **New `gc-terminal` crate** — encapsulates terminal detection, capability profiling, and render strategy selection. `TerminalProfile` struct with `RenderStrategy` and `PromptDetection` enums provides type-safe terminal abstraction.
 - **OSC 7771 prompt boundary protocol** — terminal-agnostic prompt detection emitted by shell integration scripts alongside OSC 133. Works on all terminals regardless of native semantic prompt support.
 - **tmux-in-iTerm2 support** — proxy auto-starts in tmux sessions launched from iTerm2 via `ITERM_SESSION_ID` detection.
@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Rendering pipeline** — popup rendering conditionally uses DECSET 2026 synchronized output on Ghostty, falls back to pre-render buffer strategy (single `write()` atomicity) on iTerm2 and Terminal.app.
-- **Init block** — `.zshrc` init block now uses a `case` statement matching `ghostty|iTerm.app|Apple_Terminal` instead of a single `TERM_PROGRAM == "ghostty"` check.
+- **Init block** — `.zshrc` init block now uses a `case` statement: Ghostty always auto-execs, iTerm2/Terminal.app auto-exec only when `multi_terminal = true` is set in config (checked via grep at shell startup).
 - **`doctor` command** — `check_ghostty()` replaced with `check_terminal()` that reports detected terminal name, render strategy, and prompt detection method. Lists all supported terminals on failure.
 - **Shell integration scripts** — zsh, bash, and fish scripts now emit both OSC 133 and OSC 7771 markers for cross-terminal compatibility.
 
