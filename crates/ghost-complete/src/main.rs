@@ -13,7 +13,7 @@ use tracing_subscriber::EnvFilter;
     name = "ghost-complete",
     version,
     about = "Terminal-native autocomplete engine",
-    after_help = "COMMANDS:\n  install          Install shell integration (zsh/bash/fish)\n  uninstall        Remove shell integration\n  validate-specs   Validate completion spec files\n  status           Show loaded specs and JS compatibility\n  config           Show resolved configuration\n  doctor           Run health checks\n\nSHELL SUPPORT:\n  zsh   Full support (auto-installed into ~/.zshrc)\n  bash  Ctrl+Space trigger (source shell script from .bashrc)\n  fish  Ctrl+Space trigger (source shell script from config.fish)"
+    after_help = "COMMANDS:\n  install          Install shell integration (zsh)\n  uninstall        Remove shell integration\n  validate-specs   Validate completion spec files\n  status           Show loaded specs and JS compatibility\n  config           Show resolved configuration\n  doctor           Run health checks\n\nSHELL SUPPORT:\n  zsh   Full support (auto-installed into ~/.zshrc)"
 )]
 struct Cli {
     /// Path to config file

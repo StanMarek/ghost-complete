@@ -1278,15 +1278,12 @@ fn copy_specs(config_dir: &Path) -> Result<()> {
     Ok(())
 }
 
-fn print_manual_instructions(script_path: &Path) {
+fn print_shell_blocks(script_path: &Path) {
     let init = init_block();
     let shell = shell_integration_block(script_path);
     let indented_init = init.replace('\n', "\n    ");
     let indented_shell = shell.replace('\n', "\n    ");
 
-    println!(
-        "\n  \x1b[33m\u{26a0}  Could not write to .zshrc (read-only or permission denied)\x1b[0m\n"
-    );
     println!(
         "  \x1b[36m\u{2139}\x1b[0m  Add the following \x1b[1mNEAR THE TOP\x1b[0m of your shell config:\n"
     );
@@ -1295,9 +1292,6 @@ fn print_manual_instructions(script_path: &Path) {
         "  \x1b[36m\u{2139}\x1b[0m  Add the following \x1b[1mNEAR THE BOTTOM\x1b[0m of your shell config:\n"
     );
     println!("    \x1b[36m{indented_shell}\x1b[0m\n");
-    println!(
-        "  \x1b[32m\u{2713}\x1b[0m  Installation complete (manual shell configuration required)."
-    );
 }
 
 fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()> {
@@ -1318,8 +1312,9 @@ fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()>
         } else {
             println!("  Config already exists at {}", config_path.display());
         }
-        println!("  Would update {}", zshrc_path.display());
-        print_manual_instructions(&script_path);
+        println!("  Would update {}\n", zshrc_path.display());
+        println!("  \x1b[36m\u{2139}\x1b[0m  The following would be added to your shell config:\n");
+        print_shell_blocks(&script_path);
         return Ok(());
     }
 
@@ -1375,15 +1370,29 @@ fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()>
     new_zshrc.push_str(&shell_integration_block(&script_path));
     new_zshrc.push('\n');
 
-    // 6. Write .zshrc — graceful fallback if read-only
+    // 6. Write .zshrc — graceful fallback if permission denied (e.g. nix-managed)
     match fs::write(zshrc_path, &new_zshrc) {
         Ok(()) => {
             println!("  Updated {}", zshrc_path.display());
             println!("\nghost-complete installed successfully!");
             println!("Restart your shell or run: source ~/.zshrc");
         }
-        Err(_) => {
-            print_manual_instructions(&script_path);
+        Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
+            println!(
+                "\n  \x1b[33m\u{26a0}  Could not write to {} (permission denied)\x1b[0m\n",
+                zshrc_path.display()
+            );
+            print_shell_blocks(&script_path);
+            println!(
+                "  \x1b[32m\u{2713}\x1b[0m  Installation complete (manual shell configuration required)."
+            );
+        }
+        Err(e) => {
+            return Err(anyhow::anyhow!(
+                "failed to write {}: {}",
+                zshrc_path.display(),
+                e
+            ));
         }
     }
     Ok(())
