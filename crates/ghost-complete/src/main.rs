@@ -80,7 +80,8 @@ fn main() -> Result<()> {
     match cli.shell_args.first().map(|s| s.as_str()) {
         Some("install") => {
             init_tracing(&cli.log_level, cli.log_file.as_deref())?;
-            return install::run_install();
+            let dry_run = cli.shell_args.iter().any(|s| s == "--dry-run");
+            return install::run_install(dry_run);
         }
         Some("uninstall") => {
             init_tracing(&cli.log_level, cli.log_file.as_deref())?;
