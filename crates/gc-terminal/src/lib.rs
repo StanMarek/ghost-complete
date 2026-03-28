@@ -179,6 +179,16 @@ impl TerminalProfile {
     pub fn for_iterm2() -> Self {
         Self::new(Terminal::ITerm2, false)
     }
+
+    /// Test constructor: Terminal.app profile (PreRenderBuffer, ShellIntegration).
+    pub fn for_terminal_app() -> Self {
+        Self::new(Terminal::TerminalApp, false)
+    }
+
+    /// Test constructor: Unknown terminal profile (PreRenderBuffer, ShellIntegration).
+    pub fn for_unknown(name: &str) -> Self {
+        Self::new(Terminal::Unknown(name.into()), false)
+    }
 }
 
 #[cfg(test)]
@@ -348,5 +358,49 @@ mod tests {
         let p = TerminalProfile::for_iterm2();
         assert_eq!(*p.terminal(), Terminal::ITerm2);
         assert_eq!(p.render_strategy(), RenderStrategy::PreRenderBuffer);
+    }
+
+    #[test]
+    fn test_for_terminal_app() {
+        let p = TerminalProfile::for_terminal_app();
+        assert_eq!(*p.terminal(), Terminal::TerminalApp);
+        assert_eq!(p.render_strategy(), RenderStrategy::PreRenderBuffer);
+    }
+
+    #[test]
+    fn test_for_unknown() {
+        let p = TerminalProfile::for_unknown("alacritty");
+        assert!(matches!(p.terminal(), Terminal::Unknown(s) if s == "alacritty"));
+        assert_eq!(p.render_strategy(), RenderStrategy::PreRenderBuffer);
+    }
+
+    // -- Case sensitivity: TERM_PROGRAM matching is exact --
+
+    #[test]
+    fn test_capitalized_ghostty_is_unknown() {
+        let profile = TerminalProfile::from_term_program("Ghostty", false);
+        assert!(matches!(profile.terminal(), Terminal::Unknown(_)));
+    }
+
+    #[test]
+    fn test_lowercase_iterm_is_unknown() {
+        let profile = TerminalProfile::from_term_program("iterm.app", false);
+        assert!(matches!(profile.terminal(), Terminal::Unknown(_)));
+    }
+
+    #[test]
+    fn test_lowercase_apple_terminal_is_unknown() {
+        let profile = TerminalProfile::from_term_program("apple_terminal", false);
+        assert!(matches!(profile.terminal(), Terminal::Unknown(_)));
+    }
+
+    // -- PromptDetection display --
+
+    #[test]
+    fn test_prompt_detection_display() {
+        assert!(PromptDetection::Osc133.to_string().contains("133"));
+        assert!(PromptDetection::ShellIntegration
+            .to_string()
+            .contains("7771"));
     }
 }

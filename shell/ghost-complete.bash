@@ -3,7 +3,8 @@
 
 _gc_prompt_command() {
     printf '\e]133;A\a'
-    [[ "$TERM_PROGRAM" != "ghostty" ]] && printf '\e]7771;A\a'
+    # Check GHOSTTY_RESOURCES_DIR too — TERM_PROGRAM is overwritten inside tmux
+    [[ "$TERM_PROGRAM" != "ghostty" && -z "$GHOSTTY_RESOURCES_DIR" ]] && printf '\e]7771;A\a'
 }
 PROMPT_COMMAND="_gc_prompt_command${PROMPT_COMMAND:+;$PROMPT_COMMAND}"
 
@@ -13,7 +14,7 @@ _gc_debug_trap() {
     if [[ "$_gc_preexec_enabled" == true ]]; then
         _gc_preexec_enabled=false
         printf '\e]133;C\a'
-        [[ "$TERM_PROGRAM" != "ghostty" ]] && printf '\e]7771;C\a'
+        [[ "$TERM_PROGRAM" != "ghostty" && -z "$GHOSTTY_RESOURCES_DIR" ]] && printf '\e]7771;C\a'
     fi
 }
 trap '_gc_debug_trap' DEBUG

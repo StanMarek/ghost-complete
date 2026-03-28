@@ -488,6 +488,35 @@ mod tests {
         assert_eq!(p.state().prompt_row(), None);
     }
 
+    #[test]
+    fn test_osc7771_unknown_subcommand_no_state_change() {
+        let mut p = make_parser();
+        p.process_bytes(b"\x1b[3;1H");
+        p.process_bytes(b"\x1b]7771;B\x07");
+        assert!(!p.state().in_prompt());
+        assert_eq!(p.state().prompt_row(), None);
+    }
+
+    // -- Cross-protocol interaction (OSC 133 + 7771) --
+
+    #[test]
+    fn test_osc7771_a_then_osc133_c() {
+        let mut p = make_parser();
+        p.process_bytes(b"\x1b]7771;A\x07"); // start via 7771
+        assert!(p.state().in_prompt());
+        p.process_bytes(b"\x1b]133;C\x07"); // end via 133
+        assert!(!p.state().in_prompt());
+    }
+
+    #[test]
+    fn test_osc133_a_then_osc7771_c() {
+        let mut p = make_parser();
+        p.process_bytes(b"\x1b]133;A\x07"); // start via 133
+        assert!(p.state().in_prompt());
+        p.process_bytes(b"\x1b]7771;C\x07"); // end via 7771
+        assert!(!p.state().in_prompt());
+    }
+
     // -- OSC 7770 buffer reporting --
 
     #[test]

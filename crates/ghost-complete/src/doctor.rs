@@ -182,7 +182,14 @@ fn check_shell_integration() -> CheckResult {
 /// terminal is running, avoiding divergence between detect() and is_supported().
 fn check_terminal(config: &gc_config::GhostConfig) -> CheckResult {
     let profile = gc_terminal::TerminalProfile::detect();
+    check_terminal_profile(&profile, config.experimental.multi_terminal)
+}
 
+/// Testable terminal check logic — pure function on profile + flag.
+fn check_terminal_profile(
+    profile: &gc_terminal::TerminalProfile,
+    multi_terminal: bool,
+) -> CheckResult {
     if !profile.terminal().is_known() {
         return CheckResult::warn(format!(
             "Unsupported terminal ({}) — supported: {}",
@@ -199,7 +206,7 @@ fn check_terminal(config: &gc_config::GhostConfig) -> CheckResult {
     );
 
     let is_ghostty = matches!(profile.terminal(), gc_terminal::Terminal::Ghostty);
-    if !is_ghostty && !config.experimental.multi_terminal {
+    if !is_ghostty && !multi_terminal {
         msg.push_str(
             " — multi-terminal disabled, set [experimental] multi_terminal = true to enable",
         );
@@ -232,8 +239,12 @@ pub fn run_doctor(config_path: Option<&str>) -> Result<()> {
     results.push(check_shell_integration());
 
     // Check 5: Terminal support (needs config for experimental flag)
-    let terminal_config = config.as_ref().cloned().unwrap_or_default();
-    results.push(check_terminal(&terminal_config));
+    match &config {
+        Some(cfg) => results.push(check_terminal(cfg)),
+        None => results.push(CheckResult::skip(
+            "Terminal support — config invalid, cannot check experimental flags",
+        )),
+    }
 
     print_results(&results);
 
@@ -243,4 +254,41 @@ pub fn run_doctor(config_path: Option<&str>) -> Result<()> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_check_terminal_ghostty_ok() {
+        let profile = gc_terminal::TerminalProfile::for_ghostty();
+        let result = check_terminal_profile(&profile, false);
+        assert!(matches!(result.severity, Severity::Ok));
+        assert!(result.message.contains("Ghostty"));
+    }
+
+    #[test]
+    fn test_check_terminal_iterm2_without_flag_warns() {
+        let profile = gc_terminal::TerminalProfile::for_iterm2();
+        let result = check_terminal_profile(&profile, false);
+        assert!(matches!(result.severity, Severity::Warn));
+        assert!(result.message.contains("multi-terminal disabled"));
+    }
+
+    #[test]
+    fn test_check_terminal_iterm2_with_flag_ok() {
+        let profile = gc_terminal::TerminalProfile::for_iterm2();
+        let result = check_terminal_profile(&profile, true);
+        assert!(matches!(result.severity, Severity::Ok));
+        assert!(result.message.contains("iTerm2"));
+    }
+
+    #[test]
+    fn test_check_terminal_unknown_warns() {
+        let profile = gc_terminal::TerminalProfile::for_unknown("alacritty");
+        let result = check_terminal_profile(&profile, true);
+        assert!(matches!(result.severity, Severity::Warn));
+        assert!(result.message.contains("Unsupported"));
+    }
 }

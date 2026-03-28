@@ -597,16 +597,19 @@ impl InputHandler {
         screen_rows: u16,
         screen_cols: u16,
     ) {
+        // For PreRenderBuffer strategy, we must combine clear + render into a
+        // single buffer and emit one write() call for flicker-free atomicity.
+        // For Synchronized strategy, DECSET 2026 markers handle this at the
+        // terminal level so separate writes are fine.
+        let mut buf = Vec::new();
+
         if let Some(ref layout) = self.last_layout {
-            let mut clear_buf = Vec::new();
-            clear_popup(&mut clear_buf, layout, &self.terminal_profile);
-            let _ = stdout.write_all(&clear_buf);
+            clear_popup(&mut buf, layout, &self.terminal_profile);
         }
 
-        let mut render_buf = Vec::new();
         let loading = self.dynamic_rx.is_some();
         let layout = render_popup(
-            &mut render_buf,
+            &mut buf,
             &self.suggestions,
             &self.overlay,
             cursor_row,
@@ -621,7 +624,7 @@ impl InputHandler {
             loading,
             &self.terminal_profile,
         );
-        let _ = stdout.write_all(&render_buf);
+        let _ = stdout.write_all(&buf);
         let _ = stdout.flush();
         self.scroll_deficit = layout.scroll_deficit;
         self.last_layout = Some(layout);

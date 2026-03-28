@@ -9,14 +9,15 @@
 _gc_precmd() {
     # Mark: prompt is about to be displayed
     printf '\e]133;A\a'
-    # OSC 7771: redundant on Ghostty (OSC 133 already handled), needed elsewhere
-    [[ "$TERM_PROGRAM" != "ghostty" ]] && printf '\e]7771;A\a'
+    # OSC 7771: redundant on Ghostty (OSC 133 already handled), needed elsewhere.
+    # Check GHOSTTY_RESOURCES_DIR too — TERM_PROGRAM is overwritten inside tmux.
+    [[ "$TERM_PROGRAM" != "ghostty" && -z "$GHOSTTY_RESOURCES_DIR" ]] && printf '\e]7771;A\a'
 }
 
 _gc_preexec() {
     # Mark: command is about to execute
     printf '\e]133;C\a'
-    [[ "$TERM_PROGRAM" != "ghostty" ]] && printf '\e]7771;C\a'
+    [[ "$TERM_PROGRAM" != "ghostty" && -z "$GHOSTTY_RESOURCES_DIR" ]] && printf '\e]7771;C\a'
 }
 
 precmd_functions+=(_gc_precmd)

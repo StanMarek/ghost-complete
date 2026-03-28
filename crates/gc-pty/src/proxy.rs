@@ -51,6 +51,13 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
             terminal = %terminal_profile.terminal(),
             "running on unsupported terminal — cursor save/restore may not work correctly"
         );
+        eprintln!(
+            "ghost-complete: WARNING — {} is not a tested terminal. \
+             Popup rendering may not work correctly.\n\
+             Supported terminals: {}",
+            terminal_profile.terminal(),
+            gc_terminal::Terminal::known_term_programs().join(", ")
+        );
     } else {
         tracing::info!(
             terminal = %terminal_profile.terminal(),
