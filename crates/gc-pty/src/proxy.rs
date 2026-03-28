@@ -62,7 +62,10 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     // the shell process so the user gets a normal shell session.
     // Note: CommandExt::exec() is the Unix execvp() syscall — no shell
     // interpretation, no injection risk. `shell` comes from $SHELL or argv.
-    if should_fallback_to_shell(&terminal_profile.terminal, config.experimental.multi_terminal) {
+    if should_fallback_to_shell(
+        &terminal_profile.terminal,
+        config.experimental.multi_terminal,
+    ) {
         tracing::warn!(
             terminal = %terminal_profile.terminal,
             "multi-terminal support requires [experimental] multi_terminal = true — falling back to plain shell"
@@ -128,10 +131,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
         let h = match InputHandler::new(&spec_dirs[0], terminal_profile.clone()) {
             Ok(h) => h,
             Err(e) => {
-                tracing::warn!(
-                    "failed to init suggestion engine: {}, trying fallback",
-                    e
-                );
+                tracing::warn!("failed to init suggestion engine: {}, trying fallback", e);
                 InputHandler::new(std::path::Path::new("."), terminal_profile)
                     .context("fallback handler also failed — cannot start proxy")?
             }
