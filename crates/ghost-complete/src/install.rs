@@ -1205,6 +1205,9 @@ const DEFAULT_CONFIG_TOML: &str = "\
 # match_highlight = \"bold\"
 # item_text = \"\"
 # scrollbar = \"dim\"
+
+# [experimental]
+# multi_terminal = false  # Set to true to enable iTerm2 and Terminal.app support
 ";
 
 const INIT_BEGIN: &str = "# >>> ghost-complete initialize >>>";
@@ -1214,17 +1217,42 @@ const SHELL_END: &str = "# <<< ghost-complete shell integration <<<";
 const MANAGED_WARNING: &str =
     "# !! Contents within this block are managed by 'ghost-complete install' !!";
 
+/// Shell variable holding the config file path (set once in the init block).
+const CONFIG_VAR: &str = "_gc_config";
+/// Condition: config file exists AND contains multi_terminal = true.
+/// File-existence check is silent; grep errors on an existing file are visible.
+const MULTI_TERMINAL_CHECK: &str = "[[ -f \"$_gc_config\" ]] && grep -qE '^[[:space:]]*multi_terminal[[:space:]]*=[[:space:]]*true' \"$_gc_config\"";
+
 fn init_block() -> String {
     format!(
         "{INIT_BEGIN}\n\
          {MANAGED_WARNING}\n\
-         if [[ \"$TERM_PROGRAM\" == \"ghostty\" && -z \"$GHOST_COMPLETE_ACTIVE\" ]]; then\n  \
-           export GHOST_COMPLETE_ACTIVE=1\n  \
-           exec ghost-complete\n\
-         elif [[ -n \"$TMUX\" && -n \"$GHOSTTY_RESOURCES_DIR\" && \\\n    \
+         {CONFIG_VAR}=\"$HOME/.config/ghost-complete/config.toml\"\n\
+         case \"$TERM_PROGRAM\" in\n  \
+           ghostty)\n    \
+             if [[ -z \"$GHOST_COMPLETE_ACTIVE\" ]]; then\n      \
+               export GHOST_COMPLETE_ACTIVE=1\n      \
+               exec ghost-complete\n    \
+             fi\n    \
+             ;;\n  \
+           iTerm.app|Apple_Terminal)\n    \
+             if [[ -z \"$GHOST_COMPLETE_ACTIVE\" ]] && {MULTI_TERMINAL_CHECK}; then\n      \
+               export GHOST_COMPLETE_ACTIVE=1\n      \
+               exec ghost-complete\n    \
+             fi\n    \
+             ;;\n\
+         esac\n\
+         if [[ -n \"$TMUX\" && -z \"$GHOST_COMPLETE_ACTIVE\" && \\\n    \
            \"$(ps -o comm= -p $PPID 2>/dev/null)\" != \"ghost-complete\" ]]; then\n  \
-           exec ghost-complete\n\
+           if [[ -n \"$GHOSTTY_RESOURCES_DIR\" ]]; then\n    \
+             export GHOST_COMPLETE_ACTIVE=1\n    \
+             exec ghost-complete\n  \
+           elif [[ -n \"$ITERM_SESSION_ID\" ]] && {MULTI_TERMINAL_CHECK}; then\n    \
+             export GHOST_COMPLETE_ACTIVE=1\n    \
+             exec ghost-complete\n  \
+           fi\n\
          fi\n\
+         unset {CONFIG_VAR}\n\
          {INIT_END}"
     )
 }
@@ -1497,14 +1525,26 @@ mod tests {
         assert!(block.contains(INIT_END));
         assert!(block.contains(MANAGED_WARNING));
         assert!(block.contains("exec ghost-complete"));
-        // Pure Ghostty: TERM_PROGRAM + GHOST_COMPLETE_ACTIVE guard
-        assert!(block.contains("$TERM_PROGRAM"));
+        // Allowlist: case statement with supported terminals
+        assert!(block.contains("case \"$TERM_PROGRAM\""));
+        assert!(block.contains("ghostty)"));
+        // iTerm/Terminal.app: gated behind experimental config grep
+        assert!(block.contains("iTerm.app|Apple_Terminal)"));
+        assert!(block.contains("multi_terminal"));
+        assert!(block.contains("config.toml"));
+        // File-existence check before grep (prevents silent permission errors)
+        assert!(block.contains("-f \"$_gc_config\""));
         assert!(block.contains("GHOST_COMPLETE_ACTIVE"));
-        // tmux-in-Ghostty: TMUX + GHOSTTY_RESOURCES_DIR + PPID guard
+        // tmux detection: TMUX + PPID guard
         assert!(block.contains("$TMUX"));
-        assert!(block.contains("$GHOSTTY_RESOURCES_DIR"));
         assert!(block.contains("$PPID"));
         assert!(block.contains("ghost-complete\""));
+        // tmux-in-Ghostty: GHOSTTY_RESOURCES_DIR
+        assert!(block.contains("$GHOSTTY_RESOURCES_DIR"));
+        // tmux-in-iTerm2: ITERM_SESSION_ID
+        assert!(block.contains("$ITERM_SESSION_ID"));
+        // Cleanup: unset the config var so it doesn't leak into user's shell
+        assert!(block.contains("unset _gc_config"));
     }
 
     #[test]

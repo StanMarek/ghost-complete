@@ -11,6 +11,7 @@ use gc_overlay::types::{
 use gc_overlay::{clear_popup, render_popup, PopupTheme};
 use gc_parser::TerminalParser;
 use gc_suggest::{Suggestion, SuggestionEngine};
+use gc_terminal::TerminalProfile;
 use tokio::sync::{mpsc, Notify};
 
 use crate::input::KeyEvent;
@@ -90,6 +91,7 @@ pub struct InputHandler {
     dynamic_rx: Option<mpsc::Receiver<Vec<Suggestion>>>,
     dynamic_notify: Arc<Notify>,
     generator_timeout_ms: u64,
+    terminal_profile: TerminalProfile,
     /// Accumulated viewport scroll from popup rendering. Persists across
     /// dismiss/re-trigger cycles because viewport scroll is permanent.
     /// Reset when a CPR sync corrects the parser's cursor position (new prompt).
@@ -97,7 +99,7 @@ pub struct InputHandler {
 }
 
 impl InputHandler {
-    pub fn new(spec_dir: &Path) -> anyhow::Result<Self> {
+    pub fn new(spec_dir: &Path, terminal_profile: TerminalProfile) -> anyhow::Result<Self> {
         Ok(Self {
             engine: Arc::new(SuggestionEngine::new(spec_dir)?),
             overlay: OverlayState::new(),
@@ -115,6 +117,7 @@ impl InputHandler {
             dynamic_rx: None,
             dynamic_notify: Arc::new(Notify::new()),
             generator_timeout_ms: 5000,
+            terminal_profile,
             scroll_deficit: 0,
         })
     }
@@ -594,16 +597,19 @@ impl InputHandler {
         screen_rows: u16,
         screen_cols: u16,
     ) {
+        // For PreRenderBuffer strategy, we must combine clear + render into a
+        // single buffer and emit one write() call for flicker-free atomicity.
+        // For Synchronized strategy, DECSET 2026 markers handle this at the
+        // terminal level so separate writes are fine.
+        let mut buf = Vec::new();
+
         if let Some(ref layout) = self.last_layout {
-            let mut clear_buf = Vec::new();
-            clear_popup(&mut clear_buf, layout);
-            let _ = stdout.write_all(&clear_buf);
+            clear_popup(&mut buf, layout, &self.terminal_profile);
         }
 
-        let mut render_buf = Vec::new();
         let loading = self.dynamic_rx.is_some();
         let layout = render_popup(
-            &mut render_buf,
+            &mut buf,
             &self.suggestions,
             &self.overlay,
             cursor_row,
@@ -616,8 +622,9 @@ impl InputHandler {
             &self.theme,
             self.scroll_deficit,
             loading,
+            &self.terminal_profile,
         );
-        let _ = stdout.write_all(&render_buf);
+        let _ = stdout.write_all(&buf);
         let _ = stdout.flush();
         self.scroll_deficit = layout.scroll_deficit;
         self.last_layout = Some(layout);
@@ -626,7 +633,7 @@ impl InputHandler {
     fn dismiss(&mut self, stdout: &mut dyn Write) {
         if let Some(ref layout) = self.last_layout {
             let mut buf = Vec::new();
-            clear_popup(&mut buf, layout);
+            clear_popup(&mut buf, layout, &self.terminal_profile);
             let _ = stdout.write_all(&buf);
             let _ = stdout.flush();
         }
@@ -826,6 +833,7 @@ mod tests {
             dynamic_rx: None,
             dynamic_notify: Arc::new(Notify::new()),
             generator_timeout_ms: 5000,
+            terminal_profile: TerminalProfile::for_ghostty(),
             scroll_deficit: 0,
         }
     }

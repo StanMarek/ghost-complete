@@ -1,6 +1,6 @@
 # Ghost Complete
 
-**Terminal-native autocomplete engine using PTY proxying, built for Ghostty.**
+**Terminal-native autocomplete engine using PTY proxying for macOS terminals.**
 
 [![CI](https://github.com/StanMarek/ghost-complete/actions/workflows/ci.yml/badge.svg)](https://github.com/StanMarek/ghost-complete/actions/workflows/ci.yml)
 [![GitHub Release](https://img.shields.io/github/v/release/StanMarek/ghost-complete)](https://github.com/StanMarek/ghost-complete/releases/latest)
@@ -12,7 +12,7 @@ https://github.com/user-attachments/assets/5b6a4384-7cf8-4088-9630-3ddf0ff0e93c
 
 ## What is this?
 
-Ghost Complete sits inside your terminal's data stream as a PTY proxy, intercepting I/O between Ghostty and your shell. When you type a command, it renders autocomplete suggestions as native ANSI popups — no macOS Accessibility API, no IME hacks, no Electron overlay. Just your terminal, your shell, and fast completions.
+Ghost Complete sits inside your terminal's data stream as a PTY proxy, intercepting I/O between your terminal emulator and your shell. When you type a command, it renders autocomplete suggestions as native ANSI popups — no macOS Accessibility API, no IME hacks, no Electron overlay. Just your terminal, your shell, and fast completions.
 
 Inspired by [Fig](https://fig.io) (RIP). Built from scratch in Rust.
 
@@ -20,7 +20,7 @@ Inspired by [Fig](https://fig.io) (RIP). Built from scratch in Rust.
 
 This is a personal project I built for my own workflow. I'm happy to share it and welcome contributions, but set your expectations accordingly:
 
-- **Ghostty + zsh is the tested path.** That's what I use daily — it's stable and reliable.
+- **Ghostty + zsh is the primary tested path.** iTerm2 and Terminal.app have experimental support as of v0.3.0 (opt-in via config flag).
 - **Bash and fish support is experimental.** Manual trigger only (Ctrl+/), no auto-trigger on typing, and not actively tested.
 - **No stability guarantees.** Config format, spec format, and behavior may change between releases.
 - **macOS only.** No Linux or Windows support planned at this time.
@@ -29,7 +29,7 @@ If you hit a bug, [open an issue](https://github.com/StanMarek/ghost-complete/is
 
 ## Requirements
 
-- **Terminal:** [Ghostty](https://ghostty.org)
+- **Terminal:** [Ghostty](https://ghostty.org) (default), [iTerm2](https://iterm2.com) or Terminal.app (experimental — see below)
 - **OS:** macOS
 - **Shell:** zsh (primary), bash and fish (Ctrl+/ trigger only)
 - **Rust:** 1.75+ (for building from source)
@@ -94,6 +94,19 @@ After installation, restart your terminal. Ghost Complete activates automaticall
 
 Run `ghost-complete status` to see loaded specs and generator diagnostics.
 
+### iTerm2 / Terminal.app (experimental)
+
+Multi-terminal support is available but disabled by default. To enable it, add to `~/.config/ghost-complete/config.toml`:
+
+```toml
+[experimental]
+multi_terminal = true
+```
+
+Then restart your shell or run `source ~/.zshrc`. Ghost Complete will auto-detect your terminal and use the appropriate rendering strategy.
+
+**Known limitation:** Terminal.app inside tmux is not detected (Terminal.app sets no env var that leaks through tmux).
+
 ## Configuration
 
 Config lives at `~/.config/ghost-complete/config.toml`:
@@ -126,6 +139,9 @@ commands = true
 filesystem = true
 specs = true
 git = true
+
+[experimental]
+multi_terminal = false  # Set to true for iTerm2/Terminal.app
 ```
 
 Config changes are applied live — no restart needed.
@@ -148,7 +164,7 @@ Custom specs go in `~/.config/ghost-complete/specs/`. See [docs/COMPLETION_SPEC.
 
 ## Architecture
 
-Rust workspace with 7 crates:
+Rust workspace with 8 crates:
 
 | Crate | Role |
 |-------|------|
@@ -159,6 +175,7 @@ Rust workspace with 7 crates:
 | `gc-suggest` | Suggestion engine with fuzzy ranking (nucleo) |
 | `gc-overlay` | ANSI popup rendering with synchronized output |
 | `gc-config` | TOML config, keybindings, themes |
+| `gc-terminal` | Terminal detection, capability profiling, render strategy selection |
 
 See [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) for the full design.
 
@@ -170,6 +187,14 @@ See [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) for the full desi
 | Ctrl+/ manual trigger | Yes | Yes | Yes |
 | PTY proxy wrapping | Yes | Yes | Yes |
 | OSC 133 prompt markers | Yes | Yes | Yes |
+
+## Known Limitations
+
+- **Terminal.app inside tmux is not detected.** Terminal.app sets no environment variable that leaks through tmux, so Ghost Complete cannot identify it. Ghostty and iTerm2 in tmux work correctly via `GHOSTTY_RESOURCES_DIR` and `ITERM_SESSION_ID` respectively.
+- **Dynamic generator results require a keystroke to render.** Async generators (shell commands for live results) merge into the popup on the next PTY read. If the shell is idle after the generator completes, results won't appear until the next keystroke.
+- **Bash and fish: manual trigger only.** Auto-trigger on typing is not implemented for bash or fish. Use Ctrl+/ to manually invoke completions.
+- **Specs with `requires_js: true` are partially functional.** Static completions (subcommands, options) work, but JS-based generators from the original Fig ecosystem are not executed.
+- **No Linux or Windows support.** macOS only. The PTY proxy and terminal detection rely on macOS-specific behavior.
 
 ## FAQ
 

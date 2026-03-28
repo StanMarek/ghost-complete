@@ -176,30 +176,44 @@ fn check_shell_integration() -> CheckResult {
     }
 }
 
-/// Check 5: Running inside Ghostty
+/// Check 5: Running inside a supported terminal
 ///
-/// Note: The tmux detection is a heuristic (TMUX + GHOSTTY_RESOURCES_DIR).
-/// The shell init block uses a stricter PPID check to avoid env-var leakage,
-/// but that requires a process tree walk which is not appropriate here.
-fn check_ghostty() -> CheckResult {
-    let term_program = std::env::var("TERM_PROGRAM").unwrap_or_default();
-    let in_tmux = std::env::var("TMUX").is_ok();
-    let has_ghostty_resources = std::env::var("GHOSTTY_RESOURCES_DIR").is_ok();
+/// Uses `TerminalProfile::detect()` as the single source of truth for which
+/// terminal is running, avoiding divergence between detect() and is_supported().
+fn check_terminal(config: &gc_config::GhostConfig) -> CheckResult {
+    let profile = gc_terminal::TerminalProfile::detect();
+    check_terminal_profile(&profile, config.experimental.multi_terminal)
+}
 
-    if term_program.eq_ignore_ascii_case("ghostty") {
-        CheckResult::ok("Running inside Ghostty")
-    } else if in_tmux && has_ghostty_resources {
-        CheckResult::ok("Running inside Ghostty (via tmux)")
-    } else {
-        let actual = if term_program.is_empty() {
-            "unknown".to_string()
-        } else {
-            term_program
-        };
-        CheckResult::warn(format!(
-            "Not running inside Ghostty (TERM_PROGRAM={actual})"
-        ))
+/// Testable terminal check logic — pure function on profile + flag.
+fn check_terminal_profile(
+    profile: &gc_terminal::TerminalProfile,
+    multi_terminal: bool,
+) -> CheckResult {
+    if !profile.terminal().is_known() {
+        return CheckResult::warn(format!(
+            "Unsupported terminal ({}) — supported: {}",
+            profile.display_name(),
+            gc_terminal::Terminal::known_term_programs().join(", ")
+        ));
     }
+
+    let mut msg = format!(
+        "Running inside {} (render: {}, prompt: {})",
+        profile.display_name(),
+        profile.render_strategy(),
+        profile.prompt_detection()
+    );
+
+    let is_ghostty = matches!(profile.terminal(), gc_terminal::Terminal::Ghostty);
+    if !is_ghostty && !multi_terminal {
+        msg.push_str(
+            " — multi-terminal disabled, set [experimental] multi_terminal = true to enable",
+        );
+        return CheckResult::warn(msg);
+    }
+
+    CheckResult::ok(msg)
 }
 
 pub fn run_doctor(config_path: Option<&str>) -> Result<()> {
@@ -224,8 +238,13 @@ pub fn run_doctor(config_path: Option<&str>) -> Result<()> {
     // Check 4: Shell integration
     results.push(check_shell_integration());
 
-    // Check 5: Ghostty
-    results.push(check_ghostty());
+    // Check 5: Terminal support (needs config for experimental flag)
+    match &config {
+        Some(cfg) => results.push(check_terminal(cfg)),
+        None => results.push(CheckResult::skip(
+            "Terminal support — config invalid, cannot check experimental flags",
+        )),
+    }
 
     print_results(&results);
 
@@ -235,4 +254,41 @@ pub fn run_doctor(config_path: Option<&str>) -> Result<()> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_check_terminal_ghostty_ok() {
+        let profile = gc_terminal::TerminalProfile::for_ghostty();
+        let result = check_terminal_profile(&profile, false);
+        assert!(matches!(result.severity, Severity::Ok));
+        assert!(result.message.contains("Ghostty"));
+    }
+
+    #[test]
+    fn test_check_terminal_iterm2_without_flag_warns() {
+        let profile = gc_terminal::TerminalProfile::for_iterm2();
+        let result = check_terminal_profile(&profile, false);
+        assert!(matches!(result.severity, Severity::Warn));
+        assert!(result.message.contains("multi-terminal disabled"));
+    }
+
+    #[test]
+    fn test_check_terminal_iterm2_with_flag_ok() {
+        let profile = gc_terminal::TerminalProfile::for_iterm2();
+        let result = check_terminal_profile(&profile, true);
+        assert!(matches!(result.severity, Severity::Ok));
+        assert!(result.message.contains("iTerm2"));
+    }
+
+    #[test]
+    fn test_check_terminal_unknown_warns() {
+        let profile = gc_terminal::TerminalProfile::for_unknown("alacritty");
+        let result = check_terminal_profile(&profile, true);
+        assert!(matches!(result.severity, Severity::Warn));
+        assert!(result.message.contains("Unsupported"));
+    }
 }

@@ -22,6 +22,13 @@ pub struct GhostConfig {
     pub paths: PathsConfig,
     pub keybindings: KeybindingsConfig,
     pub theme: ThemeConfig,
+    pub experimental: ExperimentalConfig,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ExperimentalConfig {
+    pub multi_terminal: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -277,6 +284,7 @@ mod tests {
         assert_eq!(config.theme.match_highlight, "");
         assert_eq!(config.theme.item_text, "");
         assert_eq!(config.theme.scrollbar, "");
+        assert!(!config.experimental.multi_terminal);
     }
 
     #[test]
@@ -516,5 +524,31 @@ history = false
         let config: GhostConfig = toml::from_str(toml_str).unwrap();
         // Field is silently ignored; max_history_results keeps its default
         assert_eq!(config.suggest.max_history_results, 5);
+    }
+
+    #[test]
+    fn test_experimental_defaults_to_off() {
+        let config = GhostConfig::default();
+        assert!(!config.experimental.multi_terminal);
+    }
+
+    #[test]
+    fn test_experimental_multi_terminal_enabled() {
+        let toml_str = r#"
+[experimental]
+multi_terminal = true
+"#;
+        let config: GhostConfig = toml::from_str(toml_str).unwrap();
+        assert!(config.experimental.multi_terminal);
+    }
+
+    #[test]
+    fn test_experimental_missing_uses_default() {
+        let toml_str = r#"
+[popup]
+max_visible = 5
+"#;
+        let config: GhostConfig = toml::from_str(toml_str).unwrap();
+        assert!(!config.experimental.multi_terminal);
     }
 }
