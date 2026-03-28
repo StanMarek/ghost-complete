@@ -153,6 +153,7 @@ impl Perform for TerminalState {
             // on all terminals, including those without native OSC 133 support.
             b"7771" => {
                 if params.len() < 2 {
+                    tracing::debug!("OSC 7771 with no subcommand — ignoring");
                     return;
                 }
                 match params[1] {
@@ -170,7 +171,12 @@ impl Perform for TerminalState {
                         self.clear_command_buffer();
                         tracing::debug!("OSC 7771;C — command executing (shell integration)");
                     }
-                    _ => {}
+                    other => {
+                        tracing::trace!(
+                            sub = ?String::from_utf8_lossy(other),
+                            "OSC 7771 unknown subcommand"
+                        );
+                    }
                 }
             }
             // OSC 7770 — Ghost Complete buffer report
@@ -471,6 +477,15 @@ mod tests {
         p.process_bytes(b"\x1b]7771;C\x07");
         assert_eq!(p.state().command_buffer(), None);
         assert_eq!(p.state().buffer_cursor(), 0);
+    }
+
+    #[test]
+    fn test_osc7771_short_params_no_crash() {
+        let mut p = make_parser();
+        p.process_bytes(b"\x1b[3;1H"); // set known cursor position
+        p.process_bytes(b"\x1b]7771\x07");
+        assert!(!p.state().in_prompt());
+        assert_eq!(p.state().prompt_row(), None);
     }
 
     // -- OSC 7770 buffer reporting --

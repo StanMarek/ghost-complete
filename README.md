@@ -164,7 +164,7 @@ Custom specs go in `~/.config/ghost-complete/specs/`. See [docs/COMPLETION_SPEC.
 
 ## Architecture
 
-Rust workspace with 7 crates:
+Rust workspace with 8 crates:
 
 | Crate | Role |
 |-------|------|
@@ -175,6 +175,7 @@ Rust workspace with 7 crates:
 | `gc-suggest` | Suggestion engine with fuzzy ranking (nucleo) |
 | `gc-overlay` | ANSI popup rendering with synchronized output |
 | `gc-config` | TOML config, keybindings, themes |
+| `gc-terminal` | Terminal detection, capability profiling, render strategy selection |
 
 See [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) for the full design.
 
@@ -186,6 +187,14 @@ See [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) for the full desi
 | Ctrl+/ manual trigger | Yes | Yes | Yes |
 | PTY proxy wrapping | Yes | Yes | Yes |
 | OSC 133 prompt markers | Yes | Yes | Yes |
+
+## Known Limitations
+
+- **Terminal.app inside tmux is not detected.** Terminal.app sets no environment variable that leaks through tmux, so Ghost Complete cannot identify it. Ghostty and iTerm2 in tmux work correctly via `GHOSTTY_RESOURCES_DIR` and `ITERM_SESSION_ID` respectively.
+- **Dynamic generator results require a keystroke to render.** Async generators (shell commands for live results) merge into the popup on the next PTY read. If the shell is idle after the generator completes, results won't appear until the next keystroke.
+- **Bash and fish: manual trigger only.** Auto-trigger on typing is not implemented for bash or fish. Use Ctrl+/ to manually invoke completions.
+- **Specs with `requires_js: true` are partially functional.** Static completions (subcommands, options) work, but JS-based generators from the original Fig ecosystem are not executed.
+- **No Linux or Windows support.** macOS only. The PTY proxy and terminal detection rely on macOS-specific behavior.
 
 ## FAQ
 

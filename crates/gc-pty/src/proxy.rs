@@ -43,16 +43,19 @@ impl Drop for RawModeGuard {
 pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Result<i32> {
     // Detect terminal capabilities
     let terminal_profile = gc_terminal::TerminalProfile::detect();
-    if matches!(terminal_profile.terminal, gc_terminal::Terminal::Unknown(_)) {
+    if matches!(
+        terminal_profile.terminal(),
+        gc_terminal::Terminal::Unknown(_)
+    ) {
         tracing::warn!(
-            terminal = %terminal_profile.terminal,
+            terminal = %terminal_profile.terminal(),
             "running on unsupported terminal — cursor save/restore may not work correctly"
         );
     } else {
         tracing::info!(
-            terminal = %terminal_profile.terminal,
-            render = %terminal_profile.render_strategy,
-            prompt = %terminal_profile.prompt_detection,
+            terminal = %terminal_profile.terminal(),
+            render = %terminal_profile.render_strategy(),
+            prompt = %terminal_profile.prompt_detection(),
             "terminal profile detected"
         );
     }
@@ -63,11 +66,11 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     // Note: CommandExt::exec() is the Unix execvp() syscall — no shell
     // interpretation, no injection risk. `shell` comes from $SHELL or argv.
     if should_fallback_to_shell(
-        &terminal_profile.terminal,
+        terminal_profile.terminal(),
         config.experimental.multi_terminal,
     ) {
         tracing::warn!(
-            terminal = %terminal_profile.terminal,
+            terminal = %terminal_profile.terminal(),
             "multi-terminal support requires [experimental] multi_terminal = true — falling back to plain shell"
         );
         eprintln!(
@@ -75,7 +78,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
              To enable, add to ~/.config/ghost-complete/config.toml:\n\n  \
              [experimental]\n  \
              multi_terminal = true\n",
-            terminal_profile.terminal
+            terminal_profile.terminal()
         );
         use std::os::unix::process::CommandExt;
         let err = std::process::Command::new(shell).args(args).exec();

@@ -2,7 +2,7 @@ use std::io::Write;
 
 use anyhow::{bail, Result};
 use gc_suggest::{Suggestion, SuggestionKind};
-use gc_terminal::{RenderStrategy, TerminalProfile};
+use gc_terminal::TerminalProfile;
 
 use crate::ansi;
 use crate::layout;
@@ -148,7 +148,10 @@ pub fn render_popup(
     let total_deficit = prior_deficit + new_deficit;
     let final_cursor_row = cursor_row.saturating_sub(total_deficit);
 
-    let use_sync = matches!(profile.render_strategy, RenderStrategy::Synchronized);
+    let use_sync = matches!(
+        profile.render_strategy(),
+        gc_terminal::RenderStrategy::Synchronized
+    );
     if use_sync {
         ansi::begin_sync(buf);
     }
@@ -295,7 +298,10 @@ pub fn clear_popup(buf: &mut Vec<u8>, layout: &PopupLayout, profile: &TerminalPr
         return;
     }
 
-    let use_sync = matches!(profile.render_strategy, RenderStrategy::Synchronized);
+    let use_sync = matches!(
+        profile.render_strategy(),
+        gc_terminal::RenderStrategy::Synchronized
+    );
     if use_sync {
         ansi::begin_sync(buf);
     }
@@ -446,24 +452,13 @@ mod tests {
     use super::*;
     use crate::types::{DEFAULT_MAX_POPUP_WIDTH, DEFAULT_MAX_VISIBLE, DEFAULT_MIN_POPUP_WIDTH};
     use gc_suggest::SuggestionSource;
-    use gc_terminal::Terminal;
 
     fn ghostty_profile() -> TerminalProfile {
-        TerminalProfile {
-            terminal: Terminal::Ghostty,
-            render_strategy: RenderStrategy::Synchronized,
-            prompt_detection: gc_terminal::PromptDetection::Osc133,
-            name: "Ghostty".to_string(),
-        }
+        TerminalProfile::for_ghostty()
     }
 
     fn iterm2_profile() -> TerminalProfile {
-        TerminalProfile {
-            terminal: Terminal::ITerm2,
-            render_strategy: RenderStrategy::PreRenderBuffer,
-            prompt_detection: gc_terminal::PromptDetection::ShellIntegration,
-            name: "iTerm2".to_string(),
-        }
+        TerminalProfile::for_iterm2()
     }
 
     fn make(text: &str, desc: Option<&str>, kind: SuggestionKind) -> Suggestion {

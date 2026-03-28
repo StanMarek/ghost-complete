@@ -183,20 +183,22 @@ fn check_shell_integration() -> CheckResult {
 fn check_terminal(config: &gc_config::GhostConfig) -> CheckResult {
     let profile = gc_terminal::TerminalProfile::detect();
 
-    if matches!(profile.terminal, gc_terminal::Terminal::Unknown(_)) {
+    if !profile.terminal().is_known() {
         return CheckResult::warn(format!(
             "Unsupported terminal ({}) — supported: {}",
-            profile.name,
-            gc_terminal::SUPPORTED_TERMINALS.join(", ")
+            profile.display_name(),
+            gc_terminal::Terminal::known_term_programs().join(", ")
         ));
     }
 
     let mut msg = format!(
         "Running inside {} (render: {}, prompt: {})",
-        profile.name, profile.render_strategy, profile.prompt_detection
+        profile.display_name(),
+        profile.render_strategy(),
+        profile.prompt_detection()
     );
 
-    let is_ghostty = matches!(profile.terminal, gc_terminal::Terminal::Ghostty);
+    let is_ghostty = matches!(profile.terminal(), gc_terminal::Terminal::Ghostty);
     if !is_ghostty && !config.experimental.multi_terminal {
         msg.push_str(
             " — multi-terminal disabled, set [experimental] multi_terminal = true to enable",

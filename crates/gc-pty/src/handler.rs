@@ -830,12 +830,7 @@ mod tests {
             dynamic_rx: None,
             dynamic_notify: Arc::new(Notify::new()),
             generator_timeout_ms: 5000,
-            terminal_profile: TerminalProfile {
-                terminal: gc_terminal::Terminal::Ghostty,
-                render_strategy: gc_terminal::RenderStrategy::Synchronized,
-                prompt_detection: gc_terminal::PromptDetection::Osc133,
-                name: "Ghostty".to_string(),
-            },
+            terminal_profile: TerminalProfile::for_ghostty(),
             scroll_deficit: 0,
         }
     }

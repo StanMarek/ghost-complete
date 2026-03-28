@@ -1221,7 +1221,7 @@ const MANAGED_WARNING: &str =
 const CONFIG_VAR: &str = "_gc_config";
 /// Condition: config file exists AND contains multi_terminal = true.
 /// File-existence check is silent; grep errors on an existing file are visible.
-const MULTI_TERMINAL_CHECK: &str = "[[ -f \"$_gc_config\" ]] && grep -qE '^multi_terminal[[:space:]]*=[[:space:]]*true' \"$_gc_config\"";
+const MULTI_TERMINAL_CHECK: &str = "[[ -f \"$_gc_config\" ]] && grep -qE '^[[:space:]]*multi_terminal[[:space:]]*=[[:space:]]*true' \"$_gc_config\"";
 
 fn init_block() -> String {
     format!(
@@ -1543,6 +1543,8 @@ mod tests {
         assert!(block.contains("$GHOSTTY_RESOURCES_DIR"));
         // tmux-in-iTerm2: ITERM_SESSION_ID
         assert!(block.contains("$ITERM_SESSION_ID"));
+        // Cleanup: unset the config var so it doesn't leak into user's shell
+        assert!(block.contains("unset _gc_config"));
     }
 
     #[test]
