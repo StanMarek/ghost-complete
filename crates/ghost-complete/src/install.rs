@@ -3,8 +3,6 @@ use std::fs;
 use std::path::Path;
 
 const ZSH_INTEGRATION: &str = include_str!("../../../shell/ghost-complete.zsh");
-const BASH_INTEGRATION: &str = include_str!("../../../shell/ghost-complete.bash");
-const FISH_INTEGRATION: &str = include_str!("../../../shell/ghost-complete.fish");
 
 const EMBEDDED_SPECS: &[(&str, &str)] = &[
     ("-.json", include_str!("../../../specs/-.json")),
@@ -1308,26 +1306,52 @@ fn copy_specs(config_dir: &Path) -> Result<()> {
     Ok(())
 }
 
-fn install_to(zshrc_path: &Path, config_dir: &Path) -> Result<()> {
-    // 1. Write shell integration script
+fn print_shell_blocks(script_path: &Path) {
+    let init = init_block();
+    let shell = shell_integration_block(script_path);
+    let indented_init = init.replace('\n', "\n    ");
+    let indented_shell = shell.replace('\n', "\n    ");
+
+    println!(
+        "  \x1b[36m\u{2139}\x1b[0m  Add the following \x1b[1mNEAR THE TOP\x1b[0m of your shell config:\n"
+    );
+    println!("    \x1b[36m{indented_init}\x1b[0m\n");
+    println!(
+        "  \x1b[36m\u{2139}\x1b[0m  Add the following \x1b[1mNEAR THE BOTTOM\x1b[0m of your shell config:\n"
+    );
+    println!("    \x1b[36m{indented_shell}\x1b[0m\n");
+}
+
+fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()> {
+    // 1. Write zsh shell integration script
     let shell_dir = config_dir.join("shell");
+    let script_path = shell_dir.join("ghost-complete.zsh");
+
+    if dry_run {
+        println!("  Would write zsh integration to {}", script_path.display());
+        println!(
+            "  Would install {} completion specs to {}",
+            EMBEDDED_SPECS.len(),
+            config_dir.join("specs").display()
+        );
+        let config_path = config_dir.join("config.toml");
+        if !config_path.exists() {
+            println!("  Would write default config to {}", config_path.display());
+        } else {
+            println!("  Config already exists at {}", config_path.display());
+        }
+        println!("  Would update {}\n", zshrc_path.display());
+        println!("  \x1b[36m\u{2139}\x1b[0m  The following would be added to your shell config:\n");
+        print_shell_blocks(&script_path);
+        return Ok(());
+    }
+
     fs::create_dir_all(&shell_dir)
         .with_context(|| format!("failed to create {}", shell_dir.display()))?;
 
-    let script_path = shell_dir.join("ghost-complete.zsh");
     fs::write(&script_path, ZSH_INTEGRATION)
         .with_context(|| format!("failed to write {}", script_path.display()))?;
     println!("  Wrote zsh integration to {}", script_path.display());
-
-    let bash_path = shell_dir.join("ghost-complete.bash");
-    fs::write(&bash_path, BASH_INTEGRATION)
-        .with_context(|| format!("failed to write {}", bash_path.display()))?;
-    println!("  Wrote bash integration to {}", bash_path.display());
-
-    let fish_path = shell_dir.join("ghost-complete.fish");
-    fs::write(&fish_path, FISH_INTEGRATION)
-        .with_context(|| format!("failed to write {}", fish_path.display()))?;
-    println!("  Wrote fish integration to {}", fish_path.display());
 
     // 1b. Copy completion specs
     copy_specs(config_dir)?;
@@ -1374,22 +1398,31 @@ fn install_to(zshrc_path: &Path, config_dir: &Path) -> Result<()> {
     new_zshrc.push_str(&shell_integration_block(&script_path));
     new_zshrc.push('\n');
 
-    // 6. Write
-    fs::write(zshrc_path, &new_zshrc)
-        .with_context(|| format!("failed to write {}", zshrc_path.display()))?;
-    println!("  Updated {}", zshrc_path.display());
-
-    println!("\nghost-complete installed successfully!");
-    println!("Restart your shell or run: source ~/.zshrc");
-    println!();
-    println!(
-        "For bash: Add to .bashrc:    source {}",
-        bash_path.display()
-    );
-    println!(
-        "For fish: Add to config.fish: source {}",
-        fish_path.display()
-    );
+    // 6. Write .zshrc — graceful fallback if permission denied (e.g. nix-managed)
+    match fs::write(zshrc_path, &new_zshrc) {
+        Ok(()) => {
+            println!("  Updated {}", zshrc_path.display());
+            println!("\nghost-complete installed successfully!");
+            println!("Restart your shell or run: source ~/.zshrc");
+        }
+        Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
+            println!(
+                "\n  \x1b[33m\u{26a0}  Could not write to {} (permission denied)\x1b[0m\n",
+                zshrc_path.display()
+            );
+            print_shell_blocks(&script_path);
+            println!(
+                "  \x1b[32m\u{2713}\x1b[0m  Installation complete (manual shell configuration required)."
+            );
+        }
+        Err(e) => {
+            return Err(anyhow::anyhow!(
+                "failed to write {}: {}",
+                zshrc_path.display(),
+                e
+            ));
+        }
+    }
     Ok(())
 }
 
@@ -1440,13 +1473,17 @@ fn uninstall_from(zshrc_path: &Path, config_dir: &Path) -> Result<()> {
     Ok(())
 }
 
-pub fn run_install() -> Result<()> {
+pub fn run_install(dry_run: bool) -> Result<()> {
     let home = dirs::home_dir().context("could not determine home directory")?;
     let zshrc = home.join(".zshrc");
     let config_dir = gc_config::config_dir().context("could not determine home directory")?;
 
-    println!("Installing ghost-complete...\n");
-    install_to(&zshrc, &config_dir)
+    if dry_run {
+        println!("Dry run: ghost-complete install\n");
+    } else {
+        println!("Installing ghost-complete...\n");
+    }
+    install_to(&zshrc, &config_dir, dry_run)
 }
 
 pub fn run_uninstall() -> Result<()> {
@@ -1524,7 +1561,7 @@ mod tests {
         let zshrc = dir.path().join(".zshrc");
         let config = dir.path().join("config");
 
-        install_to(&zshrc, &config).unwrap();
+        install_to(&zshrc, &config, false).unwrap();
 
         // .zshrc should exist with both blocks
         let content = fs::read_to_string(&zshrc).unwrap();
@@ -1534,21 +1571,15 @@ mod tests {
         assert!(content.contains(SHELL_END));
         assert!(content.contains("GHOST_COMPLETE_ACTIVE"));
 
-        // Shell scripts should be written
+        // Zsh shell script should be written
         let script = config.join("shell/ghost-complete.zsh");
         assert!(script.exists());
         let script_content = fs::read_to_string(&script).unwrap();
         assert_eq!(script_content, ZSH_INTEGRATION);
 
-        let bash_script = config.join("shell/ghost-complete.bash");
-        assert!(bash_script.exists());
-        let bash_content = fs::read_to_string(&bash_script).unwrap();
-        assert_eq!(bash_content, BASH_INTEGRATION);
-
-        let fish_script = config.join("shell/ghost-complete.fish");
-        assert!(fish_script.exists());
-        let fish_content = fs::read_to_string(&fish_script).unwrap();
-        assert_eq!(fish_content, FISH_INTEGRATION);
+        // Bash/fish are not deployed
+        assert!(!config.join("shell/ghost-complete.bash").exists());
+        assert!(!config.join("shell/ghost-complete.fish").exists());
 
         // Source path in .zshrc must match actual script location
         let expected_source = format!("source \"{}\"", script.display());
@@ -1567,7 +1598,7 @@ mod tests {
 
         // .zshrc doesn't exist yet
         assert!(!zshrc.exists());
-        install_to(&zshrc, &config).unwrap();
+        install_to(&zshrc, &config, false).unwrap();
 
         let content = fs::read_to_string(&zshrc).unwrap();
         assert!(content.contains(INIT_BEGIN));
@@ -1583,7 +1614,7 @@ mod tests {
         let existing = "export PATH=\"/usr/local/bin:$PATH\"\nalias ll='ls -la'\n";
         fs::write(&zshrc, existing).unwrap();
 
-        install_to(&zshrc, &config).unwrap();
+        install_to(&zshrc, &config, false).unwrap();
 
         let content = fs::read_to_string(&zshrc).unwrap();
         assert!(content.contains("export PATH=\"/usr/local/bin:$PATH\""));
@@ -1608,10 +1639,10 @@ mod tests {
         let existing = "export FOO=bar\n";
         fs::write(&zshrc, existing).unwrap();
 
-        install_to(&zshrc, &config).unwrap();
+        install_to(&zshrc, &config, false).unwrap();
         let first = fs::read_to_string(&zshrc).unwrap();
 
-        install_to(&zshrc, &config).unwrap();
+        install_to(&zshrc, &config, false).unwrap();
         let second = fs::read_to_string(&zshrc).unwrap();
 
         assert_eq!(first, second);
@@ -1627,7 +1658,7 @@ mod tests {
         fs::write(&zshrc, existing).unwrap();
 
         // Install then uninstall
-        install_to(&zshrc, &config).unwrap();
+        install_to(&zshrc, &config, false).unwrap();
         uninstall_from(&zshrc, &config).unwrap();
 
         // Blocks should be gone
@@ -1636,10 +1667,8 @@ mod tests {
         assert!(!content.contains(SHELL_BEGIN));
         assert!(content.contains("export FOO=bar"));
 
-        // Scripts should be removed
+        // Zsh script should be removed
         assert!(!config.join("shell/ghost-complete.zsh").exists());
-        assert!(!config.join("shell/ghost-complete.bash").exists());
-        assert!(!config.join("shell/ghost-complete.fish").exists());
     }
 
     #[test]
@@ -1651,7 +1680,7 @@ mod tests {
         let existing = "export ORIGINAL=true\n";
         fs::write(&zshrc, existing).unwrap();
 
-        install_to(&zshrc, &config).unwrap();
+        install_to(&zshrc, &config, false).unwrap();
 
         // with_extension replaces .zshrc extension
         let backup = zshrc.with_extension("backup.ghost-complete");
@@ -1665,7 +1694,7 @@ mod tests {
         let zshrc = dir.path().join(".zshrc");
         let config = dir.path().join("config");
 
-        install_to(&zshrc, &config).unwrap();
+        install_to(&zshrc, &config, false).unwrap();
 
         let config_path = config.join("config.toml");
         assert!(config_path.exists());
@@ -1692,7 +1721,7 @@ mod tests {
         let custom = "[keybindings]\naccept = \"enter\"\n";
         fs::write(&config_path, custom).unwrap();
 
-        install_to(&zshrc, &config).unwrap();
+        install_to(&zshrc, &config, false).unwrap();
 
         let content = fs::read_to_string(&config_path).unwrap();
         assert_eq!(content, custom);
@@ -1719,5 +1748,63 @@ mod tests {
             EMBEDDED_SPECS.len(),
             "spec count mismatch"
         );
+    }
+
+    #[test]
+    fn test_install_readonly_zshrc_succeeds() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = TempDir::new().unwrap();
+        let zshrc = dir.path().join(".zshrc");
+        let config = dir.path().join("config");
+
+        // Create a read-only .zshrc
+        fs::write(&zshrc, "export FOO=bar\n").unwrap();
+        fs::set_permissions(&zshrc, fs::Permissions::from_mode(0o444)).unwrap();
+
+        // Install should succeed (graceful fallback, not error)
+        let result = install_to(&zshrc, &config, false);
+        assert!(result.is_ok());
+
+        // File deployments should still have happened
+        assert!(config.join("shell/ghost-complete.zsh").exists());
+        assert!(config.join("specs").exists());
+    }
+
+    #[test]
+    fn test_install_dry_run_no_writes() {
+        let dir = TempDir::new().unwrap();
+        let zshrc = dir.path().join(".zshrc");
+        let config = dir.path().join("config");
+
+        install_to(&zshrc, &config, true).unwrap();
+
+        // Nothing should have been created
+        assert!(!zshrc.exists());
+        assert!(!config.exists());
+    }
+
+    #[test]
+    fn test_install_dry_run_existing_files_untouched() {
+        let dir = TempDir::new().unwrap();
+        let zshrc = dir.path().join(".zshrc");
+        let config = dir.path().join("config");
+
+        let existing = "export FOO=bar\n";
+        fs::write(&zshrc, existing).unwrap();
+
+        fs::create_dir_all(&config).unwrap();
+        let config_path = config.join("config.toml");
+        let custom_config = "[keybindings]\naccept = \"enter\"\n";
+        fs::write(&config_path, custom_config).unwrap();
+
+        install_to(&zshrc, &config, true).unwrap();
+
+        // .zshrc should be unchanged
+        assert_eq!(fs::read_to_string(&zshrc).unwrap(), existing);
+        // config should be unchanged
+        assert_eq!(fs::read_to_string(&config_path).unwrap(), custom_config);
+        // No shell scripts should have been created
+        assert!(!config.join("shell").exists());
     }
 }

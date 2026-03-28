@@ -21,6 +21,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`doctor` command** — `check_ghostty()` replaced with `check_terminal()` that reports detected terminal name, render strategy, and prompt detection method. Lists all supported terminals on failure.
 - **Shell integration scripts** — zsh, bash, and fish scripts now emit both OSC 133 and OSC 7771 markers for cross-terminal compatibility.
 
+## [0.2.5] - 2026-03-25
+
+### Added
+
+- **`ghost-complete install --dry-run`** — previews what would be installed without writing any files. Shows the exact shell blocks needed for manual configuration.
+
+### Changed
+
+- **Graceful fallback for read-only .zshrc** — when `.zshrc` is not writable (e.g. nix-darwin/home-manager), install now prints colored manual instructions with the exact shell blocks instead of failing with an error. Only `PermissionDenied` triggers the fallback; other write errors propagate normally.
+- **Install deploys zsh integration only** — bash and fish shell scripts are no longer deployed during install (not actively supported). Uninstall still cleans up legacy bash/fish scripts from prior installs.
+- **Updated CLI help text** — `--help` output reflects zsh-only shell support.
+
 ## [0.2.4] - 2026-03-22
 
 ### Fixed
@@ -183,6 +195,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Shell integration** for zsh (full), bash (Ctrl+/), and fish (Ctrl+/)
 - **`validate-specs` subcommand** with colored output and item counts
 
+[0.2.5]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.2.5
 [0.2.4]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.2.4
 [0.2.3]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.2.3
 [0.2.2]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.2.2
