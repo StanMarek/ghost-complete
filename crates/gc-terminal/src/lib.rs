@@ -494,6 +494,16 @@ mod tests {
     }
 
     #[test]
+    fn test_detect_rio_via_tmux_term_program_fallback() {
+        // Rio has no dedicated env var for tmux detection — falls back to TERM_PROGRAM.
+        // This documents the expected behavior; if Rio-specific env detection is added
+        // later, this test captures the current path.
+        let p = detect("rio", true, false, false, false, false, false);
+        assert_eq!(*p.terminal(), Terminal::Rio);
+        assert!(p.in_tmux());
+    }
+
+    #[test]
     fn test_detect_iterm2_via_tmux() {
         let p = detect("", true, false, true, false, false, false);
         assert_eq!(*p.terminal(), Terminal::ITerm2);

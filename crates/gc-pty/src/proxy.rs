@@ -70,7 +70,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     // Gate unknown terminals behind experimental flag.
     // Known terminals (Ghostty, Kitty, WezTerm, Alacritty, Rio, iTerm2, Terminal.app)
     // work without any flag. Unknown terminals need multi_terminal = true.
-    // Note: CommandExt::exec_for_proxy() is the Unix execvp() syscall — no shell
+    // Note: CommandExt::exec() is the Unix execvp() syscall — no shell
     // interpretation, no injection risk. `shell` comes from $SHELL or argv.
     if should_fallback_to_shell(
         terminal_profile.terminal(),

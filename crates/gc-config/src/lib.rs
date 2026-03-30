@@ -505,6 +505,30 @@ history = false
     }
 
     #[test]
+    fn test_removed_popup_fields_ignored() {
+        let toml_str = r#"
+[popup]
+max_visible = 10
+min_width = 25
+max_width = 80
+"#;
+        let config: GhostConfig = toml::from_str(toml_str).unwrap();
+        assert_eq!(config.popup.max_visible, 10);
+    }
+
+    #[test]
+    fn test_removed_suggest_fields_ignored() {
+        let toml_str = r#"
+[suggest]
+max_results = 50
+max_history_entries = 5000
+generator_timeout_ms = 3000
+"#;
+        let config: GhostConfig = toml::from_str(toml_str).unwrap();
+        assert_eq!(config.suggest.max_results, 50);
+    }
+
+    #[test]
     fn test_experimental_defaults_to_off() {
         let config = GhostConfig::default();
         assert!(!config.experimental.multi_terminal);
