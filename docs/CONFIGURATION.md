@@ -176,19 +176,20 @@ Opt-in features that are not yet considered stable.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `multi_terminal` | bool | `false` | Enable iTerm2 and Terminal.app support. When `false` (default), Ghost Complete only runs on Ghostty — on other terminals it transparently falls back to a plain shell. |
+| `multi_terminal` | bool | `false` | Enable unsupported/unknown terminals. All 7 supported terminals (Ghostty, Kitty, WezTerm, Alacritty, Rio, iTerm2, Terminal.app) work without this flag. Set to `true` only if you want to try Ghost Complete on an unlisted terminal. |
 
 ```toml
 [experimental]
 multi_terminal = true
 ```
 
-When enabled, Ghost Complete auto-detects the terminal via `TERM_PROGRAM` and selects the appropriate rendering strategy:
+Ghost Complete auto-detects the terminal via `TERM_PROGRAM` and terminal-specific env vars, then selects the appropriate rendering strategy:
 
-- **Ghostty** — DECSET 2026 synchronized output, native OSC 133 prompt markers
+- **Ghostty, Kitty, WezTerm, Rio** — DECSET 2026 synchronized output, native OSC 133 prompt markers
+- **Alacritty** — DECSET 2026 synchronized output, OSC 7771 shell integration prompt markers (Alacritty does not support OSC 133)
 - **iTerm2 / Terminal.app** — pre-render buffer (single `write()` atomicity), OSC 7771 shell integration prompt markers
 
-**Known limitation:** Terminal.app inside tmux is not detected (Terminal.app sets no env var that leaks through tmux). Ghostty and iTerm2 in tmux work correctly.
+**tmux support:** Ghostty, Kitty, WezTerm, Alacritty, and iTerm2 are detected inside tmux via their respective env vars. Terminal.app inside tmux is not detected (it sets no env var that leaks through tmux).
 
 ## Full Example
 
@@ -224,8 +225,8 @@ trigger = "ctrl+/"
 preset = "catppuccin"
 match_highlight = "underline"
 
-[experimental]
-multi_terminal = false
+# [experimental]
+# multi_terminal = false  # Only needed for unsupported terminals
 ```
 
 ## Notes

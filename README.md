@@ -20,8 +20,8 @@ Inspired by [Fig](https://fig.io) (RIP). Built from scratch in Rust.
 
 This is a personal project I built for my own workflow. I'm happy to share it and welcome contributions, but set your expectations accordingly:
 
-- **Ghostty + zsh is the primary tested path.** iTerm2 and Terminal.app have experimental support as of v0.3.0 (opt-in via config flag).
-- **Bash and fish support is experimental.** Manual trigger only (Ctrl+/), no auto-trigger on typing, and not actively tested.
+- **Supports 7 terminals on macOS:** Ghostty, Kitty, WezTerm, Alacritty, Rio, iTerm2, and Terminal.app. All work out of the box — no config flag needed.
+- **zsh is the primary tested shell.** Bash and fish have manual trigger only (Ctrl+/), no auto-trigger on typing.
 - **No stability guarantees.** Config format, spec format, and behavior may change between releases.
 - **macOS only.** No Linux or Windows support planned at this time.
 
@@ -29,7 +29,7 @@ If you hit a bug, [open an issue](https://github.com/StanMarek/ghost-complete/is
 
 ## Requirements
 
-- **Terminal:** [Ghostty](https://ghostty.org) (default), [iTerm2](https://iterm2.com) or Terminal.app (experimental — see below)
+- **Terminal:** [Ghostty](https://ghostty.org), [Kitty](https://sw.kovidgoyal.net/kitty/), [WezTerm](https://wezfurlong.org/wezterm/), [Alacritty](https://alacritty.org), [Rio](https://raphamorim.io/rio/), [iTerm2](https://iterm2.com), or Terminal.app
 - **OS:** macOS
 - **Shell:** zsh (primary), bash and fish (Ctrl+/ trigger only)
 - **Rust:** 1.75+ (for building from source)
@@ -94,18 +94,24 @@ After installation, restart your terminal. Ghost Complete activates automaticall
 
 Run `ghost-complete status` to see loaded specs and generator diagnostics.
 
-### iTerm2 / Terminal.app (experimental)
+### Supported Terminals
 
-Multi-terminal support is available but disabled by default. To enable it, add to `~/.config/ghost-complete/config.toml`:
+Ghost Complete auto-detects your terminal and selects the best rendering strategy. All supported terminals work out of the box — no config flag needed.
 
-```toml
-[experimental]
-multi_terminal = true
-```
+| Terminal | Rendering | Prompt Detection | tmux Support |
+|----------|-----------|-----------------|:------------:|
+| [Ghostty](https://ghostty.org) | Synchronized (DECSET 2026) | OSC 133 (native) | Yes |
+| [Kitty](https://sw.kovidgoyal.net/kitty/) | Synchronized (DECSET 2026) | OSC 133 (native) | Yes |
+| [WezTerm](https://wezfurlong.org/wezterm/) | Synchronized (DECSET 2026) | OSC 133 (native) | Yes |
+| [Alacritty](https://alacritty.org) | Synchronized (DECSET 2026) | Shell integration | Yes |
+| [Rio](https://raphamorim.io/rio/) | Synchronized (DECSET 2026) | OSC 133 (native) | — |
+| [iTerm2](https://iterm2.com) | Pre-render buffer | Shell integration | Yes |
+| Terminal.app | Pre-render buffer | Shell integration | No |
 
-Then restart your shell or run `source ~/.zshrc`. Ghost Complete will auto-detect your terminal and use the appropriate rendering strategy.
-
-**Known limitation:** Terminal.app inside tmux is not detected (Terminal.app sets no env var that leaks through tmux).
+**Notes:**
+- Terminal.app inside tmux is not detected (it sets no env var that leaks through tmux).
+- Alacritty does not support OSC 133 natively; Ghost Complete uses its own shell integration markers instead. No functional difference — just a different detection path.
+- Unsupported terminals can be enabled with `[experimental] multi_terminal = true` in config.
 
 ## Configuration
 
@@ -141,7 +147,7 @@ specs = true
 git = true
 
 [experimental]
-multi_terminal = false  # Set to true for iTerm2/Terminal.app
+multi_terminal = false  # Set to true for unsupported/unknown terminals
 ```
 
 Config changes are applied live — no restart needed.
@@ -190,7 +196,7 @@ See [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) for the full desi
 
 ## Known Limitations
 
-- **Terminal.app inside tmux is not detected.** Terminal.app sets no environment variable that leaks through tmux, so Ghost Complete cannot identify it. Ghostty and iTerm2 in tmux work correctly via `GHOSTTY_RESOURCES_DIR` and `ITERM_SESSION_ID` respectively.
+- **Terminal.app inside tmux is not detected.** Terminal.app sets no environment variable that leaks through tmux, so Ghost Complete cannot identify it. Ghostty, Kitty, WezTerm, Alacritty, and iTerm2 in tmux work correctly via their respective env vars (`GHOSTTY_RESOURCES_DIR`, `KITTY_WINDOW_ID`, `WEZTERM_UNIX_SOCKET`, `ALACRITTY_SOCKET`, `ITERM_SESSION_ID`).
 - **Dynamic generator results require a keystroke to render.** Async generators (shell commands for live results) merge into the popup on the next PTY read. If the shell is idle after the generator completes, results won't appear until the next keystroke.
 - **Bash and fish: manual trigger only.** Auto-trigger on typing is not implemented for bash or fish. Use Ctrl+/ to manually invoke completions.
 - **Specs with `requires_js: true` are partially functional.** Static completions (subcommands, options) work, but JS-based generators from the original Fig ecosystem are not executed.
