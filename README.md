@@ -183,7 +183,7 @@ Rust workspace with 8 crates:
 | `gc-config` | TOML config, keybindings, themes |
 | `gc-terminal` | Terminal detection, capability profiling, render strategy selection |
 
-See [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) for the full design.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full design — data flow, dependency graph, key design decisions, and performance characteristics.
 
 ## Shell Support
 
