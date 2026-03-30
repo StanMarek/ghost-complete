@@ -1183,6 +1183,10 @@ const DEFAULT_CONFIG_TOML: &str = "\
 # max_results = 50
 # max_history_results = 5
 # max_history_entries = 10000
+# generator_timeout_ms = 5000
+
+# [paths]
+# spec_dirs = []  # Additional spec directories (replaces default when set)
 
 # [suggest.providers]
 # commands = true

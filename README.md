@@ -150,7 +150,7 @@ git = true
 multi_terminal = false  # Set to true for unsupported/unknown terminals
 ```
 
-Config changes are applied live — no restart needed.
+Theme, keybindings, trigger chars, and popup dimensions are hot-reloaded. Other changes need a shell restart.
 
 See [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for the full reference.
 

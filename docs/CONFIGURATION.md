@@ -141,12 +141,14 @@ match_highlight = "underline"
 
 #### Presets
 
-| Preset | Selected | Description | Match Highlight | Scrollbar |
-|--------|----------|-------------|-----------------|-----------|
-| `dark` | `reverse` | `dim` | `bold` | `dim` |
-| `light` | `fg:#1e1e2e bg:#dce0e8 bold` | `fg:#6c6f85` | `fg:#d20f39 bold` | `fg:#9ca0b0` |
-| `catppuccin` | `fg:#cdd6f4 bg:#585b70 bold` | `fg:#6c7086` | `fg:#f9e2af bold` | `fg:#585b70` |
-| `material-darker` | `fg:#eeffff bg:#424242 bold` | `fg:#616161` | `fg:#ffcb6b bold` | `fg:#424242` |
+| Preset | Selected | Description | Match Highlight | Item Text | Scrollbar |
+|--------|----------|-------------|-----------------|-----------|-----------|
+| `dark` | `reverse` | `dim` | `bold` | *(none)* | `dim` |
+| `light` | `fg:#1e1e2e bg:#dce0e8 bold` | `fg:#6c6f85` | `fg:#d20f39 bold` | *(none)* | `fg:#9ca0b0` |
+| `catppuccin` | `fg:#cdd6f4 bg:#585b70 bold` | `fg:#6c7086` | `fg:#f9e2af bold` | *(none)* | `fg:#585b70` |
+| `material-darker` | `fg:#eeffff bg:#424242 bold` | `fg:#616161` | `fg:#ffcb6b bold` | *(none)* | `fg:#424242` |
+
+All presets leave `item_text` unstyled (default terminal foreground). Override it to colorize non-selected items.
 
 #### Style String Syntax
 
@@ -215,6 +217,9 @@ filesystem = true
 specs = true
 git = false
 
+[paths]
+spec_dirs = ["~/.config/ghost-complete/specs"]
+
 [keybindings]
 accept = "tab"
 accept_and_enter = "enter"
@@ -224,13 +229,26 @@ trigger = "ctrl+/"
 [theme]
 preset = "catppuccin"
 match_highlight = "underline"
-
-# [experimental]
-# multi_terminal = false  # Only needed for unsupported terminals
 ```
 
 ## Notes
 
-- **Config hot-reload:** Changes to `config.toml` are applied live without restarting your shell. Theme, keybindings, trigger chars, and popup dimensions are all reloaded automatically.
+- **Config hot-reload:** Some fields are applied live without restarting your shell. Others require a shell restart. See the table below.
 - **Nerd Font icons:** The popup gutter uses Nerd Font icons. If your terminal font doesn't include Nerd Font patches, you'll see placeholder characters. Use a [Nerd Font](https://www.nerdfonts.com/) for the best experience.
 - **History control:** Use `max_history_results` (not `providers.history`) to control history. Set to `0` to disable history entirely.
+
+### Hot-Reload Behavior
+
+| Section | Fields | Live Reload |
+|---------|--------|:-----------:|
+| `[theme]` | All fields | Yes |
+| `[keybindings]` | All fields | Yes |
+| `[trigger]` | `auto_chars` | Yes |
+| `[trigger]` | `delay_ms` | No |
+| `[popup]` | All fields | Yes |
+| `[suggest]` | All fields | No |
+| `[suggest.providers]` | All fields | No |
+| `[paths]` | All fields | No |
+| `[experimental]` | All fields | No |
+
+Fields marked "No" require a shell restart (`source ~/.zshrc` or open a new terminal).
