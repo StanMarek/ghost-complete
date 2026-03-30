@@ -75,17 +75,11 @@ impl Default for TriggerConfig {
 #[serde(default)]
 pub struct PopupConfig {
     pub max_visible: usize,
-    pub min_width: u16,
-    pub max_width: u16,
 }
 
 impl Default for PopupConfig {
     fn default() -> Self {
-        Self {
-            max_visible: 10,
-            min_width: 20,
-            max_width: 60,
-        }
+        Self { max_visible: 10 }
     }
 }
 
@@ -94,8 +88,6 @@ impl Default for PopupConfig {
 pub struct SuggestConfig {
     pub max_results: usize,
     pub max_history_results: usize,
-    pub max_history_entries: usize,
-    pub generator_timeout_ms: u64,
     pub providers: ProvidersConfig,
 }
 
@@ -104,8 +96,6 @@ impl Default for SuggestConfig {
         Self {
             max_results: 50,
             max_history_results: 5,
-            max_history_entries: 10_000,
-            generator_timeout_ms: 5000,
             providers: ProvidersConfig::default(),
         }
     }
@@ -261,12 +251,8 @@ mod tests {
         assert_eq!(config.trigger.auto_chars, vec![' ', '/', '-', '.']);
         assert_eq!(config.trigger.delay_ms, 150);
         assert_eq!(config.popup.max_visible, 10);
-        assert_eq!(config.popup.min_width, 20);
-        assert_eq!(config.popup.max_width, 60);
         assert_eq!(config.suggest.max_results, 50);
         assert_eq!(config.suggest.max_history_results, 5);
-        assert_eq!(config.suggest.max_history_entries, 10_000);
-        assert_eq!(config.suggest.generator_timeout_ms, 5000);
         assert!(config.suggest.providers.commands);
         assert!(config.suggest.providers.filesystem);
         assert!(config.suggest.providers.specs);
@@ -296,8 +282,6 @@ max_visible = 5
         let config: GhostConfig = toml::from_str(toml_str).unwrap();
         assert_eq!(config.popup.max_visible, 5);
         // Everything else should be default
-        assert_eq!(config.popup.min_width, 20);
-        assert_eq!(config.popup.max_width, 60);
         assert_eq!(config.trigger.auto_chars, vec![' ', '/', '-', '.']);
         assert_eq!(config.suggest.max_results, 50);
     }
@@ -342,13 +326,10 @@ delay_ms = 200
 
 [popup]
 max_visible = 15
-min_width = 25
-max_width = 80
 
 [suggest]
 max_results = 100
 max_history_results = 3
-max_history_entries = 5000
 
 [suggest.providers]
 commands = true
@@ -377,11 +358,8 @@ description = "dim"
         assert_eq!(config.theme.selected, "bold");
         assert_eq!(config.theme.description, "dim");
         assert_eq!(config.popup.max_visible, 15);
-        assert_eq!(config.popup.min_width, 25);
-        assert_eq!(config.popup.max_width, 80);
         assert_eq!(config.suggest.max_results, 100);
         assert_eq!(config.suggest.max_history_results, 3);
-        assert_eq!(config.suggest.max_history_entries, 5000);
         assert!(config.suggest.providers.commands);
         assert!(!config.suggest.providers.git);
         assert_eq!(

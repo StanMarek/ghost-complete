@@ -23,20 +23,18 @@ delay_ms = 150
 
 ### `[popup]`
 
-Controls the popup appearance and size.
+Controls the popup appearance.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `max_visible` | integer | `10` | Maximum number of suggestions shown at once |
-| `min_width` | integer | `20` | Minimum popup width in columns |
-| `max_width` | integer | `60` | Maximum popup width in columns |
 
 ```toml
 [popup]
 max_visible = 10
-min_width = 20
-max_width = 60
 ```
+
+Popup width is calculated automatically from suggestion content, clamped between 20 and 60 columns.
 
 ### `[suggest]`
 
@@ -46,16 +44,14 @@ Controls the suggestion engine behavior.
 |-------|------|---------|-------------|
 | `max_results` | integer | `50` | Maximum total candidates to consider |
 | `max_history_results` | integer | `5` | Maximum history entries shown in popup. Set to `0` to disable history. |
-| `max_history_entries` | integer | `10000` | Maximum shell history entries to load from `$HISTFILE` |
-| `generator_timeout_ms` | integer | `5000` | Timeout in milliseconds for shell command generators. Commands that exceed this are killed. |
 
 ```toml
 [suggest]
 max_results = 50
 max_history_results = 5
-max_history_entries = 10000
-generator_timeout_ms = 5000
 ```
+
+Shell history loads up to 10,000 entries. Script generators timeout after 5 seconds.
 
 ### `[suggest.providers]`
 
@@ -202,14 +198,10 @@ delay_ms = 200
 
 [popup]
 max_visible = 8
-min_width = 25
-max_width = 50
 
 [suggest]
 max_results = 100
 max_history_results = 3
-max_history_entries = 5000
-generator_timeout_ms = 5000
 
 [suggest.providers]
 commands = true
@@ -245,7 +237,7 @@ match_highlight = "underline"
 | `[keybindings]` | All fields | Yes |
 | `[trigger]` | `auto_chars` | Yes |
 | `[trigger]` | `delay_ms` | No |
-| `[popup]` | All fields | Yes |
+| `[popup]` | `max_visible` | Yes |
 | `[suggest]` | All fields | No |
 | `[suggest.providers]` | All fields | No |
 | `[paths]` | All fields | No |

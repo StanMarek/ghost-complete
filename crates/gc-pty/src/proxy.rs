@@ -148,16 +148,10 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
         };
         h.with_keybindings(keybindings)
             .with_theme(theme)
-            .with_popup_config(
-                config.popup.max_visible,
-                config.popup.min_width,
-                config.popup.max_width,
-            )
+            .with_popup_config(config.popup.max_visible)
             .with_trigger_chars(&config.trigger.auto_chars)
-            .with_generator_timeout(config.suggest.generator_timeout_ms)
             .with_suggest_config(
                 config.suggest.max_results,
-                config.suggest.max_history_entries,
                 config.suggest.providers.commands,
                 config.suggest.max_history_results,
                 config.suggest.providers.filesystem,

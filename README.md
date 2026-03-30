@@ -124,8 +124,6 @@ delay_ms = 150
 
 [popup]
 max_visible = 10
-min_width = 20
-max_width = 60
 
 [keybindings]
 accept = "tab"
@@ -138,16 +136,12 @@ preset = "dark"  # dark, light, catppuccin, material-darker
 [suggest]
 max_results = 50
 max_history_results = 5
-generator_timeout_ms = 5000
 
 [suggest.providers]
 commands = true
 filesystem = true
 specs = true
 git = true
-
-[experimental]
-multi_terminal = false  # Set to true for unsupported/unknown terminals
 ```
 
 Theme, keybindings, trigger chars, and popup dimensions are hot-reloaded. Other changes need a shell restart.

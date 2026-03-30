@@ -82,15 +82,12 @@ pub struct InputHandler {
     visible: bool,
     trigger_requested: bool,
     max_visible: usize,
-    min_width: u16,
-    max_width: u16,
     trigger_chars: HashSet<char>,
     debounce_suppressed: bool,
     keybindings: Keybindings,
     theme: PopupTheme,
     dynamic_rx: Option<mpsc::Receiver<Vec<Suggestion>>>,
     dynamic_notify: Arc<Notify>,
-    generator_timeout_ms: u64,
     terminal_profile: TerminalProfile,
     /// Accumulated viewport scroll from popup rendering. Persists across
     /// dismiss/re-trigger cycles because viewport scroll is permanent.
@@ -108,15 +105,12 @@ impl InputHandler {
             visible: false,
             trigger_requested: false,
             max_visible: DEFAULT_MAX_VISIBLE,
-            min_width: DEFAULT_MIN_POPUP_WIDTH,
-            max_width: DEFAULT_MAX_POPUP_WIDTH,
             trigger_chars: DEFAULT_TRIGGER_CHARS.iter().copied().collect(),
             debounce_suppressed: false,
             keybindings: Keybindings::default(),
             theme: PopupTheme::default(),
             dynamic_rx: None,
             dynamic_notify: Arc::new(Notify::new()),
-            generator_timeout_ms: 5000,
             terminal_profile,
             scroll_deficit: 0,
         })
@@ -126,10 +120,8 @@ impl InputHandler {
         Arc::clone(&self.dynamic_notify)
     }
 
-    pub fn with_popup_config(mut self, max_visible: usize, min_width: u16, max_width: u16) -> Self {
+    pub fn with_popup_config(mut self, max_visible: usize) -> Self {
         self.max_visible = max_visible;
-        self.min_width = min_width;
-        self.max_width = max_width;
         self
     }
 
@@ -148,16 +140,10 @@ impl InputHandler {
         self
     }
 
-    pub fn with_generator_timeout(mut self, timeout_ms: u64) -> Self {
-        self.generator_timeout_ms = timeout_ms;
-        self
-    }
-
     #[allow(clippy::too_many_arguments)]
     pub fn with_suggest_config(
         self,
         max_results: usize,
-        max_history_entries: usize,
         commands: bool,
         max_history_results: usize,
         filesystem: bool,
@@ -169,7 +155,6 @@ impl InputHandler {
             .unwrap_or_else(|_| panic!("with_suggest_config called after engine was shared"))
             .with_suggest_config(
                 max_results,
-                max_history_entries,
                 commands,
                 max_history_results,
                 filesystem,
@@ -190,15 +175,11 @@ impl InputHandler {
         keybindings: Keybindings,
         trigger_chars: &[char],
         max_visible: usize,
-        min_width: u16,
-        max_width: u16,
     ) {
         self.theme = theme;
         self.keybindings = keybindings;
         self.trigger_chars = trigger_chars.iter().copied().collect();
         self.max_visible = max_visible;
-        self.min_width = min_width;
-        self.max_width = max_width;
     }
 
     #[allow(dead_code)]
@@ -493,7 +474,7 @@ impl InputHandler {
         let engine = Arc::clone(&self.engine);
         let ctx = ctx.clone();
         let cwd = cwd.to_path_buf();
-        let timeout = self.generator_timeout_ms;
+        let timeout = GENERATOR_TIMEOUT_MS;
         let notify = Arc::clone(&self.dynamic_notify);
         tokio::spawn(async move {
             match engine
@@ -617,8 +598,8 @@ impl InputHandler {
             screen_rows,
             screen_cols,
             self.max_visible,
-            self.min_width,
-            self.max_width,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
             &self.theme,
             self.scroll_deficit,
             loading,
@@ -696,6 +677,7 @@ impl InputHandler {
 }
 
 const DEFAULT_TRIGGER_CHARS: &[char] = &[' ', '/', '-', '.'];
+const GENERATOR_TIMEOUT_MS: u64 = 5000;
 
 #[cfg(test)]
 /// Check if a printable character should trigger suggestions (using defaults).
@@ -725,9 +707,7 @@ pub fn key_to_bytes(key: &KeyEvent) -> Vec<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use gc_overlay::types::{
-        DEFAULT_MAX_POPUP_WIDTH, DEFAULT_MAX_VISIBLE, DEFAULT_MIN_POPUP_WIDTH,
-    };
+    use gc_overlay::types::DEFAULT_MAX_VISIBLE;
     use gc_suggest::{SuggestionKind, SuggestionSource};
 
     #[test]
@@ -824,15 +804,12 @@ mod tests {
             visible: false,
             trigger_requested: false,
             max_visible: DEFAULT_MAX_VISIBLE,
-            min_width: DEFAULT_MIN_POPUP_WIDTH,
-            max_width: DEFAULT_MAX_POPUP_WIDTH,
             trigger_chars: DEFAULT_TRIGGER_CHARS.iter().copied().collect(),
             debounce_suppressed: false,
             keybindings: Keybindings::default(),
             theme: PopupTheme::default(),
             dynamic_rx: None,
             dynamic_notify: Arc::new(Notify::new()),
-            generator_timeout_ms: 5000,
             terminal_profile: TerminalProfile::for_ghostty(),
             scroll_deficit: 0,
         }
@@ -1150,7 +1127,7 @@ mod tests {
             scrollbar_on: vec![0x1B, b'[', b'2', b'm'],
         };
 
-        handler.update_config(new_theme, Keybindings::default(), &[' ', '/'], 15, 25, 80);
+        handler.update_config(new_theme, Keybindings::default(), &[' ', '/'], 15);
 
         assert_eq!(handler.theme.selected_on, vec![0x1B, b'[', b'1', b'm']);
         assert_eq!(handler.theme.description_on, vec![0x1B, b'[', b'2', b'm']);
@@ -1169,20 +1146,13 @@ mod tests {
             trigger: KeyEvent::Tab,
         };
 
-        handler.update_config(
-            PopupTheme::default(),
-            new_kb.clone(),
-            &[' ', '/'],
-            10,
-            20,
-            60,
-        );
+        handler.update_config(PopupTheme::default(), new_kb.clone(), &[' ', '/'], 10);
 
         assert_eq!(handler.keybindings, new_kb);
     }
 
     #[test]
-    fn test_update_config_changes_popup_dimensions() {
+    fn test_update_config_changes_max_visible() {
         let mut handler = make_handler();
 
         handler.update_config(
@@ -1190,13 +1160,9 @@ mod tests {
             Keybindings::default(),
             &['@', '#'],
             20,
-            30,
-            100,
         );
 
         assert_eq!(handler.max_visible, 20);
-        assert_eq!(handler.min_width, 30);
-        assert_eq!(handler.max_width, 100);
     }
 
     #[test]
@@ -1208,8 +1174,6 @@ mod tests {
             Keybindings::default(),
             &['@', '#', '!'],
             10,
-            20,
-            60,
         );
 
         let expected: HashSet<char> = ['@', '#', '!'].iter().copied().collect();
