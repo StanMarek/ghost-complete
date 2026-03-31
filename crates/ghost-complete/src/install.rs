@@ -1176,13 +1176,10 @@ const DEFAULT_CONFIG_TOML: &str = "\
 
 # [popup]
 # max_visible = 10
-# min_width = 20
-# max_width = 60
 
 # [suggest]
 # max_results = 50
 # max_history_results = 5
-# max_history_entries = 10000
 
 # [suggest.providers]
 # commands = true
@@ -1207,7 +1204,7 @@ const DEFAULT_CONFIG_TOML: &str = "\
 # scrollbar = \"dim\"
 
 # [experimental]
-# multi_terminal = false  # Set to true to enable iTerm2 and Terminal.app support
+# multi_terminal = false  # Set to true to enable unsupported/unknown terminals
 ";
 
 const INIT_BEGIN: &str = "# >>> ghost-complete initialize >>>";
@@ -1217,43 +1214,47 @@ const SHELL_END: &str = "# <<< ghost-complete shell integration <<<";
 const MANAGED_WARNING: &str =
     "# !! Contents within this block are managed by 'ghost-complete install' !!";
 
-/// Shell variable holding the config file path (set once in the init block).
-const CONFIG_VAR: &str = "_gc_config";
-/// Condition: config file exists AND contains multi_terminal = true.
-/// File-existence check is silent; grep errors on an existing file are visible.
-const MULTI_TERMINAL_CHECK: &str = "[[ -f \"$_gc_config\" ]] && grep -qE '^[[:space:]]*multi_terminal[[:space:]]*=[[:space:]]*true' \"$_gc_config\"";
-
 fn init_block() -> String {
     format!(
-        "{INIT_BEGIN}\n\
-         {MANAGED_WARNING}\n\
-         {CONFIG_VAR}=\"$HOME/.config/ghost-complete/config.toml\"\n\
-         case \"$TERM_PROGRAM\" in\n  \
-           ghostty)\n    \
-             if [[ -z \"$GHOST_COMPLETE_ACTIVE\" ]]; then\n      \
-               export GHOST_COMPLETE_ACTIVE=1\n      \
-               exec ghost-complete\n    \
-             fi\n    \
-             ;;\n  \
-           iTerm.app|Apple_Terminal)\n    \
-             if [[ -z \"$GHOST_COMPLETE_ACTIVE\" ]] && {MULTI_TERMINAL_CHECK}; then\n      \
-               export GHOST_COMPLETE_ACTIVE=1\n      \
-               exec ghost-complete\n    \
-             fi\n    \
-             ;;\n\
-         esac\n\
-         if [[ -n \"$TMUX\" && -z \"$GHOST_COMPLETE_ACTIVE\" && \\\n    \
-           \"$(ps -o comm= -p $PPID 2>/dev/null)\" != \"ghost-complete\" ]]; then\n  \
-           if [[ -n \"$GHOSTTY_RESOURCES_DIR\" ]]; then\n    \
-             export GHOST_COMPLETE_ACTIVE=1\n    \
-             exec ghost-complete\n  \
-           elif [[ -n \"$ITERM_SESSION_ID\" ]] && {MULTI_TERMINAL_CHECK}; then\n    \
-             export GHOST_COMPLETE_ACTIVE=1\n    \
-             exec ghost-complete\n  \
-           fi\n\
-         fi\n\
-         unset {CONFIG_VAR}\n\
-         {INIT_END}"
+        r#"{INIT_BEGIN}
+{MANAGED_WARNING}
+if [[ -n "$KITTY_WINDOW_ID" && -z "$GHOST_COMPLETE_ACTIVE" ]]; then
+  if command -v ghost-complete >/dev/null 2>&1; then
+    export GHOST_COMPLETE_ACTIVE=1
+    exec ghost-complete
+  fi
+fi
+if [[ -n "$ALACRITTY_SOCKET" && -z "$GHOST_COMPLETE_ACTIVE" ]]; then
+  if command -v ghost-complete >/dev/null 2>&1; then
+    export GHOST_COMPLETE_ACTIVE=1
+    exec ghost-complete
+  fi
+fi
+case "$TERM_PROGRAM" in
+  ghostty|WezTerm|rio|iTerm.app|Apple_Terminal)
+    if [[ -z "$GHOST_COMPLETE_ACTIVE" ]]; then
+      if command -v ghost-complete >/dev/null 2>&1; then
+        export GHOST_COMPLETE_ACTIVE=1
+        exec ghost-complete
+      fi
+    fi
+    ;;
+esac
+if [[ -n "$TMUX" && -z "$GHOST_COMPLETE_ACTIVE" && \
+   "$(ps -o comm= -p $PPID 2>/dev/null)" != "ghost-complete" ]]; then
+  if [[ -n "$GHOSTTY_RESOURCES_DIR" ]] || \
+     [[ -n "$KITTY_WINDOW_ID" ]] || \
+     [[ -n "$WEZTERM_UNIX_SOCKET" ]] || \
+     [[ -n "$ALACRITTY_SOCKET" ]] || \
+     [[ -n "$ITERM_SESSION_ID" ]] || \
+     [[ "$TERM_PROGRAM" == "rio" ]]; then
+    if command -v ghost-complete >/dev/null 2>&1; then
+      export GHOST_COMPLETE_ACTIVE=1
+      exec ghost-complete
+    fi
+  fi
+fi
+{INIT_END}"#,
     )
 }
 
@@ -1525,26 +1526,26 @@ mod tests {
         assert!(block.contains(INIT_END));
         assert!(block.contains(MANAGED_WARNING));
         assert!(block.contains("exec ghost-complete"));
-        // Allowlist: case statement with supported terminals
+        assert!(block.contains("command -v ghost-complete"));
+        // Kitty detection (uses KITTY_WINDOW_ID because TERM_PROGRAM is xterm-kitty)
+        assert!(block.contains("$KITTY_WINDOW_ID"));
+        // Allowlist: case statement with all supported terminals
         assert!(block.contains("case \"$TERM_PROGRAM\""));
-        assert!(block.contains("ghostty)"));
-        // iTerm/Terminal.app: gated behind experimental config grep
-        assert!(block.contains("iTerm.app|Apple_Terminal)"));
-        assert!(block.contains("multi_terminal"));
-        assert!(block.contains("config.toml"));
-        // File-existence check before grep (prevents silent permission errors)
-        assert!(block.contains("-f \"$_gc_config\""));
+        assert!(block.contains("ghostty|WezTerm|rio|iTerm.app|Apple_Terminal)"));
+        // Alacritty detection (uses ALACRITTY_SOCKET)
+        assert!(block.contains("$ALACRITTY_SOCKET"));
         assert!(block.contains("GHOST_COMPLETE_ACTIVE"));
         // tmux detection: TMUX + PPID guard
         assert!(block.contains("$TMUX"));
         assert!(block.contains("$PPID"));
         assert!(block.contains("ghost-complete\""));
-        // tmux-in-Ghostty: GHOSTTY_RESOURCES_DIR
+        assert!(block.contains("\"$TERM_PROGRAM\" == \"rio\""));
+        // tmux env var detection for all supported terminals
         assert!(block.contains("$GHOSTTY_RESOURCES_DIR"));
-        // tmux-in-iTerm2: ITERM_SESSION_ID
+        assert!(block.contains("$KITTY_WINDOW_ID"));
+        assert!(block.contains("$WEZTERM_UNIX_SOCKET"));
+        assert!(block.contains("$ALACRITTY_SOCKET"));
         assert!(block.contains("$ITERM_SESSION_ID"));
-        // Cleanup: unset the config var so it doesn't leak into user's shell
-        assert!(block.contains("unset _gc_config"));
     }
 
     #[test]

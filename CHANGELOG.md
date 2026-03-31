@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Kitty, WezTerm, Alacritty, Rio terminal support** — Ghost Complete now supports 7 terminals on macOS. Kitty, WezTerm, and Rio have full parity with Ghostty (DECSET 2026 + OSC 133). Alacritty uses DECSET 2026 with shell integration prompt detection (no native OSC 133).
+- **tmux detection for new terminals** — Kitty (`KITTY_WINDOW_ID`), WezTerm (`WEZTERM_UNIX_SOCKET`), and Alacritty (`ALACRITTY_SOCKET`) are now detected inside tmux sessions.
+
+### Removed
+
+- **`min_width` and `max_width` popup config fields** — popup width is now auto-sized. Existing configs with these fields continue to parse without error (silently ignored).
+- **`generator_timeout_ms` suggest config field** — generator timeout is now hardcoded. Existing configs with this field continue to parse without error (silently ignored).
+- **`max_history_entries` suggest config field** — replaced by `max_history_results` in v0.2.2. Existing configs with this field continue to parse without error (silently ignored).
+
+### Changed
+
+- **Experimental gate removed for known terminals** — all 7 supported terminals work without `[experimental] multi_terminal = true`. The flag now only applies to unknown/unlisted terminals.
+- **Init block rewritten** — `.zshrc` init block detects Kitty via `KITTY_WINDOW_ID` before the `TERM_PROGRAM` case (Kitty reports `TERM_PROGRAM=xterm-kitty`). Supported terminals auto-exec without a config gate.
+- **`known_term_programs()` renamed to `supported_terminals()`** — returns display names for all 7 terminals instead of `TERM_PROGRAM` values.
+
 ## [0.3.0] - 2026-03-28
 
 ### Added

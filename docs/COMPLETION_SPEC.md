@@ -1,10 +1,14 @@
 # Completion Spec Format
 
-Ghost Complete uses a Fig-compatible JSON format for completion specs. Specs define the subcommands, options, and argument types for a CLI tool.
+Ghost Complete uses a Fig-compatible JSON format for completion specs. Specs define the subcommands, options, and argument types for a CLI tool. Ghost Complete ships with 709 built-in specs covering common commands (git, docker, cargo, npm, kubectl, brew, and 700+ more).
 
-## File Location
+## Overview
 
-Specs are loaded from `~/.config/ghost-complete/specs/`. The file name should match the command name (e.g., `git.json` for the `git` command).
+- Specs are JSON files, one per command
+- Shipped specs are embedded in the binary at compile time
+- Custom specs go in `~/.config/ghost-complete/specs/`
+- File name must match the command name (e.g., `git.json` for `git`)
+- Validate with `ghost-complete validate-specs`
 
 ## Schema
 

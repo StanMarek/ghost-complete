@@ -23,20 +23,18 @@ delay_ms = 150
 
 ### `[popup]`
 
-Controls the popup appearance and size.
+Controls the popup appearance.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `max_visible` | integer | `10` | Maximum number of suggestions shown at once |
-| `min_width` | integer | `20` | Minimum popup width in columns |
-| `max_width` | integer | `60` | Maximum popup width in columns |
 
 ```toml
 [popup]
 max_visible = 10
-min_width = 20
-max_width = 60
 ```
+
+Popup width is calculated automatically from suggestion content, clamped between 20 and 60 columns.
 
 ### `[suggest]`
 
@@ -46,16 +44,14 @@ Controls the suggestion engine behavior.
 |-------|------|---------|-------------|
 | `max_results` | integer | `50` | Maximum total candidates to consider |
 | `max_history_results` | integer | `5` | Maximum history entries shown in popup. Set to `0` to disable history. |
-| `max_history_entries` | integer | `10000` | Maximum shell history entries to load from `$HISTFILE` |
-| `generator_timeout_ms` | integer | `5000` | Timeout in milliseconds for shell command generators. Commands that exceed this are killed. |
 
 ```toml
 [suggest]
 max_results = 50
 max_history_results = 5
-max_history_entries = 10000
-generator_timeout_ms = 5000
 ```
+
+Shell history loads up to 10,000 entries. Script generators timeout after 5 seconds.
 
 ### `[suggest.providers]`
 
@@ -141,12 +137,14 @@ match_highlight = "underline"
 
 #### Presets
 
-| Preset | Selected | Description | Match Highlight | Scrollbar |
-|--------|----------|-------------|-----------------|-----------|
-| `dark` | `reverse` | `dim` | `bold` | `dim` |
-| `light` | `fg:#1e1e2e bg:#dce0e8 bold` | `fg:#6c6f85` | `fg:#d20f39 bold` | `fg:#9ca0b0` |
-| `catppuccin` | `fg:#cdd6f4 bg:#585b70 bold` | `fg:#6c7086` | `fg:#f9e2af bold` | `fg:#585b70` |
-| `material-darker` | `fg:#eeffff bg:#424242 bold` | `fg:#616161` | `fg:#ffcb6b bold` | `fg:#424242` |
+| Preset | Selected | Description | Match Highlight | Item Text | Scrollbar |
+|--------|----------|-------------|-----------------|-----------|-----------|
+| `dark` | `reverse` | `dim` | `bold` | *(none)* | `dim` |
+| `light` | `fg:#1e1e2e bg:#dce0e8 bold` | `fg:#6c6f85` | `fg:#d20f39 bold` | *(none)* | `fg:#9ca0b0` |
+| `catppuccin` | `fg:#cdd6f4 bg:#585b70 bold` | `fg:#6c7086` | `fg:#f9e2af bold` | *(none)* | `fg:#585b70` |
+| `material-darker` | `fg:#eeffff bg:#424242 bold` | `fg:#616161` | `fg:#ffcb6b bold` | *(none)* | `fg:#424242` |
+
+All presets leave `item_text` unstyled (default terminal foreground). Override it to colorize non-selected items.
 
 #### Style String Syntax
 
@@ -176,19 +174,20 @@ Opt-in features that are not yet considered stable.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `multi_terminal` | bool | `false` | Enable iTerm2 and Terminal.app support. When `false` (default), Ghost Complete only runs on Ghostty — on other terminals it transparently falls back to a plain shell. |
+| `multi_terminal` | bool | `false` | Enable unsupported/unknown terminals. All 7 supported terminals (Ghostty, Kitty, WezTerm, Alacritty, Rio, iTerm2, Terminal.app) work without this flag. Set to `true` only if you want to try Ghost Complete on an unlisted terminal. |
 
 ```toml
 [experimental]
 multi_terminal = true
 ```
 
-When enabled, Ghost Complete auto-detects the terminal via `TERM_PROGRAM` and selects the appropriate rendering strategy:
+Ghost Complete auto-detects the terminal via `TERM_PROGRAM` and terminal-specific env vars, then selects the appropriate rendering strategy:
 
-- **Ghostty** — DECSET 2026 synchronized output, native OSC 133 prompt markers
+- **Ghostty, Kitty, WezTerm, Rio** — DECSET 2026 synchronized output, native OSC 133 prompt markers
+- **Alacritty** — DECSET 2026 synchronized output, OSC 7771 shell integration prompt markers (Alacritty does not support OSC 133)
 - **iTerm2 / Terminal.app** — pre-render buffer (single `write()` atomicity), OSC 7771 shell integration prompt markers
 
-**Known limitation:** Terminal.app inside tmux is not detected (Terminal.app sets no env var that leaks through tmux). Ghostty and iTerm2 in tmux work correctly.
+**tmux support:** Ghostty, Kitty, WezTerm, Alacritty, and iTerm2 are detected inside tmux via their respective env vars. Terminal.app inside tmux is not detected (it sets no env var that leaks through tmux).
 
 ## Full Example
 
@@ -199,20 +198,19 @@ delay_ms = 200
 
 [popup]
 max_visible = 8
-min_width = 25
-max_width = 50
 
 [suggest]
 max_results = 100
 max_history_results = 3
-max_history_entries = 5000
-generator_timeout_ms = 5000
 
 [suggest.providers]
 commands = true
 filesystem = true
 specs = true
 git = false
+
+[paths]
+spec_dirs = ["~/.config/ghost-complete/specs"]
 
 [keybindings]
 accept = "tab"
@@ -223,13 +221,26 @@ trigger = "ctrl+/"
 [theme]
 preset = "catppuccin"
 match_highlight = "underline"
-
-[experimental]
-multi_terminal = false
 ```
 
 ## Notes
 
-- **Config hot-reload:** Changes to `config.toml` are applied live without restarting your shell. Theme, keybindings, trigger chars, and popup dimensions are all reloaded automatically.
+- **Config hot-reload:** Some fields are applied live without restarting your shell. Others require a shell restart. See the table below.
 - **Nerd Font icons:** The popup gutter uses Nerd Font icons. If your terminal font doesn't include Nerd Font patches, you'll see placeholder characters. Use a [Nerd Font](https://www.nerdfonts.com/) for the best experience.
 - **History control:** Use `max_history_results` (not `providers.history`) to control history. Set to `0` to disable history entirely.
+
+### Hot-Reload Behavior
+
+| Section | Fields | Live Reload |
+|---------|--------|:-----------:|
+| `[theme]` | All fields | Yes |
+| `[keybindings]` | All fields | Yes |
+| `[trigger]` | `auto_chars` | Yes |
+| `[trigger]` | `delay_ms` | No |
+| `[popup]` | `max_visible` | Yes |
+| `[suggest]` | All fields | No |
+| `[suggest.providers]` | All fields | No |
+| `[paths]` | All fields | No |
+| `[experimental]` | All fields | No |
+
+Fields marked "No" require a shell restart (`source ~/.zshrc` or open a new terminal).

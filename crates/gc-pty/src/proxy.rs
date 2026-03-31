@@ -56,7 +56,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
              Popup rendering may not work correctly.\n\
              Supported terminals: {}",
             terminal_profile.terminal(),
-            gc_terminal::Terminal::known_term_programs().join(", ")
+            gc_terminal::Terminal::supported_terminals().join(", ")
         );
     } else {
         tracing::info!(
@@ -67,9 +67,9 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
         );
     }
 
-    // Gate non-Ghostty terminals behind experimental flag.
-    // If the flag is off and we're not on Ghostty, replace ourselves with
-    // the shell process so the user gets a normal shell session.
+    // Gate unknown terminals behind experimental flag.
+    // Known terminals (Ghostty, Kitty, WezTerm, Alacritty, Rio, iTerm2, Terminal.app)
+    // work without any flag. Unknown terminals need multi_terminal = true.
     // Note: CommandExt::exec() is the Unix execvp() syscall — no shell
     // interpretation, no injection risk. `shell` comes from $SHELL or argv.
     if should_fallback_to_shell(
@@ -78,11 +78,11 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     ) {
         tracing::warn!(
             terminal = %terminal_profile.terminal(),
-            "multi-terminal support requires [experimental] multi_terminal = true — falling back to plain shell"
+            "unknown terminal requires [experimental] multi_terminal = true — falling back to plain shell"
         );
         eprintln!(
-            "ghost-complete: {} detected but multi-terminal support is disabled.\n\
-             To enable, add to ~/.config/ghost-complete/config.toml:\n\n  \
+            "ghost-complete: {} is not a supported terminal.\n\
+             To try anyway, add to ~/.config/ghost-complete/config.toml:\n\n  \
              [experimental]\n  \
              multi_terminal = true\n",
             terminal_profile.terminal()
@@ -148,16 +148,10 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
         };
         h.with_keybindings(keybindings)
             .with_theme(theme)
-            .with_popup_config(
-                config.popup.max_visible,
-                config.popup.min_width,
-                config.popup.max_width,
-            )
+            .with_popup_config(config.popup.max_visible)
             .with_trigger_chars(&config.trigger.auto_chars)
-            .with_generator_timeout(config.suggest.generator_timeout_ms)
             .with_suggest_config(
                 config.suggest.max_results,
-                config.suggest.max_history_entries,
                 config.suggest.providers.commands,
                 config.suggest.max_history_results,
                 config.suggest.providers.filesystem,
@@ -552,7 +546,9 @@ pub fn should_fallback_to_shell(
     terminal: &gc_terminal::Terminal,
     multi_terminal_enabled: bool,
 ) -> bool {
-    !multi_terminal_enabled && !matches!(terminal, gc_terminal::Terminal::Ghostty)
+    // All known terminals work without the experimental flag.
+    // Only Unknown terminals require multi_terminal = true.
+    matches!(terminal, gc_terminal::Terminal::Unknown(_)) && !multi_terminal_enabled
 }
 
 #[cfg(test)]
@@ -561,35 +557,33 @@ mod tests {
     use gc_terminal::Terminal;
 
     #[test]
-    fn test_ghostty_never_falls_back() {
-        assert!(!should_fallback_to_shell(&Terminal::Ghostty, false));
-        assert!(!should_fallback_to_shell(&Terminal::Ghostty, true));
-    }
-
-    #[test]
-    fn test_iterm2_falls_back_without_flag() {
-        assert!(should_fallback_to_shell(&Terminal::ITerm2, false));
-    }
-
-    #[test]
-    fn test_iterm2_runs_with_flag() {
-        assert!(!should_fallback_to_shell(&Terminal::ITerm2, true));
-    }
-
-    #[test]
-    fn test_terminal_app_falls_back_without_flag() {
-        assert!(should_fallback_to_shell(&Terminal::TerminalApp, false));
-    }
-
-    #[test]
-    fn test_terminal_app_runs_with_flag() {
-        assert!(!should_fallback_to_shell(&Terminal::TerminalApp, true));
+    fn test_known_terminals_never_fall_back() {
+        // All known terminals work without the experimental flag
+        let known = [
+            Terminal::Ghostty,
+            Terminal::Kitty,
+            Terminal::WezTerm,
+            Terminal::Alacritty,
+            Terminal::Rio,
+            Terminal::ITerm2,
+            Terminal::TerminalApp,
+        ];
+        for terminal in &known {
+            assert!(
+                !should_fallback_to_shell(terminal, false),
+                "{terminal} should not fall back without multi_terminal flag"
+            );
+            assert!(
+                !should_fallback_to_shell(terminal, true),
+                "{terminal} should not fall back with multi_terminal flag"
+            );
+        }
     }
 
     #[test]
     fn test_unknown_falls_back_without_flag() {
         assert!(should_fallback_to_shell(
-            &Terminal::Unknown("alacritty".into()),
+            &Terminal::Unknown("foot".into()),
             false
         ));
     }
@@ -597,7 +591,7 @@ mod tests {
     #[test]
     fn test_unknown_runs_with_flag() {
         assert!(!should_fallback_to_shell(
-            &Terminal::Unknown("alacritty".into()),
+            &Terminal::Unknown("foot".into()),
             true
         ));
     }

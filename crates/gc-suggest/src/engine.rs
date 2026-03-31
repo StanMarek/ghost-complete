@@ -98,7 +98,6 @@ impl SuggestionEngine {
     pub fn with_suggest_config(
         mut self,
         max_results: usize,
-        max_history_entries: usize,
         commands: bool,
         max_history_results: usize,
         filesystem: bool,
@@ -113,7 +112,7 @@ impl SuggestionEngine {
         self.providers_git = git;
         // Reload history only if enabled
         if max_history_results > 0 {
-            self.history_provider = HistoryProvider::load(max_history_entries);
+            self.history_provider = HistoryProvider::load(DEFAULT_MAX_HISTORY_ENTRIES);
         } else {
             self.history_provider = HistoryProvider::from_entries(vec![]);
         }
@@ -919,7 +918,7 @@ mod tests {
         let history = HistoryProvider::from_entries(vec![]);
         let commands = CommandsProvider::from_list(vec!["git".into(), "ls".into()]);
         let engine = SuggestionEngine::with_providers(spec_store, history, commands)
-            .with_suggest_config(50, 10_000, false, 5, true, true, true);
+            .with_suggest_config(50, false, 5, true, true, true);
 
         let ctx = make_ctx(None, vec![], "gi", 0);
         let results = engine.suggest_sync(&ctx, Path::new("/tmp"), "gi").unwrap();
