@@ -161,6 +161,10 @@ impl TerminalProfile {
             if has_kitty_window_id {
                 return Self::new(Terminal::Kitty, false);
             }
+            // Alacritty doesn't set TERM_PROGRAM — detect via ALACRITTY_SOCKET
+            if has_alacritty_socket {
+                return Self::new(Terminal::Alacritty, false);
+            }
             return Self::from_term_program(term_program, false);
         }
 
@@ -449,7 +453,8 @@ mod tests {
 
     #[test]
     fn test_detect_alacritty_direct() {
-        let p = detect("alacritty", false, false, false, false, false, false);
+        // Alacritty doesn't set TERM_PROGRAM — detected via ALACRITTY_SOCKET
+        let p = detect("", false, false, false, false, false, true);
         assert_eq!(*p.terminal(), Terminal::Alacritty);
         assert!(!p.in_tmux());
     }

@@ -1222,8 +1222,12 @@ fn init_block() -> String {
            export GHOST_COMPLETE_ACTIVE=1\n  \
            exec ghost-complete\n\
          fi\n\
+         if [[ -n \"$ALACRITTY_SOCKET\" && -z \"$GHOST_COMPLETE_ACTIVE\" ]]; then\n  \
+           export GHOST_COMPLETE_ACTIVE=1\n  \
+           exec ghost-complete\n\
+         fi\n\
          case \"$TERM_PROGRAM\" in\n  \
-           ghostty|WezTerm|alacritty|rio|iTerm.app|Apple_Terminal)\n    \
+           ghostty|WezTerm|rio|iTerm.app|Apple_Terminal)\n    \
              if [[ -z \"$GHOST_COMPLETE_ACTIVE\" ]]; then\n      \
                export GHOST_COMPLETE_ACTIVE=1\n      \
                exec ghost-complete\n    \
@@ -1517,7 +1521,9 @@ mod tests {
         assert!(block.contains("$KITTY_WINDOW_ID"));
         // Allowlist: case statement with all supported terminals
         assert!(block.contains("case \"$TERM_PROGRAM\""));
-        assert!(block.contains("ghostty|WezTerm|alacritty|rio|iTerm.app|Apple_Terminal)"));
+        assert!(block.contains("ghostty|WezTerm|rio|iTerm.app|Apple_Terminal)"));
+        // Alacritty detection (doesn't set TERM_PROGRAM — uses ALACRITTY_SOCKET)
+        assert!(block.contains("$ALACRITTY_SOCKET"));
         assert!(block.contains("GHOST_COMPLETE_ACTIVE"));
         // tmux detection: TMUX + PPID guard
         assert!(block.contains("$TMUX"));
