@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-03-31
+
 ### Added
 
 - **Kitty, WezTerm, Alacritty, Rio terminal support** — Ghost Complete now supports 7 terminals on macOS. Kitty, WezTerm, and Rio have full parity with Ghostty (DECSET 2026 + OSC 133). Alacritty uses DECSET 2026 with shell integration prompt detection (no native OSC 133).
@@ -214,6 +216,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Shell integration** for zsh (full), bash (Ctrl+/), and fish (Ctrl+/)
 - **`validate-specs` subcommand** with colored output and item counts
 
+[0.4.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.4.0
 [0.3.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.3.0
 [0.2.5]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.2.5
 [0.2.4]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.2.4
