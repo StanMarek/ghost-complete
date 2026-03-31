@@ -157,11 +157,14 @@ impl TerminalProfile {
     ) -> Self {
         // Direct terminal detection (not inside tmux)
         if !in_tmux {
-            // Kitty doesn't set TERM_PROGRAM — detect via KITTY_WINDOW_ID
+            // Kitty reports TERM_PROGRAM=xterm-kitty, so use KITTY_WINDOW_ID instead.
             if has_kitty_window_id {
                 return Self::new(Terminal::Kitty, false);
             }
-            // Alacritty doesn't set TERM_PROGRAM — detect via ALACRITTY_SOCKET
+            if has_wezterm_socket {
+                return Self::new(Terminal::WezTerm, false);
+            }
+            // Alacritty doesn't set TERM_PROGRAM — detect via ALACRITTY_SOCKET.
             if has_alacritty_socket {
                 return Self::new(Terminal::Alacritty, false);
             }
@@ -294,6 +297,22 @@ mod tests {
     fn test_supported_terminals_count() {
         // 7 supported terminals: Ghostty, Kitty, WezTerm, Alacritty, Rio, iTerm2, Terminal.app
         assert_eq!(Terminal::supported_terminals().len(), 7);
+    }
+
+    #[test]
+    fn test_supported_terminals_list_matches_variants() {
+        assert_eq!(
+            Terminal::supported_terminals(),
+            &[
+                "Ghostty",
+                "Kitty",
+                "WezTerm",
+                "Alacritty",
+                "Rio",
+                "iTerm2",
+                "Terminal.app",
+            ]
+        );
     }
 
     // -- Profile from TERM_PROGRAM --
@@ -438,15 +457,22 @@ mod tests {
 
     #[test]
     fn test_detect_kitty_direct() {
-        // Kitty doesn't set TERM_PROGRAM — detected via KITTY_WINDOW_ID
+        // Kitty reports TERM_PROGRAM=xterm-kitty, so detect via KITTY_WINDOW_ID.
         let p = detect("", false, false, false, true, false, false);
         assert_eq!(*p.terminal(), Terminal::Kitty);
         assert!(!p.in_tmux());
     }
 
     #[test]
-    fn test_detect_wezterm_direct() {
+    fn test_detect_wezterm_direct_via_term_program() {
         let p = detect("WezTerm", false, false, false, false, false, false);
+        assert_eq!(*p.terminal(), Terminal::WezTerm);
+        assert!(!p.in_tmux());
+    }
+
+    #[test]
+    fn test_detect_wezterm_direct_via_socket() {
+        let p = detect("", false, false, false, false, true, false);
         assert_eq!(*p.terminal(), Terminal::WezTerm);
         assert!(!p.in_tmux());
     }
@@ -532,6 +558,30 @@ mod tests {
     fn test_detect_tmux_kitty_takes_priority_over_wezterm() {
         let p = detect("", true, false, false, true, true, false);
         assert_eq!(*p.terminal(), Terminal::Kitty);
+    }
+
+    #[test]
+    fn test_detect_direct_kitty_takes_priority_over_wezterm() {
+        let p = detect("", false, false, false, true, true, false);
+        assert_eq!(*p.terminal(), Terminal::Kitty);
+    }
+
+    #[test]
+    fn test_detect_direct_wezterm_takes_priority_over_alacritty() {
+        let p = detect("", false, false, false, false, true, true);
+        assert_eq!(*p.terminal(), Terminal::WezTerm);
+    }
+
+    #[test]
+    fn test_detect_tmux_wezterm_takes_priority_over_alacritty() {
+        let p = detect("", true, false, false, false, true, true);
+        assert_eq!(*p.terminal(), Terminal::WezTerm);
+    }
+
+    #[test]
+    fn test_detect_tmux_alacritty_takes_priority_over_iterm() {
+        let p = detect("", true, false, true, false, false, true);
+        assert_eq!(*p.terminal(), Terminal::Alacritty);
     }
 
     #[test]

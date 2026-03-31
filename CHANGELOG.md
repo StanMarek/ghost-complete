@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Experimental gate removed for known terminals** — all 7 supported terminals work without `[experimental] multi_terminal = true`. The flag now only applies to unknown/unlisted terminals.
-- **Init block rewritten** — `.zshrc` init block detects Kitty via `KITTY_WINDOW_ID` before `TERM_PROGRAM` case (Kitty doesn't set `TERM_PROGRAM`). All supported terminals share one branch with no config check.
+- **Init block rewritten** — `.zshrc` init block detects Kitty via `KITTY_WINDOW_ID` before the `TERM_PROGRAM` case (Kitty reports `TERM_PROGRAM=xterm-kitty`). Supported terminals auto-exec without a config gate.
 - **`known_term_programs()` renamed to `supported_terminals()`** — returns display names for all 7 terminals instead of `TERM_PROGRAM` values.
 
 ## [0.3.0] - 2026-03-28

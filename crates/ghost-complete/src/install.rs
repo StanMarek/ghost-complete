@@ -1216,36 +1216,45 @@ const MANAGED_WARNING: &str =
 
 fn init_block() -> String {
     format!(
-        "{INIT_BEGIN}\n\
-         {MANAGED_WARNING}\n\
-         if [[ -n \"$KITTY_WINDOW_ID\" && -z \"$GHOST_COMPLETE_ACTIVE\" ]]; then\n  \
-           export GHOST_COMPLETE_ACTIVE=1\n  \
-           exec ghost-complete\n\
-         fi\n\
-         if [[ -n \"$ALACRITTY_SOCKET\" && -z \"$GHOST_COMPLETE_ACTIVE\" ]]; then\n  \
-           export GHOST_COMPLETE_ACTIVE=1\n  \
-           exec ghost-complete\n\
-         fi\n\
-         case \"$TERM_PROGRAM\" in\n  \
-           ghostty|WezTerm|rio|iTerm.app|Apple_Terminal)\n    \
-             if [[ -z \"$GHOST_COMPLETE_ACTIVE\" ]]; then\n      \
-               export GHOST_COMPLETE_ACTIVE=1\n      \
-               exec ghost-complete\n    \
-             fi\n    \
-             ;;\n\
-         esac\n\
-         if [[ -n \"$TMUX\" && -z \"$GHOST_COMPLETE_ACTIVE\" && \\\n    \
-           \"$(ps -o comm= -p $PPID 2>/dev/null)\" != \"ghost-complete\" ]]; then\n  \
-           if [[ -n \"$GHOSTTY_RESOURCES_DIR\" ]] || \\\n     \
-              [[ -n \"$KITTY_WINDOW_ID\" ]] || \\\n     \
-              [[ -n \"$WEZTERM_UNIX_SOCKET\" ]] || \\\n     \
-              [[ -n \"$ALACRITTY_SOCKET\" ]] || \\\n     \
-              [[ -n \"$ITERM_SESSION_ID\" ]]; then\n    \
-             export GHOST_COMPLETE_ACTIVE=1\n    \
-             exec ghost-complete\n  \
-           fi\n\
-         fi\n\
-         {INIT_END}"
+        r#"{INIT_BEGIN}
+{MANAGED_WARNING}
+if [[ -n "$KITTY_WINDOW_ID" && -z "$GHOST_COMPLETE_ACTIVE" ]]; then
+  if command -v ghost-complete >/dev/null 2>&1; then
+    export GHOST_COMPLETE_ACTIVE=1
+    exec ghost-complete
+  fi
+fi
+if [[ -n "$ALACRITTY_SOCKET" && -z "$GHOST_COMPLETE_ACTIVE" ]]; then
+  if command -v ghost-complete >/dev/null 2>&1; then
+    export GHOST_COMPLETE_ACTIVE=1
+    exec ghost-complete
+  fi
+fi
+case "$TERM_PROGRAM" in
+  ghostty|WezTerm|rio|iTerm.app|Apple_Terminal)
+    if [[ -z "$GHOST_COMPLETE_ACTIVE" ]]; then
+      if command -v ghost-complete >/dev/null 2>&1; then
+        export GHOST_COMPLETE_ACTIVE=1
+        exec ghost-complete
+      fi
+    fi
+    ;;
+esac
+if [[ -n "$TMUX" && -z "$GHOST_COMPLETE_ACTIVE" && \
+   "$(ps -o comm= -p $PPID 2>/dev/null)" != "ghost-complete" ]]; then
+  if [[ -n "$GHOSTTY_RESOURCES_DIR" ]] || \
+     [[ -n "$KITTY_WINDOW_ID" ]] || \
+     [[ -n "$WEZTERM_UNIX_SOCKET" ]] || \
+     [[ -n "$ALACRITTY_SOCKET" ]] || \
+     [[ -n "$ITERM_SESSION_ID" ]] || \
+     [[ "$TERM_PROGRAM" == "rio" ]]; then
+    if command -v ghost-complete >/dev/null 2>&1; then
+      export GHOST_COMPLETE_ACTIVE=1
+      exec ghost-complete
+    fi
+  fi
+fi
+{INIT_END}"#,
     )
 }
 
@@ -1517,18 +1526,20 @@ mod tests {
         assert!(block.contains(INIT_END));
         assert!(block.contains(MANAGED_WARNING));
         assert!(block.contains("exec ghost-complete"));
-        // Kitty detection (doesn't set TERM_PROGRAM)
+        assert!(block.contains("command -v ghost-complete"));
+        // Kitty detection (uses KITTY_WINDOW_ID because TERM_PROGRAM is xterm-kitty)
         assert!(block.contains("$KITTY_WINDOW_ID"));
         // Allowlist: case statement with all supported terminals
         assert!(block.contains("case \"$TERM_PROGRAM\""));
         assert!(block.contains("ghostty|WezTerm|rio|iTerm.app|Apple_Terminal)"));
-        // Alacritty detection (doesn't set TERM_PROGRAM — uses ALACRITTY_SOCKET)
+        // Alacritty detection (uses ALACRITTY_SOCKET)
         assert!(block.contains("$ALACRITTY_SOCKET"));
         assert!(block.contains("GHOST_COMPLETE_ACTIVE"));
         // tmux detection: TMUX + PPID guard
         assert!(block.contains("$TMUX"));
         assert!(block.contains("$PPID"));
         assert!(block.contains("ghost-complete\""));
+        assert!(block.contains("\"$TERM_PROGRAM\" == \"rio\""));
         // tmux env var detection for all supported terminals
         assert!(block.contains("$GHOSTTY_RESOURCES_DIR"));
         assert!(block.contains("$KITTY_WINDOW_ID"));
