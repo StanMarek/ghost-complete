@@ -32,7 +32,7 @@ If you hit a bug, [open an issue](https://github.com/StanMarek/ghost-complete/is
 - **Terminal:** [Ghostty](https://ghostty.org), [Kitty](https://sw.kovidgoyal.net/kitty/), [WezTerm](https://wezfurlong.org/wezterm/), [Alacritty](https://alacritty.org), [Rio](https://raphamorim.io/rio/), [iTerm2](https://iterm2.com), or Terminal.app
 - **OS:** macOS
 - **Shell:** zsh (primary), bash and fish (Ctrl+/ trigger only)
-- **Rust:** 1.75+ (for building from source)
+- **Rust:** 1.86+ (for building from source)
 
 ## Installation
 
