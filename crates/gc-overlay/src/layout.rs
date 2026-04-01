@@ -17,17 +17,20 @@ pub fn compute_layout(
     max_width: u16,
 ) -> PopupLayout {
     let visible_count = suggestions.len().min(max_visible);
-    let height = visible_count as u16;
 
-    // Compute width from visible suggestions
+    // Compute width from visible suggestions (content only, no border)
     let content_width = suggestions
         .iter()
         .skip(scroll_offset)
         .take(max_visible)
         .map(item_display_width)
         .max()
-        .unwrap_or(min_width as usize);
-    let width = (content_width as u16).clamp(min_width, max_width.min(screen_cols));
+        .unwrap_or((min_width - 2) as usize);
+    // Add 2 for left/right border columns
+    let width = (content_width as u16 + 2).clamp(min_width, max_width.min(screen_cols));
+
+    // Height includes top + bottom border rows
+    let height = (visible_count as u16) + 2;
 
     // Always render below cursor. Caller is responsible for adjusting
     // cursor_row via scroll deficit before calling this function.
@@ -209,7 +212,7 @@ mod tests {
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
         );
-        assert_eq!(layout.height, DEFAULT_MAX_VISIBLE as u16);
+        assert_eq!(layout.height, DEFAULT_MAX_VISIBLE as u16 + 2); // +2 for borders
     }
 
     #[test]
@@ -227,7 +230,7 @@ mod tests {
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
         );
-        assert_eq!(layout.height, 5);
+        assert_eq!(layout.height, 7); // 5 content + 2 borders
     }
 
     // --- Bug B4: filepath width uses basename only ---

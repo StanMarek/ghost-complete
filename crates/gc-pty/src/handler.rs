@@ -1125,6 +1125,7 @@ mod tests {
             match_highlight_on: vec![0x1B, b'[', b'4', b'm'],
             item_text_on: vec![],
             scrollbar_on: vec![0x1B, b'[', b'2', b'm'],
+            border_on: vec![0x1B, b'[', b'2', b'm'],
         };
 
         handler.update_config(new_theme, Keybindings::default(), &[' ', '/'], 15);

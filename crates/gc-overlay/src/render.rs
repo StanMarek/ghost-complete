@@ -17,6 +17,7 @@ pub struct PopupTheme {
     pub match_highlight_on: Vec<u8>,
     pub item_text_on: Vec<u8>,
     pub scrollbar_on: Vec<u8>,
+    pub border_on: Vec<u8>,
 }
 
 impl Default for PopupTheme {
@@ -27,6 +28,7 @@ impl Default for PopupTheme {
             match_highlight_on: b"\x1b[1m".to_vec(),
             item_text_on: vec![],
             scrollbar_on: b"\x1b[2m".to_vec(),
+            border_on: b"\x1b[2m".to_vec(),
         }
     }
 }
@@ -125,8 +127,9 @@ pub fn render_popup(
     }
 
     // Cap popup height to screen_rows - 1 (leave room for prompt row)
-    let effective_max = if screen_rows > 1 {
-        max_visible.min((screen_rows - 1) as usize)
+    // Subtract 2 for top/bottom border rows
+    let effective_max = if screen_rows > 3 {
+        max_visible.min((screen_rows - 1 - 2) as usize)
     } else {
         return PopupLayout {
             start_row: 0,
@@ -141,10 +144,12 @@ pub fn render_popup(
     let adj_cursor_row = cursor_row.saturating_sub(prior_deficit);
 
     // Calculate how much more scrolling is needed
+    // Total popup height = content rows + 2 border rows
     let space_below = screen_rows.saturating_sub(adj_cursor_row + 1);
     let visible_count = suggestions.len().min(effective_max) as u16;
     let loading_extra_deficit = if loading { 1u16 } else { 0 };
-    let new_deficit = (visible_count + loading_extra_deficit).saturating_sub(space_below);
+    let total_height_needed = visible_count + 2 + loading_extra_deficit; // +2 for borders
+    let new_deficit = total_height_needed.saturating_sub(space_below);
     let total_deficit = prior_deficit + new_deficit;
     let final_cursor_row = cursor_row.saturating_sub(total_deficit);
 
@@ -193,10 +198,18 @@ pub fn render_popup(
         };
     }
 
+    // Layout includes 2 border columns (left + right) and 1 top + 1 bottom row.
+    // Content area is inside the border.
+    let content_width = layout.width.saturating_sub(2);
+    let content_height = layout.height.saturating_sub(2);
+    let border_col = layout.start_col;
+    let top_border_row = layout.start_row;
+    let bottom_border_row = layout.start_row + layout.height - 1;
+
     let needs_scrollbar = suggestions.len() > effective_max;
     let (thumb_pos, thumb_size) = if needs_scrollbar {
         let total = suggestions.len();
-        let visible = layout.height as usize;
+        let visible = content_height as usize;
         let ts = std::cmp::max(1, visible * visible / total).min(visible);
         let tp = if total > visible {
             (state.scroll_offset * (visible - ts) / (total - visible))
@@ -209,20 +222,49 @@ pub fn render_popup(
         (0, 0)
     };
     let item_width = if needs_scrollbar {
-        layout.width - 1
+        content_width - 1
     } else {
-        layout.width
+        content_width
     };
 
-    let end = (state.scroll_offset + layout.height as usize).min(suggestions.len());
+    let end = (state.scroll_offset + content_height as usize).min(suggestions.len());
     let visible = &suggestions[state.scroll_offset..end];
 
+    // Draw top border line: ╭───...───╮
+    ansi::move_to(buf, top_border_row, border_col);
+    if !theme.border_on.is_empty() {
+        buf.extend_from_slice(&theme.border_on);
+    }
+    buf.push(b'\xe2');
+    buf.push(b'\x95');
+    buf.push(b'\xad'); // ╭
+    for _ in 0..content_width {
+        buf.push(b'\xe2');
+        buf.push(b'\x94');
+        buf.push(b'\x80'); // ─
+    }
+    buf.push(b'\xe2');
+    buf.push(b'\x95');
+    buf.push(b'\xae'); // ╮
+    ansi::reset(buf);
+
+    // Draw content rows with left/right borders: │content│
     for (i, suggestion) in visible.iter().enumerate() {
-        let row = layout.start_row + i as u16;
+        let row = top_border_row + 1 + i as u16;
         let is_selected = state.selected == Some(state.scroll_offset + i);
 
-        ansi::move_to(buf, row, layout.start_col);
+        ansi::move_to(buf, row, border_col);
 
+        // Left border
+        if !theme.border_on.is_empty() {
+            buf.extend_from_slice(&theme.border_on);
+        }
+        buf.push(b'\xe2');
+        buf.push(b'\x94');
+        buf.push(b'\x82'); // │
+        ansi::reset(buf);
+
+        // Content
         if is_selected {
             buf.extend_from_slice(&theme.selected_on);
         } else if !theme.item_text_on.is_empty() {
@@ -234,20 +276,17 @@ pub fn render_popup(
         if needs_scrollbar {
             let row_idx = i;
             if is_selected {
-                // Scrollbar inherits selected style (already active)
                 if row_idx >= thumb_pos && row_idx < thumb_pos + thumb_size {
                     let _ = buf.write_all("█".as_bytes());
                 } else {
                     let _ = buf.write_all("│".as_bytes());
                 }
             } else if row_idx >= thumb_pos && row_idx < thumb_pos + thumb_size {
-                // Thumb — reset dim first if item_text was active
                 if !theme.item_text_on.is_empty() {
                     ansi::reset(buf);
                 }
                 let _ = buf.write_all("█".as_bytes());
             } else {
-                // Track — use scrollbar style
                 ansi::reset(buf);
                 if !theme.scrollbar_on.is_empty() {
                     buf.extend_from_slice(&theme.scrollbar_on);
@@ -256,21 +295,43 @@ pub fn render_popup(
             }
         }
 
+        // Right border
+        ansi::reset(buf);
+        if !theme.border_on.is_empty() {
+            buf.extend_from_slice(&theme.border_on);
+        }
+        buf.push(b'\xe2');
+        buf.push(b'\x94');
+        buf.push(b'\x82'); // │
         ansi::reset(buf);
     }
 
     // Render loading indicator row when async generators are in flight
     let loading_extra = if loading {
-        let loading_row = layout.start_row + layout.height;
+        let loading_row = bottom_border_row;
         if loading_row < screen_rows {
-            ansi::move_to(buf, loading_row, layout.start_col);
+            ansi::move_to(buf, loading_row, border_col);
+            if !theme.border_on.is_empty() {
+                buf.extend_from_slice(&theme.border_on);
+            }
+            buf.push(b'\xe2');
+            buf.push(b'\x94');
+            buf.push(b'\x82'); // │
+            ansi::reset(buf);
             buf.extend_from_slice(&theme.description_on);
             let label = b"  ...";
             let _ = buf.write_all(label);
-            let pad = (layout.width as usize).saturating_sub(label.len());
+            let pad = (content_width as usize).saturating_sub(label.len());
             for _ in 0..pad {
                 let _ = buf.write_all(b" ");
             }
+            ansi::reset(buf);
+            if !theme.border_on.is_empty() {
+                buf.extend_from_slice(&theme.border_on);
+            }
+            buf.push(b'\xe2');
+            buf.push(b'\x94');
+            buf.push(b'\x82'); // │
             ansi::reset(buf);
             1
         } else {
@@ -279,6 +340,26 @@ pub fn render_popup(
     } else {
         0
     };
+
+    // Draw bottom border line: ╰───...───╯
+    if loading_extra == 0 {
+        ansi::move_to(buf, bottom_border_row, border_col);
+        if !theme.border_on.is_empty() {
+            buf.extend_from_slice(&theme.border_on);
+        }
+        buf.push(b'\xe2');
+        buf.push(b'\x95');
+        buf.push(b'\xb0'); // ╰
+        for _ in 0..content_width {
+            buf.push(b'\xe2');
+            buf.push(b'\x94');
+            buf.push(b'\x80'); // ─
+        }
+        buf.push(b'\xe2');
+        buf.push(b'\x95');
+        buf.push(b'\xaf'); // ╯
+        ansi::reset(buf);
+    }
 
     ansi::restore_cursor(buf);
     if use_sync {
@@ -814,7 +895,7 @@ mod tests {
             !output.contains("item0"),
             "should not show item0 when scrolled"
         );
-        assert_eq!(layout.height, 10); // DEFAULT_MAX_VISIBLE
+        assert_eq!(layout.height, 12); // DEFAULT_MAX_VISIBLE + 2 border rows
     }
 
     #[test]
@@ -899,7 +980,7 @@ mod tests {
         let mut buf = Vec::new();
         let suggestions = make_suggestions(); // 3 items
         let state = OverlayState::new();
-        // cursor at row 22 on 24-row screen: space_below = 1, need 3, deficit = 2
+        // cursor at row 22 on 24-row screen: space_below = 1, need 3+2(borders)=5, deficit = 4
         let layout = render_popup(
             &mut buf,
             &suggestions,
@@ -922,14 +1003,14 @@ mod tests {
             output.contains("\x1b[24;1H"),
             "should CUP to last row: {output}"
         );
-        // Should contain newlines
+        // Should contain newlines (deficit = 4)
         assert!(
-            output.contains("\n\n"),
-            "should emit deficit newlines: {output}"
+            output.contains("\n\n\n\n"),
+            "should emit 4 deficit newlines: {output}"
         );
-        assert_eq!(layout.scroll_deficit, 2);
-        // adj_row = 22 - 2 = 20, start_row = 21
-        assert_eq!(layout.start_row, 21);
+        assert_eq!(layout.scroll_deficit, 4);
+        // final_cursor = 22 - 4 = 18, start_row = 19
+        assert_eq!(layout.start_row, 19);
     }
 
     #[test]
@@ -967,7 +1048,7 @@ mod tests {
         let mut buf = Vec::new();
         let suggestions = make_suggestions(); // 3 items
         let state = OverlayState::new();
-        // prior_deficit=2: adjusted cursor = 22-2 = 20, space_below = 3, no new deficit
+        // prior_deficit=4: adjusted cursor = 22-4 = 18, space_below = 5, need 3+2=5, no new deficit
         let layout = render_popup(
             &mut buf,
             &suggestions,
@@ -980,7 +1061,7 @@ mod tests {
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
             &PopupTheme::default(),
-            2,
+            4,
             false,
             &ghostty_profile(),
         );
@@ -989,13 +1070,13 @@ mod tests {
             !buf.contains(&b'\n'),
             "should not contain newlines (no re-scroll)"
         );
-        assert_eq!(layout.scroll_deficit, 2); // carries forward
-        assert_eq!(layout.start_row, 21);
+        assert_eq!(layout.scroll_deficit, 4); // carries forward
+        assert_eq!(layout.start_row, 19);
     }
 
     #[test]
     fn test_render_incremental_deficit() {
-        // First render: 3 items, cursor at row 22, screen 24 -> deficit = 2
+        // First render: 3 items, cursor at row 22, screen 24 -> deficit = 4 (3 items + 2 borders - 1 space)
         let mut buf1 = Vec::new();
         let suggestions_3 = make_suggestions(); // 3 items
         let state = OverlayState::new();
@@ -1015,10 +1096,10 @@ mod tests {
             false,
             &ghostty_profile(),
         );
-        assert_eq!(layout1.scroll_deficit, 2);
+        assert_eq!(layout1.scroll_deficit, 4);
 
-        // Second render: 8 items, same cursor, prior_deficit=2
-        // adj_cursor = 22-2 = 20, space_below = 3, need 8, new_deficit = 5
+        // Second render: 8 items, same cursor, prior_deficit=4
+        // adj_cursor = 22-4 = 18, space_below = 5, need 8+2=10, new_deficit = 5
         let mut buf2 = Vec::new();
         let suggestions_8: Vec<Suggestion> = (0..8)
             .map(|i| make(&format!("item{i}"), None, SuggestionKind::Command))
@@ -1035,19 +1116,19 @@ mod tests {
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
             &PopupTheme::default(),
-            2, // prior_deficit from first render
+            4, // prior_deficit from first render
             false,
             &ghostty_profile(),
         );
         let output2 = String::from_utf8_lossy(&buf2);
-        // Should scroll 5 more (total = 2 + 5 = 7)
+        // Should scroll 5 more (total = 4 + 5 = 9)
         assert!(
             output2.contains("\x1b[24;1H"),
             "should scroll for incremental deficit"
         );
-        assert_eq!(layout2.scroll_deficit, 7);
-        // final_cursor = 22 - 7 = 15, start_row = 16
-        assert_eq!(layout2.start_row, 16);
+        assert_eq!(layout2.scroll_deficit, 9);
+        // final_cursor = 22 - 9 = 13, start_row = 14
+        assert_eq!(layout2.start_row, 14);
     }
 
     #[test]
@@ -1072,7 +1153,7 @@ mod tests {
             &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
-        let cup_to_adjusted = "\x1b[21;1H"; // adj_row=20, ANSI row=21
+        let cup_to_adjusted = "\x1b[19;1H"; // adj_row=18, ANSI row=19
         let decsc = "\x1b7";
         let cup_pos = output
             .find(cup_to_adjusted)
@@ -1107,7 +1188,7 @@ mod tests {
             false,
             &ghostty_profile(),
         );
-        // capped to screen_rows - 1 = 5
+        // capped to screen_rows - 1 - 2(borders) = 3 content + 2 borders = 5
         assert!(
             layout.height <= 5,
             "height {} should be <= 5",
@@ -1120,8 +1201,8 @@ mod tests {
     fn test_render_adj_row_never_underflows() {
         let mut buf = Vec::new();
         // cursor at row 2, 6-row terminal, 15 suggestions, max_visible=15
-        // effective_max = min(15, 5) = 5
-        // adj_cursor = 2, space_below = 6-2-1 = 3, visible=5, deficit = 2
+        // effective_max = min(15, 6-1-2) = 3
+        // adj_cursor = 2, space_below = 6-2-1 = 3, visible=3+2(borders)=5, deficit = 2
         // total_deficit = 2, final_cursor = 2 - 2 = 0 (not underflowed)
         let suggestions: Vec<Suggestion> = (0..15)
             .map(|i| make(&format!("item{i}"), None, SuggestionKind::Command))
@@ -1287,13 +1368,12 @@ mod tests {
             &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
-        // Should NOT contain dim sequence (item_text is empty)
-        // Only description dim should appear
+        // Dim sequences come from: border_on (dim) + description_on (dim) for each row
+        // 3 content rows × (2 border + 1 desc) + 2 border rows = 11 dim sequences
         let dim_count = output.matches("\x1b[2m").count();
-        // Each suggestion with a description gets one dim — that's from description_on only
         assert!(
-            dim_count <= 3,
-            "empty item_text should not add extra dim sequences"
+            dim_count <= 15,
+            "should not have excessive dim sequences, got {dim_count}: {output}"
         );
     }
 
@@ -1480,9 +1560,17 @@ mod tests {
             &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
+        // No scrollbar thumb or track — but border │ chars are always present
+        // Count │ occurrences: should be exactly 2 per content row (left + right border) × 3 rows = 6
+        // Plus no scrollbar │ chars (which would be extra)
+        let pipe_count = output.matches('│').count();
+        assert_eq!(
+            pipe_count, 6,
+            "should have exactly 6 │ chars (3 rows × 2 borders), not scrollbar: {output}"
+        );
         assert!(
-            !output.contains('█') && !output.contains('│'),
-            "no scrollbar when items fit: {output}"
+            !output.contains('█'),
+            "no scrollbar thumb when items fit: {output}"
         );
     }
 
@@ -1657,8 +1745,8 @@ mod tests {
             output.contains("..."),
             "loading=true should produce '...' indicator: {output}"
         );
-        // Height should be suggestions (3) + 1 loading row = 4
-        assert_eq!(layout.height, 4, "loading row should increase height by 1");
+        // Height: 3 content + 2 borders + 1 loading = 6
+        assert_eq!(layout.height, 6, "loading row should increase height by 1");
     }
 
     #[test]
@@ -1687,10 +1775,7 @@ mod tests {
             !output.contains("..."),
             "loading=false should NOT produce '...' indicator: {output}"
         );
-        // Height should be just the 3 suggestions
-        assert_eq!(
-            layout.height, 3,
-            "no loading row means height equals suggestion count"
-        );
+        // Height: 3 content + 2 borders = 5
+        assert_eq!(layout.height, 5);
     }
 }

@@ -149,6 +149,8 @@ fn build_popup_theme(resolved: &gc_config::ThemeConfig) -> Result<PopupTheme> {
             .map_err(|e| anyhow::anyhow!("invalid theme.item_text: {e}"))?,
         scrollbar_on: parse_style(&resolved.scrollbar)
             .map_err(|e| anyhow::anyhow!("invalid theme.scrollbar: {e}"))?,
+        border_on: parse_style(&resolved.border)
+            .map_err(|e| anyhow::anyhow!("invalid theme.border: {e}"))?,
     })
 }
 

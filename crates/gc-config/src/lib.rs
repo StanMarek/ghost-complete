@@ -130,6 +130,7 @@ pub struct ThemeConfig {
     pub match_highlight: String,
     pub item_text: String,
     pub scrollbar: String,
+    pub border: String,
 }
 
 impl ThemeConfig {
@@ -168,6 +169,11 @@ impl ThemeConfig {
             } else {
                 self.scrollbar.clone()
             },
+            border: if self.border.is_empty() {
+                base.border
+            } else {
+                self.border.clone()
+            },
         })
     }
 }
@@ -179,6 +185,7 @@ fn preset_values(name: &str) -> Result<ThemeConfig> {
             description: "dim".into(),
             match_highlight: "bold".into(),
             scrollbar: "dim".into(),
+            border: "dim".into(),
             ..Default::default()
         },
         "light" => ThemeConfig {
@@ -186,6 +193,7 @@ fn preset_values(name: &str) -> Result<ThemeConfig> {
             description: "fg:#6c6f85".into(),
             match_highlight: "fg:#d20f39 bold".into(),
             scrollbar: "fg:#9ca0b0".into(),
+            border: "fg:#9ca0b0".into(),
             ..Default::default()
         },
         "catppuccin" => ThemeConfig {
@@ -193,6 +201,7 @@ fn preset_values(name: &str) -> Result<ThemeConfig> {
             description: "fg:#6c7086".into(),
             match_highlight: "fg:#f9e2af bold".into(),
             scrollbar: "fg:#585b70".into(),
+            border: "fg:#585b70".into(),
             ..Default::default()
         },
         "material-darker" => ThemeConfig {
@@ -200,6 +209,7 @@ fn preset_values(name: &str) -> Result<ThemeConfig> {
             description: "fg:#616161".into(),
             match_highlight: "fg:#ffcb6b bold".into(),
             scrollbar: "fg:#424242".into(),
+            border: "fg:#424242".into(),
             ..Default::default()
         },
         _ => bail!(
@@ -270,6 +280,7 @@ mod tests {
         assert_eq!(config.theme.match_highlight, "");
         assert_eq!(config.theme.item_text, "");
         assert_eq!(config.theme.scrollbar, "");
+        assert_eq!(config.theme.border, "");
         assert!(!config.experimental.multi_terminal);
     }
 
@@ -426,6 +437,7 @@ scrollbar = "fg:#555555"
         assert_eq!(resolved.match_highlight, "bold");
         assert_eq!(resolved.item_text, "");
         assert_eq!(resolved.scrollbar, "dim");
+        assert_eq!(resolved.border, "dim");
     }
 
     #[test]
@@ -440,6 +452,7 @@ scrollbar = "fg:#555555"
         assert_eq!(resolved.match_highlight, "fg:#f9e2af bold");
         assert_eq!(resolved.item_text, "");
         assert_eq!(resolved.scrollbar, "fg:#585b70");
+        assert_eq!(resolved.border, "fg:#585b70");
     }
 
     #[test]
@@ -477,6 +490,7 @@ scrollbar = "fg:#555555"
         assert_eq!(resolved.description, "fg:#616161");
         assert_eq!(resolved.match_highlight, "fg:#ffcb6b bold");
         assert_eq!(resolved.scrollbar, "fg:#424242");
+        assert_eq!(resolved.border, "fg:#424242");
     }
 
     #[test]
@@ -491,6 +505,7 @@ scrollbar = "fg:#555555"
         assert_eq!(resolved.match_highlight, "fg:#d20f39 bold");
         assert_eq!(resolved.item_text, "");
         assert_eq!(resolved.scrollbar, "fg:#9ca0b0");
+        assert_eq!(resolved.border, "fg:#9ca0b0");
     }
 
     #[test]
