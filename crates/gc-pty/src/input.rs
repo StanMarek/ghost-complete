@@ -14,6 +14,7 @@ pub enum KeyEvent {
     ArrowRight,
     CtrlSpace,
     CtrlSlash,
+    Ctrl(char),
     Backspace,
     Printable(char),
     /// Cursor Position Report response (CSI row;col R) — 1-indexed.
@@ -132,6 +133,13 @@ pub fn parse_keys(buf: &[u8]) -> Vec<KeyEvent> {
                     events.push(KeyEvent::Raw(buf[i..].to_vec()));
                     i = buf.len();
                 }
+            }
+            b if (0x01..=0x08).contains(&b)
+                || (0x0A..=0x0C).contains(&b)
+                || (0x0E..=0x1A).contains(&b) =>
+            {
+                events.push(KeyEvent::Ctrl((b + 0x60) as char));
+                i += 1;
             }
             b if (0x20..=0x7E).contains(&b) => {
                 events.push(KeyEvent::Printable(b as char));
@@ -293,5 +301,26 @@ mod tests {
             KeyEvent::Raw(bytes) => assert_eq!(bytes, b"\x1Ba"),
             other => panic!("expected Raw, got {:?}", other),
         }
+    }
+
+    #[test]
+    fn test_ctrl_letters() {
+        assert_eq!(parse_keys(b"\x01"), vec![KeyEvent::Ctrl('a')]);
+        assert_eq!(parse_keys(b"\x04"), vec![KeyEvent::Ctrl('d')]);
+        assert_eq!(parse_keys(b"\x03"), vec![KeyEvent::Ctrl('c')]);
+        assert_eq!(parse_keys(b"\x1A"), vec![KeyEvent::Ctrl('z')]);
+    }
+
+    #[test]
+    fn test_ctrl_mixed_with_printable() {
+        let events = parse_keys(b"a\x04b");
+        assert_eq!(
+            events,
+            vec![
+                KeyEvent::Printable('a'),
+                KeyEvent::Ctrl('d'),
+                KeyEvent::Printable('b'),
+            ]
+        );
     }
 }
