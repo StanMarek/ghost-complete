@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-04-01
+
+### Changed
+
+- **Batch update 5 dependencies** — routine dependency bumps.
+
 ## [0.4.0] - 2026-03-31
 
 ### Added
@@ -216,6 +222,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Shell integration** for zsh (full), bash (Ctrl+/), and fish (Ctrl+/)
 - **`validate-specs` subcommand** with colored output and item counts
 
+[0.4.1]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.4.1
 [0.4.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.4.0
 [0.3.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.3.0
 [0.2.5]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.2.5
