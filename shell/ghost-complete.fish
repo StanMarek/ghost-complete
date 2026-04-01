@@ -8,6 +8,8 @@ function _gc_prompt --on-event fish_prompt
     if test "$TERM_PROGRAM" != ghostty -a -z "$GHOSTTY_RESOURCES_DIR"
         printf '\e]7771;A\a'
     end
+    # Report current working directory via OSC 7 for filesystem completions
+    printf '\e]7;file://%s%s\a' "$hostname" "$PWD"
 end
 
 function _gc_preexec --on-event fish_preexec

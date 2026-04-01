@@ -5,6 +5,8 @@ _gc_prompt_command() {
     printf '\e]133;A\a'
     # Check GHOSTTY_RESOURCES_DIR too — TERM_PROGRAM is overwritten inside tmux
     [[ "$TERM_PROGRAM" != "ghostty" && -z "$GHOSTTY_RESOURCES_DIR" ]] && printf '\e]7771;A\a'
+    # Report current working directory via OSC 7 for filesystem completions
+    printf '\e]7;file://%s%s\a' "$HOSTNAME" "$PWD"
 }
 PROMPT_COMMAND="_gc_prompt_command${PROMPT_COMMAND:+;$PROMPT_COMMAND}"
 
