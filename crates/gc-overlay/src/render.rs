@@ -155,13 +155,7 @@ pub fn render_popup(
     // Calculate how much more scrolling is needed
     let space_below = screen_rows.saturating_sub(adj_cursor_row + 1);
     let visible_count = suggestions.len().min(effective_max) as u16;
-    let loading_extra_deficit = if loading && theme.borders {
-        1u16 // loading row displaces bottom border; new border drawn 1 row below layout extent
-    } else if loading {
-        1u16
-    } else {
-        0
-    };
+    let loading_extra_deficit = if loading { 1u16 } else { 0 };
     let total_height_needed = visible_count + border_pad + loading_extra_deficit;
     let new_deficit = total_height_needed.saturating_sub(space_below);
     let total_deficit = prior_deficit + new_deficit;
