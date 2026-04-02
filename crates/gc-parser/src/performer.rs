@@ -214,32 +214,43 @@ fn parse_osc7_path(uri: &[u8]) -> Option<PathBuf> {
     // Skip the hostname — find the first '/' after the authority
     let slash_idx = path_part.find('/')?;
     let path = &path_part[slash_idx..];
-    // Percent-decode the path (basic: just handle %20 for spaces)
+    // Percent-decode the path (handles all percent-encoded bytes)
     let decoded = percent_decode(path);
     Some(PathBuf::from(decoded))
 }
 
 /// Minimal percent-decoding for file paths.
 fn percent_decode(input: &str) -> String {
-    let mut result = String::with_capacity(input.len());
-    let mut chars = input.bytes();
-    while let Some(b) = chars.next() {
+    let mut bytes = Vec::with_capacity(input.len());
+    let mut iter = input.bytes();
+    while let Some(b) = iter.next() {
         if b == b'%' {
-            let hi = chars.next();
-            let lo = chars.next();
-            if let (Some(hi), Some(lo)) = (hi, lo) {
-                if let (Some(h), Some(l)) = (hex_val(hi), hex_val(lo)) {
-                    result.push((h << 4 | l) as char);
-                    continue;
+            match (iter.next(), iter.next()) {
+                (Some(hi), Some(lo)) => {
+                    if let (Some(h), Some(l)) = (hex_val(hi), hex_val(lo)) {
+                        bytes.push(h << 4 | l);
+                    } else {
+                        // Invalid hex — keep all three bytes literal
+                        bytes.push(b'%');
+                        bytes.push(hi);
+                        bytes.push(lo);
+                    }
+                }
+                (Some(hi), None) => {
+                    // Truncated — keep literal
+                    bytes.push(b'%');
+                    bytes.push(hi);
+                }
+                (None, _) => {
+                    // % at very end
+                    bytes.push(b'%');
                 }
             }
-            // Malformed — keep literal
-            result.push('%');
         } else {
-            result.push(b as char);
+            bytes.push(b);
         }
     }
-    result
+    String::from_utf8(bytes).unwrap_or_else(|e| String::from_utf8_lossy(e.as_bytes()).into_owned())
 }
 
 fn hex_val(b: u8) -> Option<u8> {
@@ -655,5 +666,41 @@ mod tests {
         assert_eq!(percent_decode("/hello%20world"), "/hello world");
         assert_eq!(percent_decode("/no/encoding"), "/no/encoding");
         assert_eq!(percent_decode("%2F"), "/");
+    }
+
+    #[test]
+    fn test_percent_decode_basic() {
+        assert_eq!(percent_decode("/foo%20bar"), "/foo bar");
+        assert_eq!(percent_decode("/no/encoding"), "/no/encoding");
+        assert_eq!(percent_decode(""), "");
+    }
+
+    #[test]
+    fn test_percent_decode_preserves_malformed() {
+        // Invalid hex digits — keep all bytes literal
+        assert_eq!(percent_decode("/foo%zz/bar"), "/foo%zz/bar");
+        assert_eq!(percent_decode("/foo%gh"), "/foo%gh");
+    }
+
+    #[test]
+    fn test_percent_decode_truncated() {
+        // % at end of string
+        assert_eq!(percent_decode("/foo%"), "/foo%");
+        // % with only one byte after
+        assert_eq!(percent_decode("/foo%a"), "/foo%a");
+    }
+
+    #[test]
+    fn test_percent_decode_utf8() {
+        // é = U+00E9 = UTF-8 bytes C3 A9
+        assert_eq!(percent_decode("/caf%C3%A9"), "/café");
+        // 日 = U+65E5 = UTF-8 bytes E6 97 A5
+        assert_eq!(percent_decode("/%E6%97%A5"), "/日");
+    }
+
+    #[test]
+    fn test_percent_decode_literal_percent() {
+        // %25 is the encoding for literal %
+        assert_eq!(percent_decode("/100%25done"), "/100%done");
     }
 }

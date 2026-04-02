@@ -95,7 +95,7 @@ pub fn spawn_config_watcher(config_path: PathBuf, handler: Arc<Mutex<InputHandle
                 }
             };
 
-            let theme = match build_popup_theme(&resolved_theme) {
+            let theme = match build_popup_theme(&resolved_theme, config.popup.borders) {
                 Ok(t) => t,
                 Err(e) => {
                     tracing::warn!("config reload failed (theme styles): {e}");
@@ -137,7 +137,7 @@ pub fn spawn_config_watcher(config_path: PathBuf, handler: Arc<Mutex<InputHandle
 }
 
 /// Build a `PopupTheme` from a resolved `ThemeConfig`, parsing each style string.
-fn build_popup_theme(resolved: &gc_config::ThemeConfig) -> Result<PopupTheme> {
+fn build_popup_theme(resolved: &gc_config::ThemeConfig, borders: bool) -> Result<PopupTheme> {
     Ok(PopupTheme {
         selected_on: parse_style(&resolved.selected)
             .map_err(|e| anyhow::anyhow!("invalid theme.selected: {e}"))?,
@@ -151,6 +151,7 @@ fn build_popup_theme(resolved: &gc_config::ThemeConfig) -> Result<PopupTheme> {
             .map_err(|e| anyhow::anyhow!("invalid theme.scrollbar: {e}"))?,
         border_on: parse_style(&resolved.border)
             .map_err(|e| anyhow::anyhow!("invalid theme.border: {e}"))?,
+        borders,
     })
 }
 
@@ -168,7 +169,8 @@ mod tests {
             scrollbar: "dim".into(),
             ..Default::default()
         };
-        let result = build_popup_theme(&theme_config);
+        let result = build_popup_theme(&theme_config, true);
         assert!(result.is_ok());
+        assert!(result.unwrap().borders);
     }
 }

@@ -15,8 +15,10 @@ pub fn compute_layout(
     max_visible: usize,
     min_width: u16,
     max_width: u16,
+    borders: bool,
 ) -> PopupLayout {
     let visible_count = suggestions.len().min(max_visible);
+    let border_pad: u16 = if borders { 2 } else { 0 };
 
     // Compute width from visible suggestions (content only, no border)
     let content_width = suggestions
@@ -25,12 +27,11 @@ pub fn compute_layout(
         .take(max_visible)
         .map(item_display_width)
         .max()
-        .unwrap_or((min_width - 2) as usize);
-    // Add 2 for left/right border columns
-    let width = (content_width as u16 + 2).clamp(min_width, max_width.min(screen_cols));
+        .unwrap_or(min_width.saturating_sub(border_pad) as usize);
+    let width = (content_width as u16 + border_pad).clamp(min_width, max_width.min(screen_cols));
 
-    // Height includes top + bottom border rows
-    let height = (visible_count as u16) + 2;
+    // Height includes border rows when enabled
+    let height = (visible_count as u16) + border_pad;
 
     // Always render below cursor. Caller is responsible for adjusting
     // cursor_row via scroll deficit before calling this function.
@@ -102,6 +103,7 @@ mod tests {
             DEFAULT_MAX_VISIBLE,
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
+            true,
         );
         assert_eq!(layout.scroll_deficit, 0);
         assert_eq!(layout.start_row, 6);
@@ -121,6 +123,7 @@ mod tests {
             DEFAULT_MAX_VISIBLE,
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
+            true,
         );
         // Layout always places below — start_row = cursor_row + 1
         assert_eq!(layout.start_row, 23);
@@ -140,6 +143,7 @@ mod tests {
             DEFAULT_MAX_VISIBLE,
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
+            true,
         );
         assert!(layout.start_col + layout.width <= 80);
     }
@@ -157,6 +161,7 @@ mod tests {
             DEFAULT_MAX_VISIBLE,
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
+            true,
         );
         assert_eq!(layout.start_row, 1);
         assert_eq!(layout.start_col, 0);
@@ -175,6 +180,7 @@ mod tests {
             DEFAULT_MAX_VISIBLE,
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
+            true,
         );
         assert!(layout.width >= DEFAULT_MIN_POPUP_WIDTH);
     }
@@ -193,6 +199,7 @@ mod tests {
             DEFAULT_MAX_VISIBLE,
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
+            true,
         );
         assert!(layout.width <= DEFAULT_MAX_POPUP_WIDTH);
     }
@@ -211,6 +218,7 @@ mod tests {
             DEFAULT_MAX_VISIBLE,
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
+            true,
         );
         assert_eq!(layout.height, DEFAULT_MAX_VISIBLE as u16 + 2); // +2 for borders
     }
@@ -229,6 +237,7 @@ mod tests {
             5,
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
+            true,
         );
         assert_eq!(layout.height, 7); // 5 content + 2 borders
     }

@@ -7,6 +7,25 @@
 # OSC 7771: terminal-agnostic prompt boundary for Ghost Complete
 # OSC 7: current working directory reporting
 
+# Percent-encode a path for use in file:// URIs (RFC 8089).
+# Encodes everything except unreserved chars and '/'.
+_gc_urlencode_path() {
+    local input="$1" encoded="" i ch hex
+    for (( i = 1; i <= ${#input}; i++ )); do
+        ch="${input[i]}"
+        case "$ch" in
+            [a-zA-Z0-9._~:@!\$\&\'\(\)\*+,\;=/-])
+                encoded+="$ch"
+                ;;
+            *)
+                printf -v hex '%%%02X' "'$ch"
+                encoded+="$hex"
+                ;;
+        esac
+    done
+    printf '%s' "$encoded"
+}
+
 _gc_precmd() {
     # Mark: prompt is about to be displayed
     printf '\e]133;A\a'
@@ -27,7 +46,7 @@ preexec_functions+=(_gc_preexec)
 # Report current working directory via OSC 7 on directory change.
 # This enables the proxy to track CWD and provide correct filesystem completions.
 _gc_chpwd() {
-    printf '\e]7;file://%s%s\a' "$HOST" "$PWD"
+    printf '\e]7;file://%s%s\a' "$HOST" "$(_gc_urlencode_path "$PWD")"
 }
 
 chpwd_functions+=(_gc_chpwd)
@@ -35,9 +54,9 @@ chpwd_functions+=(_gc_chpwd)
 autoload -Uz add-zsh-hook
 add-zsh-hook precmd _gc_osc7_precmd
 _gc_osc7_precmd() {
-    printf '\e]7;file://%s%s\a' "$HOST" "$PWD"
+    printf '\e]7;file://%s%s\a' "$HOST" "$(_gc_urlencode_path "$PWD")"
     # Remove self after first run — chpwd hook handles subsequent changes
-    precmd_functions=(${precmd_functions:#_gc_osc7_precmd})
+    add-zsh-hook -d precmd _gc_osc7_precmd
 }
 
 # Report current command buffer to the proxy via custom OSC 7770.

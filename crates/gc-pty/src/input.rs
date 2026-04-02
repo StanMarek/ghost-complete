@@ -1,7 +1,7 @@
 /// Minimal key event parser for raw terminal stdin bytes.
 ///
-/// Parses known sequences (arrows, Tab, Enter, Escape, Ctrl+Space, Ctrl+/) and
-/// passes through everything else as Raw bytes.
+/// Parses known sequences (arrows, Tab, Enter, Escape, Ctrl+Space, Ctrl+/,
+/// Ctrl+A through Ctrl+Z) and passes through everything else as Raw bytes.
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum KeyEvent {
