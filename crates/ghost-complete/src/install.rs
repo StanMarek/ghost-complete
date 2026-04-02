@@ -1202,6 +1202,7 @@ const DEFAULT_CONFIG_TOML: &str = "\
 # match_highlight = \"bold\"
 # item_text = \"\"
 # scrollbar = \"dim\"
+# border = \"dim\"
 
 # [experimental]
 # multi_terminal = false  # Set to true to enable unsupported/unknown terminals

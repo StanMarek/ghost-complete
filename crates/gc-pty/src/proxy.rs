@@ -134,6 +134,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
             .context("invalid theme.item_text style")?,
         scrollbar_on: parse_style(&resolved_theme.scrollbar)
             .context("invalid theme.scrollbar style")?,
+        border_on: parse_style(&resolved_theme.border).context("invalid theme.border style")?,
     };
 
     // Initialize suggestion handler with config
