@@ -200,6 +200,11 @@ impl Perform for TerminalState {
                 if let Some(path) = parse_osc7_path(params[1]) {
                     tracing::debug!(?path, "OSC 7 — cwd update");
                     self.set_cwd(path);
+                } else {
+                    tracing::debug!(
+                        raw = %String::from_utf8_lossy(params[1]),
+                        "OSC 7 — failed to parse cwd URI"
+                    );
                 }
             }
             _ => {}
@@ -250,7 +255,13 @@ fn percent_decode(input: &str) -> String {
             bytes.push(b);
         }
     }
-    String::from_utf8(bytes).unwrap_or_else(|e| String::from_utf8_lossy(e.as_bytes()).into_owned())
+    String::from_utf8(bytes).unwrap_or_else(|e| {
+        tracing::warn!(
+            "percent_decode produced invalid UTF-8 (lossy replacement applied): {}",
+            e
+        );
+        String::from_utf8_lossy(e.as_bytes()).into_owned()
+    })
 }
 
 fn hex_val(b: u8) -> Option<u8> {

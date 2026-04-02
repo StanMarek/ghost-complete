@@ -11,8 +11,9 @@
 # Encodes everything except unreserved chars and '/'.
 _gc_urlencode_path() {
     local input="$1" encoded="" i ch hex
+    local LC_ALL=C  # force byte-level iteration for correct UTF-8 encoding
     for (( i = 1; i <= ${#input}; i++ )); do
-        ch="${input[i]}"
+        ch="${input[$i]}"
         case "$ch" in
             [a-zA-Z0-9._~:@!\$\&\'\(\)\*+,\;=/-])
                 encoded+="$ch"

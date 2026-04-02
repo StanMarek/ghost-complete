@@ -4,6 +4,7 @@
 # Percent-encode a path for use in file:// URIs (RFC 8089).
 _gc_urlencode_path() {
     local input="$1" encoded="" i ch hex
+    local LC_ALL=C  # force byte-level iteration for correct UTF-8 encoding
     for (( i = 0; i < ${#input}; i++ )); do
         ch="${input:$i:1}"
         case "$ch" in

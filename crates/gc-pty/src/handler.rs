@@ -86,6 +86,10 @@ pub fn parse_key_name(name: &str) -> anyhow::Result<KeyEvent> {
                         }
                     }
                 }
+                anyhow::bail!(
+                    "ctrl+ must be followed by a single letter (a-z), got: {:?}",
+                    c
+                );
             }
             anyhow::bail!("unknown key name: {:?}", other)
         }
@@ -717,10 +721,10 @@ pub fn key_to_bytes(key: &KeyEvent) -> Vec<u8> {
         KeyEvent::CtrlSlash => vec![0x1F],
         KeyEvent::Backspace => vec![0x7F],
         KeyEvent::Ctrl(c) => {
-            debug_assert!(
-                c.is_ascii_lowercase(),
-                "Ctrl(char) must contain lowercase ASCII"
-            );
+            if !c.is_ascii_lowercase() {
+                tracing::error!(char = ?c, "Ctrl(char) contains non-lowercase ASCII — skipping");
+                return Vec::new();
+            }
             vec![*c as u8 - 0x60]
         }
         KeyEvent::Printable(c) => vec![*c as u8],
@@ -1104,12 +1108,30 @@ mod tests {
         assert!(parse_key_name("ctrl+z").is_err());
         assert!(parse_key_name("ctrl+s").is_err());
         assert!(parse_key_name("ctrl+q").is_err());
+        // Case-insensitive: uppercase input hits same deny-list
+        assert!(parse_key_name("CTRL+C").is_err());
+        assert!(parse_key_name("Ctrl+Z").is_err());
     }
 
     #[test]
     fn test_parse_key_name_rejects_aliased_keys() {
         assert!(parse_key_name("ctrl+i").is_err());
         assert!(parse_key_name("ctrl+m").is_err());
+        assert!(parse_key_name("CTRL+I").is_err());
+    }
+
+    #[test]
+    fn test_parse_key_name_ctrl_multi_char_error() {
+        let err = parse_key_name("ctrl+ab").unwrap_err();
+        assert!(
+            err.to_string().contains("single letter"),
+            "should mention 'single letter': {err}"
+        );
+        let err = parse_key_name("ctrl+1").unwrap_err();
+        assert!(
+            err.to_string().contains("single letter"),
+            "should mention 'single letter' for digits: {err}"
+        );
     }
 
     // --- Keybindings tests ---

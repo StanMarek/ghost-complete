@@ -30,7 +30,7 @@ impl Default for PopupTheme {
             item_text_on: vec![],
             scrollbar_on: b"\x1b[2m".to_vec(),
             border_on: b"\x1b[2m".to_vec(),
-            borders: true,
+            borders: false,
         }
     }
 }
@@ -156,7 +156,7 @@ pub fn render_popup(
     let space_below = screen_rows.saturating_sub(adj_cursor_row + 1);
     let visible_count = suggestions.len().min(effective_max) as u16;
     let loading_extra_deficit = if loading && theme.borders {
-        2u16
+        1u16 // loading row displaces bottom border; new border drawn 1 row below layout extent
     } else if loading {
         1u16
     } else {
@@ -371,7 +371,7 @@ pub fn render_popup(
                     }
                     buf.extend_from_slice("╯".as_bytes());
                     ansi::reset(buf);
-                    2 // loading row + bottom border
+                    1 // loading row extends 1 row beyond layout.height (border is within that row)
                 } else {
                     1 // only loading row fit
                 }
@@ -580,6 +580,13 @@ mod tests {
         TerminalProfile::for_iterm2()
     }
 
+    fn bordered_theme() -> PopupTheme {
+        PopupTheme {
+            borders: true,
+            ..PopupTheme::default()
+        }
+    }
+
     fn make(text: &str, desc: Option<&str>, kind: SuggestionKind) -> Suggestion {
         Suggestion {
             text: text.to_string(),
@@ -618,7 +625,7 @@ mod tests {
             DEFAULT_MAX_VISIBLE,
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
-            &PopupTheme::default(),
+            &bordered_theme(),
             0,
             false,
             &ghostty_profile(),
@@ -647,7 +654,7 @@ mod tests {
             DEFAULT_MAX_VISIBLE,
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
-            &PopupTheme::default(),
+            &bordered_theme(),
             0,
             false,
             &iterm2_profile(),
@@ -704,7 +711,7 @@ mod tests {
             DEFAULT_MAX_VISIBLE,
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
-            &PopupTheme::default(),
+            &bordered_theme(),
             0,
             false,
             &ghostty_profile(),
@@ -730,7 +737,7 @@ mod tests {
             DEFAULT_MAX_VISIBLE,
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
-            &PopupTheme::default(),
+            &bordered_theme(),
             0,
             false,
             &ghostty_profile(),
@@ -760,7 +767,7 @@ mod tests {
             DEFAULT_MAX_VISIBLE,
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
-            &PopupTheme::default(),
+            &bordered_theme(),
             0,
             false,
             &ghostty_profile(),
@@ -776,7 +783,7 @@ mod tests {
     fn test_format_item_shows_kind_gutter() {
         let mut buf = Vec::new();
         let s = make("checkout", None, SuggestionKind::Subcommand);
-        format_item(&mut buf, &s, 30, false, &PopupTheme::default());
+        format_item(&mut buf, &s, 30, false, &bordered_theme());
         let output = String::from_utf8_lossy(&buf);
         assert!(
             output.starts_with(" \u{F0DA} checkout"),
@@ -792,7 +799,7 @@ mod tests {
             None,
             SuggestionKind::Directory,
         );
-        format_item(&mut buf, &s, 40, false, &PopupTheme::default());
+        format_item(&mut buf, &s, 40, false, &bordered_theme());
         let output = String::from_utf8_lossy(&buf);
         assert!(
             output.contains("2023-rust/"),
@@ -808,7 +815,7 @@ mod tests {
     fn test_format_item_shows_only_filename_for_file() {
         let mut buf = Vec::new();
         let s = make("src/main/java/App.java", None, SuggestionKind::FilePath);
-        format_item(&mut buf, &s, 40, false, &PopupTheme::default());
+        format_item(&mut buf, &s, 40, false, &bordered_theme());
         let output = String::from_utf8_lossy(&buf);
         assert!(
             output.contains("App.java"),
@@ -824,7 +831,7 @@ mod tests {
     fn test_format_item_no_slash_shows_full_name() {
         let mut buf = Vec::new();
         let s = make("Desktop/", None, SuggestionKind::Directory);
-        format_item(&mut buf, &s, 40, false, &PopupTheme::default());
+        format_item(&mut buf, &s, 40, false, &bordered_theme());
         let output = String::from_utf8_lossy(&buf);
         assert!(
             output.contains("Desktop/"),
@@ -838,7 +845,7 @@ mod tests {
         let long_text = "https://api.github.com/orgs/Example/packages?package_type=container";
         let s = make(long_text, None, SuggestionKind::History);
         let width: u16 = 30;
-        format_item(&mut buf, &s, width, false, &PopupTheme::default());
+        format_item(&mut buf, &s, width, false, &bordered_theme());
         // Count printable characters (no ANSI escape sequences)
         let output = String::from_utf8_lossy(&buf);
         let printable: String = output
@@ -857,7 +864,7 @@ mod tests {
         let mut buf = Vec::new();
         let long_desc = "a".repeat(200);
         let s = make("cmd", Some(&long_desc), SuggestionKind::Command);
-        format_item(&mut buf, &s, 30, false, &PopupTheme::default());
+        format_item(&mut buf, &s, 30, false, &bordered_theme());
         // Output should not exceed width
         assert!(buf.len() < 200, "should truncate description");
     }
@@ -919,7 +926,7 @@ mod tests {
             DEFAULT_MAX_VISIBLE,
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
-            &PopupTheme::default(),
+            &bordered_theme(),
             0,
             false,
             &ghostty_profile(),
@@ -952,7 +959,7 @@ mod tests {
             DEFAULT_MAX_VISIBLE,
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
-            &PopupTheme::default(),
+            &bordered_theme(),
             0,
             false,
             &ghostty_profile(),
@@ -1030,7 +1037,7 @@ mod tests {
             DEFAULT_MAX_VISIBLE,
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
-            &PopupTheme::default(),
+            &bordered_theme(),
             0,
             false,
             &ghostty_profile(),
@@ -1067,7 +1074,7 @@ mod tests {
             DEFAULT_MAX_VISIBLE,
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
-            &PopupTheme::default(),
+            &bordered_theme(),
             0,
             false,
             &ghostty_profile(),
@@ -1098,7 +1105,7 @@ mod tests {
             DEFAULT_MAX_VISIBLE,
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
-            &PopupTheme::default(),
+            &bordered_theme(),
             4,
             false,
             &ghostty_profile(),
@@ -1129,7 +1136,7 @@ mod tests {
             DEFAULT_MAX_VISIBLE,
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
-            &PopupTheme::default(),
+            &bordered_theme(),
             0,
             false,
             &ghostty_profile(),
@@ -1153,7 +1160,7 @@ mod tests {
             DEFAULT_MAX_VISIBLE,
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
-            &PopupTheme::default(),
+            &bordered_theme(),
             4, // prior_deficit from first render
             false,
             &ghostty_profile(),
@@ -1185,7 +1192,7 @@ mod tests {
             DEFAULT_MAX_VISIBLE,
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
-            &PopupTheme::default(),
+            &bordered_theme(),
             0,
             false,
             &ghostty_profile(),
@@ -1221,7 +1228,7 @@ mod tests {
             15, // max_visible bigger than screen
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
-            &PopupTheme::default(),
+            &bordered_theme(),
             0,
             false,
             &ghostty_profile(),
@@ -1257,7 +1264,7 @@ mod tests {
             15,
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
-            &PopupTheme::default(),
+            &bordered_theme(),
             0,
             false,
             &ghostty_profile(),
@@ -1319,7 +1326,7 @@ mod tests {
         state.selected = Some(0); // Only first item selected
         let theme = PopupTheme {
             item_text_on: b"\x1b[2m".to_vec(), // explicitly dim for this test
-            ..PopupTheme::default()
+            ..bordered_theme()
         };
         render_popup(
             &mut buf,
@@ -1357,7 +1364,7 @@ mod tests {
         let theme = PopupTheme {
             item_text_on: b"\x1b[2m".to_vec(),
             selected_on: b"\x1b[7m".to_vec(),
-            ..PopupTheme::default()
+            ..bordered_theme()
         };
         render_popup(
             &mut buf,
@@ -1387,7 +1394,7 @@ mod tests {
         let state = OverlayState::new(); // Nothing selected
         let theme = PopupTheme {
             item_text_on: vec![], // Empty — no styling
-            ..PopupTheme::default()
+            ..bordered_theme()
         };
         render_popup(
             &mut buf,
@@ -1564,7 +1571,7 @@ mod tests {
             DEFAULT_MAX_VISIBLE,
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
-            &PopupTheme::default(),
+            &bordered_theme(),
             0,
             false,
             &ghostty_profile(),
@@ -1592,7 +1599,7 @@ mod tests {
             DEFAULT_MAX_VISIBLE,
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
-            &PopupTheme::default(),
+            &bordered_theme(),
             0,
             false,
             &ghostty_profile(),
@@ -1630,7 +1637,7 @@ mod tests {
             DEFAULT_MAX_VISIBLE,
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
-            &PopupTheme::default(),
+            &bordered_theme(),
             0,
             false,
             &ghostty_profile(),
@@ -1660,7 +1667,7 @@ mod tests {
             DEFAULT_MAX_VISIBLE,
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
-            &PopupTheme::default(),
+            &bordered_theme(),
             0,
             false,
             &ghostty_profile(),
@@ -1691,7 +1698,7 @@ mod tests {
             DEFAULT_MAX_VISIBLE,
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
-            &PopupTheme::default(),
+            &bordered_theme(),
             0,
             false,
             &ghostty_profile(),
@@ -1709,7 +1716,7 @@ mod tests {
             DEFAULT_MAX_VISIBLE,
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
-            &PopupTheme::default(),
+            &bordered_theme(),
             0,
             false,
             &ghostty_profile(),
@@ -1732,7 +1739,7 @@ mod tests {
         state.selected = Some(0);
         let theme = PopupTheme {
             selected_on: b"\x1b[7m".to_vec(),
-            ..PopupTheme::default()
+            ..bordered_theme()
         };
         render_popup(
             &mut buf,
@@ -1773,7 +1780,7 @@ mod tests {
             DEFAULT_MAX_VISIBLE,
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
-            &PopupTheme::default(),
+            &bordered_theme(),
             0,
             true,
             &ghostty_profile(),
@@ -1783,10 +1790,11 @@ mod tests {
             output.contains("..."),
             "loading=true should produce '...' indicator: {output}"
         );
-        // Height: 3 content + 2 borders + 1 loading + 1 bottom border below loading = 7
+        // Height: 3 content + 2 borders + 1 loading extra (loading displaces bottom border,
+        // which moves down 1 row, netting 1 extra row beyond layout.height) = 6
         assert_eq!(
-            layout.height, 7,
-            "loading row + bottom border should increase height by 2"
+            layout.height, 6,
+            "loading should increase height by 1 beyond base layout"
         );
     }
 
@@ -1806,7 +1814,7 @@ mod tests {
             DEFAULT_MAX_VISIBLE,
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
-            &PopupTheme::default(),
+            &bordered_theme(),
             0,
             false,
             &ghostty_profile(),
@@ -1836,7 +1844,7 @@ mod tests {
             DEFAULT_MAX_VISIBLE,
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
-            &PopupTheme::default(),
+            &bordered_theme(),
             0,
             false,
             &ghostty_profile(),
@@ -1851,5 +1859,136 @@ mod tests {
         );
         assert!(output.contains('─'), "missing horizontal border: {output}");
         assert!(output.contains('│'), "missing vertical border: {output}");
+    }
+
+    // --- borders: false tests (production default) ---
+
+    #[test]
+    fn test_render_no_borders_no_border_chars() {
+        let mut buf = Vec::new();
+        let suggestions = make_suggestions();
+        let state = OverlayState::new();
+        render_popup(
+            &mut buf,
+            &suggestions,
+            &state,
+            5,
+            0,
+            24,
+            80,
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &PopupTheme::default(), // borders: false
+            0,
+            false,
+            &ghostty_profile(),
+        );
+        let output = String::from_utf8_lossy(&buf);
+        assert!(!output.contains('╭'), "no top-left corner without borders");
+        assert!(!output.contains('╮'), "no top-right corner without borders");
+        assert!(
+            !output.contains('╰'),
+            "no bottom-left corner without borders"
+        );
+        assert!(
+            !output.contains('╯'),
+            "no bottom-right corner without borders"
+        );
+        assert!(!output.contains('│'), "no vertical border without borders");
+    }
+
+    #[test]
+    fn test_render_no_borders_height() {
+        let mut buf = Vec::new();
+        let suggestions = make_suggestions(); // 3 items
+        let state = OverlayState::new();
+        let layout = render_popup(
+            &mut buf,
+            &suggestions,
+            &state,
+            5,
+            0,
+            24,
+            80,
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &PopupTheme::default(),
+            0,
+            false,
+            &ghostty_profile(),
+        );
+        // 3 content rows, no border padding
+        assert_eq!(layout.height, 3, "borderless height = content rows only");
+    }
+
+    #[test]
+    fn test_layout_no_borders_width() {
+        // Use a suggestion wide enough to exceed min_width so border padding is visible
+        let suggestions = vec![make(
+            "a-sufficiently-long-suggestion-name",
+            None,
+            SuggestionKind::Subcommand,
+        )];
+        let layout = layout::compute_layout(
+            &suggestions,
+            0,
+            5,
+            0,
+            24,
+            80,
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            false, // no borders
+        );
+        let bordered = layout::compute_layout(
+            &suggestions,
+            0,
+            5,
+            0,
+            24,
+            80,
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            true,
+        );
+        assert_eq!(
+            bordered.width - layout.width,
+            2,
+            "bordered should be 2 wider (border padding), got borderless={} bordered={}",
+            layout.width,
+            bordered.width
+        );
+    }
+
+    #[test]
+    fn test_loading_no_borders_height() {
+        let mut buf = Vec::new();
+        let suggestions = make_suggestions();
+        let state = OverlayState::new();
+        let layout = render_popup(
+            &mut buf,
+            &suggestions,
+            &state,
+            5,
+            0,
+            24,
+            80,
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &PopupTheme::default(), // borders: false
+            0,
+            true,
+            &ghostty_profile(),
+        );
+        // 3 content + 1 loading row, no borders
+        assert_eq!(
+            layout.height, 4,
+            "borderless loading height = content + 1 loading row"
+        );
     }
 }
