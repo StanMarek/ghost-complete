@@ -57,7 +57,7 @@ impl Keybindings {
 ///
 /// Supported names (case-insensitive):
 /// `tab`, `enter`, `escape`, `backspace`, `ctrl+space`, `ctrl+/`,
-/// `arrow_up`, `arrow_down`, `arrow_left`, `arrow_right`
+/// `arrow_up`, `arrow_down`, `arrow_left`, `arrow_right`, `ctrl+a`-`ctrl+z`
 pub fn parse_key_name(name: &str) -> anyhow::Result<KeyEvent> {
     match name.trim().to_lowercase().as_str() {
         "tab" => Ok(KeyEvent::Tab),
@@ -70,7 +70,14 @@ pub fn parse_key_name(name: &str) -> anyhow::Result<KeyEvent> {
         "arrow_down" => Ok(KeyEvent::ArrowDown),
         "arrow_left" => Ok(KeyEvent::ArrowLeft),
         "arrow_right" => Ok(KeyEvent::ArrowRight),
-        other => anyhow::bail!("unknown key name: {:?}", other),
+        other => {
+            if let Some(c) = other.strip_prefix("ctrl+") {
+                if c.len() == 1 && c.chars().next().unwrap().is_ascii_lowercase() {
+                    return Ok(KeyEvent::Ctrl(c.chars().next().unwrap()));
+                }
+            }
+            anyhow::bail!("unknown key name: {:?}", other)
+        }
     }
 }
 
@@ -698,6 +705,7 @@ pub fn key_to_bytes(key: &KeyEvent) -> Vec<u8> {
         KeyEvent::CtrlSpace => vec![0x00],
         KeyEvent::CtrlSlash => vec![0x1F],
         KeyEvent::Backspace => vec![0x7F],
+        KeyEvent::Ctrl(c) => vec![*c as u8 - 0x60],
         KeyEvent::Printable(c) => vec![*c as u8],
         KeyEvent::CursorPositionReport(_, _) => Vec::new(), // intercepted in proxy
         KeyEvent::Raw(bytes) => bytes.clone(),
@@ -772,11 +780,21 @@ mod tests {
             KeyEvent::Backspace,
             KeyEvent::Printable('a'),
             KeyEvent::Raw(vec![0xFF]),
+            KeyEvent::Ctrl('a'),
+            KeyEvent::Ctrl('d'),
+            KeyEvent::Ctrl('z'),
         ];
         for key in keys {
             let bytes = key_to_bytes(&key);
             assert!(!bytes.is_empty(), "key_to_bytes({:?}) was empty", key);
         }
+    }
+
+    #[test]
+    fn test_key_to_bytes_ctrl() {
+        assert_eq!(key_to_bytes(&KeyEvent::Ctrl('a')), vec![0x01]);
+        assert_eq!(key_to_bytes(&KeyEvent::Ctrl('d')), vec![0x04]);
+        assert_eq!(key_to_bytes(&KeyEvent::Ctrl('z')), vec![0x1A]);
     }
 
     #[test]
@@ -1047,9 +1065,19 @@ mod tests {
     #[test]
     fn test_parse_key_name_unknown_errors() {
         assert!(parse_key_name("f1").is_err());
-        assert!(parse_key_name("ctrl+c").is_err());
         assert!(parse_key_name("").is_err());
         assert!(parse_key_name("banana").is_err());
+        assert!(parse_key_name("ctrl+1").is_err());
+        assert!(parse_key_name("ctrl+").is_err());
+    }
+
+    #[test]
+    fn test_parse_key_name_ctrl_letters() {
+        assert_eq!(parse_key_name("ctrl+a").unwrap(), KeyEvent::Ctrl('a'));
+        assert_eq!(parse_key_name("ctrl+d").unwrap(), KeyEvent::Ctrl('d'));
+        assert_eq!(parse_key_name("ctrl+z").unwrap(), KeyEvent::Ctrl('z'));
+        assert_eq!(parse_key_name("CTRL+C").unwrap(), KeyEvent::Ctrl('c'));
+        assert_eq!(parse_key_name("Ctrl+X").unwrap(), KeyEvent::Ctrl('x'));
     }
 
     // --- Keybindings tests ---
