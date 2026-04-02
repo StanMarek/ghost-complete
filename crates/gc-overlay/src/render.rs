@@ -213,9 +213,9 @@ pub fn render_popup(
     let border_col = layout.start_col;
     let top_border_row = layout.start_row;
     let bottom_border_row = if theme.borders {
-        layout.start_row + layout.height - 1
+        Some(layout.start_row + layout.height - 1)
     } else {
-        layout.start_row + layout.height // past end, won't be used
+        None
     };
 
     let needs_scrollbar = suggestions.len() > effective_max;
@@ -323,11 +323,7 @@ pub fn render_popup(
 
     // Render loading indicator row when async generators are in flight
     let loading_extra = if loading {
-        let loading_row = if theme.borders {
-            bottom_border_row
-        } else {
-            layout.start_row + layout.height
-        };
+        let loading_row = bottom_border_row.unwrap_or(layout.start_row + layout.height);
         if loading_row < screen_rows {
             ansi::move_to(buf, loading_row, border_col);
             if theme.borders {
@@ -380,8 +376,8 @@ pub fn render_popup(
     };
 
     // Draw bottom border line: ╰───...───╯
-    if theme.borders && loading_extra == 0 {
-        ansi::move_to(buf, bottom_border_row, border_col);
+    if let (Some(bbr), 0) = (bottom_border_row, loading_extra) {
+        ansi::move_to(buf, bbr, border_col);
         if !theme.border_on.is_empty() {
             buf.extend_from_slice(&theme.border_on);
         }

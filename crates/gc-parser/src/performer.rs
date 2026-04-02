@@ -220,12 +220,15 @@ fn parse_osc7_path(uri: &[u8]) -> Option<PathBuf> {
     let slash_idx = path_part.find('/')?;
     let path = &path_part[slash_idx..];
     // Percent-decode the path (handles all percent-encoded bytes)
-    let decoded = percent_decode(path);
-    Some(PathBuf::from(decoded))
+    Some(percent_decode_path(path))
 }
 
 /// Minimal percent-decoding for file paths.
-fn percent_decode(input: &str) -> String {
+///
+/// Returns a `PathBuf` built directly from raw bytes via `OsStr`, avoiding
+/// lossy UTF-8 conversion. Unix paths are byte sequences, not necessarily
+/// valid UTF-8, so this preserves paths that contain arbitrary bytes.
+fn percent_decode_path(input: &str) -> PathBuf {
     let mut bytes = Vec::with_capacity(input.len());
     let mut iter = input.bytes();
     while let Some(b) = iter.next() {
@@ -255,13 +258,8 @@ fn percent_decode(input: &str) -> String {
             bytes.push(b);
         }
     }
-    String::from_utf8(bytes).unwrap_or_else(|e| {
-        tracing::warn!(
-            "percent_decode produced invalid UTF-8 (lossy replacement applied): {}",
-            e
-        );
-        String::from_utf8_lossy(e.as_bytes()).into_owned()
-    })
+    use std::os::unix::ffi::OsStrExt;
+    PathBuf::from(std::ffi::OsStr::from_bytes(&bytes))
 }
 
 fn hex_val(b: u8) -> Option<u8> {
@@ -674,44 +672,68 @@ mod tests {
 
     #[test]
     fn test_percent_decode() {
-        assert_eq!(percent_decode("/hello%20world"), "/hello world");
-        assert_eq!(percent_decode("/no/encoding"), "/no/encoding");
-        assert_eq!(percent_decode("%2F"), "/");
+        assert_eq!(
+            percent_decode_path("/hello%20world"),
+            PathBuf::from("/hello world")
+        );
+        assert_eq!(
+            percent_decode_path("/no/encoding"),
+            PathBuf::from("/no/encoding")
+        );
+        assert_eq!(percent_decode_path("%2F"), PathBuf::from("/"));
     }
 
     #[test]
     fn test_percent_decode_basic() {
-        assert_eq!(percent_decode("/foo%20bar"), "/foo bar");
-        assert_eq!(percent_decode("/no/encoding"), "/no/encoding");
-        assert_eq!(percent_decode(""), "");
+        assert_eq!(percent_decode_path("/foo%20bar"), PathBuf::from("/foo bar"));
+        assert_eq!(
+            percent_decode_path("/no/encoding"),
+            PathBuf::from("/no/encoding")
+        );
+        assert_eq!(percent_decode_path(""), PathBuf::from(""));
     }
 
     #[test]
     fn test_percent_decode_preserves_malformed() {
         // Invalid hex digits — keep all bytes literal
-        assert_eq!(percent_decode("/foo%zz/bar"), "/foo%zz/bar");
-        assert_eq!(percent_decode("/foo%gh"), "/foo%gh");
+        assert_eq!(
+            percent_decode_path("/foo%zz/bar"),
+            PathBuf::from("/foo%zz/bar")
+        );
+        assert_eq!(percent_decode_path("/foo%gh"), PathBuf::from("/foo%gh"));
     }
 
     #[test]
     fn test_percent_decode_truncated() {
         // % at end of string
-        assert_eq!(percent_decode("/foo%"), "/foo%");
+        assert_eq!(percent_decode_path("/foo%"), PathBuf::from("/foo%"));
         // % with only one byte after
-        assert_eq!(percent_decode("/foo%a"), "/foo%a");
+        assert_eq!(percent_decode_path("/foo%a"), PathBuf::from("/foo%a"));
     }
 
     #[test]
     fn test_percent_decode_utf8() {
         // é = U+00E9 = UTF-8 bytes C3 A9
-        assert_eq!(percent_decode("/caf%C3%A9"), "/café");
+        assert_eq!(percent_decode_path("/caf%C3%A9"), PathBuf::from("/café"));
         // 日 = U+65E5 = UTF-8 bytes E6 97 A5
-        assert_eq!(percent_decode("/%E6%97%A5"), "/日");
+        assert_eq!(percent_decode_path("/%E6%97%A5"), PathBuf::from("/日"));
     }
 
     #[test]
     fn test_percent_decode_literal_percent() {
         // %25 is the encoding for literal %
-        assert_eq!(percent_decode("/100%25done"), "/100%done");
+        assert_eq!(
+            percent_decode_path("/100%25done"),
+            PathBuf::from("/100%done")
+        );
+    }
+
+    #[test]
+    fn test_percent_decode_non_utf8_bytes() {
+        // Bytes 0x80 0x81 are not valid UTF-8, but are valid Unix path bytes
+        use std::os::unix::ffi::OsStrExt;
+        let result = percent_decode_path("/%80%81");
+        let expected = PathBuf::from(std::ffi::OsStr::from_bytes(&[b'/', 0x80, 0x81]));
+        assert_eq!(result, expected);
     }
 }
