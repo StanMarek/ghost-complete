@@ -5,6 +5,7 @@
 # boundaries and track the current command buffer.
 # OSC 133: native semantic prompts (Ghostty, iTerm2 partial)
 # OSC 7771: terminal-agnostic prompt boundary for Ghost Complete
+# OSC 7: current working directory reporting
 
 _gc_precmd() {
     # Mark: prompt is about to be displayed
@@ -22,6 +23,22 @@ _gc_preexec() {
 
 precmd_functions+=(_gc_precmd)
 preexec_functions+=(_gc_preexec)
+
+# Report current working directory via OSC 7 on directory change.
+# This enables the proxy to track CWD and provide correct filesystem completions.
+_gc_chpwd() {
+    printf '\e]7;file://%s%s\a' "$HOST" "$PWD"
+}
+
+chpwd_functions+=(_gc_chpwd)
+# Also emit on first prompt in case the shell started in a non-default directory
+autoload -Uz add-zsh-hook
+add-zsh-hook precmd _gc_osc7_precmd
+_gc_osc7_precmd() {
+    printf '\e]7;file://%s%s\a' "$HOST" "$PWD"
+    # Remove self after first run — chpwd hook handles subsequent changes
+    precmd_functions=(${precmd_functions:#_gc_osc7_precmd})
+}
 
 # Report current command buffer to the proxy via custom OSC 7770.
 # Fires after every buffer modification (typing, deletion, cursor movement, paste).
