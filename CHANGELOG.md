@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-04-03
+
+### Added
+
+- **Ctrl+A through Ctrl+Z keybindings** — full alphabet of ctrl keybindings now supported for custom actions.
+- **CWD tracking via OSC 7** — filesystem completions now use the shell's actual working directory for accurate path resolution.
+- **Rounded border on completion popup** — popup uses rounded Unicode box-drawing characters for a cleaner look.
+
+### Fixed
+
+- **Hardened keybindings, OSC 7 encoding, and border rendering** — fixes for edge cases in keybinding dispatch, percent-encoding in OSC 7 CWD URIs, and border character rendering.
+
 ## [0.4.1] - 2026-04-01
 
 ### Changed
@@ -222,6 +234,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Shell integration** for zsh (full), bash (Ctrl+/), and fish (Ctrl+/)
 - **`validate-specs` subcommand** with colored output and item counts
 
+[0.5.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.5.0
 [0.4.1]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.4.1
 [0.4.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.4.0
 [0.3.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.3.0
