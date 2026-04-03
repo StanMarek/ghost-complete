@@ -145,8 +145,10 @@ impl SuggestionEngine {
     }
 
     /// Record an accepted completion for frecency scoring.
-    pub fn record_frecency(&self, text: &str) {
-        self.frecency_db.record(text);
+    /// `command` scopes the key so `--help` under `git` doesn't boost `docker`.
+    pub fn record_frecency(&self, command: Option<&str>, text: &str) {
+        let key = crate::frecency::frecency_key(command, text);
+        self.frecency_db.record(&key);
     }
 
     /// Flush unsaved frecency records to disk. Call on shutdown.
@@ -538,10 +540,9 @@ impl SuggestionEngine {
         }
 
         // Apply frecency boost to ALL suggestions, then re-sort.
-        // Preserve history-comes-last ordering from fuzzy::rank.
-        for suggestion in &mut results {
-            self.frecency_db.boost_score(suggestion);
-        }
+        // Re-sort after frecency boost changes scores. Maintains history-comes-last partition.
+        self.frecency_db
+            .boost_scores(&mut results, ctx.command.as_deref());
         results.sort_by(|a, b| {
             let a_hist = a.source == SuggestionSource::History;
             let b_hist = b.source == SuggestionSource::History;
@@ -1252,5 +1253,143 @@ mod tests {
             !results.iter().any(|s| s.text == "staging"),
             "'staging' should not match 'pro': {results:?}"
         );
+    }
+
+    // ---------------------------------------------------------------
+    // rank_with_history re-sort tests (Issue #3 from PR review)
+    // ---------------------------------------------------------------
+
+    #[test]
+    fn test_frecency_boost_reorders_non_history_suggestions() {
+        // Record high frecency for "checkout" under git, nothing for "cherry-pick".
+        // Both match query "ch" — checkout should sort above cherry-pick after boost.
+        let engine = make_engine();
+
+        // Boost "checkout" frecency under git
+        for _ in 0..10 {
+            engine.record_frecency(Some("git"), "checkout");
+        }
+
+        let ctx = make_ctx(Some("git"), vec![], "ch", 1);
+        let results = engine
+            .suggest_sync(&ctx, Path::new("/tmp"), "git ch")
+            .unwrap();
+
+        let non_hist: Vec<_> = results
+            .iter()
+            .filter(|s| s.source != SuggestionSource::History)
+            .collect();
+
+        assert!(
+            non_hist.len() >= 2,
+            "need at least 2 results for ordering test"
+        );
+        let checkout_pos = non_hist.iter().position(|s| s.text == "checkout");
+        let cherry_pick_pos = non_hist.iter().position(|s| s.text == "cherry-pick");
+
+        if let (Some(co), Some(cp)) = (checkout_pos, cherry_pick_pos) {
+            assert!(
+                co < cp,
+                "frecency-boosted 'checkout' should sort above 'cherry-pick', positions: checkout={co}, cherry-pick={cp}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_history_stays_last_despite_frecency() {
+        // Even with massive frecency on a history entry, it should sort after
+        // non-history entries.
+        let spec_store = SpecStore::load_from_dir(&spec_dir()).unwrap().store;
+        let history = HistoryProvider::from_entries(vec!["git push origin main".into()]);
+        let commands = CommandsProvider::from_list(vec!["git".into()]);
+        let engine = SuggestionEngine::with_providers(spec_store, history, commands);
+
+        // Give "git push origin main" massive frecency (no command scope since it's history)
+        for _ in 0..50 {
+            engine.record_frecency(None, "git push origin main");
+        }
+
+        let ctx = make_ctx(None, vec![], "git", 0);
+        let results = engine.suggest_sync(&ctx, Path::new("/tmp"), "git").unwrap();
+
+        let history_indices: Vec<_> = results
+            .suggestions
+            .iter()
+            .enumerate()
+            .filter(|(_, s)| s.source == SuggestionSource::History)
+            .map(|(i, _)| i)
+            .collect();
+        let non_history_indices: Vec<_> = results
+            .suggestions
+            .iter()
+            .enumerate()
+            .filter(|(_, s)| s.source != SuggestionSource::History)
+            .map(|(i, _)| i)
+            .collect();
+
+        if !history_indices.is_empty() && !non_history_indices.is_empty() {
+            let max_non_hist = *non_history_indices.last().unwrap();
+            let min_hist = *history_indices.first().unwrap();
+            assert!(
+                min_hist > max_non_hist,
+                "all history entries should come after non-history entries, \
+                 non-hist max idx={max_non_hist}, hist min idx={min_hist}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_sort_priority_tiebreaker_with_equal_boosted_scores() {
+        // When two suggestions have the same score after frecency boost,
+        // sort_priority should break the tie (GitBranch < Subcommand < Flag).
+        let engine = make_engine();
+        let ctx = make_ctx(Some("git"), vec![], "ch", 1);
+        let results = engine
+            .suggest_sync(&ctx, Path::new("/tmp"), "git ch")
+            .unwrap();
+
+        let non_hist: Vec<_> = results
+            .iter()
+            .filter(|s| s.source != SuggestionSource::History)
+            .collect();
+
+        // For any adjacent pair with equal scores, verify sort_priority ordering
+        for pair in non_hist.windows(2) {
+            if pair[0].score == pair[1].score {
+                assert!(
+                    pair[0].kind.sort_priority() <= pair[1].kind.sort_priority(),
+                    "equal-score items should be ordered by sort_priority: {:?} (pri={}) before {:?} (pri={})",
+                    pair[0].text, pair[0].kind.sort_priority(),
+                    pair[1].text, pair[1].kind.sort_priority()
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_context_scoping_prevents_cross_command_frecency_bleed() {
+        // Record frecency for "--verbose" under "cargo", then query "docker --"
+        // The frecency for cargo's --verbose should NOT affect docker's results.
+        let engine = make_engine();
+
+        for _ in 0..20 {
+            engine.record_frecency(Some("cargo"), "--verbose");
+        }
+
+        let ctx = make_ctx(Some("docker"), vec![], "--", 1);
+        let results = engine
+            .suggest_sync(&ctx, Path::new("/tmp"), "docker --")
+            .unwrap();
+
+        // If --verbose appears in docker results, its score should NOT be boosted
+        if let Some(verbose) = results.iter().find(|s| s.text == "--verbose") {
+            // Without frecency boost, the score should be from fuzzy matching only
+            // A boosted score would be >= 2000 (20 records * 100 multiplier)
+            assert!(
+                verbose.score < 2000,
+                "cargo's --verbose frecency should not leak to docker, score={}",
+                verbose.score
+            );
+        }
     }
 }
