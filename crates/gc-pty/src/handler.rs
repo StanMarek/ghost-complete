@@ -655,6 +655,9 @@ impl InputHandler {
 
         let selected = &self.suggestions[selected_idx];
 
+        // Record accepted completion for frecency scoring
+        self.engine.record_frecency(&selected.text);
+
         let (delete_chars, replacement) = {
             let p = parser.lock().unwrap();
             let state = p.state();
@@ -695,6 +698,11 @@ impl InputHandler {
         }
         // Screen dimensions changed — prior scroll deficit is meaningless.
         self.scroll_deficit = 0;
+    }
+
+    /// Flush unsaved frecency records to disk. Call on proxy shutdown.
+    pub fn flush_frecency(&self) {
+        self.engine.flush_frecency();
     }
 }
 

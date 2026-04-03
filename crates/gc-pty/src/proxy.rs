@@ -407,6 +407,11 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
         h.abort();
     }
 
+    // Flush unsaved frecency records before exit
+    if let Ok(h) = handler.lock() {
+        h.flush_frecency();
+    }
+
     // _raw_guard drops here, restoring terminal state
 
     // Wait for child and get exit status

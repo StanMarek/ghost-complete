@@ -144,6 +144,16 @@ impl SuggestionEngine {
         }
     }
 
+    /// Record an accepted completion for frecency scoring.
+    pub fn record_frecency(&self, text: &str) {
+        self.frecency_db.record(text);
+    }
+
+    /// Flush unsaved frecency records to disk. Call on shutdown.
+    pub fn flush_frecency(&self) {
+        self.frecency_db.flush();
+    }
+
     /// Test helper — set the history results cap without reloading from disk.
     #[cfg(test)]
     pub fn with_max_history_results(mut self, n: usize) -> Self {
@@ -500,8 +510,8 @@ impl SuggestionEngine {
 
     /// Rank main candidates with current_word, then separately rank history
     /// candidates with the full buffer, and append history results at the end.
-    /// History suggestions receive a frecency bonus so frequently/recently used
-    /// commands sort higher.
+    /// All suggestions receive a frecency bonus so frequently/recently accepted
+    /// completions sort higher.
     fn rank_with_history(
         &self,
         ctx: &CommandContext,
@@ -519,20 +529,28 @@ impl SuggestionEngine {
             if remaining > 0 {
                 match self.history_provider.provide(ctx, cwd) {
                     Ok(hist) if !hist.is_empty() => {
-                        let mut hist_results = fuzzy::rank(buffer, hist, remaining);
-                        // Apply frecency boost to history suggestions
-                        for suggestion in &mut hist_results {
-                            if suggestion.source == SuggestionSource::History {
-                                self.frecency_db.boost_score(suggestion);
-                            }
-                        }
-                        results.extend(hist_results);
+                        results.extend(fuzzy::rank(buffer, hist, remaining));
                     }
                     Ok(_) => {}
                     Err(e) => tracing::debug!("history provider error: {e}"),
                 }
             }
         }
+
+        // Apply frecency boost to ALL suggestions, then re-sort.
+        // Preserve history-comes-last ordering from fuzzy::rank.
+        for suggestion in &mut results {
+            self.frecency_db.boost_score(suggestion);
+        }
+        results.sort_by(|a, b| {
+            let a_hist = a.source == SuggestionSource::History;
+            let b_hist = b.source == SuggestionSource::History;
+            a_hist
+                .cmp(&b_hist)
+                .then_with(|| b.score.cmp(&a.score))
+                .then_with(|| a.kind.sort_priority().cmp(&b.kind.sort_priority()))
+                .then_with(|| a.text.cmp(&b.text))
+        });
 
         results
     }
