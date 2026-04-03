@@ -679,9 +679,16 @@ impl InputHandler {
             }
         };
 
-        // Record accepted completion with command scope for frecency scoring
+        // Record accepted completion for frecency scoring.
+        // History items are full commands — always keyed without command scope
+        // so the key is consistent regardless of buffer parse state.
+        let frecency_command = if selected.kind == gc_suggest::SuggestionKind::History {
+            None
+        } else {
+            command.as_deref()
+        };
         self.engine
-            .record_frecency(command.as_deref(), &selected.text);
+            .record_frecency(frecency_command, selected.kind, &selected.text);
 
         // One 0x7F (backspace) per CHARACTER — the shell deletes by character, not byte
         let mut bytes = vec![0x7F; delete_chars];

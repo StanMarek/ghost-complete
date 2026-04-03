@@ -4,9 +4,11 @@
 //! decay with a half-life of 72 hours (3 days) — the full usage history is
 //! compressed into a single f64 per entry.
 //!
-//! Keys are command-scoped: an argument completion under `git` is stored as
-//! `git\0--help`, distinct from `docker\0--help`. Command-position completions
-//! (where there is no parent command) use the raw text as key.
+//! Keys are scoped by command **and** suggestion kind: an argument completion
+//! under `git` is stored as `git\0sub\0status`, distinct from `docker\0sub\0status`.
+//! Different kinds under the same command are also distinct: `git\0branch\0main`
+//! vs `git\0file\0main`. History items are always keyed without a command scope
+//! (e.g. `hist\0git push`) because the text IS the full command.
 //!
 //! Storage lives at `~/.config/ghost-complete/frecency.json`.
 
@@ -17,7 +19,7 @@ use std::time::SystemTime;
 
 use serde::{Deserialize, Serialize};
 
-use crate::types::Suggestion;
+use crate::types::{Suggestion, SuggestionKind};
 
 /// File name within the config directory.
 const FRECENCY_FILE: &str = "frecency.json";
@@ -90,15 +92,18 @@ fn now_secs() -> u64 {
         .as_secs()
 }
 
-/// Build a command-scoped frecency key.
+/// Build a frecency key scoped by command and suggestion kind.
 ///
-/// Argument completions are keyed as `"command\0text"` so that `--help`
-/// under `git` doesn't pollute `docker`'s ranking. Command-position
-/// completions (no parent command) use the raw text.
-pub fn frecency_key(command: Option<&str>, text: &str) -> String {
+/// Keys use the format `command\0kind_tag\0text` for argument-position
+/// completions, or `kind_tag\0text` for command-position completions.
+/// This prevents both cross-command bleed (`git\0sub\0status` vs
+/// `docker\0sub\0status`) and same-command kind collisions
+/// (`git\0branch\0main` vs `git\0file\0main`).
+pub fn frecency_key(command: Option<&str>, kind: SuggestionKind, text: &str) -> String {
+    let tag = kind.key_tag();
     match command {
-        Some(cmd) if !cmd.is_empty() => format!("{cmd}{KEY_SEP}{text}"),
-        _ => text.to_string(),
+        Some(cmd) if !cmd.is_empty() => format!("{cmd}{KEY_SEP}{tag}{KEY_SEP}{text}"),
+        _ => format!("{tag}{KEY_SEP}{text}"),
     }
 }
 
@@ -310,7 +315,13 @@ impl FrecencyDb {
         let inner = self.lock_inner();
         let now = now_secs();
         for suggestion in suggestions.iter_mut() {
-            let key = frecency_key(command, &suggestion.text);
+            // History items are full commands — always keyed without command scope
+            let cmd = if suggestion.kind == SuggestionKind::History {
+                None
+            } else {
+                command
+            };
+            let key = frecency_key(cmd, suggestion.kind, &suggestion.text);
             if let Some(entry) = inner.entries.get(&key) {
                 let frecency = entry.actual_score(now);
                 if frecency > 0.0 {
@@ -402,9 +413,9 @@ mod tests {
         let db = FrecencyDb::empty();
         {
             let mut inner = db.lock_inner();
-            // Key includes command scope
+            // Key includes command + kind scope
             inner.entries.insert(
-                frecency_key(Some("git"), "status"),
+                frecency_key(Some("git"), SuggestionKind::Subcommand, "status"),
                 FrecencyEntry {
                     stored_score: 5.0,
                     reference_secs: now_secs(),
@@ -448,9 +459,9 @@ mod tests {
     #[test]
     fn context_aware_keys_are_distinct() {
         let db = FrecencyDb::empty();
-        let git_key = frecency_key(Some("git"), "--help");
-        let docker_key = frecency_key(Some("docker"), "--help");
-        let cmd_key = frecency_key(None, "git");
+        let git_key = frecency_key(Some("git"), SuggestionKind::Flag, "--help");
+        let docker_key = frecency_key(Some("docker"), SuggestionKind::Flag, "--help");
+        let cmd_key = frecency_key(None, SuggestionKind::Command, "git");
 
         db.record(&git_key);
         db.record(&git_key);
@@ -463,6 +474,70 @@ mod tests {
             "docker --help should be unaffected"
         );
         assert_eq!(db.score(&cmd_key), 0.0, "command-position git unaffected");
+    }
+
+    #[test]
+    fn kind_scoping_prevents_same_command_collisions() {
+        // Under `git`, a branch named `main` and a file named `main` should
+        // have distinct frecency keys.
+        let db = FrecencyDb::empty();
+        let branch_key = frecency_key(Some("git"), SuggestionKind::GitBranch, "main");
+        let file_key = frecency_key(Some("git"), SuggestionKind::FilePath, "main");
+        let remote_key = frecency_key(Some("git"), SuggestionKind::GitRemote, "main");
+
+        db.record(&branch_key);
+        db.record(&branch_key);
+        db.record(&branch_key);
+
+        assert!(
+            db.score(&branch_key) > 2.5,
+            "git branch main should have score ~3"
+        );
+        assert_eq!(
+            db.score(&file_key),
+            0.0,
+            "git file main should be unaffected"
+        );
+        assert_eq!(
+            db.score(&remote_key),
+            0.0,
+            "git remote main should be unaffected"
+        );
+    }
+
+    #[test]
+    fn history_items_keyed_without_command_scope() {
+        // History items should always use kind-only keys (no command prefix),
+        // so recording from different buffer states produces the same key.
+        let db = FrecencyDb::empty();
+
+        let key_no_cmd = frecency_key(None, SuggestionKind::History, "git status");
+        let key_with_cmd = frecency_key(Some("git"), SuggestionKind::History, "git status");
+
+        // Verify they're different raw strings (command prefix differs)
+        assert_ne!(key_no_cmd, key_with_cmd);
+
+        // But boost_scores always uses None for history, so let's verify via boost
+        db.record(&key_no_cmd);
+        db.record(&key_no_cmd);
+        db.record(&key_no_cmd);
+
+        let mut suggestions = vec![Suggestion {
+            text: "git status".into(),
+            description: None,
+            kind: SuggestionKind::History,
+            source: SuggestionSource::History,
+            score: 10,
+            match_indices: vec![],
+        }];
+
+        // Even when called with Some("git"), history items should look up with None
+        db.boost_scores(&mut suggestions, Some("git"));
+        assert!(
+            suggestions[0].score > 200,
+            "history should be boosted via None-scoped key, got {}",
+            suggestions[0].score
+        );
     }
 
     #[test]

@@ -146,8 +146,14 @@ impl SuggestionEngine {
 
     /// Record an accepted completion for frecency scoring.
     /// `command` scopes the key so `--help` under `git` doesn't boost `docker`.
-    pub fn record_frecency(&self, command: Option<&str>, text: &str) {
-        let key = crate::frecency::frecency_key(command, text);
+    /// `kind` scopes it further so a branch `main` doesn't boost a file `main`.
+    pub fn record_frecency(
+        &self,
+        command: Option<&str>,
+        kind: SuggestionKind,
+        text: &str,
+    ) {
+        let key = crate::frecency::frecency_key(command, kind, text);
         self.frecency_db.record(&key);
     }
 
@@ -1267,7 +1273,7 @@ mod tests {
 
         // Boost "checkout" frecency under git
         for _ in 0..10 {
-            engine.record_frecency(Some("git"), "checkout");
+            engine.record_frecency(Some("git"), SuggestionKind::Subcommand, "checkout");
         }
 
         let ctx = make_ctx(Some("git"), vec![], "ch", 1);
@@ -1306,7 +1312,7 @@ mod tests {
 
         // Give "git push origin main" massive frecency (no command scope since it's history)
         for _ in 0..50 {
-            engine.record_frecency(None, "git push origin main");
+            engine.record_frecency(None, SuggestionKind::History, "git push origin main");
         }
 
         let ctx = make_ctx(None, vec![], "git", 0);
@@ -1373,7 +1379,7 @@ mod tests {
         let engine = make_engine();
 
         for _ in 0..20 {
-            engine.record_frecency(Some("cargo"), "--verbose");
+            engine.record_frecency(Some("cargo"), SuggestionKind::Flag, "--verbose");
         }
 
         let ctx = make_ctx(Some("docker"), vec![], "--", 1);
