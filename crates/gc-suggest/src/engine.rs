@@ -147,12 +147,7 @@ impl SuggestionEngine {
     /// Record an accepted completion for frecency scoring.
     /// `command` scopes the key so `--help` under `git` doesn't boost `docker`.
     /// `kind` scopes it further so a branch `main` doesn't boost a file `main`.
-    pub fn record_frecency(
-        &self,
-        command: Option<&str>,
-        kind: SuggestionKind,
-        text: &str,
-    ) {
+    pub fn record_frecency(&self, command: Option<&str>, kind: SuggestionKind, text: &str) {
         let key = crate::frecency::frecency_key(command, kind, text);
         self.frecency_db.record(&key);
     }
