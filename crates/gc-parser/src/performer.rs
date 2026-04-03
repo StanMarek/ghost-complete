@@ -200,6 +200,11 @@ impl Perform for TerminalState {
                 if let Some(path) = parse_osc7_path(params[1]) {
                     tracing::debug!(?path, "OSC 7 — cwd update");
                     self.set_cwd(path);
+                } else {
+                    tracing::debug!(
+                        raw = %String::from_utf8_lossy(params[1]),
+                        "OSC 7 — failed to parse cwd URI"
+                    );
                 }
             }
             _ => {}
@@ -214,32 +219,47 @@ fn parse_osc7_path(uri: &[u8]) -> Option<PathBuf> {
     // Skip the hostname — find the first '/' after the authority
     let slash_idx = path_part.find('/')?;
     let path = &path_part[slash_idx..];
-    // Percent-decode the path (basic: just handle %20 for spaces)
-    let decoded = percent_decode(path);
-    Some(PathBuf::from(decoded))
+    // Percent-decode the path (handles all percent-encoded bytes)
+    Some(percent_decode_path(path))
 }
 
 /// Minimal percent-decoding for file paths.
-fn percent_decode(input: &str) -> String {
-    let mut result = String::with_capacity(input.len());
-    let mut chars = input.bytes();
-    while let Some(b) = chars.next() {
+///
+/// Returns a `PathBuf` built directly from raw bytes via `OsStr`, avoiding
+/// lossy UTF-8 conversion. Unix paths are byte sequences, not necessarily
+/// valid UTF-8, so this preserves paths that contain arbitrary bytes.
+fn percent_decode_path(input: &str) -> PathBuf {
+    let mut bytes = Vec::with_capacity(input.len());
+    let mut iter = input.bytes();
+    while let Some(b) = iter.next() {
         if b == b'%' {
-            let hi = chars.next();
-            let lo = chars.next();
-            if let (Some(hi), Some(lo)) = (hi, lo) {
-                if let (Some(h), Some(l)) = (hex_val(hi), hex_val(lo)) {
-                    result.push((h << 4 | l) as char);
-                    continue;
+            match (iter.next(), iter.next()) {
+                (Some(hi), Some(lo)) => {
+                    if let (Some(h), Some(l)) = (hex_val(hi), hex_val(lo)) {
+                        bytes.push(h << 4 | l);
+                    } else {
+                        // Invalid hex — keep all three bytes literal
+                        bytes.push(b'%');
+                        bytes.push(hi);
+                        bytes.push(lo);
+                    }
+                }
+                (Some(hi), None) => {
+                    // Truncated — keep literal
+                    bytes.push(b'%');
+                    bytes.push(hi);
+                }
+                (None, _) => {
+                    // % at very end
+                    bytes.push(b'%');
                 }
             }
-            // Malformed — keep literal
-            result.push('%');
         } else {
-            result.push(b as char);
+            bytes.push(b);
         }
     }
-    result
+    use std::os::unix::ffi::OsStrExt;
+    PathBuf::from(std::ffi::OsStr::from_bytes(&bytes))
 }
 
 fn hex_val(b: u8) -> Option<u8> {
@@ -652,8 +672,68 @@ mod tests {
 
     #[test]
     fn test_percent_decode() {
-        assert_eq!(percent_decode("/hello%20world"), "/hello world");
-        assert_eq!(percent_decode("/no/encoding"), "/no/encoding");
-        assert_eq!(percent_decode("%2F"), "/");
+        assert_eq!(
+            percent_decode_path("/hello%20world"),
+            PathBuf::from("/hello world")
+        );
+        assert_eq!(
+            percent_decode_path("/no/encoding"),
+            PathBuf::from("/no/encoding")
+        );
+        assert_eq!(percent_decode_path("%2F"), PathBuf::from("/"));
+    }
+
+    #[test]
+    fn test_percent_decode_basic() {
+        assert_eq!(percent_decode_path("/foo%20bar"), PathBuf::from("/foo bar"));
+        assert_eq!(
+            percent_decode_path("/no/encoding"),
+            PathBuf::from("/no/encoding")
+        );
+        assert_eq!(percent_decode_path(""), PathBuf::from(""));
+    }
+
+    #[test]
+    fn test_percent_decode_preserves_malformed() {
+        // Invalid hex digits — keep all bytes literal
+        assert_eq!(
+            percent_decode_path("/foo%zz/bar"),
+            PathBuf::from("/foo%zz/bar")
+        );
+        assert_eq!(percent_decode_path("/foo%gh"), PathBuf::from("/foo%gh"));
+    }
+
+    #[test]
+    fn test_percent_decode_truncated() {
+        // % at end of string
+        assert_eq!(percent_decode_path("/foo%"), PathBuf::from("/foo%"));
+        // % with only one byte after
+        assert_eq!(percent_decode_path("/foo%a"), PathBuf::from("/foo%a"));
+    }
+
+    #[test]
+    fn test_percent_decode_utf8() {
+        // é = U+00E9 = UTF-8 bytes C3 A9
+        assert_eq!(percent_decode_path("/caf%C3%A9"), PathBuf::from("/café"));
+        // 日 = U+65E5 = UTF-8 bytes E6 97 A5
+        assert_eq!(percent_decode_path("/%E6%97%A5"), PathBuf::from("/日"));
+    }
+
+    #[test]
+    fn test_percent_decode_literal_percent() {
+        // %25 is the encoding for literal %
+        assert_eq!(
+            percent_decode_path("/100%25done"),
+            PathBuf::from("/100%done")
+        );
+    }
+
+    #[test]
+    fn test_percent_decode_non_utf8_bytes() {
+        // Bytes 0x80 0x81 are not valid UTF-8, but are valid Unix path bytes
+        use std::os::unix::ffi::OsStrExt;
+        let result = percent_decode_path("/%80%81");
+        let expected = PathBuf::from(std::ffi::OsStr::from_bytes(&[b'/', 0x80, 0x81]));
+        assert_eq!(result, expected);
     }
 }

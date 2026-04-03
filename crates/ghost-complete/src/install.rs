@@ -1176,6 +1176,7 @@ const DEFAULT_CONFIG_TOML: &str = "\
 
 # [popup]
 # max_visible = 10
+# borders = false  # Set to true to enable rounded borders around the popup
 
 # [suggest]
 # max_results = 50

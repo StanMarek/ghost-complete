@@ -75,11 +75,15 @@ impl Default for TriggerConfig {
 #[serde(default)]
 pub struct PopupConfig {
     pub max_visible: usize,
+    pub borders: bool,
 }
 
 impl Default for PopupConfig {
     fn default() -> Self {
-        Self { max_visible: 10 }
+        Self {
+            max_visible: 10,
+            borders: false,
+        }
     }
 }
 

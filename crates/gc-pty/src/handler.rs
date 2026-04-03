@@ -72,9 +72,24 @@ pub fn parse_key_name(name: &str) -> anyhow::Result<KeyEvent> {
         "arrow_right" => Ok(KeyEvent::ArrowRight),
         other => {
             if let Some(c) = other.strip_prefix("ctrl+") {
-                if c.len() == 1 && c.chars().next().unwrap().is_ascii_lowercase() {
-                    return Ok(KeyEvent::Ctrl(c.chars().next().unwrap()));
+                if let Some(ch) = c.chars().next() {
+                    if c.len() == 1 && ch.is_ascii_lowercase() {
+                        match ch {
+                            'c' => anyhow::bail!("ctrl+c is reserved for SIGINT — cannot be used as a keybinding"),
+                            'd' => anyhow::bail!("ctrl+d is reserved for EOF — cannot be used as a keybinding"),
+                            'z' => anyhow::bail!("ctrl+z is reserved for SIGTSTP — cannot be used as a keybinding"),
+                            's' => anyhow::bail!("ctrl+s is reserved for flow control (XOFF) — cannot be used as a keybinding"),
+                            'q' => anyhow::bail!("ctrl+q is reserved for flow control (XON) — cannot be used as a keybinding"),
+                            'i' => anyhow::bail!("ctrl+i produces the same byte as Tab (0x09) — use 'tab' instead"),
+                            'm' => anyhow::bail!("ctrl+m produces the same byte as Enter (0x0D) — use 'enter' instead"),
+                            _ => return Ok(KeyEvent::Ctrl(ch)),
+                        }
+                    }
                 }
+                anyhow::bail!(
+                    "ctrl+ must be followed by a single letter (a-z), got: {:?}",
+                    c
+                );
             }
             anyhow::bail!("unknown key name: {:?}", other)
         }
@@ -705,7 +720,13 @@ pub fn key_to_bytes(key: &KeyEvent) -> Vec<u8> {
         KeyEvent::CtrlSpace => vec![0x00],
         KeyEvent::CtrlSlash => vec![0x1F],
         KeyEvent::Backspace => vec![0x7F],
-        KeyEvent::Ctrl(c) => vec![*c as u8 - 0x60],
+        KeyEvent::Ctrl(c) => {
+            if !c.is_ascii_lowercase() {
+                tracing::error!(char = ?c, "Ctrl(char) contains non-lowercase ASCII — skipping");
+                return Vec::new();
+            }
+            vec![*c as u8 - 0x60]
+        }
         KeyEvent::Printable(c) => vec![*c as u8],
         KeyEvent::CursorPositionReport(_, _) => Vec::new(), // intercepted in proxy
         KeyEvent::Raw(bytes) => bytes.clone(),
@@ -1074,10 +1095,43 @@ mod tests {
     #[test]
     fn test_parse_key_name_ctrl_letters() {
         assert_eq!(parse_key_name("ctrl+a").unwrap(), KeyEvent::Ctrl('a'));
-        assert_eq!(parse_key_name("ctrl+d").unwrap(), KeyEvent::Ctrl('d'));
-        assert_eq!(parse_key_name("ctrl+z").unwrap(), KeyEvent::Ctrl('z'));
-        assert_eq!(parse_key_name("CTRL+C").unwrap(), KeyEvent::Ctrl('c'));
+        assert_eq!(parse_key_name("ctrl+e").unwrap(), KeyEvent::Ctrl('e'));
+        assert_eq!(parse_key_name("ctrl+n").unwrap(), KeyEvent::Ctrl('n'));
+        assert_eq!(parse_key_name("ctrl+p").unwrap(), KeyEvent::Ctrl('p'));
         assert_eq!(parse_key_name("Ctrl+X").unwrap(), KeyEvent::Ctrl('x'));
+    }
+
+    #[test]
+    fn test_parse_key_name_rejects_signal_keys() {
+        assert!(parse_key_name("ctrl+c").is_err());
+        assert!(parse_key_name("ctrl+d").is_err());
+        assert!(parse_key_name("ctrl+z").is_err());
+        assert!(parse_key_name("ctrl+s").is_err());
+        assert!(parse_key_name("ctrl+q").is_err());
+        // Case-insensitive: uppercase input hits same deny-list
+        assert!(parse_key_name("CTRL+C").is_err());
+        assert!(parse_key_name("Ctrl+Z").is_err());
+    }
+
+    #[test]
+    fn test_parse_key_name_rejects_aliased_keys() {
+        assert!(parse_key_name("ctrl+i").is_err());
+        assert!(parse_key_name("ctrl+m").is_err());
+        assert!(parse_key_name("CTRL+I").is_err());
+    }
+
+    #[test]
+    fn test_parse_key_name_ctrl_multi_char_error() {
+        let err = parse_key_name("ctrl+ab").unwrap_err();
+        assert!(
+            err.to_string().contains("single letter"),
+            "should mention 'single letter': {err}"
+        );
+        let err = parse_key_name("ctrl+1").unwrap_err();
+        assert!(
+            err.to_string().contains("single letter"),
+            "should mention 'single letter' for digits: {err}"
+        );
     }
 
     // --- Keybindings tests ---
@@ -1154,6 +1208,7 @@ mod tests {
             item_text_on: vec![],
             scrollbar_on: vec![0x1B, b'[', b'2', b'm'],
             border_on: vec![0x1B, b'[', b'2', b'm'],
+            borders: true,
         };
 
         handler.update_config(new_theme, Keybindings::default(), &[' ', '/'], 15);
