@@ -655,11 +655,12 @@ impl InputHandler {
 
         let selected = &self.suggestions[selected_idx];
 
-        let (delete_chars, replacement) = {
+        let (delete_chars, replacement, command) = {
             let p = parser.lock().unwrap();
             let state = p.state();
             let buffer = state.command_buffer().unwrap_or("");
             let cursor = state.buffer_cursor();
+            let ctx = parse_command_context(buffer, cursor);
 
             if selected.kind == gc_suggest::SuggestionKind::History {
                 // History: delete the entire buffer up to cursor, then type the full command.
@@ -671,13 +672,23 @@ impl InputHandler {
                     buffer.chars().count(),
                     "history accept assumes cursor at end of buffer"
                 );
-                (cursor, selected.text.clone())
+                (cursor, selected.text.clone(), ctx.command)
             } else {
-                // Non-history: delete current_word, type suggestion text
-                let ctx = parse_command_context(buffer, cursor);
-                (ctx.current_word.chars().count(), selected.text.clone())
+                let word_len = ctx.current_word.chars().count();
+                (word_len, selected.text.clone(), ctx.command)
             }
         };
+
+        // Record accepted completion for frecency scoring.
+        // History items are full commands — always keyed without command scope
+        // so the key is consistent regardless of buffer parse state.
+        let frecency_command = if selected.kind == gc_suggest::SuggestionKind::History {
+            None
+        } else {
+            command.as_deref()
+        };
+        self.engine
+            .record_frecency(frecency_command, selected.kind, &selected.text);
 
         // One 0x7F (backspace) per CHARACTER — the shell deletes by character, not byte
         let mut bytes = vec![0x7F; delete_chars];
@@ -695,6 +706,11 @@ impl InputHandler {
         }
         // Screen dimensions changed — prior scroll deficit is meaningless.
         self.scroll_deficit = 0;
+    }
+
+    /// Flush unsaved frecency records to disk. Call on proxy shutdown.
+    pub fn flush_frecency(&self) {
+        self.engine.flush_frecency();
     }
 }
 

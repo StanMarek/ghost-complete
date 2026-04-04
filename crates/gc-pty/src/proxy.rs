@@ -407,6 +407,14 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
         h.abort();
     }
 
+    // Flush unsaved frecency records before exit
+    match handler.lock() {
+        Ok(h) => h.flush_frecency(),
+        Err(e) => {
+            tracing::warn!("handler mutex poisoned at shutdown, frecency data not flushed: {e}")
+        }
+    }
+
     // _raw_guard drops here, restoring terminal state
 
     // Wait for child and get exit status

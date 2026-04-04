@@ -15,6 +15,25 @@ pub enum SuggestionKind {
 impl SuggestionKind {
     /// Display priority for popup ordering (lower = shown first).
     /// Branches/tags before subcommands/flags, flags before filesystem.
+    /// Short tag used as a component in frecency keys so that different kinds
+    /// under the same command don't share a score bucket.
+    pub fn key_tag(self) -> &'static str {
+        match self {
+            Self::Command => "cmd",
+            Self::Subcommand => "sub",
+            Self::Flag => "flag",
+            Self::FilePath => "file",
+            Self::Directory => "dir",
+            Self::GitBranch => "branch",
+            Self::GitTag => "tag",
+            Self::GitRemote => "remote",
+            Self::History => "hist",
+            Self::EnvVar => "env",
+        }
+    }
+
+    /// Display priority for popup ordering (lower = shown first).
+    /// Branches/tags before subcommands/flags, flags before filesystem.
     pub fn sort_priority(self) -> u8 {
         match self {
             Self::GitBranch => 0,
