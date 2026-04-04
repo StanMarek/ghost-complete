@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-04-04
+
+### Fixed
+
+- **Prevent recursive launch and enable per-pane proxy in tmux** — fixes recursive ghost-complete spawning and enables independent proxy instances per tmux pane.
+
 ## [0.6.0] - 2026-04-04
 
 ### Added
@@ -249,6 +255,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Shell integration** for zsh (full), bash (Ctrl+/), and fish (Ctrl+/)
 - **`validate-specs` subcommand** with colored output and item counts
 
+[0.6.1]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.6.1
 [0.6.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.6.0
 [0.5.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.5.0
 [0.4.1]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.4.1
