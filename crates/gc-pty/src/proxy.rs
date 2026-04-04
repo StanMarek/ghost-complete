@@ -92,12 +92,32 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
         anyhow::bail!("failed to exec shell: {}", err);
     }
 
-    // Log tmux detection for debugging
+    // Log tmux detection and propagate recursion guard to future panes
     if std::env::var("TMUX").is_ok() {
         tracing::info!("tmux session detected — running inside tmux pane");
         if let Ok(output) = std::process::Command::new("tmux").arg("-V").output() {
             let version = String::from_utf8_lossy(&output.stdout);
             tracing::info!("tmux version: {}", version.trim());
+        }
+        // Propagate GHOST_COMPLETE_ACTIVE into the tmux session env so future
+        // panes inherit it. init.zsh uses PPID + GHOST_COMPLETE_PANE for its
+        // recursion check (not this variable), but session-level propagation
+        // covers edge cases (respawn-pane, programmatic pane creation) and
+        // lets script generators detect the proxy context.
+        match std::process::Command::new("tmux")
+            .args(["setenv", "GHOST_COMPLETE_ACTIVE", "1"])
+            .output()
+        {
+            Ok(output) if !output.status.success() => {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                tracing::warn!(
+                    "tmux setenv failed (exit {}): {}",
+                    output.status,
+                    stderr.trim()
+                );
+            }
+            Err(e) => tracing::warn!("failed to run tmux setenv: {}", e),
+            _ => {}
         }
     }
 
@@ -406,6 +426,11 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     if let Some(h) = debounce_handle {
         h.abort();
     }
+
+    // Note: we do NOT clean up `tmux setenv GHOST_COMPLETE_ACTIVE` on exit.
+    // Multiple panes share the session env, so the first pane to exit would
+    // remove it for all others. Leaving it set is harmless — init.zsh's tmux
+    // branch uses PPID + GHOST_COMPLETE_PANE, not this variable.
 
     // Flush unsaved frecency records before exit
     match handler.lock() {
