@@ -2,11 +2,21 @@
 # Detects the terminal emulator and exec's ghost-complete as a PTY proxy.
 __ghost_complete_init() {
   if [[ -n "$TMUX" ]]; then
-    # Inside tmux: launch per-pane. Skip GHOST_COMPLETE_ACTIVE (leaks from
-    # outer shell and would block the per-pane proxy we actually want).
-    # PPID check prevents recursion: ghost-complete spawns the inner shell,
-    # so the inner shell's PPID is ghost-complete.
-    [[ "$(ps -o comm= -p $PPID 2>/dev/null)" == "ghost-complete" ]] && return
+    # Inside tmux: two guards prevent stacking proxies.
+    #
+    # 1) PPID check — catches the direct child shell. Works because
+    #    `exec ghost-complete` replaces the shell process, so the spawned
+    #    inner shell's PPID is the ghost-complete binary itself.
+    # 2) GHOST_COMPLETE_PANE — catches subshells (zsh/bash typed at the
+    #    prompt). spawn.rs sets GHOST_COMPLETE_PANE=$TMUX_PANE in the child
+    #    env; subshells inherit it. A new tmux pane gets a fresh env without
+    #    this variable, so it correctly launches a new proxy.
+    #
+    # We cannot use GHOST_COMPLETE_ACTIVE here because it is always present
+    # in tmux — set by proxy.rs (tmux setenv) for future-pane propagation,
+    # and inherited from the outer terminal shell that launched tmux.
+    [[ "$(ps -o comm= -p "$PPID" 2>/dev/null)" == "ghost-complete" ]] && return
+    [[ -n "$GHOST_COMPLETE_PANE" && "$GHOST_COMPLETE_PANE" == "$TMUX_PANE" ]] && return
     if [[ -n "$GHOSTTY_RESOURCES_DIR" ]] || \
        [[ -n "$KITTY_WINDOW_ID" ]] || \
        [[ -n "$WEZTERM_UNIX_SOCKET" ]] || \
@@ -19,7 +29,8 @@ __ghost_complete_init() {
       fi
     fi
   else
-    # Outside tmux: env var guard is reliable (no multiplexer to strip it)
+    # Outside tmux: GHOST_COMPLETE_ACTIVE is a reliable recursion guard
+    # because no multiplexer re-injects it into unrelated shell sessions.
     [[ -n "$GHOST_COMPLETE_ACTIVE" ]] && return
     local supported=0
     if [[ -n "$KITTY_WINDOW_ID" ]] || [[ -n "$ALACRITTY_SOCKET" ]]; then

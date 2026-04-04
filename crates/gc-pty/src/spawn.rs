@@ -24,8 +24,17 @@ pub fn spawn_shell(shell: &str, args: &[String]) -> Result<SpawnedShell> {
     for (key, value) in std::env::vars() {
         cmd.env(key, value);
     }
-    // Ensure recursion guard is always set, even if the parent env lost it
+    // Belt-and-suspenders recursion guard. init.zsh checks this in the
+    // non-tmux path; setting it here covers manual `ghost-complete` invocations
+    // that bypass init.zsh entirely.
     cmd.env("GHOST_COMPLETE_ACTIVE", "1");
+
+    // Pane-local recursion guard for tmux. init.zsh compares this against the
+    // live $TMUX_PANE — matches inside the same pane (blocking subshells),
+    // mismatches in new panes (allowing a fresh proxy).
+    if let Ok(pane) = std::env::var("TMUX_PANE") {
+        cmd.env("GHOST_COMPLETE_PANE", pane);
+    }
 
     let child = slave
         .spawn_command(cmd)

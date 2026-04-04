@@ -1218,13 +1218,17 @@ const MANAGED_WARNING: &str =
     "# !! Contents within this block are managed by 'ghost-complete install' !!";
 
 fn init_block(script_path: &Path) -> String {
+    let path = script_path.display();
     format!(
         "{INIT_BEGIN}\n\
          {MANAGED_WARNING}\n\
-         [[ -f \"{}\" ]] && builtin source \"{}\"\n\
-         {INIT_END}",
-        script_path.display(),
-        script_path.display()
+         if [[ -f \"{path}\" ]]; then\n  \
+         builtin source \"{path}\"\n\
+         else\n  \
+         echo \"ghost-complete: init script missing: {path}\" >&2\n  \
+         echo \"ghost-complete: run 'ghost-complete install' to restore it\" >&2\n\
+         fi\n\
+         {INIT_END}"
     )
 }
 
@@ -1503,9 +1507,12 @@ mod tests {
         assert!(block.contains(INIT_BEGIN));
         assert!(block.contains(INIT_END));
         assert!(block.contains(MANAGED_WARNING));
-        // Thin source line pointing to external script
+        // Source line pointing to external script
         assert!(block.contains("builtin source \"/some/path/init.zsh\""));
         assert!(block.contains("-f \"/some/path/init.zsh\""));
+        // Missing-file warning (else branch)
+        assert!(block.contains("ghost-complete: init script missing:"));
+        assert!(block.contains("ghost-complete install"));
     }
 
     #[test]
@@ -1516,22 +1523,53 @@ mod tests {
         assert!(script.contains("unset -f __ghost_complete_init"));
         assert!(script.contains("exec ghost-complete"));
         assert!(script.contains("command -v ghost-complete"));
-        // Guard: env var (non-tmux path)
-        assert!(script.contains("GHOST_COMPLETE_ACTIVE"));
-        // Guard: PPID check (tmux path)
-        assert!(script.contains("$PPID"));
-        assert!(script.contains("ghost-complete\""));
+
+        // --- Structural validation: guards must be in the correct branch ---
+
+        // Split on the else branch to get tmux vs non-tmux sections
+        let tmux_marker = "if [[ -n \"$TMUX\" ]]; then";
+        assert!(script.contains(tmux_marker), "missing tmux branch");
+        let tmux_start = script.find(tmux_marker).unwrap();
+        let else_marker = script[tmux_start..].find("\n  else\n").unwrap();
+        let tmux_branch = &script[tmux_start..tmux_start + else_marker];
+        let non_tmux_branch = &script[tmux_start + else_marker..];
+
+        // tmux branch: PPID check (quoted) + GHOST_COMPLETE_PANE check
+        assert!(
+            tmux_branch.contains("ps -o comm= -p \"$PPID\""),
+            "tmux branch must have quoted PPID check"
+        );
+        assert!(
+            tmux_branch.contains("GHOST_COMPLETE_PANE"),
+            "tmux branch must have GHOST_COMPLETE_PANE subshell guard"
+        );
+        assert!(
+            tmux_branch.contains("$TMUX_PANE"),
+            "tmux branch must compare GHOST_COMPLETE_PANE against TMUX_PANE"
+        );
+        // tmux branch must NOT use GHOST_COMPLETE_ACTIVE as a guard
+        assert!(
+            !tmux_branch.contains("[[ -n \"$GHOST_COMPLETE_ACTIVE\" ]] && return"),
+            "tmux branch must not use GHOST_COMPLETE_ACTIVE as recursion guard"
+        );
+
+        // non-tmux branch: GHOST_COMPLETE_ACTIVE guard
+        assert!(
+            non_tmux_branch.contains("GHOST_COMPLETE_ACTIVE"),
+            "non-tmux branch must use GHOST_COMPLETE_ACTIVE guard"
+        );
+
         // tmux branch: detect outer terminal via env vars
-        assert!(script.contains("$TMUX"));
-        assert!(script.contains("$GHOSTTY_RESOURCES_DIR"));
-        assert!(script.contains("$KITTY_WINDOW_ID"));
-        assert!(script.contains("$WEZTERM_UNIX_SOCKET"));
-        assert!(script.contains("$ALACRITTY_SOCKET"));
-        assert!(script.contains("$ITERM_SESSION_ID"));
-        assert!(script.contains("\"$TERM_PROGRAM\" == \"rio\""));
-        // Direct terminal detection
-        assert!(script.contains("case \"$TERM_PROGRAM\""));
-        assert!(script.contains("ghostty|WezTerm|rio|iTerm.app|Apple_Terminal)"));
+        assert!(tmux_branch.contains("$GHOSTTY_RESOURCES_DIR"));
+        assert!(tmux_branch.contains("$KITTY_WINDOW_ID"));
+        assert!(tmux_branch.contains("$WEZTERM_UNIX_SOCKET"));
+        assert!(tmux_branch.contains("$ALACRITTY_SOCKET"));
+        assert!(tmux_branch.contains("$ITERM_SESSION_ID"));
+        assert!(tmux_branch.contains("\"$TERM_PROGRAM\" == \"rio\""));
+
+        // Direct terminal detection (non-tmux)
+        assert!(non_tmux_branch.contains("case \"$TERM_PROGRAM\""));
+        assert!(non_tmux_branch.contains("ghostty|WezTerm|rio|iTerm.app|Apple_Terminal)"));
     }
 
     #[test]
