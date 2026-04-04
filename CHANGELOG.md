@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-04-04
+
+### Added
+
+- **Frecency recording wired in production** — frecency scoring (added in v0.2.3) now records accepted completions. Every Tab/Enter acceptance calls `record_frecency()`, so the frecency database is no longer always empty.
+- **Exponential decay algorithm** — replaced linear decay (`freq * 1/(1+t/168h)`) with exponential decay using single-number compression (`stored_score / 2^(t/72h)`). Full usage history compressed into one `f64` per entry. Half-life shortened from 1 week to 3 days.
+- **Context-aware frecency keys** — argument completions keyed as `command\0kind\0text` so `--help` under `git` doesn't pollute `docker`. History items always keyed without command scope for consistency.
+- **Frecency boosts all suggestion types** — files, flags, branches, subcommands all benefit from frecency boosting, not just history entries. Re-sorts after boosting while preserving history-comes-last ordering.
+
+### Changed
+
+- **Atomic frecency persistence** — writes via tmp+rename, batch saves every 3 accepts, flush on proxy shutdown. Prunes to 1000 entries on save.
+- **Schema migration** — old `{frequency, last_used_secs}` format auto-migrated to `{stored_score, reference_secs}` on load.
+- **Mutex poison recovery** — `FrecencyDb` lock uses poison recovery so a best-effort subsystem never crashes the proxy.
+
 ## [0.5.0] - 2026-04-03
 
 ### Added
@@ -234,6 +249,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Shell integration** for zsh (full), bash (Ctrl+/), and fish (Ctrl+/)
 - **`validate-specs` subcommand** with colored output and item counts
 
+[0.6.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.6.0
 [0.5.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.5.0
 [0.4.1]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.4.1
 [0.4.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.4.0
