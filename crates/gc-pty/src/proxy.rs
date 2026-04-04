@@ -427,12 +427,10 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
         h.abort();
     }
 
-    // Clean up tmux session env if we set it
-    if std::env::var("TMUX").is_ok() {
-        let _ = std::process::Command::new("tmux")
-            .args(["setenv", "-u", "GHOST_COMPLETE_ACTIVE"])
-            .output();
-    }
+    // Note: we do NOT clean up `tmux setenv GHOST_COMPLETE_ACTIVE` on exit.
+    // Multiple panes share the session env, so the first pane to exit would
+    // remove it for all others. Leaving it set is harmless — init.zsh's tmux
+    // branch uses PPID + GHOST_COMPLETE_PANE, not this variable.
 
     // Flush unsaved frecency records before exit
     match handler.lock() {

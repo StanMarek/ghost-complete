@@ -32,8 +32,15 @@ pub fn spawn_shell(shell: &str, args: &[String]) -> Result<SpawnedShell> {
     // Pane-local recursion guard for tmux. init.zsh compares this against the
     // live $TMUX_PANE — matches inside the same pane (blocking subshells),
     // mismatches in new panes (allowing a fresh proxy).
-    if let Ok(pane) = std::env::var("TMUX_PANE") {
-        cmd.env("GHOST_COMPLETE_PANE", pane);
+    if std::env::var("TMUX").is_ok() {
+        match std::env::var("TMUX_PANE") {
+            Ok(pane) => {
+                cmd.env("GHOST_COMPLETE_PANE", pane);
+            }
+            Err(_) => tracing::warn!(
+                "TMUX is set but TMUX_PANE is not — subshell recursion guard degraded"
+            ),
+        }
     }
 
     let child = slave
