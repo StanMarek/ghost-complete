@@ -92,13 +92,17 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
         anyhow::bail!("failed to exec shell: {}", err);
     }
 
-    // Log tmux detection for debugging
+    // Log tmux detection and propagate recursion guard to future panes
     if std::env::var("TMUX").is_ok() {
         tracing::info!("tmux session detected — running inside tmux pane");
         if let Ok(output) = std::process::Command::new("tmux").arg("-V").output() {
             let version = String::from_utf8_lossy(&output.stdout);
             tracing::info!("tmux version: {}", version.trim());
         }
+        // Set GHOST_COMPLETE_ACTIVE in tmux session env so new panes inherit it
+        let _ = std::process::Command::new("tmux")
+            .args(["setenv", "GHOST_COMPLETE_ACTIVE", "1"])
+            .output();
     }
 
     let SpawnedShell { master, mut child } = spawn_shell(shell, args)?;

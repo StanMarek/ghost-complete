@@ -24,6 +24,8 @@ pub fn spawn_shell(shell: &str, args: &[String]) -> Result<SpawnedShell> {
     for (key, value) in std::env::vars() {
         cmd.env(key, value);
     }
+    // Ensure recursion guard is always set, even if the parent env lost it
+    cmd.env("GHOST_COMPLETE_ACTIVE", "1");
 
     let child = slave
         .spawn_command(cmd)

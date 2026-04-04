@@ -3,6 +3,7 @@ use std::fs;
 use std::path::Path;
 
 const ZSH_INTEGRATION: &str = include_str!("../../../shell/ghost-complete.zsh");
+const ZSH_INIT: &str = include_str!("../../../shell/init.zsh");
 
 const EMBEDDED_SPECS: &[(&str, &str)] = &[
     ("-.json", include_str!("../../../specs/-.json")),
@@ -1216,47 +1217,14 @@ const SHELL_END: &str = "# <<< ghost-complete shell integration <<<";
 const MANAGED_WARNING: &str =
     "# !! Contents within this block are managed by 'ghost-complete install' !!";
 
-fn init_block() -> String {
+fn init_block(script_path: &Path) -> String {
     format!(
-        r#"{INIT_BEGIN}
-{MANAGED_WARNING}
-if [[ -n "$KITTY_WINDOW_ID" && -z "$GHOST_COMPLETE_ACTIVE" ]]; then
-  if command -v ghost-complete >/dev/null 2>&1; then
-    export GHOST_COMPLETE_ACTIVE=1
-    exec ghost-complete
-  fi
-fi
-if [[ -n "$ALACRITTY_SOCKET" && -z "$GHOST_COMPLETE_ACTIVE" ]]; then
-  if command -v ghost-complete >/dev/null 2>&1; then
-    export GHOST_COMPLETE_ACTIVE=1
-    exec ghost-complete
-  fi
-fi
-case "$TERM_PROGRAM" in
-  ghostty|WezTerm|rio|iTerm.app|Apple_Terminal)
-    if [[ -z "$GHOST_COMPLETE_ACTIVE" ]]; then
-      if command -v ghost-complete >/dev/null 2>&1; then
-        export GHOST_COMPLETE_ACTIVE=1
-        exec ghost-complete
-      fi
-    fi
-    ;;
-esac
-if [[ -n "$TMUX" && -z "$GHOST_COMPLETE_ACTIVE" && \
-   "$(ps -o comm= -p $PPID 2>/dev/null)" != "ghost-complete" ]]; then
-  if [[ -n "$GHOSTTY_RESOURCES_DIR" ]] || \
-     [[ -n "$KITTY_WINDOW_ID" ]] || \
-     [[ -n "$WEZTERM_UNIX_SOCKET" ]] || \
-     [[ -n "$ALACRITTY_SOCKET" ]] || \
-     [[ -n "$ITERM_SESSION_ID" ]] || \
-     [[ "$TERM_PROGRAM" == "rio" ]]; then
-    if command -v ghost-complete >/dev/null 2>&1; then
-      export GHOST_COMPLETE_ACTIVE=1
-      exec ghost-complete
-    fi
-  fi
-fi
-{INIT_END}"#,
+        "{INIT_BEGIN}\n\
+         {MANAGED_WARNING}\n\
+         [[ -f \"{}\" ]] && builtin source \"{}\"\n\
+         {INIT_END}",
+        script_path.display(),
+        script_path.display()
     )
 }
 
@@ -1309,8 +1277,8 @@ fn copy_specs(config_dir: &Path) -> Result<()> {
     Ok(())
 }
 
-fn print_shell_blocks(script_path: &Path) {
-    let init = init_block();
+fn print_shell_blocks(init_path: &Path, script_path: &Path) {
+    let init = init_block(init_path);
     let shell = shell_integration_block(script_path);
     let indented_init = init.replace('\n', "\n    ");
     let indented_shell = shell.replace('\n', "\n    ");
@@ -1326,11 +1294,13 @@ fn print_shell_blocks(script_path: &Path) {
 }
 
 fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()> {
-    // 1. Write zsh shell integration script
+    // 1. Write zsh shell scripts
     let shell_dir = config_dir.join("shell");
+    let init_path = shell_dir.join("init.zsh");
     let script_path = shell_dir.join("ghost-complete.zsh");
 
     if dry_run {
+        println!("  Would write init script to {}", init_path.display());
         println!("  Would write zsh integration to {}", script_path.display());
         println!(
             "  Would install {} completion specs to {}",
@@ -1345,12 +1315,16 @@ fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()>
         }
         println!("  Would update {}\n", zshrc_path.display());
         println!("  \x1b[36m\u{2139}\x1b[0m  The following would be added to your shell config:\n");
-        print_shell_blocks(&script_path);
+        print_shell_blocks(&init_path, &script_path);
         return Ok(());
     }
 
     fs::create_dir_all(&shell_dir)
         .with_context(|| format!("failed to create {}", shell_dir.display()))?;
+
+    fs::write(&init_path, ZSH_INIT)
+        .with_context(|| format!("failed to write {}", init_path.display()))?;
+    println!("  Wrote init script to {}", init_path.display());
 
     fs::write(&script_path, ZSH_INTEGRATION)
         .with_context(|| format!("failed to write {}", script_path.display()))?;
@@ -1392,7 +1366,7 @@ fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()>
     // 5. Prepend init block, append shell integration block
     let content = content.trim().to_string();
     let mut new_zshrc = String::new();
-    new_zshrc.push_str(&init_block());
+    new_zshrc.push_str(&init_block(&init_path));
     new_zshrc.push('\n');
     if !content.is_empty() {
         new_zshrc.push_str(&content);
@@ -1413,7 +1387,7 @@ fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()>
                 "\n  \x1b[33m\u{26a0}  Could not write to {} (permission denied)\x1b[0m\n",
                 zshrc_path.display()
             );
-            print_shell_blocks(&script_path);
+            print_shell_blocks(&init_path, &script_path);
             println!(
                 "  \x1b[32m\u{2713}\x1b[0m  Installation complete (manual shell configuration required)."
             );
@@ -1454,6 +1428,7 @@ fn uninstall_from(zshrc_path: &Path, config_dir: &Path) -> Result<()> {
 
     // 2. Remove shell integration scripts
     for name in &[
+        "init.zsh",
         "ghost-complete.zsh",
         "ghost-complete.bash",
         "ghost-complete.fish",
@@ -1523,31 +1498,40 @@ mod tests {
 
     #[test]
     fn test_init_block_content() {
-        let block = init_block();
+        let path = Path::new("/some/path/init.zsh");
+        let block = init_block(path);
         assert!(block.contains(INIT_BEGIN));
         assert!(block.contains(INIT_END));
         assert!(block.contains(MANAGED_WARNING));
-        assert!(block.contains("exec ghost-complete"));
-        assert!(block.contains("command -v ghost-complete"));
-        // Kitty detection (uses KITTY_WINDOW_ID because TERM_PROGRAM is xterm-kitty)
-        assert!(block.contains("$KITTY_WINDOW_ID"));
-        // Allowlist: case statement with all supported terminals
-        assert!(block.contains("case \"$TERM_PROGRAM\""));
-        assert!(block.contains("ghostty|WezTerm|rio|iTerm.app|Apple_Terminal)"));
-        // Alacritty detection (uses ALACRITTY_SOCKET)
-        assert!(block.contains("$ALACRITTY_SOCKET"));
-        assert!(block.contains("GHOST_COMPLETE_ACTIVE"));
-        // tmux detection: TMUX + PPID guard
-        assert!(block.contains("$TMUX"));
-        assert!(block.contains("$PPID"));
-        assert!(block.contains("ghost-complete\""));
-        assert!(block.contains("\"$TERM_PROGRAM\" == \"rio\""));
-        // tmux env var detection for all supported terminals
-        assert!(block.contains("$GHOSTTY_RESOURCES_DIR"));
-        assert!(block.contains("$KITTY_WINDOW_ID"));
-        assert!(block.contains("$WEZTERM_UNIX_SOCKET"));
-        assert!(block.contains("$ALACRITTY_SOCKET"));
-        assert!(block.contains("$ITERM_SESSION_ID"));
+        // Thin source line pointing to external script
+        assert!(block.contains("builtin source \"/some/path/init.zsh\""));
+        assert!(block.contains("-f \"/some/path/init.zsh\""));
+    }
+
+    #[test]
+    fn test_init_script_content() {
+        // Verify the external init script has all the required detection logic
+        let script = ZSH_INIT;
+        assert!(script.contains("__ghost_complete_init()"));
+        assert!(script.contains("unset -f __ghost_complete_init"));
+        assert!(script.contains("exec ghost-complete"));
+        assert!(script.contains("command -v ghost-complete"));
+        // Guard: env var (non-tmux path)
+        assert!(script.contains("GHOST_COMPLETE_ACTIVE"));
+        // Guard: PPID check (tmux path)
+        assert!(script.contains("$PPID"));
+        assert!(script.contains("ghost-complete\""));
+        // tmux branch: detect outer terminal via env vars
+        assert!(script.contains("$TMUX"));
+        assert!(script.contains("$GHOSTTY_RESOURCES_DIR"));
+        assert!(script.contains("$KITTY_WINDOW_ID"));
+        assert!(script.contains("$WEZTERM_UNIX_SOCKET"));
+        assert!(script.contains("$ALACRITTY_SOCKET"));
+        assert!(script.contains("$ITERM_SESSION_ID"));
+        assert!(script.contains("\"$TERM_PROGRAM\" == \"rio\""));
+        // Direct terminal detection
+        assert!(script.contains("case \"$TERM_PROGRAM\""));
+        assert!(script.contains("ghostty|WezTerm|rio|iTerm.app|Apple_Terminal)"));
     }
 
     #[test]
@@ -1574,25 +1558,33 @@ mod tests {
         assert!(content.contains(INIT_END));
         assert!(content.contains(SHELL_BEGIN));
         assert!(content.contains(SHELL_END));
-        assert!(content.contains("GHOST_COMPLETE_ACTIVE"));
+        // Init script should be written and sourced
+        let init_script = config.join("shell/init.zsh");
+        assert!(init_script.exists());
+        let init_content = fs::read_to_string(&init_script).unwrap();
+        assert_eq!(init_content, ZSH_INIT);
+        let expected_init_source = format!("builtin source \"{}\"", init_script.display());
+        assert!(
+            content.contains(&expected_init_source),
+            "init source path mismatch: .zshrc does not contain '{}'",
+            expected_init_source
+        );
 
-        // Zsh shell script should be written
+        // Zsh shell integration script should be written and sourced
         let script = config.join("shell/ghost-complete.zsh");
         assert!(script.exists());
         let script_content = fs::read_to_string(&script).unwrap();
         assert_eq!(script_content, ZSH_INTEGRATION);
-
-        // Bash/fish are not deployed
-        assert!(!config.join("shell/ghost-complete.bash").exists());
-        assert!(!config.join("shell/ghost-complete.fish").exists());
-
-        // Source path in .zshrc must match actual script location
         let expected_source = format!("source \"{}\"", script.display());
         assert!(
             content.contains(&expected_source),
             "source path mismatch: .zshrc does not contain '{}'",
             expected_source
         );
+
+        // Bash/fish are not deployed
+        assert!(!config.join("shell/ghost-complete.bash").exists());
+        assert!(!config.join("shell/ghost-complete.fish").exists());
     }
 
     #[test]
@@ -1672,7 +1664,8 @@ mod tests {
         assert!(!content.contains(SHELL_BEGIN));
         assert!(content.contains("export FOO=bar"));
 
-        // Zsh script should be removed
+        // Shell scripts should be removed
+        assert!(!config.join("shell/init.zsh").exists());
         assert!(!config.join("shell/ghost-complete.zsh").exists());
     }
 
@@ -1772,6 +1765,7 @@ mod tests {
         assert!(result.is_ok());
 
         // File deployments should still have happened
+        assert!(config.join("shell/init.zsh").exists());
         assert!(config.join("shell/ghost-complete.zsh").exists());
         assert!(config.join("specs").exists());
     }
