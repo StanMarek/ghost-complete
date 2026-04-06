@@ -4,6 +4,8 @@ use std::path::Path;
 
 const ZSH_INTEGRATION: &str = include_str!("../../../shell/ghost-complete.zsh");
 const ZSH_INIT: &str = include_str!("../../../shell/init.zsh");
+const BASH_INTEGRATION: &str = include_str!("../../../shell/ghost-complete.bash");
+const BASH_INIT: &str = include_str!("../../../shell/init.bash");
 
 const EMBEDDED_SPECS: &[(&str, &str)] = &[
     ("-.json", include_str!("../../../specs/-.json")),
@@ -1297,7 +1299,7 @@ fn print_shell_blocks(init_path: &Path, script_path: &Path) {
     println!("    \x1b[36m{indented_shell}\x1b[0m\n");
 }
 
-fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()> {
+fn install_zsh_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()> {
     // 1. Write zsh shell scripts
     let shell_dir = config_dir.join("shell");
     let init_path = shell_dir.join("init.zsh");
@@ -1383,7 +1385,7 @@ fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()>
     match fs::write(zshrc_path, &new_zshrc) {
         Ok(()) => {
             println!("  Updated {}", zshrc_path.display());
-            println!("\nghost-complete installed successfully!");
+            println!("\nghost-complete installed successfully for zsh!");
             println!("Restart your shell or run: source ~/.zshrc");
         }
         Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
@@ -1407,7 +1409,175 @@ fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()>
     Ok(())
 }
 
-fn uninstall_from(zshrc_path: &Path, config_dir: &Path) -> Result<()> {
+fn install_bash_to(bashrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()> {
+    // 1. Write bash shell scripts
+    let shell_dir = config_dir.join("shell");
+    let init_path = shell_dir.join("init.bash");
+    let script_path = shell_dir.join("ghost-complete.bash");
+
+    if dry_run {
+        println!("  Would write init script to {}", init_path.display());
+        println!(
+            "  Would write bash integration to {}",
+            script_path.display()
+        );
+        println!(
+            "  Would install {} completion specs to {}",
+            EMBEDDED_SPECS.len(),
+            config_dir.join("specs").display()
+        );
+        let config_path = config_dir.join("config.toml");
+        if !config_path.exists() {
+            println!("  Would write default config to {}", config_path.display());
+        } else {
+            println!("  Config already exists at {}", config_path.display());
+        }
+        println!("  Would update {}\n", bashrc_path.display());
+        println!("  \x1b[36m\u{2139}\x1b[0m  The following would be added to your shell config:\n");
+        print_shell_blocks(&init_path, &script_path);
+        return Ok(());
+    }
+
+    fs::create_dir_all(&shell_dir)
+        .with_context(|| format!("failed to create {}", shell_dir.display()))?;
+
+    fs::write(&init_path, BASH_INIT)
+        .with_context(|| format!("failed to write {}", init_path.display()))?;
+    println!("  Wrote init script to {}", init_path.display());
+
+    fs::write(&script_path, BASH_INTEGRATION)
+        .with_context(|| format!("failed to write {}", script_path.display()))?;
+    println!("  Wrote bash integration to {}", script_path.display());
+
+    // 1b. Copy completion specs
+    copy_specs(config_dir)?;
+
+    // 1c. Write default config.toml if one doesn't exist (never clobber)
+    let config_path = config_dir.join("config.toml");
+    if !config_path.exists() {
+        fs::write(&config_path, DEFAULT_CONFIG_TOML)
+            .with_context(|| format!("failed to write {}", config_path.display()))?;
+        println!("  Wrote default config to {}", config_path.display());
+    } else {
+        println!("  Config already exists at {}", config_path.display());
+    }
+
+    // 2. Read existing .bashrc (or empty)
+    let existing = if bashrc_path.exists() {
+        fs::read_to_string(bashrc_path)
+            .with_context(|| format!("failed to read {}", bashrc_path.display()))?
+    } else {
+        String::new()
+    };
+
+    // 3. Backup
+    if bashrc_path.exists() {
+        let backup = bashrc_path.with_extension("backup.ghost-complete");
+        fs::copy(bashrc_path, &backup)
+            .with_context(|| format!("failed to backup to {}", backup.display()))?;
+        println!("  Backed up .bashrc to {}", backup.display());
+    }
+
+    // 4. Strip existing managed blocks (idempotent)
+    let (content, _) = remove_block(&existing, INIT_BEGIN, INIT_END);
+    let (content, _) = remove_block(&content, SHELL_BEGIN, SHELL_END);
+
+    // 5. Prepend init block, append shell integration block
+    let content = content.trim().to_string();
+    let mut new_bashrc = String::new();
+    new_bashrc.push_str(&init_block(&init_path));
+    new_bashrc.push('\n');
+    if !content.is_empty() {
+        new_bashrc.push_str(&content);
+        new_bashrc.push('\n');
+    }
+    new_bashrc.push_str(&shell_integration_block(&script_path));
+    new_bashrc.push('\n');
+
+    // 6. Write .bashrc — graceful fallback if permission denied (e.g. nix-managed)
+    match fs::write(bashrc_path, &new_bashrc) {
+        Ok(()) => {
+            println!("  Updated {}", bashrc_path.display());
+            println!("\nghost-complete installed successfully for bash!");
+            println!("Restart your shell or run: source ~/.bashrc");
+        }
+        Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
+            println!(
+                "\n  \x1b[33m\u{26a0}  Could not write to {} (permission denied)\x1b[0m\n",
+                bashrc_path.display()
+            );
+            print_shell_blocks(&init_path, &script_path);
+            println!(
+                "  \x1b[32m\u{2713}\x1b[0m  Installation complete (manual shell configuration required)."
+            );
+        }
+        Err(e) => {
+            return Err(anyhow::anyhow!(
+                "failed to write {}: {}",
+                bashrc_path.display(),
+                e
+            ));
+        }
+    }
+    Ok(())
+}
+
+// Keep backward-compatible install_to that uses zsh
+fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()> {
+    install_zsh_to(zshrc_path, config_dir, dry_run)
+}
+
+fn uninstall_from(rc_path: &Path, config_dir: &Path, shell_name: &str) -> Result<()> {
+    // 1. Strip managed blocks from rc file
+    if rc_path.exists() {
+        let content = fs::read_to_string(rc_path)
+            .with_context(|| format!("failed to read {}", rc_path.display()))?;
+
+        let (content, found_init) = remove_block(&content, INIT_BEGIN, INIT_END);
+        let (content, found_shell) = remove_block(&content, SHELL_BEGIN, SHELL_END);
+
+        if found_init || found_shell {
+            fs::write(rc_path, &content)
+                .with_context(|| format!("failed to write {}", rc_path.display()))?;
+            println!("  Removed managed blocks from {}", rc_path.display());
+        } else {
+            println!("  No ghost-complete blocks found in {}", rc_path.display());
+        }
+    } else {
+        println!("  {} does not exist, nothing to do", rc_path.display());
+    }
+
+    // 2. Remove shell integration scripts for this shell
+    let scripts_to_remove = if shell_name == "bash" {
+        vec!["init.bash", "ghost-complete.bash"]
+    } else {
+        vec!["init.zsh", "ghost-complete.zsh"]
+    };
+
+    for name in scripts_to_remove {
+        let script_path = config_dir.join("shell").join(name);
+        if script_path.exists() {
+            fs::remove_file(&script_path)
+                .with_context(|| format!("failed to remove {}", script_path.display()))?;
+            println!("  Removed {}", script_path.display());
+        }
+    }
+
+    // 3. Clean up empty shell/ directory (best-effort)
+    let shell_dir = config_dir.join("shell");
+    if shell_dir.exists() {
+        let _ = fs::remove_dir(&shell_dir); // only succeeds if empty
+    }
+
+    println!(
+        "\nghost-complete uninstalled successfully for {}!",
+        shell_name
+    );
+    Ok(())
+}
+
+// Legacy wrapper for backward compatibility with tests
+fn uninstall_from_zsh(zshrc_path: &Path, config_dir: &Path) -> Result<()> {
     // 1. Strip managed blocks from .zshrc
     if zshrc_path.exists() {
         let content = fs::read_to_string(zshrc_path)
@@ -1434,6 +1604,7 @@ fn uninstall_from(zshrc_path: &Path, config_dir: &Path) -> Result<()> {
     for name in &[
         "init.zsh",
         "ghost-complete.zsh",
+        "init.bash",
         "ghost-complete.bash",
         "ghost-complete.fish",
     ] {
@@ -1455,26 +1626,106 @@ fn uninstall_from(zshrc_path: &Path, config_dir: &Path) -> Result<()> {
     Ok(())
 }
 
+/// Detect the user's login shell
+fn detect_shell() -> Option<String> {
+    // First try SHELL environment variable
+    if let Ok(shell) = std::env::var("SHELL") {
+        let shell_name = std::path::Path::new(&shell)
+            .file_name()
+            .and_then(|s| s.to_str())
+            .map(|s| s.to_string());
+        if shell_name.is_some() {
+            return shell_name;
+        }
+    }
+    None
+}
+
 pub fn run_install(dry_run: bool) -> Result<()> {
     let home = dirs::home_dir().context("could not determine home directory")?;
-    let zshrc = home.join(".zshrc");
     let config_dir = gc_config::config_dir().context("could not determine home directory")?;
+
+    let shell = detect_shell().unwrap_or_else(|| "bash".to_string());
 
     if dry_run {
         println!("Dry run: ghost-complete install\n");
     } else {
         println!("Installing ghost-complete...\n");
     }
-    install_to(&zshrc, &config_dir, dry_run)
+
+    match shell.as_str() {
+        "bash" => {
+            let bashrc = home.join(".bashrc");
+            println!("  Detected shell: bash");
+            install_bash_to(&bashrc, &config_dir, dry_run)
+        }
+        "zsh" => {
+            let zshrc = home.join(".zshrc");
+            println!("  Detected shell: zsh");
+            install_zsh_to(&zshrc, &config_dir, dry_run)
+        }
+        other => {
+            // For other shells, try to install bash support as fallback
+            println!(
+                "  Detected shell: {} (unsupported, falling back to bash)",
+                other
+            );
+            let bashrc = home.join(".bashrc");
+            install_bash_to(&bashrc, &config_dir, dry_run)
+        }
+    }
 }
 
 pub fn run_uninstall() -> Result<()> {
     let home = dirs::home_dir().context("could not determine home directory")?;
-    let zshrc = home.join(".zshrc");
     let config_dir = gc_config::config_dir().context("could not determine home directory")?;
 
     println!("Uninstalling ghost-complete...\n");
-    uninstall_from(&zshrc, &config_dir)
+
+    // Uninstall from both bash and zsh if they exist
+    let bashrc = home.join(".bashrc");
+    let zshrc = home.join(".zshrc");
+
+    let mut uninstalled_any = false;
+
+    // Check and uninstall from bashrc
+    if bashrc.exists() {
+        let content = fs::read_to_string(&bashrc)?;
+        if content.contains(INIT_BEGIN) || content.contains(SHELL_BEGIN) {
+            uninstall_from(&bashrc, &config_dir, "bash")?;
+            uninstalled_any = true;
+        }
+    }
+
+    // Check and uninstall from zshrc
+    if zshrc.exists() {
+        let content = fs::read_to_string(&zshrc)?;
+        if content.contains(INIT_BEGIN) || content.contains(SHELL_BEGIN) {
+            uninstall_from(&zshrc, &config_dir, "zsh")?;
+            uninstalled_any = true;
+        }
+    }
+
+    if !uninstalled_any {
+        // Clean up any remaining shell scripts
+        for name in &[
+            "init.zsh",
+            "ghost-complete.zsh",
+            "init.bash",
+            "ghost-complete.bash",
+            "ghost-complete.fish",
+        ] {
+            let script_path = config_dir.join("shell").join(name);
+            if script_path.exists() {
+                fs::remove_file(&script_path)
+                    .with_context(|| format!("failed to remove {}", script_path.display()))?;
+                println!("  Removed {}", script_path.display());
+            }
+        }
+        println!("\nNo ghost-complete configuration found in shell rc files.");
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -1569,7 +1820,7 @@ mod tests {
 
         // Direct terminal detection (non-tmux)
         assert!(non_tmux_branch.contains("case \"$TERM_PROGRAM\""));
-        assert!(non_tmux_branch.contains("ghostty|WezTerm|rio|iTerm.app|Apple_Terminal)"));
+        assert!(non_tmux_branch.contains("ghostty|WezTerm|rio|iTerm.app|Apple_Terminal|gnome-terminal|tilix|xterm|konsole|foot|terminator)"));
     }
 
     #[test]
@@ -1694,7 +1945,7 @@ mod tests {
 
         // Install then uninstall
         install_to(&zshrc, &config, false).unwrap();
-        uninstall_from(&zshrc, &config).unwrap();
+        uninstall_from_zsh(&zshrc, &config).unwrap();
 
         // Blocks should be gone
         let content = fs::read_to_string(&zshrc).unwrap();
@@ -1843,5 +2094,108 @@ mod tests {
         assert_eq!(fs::read_to_string(&config_path).unwrap(), custom_config);
         // No shell scripts should have been created
         assert!(!config.join("shell").exists());
+    }
+
+    // ==================== BASH INSTALLATION TESTS ====================
+
+    #[test]
+    fn test_bash_install_creates_files() {
+        let dir = TempDir::new().unwrap();
+        let bashrc = dir.path().join(".bashrc");
+        let config = dir.path().join("config");
+
+        install_bash_to(&bashrc, &config, false).unwrap();
+
+        // .bashrc should exist with both blocks
+        let content = fs::read_to_string(&bashrc).unwrap();
+        assert!(content.contains(INIT_BEGIN));
+        assert!(content.contains(INIT_END));
+        assert!(content.contains(SHELL_BEGIN));
+        assert!(content.contains(SHELL_END));
+
+        // Init script should be written and sourced
+        let init_script = config.join("shell/init.bash");
+        assert!(init_script.exists());
+        let init_content = fs::read_to_string(&init_script).unwrap();
+        assert_eq!(init_content, BASH_INIT);
+
+        // Bash shell integration script should be written and sourced
+        let script = config.join("shell/ghost-complete.bash");
+        assert!(script.exists());
+        let script_content = fs::read_to_string(&script).unwrap();
+        assert_eq!(script_content, BASH_INTEGRATION);
+    }
+
+    #[test]
+    fn test_bash_install_preserves_existing_content() {
+        let dir = TempDir::new().unwrap();
+        let bashrc = dir.path().join(".bashrc");
+        let config = dir.path().join("config");
+
+        let existing = "export PATH=\"/usr/local/bin:$PATH\"\nalias ll='ls -la'\n";
+        fs::write(&bashrc, existing).unwrap();
+
+        install_bash_to(&bashrc, &config, false).unwrap();
+
+        let content = fs::read_to_string(&bashrc).unwrap();
+        assert!(content.contains("export PATH=\"/usr/local/bin:$PATH\""));
+        assert!(content.contains("alias ll='ls -la'"));
+        assert!(content.contains(INIT_BEGIN));
+        assert!(content.contains(SHELL_BEGIN));
+
+        // Init block should be before user content
+        let init_pos = content.find(INIT_BEGIN).unwrap();
+        let user_pos = content.find("export PATH").unwrap();
+        let shell_pos = content.find(SHELL_BEGIN).unwrap();
+        assert!(init_pos < user_pos);
+        assert!(user_pos < shell_pos);
+    }
+
+    #[test]
+    fn test_bash_idempotency() {
+        let dir = TempDir::new().unwrap();
+        let bashrc = dir.path().join(".bashrc");
+        let config = dir.path().join("config");
+
+        let existing = "export FOO=bar\n";
+        fs::write(&bashrc, existing).unwrap();
+
+        install_bash_to(&bashrc, &config, false).unwrap();
+        let first = fs::read_to_string(&bashrc).unwrap();
+
+        install_bash_to(&bashrc, &config, false).unwrap();
+        let second = fs::read_to_string(&bashrc).unwrap();
+
+        assert_eq!(first, second);
+    }
+
+    #[test]
+    fn test_bash_init_script_content() {
+        // Verify the external bash init script has all the required detection logic
+        let script = BASH_INIT;
+        assert!(script.contains("__ghost_complete_init()"));
+        assert!(script.contains("unset -f __ghost_complete_init"));
+        assert!(script.contains("exec ghost-complete"));
+        assert!(script.contains("command -v ghost-complete"));
+
+        // Should have Linux terminal detection
+        assert!(script.contains("KONSOLE_VERSION"));
+        assert!(script.contains("GNOME_TERMINAL_SCREEN"));
+        assert!(script.contains("VTE_VERSION"));
+        assert!(script.contains("TILIX_ID"));
+        assert!(script.contains("FOOT_SERVER_SOCKET"));
+        assert!(script.contains("TERMINATOR_UUID"));
+    }
+
+    #[test]
+    fn test_bash_integration_has_auto_trigger() {
+        // Verify the bash integration script has auto-trigger support
+        let script = BASH_INTEGRATION;
+        assert!(script.contains("_gc_self_insert_and_report"));
+        assert!(script.contains("_gc_space"));
+        assert!(script.contains("_gc_slash"));
+        assert!(script.contains("_gc_dash"));
+        assert!(script.contains("_gc_dot"));
+        assert!(script.contains("GC_NO_AUTO_TRIGGER"));
     }
 }

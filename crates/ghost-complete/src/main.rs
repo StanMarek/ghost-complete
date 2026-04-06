@@ -111,7 +111,7 @@ fn main() -> Result<()> {
     init_tracing(&cli.log_level, log_file.as_deref())?;
 
     let (shell, args) = if cli.shell_args.is_empty() {
-        let default_shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/zsh".to_string());
+        let default_shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string());
         (default_shell, vec![])
     } else {
         let mut iter = cli.shell_args.into_iter();

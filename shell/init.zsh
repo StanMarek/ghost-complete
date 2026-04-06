@@ -22,7 +22,13 @@ __ghost_complete_init() {
        [[ -n "$WEZTERM_UNIX_SOCKET" ]] || \
        [[ -n "$ALACRITTY_SOCKET" ]] || \
        [[ -n "$ITERM_SESSION_ID" ]] || \
-       [[ "$TERM_PROGRAM" == "rio" ]]; then
+       [[ "$TERM_PROGRAM" == "rio" ]] || \
+       [[ -n "$KONSOLE_VERSION" ]] || \
+       [[ -n "$GNOME_TERMINAL_SCREEN" ]] || \
+       [[ -n "$VTE_VERSION" ]] || \
+       [[ -n "$TILIX_ID" ]] || \
+       [[ -n "$FOOT_SERVER_SOCKET" ]] || \
+       [[ -n "$TERMINATOR_UUID" ]]; then
       if command -v ghost-complete >/dev/null 2>&1; then
         export GHOST_COMPLETE_ACTIVE=1
         exec ghost-complete
@@ -33,11 +39,19 @@ __ghost_complete_init() {
     # because no multiplexer re-injects it into unrelated shell sessions.
     [[ -n "$GHOST_COMPLETE_ACTIVE" ]] && return
     local supported=0
-    if [[ -n "$KITTY_WINDOW_ID" ]] || [[ -n "$ALACRITTY_SOCKET" ]]; then
+    if [[ -n "$KITTY_WINDOW_ID" ]] || \
+       [[ -n "$ALACRITTY_SOCKET" ]] || \
+       [[ -n "$GHOSTTY_RESOURCES_DIR" ]] || \
+       [[ -n "$KONSOLE_VERSION" ]] || \
+       [[ -n "$GNOME_TERMINAL_SCREEN" ]] || \
+       [[ -n "$VTE_VERSION" ]] || \
+       [[ -n "$TILIX_ID" ]] || \
+       [[ -n "$FOOT_SERVER_SOCKET" ]] || \
+       [[ -n "$TERMINATOR_UUID" ]]; then
       supported=1
     else
       case "$TERM_PROGRAM" in
-        ghostty|WezTerm|rio|iTerm.app|Apple_Terminal) supported=1 ;;
+        ghostty|WezTerm|rio|iTerm.app|Apple_Terminal|gnome-terminal|tilix|xterm|konsole|foot|terminator) supported=1 ;;
       esac
     fi
     if [[ $supported -eq 1 ]] && command -v ghost-complete >/dev/null 2>&1; then
