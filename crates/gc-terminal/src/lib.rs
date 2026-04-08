@@ -3,13 +3,23 @@ use std::fmt;
 /// Supported terminal emulators.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Terminal {
+    // Cross-platform terminals
     Ghostty,
     Kitty,
     WezTerm,
     Alacritty,
     Rio,
+    // macOS-only terminals
     ITerm2,
     TerminalApp,
+    // Linux terminals
+    GnomeTerminal,
+    Konsole,
+    Tilix,
+    Foot,
+    Terminator,
+    Xterm,
+    // Fallback
     Unknown(String),
 }
 
@@ -22,13 +32,22 @@ impl Terminal {
     /// Display names of all supported terminals (for diagnostics).
     pub fn supported_terminals() -> &'static [&'static str] {
         &[
+            // Cross-platform
             "Ghostty",
             "Kitty",
             "WezTerm",
             "Alacritty",
             "Rio",
+            // macOS
             "iTerm2",
             "Terminal.app",
+            // Linux
+            "GNOME Terminal",
+            "Konsole",
+            "Tilix",
+            "Foot",
+            "Terminator",
+            "xterm",
         ]
     }
 }
@@ -36,13 +55,23 @@ impl Terminal {
 impl fmt::Display for Terminal {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            // Cross-platform
             Terminal::Ghostty => write!(f, "Ghostty"),
             Terminal::Kitty => write!(f, "Kitty"),
             Terminal::WezTerm => write!(f, "WezTerm"),
             Terminal::Alacritty => write!(f, "Alacritty"),
             Terminal::Rio => write!(f, "Rio"),
+            // macOS
             Terminal::ITerm2 => write!(f, "iTerm2"),
             Terminal::TerminalApp => write!(f, "Terminal.app"),
+            // Linux
+            Terminal::GnomeTerminal => write!(f, "GNOME Terminal"),
+            Terminal::Konsole => write!(f, "Konsole"),
+            Terminal::Tilix => write!(f, "Tilix"),
+            Terminal::Foot => write!(f, "Foot"),
+            Terminal::Terminator => write!(f, "Terminator"),
+            Terminal::Xterm => write!(f, "xterm"),
+            // Fallback
             Terminal::Unknown(name) => write!(f, "{name}"),
         }
     }
@@ -128,11 +157,22 @@ impl TerminalProfile {
     pub fn detect() -> Self {
         let term_program = std::env::var("TERM_PROGRAM").unwrap_or_default();
         let in_tmux = std::env::var("TMUX").is_ok();
+
+        // Cross-platform terminal env vars
         let has_ghostty_res = std::env::var("GHOSTTY_RESOURCES_DIR").is_ok();
         let has_iterm_session = std::env::var("ITERM_SESSION_ID").is_ok();
         let has_kitty_window_id = std::env::var("KITTY_WINDOW_ID").is_ok();
         let has_wezterm_socket = std::env::var("WEZTERM_UNIX_SOCKET").is_ok();
         let has_alacritty_socket = std::env::var("ALACRITTY_SOCKET").is_ok();
+
+        // Linux-specific terminal env vars
+        let has_vte_version = std::env::var("VTE_VERSION").is_ok();
+        let has_gnome_terminal = std::env::var("GNOME_TERMINAL_SCREEN").is_ok();
+        let has_konsole = std::env::var("KONSOLE_VERSION").is_ok();
+        let has_tilix = std::env::var("TILIX_ID").is_ok();
+        let has_foot = std::env::var("FOOT_SERVER_SOCKET").is_ok();
+        let has_terminator = std::env::var("TERMINATOR_UUID").is_ok();
+        let has_xterm = std::env::var("XTERM_VERSION").is_ok();
 
         Self::detect_from_env(
             &term_program,
@@ -142,6 +182,13 @@ impl TerminalProfile {
             has_kitty_window_id,
             has_wezterm_socket,
             has_alacritty_socket,
+            has_vte_version,
+            has_gnome_terminal,
+            has_konsole,
+            has_tilix,
+            has_foot,
+            has_terminator,
+            has_xterm,
         )
     }
 
@@ -154,20 +201,55 @@ impl TerminalProfile {
         has_kitty_window_id: bool,
         has_wezterm_socket: bool,
         has_alacritty_socket: bool,
+        // Linux env vars
+        has_vte_version: bool,
+        has_gnome_terminal: bool,
+        has_konsole: bool,
+        has_tilix: bool,
+        has_foot: bool,
+        has_terminator: bool,
+        has_xterm: bool,
     ) -> Self {
         // Direct terminal detection (not inside tmux)
         if !in_tmux {
-            // Kitty reports TERM_PROGRAM=xterm-kitty, so use KITTY_WINDOW_ID instead.
+            // Cross-platform terminals (check specific env vars first)
             if has_kitty_window_id {
                 return Self::new(Terminal::Kitty, false);
             }
             if has_wezterm_socket {
                 return Self::new(Terminal::WezTerm, false);
             }
-            // Alacritty doesn't set TERM_PROGRAM — detect via ALACRITTY_SOCKET.
             if has_alacritty_socket {
                 return Self::new(Terminal::Alacritty, false);
             }
+            if has_ghostty_res {
+                return Self::new(Terminal::Ghostty, false);
+            }
+
+            // Linux-specific terminals
+            if has_konsole {
+                return Self::new(Terminal::Konsole, false);
+            }
+            if has_tilix {
+                return Self::new(Terminal::Tilix, false);
+            }
+            if has_foot {
+                return Self::new(Terminal::Foot, false);
+            }
+            if has_terminator {
+                return Self::new(Terminal::Terminator, false);
+            }
+            if has_gnome_terminal {
+                return Self::new(Terminal::GnomeTerminal, false);
+            }
+            // VTE-based terminal without specific identification
+            if has_vte_version && term_program.is_empty() {
+                return Self::new(Terminal::GnomeTerminal, false);
+            }
+            if has_xterm {
+                return Self::new(Terminal::Xterm, false);
+            }
+
             return Self::from_term_program(term_program, false);
         }
 
@@ -188,6 +270,22 @@ impl TerminalProfile {
         if has_iterm_session {
             return Self::new(Terminal::ITerm2, true);
         }
+        // Linux terminals in tmux
+        if has_konsole {
+            return Self::new(Terminal::Konsole, true);
+        }
+        if has_tilix {
+            return Self::new(Terminal::Tilix, true);
+        }
+        if has_foot {
+            return Self::new(Terminal::Foot, true);
+        }
+        if has_terminator {
+            return Self::new(Terminal::Terminator, true);
+        }
+        if has_gnome_terminal || has_vte_version {
+            return Self::new(Terminal::GnomeTerminal, true);
+        }
 
         // Fallback: try TERM_PROGRAM (some terminals set it even in tmux)
         Self::from_term_program(term_program, true)
@@ -195,12 +293,22 @@ impl TerminalProfile {
 
     fn from_term_program(term_program: &str, in_tmux: bool) -> Self {
         let terminal = match term_program {
+            // Cross-platform
             "ghostty" => Terminal::Ghostty,
-            "iTerm.app" => Terminal::ITerm2,
-            "Apple_Terminal" => Terminal::TerminalApp,
             "WezTerm" => Terminal::WezTerm,
             "alacritty" => Terminal::Alacritty,
             "rio" => Terminal::Rio,
+            // macOS
+            "iTerm.app" => Terminal::ITerm2,
+            "Apple_Terminal" => Terminal::TerminalApp,
+            // Linux
+            "gnome-terminal" => Terminal::GnomeTerminal,
+            "tilix" => Terminal::Tilix,
+            "xterm" => Terminal::Xterm,
+            "konsole" => Terminal::Konsole,
+            "foot" => Terminal::Foot,
+            "terminator" => Terminal::Terminator,
+            // Fallback
             "" => Terminal::Unknown("unknown".into()),
             other => Terminal::Unknown(other.into()),
         };
@@ -218,8 +326,20 @@ impl TerminalProfile {
                 RenderStrategy::Synchronized,
                 PromptDetection::ShellIntegration,
             ),
-            // Legacy: no DECSET 2026, use pre-render buffer + shell integration
-            Terminal::ITerm2 | Terminal::TerminalApp | Terminal::Unknown(_) => (
+            // Linux terminals with synchronized output (DECSET 2026) support
+            // Foot and Konsole support synchronized output
+            Terminal::Foot | Terminal::Konsole => (
+                RenderStrategy::Synchronized,
+                PromptDetection::ShellIntegration,
+            ),
+            // VTE-based terminals (GNOME Terminal, Tilix, Terminator)
+            // VTE supports DECSET 2026 since version 0.66
+            Terminal::GnomeTerminal | Terminal::Tilix | Terminal::Terminator => (
+                RenderStrategy::Synchronized,
+                PromptDetection::ShellIntegration,
+            ),
+            // Legacy terminals without synchronized output support
+            Terminal::Xterm | Terminal::ITerm2 | Terminal::TerminalApp | Terminal::Unknown(_) => (
                 RenderStrategy::PreRenderBuffer,
                 PromptDetection::ShellIntegration,
             ),
@@ -272,6 +392,36 @@ impl TerminalProfile {
     pub fn for_unknown(name: &str) -> Self {
         Self::new(Terminal::Unknown(name.into()), false)
     }
+
+    /// Test constructor: GNOME Terminal profile (Synchronized, ShellIntegration).
+    pub fn for_gnome_terminal() -> Self {
+        Self::new(Terminal::GnomeTerminal, false)
+    }
+
+    /// Test constructor: Konsole profile (Synchronized, ShellIntegration).
+    pub fn for_konsole() -> Self {
+        Self::new(Terminal::Konsole, false)
+    }
+
+    /// Test constructor: Tilix profile (Synchronized, ShellIntegration).
+    pub fn for_tilix() -> Self {
+        Self::new(Terminal::Tilix, false)
+    }
+
+    /// Test constructor: Foot profile (Synchronized, ShellIntegration).
+    pub fn for_foot() -> Self {
+        Self::new(Terminal::Foot, false)
+    }
+
+    /// Test constructor: Terminator profile (Synchronized, ShellIntegration).
+    pub fn for_terminator() -> Self {
+        Self::new(Terminal::Terminator, false)
+    }
+
+    /// Test constructor: xterm profile (PreRenderBuffer, ShellIntegration).
+    pub fn for_xterm() -> Self {
+        Self::new(Terminal::Xterm, false)
+    }
 }
 
 #[cfg(test)]
@@ -289,14 +439,22 @@ mod tests {
         assert!(Terminal::Rio.is_known());
         assert!(Terminal::ITerm2.is_known());
         assert!(Terminal::TerminalApp.is_known());
-        assert!(!Terminal::Unknown("foot".into()).is_known());
+        // Linux terminals
+        assert!(Terminal::GnomeTerminal.is_known());
+        assert!(Terminal::Konsole.is_known());
+        assert!(Terminal::Tilix.is_known());
+        assert!(Terminal::Foot.is_known());
+        assert!(Terminal::Terminator.is_known());
+        assert!(Terminal::Xterm.is_known());
+        // Unknown
+        assert!(!Terminal::Unknown("other".into()).is_known());
         assert!(!Terminal::Unknown("unknown".into()).is_known());
     }
 
     #[test]
     fn test_supported_terminals_count() {
-        // 7 supported terminals: Ghostty, Kitty, WezTerm, Alacritty, Rio, iTerm2, Terminal.app
-        assert_eq!(Terminal::supported_terminals().len(), 7);
+        // 13 supported terminals: 7 original + 6 Linux
+        assert_eq!(Terminal::supported_terminals().len(), 13);
     }
 
     #[test]
@@ -304,13 +462,22 @@ mod tests {
         assert_eq!(
             Terminal::supported_terminals(),
             &[
+                // Cross-platform
                 "Ghostty",
                 "Kitty",
                 "WezTerm",
                 "Alacritty",
                 "Rio",
+                // macOS
                 "iTerm2",
                 "Terminal.app",
+                // Linux
+                "GNOME Terminal",
+                "Konsole",
+                "Tilix",
+                "Foot",
+                "Terminator",
+                "xterm",
             ]
         );
     }
@@ -377,7 +544,7 @@ mod tests {
 
     #[test]
     fn test_unknown_terminal_profile() {
-        let profile = TerminalProfile::from_term_program("foot", false);
+        let profile = TerminalProfile::from_term_program("some-unknown-terminal", false);
         assert!(matches!(profile.terminal(), Terminal::Unknown(_)));
         assert_eq!(profile.render_strategy(), RenderStrategy::PreRenderBuffer);
         assert_eq!(
@@ -437,6 +604,7 @@ mod tests {
         wezterm_sock: bool,
         alacritty_sock: bool,
     ) -> TerminalProfile {
+        // Call with Linux params all false for backward compatibility
         TerminalProfile::detect_from_env(
             term_program,
             in_tmux,
@@ -445,6 +613,43 @@ mod tests {
             kitty_wid,
             wezterm_sock,
             alacritty_sock,
+            false, // vte_version
+            false, // gnome_terminal
+            false, // konsole
+            false, // tilix
+            false, // foot
+            false, // terminator
+            false, // xterm
+        )
+    }
+
+    // Helper for Linux terminal detection tests
+    fn detect_linux(
+        term_program: &str,
+        in_tmux: bool,
+        vte_version: bool,
+        gnome_terminal: bool,
+        konsole: bool,
+        tilix: bool,
+        foot: bool,
+        terminator: bool,
+        xterm: bool,
+    ) -> TerminalProfile {
+        TerminalProfile::detect_from_env(
+            term_program,
+            in_tmux,
+            false, // ghostty_res
+            false, // iterm_session
+            false, // kitty_wid
+            false, // wezterm_sock
+            false, // alacritty_sock
+            vte_version,
+            gnome_terminal,
+            konsole,
+            tilix,
+            foot,
+            terminator,
+            xterm,
         )
     }
 
@@ -656,8 +861,8 @@ mod tests {
 
     #[test]
     fn test_for_unknown() {
-        let p = TerminalProfile::for_unknown("foot");
-        assert!(matches!(p.terminal(), Terminal::Unknown(s) if s == "foot"));
+        let p = TerminalProfile::for_unknown("some-terminal");
+        assert!(matches!(p.terminal(), Terminal::Unknown(s) if s == "some-terminal"));
         assert_eq!(p.render_strategy(), RenderStrategy::PreRenderBuffer);
     }
 
@@ -701,5 +906,80 @@ mod tests {
         assert!(PromptDetection::ShellIntegration
             .to_string()
             .contains("7771"));
+    }
+
+    // -- Linux terminal detection tests --
+
+    #[test]
+    fn test_detect_gnome_terminal_via_env() {
+        let p = detect_linux("", false, false, true, false, false, false, false, false);
+        assert_eq!(*p.terminal(), Terminal::GnomeTerminal);
+        assert!(!p.in_tmux());
+    }
+
+    #[test]
+    fn test_detect_konsole_via_env() {
+        let p = detect_linux("", false, false, false, true, false, false, false, false);
+        assert_eq!(*p.terminal(), Terminal::Konsole);
+        assert!(!p.in_tmux());
+    }
+
+    #[test]
+    fn test_detect_tilix_via_env() {
+        let p = detect_linux("", false, false, false, false, true, false, false, false);
+        assert_eq!(*p.terminal(), Terminal::Tilix);
+        assert!(!p.in_tmux());
+    }
+
+    #[test]
+    fn test_detect_foot_via_env() {
+        let p = detect_linux("", false, false, false, false, false, true, false, false);
+        assert_eq!(*p.terminal(), Terminal::Foot);
+        assert!(!p.in_tmux());
+    }
+
+    #[test]
+    fn test_detect_terminator_via_env() {
+        let p = detect_linux("", false, false, false, false, false, false, true, false);
+        assert_eq!(*p.terminal(), Terminal::Terminator);
+        assert!(!p.in_tmux());
+    }
+
+    #[test]
+    fn test_detect_xterm_via_env() {
+        let p = detect_linux("", false, false, false, false, false, false, false, true);
+        assert_eq!(*p.terminal(), Terminal::Xterm);
+        assert!(!p.in_tmux());
+    }
+
+    #[test]
+    fn test_linux_terminal_display_names() {
+        assert_eq!(Terminal::GnomeTerminal.to_string(), "GNOME Terminal");
+        assert_eq!(Terminal::Konsole.to_string(), "Konsole");
+        assert_eq!(Terminal::Tilix.to_string(), "Tilix");
+        assert_eq!(Terminal::Foot.to_string(), "Foot");
+        assert_eq!(Terminal::Terminator.to_string(), "Terminator");
+        assert_eq!(Terminal::Xterm.to_string(), "xterm");
+    }
+
+    #[test]
+    fn test_foot_profile() {
+        let profile = TerminalProfile::from_term_program("foot", false);
+        assert_eq!(*profile.terminal(), Terminal::Foot);
+        assert_eq!(profile.render_strategy(), RenderStrategy::Synchronized);
+    }
+
+    #[test]
+    fn test_gnome_terminal_profile() {
+        let profile = TerminalProfile::from_term_program("gnome-terminal", false);
+        assert_eq!(*profile.terminal(), Terminal::GnomeTerminal);
+        assert_eq!(profile.render_strategy(), RenderStrategy::Synchronized);
+    }
+
+    #[test]
+    fn test_konsole_profile() {
+        let profile = TerminalProfile::from_term_program("konsole", false);
+        assert_eq!(*profile.terminal(), Terminal::Konsole);
+        assert_eq!(profile.render_strategy(), RenderStrategy::Synchronized);
     }
 }
