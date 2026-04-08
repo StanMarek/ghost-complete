@@ -237,13 +237,27 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
 
             let keys = parse_keys(&buf[..n]);
             for key in &keys {
-                // Intercept CPR (Cursor Position Report) responses —
-                // update parser with real cursor position, don't forward
-                // to the shell PTY.
+                // CPR (Cursor Position Report) responses arrive here
+                // from the real terminal. If we sent the request, consume
+                // it for cursor sync. Otherwise forward it through the
+                // PTY so programs like atuin/crossterm receive it.
                 if let crate::input::KeyEvent::CursorPositionReport(row, col) = key {
                     let mut p = parser_for_stdin.lock().unwrap();
-                    tracing::debug!(row, col, "CPR response — syncing cursor position");
-                    p.state_mut().set_cursor_from_report(*row, *col);
+                    if p.state_mut().claim_cpr_response() {
+                        tracing::debug!(row, col, "CPR response — syncing cursor position (ours)");
+                        p.state_mut().set_cursor_from_report(*row, *col);
+                        continue;
+                    }
+                    tracing::debug!(row, col, "CPR response — forwarding to PTY (not ours)");
+                    drop(p);
+                    // Re-encode as CSI row;col R and forward to PTY
+                    let cpr = format!("\x1b[{row};{col}R");
+                    if pty_writer.write_all(cpr.as_bytes()).is_err() {
+                        return;
+                    }
+                    if pty_writer.flush().is_err() {
+                        return;
+                    }
                     continue;
                 }
 
@@ -310,6 +324,12 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 if needs_cpr {
                     tracing::debug!("sending CPR request (CSI 6n)");
                     let _ = stdout.write_all(b"\x1b[6n");
+                    // Mark this as our own request so Task A knows to
+                    // consume the response instead of forwarding it to
+                    // the PTY (where programs like atuin may be waiting
+                    // for their own CPR responses).
+                    let mut p = parser_for_stdout.lock().unwrap();
+                    p.state_mut().increment_cpr_pending();
                 }
                 if stdout.flush().is_err() {
                     break;

@@ -21,6 +21,7 @@ pub struct TerminalState {
     cwd_dirty: bool,
     cursor_sync_requested: bool,
     cpr_synced: bool,
+    cpr_pending: u8,
 }
 
 impl TerminalState {
@@ -40,6 +41,7 @@ impl TerminalState {
             cwd_dirty: false,
             cursor_sync_requested: false,
             cpr_synced: false,
+            cpr_pending: 0,
         }
     }
 
@@ -123,6 +125,25 @@ impl TerminalState {
         let synced = self.cpr_synced;
         self.cpr_synced = false;
         synced
+    }
+
+    /// Increment the pending CPR counter. Called when ghost-complete sends
+    /// its own `CSI 6n` request so we know to consume the matching response
+    /// rather than forwarding it to the PTY.
+    pub fn increment_cpr_pending(&mut self) {
+        self.cpr_pending = self.cpr_pending.saturating_add(1);
+    }
+
+    /// Try to claim a pending CPR response. Returns `true` if ghost-complete
+    /// has an outstanding CPR request (response should be consumed), `false`
+    /// if the response belongs to a program inside the PTY (should be forwarded).
+    pub fn claim_cpr_response(&mut self) -> bool {
+        if self.cpr_pending > 0 {
+            self.cpr_pending -= 1;
+            true
+        } else {
+            false
+        }
     }
 
     /// Override the command buffer with a predicted value (e.g., after Tab
