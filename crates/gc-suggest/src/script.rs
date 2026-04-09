@@ -15,15 +15,25 @@ pub(crate) const MAX_GENERATOR_STDOUT_BYTES: usize = 1024 * 1024;
 
 /// Execute a shell command as an array (no shell interpolation), return stdout.
 ///
-/// Stdout is read into a 1MB-bounded buffer (`MAX_GENERATOR_STDOUT_BYTES`).
+/// Stdout is read into a 1 MiB-bounded buffer (`MAX_GENERATOR_STDOUT_BYTES`).
 /// If the cap is hit the child is killed, a warning is logged, and the
 /// truncated bytes are still returned so the downstream transform pipeline
 /// can process what was collected.
 ///
-/// Stderr is discarded but logged at debug level. The child inherits the full
-/// process environment (minus `GHOST_COMPLETE_ACTIVE`) because generators like
-/// `gh`, `aws`, and `kubectl` require auth tokens to produce useful completions.
-/// On timeout the child is killed and an error is returned.
+/// Stderr is drained concurrently (also capped at 1 MiB) to avoid pipe-fill
+/// deadlock. On non-zero exit with non-empty stderr, the stderr contents
+/// are logged at `warn!` — this is the primary diagnostic path for
+/// generator failures like `gh auth status` without credentials. On
+/// non-zero exit with empty stderr, the exit code is logged at `debug!`
+/// (the common "script legitimately exits non-zero" case).
+///
+/// The child inherits the full process environment (minus
+/// `GHOST_COMPLETE_ACTIVE`) because generators like `gh`, `aws`, and
+/// `kubectl` require auth tokens to produce useful completions. On
+/// timeout the child is killed and an error is returned (stderr
+/// captured before the timeout fires is dropped — the timeout's async
+/// cancellation discards the inner state; a future improvement could
+/// hoist the buffers via interior mutability).
 /// Non-zero exit codes return an empty string (avoids error messages as suggestions).
 pub async fn run_script(argv: &[&str], cwd: &Path, timeout_ms: u64) -> Result<String> {
     if argv.is_empty() {
@@ -135,7 +145,24 @@ pub async fn run_script(argv: &[&str], cwd: &Path, timeout_ms: u64) -> Result<St
 
             if !status.success() {
                 let code = status.code().unwrap_or(-1);
-                tracing::debug!("script {:?} exited with code {code}", argv);
+                if stderr_buf.is_empty() {
+                    // Common case: script legitimately exits non-zero (e.g.,
+                    // `git rev-parse --show-toplevel` in a non-repo). Debug level
+                    // to avoid noise for the expected failure modes.
+                    tracing::debug!("script {:?} exited with code {code} (no stderr)", argv);
+                } else {
+                    // Actionable failure: the script wrote to stderr. Surface it at
+                    // warn level so users debugging "why are my completions empty"
+                    // can see the real error. This is the whole reason the
+                    // concurrent stderr drain exists — see the comment above
+                    // the read loop for the rationale.
+                    let stderr_str = String::from_utf8_lossy(&stderr_buf);
+                    tracing::warn!(
+                        "script {:?} exited with code {code}: {}",
+                        argv,
+                        stderr_str.trim_end()
+                    );
+                }
                 return Ok(String::new());
             }
 
@@ -296,6 +323,27 @@ mod tests {
         assert!(
             result.is_empty(),
             "non-zero exit should return empty string, got: {:?}",
+            result
+        );
+    }
+
+    #[tokio::test]
+    async fn test_run_script_nonzero_exit_with_stderr() {
+        // Regression for CRIT-B: a script that fails AND writes to stderr
+        // (e.g. `gh auth status` without credentials) must still return an
+        // empty String to the caller. The stderr contents are logged at
+        // warn! inside run_script — we don't assert on logs here, but the
+        // return contract is what callers rely on.
+        let result = run_script(
+            &["sh", "-c", "echo 'fake auth error' >&2; exit 42"],
+            Path::new("/tmp"),
+            5000,
+        )
+        .await
+        .expect("non-zero exit with stderr must not surface as an error");
+        assert!(
+            result.is_empty(),
+            "non-zero exit with stderr should return empty string, got: {:?}",
             result
         );
     }
