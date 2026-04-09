@@ -210,7 +210,7 @@ pub fn load_shell_aliases() -> HashMap<String, String> {
         }
     }
 
-    tracing::debug!("no aliases loaded from any source");
+    tracing::warn!("no aliases loaded from any source");
     HashMap::new()
 }
 

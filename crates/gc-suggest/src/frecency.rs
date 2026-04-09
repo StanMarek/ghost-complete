@@ -125,7 +125,7 @@ impl FrecencyDb {
             Some(p) if p.exists() => match std::fs::read_to_string(p) {
                 Ok(s) => Self::deserialize_entries(&s),
                 Err(e) => {
-                    tracing::debug!("frecency file unreadable: {e}");
+                    tracing::warn!("frecency file unreadable: {e}");
                     HashMap::new()
                 }
             },

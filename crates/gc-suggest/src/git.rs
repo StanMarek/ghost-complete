@@ -67,7 +67,7 @@ async fn run_git(cwd: &Path, args: &[&str]) -> Vec<String> {
     {
         Ok(o) => o,
         Err(e) => {
-            tracing::debug!("git command failed: {e}");
+            tracing::warn!("git command failed: {e}");
             return Vec::new();
         }
     };

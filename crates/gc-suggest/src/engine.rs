@@ -488,7 +488,7 @@ impl SuggestionEngine {
         if self.providers_commands {
             match self.commands_provider.provide(ctx, cwd) {
                 Ok(cmds) => candidates.extend(cmds),
-                Err(e) => tracing::debug!("commands provider error: {e}"),
+                Err(e) => tracing::warn!("commands provider error: {e}"),
             }
         }
         SyncResult {
@@ -506,7 +506,7 @@ impl SuggestionEngine {
         if self.providers_filesystem {
             match self.filesystem_provider.provide(ctx, cwd) {
                 Ok(fs) => candidates.extend(fs),
-                Err(e) => tracing::debug!("filesystem provider error (redirect): {e}"),
+                Err(e) => tracing::warn!("filesystem provider error (redirect): {e}"),
             }
         }
         SyncResult {
@@ -530,7 +530,7 @@ impl SuggestionEngine {
         }
         match self.env_provider.provide(ctx, cwd) {
             Ok(env_vars) => candidates.extend(env_vars),
-            Err(e) => tracing::debug!("env provider error: {e}"),
+            Err(e) => tracing::warn!("env provider error: {e}"),
         }
     }
 
@@ -620,7 +620,7 @@ impl SuggestionEngine {
         } else if wants_filepaths && self.providers_filesystem {
             match self.filesystem_provider.provide(ctx, cwd) {
                 Ok(fs) => candidates.extend(fs),
-                Err(e) => tracing::debug!("filesystem provider error: {e}"),
+                Err(e) => tracing::warn!("filesystem provider error: {e}"),
             }
         }
 
@@ -692,7 +692,7 @@ impl SuggestionEngine {
                         .filter(|s| s.kind == SuggestionKind::Directory),
                 );
             }
-            Err(e) => tracing::debug!("filesystem provider error (folders): {e}"),
+            Err(e) => tracing::warn!("filesystem provider error (folders): {e}"),
         }
     }
 
@@ -710,7 +710,7 @@ impl SuggestionEngine {
         if self.providers_filesystem {
             match self.filesystem_provider.provide(ctx, cwd) {
                 Ok(fs) => candidates.extend(fs),
-                Err(e) => tracing::debug!("filesystem provider error ({label}): {e}"),
+                Err(e) => tracing::warn!("filesystem provider error ({label}): {e}"),
             }
         }
         SyncResult {
@@ -744,7 +744,7 @@ impl SuggestionEngine {
                         results.extend(fuzzy::rank(buffer, hist, remaining));
                     }
                     Ok(_) => {}
-                    Err(e) => tracing::debug!("history provider error: {e}"),
+                    Err(e) => tracing::warn!("history provider error: {e}"),
                 }
             }
         }

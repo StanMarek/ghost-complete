@@ -689,11 +689,11 @@ impl InputHandler {
 
             match script_res {
                 Ok(results) => all_results.extend(results),
-                Err(e) => tracing::debug!("dynamic suggestions failed: {e}"),
+                Err(e) => tracing::warn!("dynamic suggestions failed: {e}"),
             }
             match git_res {
                 Ok(results) => all_results.extend(results),
-                Err(e) => tracing::debug!("git suggestions failed: {e}"),
+                Err(e) => tracing::warn!("git suggestions failed: {e}"),
             }
 
             if !all_results.is_empty() {
