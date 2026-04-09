@@ -73,6 +73,26 @@ async fn run_git(cwd: &Path, args: &[&str]) -> Vec<String> {
     };
 
     if !output.status.success() {
+        let exit_code = output.status.code();
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        // Exit code 128 is git's "not a repo" code — expected noise outside
+        // repos. Everything else (corrupt index, locked refs, dubious-ownership,
+        // missing HEAD, broken hooks) is a real error worth surfacing so users
+        // debugging empty completions can see the actual cause.
+        if exit_code == Some(128) {
+            tracing::debug!(
+                args = ?args,
+                stderr = %stderr.trim(),
+                "git command failed (not a repo)"
+            );
+        } else {
+            tracing::warn!(
+                args = ?args,
+                exit = ?exit_code,
+                stderr = %stderr.trim(),
+                "git command failed"
+            );
+        }
         return Vec::new();
     }
 
@@ -109,6 +129,26 @@ mod tests {
         let tmp = tempfile::TempDir::new().unwrap();
         let branches = git_branches(tmp.path()).await;
         assert!(branches.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_run_git_non_repo_returns_empty_and_does_not_panic() {
+        // Exercises the non-zero-exit branch of `run_git` directly. `git
+        // branch` in a non-repo directory exits 128 ("not a repository"),
+        // which must be handled gracefully — empty Vec, no panic, and the
+        // stderr-logging branch must not blow up on non-UTF8 or empty stderr.
+        let tmp = tempfile::TempDir::new().unwrap();
+        let result = run_git(tmp.path(), &["branch", "--format=%(refname:short)"]).await;
+        assert!(result.is_empty(), "expected empty Vec outside a git repo");
+
+        // Also exercise a non-128 failure: invalid subcommand exits 1 (usage
+        // error), which should route through the `warn!` branch rather than
+        // the `debug!("not a repo")` branch.
+        let result = run_git(tmp.path(), &["this-is-not-a-real-subcommand"]).await;
+        assert!(
+            result.is_empty(),
+            "expected empty Vec for invalid git subcommand"
+        );
     }
 
     #[tokio::test]

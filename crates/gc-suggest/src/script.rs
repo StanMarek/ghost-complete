@@ -35,12 +35,20 @@ pub async fn run_script(argv: &[&str], cwd: &Path, timeout_ms: u64) -> Result<St
         cmd.args(&argv[1..]);
     }
     cmd.current_dir(cwd);
-    // Prevent recursive launch detection in generator subprocesses.
-    // Note: generators inherit the full process environment because many
-    // legitimate completions require auth tokens (GITHUB_TOKEN for `gh`,
-    // AWS credentials for `aws`, etc.). The specs are either embedded in
-    // the binary (trusted) or user-installed. If an attacker can write to
+    // HIGH-13 (DEFERRED): env isolation via a deny-list was rejected because
+    // it silently breaks authenticated completions for gh/aws/kubectl/npm and
+    // similar tools that rely on inherited tokens (GH_TOKEN, AWS_PROFILE,
+    // KUBECONFIG, NPM_TOKEN, ...). If ever revisited, use an allow-list with
+    // explicit per-spec opt-in. See PR #66 body for the full rationale.
+    //
+    // Generators inherit the full process environment because many legitimate
+    // completions require auth tokens (GITHUB_TOKEN for `gh`, AWS credentials
+    // for `aws`, etc.). The specs are either embedded in the binary (trusted)
+    // or user-installed. If an attacker can write to
     // ~/.config/ghost-complete/specs/, they already have shell access.
+    //
+    // The only var we strip is our own re-entry guard, so nested shells don't
+    // think they're still inside the proxy.
     cmd.env_remove("GHOST_COMPLETE_ACTIVE");
     cmd.stdout(std::process::Stdio::piped());
     cmd.stderr(std::process::Stdio::piped());
