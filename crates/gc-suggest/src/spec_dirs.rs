@@ -14,14 +14,22 @@
 
 use std::path::PathBuf;
 
-/// Partition configured spec_dirs into `(valid, invalid)` after tilde
+/// Partition result from [`partition_spec_dirs`]: tilde-expanded valid
+/// directories and the raw (pre-expansion) strings for entries that don't
+/// resolve to an existing directory.
+pub struct SpecDirPartition {
+    pub valid: Vec<PathBuf>,
+    pub invalid: Vec<String>,
+}
+
+/// Partition configured spec_dirs into valid/invalid entries after tilde
 /// expansion.
 ///
 /// A path is valid iff it resolves to an existing directory on disk. The
 /// `invalid` vector preserves the raw configured strings (pre-expansion) in
 /// input order so callers can log warnings that match what the user wrote
 /// in their config file.
-pub fn partition_spec_dirs(configured: &[String]) -> (Vec<PathBuf>, Vec<String>) {
+pub fn partition_spec_dirs(configured: &[String]) -> SpecDirPartition {
     let mut valid: Vec<PathBuf> = Vec::with_capacity(configured.len());
     let mut invalid: Vec<String> = Vec::new();
     for raw in configured {
@@ -32,7 +40,7 @@ pub fn partition_spec_dirs(configured: &[String]) -> (Vec<PathBuf>, Vec<String>)
             invalid.push(raw.clone());
         }
     }
-    (valid, invalid)
+    SpecDirPartition { valid, invalid }
 }
 
 /// Resolve spec directories from config, with tilde expansion.
@@ -52,16 +60,16 @@ pub fn partition_spec_dirs(configured: &[String]) -> (Vec<PathBuf>, Vec<String>)
 /// at least one path to try.
 pub fn resolve_spec_dirs(configured: &[String]) -> Vec<PathBuf> {
     if !configured.is_empty() {
-        let (valid, invalid) = partition_spec_dirs(configured);
-        for bad in &invalid {
+        let partition = partition_spec_dirs(configured);
+        for bad in &partition.invalid {
             tracing::warn!(
                 configured = %bad,
                 resolved = %expand_tilde(bad).display(),
                 "configured spec_dir is not a directory, skipping"
             );
         }
-        if !valid.is_empty() {
-            return valid;
+        if !partition.valid.is_empty() {
+            return partition.valid;
         }
         tracing::warn!("all configured spec_dirs are invalid — falling back to auto-detection");
     }
@@ -121,11 +129,11 @@ mod tests {
             "/ghost-complete-nonexistent-xyz-1".to_string(),
             "/ghost-complete-nonexistent-xyz-2".to_string(),
         ];
-        let (valid, invalid) = partition_spec_dirs(&configured);
-        assert_eq!(valid.len(), 1, "expected only `.` to be valid");
-        assert_eq!(valid[0], PathBuf::from("."));
+        let partition = partition_spec_dirs(&configured);
+        assert_eq!(partition.valid.len(), 1, "expected only `.` to be valid");
+        assert_eq!(partition.valid[0], PathBuf::from("."));
         assert_eq!(
-            invalid,
+            partition.invalid,
             vec![
                 "/ghost-complete-nonexistent-xyz-1".to_string(),
                 "/ghost-complete-nonexistent-xyz-2".to_string(),
@@ -136,24 +144,27 @@ mod tests {
 
     #[test]
     fn partition_spec_dirs_empty_input() {
-        let (valid, invalid) = partition_spec_dirs(&[]);
-        assert!(valid.is_empty());
-        assert!(invalid.is_empty());
+        let partition = partition_spec_dirs(&[]);
+        assert!(partition.valid.is_empty());
+        assert!(partition.invalid.is_empty());
     }
 
     #[test]
     fn partition_spec_dirs_all_valid() {
         let configured = vec![".".to_string()];
-        let (valid, invalid) = partition_spec_dirs(&configured);
-        assert_eq!(valid, vec![PathBuf::from(".")]);
-        assert!(invalid.is_empty());
+        let partition = partition_spec_dirs(&configured);
+        assert_eq!(partition.valid, vec![PathBuf::from(".")]);
+        assert!(partition.invalid.is_empty());
     }
 
     #[test]
     fn partition_spec_dirs_all_invalid() {
         let configured = vec!["/ghost-complete-fake-path-zzz".to_string()];
-        let (valid, invalid) = partition_spec_dirs(&configured);
-        assert!(valid.is_empty());
-        assert_eq!(invalid, vec!["/ghost-complete-fake-path-zzz".to_string()]);
+        let partition = partition_spec_dirs(&configured);
+        assert!(partition.valid.is_empty());
+        assert_eq!(
+            partition.invalid,
+            vec!["/ghost-complete-fake-path-zzz".to_string()]
+        );
     }
 }

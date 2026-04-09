@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -103,8 +103,8 @@ pub struct SuggestionEngine {
 }
 
 impl SuggestionEngine {
-    pub fn new(spec_dir: &Path) -> Result<Self> {
-        let result = SpecStore::load_from_dir(spec_dir)?;
+    pub fn new(spec_dirs: &[PathBuf]) -> Result<Self> {
+        let result = SpecStore::load_from_dirs(spec_dirs)?;
         if !result.errors.is_empty() {
             tracing::warn!(
                 "{} spec(s) failed to load (run `ghost-complete validate-specs` for details): {}",
@@ -1270,7 +1270,8 @@ mod tests {
         let dir = tempfile::TempDir::new().unwrap();
         std::fs::write(dir.path().join("test-dynamic.json"), spec_json).unwrap();
 
-        let engine = SuggestionEngine::new(dir.path()).unwrap();
+        let dirs = vec![dir.path().to_path_buf()];
+        let engine = SuggestionEngine::new(&dirs).unwrap();
         let ctx = make_ctx(Some("test-dynamic"), vec![], "", 1);
         let results = engine
             .suggest_dynamic(&ctx, Path::new("/tmp"), 5000)
@@ -1300,7 +1301,8 @@ mod tests {
         let dir = tempfile::TempDir::new().unwrap();
         std::fs::write(dir.path().join("test-native-only.json"), spec_json).unwrap();
 
-        let engine = SuggestionEngine::new(dir.path()).unwrap();
+        let dirs = vec![dir.path().to_path_buf()];
+        let engine = SuggestionEngine::new(&dirs).unwrap();
         let ctx = make_ctx(Some("test-native-only"), vec![], "", 1);
         let results = engine
             .suggest_dynamic(&ctx, Path::new("/tmp"), 5000)
@@ -1326,7 +1328,8 @@ mod tests {
         let dir = tempfile::TempDir::new().unwrap();
         std::fs::write(dir.path().join("test-cached.json"), spec_json).unwrap();
 
-        let engine = SuggestionEngine::new(dir.path()).unwrap();
+        let dirs = vec![dir.path().to_path_buf()];
+        let engine = SuggestionEngine::new(&dirs).unwrap();
         let ctx = make_ctx(Some("test-cached"), vec![], "", 1);
 
         // First call populates cache
@@ -1358,7 +1361,8 @@ mod tests {
     async fn test_suggest_dynamic_command_position_returns_empty() {
         // word_index == 0 means command position — no dynamic suggestions
         let dir = tempfile::TempDir::new().unwrap();
-        let engine = SuggestionEngine::new(dir.path()).unwrap();
+        let dirs = vec![dir.path().to_path_buf()];
+        let engine = SuggestionEngine::new(&dirs).unwrap();
         let ctx = make_ctx(None, vec![], "gi", 0);
         let results = engine
             .suggest_dynamic(&ctx, Path::new("/tmp"), 5000)

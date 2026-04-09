@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 use serde::Deserialize;
@@ -157,12 +157,44 @@ pub struct SpecLoadResult {
 }
 
 impl SpecStore {
+    /// Load specs from multiple directories with first-match-wins merging:
+    /// a spec from an earlier directory is not overridden by a later one.
+    /// This matches the user intuition that earlier entries in config's
+    /// `paths.spec_dirs` take precedence (e.g., user overrides before
+    /// system defaults).
+    pub fn load_from_dirs(dirs: &[PathBuf]) -> Result<SpecLoadResult> {
+        let mut specs: HashMap<String, CompletionSpec> = HashMap::new();
+        let mut errors: Vec<String> = Vec::new();
+        for dir in dirs {
+            match Self::load_from_dir(dir) {
+                Ok(result) => {
+                    for (name, spec) in result.store.specs {
+                        specs.entry(name).or_insert(spec);
+                    }
+                    errors.extend(result.errors);
+                }
+                Err(e) => {
+                    // Directory-level IO failure (e.g., EACCES on read_dir).
+                    // Accumulate into errors like per-file failures instead
+                    // of bailing — a broken dir earlier in the list must not
+                    // hide valid dirs later in the list. Symmetric with
+                    // load_from_dir's per-file error handling.
+                    errors.push(format!("{}: {e}", dir.display()));
+                }
+            }
+        }
+        Ok(SpecLoadResult {
+            store: Self { specs },
+            errors,
+        })
+    }
+
     pub fn load_from_dir(dir: &Path) -> Result<SpecLoadResult> {
         let mut specs = HashMap::new();
         let mut errors = Vec::new();
 
         if !dir.exists() {
-            tracing::debug!("spec directory does not exist: {}", dir.display());
+            tracing::warn!("spec directory does not exist: {}", dir.display());
             return Ok(SpecLoadResult {
                 store: Self { specs },
                 errors,

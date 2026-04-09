@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use gc_buffer::{byte_to_char_offset, char_to_byte_offset, parse_command_context};
@@ -193,9 +193,9 @@ pub struct InputHandler {
 }
 
 impl InputHandler {
-    pub fn new(spec_dir: &Path, terminal_profile: TerminalProfile) -> anyhow::Result<Self> {
+    pub fn new(spec_dirs: &[PathBuf], terminal_profile: TerminalProfile) -> anyhow::Result<Self> {
         Ok(Self {
-            engine: Arc::new(SuggestionEngine::new(spec_dir)?),
+            engine: Arc::new(SuggestionEngine::new(spec_dirs)?),
             overlay: OverlayState::new(),
             suggestions: Vec::new(),
             last_layout: None,
@@ -1364,7 +1364,7 @@ mod tests {
 
     fn make_handler() -> InputHandler {
         InputHandler {
-            engine: Arc::new(SuggestionEngine::new(Path::new(".")).unwrap()),
+            engine: Arc::new(SuggestionEngine::new(&[PathBuf::from(".")]).unwrap()),
             overlay: OverlayState::new(),
             suggestions: Vec::new(),
             last_layout: None,

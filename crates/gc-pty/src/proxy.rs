@@ -160,11 +160,11 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
 
     // Initialize suggestion handler with config
     let handler = Arc::new(Mutex::new({
-        let h = match InputHandler::new(&spec_dirs[0], terminal_profile.clone()) {
+        let h = match InputHandler::new(&spec_dirs, terminal_profile.clone()) {
             Ok(h) => h,
             Err(e) => {
                 tracing::warn!("failed to init suggestion engine: {}, trying fallback", e);
-                InputHandler::new(std::path::Path::new("."), terminal_profile)
+                InputHandler::new(&[std::path::PathBuf::from(".")], terminal_profile)
                     .context("fallback handler also failed — cannot start proxy")?
             }
         };

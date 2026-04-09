@@ -67,9 +67,12 @@ pub fn run_status(config_path: Option<&str>) -> Result<()> {
 
         if !result.errors.is_empty() {
             println!(
-                "\x1b[33m{} spec(s) failed to load\x1b[0m",
+                "\x1b[33m{} spec(s) failed to load:\x1b[0m",
                 result.errors.len()
             );
+            for err in &result.errors {
+                println!("  \x1b[33m- {err}\x1b[0m");
+            }
         }
     }
 
