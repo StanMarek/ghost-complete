@@ -76,9 +76,16 @@ fn print_results(results: &[CheckResult]) {
 fn check_config(config_path: Option<&str>) -> (CheckResult, Option<gc_config::GhostConfig>) {
     let path = match config_path {
         Some(p) => PathBuf::from(p),
-        None => gc_config::config_dir()
-            .unwrap_or_else(|| PathBuf::from("."))
-            .join("config.toml"),
+        None => {
+            let Some(dir) = gc_config::config_dir() else {
+                // HOME unset — refuse to probe CWD for config.
+                return (
+                    CheckResult::warn("Config file: HOME unset, using defaults"),
+                    Some(gc_config::GhostConfig::default()),
+                );
+            };
+            dir.join("config.toml")
+        }
     };
 
     if !path.exists() {
@@ -181,14 +188,23 @@ fn check_shell_integration() -> CheckResult {
 ///
 /// Uses `TerminalProfile::detect()` as the single source of truth for which
 /// terminal is running, avoiding divergence between detect() and is_supported().
-fn check_terminal(_config: &gc_config::GhostConfig) -> CheckResult {
+fn check_terminal(config: &gc_config::GhostConfig) -> CheckResult {
     let profile = gc_terminal::TerminalProfile::detect();
-    check_terminal_profile(&profile)
+    check_terminal_profile(&profile, config.experimental.multi_terminal)
 }
 
 /// Testable terminal check logic — pure function on profile.
-fn check_terminal_profile(profile: &gc_terminal::TerminalProfile) -> CheckResult {
+fn check_terminal_profile(
+    profile: &gc_terminal::TerminalProfile,
+    multi_terminal: bool,
+) -> CheckResult {
     if !profile.terminal().is_known() {
+        if multi_terminal {
+            return CheckResult::ok(format!(
+                "Unknown terminal ({}) — multi_terminal enabled, proceeding anyway",
+                profile.display_name(),
+            ));
+        }
         return CheckResult::warn(format!(
             "Unsupported terminal ({}) — supported: {}",
             profile.display_name(),
@@ -253,7 +269,7 @@ mod tests {
     #[test]
     fn test_check_terminal_ghostty_ok() {
         let profile = gc_terminal::TerminalProfile::for_ghostty();
-        let result = check_terminal_profile(&profile);
+        let result = check_terminal_profile(&profile, false);
         assert!(matches!(result.severity, Severity::Ok));
         assert!(result.message.contains("Ghostty"));
     }
@@ -261,7 +277,7 @@ mod tests {
     #[test]
     fn test_check_terminal_kitty_ok() {
         let profile = gc_terminal::TerminalProfile::for_kitty();
-        let result = check_terminal_profile(&profile);
+        let result = check_terminal_profile(&profile, false);
         assert!(matches!(result.severity, Severity::Ok));
         assert!(result.message.contains("Kitty"));
     }
@@ -269,7 +285,7 @@ mod tests {
     #[test]
     fn test_check_terminal_wezterm_ok() {
         let profile = gc_terminal::TerminalProfile::for_wezterm();
-        let result = check_terminal_profile(&profile);
+        let result = check_terminal_profile(&profile, false);
         assert!(matches!(result.severity, Severity::Ok));
         assert!(result.message.contains("WezTerm"));
     }
@@ -277,7 +293,7 @@ mod tests {
     #[test]
     fn test_check_terminal_alacritty_ok() {
         let profile = gc_terminal::TerminalProfile::for_alacritty();
-        let result = check_terminal_profile(&profile);
+        let result = check_terminal_profile(&profile, false);
         assert!(matches!(result.severity, Severity::Ok));
         assert!(result.message.contains("Alacritty"));
     }
@@ -285,7 +301,7 @@ mod tests {
     #[test]
     fn test_check_terminal_rio_ok() {
         let profile = gc_terminal::TerminalProfile::for_rio();
-        let result = check_terminal_profile(&profile);
+        let result = check_terminal_profile(&profile, false);
         assert!(matches!(result.severity, Severity::Ok));
         assert!(result.message.contains("Rio"));
     }
@@ -293,7 +309,7 @@ mod tests {
     #[test]
     fn test_check_terminal_iterm2_ok() {
         let profile = gc_terminal::TerminalProfile::for_iterm2();
-        let result = check_terminal_profile(&profile);
+        let result = check_terminal_profile(&profile, false);
         assert!(matches!(result.severity, Severity::Ok));
         assert!(result.message.contains("iTerm2"));
     }
@@ -301,8 +317,16 @@ mod tests {
     #[test]
     fn test_check_terminal_unknown_warns() {
         let profile = gc_terminal::TerminalProfile::for_unknown("foot");
-        let result = check_terminal_profile(&profile);
+        let result = check_terminal_profile(&profile, false);
         assert!(matches!(result.severity, Severity::Warn));
         assert!(result.message.contains("Unsupported"));
+    }
+
+    #[test]
+    fn test_check_terminal_unknown_with_multi_terminal_ok() {
+        let profile = gc_terminal::TerminalProfile::for_unknown("foot");
+        let result = check_terminal_profile(&profile, true);
+        assert!(matches!(result.severity, Severity::Ok));
+        assert!(result.message.contains("multi_terminal"));
     }
 }

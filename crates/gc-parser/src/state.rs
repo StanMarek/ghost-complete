@@ -21,6 +21,29 @@ pub struct TerminalState {
     cwd_dirty: bool,
     cursor_sync_requested: bool,
     cpr_synced: bool,
+    /// Count of outstanding CPR (Cursor Position Report) requests that
+    /// ghost-complete itself sent, so Task A can distinguish "our" CPR
+    /// responses (consume for cursor sync) from responses belonging to a
+    /// program running inside the PTY like atuin/crossterm (forward to PTY).
+    ///
+    /// Access pattern (see `gc-pty/src/proxy.rs`):
+    /// - **Writer:** Task B (PTY → stdout) calls `increment_cpr_pending`
+    ///   strictly BEFORE writing `CSI 6n` to stdout. This ordering matters —
+    ///   Phase 2 MED-15 fix. If Task B incremented AFTER the flush, a fast
+    ///   terminal could reply before Task A saw a pending count, and Task A
+    ///   would forward our own CPR response into the PTY, corrupting the
+    ///   cursor sync cycle.
+    /// - **Reader:** Task A (stdin → PTY) calls `claim_cpr_response` when a
+    ///   CPR arrives from the real terminal. A non-zero count means the
+    ///   response is ours; Task A decrements and consumes it. A zero count
+    ///   means the response belongs to a PTY program and should be forwarded.
+    /// - **Rollback writer:** Task B also calls `claim_cpr_response` on a
+    ///   failed write/flush to undo its own increment, because no response
+    ///   will ever arrive and a permanent leak would make Task A steal the
+    ///   next legitimate application CPR.
+    ///
+    /// External code (any crate other than `gc-pty::proxy`) must not touch
+    /// these helpers — the three call sites above are the entire contract.
     cpr_pending: u8,
 }
 
@@ -29,8 +52,8 @@ impl TerminalState {
         Self {
             cursor_row: 0,
             cursor_col: 0,
-            screen_rows: rows,
-            screen_cols: cols,
+            screen_rows: rows.max(1),
+            screen_cols: cols.max(1),
             saved_cursor: None,
             prompt_row: None,
             cwd: None,
@@ -46,8 +69,8 @@ impl TerminalState {
     }
 
     pub fn update_dimensions(&mut self, rows: u16, cols: u16) {
-        self.screen_rows = rows;
-        self.screen_cols = cols;
+        self.screen_rows = rows.max(1);
+        self.screen_cols = cols.max(1);
         self.clamp_cursor();
     }
 
@@ -108,6 +131,16 @@ impl TerminalState {
         self.cursor_sync_requested = true;
     }
 
+    /// Validate that CPR coordinates (1-indexed) fall within screen bounds.
+    /// Returns `false` for zero or out-of-range values, which indicate an
+    /// injected or corrupted CPR response that should be discarded.
+    pub fn validate_cpr_coordinates(&self, row_1: u16, col_1: u16) -> bool {
+        row_1 > 0
+            && col_1 > 0
+            && row_1 <= self.screen_rows
+            && col_1 <= self.screen_cols
+    }
+
     /// Sync cursor position from a CPR response (1-indexed row/col from
     /// the terminal, converted to 0-indexed internally).
     pub fn set_cursor_from_report(&mut self, row_1: u16, col_1: u16) {
@@ -150,8 +183,8 @@ impl TerminalState {
     /// acceptance in directory chaining). Does NOT set `buffer_dirty` since
     /// this is a local prediction, not a shell-reported update via OSC 7770.
     pub fn predict_command_buffer(&mut self, buffer: String, cursor: usize) {
+        self.buffer_cursor = cursor.min(buffer.chars().count());
         self.command_buffer = Some(buffer);
-        self.buffer_cursor = cursor;
     }
 
     // -- mutation helpers used by Perform impl --
@@ -163,14 +196,26 @@ impl TerminalState {
     }
 
     pub(crate) fn advance_col(&mut self, n: u16) {
-        self.cursor_col = self.cursor_col.saturating_add(n);
-        if self.screen_cols > 0 && self.cursor_col >= self.screen_cols {
-            self.cursor_row = self
-                .cursor_row
-                .saturating_add(self.cursor_col / self.screen_cols);
-            self.cursor_col %= self.screen_cols;
+        if self.screen_cols > 0 {
+            // Wide character (n > 1) doesn't fit in remaining columns —
+            // real terminals wrap to the next line before placing it,
+            // leaving the partial column blank.
+            if n > 1 && self.cursor_col + n > self.screen_cols {
+                self.cursor_row = self.cursor_row.saturating_add(1);
+                self.cursor_col = if n < self.screen_cols { n } else { 0 };
+            } else {
+                self.cursor_col = self.cursor_col.saturating_add(n);
+                if self.cursor_col >= self.screen_cols {
+                    self.cursor_row = self
+                        .cursor_row
+                        .saturating_add(self.cursor_col / self.screen_cols);
+                    self.cursor_col %= self.screen_cols;
+                }
+            }
             // Wrapping past the bottom row means the terminal scrolled.
             self.clamp_cursor_row();
+        } else {
+            self.cursor_col = self.cursor_col.saturating_add(n);
         }
     }
 
@@ -218,7 +263,7 @@ impl TerminalState {
     }
 
     pub(crate) fn tab(&mut self) {
-        self.cursor_col = (self.cursor_col + 8) & !7;
+        self.cursor_col = (self.cursor_col.saturating_add(8)) & !7;
         self.clamp_cursor_col();
     }
 
@@ -230,6 +275,7 @@ impl TerminalState {
         if let Some((row, col)) = self.saved_cursor {
             self.cursor_row = row;
             self.cursor_col = col;
+            self.clamp_cursor();
         }
     }
 
@@ -253,8 +299,9 @@ impl TerminalState {
     }
 
     pub(crate) fn set_command_buffer(&mut self, buffer: String, cursor: usize) {
+        let clamped = cursor.min(buffer.chars().count());
         self.command_buffer = Some(buffer);
-        self.buffer_cursor = cursor;
+        self.buffer_cursor = clamped;
         self.buffer_dirty = true;
     }
 
@@ -282,5 +329,91 @@ impl TerminalState {
         if self.screen_cols > 0 {
             self.cursor_col = self.cursor_col.min(self.screen_cols - 1);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn validate_cpr_accepts_valid_coordinates() {
+        let state = TerminalState::new(24, 80);
+        assert!(state.validate_cpr_coordinates(1, 1));
+        assert!(state.validate_cpr_coordinates(24, 80));
+        assert!(state.validate_cpr_coordinates(12, 40));
+    }
+
+    #[test]
+    fn validate_cpr_rejects_zero_coordinates() {
+        let state = TerminalState::new(24, 80);
+        assert!(!state.validate_cpr_coordinates(0, 1));
+        assert!(!state.validate_cpr_coordinates(1, 0));
+        assert!(!state.validate_cpr_coordinates(0, 0));
+    }
+
+    #[test]
+    fn validate_cpr_rejects_out_of_bounds() {
+        let state = TerminalState::new(24, 80);
+        // Row beyond screen
+        assert!(!state.validate_cpr_coordinates(25, 1));
+        // Col beyond screen
+        assert!(!state.validate_cpr_coordinates(1, 81));
+        // Both beyond screen
+        assert!(!state.validate_cpr_coordinates(25, 81));
+        // Absurd injected values
+        assert!(!state.validate_cpr_coordinates(65535, 65535));
+    }
+
+    #[test]
+    fn validate_cpr_boundary_values() {
+        let state = TerminalState::new(24, 80);
+        // Exactly at screen bounds (valid — 1-indexed)
+        assert!(state.validate_cpr_coordinates(24, 80));
+        // One past screen bounds (invalid)
+        assert!(!state.validate_cpr_coordinates(25, 80));
+        assert!(!state.validate_cpr_coordinates(24, 81));
+    }
+
+    #[test]
+    fn restore_cursor_clamps_after_resize() {
+        let mut state = TerminalState::new(24, 80);
+        // Save cursor near bottom-right of large terminal
+        state.set_cursor(23, 79);
+        state.save_cursor();
+        // Shrink terminal
+        state.update_dimensions(12, 40);
+        // Restore — should clamp to new bounds
+        state.restore_cursor();
+        let (row, col) = state.cursor_position();
+        assert!(row < 12, "row {row} should be clamped below 12");
+        assert!(col < 40, "col {col} should be clamped below 40");
+    }
+
+    #[test]
+    fn tab_saturating_at_u16_max() {
+        let mut state = TerminalState::new(24, 80);
+        state.cursor_col = u16::MAX - 2;
+        state.tab();
+        // Should not panic or wrap — cursor clamped to screen bounds
+        let (_, col) = state.cursor_position();
+        assert!(col < 80);
+    }
+
+    #[test]
+    fn zero_dimensions_clamped_to_one() {
+        let state = TerminalState::new(0, 0);
+        let (rows, cols) = state.screen_dimensions();
+        assert_eq!(rows, 1);
+        assert_eq!(cols, 1);
+    }
+
+    #[test]
+    fn update_dimensions_clamps_zero() {
+        let mut state = TerminalState::new(24, 80);
+        state.update_dimensions(0, 0);
+        let (rows, cols) = state.screen_dimensions();
+        assert_eq!(rows, 1);
+        assert_eq!(cols, 1);
     }
 }

@@ -96,6 +96,69 @@ pub fn parse_key_name(name: &str) -> anyhow::Result<KeyEvent> {
     }
 }
 
+/// Snapshot of command context at the moment async generators were spawned.
+/// Used to detect whether the current buffer context has diverged enough that
+/// the in-flight generator results are no longer applicable.
+///
+/// When `spawned_current_word` is `Some`, at least one generator consumed
+/// `current_word` (e.g. a script template with `{current_token}`) and the
+/// results are only valid for that exact word. When `None`, no generator
+/// depended on `current_word`, so typing more characters still lets the
+/// results merge and re-rank.
+#[derive(Debug, Clone)]
+struct DynamicCtxSnapshot {
+    command: Option<String>,
+    args: Vec<String>,
+    preceding_flag: Option<String>,
+    word_index: usize,
+    /// The `current_word` at spawn time, but ONLY when a generator depends
+    /// on its value. `None` for generators that treat `current_word` purely
+    /// as a fuzzy-filter prefix (git branches, plain scripts, filesystem).
+    spawned_current_word: Option<String>,
+}
+
+impl DynamicCtxSnapshot {
+    fn capture(ctx: &gc_buffer::CommandContext, uses_current_word: bool) -> Self {
+        Self {
+            command: ctx.command.clone(),
+            args: ctx.args.clone(),
+            preceding_flag: ctx.preceding_flag.clone(),
+            word_index: ctx.word_index,
+            spawned_current_word: if uses_current_word {
+                Some(ctx.current_word.clone())
+            } else {
+                None
+            },
+        }
+    }
+
+    /// Returns true if `current` represents a different completion site than
+    /// the site this snapshot was taken at — in which case in-flight results
+    /// are stale and must not be merged.
+    fn is_stale_against(&self, current: &gc_buffer::CommandContext) -> bool {
+        if self.command != current.command
+            || self.args != current.args
+            || self.preceding_flag != current.preceding_flag
+            || self.word_index != current.word_index
+        {
+            return true;
+        }
+        // `script_template` generators (the only case where this field is
+        // Some) substitute `{current_token}` LITERALLY into the generator's
+        // command line, per docs/COMPLETION_SPEC.md. `docker inspect ar` and
+        // `docker inspect arg` are independent commands producing disjoint
+        // result sets — prefix extension is unsound because results are not
+        // a superset/subset relationship. Any change to current_word means
+        // the results are from a different command invocation entirely.
+        if let Some(ref spawned_word) = self.spawned_current_word {
+            if spawned_word != &current.current_word {
+                return true;
+            }
+        }
+        false
+    }
+}
+
 pub struct InputHandler {
     engine: Arc<SuggestionEngine>,
     overlay: OverlayState,
@@ -108,8 +171,20 @@ pub struct InputHandler {
     debounce_suppressed: bool,
     keybindings: Keybindings,
     theme: PopupTheme,
+    /// Per-spawn timeout (ms) applied to async script / git generators.
+    /// Populated via [`InputHandler::with_suggest_config`] during builder
+    /// phase, defaulting to [`DEFAULT_GENERATOR_TIMEOUT_MS`] when unset.
+    generator_timeout_ms: u64,
     dynamic_rx: Option<mpsc::Receiver<Vec<Suggestion>>>,
+    dynamic_task: Option<tokio::task::JoinHandle<()>>,
     dynamic_notify: Arc<Notify>,
+    /// Command context snapshot captured when generators were spawned.
+    /// Used by try_merge_dynamic to drop stale results when the user's
+    /// editing has changed WHICH generator would now apply. We compare
+    /// command + args (subcommand path) + preceding_flag + word_index;
+    /// `current_word` is intentionally excluded so typing more characters
+    /// of the same completion still lets results merge.
+    dynamic_ctx: Option<DynamicCtxSnapshot>,
     terminal_profile: TerminalProfile,
     /// Accumulated viewport scroll from popup rendering. Persists across
     /// dismiss/re-trigger cycles because viewport scroll is permanent.
@@ -131,8 +206,11 @@ impl InputHandler {
             debounce_suppressed: false,
             keybindings: Keybindings::default(),
             theme: PopupTheme::default(),
+            generator_timeout_ms: DEFAULT_GENERATOR_TIMEOUT_MS,
             dynamic_rx: None,
+            dynamic_task: None,
             dynamic_notify: Arc::new(Notify::new()),
+            dynamic_ctx: None,
             terminal_profile,
             scroll_deficit: 0,
         })
@@ -162,6 +240,31 @@ impl InputHandler {
         self
     }
 
+    /// Apply suggestion engine configuration during the builder phase.
+    ///
+    /// # Contract
+    ///
+    /// - **Must be called before the handler is shared.** Internally this
+    ///   `try_unwrap`s the engine `Arc`, which only succeeds while the
+    ///   refcount is exactly 1. Once the handler has been wrapped in
+    ///   `Arc<Mutex<InputHandler>>` and handed off to the proxy tasks
+    ///   (see `proxy.rs`), calling this method will panic with
+    ///   `"with_suggest_config called after engine was shared"`.
+    /// - **Builder phase only.** Call site convention is a single chained
+    ///   `.with_suggest_config(...)` on the freshly constructed handler,
+    ///   before any `handle_*` / `process_key` call.
+    /// - **If never called**, the engine uses whatever defaults
+    ///   `SuggestionEngine::new()` installs (all providers on,
+    ///   `DEFAULT_MAX_RESULTS` for both main and history pools) and
+    ///   `generator_timeout_ms` stays at [`DEFAULT_GENERATOR_TIMEOUT_MS`].
+    /// - **Eager vs. lazy fields.** The provider / result-cap parameters are
+    ///   baked into the engine at construction; `generator_timeout_ms` is
+    ///   stored on the handler and read on every `spawn_generators` call.
+    ///   None of them change thereafter without going through
+    ///   [`InputHandler::update_config`] / a runtime reload path.
+    /// - **Repeated calls** are supported in theory (each call consumes
+    ///   `self` and rebuilds the engine) but the current call path in
+    ///   `proxy.rs` only invokes it once, so treat it as idempotent-by-replacement.
     #[allow(clippy::too_many_arguments)]
     pub fn with_suggest_config(
         self,
@@ -171,6 +274,7 @@ impl InputHandler {
         filesystem: bool,
         specs: bool,
         git: bool,
+        generator_timeout_ms: u64,
     ) -> Self {
         // During builder phase the Arc has exactly one reference, so try_unwrap succeeds.
         let engine = Arc::try_unwrap(self.engine)
@@ -185,6 +289,7 @@ impl InputHandler {
             );
         Self {
             engine: Arc::new(engine),
+            generator_timeout_ms,
             ..self
         }
     }
@@ -202,11 +307,6 @@ impl InputHandler {
         self.keybindings = keybindings;
         self.trigger_chars = trigger_chars.iter().copied().collect();
         self.max_visible = max_visible;
-    }
-
-    #[allow(dead_code)]
-    pub fn is_visible(&self) -> bool {
-        self.visible
     }
 
     pub fn has_pending_trigger(&self) -> bool {
@@ -451,8 +551,13 @@ impl InputHandler {
 
         let ctx = parse_command_context(&buffer, cursor);
 
-        // Drop any pending dynamic results from a previous trigger
+        // Abort any in-flight generator task before dropping the receiver,
+        // otherwise the spawned task leaks (tx.send blocks on dropped rx).
+        if let Some(handle) = self.dynamic_task.take() {
+            handle.abort();
+        }
         self.dynamic_rx = None;
+        self.dynamic_ctx = None;
 
         let sync_result = self.engine.suggest_sync(&ctx, &cwd, &buffer);
 
@@ -462,11 +567,31 @@ impl InputHandler {
                 self.overlay.reset();
                 self.visible = true;
                 self.render_at(stdout, cursor_row, cursor_col, screen_rows, screen_cols);
-                self.spawn_generators(result.script_generators, &ctx, &cwd);
+                self.spawn_generators(result.script_generators, result.git_generators, &ctx, &cwd);
             }
             Ok(result) => {
-                if !result.script_generators.is_empty() {
-                    self.spawn_generators(result.script_generators, &ctx, &cwd);
+                let has_async =
+                    !result.script_generators.is_empty() || !result.git_generators.is_empty();
+                if has_async {
+                    // No static suggestions but generators are pending.
+                    // If a popup is currently visible (e.g. from a previous
+                    // trigger with static results), dismiss it first — the
+                    // old popup's screen contents, selection state, and any
+                    // in-flight task must all be cleared before spawning new
+                    // generators. dismiss() handles clear_popup, abort of
+                    // dynamic_task, and resetting visible/suggestions/layout.
+                    if self.visible {
+                        self.dismiss(stdout);
+                    }
+                    // Don't set visible yet — that would intercept navigation
+                    // keys while the popup is empty. The popup becomes visible
+                    // when try_merge_dynamic receives non-empty results.
+                    self.spawn_generators(
+                        result.script_generators,
+                        result.git_generators,
+                        &ctx,
+                        &cwd,
+                    );
                 } else if self.visible {
                     self.dismiss(stdout);
                 }
@@ -480,41 +605,71 @@ impl InputHandler {
         }
     }
 
-    /// Spawn an async task to run pre-resolved script generators. Results
-    /// arrive via `dynamic_rx` and Task E renders them via `dynamic_notify`.
+    /// Spawn an async task to run pre-resolved generators (script + git).
+    /// Results arrive via `dynamic_rx` and Task E renders them via `dynamic_notify`.
     fn spawn_generators(
         &mut self,
-        generators: Vec<gc_suggest::specs::GeneratorSpec>,
+        script_generators: Vec<gc_suggest::specs::GeneratorSpec>,
+        git_generators: Vec<gc_suggest::git::GitQueryKind>,
         ctx: &gc_buffer::CommandContext,
         cwd: &std::path::Path,
     ) {
-        if generators.is_empty() {
+        if script_generators.is_empty() && git_generators.is_empty() {
             return;
         }
+        // Snapshot the command context so try_merge_dynamic can drop results
+        // if the user typed a different command/subcommand/flag while
+        // generators were running. A script_template only depends on
+        // current_word if its template actually contains `{current_token}`
+        // — templates that only use `{prev_token}` or no placeholders at
+        // all don't need current_word to be pinned.
+        let uses_current_word = script_generators.iter().any(|gen| {
+            gen.script_template
+                .as_ref()
+                .is_some_and(|tpl| tpl.iter().any(|part| part.contains("{current_token}")))
+        });
+        self.dynamic_ctx = Some(DynamicCtxSnapshot::capture(ctx, uses_current_word));
         let (tx, rx) = mpsc::channel::<Vec<Suggestion>>(1);
         self.dynamic_rx = Some(rx);
         let engine = Arc::clone(&self.engine);
         let ctx = ctx.clone();
         let cwd = cwd.to_path_buf();
-        let timeout = GENERATOR_TIMEOUT_MS;
+        let timeout = self.generator_timeout_ms;
         let notify = Arc::clone(&self.dynamic_notify);
-        tokio::spawn(async move {
-            match engine
-                .run_generators(&generators, &ctx, &cwd, timeout)
-                .await
-            {
-                Ok(results) if !results.is_empty() => {
-                    let _ = tx.send(results).await;
-                }
-                Ok(_) => {} // empty results — tx dropped, channel disconnects
-                Err(e) => {
-                    tracing::debug!("dynamic suggestions failed: {e}");
-                }
+        let handle = tokio::spawn(async move {
+            let mut all_results = Vec::new();
+
+            // Run script generators and git generators concurrently
+            let (script_res, git_res) = tokio::join!(
+                engine.run_generators(&script_generators, &ctx, &cwd, timeout),
+                engine.resolve_git(&git_generators, &cwd, &ctx.current_word),
+            );
+
+            match script_res {
+                Ok(results) => all_results.extend(results),
+                Err(e) => tracing::debug!("dynamic suggestions failed: {e}"),
             }
+            match git_res {
+                Ok(results) => all_results.extend(results),
+                Err(e) => tracing::debug!("git suggestions failed: {e}"),
+            }
+
+            if !all_results.is_empty() {
+                let _ = tx.send(all_results).await;
+            }
+            // Drop tx BEFORE notifying so Task E sees Disconnected on
+            // the first try_recv after wake. Otherwise on a multi-threaded
+            // runtime Task E can wake and read rx while this task is still
+            // executing its local drops, getting Empty instead of
+            // Disconnected — and Empty leaves dynamic_rx = Some, which
+            // pins the loading indicator on forever with no further
+            // notifications coming.
+            drop(tx);
             // Always notify so Task E clears the loading indicator,
             // even when generators returned empty or errored.
             notify.notify_one();
         });
+        self.dynamic_task = Some(handle);
     }
 
     /// Check for pending dynamic (script generator) results and merge them
@@ -532,8 +687,70 @@ impl InputHandler {
         match rx.try_recv() {
             Ok(dynamic_results) => {
                 self.dynamic_rx = None;
-                if !self.visible || dynamic_results.is_empty() {
+                if dynamic_results.is_empty() {
+                    // No results from generators. If the popup is already
+                    // visible with static suggestions, leave the suggestions
+                    // alone but re-render so the loading indicator clears —
+                    // render() reads `loading = dynamic_rx.is_some()`, and
+                    // without a repaint the on-screen indicator is a stale
+                    // snapshot from when dynamic_rx was still Some.
+                    self.dynamic_ctx = None;
+                    if self.visible {
+                        self.render(parser, stdout);
+                    }
                     return false;
+                }
+                // Parse the current buffer context and verify it still matches
+                // what the generators were spawned against. If the user's
+                // editing changed WHICH generator would apply (different
+                // command, subcommand, flag, or word position), or if a
+                // current_word-dependent generator's input changed, the
+                // results are stale and must be dropped.
+                let current_ctx = {
+                    let p = match parser.lock() {
+                        Ok(p) => p,
+                        Err(e) => {
+                            // Don't call self.render() — it would also try
+                            // to lock the poisoned parser and double-panic.
+                            tracing::warn!(
+                                "parser lock poisoned during dynamic merge re-rank: {e} — \
+                                 disabling dynamic_rx"
+                            );
+                            self.dynamic_rx = None;
+                            self.dynamic_ctx = None;
+                            return false;
+                        }
+                    };
+                    let state = p.state();
+                    let buffer = state.command_buffer().unwrap_or("");
+                    let cursor = state.buffer_cursor();
+                    parse_command_context(buffer, cursor)
+                };
+                let current_word = current_ctx.current_word.clone();
+
+                // Staleness check: snapshotted context must still match.
+                let stale = match &self.dynamic_ctx {
+                    Some(spawned) => spawned.is_stale_against(&current_ctx),
+                    None => true,
+                };
+                self.dynamic_ctx = None;
+                if stale {
+                    // Don't merge stale results. If popup is visible from
+                    // the mixed static+async path, static suggestions stay
+                    // but we must repaint so the loading indicator clears
+                    // (same reasoning as the empty-results branch above).
+                    // If not visible (async-only path), nothing happens.
+                    if self.visible {
+                        self.render(parser, stdout);
+                    }
+                    return false;
+                }
+
+                // Activate popup if it wasn't visible yet (async-only path:
+                // no static suggestions, generators produced the results).
+                if !self.visible {
+                    self.visible = true;
+                    self.overlay.reset();
                 }
 
                 // Merge: add dynamic results, dedup by text
@@ -544,26 +761,48 @@ impl InputHandler {
                         self.suggestions.push(s);
                     }
                 }
-
-                // Re-rank against the current query — the user may have
-                // typed more characters while generators were running.
-                let current_word = {
-                    let p = match parser.lock() {
-                        Ok(p) => p,
-                        Err(_) => {
-                            self.render(parser, stdout);
-                            return true;
-                        }
-                    };
-                    let state = p.state();
-                    let buffer = state.command_buffer().unwrap_or("");
-                    let cursor = state.buffer_cursor();
-                    let ctx = parse_command_context(buffer, cursor);
-                    ctx.current_word
-                };
                 let merged = std::mem::take(&mut self.suggestions);
-                self.suggestions =
-                    gc_suggest::fuzzy::rank(&current_word, merged, self.max_visible * 5);
+                // Merge-time rank: when the user has a non-empty query, filter
+                // the pool to matches sorted by relevance and cap at
+                // `max_visible * 5` (generous headroom over what's rendered).
+                //
+                // When the spawn-time query is empty (user triggered on space
+                // then hasn't typed yet), `fuzzy::rank("", pool, N)` takes the
+                // empty-query fast path in `gc_suggest::fuzzy::rank` which
+                // sorts by kind priority and then alphabetically, then
+                // truncates to N. For single-kind dynamic pools (e.g. git
+                // branches from `resolve_git`), kind priority is uniform, so
+                // the effective result is "first N branches alphabetically"
+                // — dropping any candidate past alphabetic position ~50. A
+                // branch named `zzz-hotfix-critical` in a 5000-branch monorepo
+                // would be silently evicted at merge time, and the subsequent
+                // keystroke-driven re-rank could never recover it because the
+                // full pool is gone.
+                //
+                // Instead, when merging with an empty query, keep the full
+                // pool untruncated. The render path is bounded by
+                // `max_visible` (overlay's `render_popup` uses
+                // `skip(scroll_offset).take(max_visible)`), so large
+                // `self.suggestions` is cheap to render. The next keystroke
+                // that arrives with a non-empty query will trigger a fresh
+                // `suggest_sync` cycle; any retained-but-not-yet-merged
+                // dynamic pool is bounded upstream by
+                // `gc_suggest::engine::MAX_DYNAMIC_CANDIDATES` (1000 for
+                // non-empty spawns; for empty spawns the engine also leaves
+                // it unbounded and relies on realistic provider sizes —
+                // typically <5k items; nucleo handles 10k in <1ms per the
+                // CLAUDE.md perf target).
+                //
+                // Option B future mitigation (not needed yet): stash the raw
+                // untruncated pool in a separate field (e.g. `dynamic_raw`)
+                // and re-rank from it on every keystroke. That eliminates
+                // the pathological-provider case entirely. Deferred until a
+                // real-world report of a >10k-item provider.
+                self.suggestions = if current_word.is_empty() {
+                    merged
+                } else {
+                    gc_suggest::fuzzy::rank(&current_word, merged, self.max_visible * 5)
+                };
 
                 if self.suggestions.is_empty() {
                     self.dismiss(stdout);
@@ -575,19 +814,38 @@ impl InputHandler {
             }
             Err(mpsc::error::TryRecvError::Empty) => false,
             Err(mpsc::error::TryRecvError::Disconnected) => {
+                // Generator task exited without sending (e.g. all
+                // generators returned empty, or the task was aborted).
+                // Clear dynamic_rx AND repaint so the loading indicator
+                // goes away — otherwise on an idle shell the spinner
+                // stays visually stuck forever.
                 self.dynamic_rx = None;
+                self.dynamic_ctx = None;
+                if self.visible {
+                    self.render(parser, stdout);
+                }
                 false
             }
         }
     }
 
     fn render(&mut self, parser: &Arc<Mutex<TerminalParser>>, stdout: &mut dyn Write) {
-        let (cursor_row, cursor_col, screen_rows, screen_cols) = {
-            let p = parser.lock().unwrap();
-            let state = p.state();
-            let (cr, cc) = state.cursor_position();
-            let (sr, sc) = state.screen_dimensions();
-            (cr, cc, sr, sc)
+        // Poison handling mirrors Task B in proxy.rs: if the parser mutex
+        // is poisoned (another task panicked while holding it), log and
+        // skip this render rather than propagating the panic. The popup
+        // will simply not update on this tick; the next render attempt is
+        // driven by further PTY input.
+        let (cursor_row, cursor_col, screen_rows, screen_cols) = match parser.lock() {
+            Ok(p) => {
+                let state = p.state();
+                let (cr, cc) = state.cursor_position();
+                let (sr, sc) = state.screen_dimensions();
+                (cr, cc, sr, sc)
+            }
+            Err(e) => {
+                tracing::warn!("parser mutex poisoned in render: {e} — skipping render");
+                return;
+            }
         };
         self.render_at(stdout, cursor_row, cursor_col, screen_rows, screen_cols);
     }
@@ -644,7 +902,11 @@ impl InputHandler {
         self.suggestions.clear();
         self.overlay.reset();
         self.last_layout = None;
+        if let Some(handle) = self.dynamic_task.take() {
+            handle.abort();
+        }
         self.dynamic_rx = None;
+        self.dynamic_ctx = None;
     }
 
     fn accept_suggestion(&self, parser: &Arc<Mutex<TerminalParser>>) -> Vec<u8> {
@@ -656,23 +918,44 @@ impl InputHandler {
         let selected = &self.suggestions[selected_idx];
 
         let (delete_chars, replacement, command) = {
-            let p = parser.lock().unwrap();
+            // Poison handling mirrors Task B in proxy.rs: if the parser
+            // mutex is poisoned we can't safely read the buffer, so return
+            // empty bytes (caller treats this as "no-op accept"). Failing
+            // here must not crash the proxy.
+            let p = match parser.lock() {
+                Ok(p) => p,
+                Err(e) => {
+                    tracing::warn!(
+                        "parser mutex poisoned in accept_suggestion: {e} — dropping accept"
+                    );
+                    return Vec::new();
+                }
+            };
             let state = p.state();
             let buffer = state.command_buffer().unwrap_or("");
             let cursor = state.buffer_cursor();
             let ctx = parse_command_context(buffer, cursor);
+
+            // Defense-in-depth: clamp cursor to buffer length even though
+            // set_command_buffer already clamps, to prevent PTY corruption
+            // if an unclamped value ever reaches here.
+            let safe_cursor = cursor.min(buffer.chars().count());
 
             if selected.kind == gc_suggest::SuggestionKind::History {
                 // History: delete the entire buffer up to cursor, then type the full command.
                 // Cursor is always at buffer end when popup is visible (arrow keys dismiss),
                 // but we use cursor (not buffer.chars().count()) because over-deleting past
                 // cursor into the prompt would be worse than leaving trailing chars.
-                debug_assert_eq!(
-                    cursor,
-                    buffer.chars().count(),
-                    "history accept assumes cursor at end of buffer"
-                );
-                (cursor, selected.text.clone(), ctx.command)
+                let buf_len = buffer.chars().count();
+                if safe_cursor != buf_len {
+                    tracing::warn!(
+                        cursor = safe_cursor,
+                        buffer_len = buf_len,
+                        "history accept: cursor not at end of buffer — \
+                         using cursor position to avoid over-deleting into prompt"
+                    );
+                }
+                (safe_cursor, selected.text.clone(), ctx.command)
             } else {
                 let word_len = ctx.current_word.chars().count();
                 (word_len, selected.text.clone(), ctx.command)
@@ -715,7 +998,11 @@ impl InputHandler {
 }
 
 const DEFAULT_TRIGGER_CHARS: &[char] = &[' ', '/', '-', '.'];
-const GENERATOR_TIMEOUT_MS: u64 = 5000;
+
+/// Default generator timeout applied when [`InputHandler::with_suggest_config`]
+/// is never called (primarily in tests). Production proxy always passes the
+/// value resolved from `gc_config::SuggestConfig::generator_timeout_ms`.
+pub const DEFAULT_GENERATOR_TIMEOUT_MS: u64 = 5000;
 
 #[cfg(test)]
 /// Check if a printable character should trigger suggestions (using defaults).
@@ -835,6 +1122,125 @@ mod tests {
     }
 
     #[test]
+    fn test_try_merge_dynamic_disconnected_rerenders_to_clear_loading() {
+        // Regression: when the dynamic channel disconnects (generator task
+        // finished without sending, or was aborted), `try_merge_dynamic`
+        // previously cleared `dynamic_rx` but did NOT re-render. The popup
+        // kept showing the loading indicator from its last paint because
+        // render() reads `loading = self.dynamic_rx.is_some()` — without a
+        // fresh render, the on-screen indicator is a stale snapshot. On an
+        // idle shell this would stay stuck until the user typed or
+        // dismissed manually.
+        let mut handler = make_visible_handler(vec![Suggestion {
+            text: "static".to_string(),
+            ..Default::default()
+        }]);
+
+        // Closed receiver: drop tx immediately so try_recv returns
+        // Disconnected on the first call.
+        let (tx, rx) = mpsc::channel::<Vec<Suggestion>>(1);
+        drop(tx);
+        handler.dynamic_rx = Some(rx);
+
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+
+        handler.try_merge_dynamic(&parser, &mut buf);
+
+        assert!(
+            handler.dynamic_rx.is_none(),
+            "dynamic_rx must be cleared on Disconnected"
+        );
+        assert!(
+            !buf.is_empty(),
+            "Disconnected path must re-render so the loading indicator clears"
+        );
+    }
+
+    #[test]
+    fn test_try_merge_dynamic_empty_ok_rerenders_to_clear_loading() {
+        // Regression: if an `Ok(empty Vec)` ever slips through (defensive
+        // path in the current code), it must behave like Disconnected —
+        // clear dynamic_rx AND repaint.
+        let mut handler = make_visible_handler(vec![Suggestion {
+            text: "static".to_string(),
+            ..Default::default()
+        }]);
+
+        let (tx, rx) = mpsc::channel::<Vec<Suggestion>>(1);
+        tx.try_send(Vec::new()).unwrap();
+        handler.dynamic_rx = Some(rx);
+
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+
+        handler.try_merge_dynamic(&parser, &mut buf);
+
+        assert!(
+            handler.dynamic_rx.is_none(),
+            "dynamic_rx must be cleared on Ok(empty)"
+        );
+        assert!(
+            !buf.is_empty(),
+            "Ok(empty) path must re-render so the loading indicator clears"
+        );
+    }
+
+    #[test]
+    fn test_render_survives_poisoned_parser_mutex() {
+        // Regression: previously render() called `parser.lock().unwrap()`,
+        // which panics on poison. A poisoned parser mutex (from any prior
+        // panic inside a parser lock in Task B or elsewhere) must not take
+        // down Task B's render path.
+        let mut handler = make_visible_handler(vec![Suggestion {
+            text: "poisoned".to_string(),
+            ..Default::default()
+        }]);
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+
+        // Poison the mutex by panicking inside a guard.
+        let parser_clone = parser.clone();
+        let _ = std::thread::spawn(move || {
+            let _guard = parser_clone.lock().unwrap();
+            panic!("intentional poison for test");
+        })
+        .join();
+        assert!(parser.is_poisoned(), "setup: mutex must be poisoned");
+
+        // Must not panic.
+        let mut buf = Vec::new();
+        handler.render(&parser, &mut buf);
+    }
+
+    #[test]
+    fn test_accept_suggestion_survives_poisoned_parser_mutex() {
+        // Regression: previously accept_suggestion() called
+        // `parser.lock().unwrap()`, which panics on poison. Must return
+        // an empty byte vec instead so the PTY proxy can continue cleanly.
+        let handler = make_selected_handler(Suggestion {
+            text: "poisoned".to_string(),
+            kind: SuggestionKind::Subcommand,
+            source: SuggestionSource::Spec,
+            ..Default::default()
+        });
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+
+        let parser_clone = parser.clone();
+        let _ = std::thread::spawn(move || {
+            let _guard = parser_clone.lock().unwrap();
+            panic!("intentional poison for test");
+        })
+        .join();
+        assert!(parser.is_poisoned(), "setup: mutex must be poisoned");
+
+        let bytes = handler.accept_suggestion(&parser);
+        assert!(
+            bytes.is_empty(),
+            "accept_suggestion with poisoned mutex must return empty, got {bytes:?}"
+        );
+    }
+
+    #[test]
     fn test_dismiss_clears_state() {
         let mut handler = make_visible_handler(vec![Suggestion {
             text: "test".to_string(),
@@ -863,8 +1269,11 @@ mod tests {
             debounce_suppressed: false,
             keybindings: Keybindings::default(),
             theme: PopupTheme::default(),
+            generator_timeout_ms: DEFAULT_GENERATOR_TIMEOUT_MS,
             dynamic_rx: None,
+            dynamic_task: None,
             dynamic_notify: Arc::new(Notify::new()),
+            dynamic_ctx: None,
             terminal_profile: TerminalProfile::for_ghostty(),
             scroll_deficit: 0,
         }
@@ -937,7 +1346,9 @@ mod tests {
     #[test]
     fn test_handler_starts_not_visible() {
         let handler = make_handler();
-        assert!(!handler.is_visible());
+        // Accessing the private field directly — the public `is_visible()`
+        // accessor was removed as dead API.
+        assert!(!handler.visible);
         assert!(!handler.has_pending_trigger());
     }
 

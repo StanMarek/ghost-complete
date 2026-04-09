@@ -77,7 +77,18 @@ pub fn spawn_config_watcher(config_path: PathBuf, handler: Arc<Mutex<InputHandle
 
             tracing::info!("config.toml changed, reloading...");
 
-            let config_path_str = config_path.to_str().unwrap_or("");
+            // If the config path contains non-UTF-8 bytes, we can't pass
+            // it through the str-based GhostConfig::load API. Skipping the
+            // reload is strictly better than silently substituting an
+            // empty string (which would dispatch load() to its "no path"
+            // fallback and reload the wrong file).
+            let Some(config_path_str) = config_path.to_str() else {
+                tracing::warn!(
+                    "config reload skipped: path is not valid UTF-8: {}",
+                    config_path.display()
+                );
+                continue;
+            };
             let config = match GhostConfig::load(Some(config_path_str)) {
                 Ok(c) => c,
                 Err(e) => {
@@ -130,14 +141,19 @@ pub fn spawn_config_watcher(config_path: PathBuf, handler: Arc<Mutex<InputHandle
             }
 
             tracing::info!("config reloaded successfully");
+            tracing::info!(
+                "note: changes to delay_ms, max_results, providers, spec_dirs, \
+                 and [experimental] require a restart to take effect"
+            );
         }
     });
 
     Ok(())
 }
 
-/// Build a `PopupTheme` from a resolved `ThemeConfig`, parsing each style string.
-fn build_popup_theme(resolved: &gc_config::ThemeConfig, borders: bool) -> Result<PopupTheme> {
+/// Build a `PopupTheme` from a [`gc_config::ResolvedTheme`] (preset merged
+/// with user overrides), parsing each style string.
+fn build_popup_theme(resolved: &gc_config::ResolvedTheme, borders: bool) -> Result<PopupTheme> {
     Ok(PopupTheme {
         selected_on: parse_style(&resolved.selected)
             .map_err(|e| anyhow::anyhow!("invalid theme.selected: {e}"))?,
@@ -161,15 +177,15 @@ mod tests {
 
     #[test]
     fn test_build_popup_theme_valid() {
-        let theme_config = gc_config::ThemeConfig {
+        let resolved = gc_config::ResolvedTheme {
             selected: "reverse".into(),
             description: "dim".into(),
             match_highlight: "bold".into(),
-            item_text: "".into(),
+            item_text: String::new(),
             scrollbar: "dim".into(),
-            ..Default::default()
+            border: "dim".into(),
         };
-        let result = build_popup_theme(&theme_config, true);
+        let result = build_popup_theme(&resolved, true);
         assert!(result.is_ok());
         assert!(result.unwrap().borders);
     }

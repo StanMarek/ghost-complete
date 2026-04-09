@@ -1,11 +1,12 @@
 use anyhow::{Context, Result};
 use std::fs;
+use std::io::Write as _;
 use std::path::Path;
 
 const ZSH_INTEGRATION: &str = include_str!("../../../shell/ghost-complete.zsh");
 const ZSH_INIT: &str = include_str!("../../../shell/init.zsh");
 
-const EMBEDDED_SPECS: &[(&str, &str)] = &[
+pub(crate) const EMBEDDED_SPECS: &[(&str, &str)] = &[
     ("-.json", include_str!("../../../specs/-.json")),
     ("act.json", include_str!("../../../specs/act.json")),
     ("adb.json", include_str!("../../../specs/adb.json")),
@@ -1182,6 +1183,7 @@ const DEFAULT_CONFIG_TOML: &str = "\
 # [suggest]
 # max_results = 50
 # max_history_results = 5
+# generator_timeout_ms = 5000  # Per-invocation timeout (ms) for async script/git generators
 
 # [suggest.providers]
 # commands = true
@@ -1217,15 +1219,22 @@ const SHELL_END: &str = "# <<< ghost-complete shell integration <<<";
 const MANAGED_WARNING: &str =
     "# !! Contents within this block are managed by 'ghost-complete install' !!";
 
+/// Single-quote a path for safe embedding in shell code.
+/// Escapes embedded single quotes with the `'\''` idiom.
+fn shell_safe_path(path: &Path) -> String {
+    let s = path.display().to_string();
+    format!("'{}'", s.replace('\'', r"'\''"))
+}
+
 fn init_block(script_path: &Path) -> String {
-    let path = script_path.display();
+    let path = shell_safe_path(script_path);
     format!(
         "{INIT_BEGIN}\n\
          {MANAGED_WARNING}\n\
-         if [[ -f \"{path}\" ]]; then\n  \
-         builtin source \"{path}\"\n\
+         if [[ -f {path} ]]; then\n  \
+         builtin source {path}\n\
          else\n  \
-         echo \"ghost-complete: init script missing: {path}\" >&2\n  \
+         echo \"ghost-complete: init script missing: \"{path} >&2\n  \
          echo \"ghost-complete: run 'ghost-complete install' to restore it\" >&2\n\
          fi\n\
          {INIT_END}"
@@ -1236,9 +1245,9 @@ fn shell_integration_block(script_path: &Path) -> String {
     format!(
         "{SHELL_BEGIN}\n\
          {MANAGED_WARNING}\n\
-         source \"{}\"\n\
+         source {}\n\
          {SHELL_END}",
-        script_path.display()
+        shell_safe_path(script_path)
     )
 }
 
@@ -1337,14 +1346,29 @@ fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()>
     // 1b. Copy completion specs
     copy_specs(config_dir)?;
 
-    // 1c. Write default config.toml if one doesn't exist (never clobber)
+    // 1c. Write default config.toml if one doesn't exist (never clobber).
+    // Uses create_new(true) so the existence check and file creation are
+    // a single atomic operation — closes the TOCTOU race where two
+    // concurrent `ghost-complete install` runs could clobber a config
+    // written between the exists() check and the subsequent write.
     let config_path = config_dir.join("config.toml");
-    if !config_path.exists() {
-        fs::write(&config_path, DEFAULT_CONFIG_TOML)
-            .with_context(|| format!("failed to write {}", config_path.display()))?;
-        println!("  Wrote default config to {}", config_path.display());
-    } else {
-        println!("  Config already exists at {}", config_path.display());
+    match fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&config_path)
+    {
+        Ok(mut file) => {
+            file.write_all(DEFAULT_CONFIG_TOML.as_bytes())
+                .with_context(|| format!("failed to write {}", config_path.display()))?;
+            println!("  Wrote default config to {}", config_path.display());
+        }
+        Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+            println!("  Config already exists at {}", config_path.display());
+        }
+        Err(e) => {
+            return Err(anyhow::Error::new(e))
+                .with_context(|| format!("failed to create {}", config_path.display()));
+        }
     }
 
     // 2. Read existing .zshrc (or empty)
@@ -1355,12 +1379,16 @@ fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()>
         String::new()
     };
 
-    // 3. Backup
+    // 3. Backup (only on first install — preserve the original)
     if zshrc_path.exists() {
         let backup = zshrc_path.with_extension("backup.ghost-complete");
-        fs::copy(zshrc_path, &backup)
-            .with_context(|| format!("failed to backup to {}", backup.display()))?;
-        println!("  Backed up .zshrc to {}", backup.display());
+        if !backup.exists() {
+            fs::copy(zshrc_path, &backup)
+                .with_context(|| format!("failed to backup to {}", backup.display()))?;
+            println!("  Backed up .zshrc to {}", backup.display());
+        } else {
+            println!("  Backup already exists at {}", backup.display());
+        }
     }
 
     // 4. Strip existing managed blocks (idempotent)
@@ -1451,11 +1479,40 @@ fn uninstall_from(zshrc_path: &Path, config_dir: &Path) -> Result<()> {
         let _ = fs::remove_dir(&shell_dir); // only succeeds if empty
     }
 
+    // 4. Note about retained files
+    let specs_dir = config_dir.join("specs");
+    let has_specs =
+        specs_dir.exists() && fs::read_dir(&specs_dir).is_ok_and(|mut d| d.next().is_some());
+    let has_config = config_dir.join("config.toml").exists();
+    if has_specs || has_config {
+        eprintln!();
+        eprintln!("  \x1b[33mNote:\x1b[0m The following files were retained:");
+        if has_specs {
+            eprintln!(
+                "    - {} ({} specs)",
+                specs_dir.display(),
+                fs::read_dir(&specs_dir).map(|d| d.count()).unwrap_or(0)
+            );
+        }
+        if has_config {
+            eprintln!("    - {}", config_dir.join("config.toml").display());
+        }
+        eprintln!("  To remove everything: rm -rf {}", config_dir.display());
+    }
+
     println!("\nghost-complete uninstalled successfully!");
     Ok(())
 }
 
 pub fn run_install(dry_run: bool) -> Result<()> {
+    // Guard: refuse to install as root — creates root-owned files that break normal user's shell
+    if unsafe { libc::getuid() } == 0 {
+        anyhow::bail!(
+            "refusing to install as root — this would create root-owned files in your \
+             home directory that break shell startup. Run without sudo."
+        );
+    }
+
     let home = dirs::home_dir().context("could not determine home directory")?;
     let zshrc = home.join(".zshrc");
     let config_dir = gc_config::config_dir().context("could not determine home directory")?;
@@ -1507,9 +1564,9 @@ mod tests {
         assert!(block.contains(INIT_BEGIN));
         assert!(block.contains(INIT_END));
         assert!(block.contains(MANAGED_WARNING));
-        // Source line pointing to external script
-        assert!(block.contains("builtin source \"/some/path/init.zsh\""));
-        assert!(block.contains("-f \"/some/path/init.zsh\""));
+        // Source line pointing to external script (single-quoted)
+        assert!(block.contains("builtin source '/some/path/init.zsh'"));
+        assert!(block.contains("-f '/some/path/init.zsh'"));
         // Missing-file warning (else branch)
         assert!(block.contains("ghost-complete: init script missing:"));
         assert!(block.contains("ghost-complete install"));
@@ -1579,7 +1636,51 @@ mod tests {
         assert!(block.contains(SHELL_BEGIN));
         assert!(block.contains(SHELL_END));
         assert!(block.contains(MANAGED_WARNING));
-        assert!(block.contains("/some/path/ghost-complete.zsh"));
+        assert!(block.contains("source '/some/path/ghost-complete.zsh'"));
+    }
+
+    #[test]
+    fn test_shell_safe_path_escapes_metacharacters() {
+        // Dollar sign — would trigger variable expansion in double quotes
+        let path = Path::new("/home/$USER/config/init.zsh");
+        assert_eq!(shell_safe_path(path), "'/home/$USER/config/init.zsh'");
+
+        // Backtick — would trigger command substitution in double quotes
+        let path = Path::new("/home/user`whoami`/init.zsh");
+        assert_eq!(shell_safe_path(path), "'/home/user`whoami`/init.zsh'");
+
+        // Double quote — would break double-quoted embedding
+        let path = Path::new("/home/us\"er/init.zsh");
+        assert_eq!(shell_safe_path(path), "'/home/us\"er/init.zsh'");
+
+        // Single quote — must be escaped with '\'' idiom
+        let path = Path::new("/home/o'brien/init.zsh");
+        assert_eq!(shell_safe_path(path), r"'/home/o'\''brien/init.zsh'");
+
+        // Combined metacharacters
+        let path = Path::new("/home/$(`evil'cmd\")/init.zsh");
+        assert_eq!(
+            shell_safe_path(path),
+            r#"'/home/$(`evil'\''cmd")/init.zsh'"#
+        );
+    }
+
+    #[test]
+    fn test_init_block_metacharacters_safe() {
+        let path = Path::new("/home/$(rm -rf /)/config/ghost-complete/init.zsh");
+        let block = init_block(path);
+        // Must be single-quoted — no shell expansion possible
+        assert!(block.contains("'/home/$(rm -rf /)/config/ghost-complete/init.zsh'"));
+        // Must NOT contain the path inside double quotes (would allow expansion)
+        assert!(!block.contains("\"$(rm -rf /)\""));
+        // The echo line must close double quotes BEFORE the single-quoted path
+        assert!(
+            block.contains(
+                r#"echo "ghost-complete: init script missing: "'/home/$(rm -rf /)/config/ghost-complete/init.zsh'"#
+            ),
+            "echo line must not embed single-quoted path inside double quotes:\n{}",
+            block
+        );
     }
 
     #[test]
@@ -1601,7 +1702,7 @@ mod tests {
         assert!(init_script.exists());
         let init_content = fs::read_to_string(&init_script).unwrap();
         assert_eq!(init_content, ZSH_INIT);
-        let expected_init_source = format!("builtin source \"{}\"", init_script.display());
+        let expected_init_source = format!("builtin source {}", shell_safe_path(&init_script));
         assert!(
             content.contains(&expected_init_source),
             "init source path mismatch: .zshrc does not contain '{}'",
@@ -1613,7 +1714,7 @@ mod tests {
         assert!(script.exists());
         let script_content = fs::read_to_string(&script).unwrap();
         assert_eq!(script_content, ZSH_INTEGRATION);
-        let expected_source = format!("source \"{}\"", script.display());
+        let expected_source = format!("source {}", shell_safe_path(&script));
         assert!(
             content.contains(&expected_source),
             "source path mismatch: .zshrc does not contain '{}'",
@@ -1742,8 +1843,9 @@ mod tests {
         // Should parse as valid TOML config (all theme fields are commented out)
         let parsed: gc_config::GhostConfig = toml::from_str(&content).unwrap();
         assert_eq!(parsed.keybindings.accept, "tab");
-        assert_eq!(parsed.theme.selected, "");
-        assert_eq!(parsed.theme.description, "");
+        // Commented-out theme overrides leave the fields as None (inherit preset).
+        assert_eq!(parsed.theme.selected, None);
+        assert_eq!(parsed.theme.description, None);
     }
 
     #[test]
@@ -1843,5 +1945,50 @@ mod tests {
         assert_eq!(fs::read_to_string(&config_path).unwrap(), custom_config);
         // No shell scripts should have been created
         assert!(!config.join("shell").exists());
+    }
+
+    #[test]
+    fn test_backup_not_overwritten_on_reinstall() {
+        let dir = TempDir::new().unwrap();
+        let zshrc = dir.path().join(".zshrc");
+        let config = dir.path().join("config");
+
+        let original = "export ORIGINAL=true\n";
+        fs::write(&zshrc, original).unwrap();
+
+        // First install — creates backup with original content
+        install_to(&zshrc, &config, false).unwrap();
+        let backup = zshrc.with_extension("backup.ghost-complete");
+        assert!(backup.exists());
+        assert_eq!(fs::read_to_string(&backup).unwrap(), original);
+
+        // Second install — backup should NOT be overwritten
+        install_to(&zshrc, &config, false).unwrap();
+        assert_eq!(
+            fs::read_to_string(&backup).unwrap(),
+            original,
+            "backup was overwritten on second install — original content lost"
+        );
+    }
+
+    #[test]
+    fn test_uninstall_prints_retained_files_note() {
+        let dir = TempDir::new().unwrap();
+        let zshrc = dir.path().join(".zshrc");
+        let config = dir.path().join("config");
+
+        fs::write(&zshrc, "export FOO=bar\n").unwrap();
+        install_to(&zshrc, &config, false).unwrap();
+
+        // After install, specs and config should exist
+        assert!(config.join("specs").exists());
+        assert!(config.join("config.toml").exists());
+
+        // Uninstall — should succeed and leave specs/config behind
+        uninstall_from(&zshrc, &config).unwrap();
+
+        // Specs and config should still be there (retained)
+        assert!(config.join("specs").exists());
+        assert!(config.join("config.toml").exists());
     }
 }

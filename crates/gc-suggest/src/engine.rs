@@ -6,6 +6,7 @@ use anyhow::Result;
 use gc_buffer::CommandContext;
 use tokio::sync::Semaphore;
 
+use crate::alias::AliasStore;
 use crate::cache::{CacheKey, GeneratorCache};
 use crate::commands::CommandsProvider;
 use crate::env::EnvProvider;
@@ -24,7 +25,40 @@ use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 /// Maximum number of concurrent script generators.
 const MAX_CONCURRENT_GENERATORS: usize = 3;
 
-/// Result from `suggest_sync` — includes ranked suggestions and any script
+/// Cap on the candidate pool returned by async dynamic providers
+/// (`run_generators`, `resolve_git`) **when the spawn-time query is
+/// non-empty**. Passed as the `max_results` argument to `fuzzy::rank` at the
+/// tail of each async body, so the survivors are the top-N *by score*
+/// against the spawn-time query — not by generator order.
+///
+/// For the **empty-query case** (e.g. the user triggers completion on the
+/// space after a command name, before typing any characters), the cap is
+/// bypassed entirely: the raw merged pool is returned without calling
+/// `fuzzy::rank`. Empty-query `fuzzy::rank` sorts by `(kind_priority,
+/// text)` and truncates, which for single-kind pools (all `GitBranch`,
+/// etc.) degenerates into an alphabetic position truncate — exactly the
+/// failure mode we're trying to avoid. See `run_generators` for the full
+/// rationale.
+///
+/// Rationale for the non-empty-query cap:
+/// - The handler's `try_merge_dynamic` re-ranks the merged pool against the
+///   CURRENT `current_word` under the handler lock. An unbounded pool would
+///   make lock-hold time scale with raw provider output (e.g. 10k git
+///   branches on a giant repo), starving the stdin/PTY/SIGWINCH tasks.
+/// - A pure size truncate ("first N items") was tried and rejected: git
+///   providers emit refname-alphabetic order, so "first 1000" can miss every
+///   match on a large monorepo that happens to sort late alphabetically.
+///   Ranking against the spawn-time query filters non-matches first, so the
+///   cap trims the long tail of matches by score rather than by position.
+/// - 1000 is ~20x the visible result count (`DEFAULT_MAX_RESULTS = 50`) — a
+///   generous headroom that leaves the stale-query bug (the reason the
+///   original `max_results = 50` rank was removed) as a narrow theoretical
+///   case rather than a common failure mode. Nucleo's benchmark target of
+///   <1ms on 10k candidates means a locked re-rank of ≤1000 stays well
+///   under the keystroke-latency budget.
+const MAX_DYNAMIC_CANDIDATES: usize = 1000;
+
+/// Result from `suggest_sync` — includes ranked suggestions and any
 /// generators that the caller should dispatch asynchronously.
 #[derive(Debug)]
 pub struct SyncResult {
@@ -32,6 +66,9 @@ pub struct SyncResult {
     /// Script generators from the spec resolution, if any. The caller passes
     /// these to `run_generators` to avoid re-resolving the spec tree.
     pub script_generators: Vec<specs::GeneratorSpec>,
+    /// Native git generators resolved from the spec. The caller dispatches
+    /// these asynchronously via `resolve_git` to avoid blocking the runtime.
+    pub git_generators: Vec<git::GitQueryKind>,
 }
 
 impl SyncResult {
@@ -54,7 +91,7 @@ pub struct SuggestionEngine {
     commands_provider: CommandsProvider,
     env_provider: EnvProvider,
     ssh_host_cache: Option<SshHostCache>,
-    alias_map: std::collections::HashMap<String, String>,
+    alias_map: AliasStore,
     generator_cache: Arc<GeneratorCache>,
     frecency_db: FrecencyDb,
     max_results: usize,
@@ -82,7 +119,7 @@ impl SuggestionEngine {
             commands_provider: CommandsProvider::from_path_env(),
             env_provider: EnvProvider::new(),
             ssh_host_cache: SshHostCache::default_path(),
-            alias_map: crate::alias::load_shell_aliases(),
+            alias_map: AliasStore::load_async(),
             generator_cache: Arc::new(GeneratorCache::new()),
             frecency_db: FrecencyDb::load(),
             max_results: fuzzy::DEFAULT_MAX_RESULTS,
@@ -132,7 +169,7 @@ impl SuggestionEngine {
             commands_provider,
             env_provider: EnvProvider::new(),
             ssh_host_cache: SshHostCache::default_path(),
-            alias_map: std::collections::HashMap::new(),
+            alias_map: AliasStore::empty(),
             generator_cache: Arc::new(GeneratorCache::new()),
             frecency_db: FrecencyDb::empty(),
             max_results: fuzzy::DEFAULT_MAX_RESULTS,
@@ -278,11 +315,90 @@ impl SuggestionEngine {
             }
         }
 
+        // Empty spawn-time query: the common "trigger on space after a
+        // command, then type" case. There's no relevance signal to filter
+        // or rank against, so we MUST NOT call `fuzzy::rank` — its
+        // empty-query path sorts by `(kind_priority, text)` and truncates,
+        // which for single-kind providers (e.g. all `GitBranch`) collapses
+        // to an alphabetic position truncate. That reintroduces the exact
+        // false-negative we just fixed for non-empty queries: in a
+        // 5000-branch monorepo, `zzz-hotfix-critical` drops alphabetically
+        // past position 1000 before the user has typed a single character.
+        //
+        // Return the raw merged pool instead. The handler's
+        // `try_merge_dynamic` re-ranks against the user's EVENTUAL typed
+        // query, bounded by its own `max_visible * 5` cap. Per the nucleo
+        // performance target in `CLAUDE.md` (<1ms on 10k candidates), the
+        // locked re-rank stays within the keystroke budget for realistic
+        // provider outputs. For pathological providers (>10k items), the
+        // fully-correct fix is moving the handler re-rank outside the
+        // mutex (Option B) — cross-crate refactor deferred.
+        if ctx.current_word.is_empty() {
+            return Ok(all_results);
+        }
+
+        // Non-empty query: spawn-time `fuzzy::rank` at a generous cap
+        // (`MAX_DYNAMIC_CANDIDATES`).
+        //
+        // Why rank here rather than a pure size truncate: provider output
+        // order is NOT relevance order for alphabetic providers — `git
+        // branch --format=%(refname:short)` and `git tag --list` emit in
+        // refname-alphabetic order. A position truncate on a 5000-branch
+        // monorepo would silently drop every match past refname position
+        // 1000, regardless of how well the user's query matches it.
+        //
+        // Why this is NOT the previously-fixed stale-query bug resurfacing:
+        // the original bug was `max_results = DEFAULT_MAX_RESULTS (50)` — so
+        // tight that a user typing more characters routinely found matches
+        // already evicted at spawn time. Here the cap is 1000, ~20x the
+        // visible result count, so the cap only trims pools that are deeply
+        // long-tail under the spawn-time query, and the handler's
+        // `try_merge_dynamic` re-ranks the survivors against the CURRENT
+        // query at merge time.
+        //
+        // Known limitation: for pools with >1000 matching candidates, a
+        // narrow scoring edge case may drop a candidate that would score
+        // higher under an extended query (e.g. mid-word `h` scoring low for
+        // `"h"` but a contiguous mid-word `ho` scoring high for `"ho"`).
+        // Full correctness here also requires Option B.
         Ok(fuzzy::rank(
             &ctx.current_word,
             all_results,
-            self.max_results,
+            MAX_DYNAMIC_CANDIDATES,
         ))
+    }
+
+    /// Resolve native git generators asynchronously using `tokio::process::Command`.
+    /// Called by the handler alongside `run_generators`.
+    pub async fn resolve_git(
+        &self,
+        kinds: &[git::GitQueryKind],
+        cwd: &Path,
+        query: &str,
+    ) -> Result<Vec<Suggestion>> {
+        let mut all = Vec::new();
+        for &kind in kinds {
+            match git::git_suggestions(cwd, kind).await {
+                Ok(suggestions) => all.extend(suggestions),
+                Err(e) => tracing::debug!("git provider error ({kind:?}): {e}"),
+            }
+        }
+        // Empty spawn-time query: return the raw pool (no `fuzzy::rank`
+        // call). `fuzzy::rank`'s empty-query path sorts by kind+text and
+        // truncates, which for all-GitBranch pools collapses to an
+        // alphabetic position truncate — reintroducing the `zzz-hotfix`
+        // false-negative on large monorepos. The handler re-ranks against
+        // the user's eventual typed query. See `run_generators` for the
+        // full rationale.
+        if query.is_empty() {
+            return Ok(all);
+        }
+        // Non-empty query: rank at the generous cap. Git providers emit
+        // refname-alphabetic order, so a pure size truncate would
+        // guarantee false negatives past position ~1000 in large
+        // monorepos. See `run_generators` for the full rationale and the
+        // known edge-case limitation.
+        Ok(fuzzy::rank(query, all, MAX_DYNAMIC_CANDIDATES))
     }
 
     /// Convenience method that resolves the spec and runs script generators.
@@ -316,199 +432,292 @@ impl SuggestionEngine {
         self.run_generators(&generators, ctx, cwd, timeout_ms).await
     }
 
+    /// Dispatcher for the synchronous suggestion pipeline. Each branch is
+    /// handled by a focused helper; this method only picks the right one
+    /// based on the cursor context.
     pub fn suggest_sync(
         &self,
         ctx: &CommandContext,
         cwd: &Path,
         buffer: &str,
     ) -> Result<SyncResult> {
-        let mut candidates = Vec::new();
-
-        // Command position: commands (history handled by rank_with_history)
+        // Command position: commands (history handled by rank_with_history).
         if ctx.word_index == 0 {
-            if self.providers_commands {
-                match self.commands_provider.provide(ctx, cwd) {
-                    Ok(cmds) => candidates.extend(cmds),
-                    Err(e) => tracing::debug!("commands provider error: {e}"),
-                }
-            }
-            return Ok(SyncResult {
-                suggestions: self.rank_with_history(ctx, cwd, buffer, candidates),
-                script_generators: Vec::new(),
-            });
+            return Ok(self.suggest_command_position(ctx, cwd, buffer));
         }
 
-        // Redirect: always filesystem
+        // Redirect: always filesystem.
         if ctx.in_redirect {
-            if self.providers_filesystem {
-                match self.filesystem_provider.provide(ctx, cwd) {
-                    Ok(fs) => candidates.extend(fs),
-                    Err(e) => tracing::debug!("filesystem provider error (redirect): {e}"),
-                }
-            }
-            return Ok(SyncResult {
-                suggestions: self.rank_with_history(ctx, cwd, buffer, candidates),
-                script_generators: Vec::new(),
-            });
+            return Ok(self.suggest_redirect(ctx, cwd, buffer));
         }
 
-        // Environment variable completion: when current_word starts with $
-        if ctx.current_word.starts_with('$') {
-            match self.env_provider.provide(ctx, cwd) {
-                Ok(env_vars) => candidates.extend(env_vars),
-                Err(e) => tracing::debug!("env provider error: {e}"),
+        // Contextual injectors populate the shared candidate set before
+        // spec/filesystem resolution runs.
+        let mut candidates = Vec::new();
+        self.extend_with_env_vars(ctx, cwd, &mut candidates);
+        self.extend_with_ssh_hosts(ctx, &mut candidates);
+
+        // Spec-driven completion takes priority over the path heuristic.
+        // On Err, try_suggest_from_spec hands the partially-populated
+        // candidates vec back so the caller can fall through.
+        let candidates = match self.try_suggest_from_spec(ctx, cwd, buffer, candidates) {
+            Ok(result) => return Ok(result),
+            Err(candidates) => candidates,
+        };
+
+        // Path-like current_word vs. plain fallback: same logic, different
+        // tracing label for debugging.
+        let label = if looks_like_path(&ctx.current_word) {
+            "path"
+        } else {
+            "fallback"
+        };
+        Ok(self.suggest_filesystem_fallback(ctx, cwd, buffer, candidates, label))
+    }
+
+    /// Complete the command name (`ctx.word_index == 0`). Pulls candidates
+    /// from the `$PATH` commands provider; history is injected by
+    /// `rank_with_history`.
+    fn suggest_command_position(
+        &self,
+        ctx: &CommandContext,
+        cwd: &Path,
+        buffer: &str,
+    ) -> SyncResult {
+        let mut candidates = Vec::new();
+        if self.providers_commands {
+            match self.commands_provider.provide(ctx, cwd) {
+                Ok(cmds) => candidates.extend(cmds),
+                Err(e) => tracing::debug!("commands provider error: {e}"),
             }
         }
-
-        // SSH host completion: inject configured hosts when completing ssh args
-        if let Some(ref cache) = self.ssh_host_cache {
-            if let Some(ref cmd) = ctx.command {
-                let resolved_cmd = self
-                    .alias_map
-                    .get(cmd.as_str())
-                    .map(|s| s.as_str())
-                    .unwrap_or(cmd.as_str());
-                if resolved_cmd == "ssh" && ctx.word_index > 0 && !ctx.is_flag {
-                    candidates.extend(cache.hosts_matching(&ctx.current_word).into_iter().map(
-                        |host| Suggestion {
-                            text: host,
-                            description: Some("SSH host".to_string()),
-                            kind: SuggestionKind::Command,
-                            source: SuggestionSource::SshConfig,
-                            ..Default::default()
-                        },
-                    ));
-                }
-            }
+        SyncResult {
+            suggestions: self.rank_with_history(ctx, cwd, buffer, candidates),
+            script_generators: Vec::new(),
+            git_generators: Vec::new(),
         }
+    }
 
-        // Check for a spec for this command (before path heuristic — specs
-        // know about folders-only vs all-filepaths and should take priority)
-        if self.providers_specs {
-            if let Some(command) = &ctx.command {
-                // Resolve alias: if "g" is aliased to "git", look up "git" spec
-                let resolved = self
-                    .alias_map
-                    .get(command.as_str())
-                    .map(|s| s.as_str())
-                    .unwrap_or(command.as_str());
-                if let Some(spec) = self.spec_store.get(resolved) {
-                    let resolution = specs::resolve_spec(spec, ctx);
-
-                    // When the preceding flag takes an argument (templates or
-                    // generators are set from the option's args), show ONLY
-                    // those arg completions — not the full subcommand/option
-                    // list.  The user typed e.g. `curl -o ` and wants files,
-                    // not more flags.
-                    let in_option_arg = ctx.preceding_flag.is_some()
-                        && (resolution.wants_filepaths
-                            || resolution.wants_folders_only
-                            || !resolution.native_generators.is_empty());
-
-                    if !in_option_arg {
-                        candidates.extend(resolution.subcommands);
-                        candidates.extend(resolution.options);
-                    }
-
-                    // Handle generators (e.g., git branches/tags/remotes)
-                    if self.providers_git {
-                        for gen_type in &resolution.native_generators {
-                            if let Some(kind) = git::generator_to_query_kind(gen_type) {
-                                match git::git_suggestions(cwd, kind) {
-                                    Ok(suggestions) => candidates.extend(suggestions),
-                                    Err(e) => {
-                                        tracing::debug!("git provider error ({gen_type}): {e}")
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Add filesystem: folders-only or all filepaths
-                    if resolution.wants_folders_only && self.providers_filesystem {
-                        // Offer "../" to navigate up, unless at / or $HOME
-                        let parent_text = if ctx.current_word.is_empty() {
-                            Some("../".to_string())
-                        } else if ctx.current_word.ends_with("../") {
-                            Some(format!("{}../", ctx.current_word))
-                        } else {
-                            None
-                        };
-                        if let Some(text) = parent_text {
-                            let effective = cwd.join(&ctx.current_word);
-                            let at_boundary =
-                                effective.canonicalize().ok().map_or(true, |resolved| {
-                                    resolved == Path::new("/")
-                                        || std::env::var("HOME")
-                                            .ok()
-                                            .is_some_and(|h| resolved == Path::new(&h))
-                                });
-                            if !at_boundary {
-                                candidates.push(Suggestion {
-                                    text,
-                                    description: Some("Parent directory".to_string()),
-                                    kind: SuggestionKind::Directory,
-                                    source: SuggestionSource::Filesystem,
-                                    ..Default::default()
-                                });
-                            }
-                        }
-                        match self.filesystem_provider.provide(ctx, cwd) {
-                            Ok(fs) => {
-                                candidates.extend(
-                                    fs.into_iter()
-                                        .filter(|s| s.kind == SuggestionKind::Directory),
-                                );
-                            }
-                            Err(e) => tracing::debug!("filesystem provider error (folders): {e}"),
-                        }
-                    } else if resolution.wants_filepaths && self.providers_filesystem {
-                        match self.filesystem_provider.provide(ctx, cwd) {
-                            Ok(fs) => candidates.extend(fs),
-                            Err(e) => tracing::debug!("filesystem provider error: {e}"),
-                        }
-                    }
-
-                    // Extract script generators that the caller can dispatch async
-                    let script_generators: Vec<_> = resolution
-                        .script_generators
-                        .into_iter()
-                        .filter(|g| !g.requires_js)
-                        .collect();
-
-                    return Ok(SyncResult {
-                        suggestions: self.rank_with_history(ctx, cwd, buffer, candidates),
-                        script_generators,
-                    });
-                }
-            }
-        }
-
-        // Path-like current_word without a spec: filesystem
-        if looks_like_path(&ctx.current_word) {
-            if self.providers_filesystem {
-                match self.filesystem_provider.provide(ctx, cwd) {
-                    Ok(fs) => candidates.extend(fs),
-                    Err(e) => tracing::debug!("filesystem provider error (path): {e}"),
-                }
-            }
-            return Ok(SyncResult {
-                suggestions: self.rank_with_history(ctx, cwd, buffer, candidates),
-                script_generators: Vec::new(),
-            });
-        }
-
-        // No spec, no path — fallback to filesystem
+    /// Complete after a redirect operator (e.g. `echo foo > <TAB>`). The
+    /// shell will write to a file, so only filesystem candidates are
+    /// relevant — not commands, not specs.
+    fn suggest_redirect(&self, ctx: &CommandContext, cwd: &Path, buffer: &str) -> SyncResult {
+        let mut candidates = Vec::new();
         if self.providers_filesystem {
             match self.filesystem_provider.provide(ctx, cwd) {
                 Ok(fs) => candidates.extend(fs),
-                Err(e) => tracing::debug!("filesystem provider error (fallback): {e}"),
+                Err(e) => tracing::debug!("filesystem provider error (redirect): {e}"),
             }
         }
-        Ok(SyncResult {
+        SyncResult {
             suggestions: self.rank_with_history(ctx, cwd, buffer, candidates),
             script_generators: Vec::new(),
+            git_generators: Vec::new(),
+        }
+    }
+
+    /// Inject environment variable candidates when `current_word` starts
+    /// with `$`. Augments the candidate set without short-circuiting spec
+    /// or filesystem resolution.
+    fn extend_with_env_vars(
+        &self,
+        ctx: &CommandContext,
+        cwd: &Path,
+        candidates: &mut Vec<Suggestion>,
+    ) {
+        if !ctx.current_word.starts_with('$') {
+            return;
+        }
+        match self.env_provider.provide(ctx, cwd) {
+            Ok(env_vars) => candidates.extend(env_vars),
+            Err(e) => tracing::debug!("env provider error: {e}"),
+        }
+    }
+
+    /// Inject SSH host candidates when completing an argument to `ssh`
+    /// (respecting alias resolution). Skips the command position and flag
+    /// words so hosts don't appear for `ssh -p<TAB>` or unrelated commands.
+    fn extend_with_ssh_hosts(&self, ctx: &CommandContext, candidates: &mut Vec<Suggestion>) {
+        let Some(cache) = self.ssh_host_cache.as_ref() else {
+            return;
+        };
+        let Some(cmd) = ctx.command.as_ref() else {
+            return;
+        };
+        let resolved_owned = self.alias_map.get(cmd.as_str());
+        let resolved_cmd = resolved_owned.as_deref().unwrap_or(cmd.as_str());
+        if resolved_cmd != "ssh" || ctx.word_index == 0 || ctx.is_flag {
+            return;
+        }
+        candidates.extend(
+            cache
+                .hosts_matching(&ctx.current_word)
+                .into_iter()
+                .map(|host| Suggestion {
+                    text: host,
+                    description: Some("SSH host".to_string()),
+                    kind: SuggestionKind::Command,
+                    source: SuggestionSource::SshConfig,
+                    ..Default::default()
+                }),
+        );
+    }
+
+    /// Attempt to resolve candidates from a loaded spec for this command.
+    ///
+    /// Returns `Ok(SyncResult)` if a spec was found and handled. Returns
+    /// `Err(candidates)` — handing the partially-populated candidate vec
+    /// back — so the caller can fall through to filesystem completion.
+    fn try_suggest_from_spec(
+        &self,
+        ctx: &CommandContext,
+        cwd: &Path,
+        buffer: &str,
+        mut candidates: Vec<Suggestion>,
+    ) -> std::result::Result<SyncResult, Vec<Suggestion>> {
+        if !self.providers_specs {
+            return Err(candidates);
+        }
+        let Some(command) = ctx.command.as_ref() else {
+            return Err(candidates);
+        };
+        // Resolve alias: if "g" is aliased to "git", look up "git" spec.
+        let resolved_owned = self.alias_map.get(command.as_str());
+        let resolved = resolved_owned.as_deref().unwrap_or(command.as_str());
+        let Some(spec) = self.spec_store.get(resolved) else {
+            return Err(candidates);
+        };
+
+        let specs::SpecResolution {
+            subcommands,
+            options,
+            native_generators,
+            script_generators,
+            wants_filepaths,
+            wants_folders_only,
+        } = specs::resolve_spec(spec, ctx);
+
+        // When the preceding flag takes an argument (templates or generators
+        // are set from the option's args), show ONLY those arg completions —
+        // not the full subcommand/option list. The user typed e.g.
+        // `curl -o ` and wants files, not more flags.
+        let in_option_arg = ctx.preceding_flag.is_some()
+            && (wants_filepaths
+                || wants_folders_only
+                || !native_generators.is_empty()
+                || !script_generators.is_empty());
+
+        if !in_option_arg {
+            candidates.extend(subcommands);
+            candidates.extend(options);
+        }
+
+        let git_generators = self.git_generators_from(&native_generators);
+
+        // Add filesystem: folders-only or all filepaths.
+        if wants_folders_only && self.providers_filesystem {
+            self.extend_with_folders(ctx, cwd, &mut candidates);
+        } else if wants_filepaths && self.providers_filesystem {
+            match self.filesystem_provider.provide(ctx, cwd) {
+                Ok(fs) => candidates.extend(fs),
+                Err(e) => tracing::debug!("filesystem provider error: {e}"),
+            }
+        }
+
+        // Script generators are dispatched asynchronously by the caller.
+        let script_generators: Vec<_> = script_generators
+            .into_iter()
+            .filter(|g| !g.requires_js)
+            .collect();
+
+        Ok(SyncResult {
+            suggestions: self.rank_with_history(ctx, cwd, buffer, candidates),
+            script_generators,
+            git_generators,
         })
+    }
+
+    /// Collect native git generators for async resolution by the caller.
+    /// Previously these ran synchronously via `std::process::Command`,
+    /// blocking the tokio runtime thread for 200-500ms on large repos.
+    fn git_generators_from(&self, native_generators: &[String]) -> Vec<git::GitQueryKind> {
+        if !self.providers_git {
+            return Vec::new();
+        }
+        native_generators
+            .iter()
+            .filter_map(|g| git::generator_to_query_kind(g))
+            .collect()
+    }
+
+    /// Populate `candidates` with directory-only filesystem results plus an
+    /// optional "../" parent-directory entry. Used by spec arguments whose
+    /// `template` is `"folders"` (e.g. `cd`).
+    fn extend_with_folders(
+        &self,
+        ctx: &CommandContext,
+        cwd: &Path,
+        candidates: &mut Vec<Suggestion>,
+    ) {
+        // Offer "../" to navigate up, unless already at / or $HOME.
+        let parent_text = if ctx.current_word.is_empty() {
+            Some("../".to_string())
+        } else if ctx.current_word.ends_with("../") {
+            Some(format!("{}../", ctx.current_word))
+        } else {
+            None
+        };
+        if let Some(text) = parent_text {
+            let effective = cwd.join(&ctx.current_word);
+            let at_boundary = effective.canonicalize().ok().map_or(true, |resolved| {
+                resolved == Path::new("/")
+                    || std::env::var("HOME")
+                        .ok()
+                        .is_some_and(|h| resolved == Path::new(&h))
+            });
+            if !at_boundary {
+                candidates.push(Suggestion {
+                    text,
+                    description: Some("Parent directory".to_string()),
+                    kind: SuggestionKind::Directory,
+                    source: SuggestionSource::Filesystem,
+                    ..Default::default()
+                });
+            }
+        }
+        match self.filesystem_provider.provide(ctx, cwd) {
+            Ok(fs) => {
+                candidates.extend(
+                    fs.into_iter()
+                        .filter(|s| s.kind == SuggestionKind::Directory),
+                );
+            }
+            Err(e) => tracing::debug!("filesystem provider error (folders): {e}"),
+        }
+    }
+
+    /// Extend `candidates` with filesystem results and rank. Used when no
+    /// spec matches — either because `current_word` looks like a path or
+    /// as a final fallback. `label` appears in the tracing log only.
+    fn suggest_filesystem_fallback(
+        &self,
+        ctx: &CommandContext,
+        cwd: &Path,
+        buffer: &str,
+        mut candidates: Vec<Suggestion>,
+        label: &'static str,
+    ) -> SyncResult {
+        if self.providers_filesystem {
+            match self.filesystem_provider.provide(ctx, cwd) {
+                Ok(fs) => candidates.extend(fs),
+                Err(e) => tracing::debug!("filesystem provider error ({label}): {e}"),
+            }
+        }
+        SyncResult {
+            suggestions: self.rank_with_history(ctx, cwd, buffer, candidates),
+            script_generators: Vec::new(),
+            git_generators: Vec::new(),
+        }
     }
 
     /// Rank main candidates with current_word, then separately rank history
@@ -862,6 +1071,78 @@ mod tests {
     }
 
     #[test]
+    fn test_option_arg_script_generator_suppresses_subcommands() {
+        // MED-19: When a flag's arg has script generators, the in_option_arg
+        // guard should suppress subcommands/options. Previously it only checked
+        // for templates and native generators.
+        let spec_dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            spec_dir.path().join("test-script-arg.json"),
+            r#"{
+                "name": "test-script-arg",
+                "subcommands": [
+                    {
+                        "name": "deploy",
+                        "options": [
+                            {
+                                "name": ["--env"],
+                                "description": "Target environment",
+                                "args": {
+                                    "name": "env",
+                                    "generators": [{
+                                        "script": ["printf", "staging\nproduction"]
+                                    }]
+                                }
+                            }
+                        ],
+                        "subcommands": [
+                            {"name": "canary", "description": "Canary deploy"}
+                        ]
+                    }
+                ]
+            }"#,
+        )
+        .unwrap();
+        let spec_store = SpecStore::load_from_dir(spec_dir.path()).unwrap().store;
+        let history = HistoryProvider::from_entries(vec![]);
+        let commands = CommandsProvider::from_list(vec![]);
+        let engine = SuggestionEngine::with_providers(spec_store, history, commands);
+
+        // Simulate: test-script-arg deploy --env <TAB>
+        let ctx = CommandContext {
+            command: Some("test-script-arg".into()),
+            args: vec!["deploy".into(), "--env".into()],
+            current_word: String::new(),
+            word_index: 3,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: Some("--env".into()),
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: QuoteState::None,
+            is_first_segment: true,
+        };
+        let results = engine
+            .suggest_sync(&ctx, Path::new("/tmp"), "test-script-arg deploy --env ")
+            .unwrap();
+
+        // Subcommands and options should be suppressed
+        assert!(
+            !results.iter().any(|s| s.text == "canary"),
+            "subcommand 'canary' should be suppressed when flag has script generator arg: {results:?}"
+        );
+        assert!(
+            !results.iter().any(|s| s.text == "--env"),
+            "option '--env' should be suppressed when flag has script generator arg: {results:?}"
+        );
+        // Script generators should be present for async dispatch
+        assert!(
+            !results.script_generators.is_empty(),
+            "script generators should be returned for async dispatch"
+        );
+    }
+
+    #[test]
     fn test_cd_first_suggestion_is_parent_dir() {
         let engine = make_engine();
         let tmp = tempfile::TempDir::new().unwrap();
@@ -1084,6 +1365,62 @@ mod tests {
             .await
             .unwrap();
         assert!(results.is_empty());
+    }
+
+    #[test]
+    fn test_suggest_sync_returns_git_generators_not_inline() {
+        // MED-18: git generators should be returned for async dispatch,
+        // not resolved inline (which would block the tokio runtime).
+        let spec_dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            spec_dir.path().join("test-git-gen.json"),
+            r#"{
+                "name": "test-git-gen",
+                "args": [{"generators": [{"type": "git_branches"}]}]
+            }"#,
+        )
+        .unwrap();
+        let spec_store = SpecStore::load_from_dir(spec_dir.path()).unwrap().store;
+        let history = HistoryProvider::from_entries(vec![]);
+        let commands = CommandsProvider::from_list(vec![]);
+        let engine = SuggestionEngine::with_providers(spec_store, history, commands);
+
+        let ctx = make_ctx(Some("test-git-gen"), vec![], "", 1);
+        let results = engine
+            .suggest_sync(&ctx, Path::new("/tmp"), "test-git-gen ")
+            .unwrap();
+        // The git generators should be deferred, not resolved inline
+        assert!(
+            !results.git_generators.is_empty(),
+            "git generators should be returned for async dispatch, got: {:?}",
+            results.git_generators
+        );
+        assert_eq!(
+            results.git_generators[0],
+            crate::git::GitQueryKind::Branches,
+        );
+    }
+
+    #[tokio::test]
+    async fn test_resolve_git_returns_branches() {
+        // MED-18: resolve_git should work asynchronously
+        let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        if !workspace_root.join(".git").exists() {
+            return; // skip if not in a git repo
+        }
+        let engine = make_engine();
+        let results = engine
+            .resolve_git(&[crate::git::GitQueryKind::Branches], &workspace_root, "")
+            .await
+            .unwrap();
+        assert!(
+            !results.is_empty(),
+            "expected at least one branch from resolve_git"
+        );
+        assert!(
+            results.iter().all(|s| s.kind == SuggestionKind::GitBranch),
+            "all results should be GitBranch kind"
+        );
     }
 
     #[test]

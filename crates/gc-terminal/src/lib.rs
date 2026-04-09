@@ -127,12 +127,23 @@ impl TerminalProfile {
     /// the terminal and set appropriate strategies.
     pub fn detect() -> Self {
         let term_program = std::env::var("TERM_PROGRAM").unwrap_or_default();
-        let in_tmux = std::env::var("TMUX").is_ok();
-        let has_ghostty_res = std::env::var("GHOSTTY_RESOURCES_DIR").is_ok();
-        let has_iterm_session = std::env::var("ITERM_SESSION_ID").is_ok();
-        let has_kitty_window_id = std::env::var("KITTY_WINDOW_ID").is_ok();
-        let has_wezterm_socket = std::env::var("WEZTERM_UNIX_SOCKET").is_ok();
-        let has_alacritty_socket = std::env::var("ALACRITTY_SOCKET").is_ok();
+        let env_is_set = |key: &str| {
+            std::env::var(key)
+                .map(|v| !v.is_empty())
+                .unwrap_or(false)
+        };
+        let env_is_existing_path = |key: &str| {
+            std::env::var(key)
+                .map(|v| !v.is_empty() && std::path::Path::new(&v).exists())
+                .unwrap_or(false)
+        };
+
+        let in_tmux = env_is_set("TMUX");
+        let has_ghostty_res = env_is_set("GHOSTTY_RESOURCES_DIR");
+        let has_iterm_session = env_is_set("ITERM_SESSION_ID");
+        let has_kitty_window_id = env_is_set("KITTY_WINDOW_ID");
+        let has_wezterm_socket = env_is_existing_path("WEZTERM_UNIX_SOCKET");
+        let has_alacritty_socket = env_is_existing_path("ALACRITTY_SOCKET");
 
         Self::detect_from_env(
             &term_program,
@@ -202,7 +213,13 @@ impl TerminalProfile {
             "alacritty" => Terminal::Alacritty,
             "rio" => Terminal::Rio,
             "" => Terminal::Unknown("unknown".into()),
-            other => Terminal::Unknown(other.into()),
+            other => {
+                let sanitized: String = other
+                    .chars()
+                    .filter(|c| c.is_ascii_graphic() || *c == ' ')
+                    .collect();
+                Terminal::Unknown(sanitized)
+            }
         };
         Self::new(terminal, in_tmux)
     }
@@ -234,41 +251,49 @@ impl TerminalProfile {
     }
 
     /// Test constructor: Ghostty profile (Synchronized, OSC 133).
+    #[cfg(any(test, feature = "test-utils"))]
     pub fn for_ghostty() -> Self {
         Self::new(Terminal::Ghostty, false)
     }
 
     /// Test constructor: iTerm2 profile (PreRenderBuffer, ShellIntegration).
+    #[cfg(any(test, feature = "test-utils"))]
     pub fn for_iterm2() -> Self {
         Self::new(Terminal::ITerm2, false)
     }
 
     /// Test constructor: Terminal.app profile (PreRenderBuffer, ShellIntegration).
+    #[cfg(any(test, feature = "test-utils"))]
     pub fn for_terminal_app() -> Self {
         Self::new(Terminal::TerminalApp, false)
     }
 
     /// Test constructor: Kitty profile (Synchronized, OSC 133).
+    #[cfg(any(test, feature = "test-utils"))]
     pub fn for_kitty() -> Self {
         Self::new(Terminal::Kitty, false)
     }
 
     /// Test constructor: WezTerm profile (Synchronized, OSC 133).
+    #[cfg(any(test, feature = "test-utils"))]
     pub fn for_wezterm() -> Self {
         Self::new(Terminal::WezTerm, false)
     }
 
     /// Test constructor: Alacritty profile (Synchronized, ShellIntegration).
+    #[cfg(any(test, feature = "test-utils"))]
     pub fn for_alacritty() -> Self {
         Self::new(Terminal::Alacritty, false)
     }
 
     /// Test constructor: Rio profile (Synchronized, OSC 133).
+    #[cfg(any(test, feature = "test-utils"))]
     pub fn for_rio() -> Self {
         Self::new(Terminal::Rio, false)
     }
 
     /// Test constructor: Unknown terminal profile (PreRenderBuffer, ShellIntegration).
+    #[cfg(any(test, feature = "test-utils"))]
     pub fn for_unknown(name: &str) -> Self {
         Self::new(Terminal::Unknown(name.into()), false)
     }
@@ -691,6 +716,75 @@ mod tests {
     fn test_capitalized_alacritty_is_unknown() {
         let profile = TerminalProfile::from_term_program("Alacritty", false);
         assert!(matches!(profile.terminal(), Terminal::Unknown(_)));
+    }
+
+    // -- Empty env var / stale socket / sanitization hardening --
+
+    #[test]
+    fn test_empty_env_vars_do_not_trigger_detection() {
+        // All flags false simulates empty env vars (the real detect() now
+        // treats empty strings as absent).
+        let p = detect("", false, false, false, false, false, false);
+        assert!(matches!(p.terminal(), Terminal::Unknown(_)));
+        assert!(!p.in_tmux());
+    }
+
+    #[test]
+    fn test_empty_tmux_does_not_trigger_tmux_branch() {
+        // Even with ghostty_res true, in_tmux=false should use the direct path.
+        let p = detect("ghostty", false, true, false, false, false, false);
+        assert_eq!(*p.terminal(), Terminal::Ghostty);
+        assert!(!p.in_tmux());
+    }
+
+    #[test]
+    fn test_stale_socket_does_not_trigger_wezterm() {
+        // has_wezterm_socket=false simulates a non-existent socket path
+        // (the real detect() now checks Path::exists()).
+        let p = detect("", false, false, false, false, false, false);
+        assert!(matches!(p.terminal(), Terminal::Unknown(_)));
+    }
+
+    #[test]
+    fn test_stale_socket_does_not_trigger_alacritty() {
+        // has_alacritty_socket=false simulates a non-existent socket path.
+        let p = detect("", false, false, false, false, false, false);
+        assert!(matches!(p.terminal(), Terminal::Unknown(_)));
+    }
+
+    #[test]
+    fn test_malicious_term_program_sanitized() {
+        // ESC sequences should be stripped from Unknown terminal name.
+        let malicious = "evil\x1b[31mterm\x1b[0m";
+        let profile = TerminalProfile::from_term_program(malicious, false);
+        match profile.terminal() {
+            Terminal::Unknown(name) => {
+                assert!(!name.contains('\x1b'), "ESC not stripped: {name:?}");
+                assert_eq!(name, "evil[31mterm[0m");
+            }
+            other => panic!("expected Unknown, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_term_program_with_control_chars_sanitized() {
+        let nasty = "foo\x07bar\x00baz";
+        let profile = TerminalProfile::from_term_program(nasty, false);
+        match profile.terminal() {
+            Terminal::Unknown(name) => {
+                assert_eq!(name, "foobarbaz");
+            }
+            other => panic!("expected Unknown, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_clean_unknown_term_program_unchanged() {
+        let profile = TerminalProfile::from_term_program("foot", false);
+        match profile.terminal() {
+            Terminal::Unknown(name) => assert_eq!(name, "foot"),
+            other => panic!("expected Unknown, got {other:?}"),
+        }
     }
 
     // -- PromptDetection display --

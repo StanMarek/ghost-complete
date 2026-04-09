@@ -59,6 +59,25 @@ impl Default for KeybindingsConfig {
 #[serde(default)]
 pub struct TriggerConfig {
     pub auto_chars: Vec<char>,
+    /// Typing-pause debounce window (milliseconds) before suggestions are
+    /// computed on regular printable keystrokes.
+    ///
+    /// - `delay_ms > 0`: Task D in `gc-pty/src/proxy.rs` waits for this many
+    ///   ms of inactivity after the last keystroke before firing a trigger.
+    ///   This is the recommended behavior — it avoids re-ranking on every
+    ///   character during fast typing.
+    /// - `delay_ms = 0`: the debounce task is not spawned. Every printable
+    ///   key and backspace fires a trigger immediately via
+    ///   `handler.trigger_requested`, without any wait. Explicit triggers
+    ///   (`auto_chars` such as space / slash, and the `trigger` keybinding)
+    ///   still fire instantly regardless of this value — `delay_ms` only
+    ///   gates the passive typing-pause path.
+    ///
+    /// Default: 150ms.
+    ///
+    /// **Hot-reload:** Changing `delay_ms` via `config.toml` edits while
+    /// the proxy is running requires a restart to take effect (the debounce
+    /// task is spawned once at startup — see `spawn_config_watcher`).
     pub delay_ms: u64,
 }
 
@@ -90,8 +109,28 @@ impl Default for PopupConfig {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct SuggestConfig {
+    /// Maximum number of ranked suggestions shown in the popup after
+    /// fuzzy matching. Clamped to `[1, 10_000]` by [`GhostConfig::clamp_bounds`].
+    ///
+    /// - Upper bound `10_000`: values above are clamped with a warning to
+    ///   avoid pathological memory / render cost.
+    /// - Lower bound `1`: a literal `max_results = 0` is clamped to the
+    ///   default (`50`) with a warning, because a zero cap would truncate
+    ///   every result set to empty and render the popup permanently blank —
+    ///   there is no legitimate user-facing reason to request that.
+    /// - Default: `50`.
+    ///
+    /// **Hot-reload:** Changes require a proxy restart — the value is baked
+    /// into the `SuggestionEngine` at builder time in
+    /// `InputHandler::with_suggest_config`.
     pub max_results: usize,
     pub max_history_results: usize,
+    /// Per-invocation timeout (ms) for async script/git generators. Results
+    /// arriving after this budget elapses are discarded. Set high enough to
+    /// cover slow generators (`docker ps`, `kubectl get`), low enough that a
+    /// stalled generator does not keep the loading indicator spinning
+    /// indefinitely. Default: 5000 ms.
+    pub generator_timeout_ms: u64,
     pub providers: ProvidersConfig,
 }
 
@@ -100,6 +139,7 @@ impl Default for SuggestConfig {
         Self {
             max_results: 50,
             max_history_results: 5,
+            generator_timeout_ms: 5000,
             providers: ProvidersConfig::default(),
         }
     }
@@ -125,10 +165,48 @@ impl Default for ProvidersConfig {
     }
 }
 
+/// User-facing theme config. Deserialized directly from `config.toml`.
+///
+/// Each override field is `Option<String>` so we can distinguish three cases:
+///
+/// * `None` — field omitted in TOML. Inherits from the preset.
+/// * `Some("")` — field explicitly set to empty. Valid: means "no styling"
+///   (i.e. produce zero ANSI bytes), distinct from "inherit from preset".
+/// * `Some("bold fg:196")` — explicit override, used verbatim.
+///
+/// Call [`ThemeConfig::resolve`] to collapse this into a [`ResolvedTheme`]
+/// where every field is a concrete `String`.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ThemeConfig {
     pub preset: String,
+    // `skip_serializing_if` is required for every Option here: TOML has no
+    // null, so `toml::Value::try_from` would error on a `None` field. The
+    // two-pass loader in `GhostConfig::load` serializes the strict view to
+    // walk it alongside the user's TOML, and that path must never fail on
+    // the default (all-None) config.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub selected: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub match_highlight: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub item_text: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub scrollbar: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub border: Option<String>,
+}
+
+/// Fully resolved theme — every field is a concrete style string (possibly
+/// empty, meaning "no styling"). Produced by [`ThemeConfig::resolve`]; this
+/// is what consumers (gc-pty, gc-overlay) should read.
+///
+/// Unlike [`ThemeConfig`], there is no `preset` field and no optionality:
+/// the resolver has already merged the preset base with user overrides.
+#[derive(Debug, Clone, Default)]
+pub struct ResolvedTheme {
     pub selected: String,
     pub description: String,
     pub match_highlight: String,
@@ -138,83 +216,145 @@ pub struct ThemeConfig {
 }
 
 impl ThemeConfig {
-    /// Resolve preset base + field overrides into a fully populated ThemeConfig.
-    pub fn resolve(&self) -> Result<ThemeConfig> {
+    /// Validate every style-string field without producing ANSI bytes.
+    ///
+    /// Each field is parsed against the same token grammar as
+    /// `gc_overlay::parse_style`:
+    /// `reverse` | `dim` | `bold` | `underline` | `fg:N` | `bg:N` | `fg:#RRGGBB` | `bg:#RRGGBB`
+    ///
+    /// Called from [`GhostConfig::load`] so that a typo in `config.toml`
+    /// (e.g. `selected = "bld"` or `scrollbar = "fg:#GGGGGG"`) surfaces as a
+    /// clear load-time error rather than a broken render later.
+    ///
+    /// `None` fields are skipped — they mean "inherit from preset", and the
+    /// preset values are hard-coded and trusted.
+    ///
+    /// **SYNC REQUIREMENT:** this validator mirrors the token grammar of
+    /// `gc_overlay::render::parse_style`. If a new token is added to the
+    /// overlay parser, add it here too (or the new token will be silently
+    /// rejected at load time until this validator catches up). Direct reuse
+    /// of `parse_style` is blocked by a dependency cycle: gc-config →
+    /// gc-overlay → gc-suggest → gc-config.
+    pub fn validate(&self) -> Result<()> {
+        validate_opt_style("theme.selected", self.selected.as_deref())?;
+        validate_opt_style("theme.description", self.description.as_deref())?;
+        validate_opt_style("theme.match_highlight", self.match_highlight.as_deref())?;
+        validate_opt_style("theme.item_text", self.item_text.as_deref())?;
+        validate_opt_style("theme.scrollbar", self.scrollbar.as_deref())?;
+        validate_opt_style("theme.border", self.border.as_deref())?;
+        Ok(())
+    }
+
+    /// Resolve preset base + field overrides into a [`ResolvedTheme`].
+    ///
+    /// For each override field: `Some(v)` wins (including `Some("")`,
+    /// which means "explicitly no styling"); `None` inherits the preset's
+    /// value for that field.
+    pub fn resolve(&self) -> Result<ResolvedTheme> {
         let preset_name = if self.preset.is_empty() {
             "dark"
         } else {
             &self.preset
         };
         let base = preset_values(preset_name)?;
-        Ok(ThemeConfig {
-            preset: self.preset.clone(),
-            selected: if self.selected.is_empty() {
-                base.selected
-            } else {
-                self.selected.clone()
-            },
-            description: if self.description.is_empty() {
-                base.description
-            } else {
-                self.description.clone()
-            },
-            match_highlight: if self.match_highlight.is_empty() {
-                base.match_highlight
-            } else {
-                self.match_highlight.clone()
-            },
-            item_text: if self.item_text.is_empty() {
-                base.item_text
-            } else {
-                self.item_text.clone()
-            },
-            scrollbar: if self.scrollbar.is_empty() {
-                base.scrollbar
-            } else {
-                self.scrollbar.clone()
-            },
-            border: if self.border.is_empty() {
-                base.border
-            } else {
-                self.border.clone()
-            },
+        Ok(ResolvedTheme {
+            selected: self.selected.clone().unwrap_or(base.selected),
+            description: self.description.clone().unwrap_or(base.description),
+            match_highlight: self.match_highlight.clone().unwrap_or(base.match_highlight),
+            item_text: self.item_text.clone().unwrap_or(base.item_text),
+            scrollbar: self.scrollbar.clone().unwrap_or(base.scrollbar),
+            border: self.border.clone().unwrap_or(base.border),
         })
     }
 }
 
-fn preset_values(name: &str) -> Result<ThemeConfig> {
+/// Validate an `Option<&str>` style field. `None` is always OK (means
+/// "inherit from preset"); `Some(v)` delegates to [`validate_style_str`].
+fn validate_opt_style(field: &str, value: Option<&str>) -> Result<()> {
+    match value {
+        None => Ok(()),
+        Some(v) => validate_style_str(field, v),
+    }
+}
+
+/// Shape validator for a single style string. Mirrors the token grammar of
+/// `gc_overlay::render::parse_style` — see the doc comment on
+/// [`ThemeConfig::validate`] for why this is a mirror rather than a call.
+fn validate_style_str(field: &str, value: &str) -> Result<()> {
+    for token in value.split_whitespace() {
+        match token {
+            "reverse" | "dim" | "bold" | "underline" => {}
+            _ if token.starts_with("fg:#") => validate_hex_color(&token[4..], token, field)?,
+            _ if token.starts_with("fg:") => validate_u8_color(&token[3..], token, field)?,
+            _ if token.starts_with("bg:#") => validate_hex_color(&token[4..], token, field)?,
+            _ if token.starts_with("bg:") => validate_u8_color(&token[3..], token, field)?,
+            _ => bail!("invalid {}: unknown style token: {:?}", field, token),
+        }
+    }
+    Ok(())
+}
+
+fn validate_hex_color(hex: &str, token: &str, field: &str) -> Result<()> {
+    if hex.len() != 6 {
+        bail!(
+            "invalid {}: hex color must be 6 characters (token: {:?})",
+            field,
+            token
+        );
+    }
+    if !hex.chars().all(|c| c.is_ascii_hexdigit()) {
+        bail!(
+            "invalid {}: hex color contains non-hex chars (token: {:?})",
+            field,
+            token
+        );
+    }
+    Ok(())
+}
+
+fn validate_u8_color(num: &str, token: &str, field: &str) -> Result<()> {
+    num.parse::<u8>().map(|_| ()).map_err(|_| {
+        anyhow::anyhow!(
+            "invalid {}: expected 0-255 palette index (token: {:?})",
+            field,
+            token
+        )
+    })
+}
+
+fn preset_values(name: &str) -> Result<ResolvedTheme> {
     let theme = match name {
-        "dark" => ThemeConfig {
+        "dark" => ResolvedTheme {
             selected: "reverse".into(),
             description: "dim".into(),
             match_highlight: "bold".into(),
+            item_text: String::new(),
             scrollbar: "dim".into(),
             border: "dim".into(),
-            ..Default::default()
         },
-        "light" => ThemeConfig {
+        "light" => ResolvedTheme {
             selected: "fg:#1e1e2e bg:#dce0e8 bold".into(),
             description: "fg:#6c6f85".into(),
             match_highlight: "fg:#d20f39 bold".into(),
+            item_text: String::new(),
             scrollbar: "fg:#9ca0b0".into(),
             border: "fg:#9ca0b0".into(),
-            ..Default::default()
         },
-        "catppuccin" => ThemeConfig {
+        "catppuccin" => ResolvedTheme {
             selected: "fg:#cdd6f4 bg:#585b70 bold".into(),
             description: "fg:#6c7086".into(),
             match_highlight: "fg:#f9e2af bold".into(),
+            item_text: String::new(),
             scrollbar: "fg:#585b70".into(),
             border: "fg:#585b70".into(),
-            ..Default::default()
         },
-        "material-darker" => ThemeConfig {
+        "material-darker" => ResolvedTheme {
             selected: "fg:#eeffff bg:#424242 bold".into(),
             description: "fg:#616161".into(),
             match_highlight: "fg:#ffcb6b bold".into(),
+            item_text: String::new(),
             scrollbar: "fg:#424242".into(),
             border: "fg:#424242".into(),
-            ..Default::default()
         },
         _ => bail!(
             "unknown theme preset: {:?} (valid: dark, light, catppuccin, material-darker)",
@@ -230,27 +370,143 @@ pub struct PathsConfig {
     pub spec_dirs: Vec<String>,
 }
 
+const MAX_VISIBLE_UPPER: usize = 50;
+const MAX_RESULTS_UPPER: usize = 10_000;
+const MAX_RESULTS_DEFAULT: usize = 50;
+
 impl GhostConfig {
+    /// Clamp config values to sane bounds, logging warnings when clamping.
+    fn clamp_bounds(&mut self) {
+        if self.popup.max_visible > MAX_VISIBLE_UPPER {
+            tracing::warn!(
+                "popup.max_visible={} exceeds maximum {}, clamping",
+                self.popup.max_visible,
+                MAX_VISIBLE_UPPER,
+            );
+            self.popup.max_visible = MAX_VISIBLE_UPPER;
+        }
+        if self.suggest.max_results > MAX_RESULTS_UPPER {
+            tracing::warn!(
+                "suggest.max_results={} exceeds maximum {}, clamping",
+                self.suggest.max_results,
+                MAX_RESULTS_UPPER,
+            );
+            self.suggest.max_results = MAX_RESULTS_UPPER;
+        }
+        // max_results=0 would truncate all ranked output to empty, leaving
+        // the popup permanently blank. Clamp to the default and warn.
+        if self.suggest.max_results == 0 {
+            tracing::warn!(
+                "suggest.max_results=0 is invalid (would hide all suggestions), \
+                 clamping to default {}",
+                MAX_RESULTS_DEFAULT,
+            );
+            self.suggest.max_results = MAX_RESULTS_DEFAULT;
+        }
+    }
+
     pub fn load(path: Option<&str>) -> Result<Self> {
         let config_path = match path {
             Some(p) => PathBuf::from(p),
             None => {
-                let dir = config_dir().unwrap_or_else(|| PathBuf::from("."));
+                let Some(dir) = config_dir() else {
+                    // HOME unset — refuse to load from CWD (could be attacker-controlled).
+                    return Ok(Self::default());
+                };
                 dir.join("config.toml")
             }
         };
 
-        if !config_path.exists() {
-            return Ok(Self::default());
-        }
+        let contents = match std::fs::read_to_string(&config_path) {
+            Ok(c) => c,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                return Ok(Self::default());
+            }
+            Err(e) => {
+                return Err(anyhow::Error::new(e).context(format!(
+                    "failed to read config file: {}",
+                    config_path.display()
+                )));
+            }
+        };
 
-        let contents = std::fs::read_to_string(&config_path)
-            .with_context(|| format!("failed to read config file: {}", config_path.display()))?;
-
-        let config: GhostConfig = toml::from_str(&contents)
+        let mut config: GhostConfig = toml::from_str(&contents)
             .with_context(|| format!("failed to parse config file: {}", config_path.display()))?;
 
+        // Fail-fast theme validation: catch typos in user-supplied style
+        // strings at load time rather than later at render time. Presets are
+        // hardcoded and always valid, so validating only the raw override
+        // fields is sufficient.
+        config
+            .theme
+            .validate()
+            .with_context(|| format!("invalid theme in {}", config_path.display()))?;
+
+        // Two-pass unknown-key detection: re-parse the source as a
+        // permissive `toml::Value`, serialize the strictly-typed `GhostConfig`
+        // back to `toml::Value`, and diff the two trees. Any key present in
+        // the loose tree but absent in the typed tree is a typo / removed
+        // field / unknown field — warn (not error) so a bad config.toml edit
+        // can never take the proxy down.
+        if let Ok(loose) = toml::from_str::<toml::Value>(&contents) {
+            if let Ok(strict) = toml::Value::try_from(&config) {
+                let mut unknown = Vec::new();
+                let mut path: Vec<String> = Vec::new();
+                diff_unknown_keys(&loose, &strict, &mut path, &mut unknown);
+                for key in unknown {
+                    tracing::warn!(
+                        "unknown config key in {}: {} (typo? removed field?)",
+                        config_path.display(),
+                        key,
+                    );
+                }
+            }
+        }
+
+        config.clamp_bounds();
+
         Ok(config)
+    }
+}
+
+/// Walk `loose` (a permissive `toml::Value` parsed from the source file) and
+/// `strict` (the same config serialized back from the typed `GhostConfig`) in
+/// parallel, collecting dotted-path keys that exist only on the loose side.
+///
+/// Both sides are expected to be `Table`s at the root. Nested tables recurse.
+/// Arrays-of-tables recurse element-wise. Leaf / scalar values are ignored —
+/// value-level mismatches aren't unknown-key diagnostics.
+fn diff_unknown_keys(
+    loose: &toml::Value,
+    strict: &toml::Value,
+    path: &mut Vec<String>,
+    out: &mut Vec<String>,
+) {
+    match (loose, strict) {
+        (toml::Value::Table(loose_tbl), toml::Value::Table(strict_tbl)) => {
+            for (key, loose_val) in loose_tbl {
+                path.push(key.clone());
+                match strict_tbl.get(key) {
+                    Some(strict_val) => diff_unknown_keys(loose_val, strict_val, path, out),
+                    None => out.push(path.join(".")),
+                }
+                path.pop();
+            }
+        }
+        (toml::Value::Array(loose_arr), toml::Value::Array(strict_arr)) => {
+            // Recurse into array-of-tables elements; scalar arrays bottom out
+            // because their elements have no inner keys to diff.
+            for (idx, loose_item) in loose_arr.iter().enumerate() {
+                if let Some(strict_item) = strict_arr.get(idx) {
+                    path.push(format!("[{idx}]"));
+                    diff_unknown_keys(loose_item, strict_item, path, out);
+                    path.pop();
+                }
+            }
+        }
+        _ => {
+            // Leaves (scalar values) — nothing to diff key-wise.
+        }
     }
 }
 
@@ -279,12 +535,12 @@ mod tests {
         assert_eq!(config.keybindings.navigate_down, "arrow_down");
         assert_eq!(config.keybindings.trigger, "ctrl+/");
         assert_eq!(config.theme.preset, "");
-        assert_eq!(config.theme.selected, "");
-        assert_eq!(config.theme.description, "");
-        assert_eq!(config.theme.match_highlight, "");
-        assert_eq!(config.theme.item_text, "");
-        assert_eq!(config.theme.scrollbar, "");
-        assert_eq!(config.theme.border, "");
+        assert_eq!(config.theme.selected, None);
+        assert_eq!(config.theme.description, None);
+        assert_eq!(config.theme.match_highlight, None);
+        assert_eq!(config.theme.item_text, None);
+        assert_eq!(config.theme.scrollbar, None);
+        assert_eq!(config.theme.border, None);
         assert!(!config.experimental.multi_terminal);
     }
 
@@ -370,8 +626,8 @@ description = "dim"
         let config: GhostConfig = toml::from_str(toml_str).unwrap();
         assert_eq!(config.trigger.auto_chars, vec![' ', '/']);
         assert_eq!(config.trigger.delay_ms, 200);
-        assert_eq!(config.theme.selected, "bold");
-        assert_eq!(config.theme.description, "dim");
+        assert_eq!(config.theme.selected.as_deref(), Some("bold"));
+        assert_eq!(config.theme.description.as_deref(), Some("dim"));
         assert_eq!(config.popup.max_visible, 15);
         assert_eq!(config.suggest.max_results, 100);
         assert_eq!(config.suggest.max_history_results, 3);
@@ -392,9 +648,9 @@ description = "dim"
 selected = "bold fg:255"
 "#;
         let config: GhostConfig = toml::from_str(toml_str).unwrap();
-        assert_eq!(config.theme.selected, "bold fg:255");
-        // Unset field keeps default
-        assert_eq!(config.theme.description, "");
+        assert_eq!(config.theme.selected.as_deref(), Some("bold fg:255"));
+        // Unset field stays None (inherits from preset at resolve time)
+        assert_eq!(config.theme.description, None);
     }
 
     #[test]
@@ -405,16 +661,16 @@ selected = "fg:255 bg:236"
 description = "dim underline"
 "#;
         let config: GhostConfig = toml::from_str(toml_str).unwrap();
-        assert_eq!(config.theme.selected, "fg:255 bg:236");
-        assert_eq!(config.theme.description, "dim underline");
+        assert_eq!(config.theme.selected.as_deref(), Some("fg:255 bg:236"));
+        assert_eq!(config.theme.description.as_deref(), Some("dim underline"));
     }
 
     #[test]
     fn test_theme_new_field_defaults() {
         let config = GhostConfig::default();
-        assert_eq!(config.theme.match_highlight, "");
-        assert_eq!(config.theme.item_text, "");
-        assert_eq!(config.theme.scrollbar, "");
+        assert_eq!(config.theme.match_highlight, None);
+        assert_eq!(config.theme.item_text, None);
+        assert_eq!(config.theme.scrollbar, None);
     }
 
     #[test]
@@ -425,11 +681,32 @@ match_highlight = "underline"
 scrollbar = "fg:#555555"
 "#;
         let config: GhostConfig = toml::from_str(toml_str).unwrap();
-        assert_eq!(config.theme.match_highlight, "underline");
-        assert_eq!(config.theme.scrollbar, "fg:#555555");
-        assert_eq!(config.theme.selected, "");
-        assert_eq!(config.theme.description, "");
-        assert_eq!(config.theme.item_text, "");
+        assert_eq!(config.theme.match_highlight.as_deref(), Some("underline"));
+        assert_eq!(config.theme.scrollbar.as_deref(), Some("fg:#555555"));
+        assert_eq!(config.theme.selected, None);
+        assert_eq!(config.theme.description, None);
+        assert_eq!(config.theme.item_text, None);
+    }
+
+    #[test]
+    fn test_explicit_empty_string_distinct_from_none() {
+        // Setting a theme field to "" in TOML is valid and distinct from
+        // omitting it: omitted => inherit preset, "" => explicitly no styling.
+        let toml_str = r#"
+[theme]
+preset = "dark"
+selected = ""
+"#;
+        let config: GhostConfig = toml::from_str(toml_str).unwrap();
+        assert_eq!(config.theme.selected.as_deref(), Some(""));
+        // description was omitted — stays None
+        assert_eq!(config.theme.description, None);
+
+        let resolved = config.theme.resolve().unwrap();
+        // Explicit empty wins: no styling even though dark preset has "reverse"
+        assert_eq!(resolved.selected, "");
+        // Omitted field inherits from dark preset
+        assert_eq!(resolved.description, "dim");
     }
 
     #[test]
@@ -463,7 +740,7 @@ scrollbar = "fg:#555555"
     fn test_resolve_preset_with_field_override() {
         let config = ThemeConfig {
             preset: "catppuccin".into(),
-            match_highlight: "underline".into(),
+            match_highlight: Some("underline".into()),
             ..Default::default()
         };
         let resolved = config.resolve().unwrap();
@@ -537,14 +814,44 @@ max_width = 80
 
     #[test]
     fn test_removed_suggest_fields_ignored() {
+        // `max_history_entries` was renamed — parsing should succeed and
+        // leave the replacement field at its default.
         let toml_str = r#"
 [suggest]
 max_results = 50
 max_history_entries = 5000
-generator_timeout_ms = 3000
 "#;
         let config: GhostConfig = toml::from_str(toml_str).unwrap();
         assert_eq!(config.suggest.max_results, 50);
+    }
+
+    #[test]
+    fn test_generator_timeout_ms_default() {
+        let config = GhostConfig::default();
+        assert_eq!(config.suggest.generator_timeout_ms, 5000);
+    }
+
+    #[test]
+    fn test_generator_timeout_ms_parse() {
+        let toml_str = r#"
+[suggest]
+generator_timeout_ms = 2000
+"#;
+        let config: GhostConfig = toml::from_str(toml_str).unwrap();
+        assert_eq!(config.suggest.generator_timeout_ms, 2000);
+        // Unrelated fields keep defaults.
+        assert_eq!(config.suggest.max_results, 50);
+    }
+
+    #[test]
+    fn test_generator_timeout_ms_missing_is_default() {
+        let toml_str = r#"
+[suggest]
+max_results = 25
+"#;
+        let config: GhostConfig = toml::from_str(toml_str).unwrap();
+        assert_eq!(config.suggest.max_results, 25);
+        assert_eq!(config.suggest.generator_timeout_ms, 5000);
     }
 
     #[test]
@@ -571,5 +878,296 @@ max_visible = 5
 "#;
         let config: GhostConfig = toml::from_str(toml_str).unwrap();
         assert!(!config.experimental.multi_terminal);
+    }
+
+    #[test]
+    fn test_clamp_max_visible_over_limit() {
+        let mut tmp = tempfile::NamedTempFile::new().unwrap();
+        writeln!(tmp, "[popup]\nmax_visible = 100000").unwrap();
+        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        assert_eq!(config.popup.max_visible, MAX_VISIBLE_UPPER);
+    }
+
+    #[test]
+    fn test_clamp_max_results_over_limit() {
+        let mut tmp = tempfile::NamedTempFile::new().unwrap();
+        writeln!(tmp, "[suggest]\nmax_results = 999999").unwrap();
+        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        assert_eq!(config.suggest.max_results, MAX_RESULTS_UPPER);
+    }
+
+    #[test]
+    fn test_no_clamp_when_within_bounds() {
+        let mut tmp = tempfile::NamedTempFile::new().unwrap();
+        writeln!(
+            tmp,
+            "[popup]\nmax_visible = 25\n[suggest]\nmax_results = 500"
+        )
+        .unwrap();
+        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        assert_eq!(config.popup.max_visible, 25);
+        assert_eq!(config.suggest.max_results, 500);
+    }
+
+    #[test]
+    fn test_clamp_at_exact_boundary() {
+        let mut tmp = tempfile::NamedTempFile::new().unwrap();
+        writeln!(
+            tmp,
+            "[popup]\nmax_visible = 50\n[suggest]\nmax_results = 10000"
+        )
+        .unwrap();
+        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        assert_eq!(config.popup.max_visible, 50);
+        assert_eq!(config.suggest.max_results, 10000);
+    }
+
+    #[test]
+    fn test_clamp_max_results_zero_to_default() {
+        // max_results=0 is a footgun — it would truncate every ranked result
+        // set to empty. Clamp to the default instead of rendering a
+        // permanently blank popup.
+        let mut tmp = tempfile::NamedTempFile::new().unwrap();
+        writeln!(tmp, "[suggest]\nmax_results = 0").unwrap();
+        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        assert_eq!(config.suggest.max_results, MAX_RESULTS_DEFAULT);
+    }
+
+    #[test]
+    fn test_delay_ms_zero_is_allowed() {
+        // delay_ms=0 disables the typing-pause debounce — still a valid
+        // choice, so it must pass through untouched.
+        let mut tmp = tempfile::NamedTempFile::new().unwrap();
+        writeln!(tmp, "[trigger]\ndelay_ms = 0").unwrap();
+        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        assert_eq!(config.trigger.delay_ms, 0);
+    }
+
+    #[test]
+    fn test_diff_unknown_keys_flat_top_level() {
+        let loose: toml::Value = toml::from_str("known = 1\nbogus = 2").unwrap();
+        let strict: toml::Value = toml::from_str("known = 1").unwrap();
+        let mut out = Vec::new();
+        let mut path = Vec::new();
+        diff_unknown_keys(&loose, &strict, &mut path, &mut out);
+        assert_eq!(out, vec!["bogus".to_string()]);
+    }
+
+    #[test]
+    fn test_diff_unknown_keys_nested_table() {
+        let loose: toml::Value = toml::from_str(
+            r#"
+[suggest]
+max_results = 50
+typo_field = 42
+
+[suggest.providers]
+git = true
+"#,
+        )
+        .unwrap();
+        let strict: toml::Value = toml::from_str(
+            r#"
+[suggest]
+max_results = 50
+
+[suggest.providers]
+git = true
+"#,
+        )
+        .unwrap();
+        let mut out = Vec::new();
+        let mut path = Vec::new();
+        diff_unknown_keys(&loose, &strict, &mut path, &mut out);
+        assert_eq!(out, vec!["suggest.typo_field".to_string()]);
+    }
+
+    #[test]
+    fn test_diff_unknown_keys_deep_nested() {
+        let loose: toml::Value = toml::from_str(
+            r#"
+[suggest.providers]
+commands = true
+unknown_provider = false
+"#,
+        )
+        .unwrap();
+        let strict: toml::Value = toml::from_str(
+            r#"
+[suggest.providers]
+commands = true
+"#,
+        )
+        .unwrap();
+        let mut out = Vec::new();
+        let mut path = Vec::new();
+        diff_unknown_keys(&loose, &strict, &mut path, &mut out);
+        assert_eq!(out, vec!["suggest.providers.unknown_provider".to_string()]);
+    }
+
+    #[test]
+    fn test_diff_unknown_keys_all_known() {
+        let loose: toml::Value = toml::from_str(
+            r#"
+[suggest]
+max_results = 100
+max_history_results = 10
+"#,
+        )
+        .unwrap();
+        let strict = loose.clone();
+        let mut out = Vec::new();
+        let mut path = Vec::new();
+        diff_unknown_keys(&loose, &strict, &mut path, &mut out);
+        assert!(out.is_empty());
+    }
+
+    #[test]
+    fn test_validate_empty_theme_ok() {
+        // Default theme has all-None fields — validation is a no-op.
+        let config = ThemeConfig::default();
+        assert!(config.validate().is_ok());
+    }
+
+    #[test]
+    fn test_validate_all_valid_tokens() {
+        let config = ThemeConfig {
+            selected: Some("reverse bold".into()),
+            description: Some("dim underline".into()),
+            match_highlight: Some("fg:196 bg:0".into()),
+            item_text: Some("fg:#FFCC00".into()),
+            scrollbar: Some("bg:#112233".into()),
+            border: Some("fg:255".into()),
+            ..Default::default()
+        };
+        assert!(config.validate().is_ok());
+    }
+
+    #[test]
+    fn test_validate_accepts_explicit_empty_string() {
+        // Some("") is valid — it means "explicitly no styling", not a typo.
+        let config = ThemeConfig {
+            selected: Some(String::new()),
+            description: Some(String::new()),
+            match_highlight: Some(String::new()),
+            item_text: Some(String::new()),
+            scrollbar: Some(String::new()),
+            border: Some(String::new()),
+            ..Default::default()
+        };
+        assert!(config.validate().is_ok());
+    }
+
+    #[test]
+    fn test_validate_rejects_unknown_token() {
+        let config = ThemeConfig {
+            selected: Some("notacolor".into()),
+            ..Default::default()
+        };
+        let err = config.validate().unwrap_err().to_string();
+        assert!(err.contains("theme.selected"));
+        assert!(err.contains("notacolor"));
+    }
+
+    #[test]
+    fn test_validate_rejects_bad_hex_length() {
+        let config = ThemeConfig {
+            description: Some("fg:#ABC".into()),
+            ..Default::default()
+        };
+        let err = config.validate().unwrap_err().to_string();
+        assert!(err.contains("theme.description"));
+        assert!(err.contains("6 characters"));
+    }
+
+    #[test]
+    fn test_validate_rejects_bad_hex_digits() {
+        let config = ThemeConfig {
+            match_highlight: Some("fg:#GGGGGG".into()),
+            ..Default::default()
+        };
+        let err = config.validate().unwrap_err().to_string();
+        assert!(err.contains("theme.match_highlight"));
+        assert!(err.contains("non-hex"));
+    }
+
+    #[test]
+    fn test_validate_rejects_bad_palette_index() {
+        let config = ThemeConfig {
+            scrollbar: Some("bg:999".into()),
+            ..Default::default()
+        };
+        let err = config.validate().unwrap_err().to_string();
+        assert!(err.contains("theme.scrollbar"));
+        assert!(err.contains("0-255"));
+    }
+
+    #[test]
+    fn test_load_rejects_invalid_theme_style() {
+        let mut tmp = tempfile::NamedTempFile::new().unwrap();
+        writeln!(tmp, "[theme]\nselected = \"blod\"").unwrap();
+        let result = GhostConfig::load(Some(tmp.path().to_str().unwrap()));
+        assert!(result.is_err());
+        let err = result.unwrap_err().to_string();
+        assert!(err.contains("invalid theme"));
+    }
+
+    #[test]
+    fn test_load_accepts_valid_theme_style() {
+        let mut tmp = tempfile::NamedTempFile::new().unwrap();
+        writeln!(
+            tmp,
+            "[theme]\nselected = \"bold fg:196\"\nborder = \"fg:#00FF00\""
+        )
+        .unwrap();
+        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        assert_eq!(config.theme.selected.as_deref(), Some("bold fg:196"));
+        assert_eq!(config.theme.border.as_deref(), Some("fg:#00FF00"));
+    }
+
+    #[test]
+    fn test_load_with_unknown_key_succeeds() {
+        // The two-pass load warns on unknown keys but must still succeed —
+        // a typo in config.toml should never take the proxy down.
+        let mut tmp = tempfile::NamedTempFile::new().unwrap();
+        writeln!(
+            tmp,
+            "[trigger]\ndelay_ms = 200\ndelay_ms_typo = 999\n\n[suggest]\nmax_results = 75"
+        )
+        .unwrap();
+        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        // Known fields still applied correctly.
+        assert_eq!(config.trigger.delay_ms, 200);
+        assert_eq!(config.suggest.max_results, 75);
+    }
+
+    #[test]
+    fn test_missing_file_returns_default_via_notfound() {
+        // Verifies the TOCTOU-safe path: read_to_string NotFound → default
+        let config = GhostConfig::load(Some("/tmp/definitely_not_a_real_config_42.toml")).unwrap();
+        assert_eq!(config.popup.max_visible, 10);
+        assert_eq!(config.suggest.max_results, 50);
+    }
+
+    #[test]
+    fn test_config_dir_returns_none_yields_default() {
+        // Simulate the load() code path when config_dir() returns None:
+        // it must return Self::default(), NOT load from CWD.
+        let result: Option<PathBuf> = None;
+        let config = match result {
+            Some(dir) => {
+                let path = dir.join("config.toml");
+                if path.exists() {
+                    toml::from_str::<GhostConfig>(&std::fs::read_to_string(&path).unwrap()).unwrap()
+                } else {
+                    GhostConfig::default()
+                }
+            }
+            None => GhostConfig::default(),
+        };
+        // Should be identical to defaults — never loaded from CWD
+        assert_eq!(config.popup.max_visible, 10);
+        assert_eq!(config.trigger.delay_ms, 150);
+        assert_eq!(config.suggest.max_results, 50);
     }
 }

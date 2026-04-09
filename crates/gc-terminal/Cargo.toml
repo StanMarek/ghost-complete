@@ -7,4 +7,13 @@ license.workspace = true
 authors.workspace = true
 publish = false
 
+[features]
+# Exposes the `TerminalProfile::for_*()` fixture constructors that bypass
+# env-based detection. Enabled automatically for this crate's own tests and
+# opt-in for downstream crates via their `[dev-dependencies]`. MUST NOT be
+# enabled on a production build — the constructors skip detection logic and
+# would let callers break the `TerminalProfile` invariants enforced in
+# `TerminalProfile::new`.
+test-utils = []
+
 [dependencies]

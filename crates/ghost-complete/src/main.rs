@@ -1,6 +1,7 @@
 mod config_cmd;
 mod doctor;
 mod install;
+mod spec_dirs;
 mod status;
 mod validate;
 
@@ -37,16 +38,24 @@ fn default_log_file() -> Option<String> {
     let state_dir = dirs::state_dir()
         .or_else(|| dirs::home_dir().map(|h| h.join(".local/state")))
         .map(|d| d.join("ghost-complete"));
-    if let Some(dir) = state_dir {
-        let _ = std::fs::create_dir_all(&dir);
-        Some(
-            dir.join("ghost-complete.log")
-                .to_string_lossy()
-                .into_owned(),
-        )
-    } else {
-        None
+    let dir = state_dir?;
+    // Use eprintln! rather than tracing because init_tracing has not
+    // been called yet at this point — we're computing its log file path.
+    // Returning None here falls back to stderr logging, which is strictly
+    // better than silently continuing with a nonexistent log file and
+    // then failing to open it a few milliseconds later.
+    if let Err(e) = std::fs::create_dir_all(&dir) {
+        eprintln!(
+            "ghost-complete: could not create log directory {}: {e} — falling back to stderr",
+            dir.display()
+        );
+        return None;
     }
+    Some(
+        dir.join("ghost-complete.log")
+            .to_string_lossy()
+            .into_owned(),
+    )
 }
 
 fn init_tracing(level: &str, log_file: Option<&str>) -> Result<()> {

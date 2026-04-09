@@ -11,7 +11,7 @@ mod env;
 mod filesystem;
 pub mod frecency;
 pub mod fuzzy;
-mod git;
+pub mod git;
 pub mod history;
 mod provider;
 pub mod script;

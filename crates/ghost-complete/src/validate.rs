@@ -1,32 +1,8 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use anyhow::{Context, Result};
 
-/// Resolve spec directories using the same heuristics as the proxy:
-/// explicit config paths first, then ~/.config/ghost-complete/specs.
-fn resolve_spec_dirs(config: &gc_config::GhostConfig) -> Vec<PathBuf> {
-    if !config.paths.spec_dirs.is_empty() {
-        return config
-            .paths
-            .spec_dirs
-            .iter()
-            .map(|s| {
-                if s.starts_with('~') {
-                    if let Some(home) = dirs::home_dir() {
-                        return home.join(s.strip_prefix("~/").unwrap_or(s));
-                    }
-                }
-                PathBuf::from(s)
-            })
-            .collect();
-    }
-
-    let mut dirs = Vec::new();
-    if let Some(config_dir) = gc_config::config_dir() {
-        dirs.push(config_dir.join("specs"));
-    }
-    dirs
-}
+use crate::spec_dirs::resolve_spec_dirs;
 
 fn count_spec_items(spec: &gc_suggest::CompletionSpec) -> (usize, usize) {
     fn count_subcommands(subs: &[gc_suggest::specs::SubcommandSpec]) -> usize {
@@ -51,12 +27,29 @@ fn validate_dir(dir: &Path) -> Result<(usize, usize)> {
         return Ok((0, 0));
     }
 
-    let mut entries: Vec<_> = std::fs::read_dir(dir)
+    let mut entries = Vec::new();
+    let mut unreadable = 0usize;
+    for entry_result in std::fs::read_dir(dir)
         .with_context(|| format!("failed to read directory: {}", dir.display()))?
-        .filter_map(|e| e.ok())
-        .filter(|e| e.path().extension().and_then(|ext| ext.to_str()) == Some("json"))
-        .collect();
+    {
+        match entry_result {
+            Ok(e) => {
+                if e.path().extension().and_then(|ext| ext.to_str()) == Some("json") {
+                    entries.push(e);
+                }
+            }
+            Err(e) => {
+                unreadable += 1;
+                tracing::warn!("failed to read directory entry in {}: {e}", dir.display());
+            }
+        }
+    }
     entries.sort_by_key(|e| e.file_name());
+
+    if unreadable > 0 {
+        println!("  \x1b[33m{unreadable} file(s) could not be read\x1b[0m");
+        failed += unreadable;
+    }
 
     for entry in entries {
         let path = entry.path();

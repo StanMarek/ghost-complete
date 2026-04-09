@@ -21,3 +21,7 @@ gc-config = { path = "../gc-config" }
 gc-terminal = { path = "../gc-terminal" }
 dirs = "6"
 notify = "8"
+
+[dev-dependencies]
+# Enables the `TerminalProfile::for_*()` fixture constructors for tests only.
+gc-terminal = { path = "../gc-terminal", features = ["test-utils"] }

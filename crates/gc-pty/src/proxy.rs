@@ -179,6 +179,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 config.suggest.providers.filesystem,
                 config.suggest.providers.specs,
                 config.suggest.providers.git,
+                config.suggest.generator_timeout_ms,
             )
     }));
 
@@ -207,7 +208,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
 
     // Task E: dynamic merge loop — renders script generator results when shell is idle.
     let dynamic_notify = {
-        let h = handler.lock().unwrap();
+        let h = handler.lock().expect("handler mutex poisoned during setup");
         h.dynamic_notify()
     };
     let handler_for_merge = Arc::clone(&handler);
@@ -226,8 +227,8 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     let handler_for_stdin = Arc::clone(&handler);
     let stdin_handle = tokio::task::spawn_blocking(move || {
         let mut stdin = std::io::stdin().lock();
-        let mut buf = [0u8; 256];
-        loop {
+        let mut buf = [0u8; 4096];
+        'stdin: loop {
             let n = match stdin.read(&mut buf) {
                 Ok(0) => break, // EOF
                 Ok(n) => n,
@@ -242,10 +243,39 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 // it for cursor sync. Otherwise forward it through the
                 // PTY so programs like atuin/crossterm receive it.
                 if let crate::input::KeyEvent::CursorPositionReport(row, col) = key {
-                    let mut p = parser_for_stdin.lock().unwrap();
+                    let mut p = match parser_for_stdin.lock() {
+                        Ok(p) => p,
+                        Err(e) => {
+                            tracing::warn!("parser mutex poisoned in stdin task: {e}");
+                            break 'stdin;
+                        }
+                    };
                     if p.state_mut().claim_cpr_response() {
-                        tracing::debug!(row, col, "CPR response — syncing cursor position (ours)");
-                        p.state_mut().set_cursor_from_report(*row, *col);
+                        let state = p.state_mut();
+                        if state.validate_cpr_coordinates(*row, *col) {
+                            tracing::debug!(
+                                row,
+                                col,
+                                "CPR response — syncing cursor position (ours)"
+                            );
+                            state.set_cursor_from_report(*row, *col);
+                        } else {
+                            let (screen_rows, screen_cols) = state.screen_dimensions();
+                            tracing::warn!(
+                                row,
+                                col,
+                                screen_rows,
+                                screen_cols,
+                                "CPR coordinates out of screen bounds — ignoring"
+                            );
+                            // Do NOT retry with a new CSI 6n: we can't tell if
+                            // this was the terminal's real response (resize race)
+                            // or an injected fake. Retrying would send a CSI 6n
+                            // whose response may have no matching cpr_pending,
+                            // leaking an unsolicited CPR into the PTY. Instead,
+                            // accept the temporary cursor desync — the next
+                            // prompt (OSC 133) triggers a fresh sync cycle.
+                        }
                         continue;
                     }
                     tracing::debug!(row, col, "CPR response — forwarding to PTY (not ours)");
@@ -266,7 +296,13 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 // with Task B's stdout writes).
                 let mut render_buf = Vec::new();
                 let forward = {
-                    let mut h = handler_for_stdin.lock().unwrap();
+                    let mut h = match handler_for_stdin.lock() {
+                        Ok(h) => h,
+                        Err(e) => {
+                            tracing::warn!("handler mutex poisoned in stdin task: {e}");
+                            break 'stdin;
+                        }
+                    };
                     h.process_key(key, &parser_for_stdin, &mut render_buf)
                 };
                 // Briefly lock stdout to flush any popup rendering
@@ -305,49 +341,113 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
 
             // Feed bytes through the VT parser to track terminal state
             let needs_cpr = {
-                let mut p = parser_for_stdout.lock().unwrap();
+                let mut p = match parser_for_stdout.lock() {
+                    Ok(p) => p,
+                    Err(e) => {
+                        tracing::warn!("parser mutex poisoned in stdout task: {e}");
+                        break;
+                    }
+                };
                 p.process_bytes(&buf[..n]);
                 p.state_mut().take_cursor_sync_requested()
             };
 
             // Briefly lock stdout for each write — do NOT hold the lock
             // across the entire loop or it deadlocks with Task A.
-            {
+            //
+            // CPR accounting invariant: cpr_pending must be incremented
+            // if and only if a corresponding CSI 6n was successfully
+            // flushed to the terminal. Violating this in either direction
+            // causes cursor-sync corruption — under-counting makes Task A
+            // forward our own CPR response to the PTY, over-counting makes
+            // Task A steal the next application CPR response.
+            //
+            // Lock ordering: acquire the parser mutex and drop it BEFORE
+            // taking the stdout lock. A nested (stdout → parser) path is a
+            // latent deadlock trap for any future code that legitimately
+            // takes parser then stdout. cpr_pending is a counter, so
+            // incrementing earlier (before the main buffer write) is
+            // semantically equivalent — Task A always decrements on the
+            // matching CPR response, and we roll back on write failure.
+            let mut cpr_incremented = false;
+            if needs_cpr {
+                match parser_for_stdout.lock() {
+                    Ok(mut p) => {
+                        p.state_mut().increment_cpr_pending();
+                        cpr_incremented = true;
+                    }
+                    Err(e) => {
+                        tracing::warn!(
+                            "parser mutex poisoned before CPR increment: {e} \
+                             — skipping CPR"
+                        );
+                    }
+                }
+            }
+            // If we couldn't increment (poisoned mutex), don't emit the
+            // CSI 6n — under-counting cpr_pending would make Task A
+            // forward our response to the PTY.
+            let send_cpr = needs_cpr && cpr_incremented;
+
+            let write_result: std::io::Result<()> = {
                 let mut stdout = std::io::stdout().lock();
-                if stdout.write_all(&buf[..n]).is_err() {
-                    break;
+                stdout.write_all(&buf[..n]).and_then(|()| {
+                    if send_cpr {
+                        tracing::debug!("sending CPR request (CSI 6n)");
+                        stdout.write_all(b"\x1b[6n").and_then(|()| stdout.flush())
+                    } else {
+                        stdout.flush()
+                    }
+                })
+            };
+
+            if let Err(e) = write_result {
+                // Rollback the CPR increment if the write/flush failed
+                // partway through — the CSI 6n did not reach the terminal
+                // (or at least can't be guaranteed to have reached it) so
+                // no response will arrive. A permanent leak here would
+                // make Task A steal the next application CPR response.
+                if cpr_incremented {
+                    match parser_for_stdout.lock() {
+                        Ok(mut p) => {
+                            // claim_cpr_response decrements cpr_pending.
+                            p.state_mut().claim_cpr_response();
+                        }
+                        Err(poison_err) => {
+                            tracing::error!(
+                                "parser mutex poisoned during CPR rollback: {poison_err} \
+                                 — cpr_pending is permanently elevated by 1"
+                            );
+                        }
+                    }
                 }
-                // Send CPR request (CSI 6n) to the REAL terminal so it
-                // reports its actual cursor position. The response
-                // (CSI row;col R) arrives on stdin and is intercepted by
-                // Task A to sync our VT parser's cursor tracking.
-                if needs_cpr {
-                    tracing::debug!("sending CPR request (CSI 6n)");
-                    let _ = stdout.write_all(b"\x1b[6n");
-                    // Mark this as our own request so Task A knows to
-                    // consume the response instead of forwarding it to
-                    // the PTY (where programs like atuin may be waiting
-                    // for their own CPR responses).
-                    let mut p = parser_for_stdout.lock().unwrap();
-                    p.state_mut().increment_cpr_pending();
-                }
-                if stdout.flush().is_err() {
-                    break;
-                }
+                tracing::debug!("stdout write/flush failed: {e}");
+                break;
             }
 
             // Check if shell reported a buffer update via OSC 7770.
             // Trigger suggestions here (Task B) instead of Task A to ensure
             // we have the shell's updated buffer, fixing the stale-buffer bug.
             let buffer_dirty = {
-                let mut p = parser_for_stdout.lock().unwrap();
-                p.state_mut().take_buffer_dirty()
+                match parser_for_stdout.lock() {
+                    Ok(mut p) => p.state_mut().take_buffer_dirty(),
+                    Err(e) => {
+                        tracing::warn!("parser mutex poisoned in stdout task: {e}");
+                        break;
+                    }
+                }
             };
 
             if buffer_dirty {
                 let mut render_buf = Vec::new();
                 {
-                    let mut h = handler_for_stdout.lock().unwrap();
+                    let mut h = match handler_for_stdout.lock() {
+                        Ok(h) => h,
+                        Err(e) => {
+                            tracing::warn!("handler mutex poisoned in stdout task: {e}");
+                            break;
+                        }
+                    };
                     if h.has_pending_trigger() {
                         h.clear_trigger_request();
                         h.trigger(&parser_for_stdout, &mut render_buf);
@@ -365,14 +465,25 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
             // CD chaining: auto-trigger suggestions when CWD changes (OSC 7).
             // No has_pending_trigger() gate — CWD change is unconditional.
             let cwd_dirty = {
-                let mut p = parser_for_stdout.lock().unwrap();
-                p.state_mut().take_cwd_dirty()
+                match parser_for_stdout.lock() {
+                    Ok(mut p) => p.state_mut().take_cwd_dirty(),
+                    Err(e) => {
+                        tracing::warn!("parser mutex poisoned in stdout task: {e}");
+                        break;
+                    }
+                }
             };
 
             if cwd_dirty {
                 let mut render_buf = Vec::new();
                 {
-                    let mut h = handler_for_stdout.lock().unwrap();
+                    let mut h = match handler_for_stdout.lock() {
+                        Ok(h) => h,
+                        Err(e) => {
+                            tracing::warn!("handler mutex poisoned in stdout task: {e}");
+                            break;
+                        }
+                    };
                     h.trigger(&parser_for_stdout, &mut render_buf);
                 }
                 if !render_buf.is_empty() {
@@ -386,7 +497,13 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
             {
                 let mut render_buf = Vec::new();
                 {
-                    let mut h = handler_for_stdout.lock().unwrap();
+                    let mut h = match handler_for_stdout.lock() {
+                        Ok(h) => h,
+                        Err(e) => {
+                            tracing::warn!("handler mutex poisoned in stdout task: {e}");
+                            break;
+                        }
+                    };
                     h.try_merge_dynamic(&parser_for_stdout, &mut render_buf);
                 }
                 if !render_buf.is_empty() {
@@ -420,15 +537,23 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                             tracing::warn!("failed to resize PTY: {}", e);
                         }
                         // Update parser's screen dimensions
-                        {
-                            let mut p = parser.lock().unwrap();
-                            p.state_mut().update_dimensions(size.rows, size.cols);
+                        match parser.lock() {
+                            Ok(mut p) => {
+                                p.state_mut().update_dimensions(size.rows, size.cols);
+                            }
+                            Err(e) => {
+                                tracing::warn!("parser mutex poisoned on SIGWINCH: {e}");
+                            }
                         }
                         // Re-render popup if visible
-                        {
-                            let mut stdout = std::io::stdout().lock();
-                            let mut h = handler.lock().unwrap();
-                            h.handle_resize(&parser, &mut stdout);
+                        match handler.lock() {
+                            Ok(mut h) => {
+                                let mut stdout = std::io::stdout().lock();
+                                h.handle_resize(&parser, &mut stdout);
+                            }
+                            Err(e) => {
+                                tracing::warn!("handler mutex poisoned on SIGWINCH: {e}");
+                            }
                         }
                     }
                     Err(e) => {
@@ -542,15 +667,42 @@ async fn dynamic_merge_loop(
     }
 }
 
+/// Partition configured spec_dirs into (valid, invalid) after tilde expansion.
+///
+/// A path is valid iff it resolves to an existing directory on disk. The
+/// `invalid` vector preserves the raw configured strings (pre-expansion) in
+/// input order so callers can log warnings that match what the user wrote in
+/// their config file.
+fn partition_spec_dirs(configured: &[String]) -> (Vec<PathBuf>, Vec<String>) {
+    let mut valid: Vec<PathBuf> = Vec::with_capacity(configured.len());
+    let mut invalid: Vec<String> = Vec::new();
+    for raw in configured {
+        let path = expand_tilde(raw);
+        if path.is_dir() {
+            valid.push(path);
+        } else {
+            invalid.push(raw.clone());
+        }
+    }
+    (valid, invalid)
+}
+
 /// Resolve spec directories from config, with tilde expansion.
 /// If config provides directories, use those. Otherwise fall back to auto-detection.
 fn resolve_spec_dirs(configured: &[String]) -> Vec<PathBuf> {
     if !configured.is_empty() {
-        return configured
-            .iter()
-            .map(|s| expand_tilde(s))
-            .filter(|p| p.is_dir())
-            .collect();
+        let (valid, invalid) = partition_spec_dirs(configured);
+        for bad in &invalid {
+            tracing::warn!(
+                configured = %bad,
+                resolved = %expand_tilde(bad).display(),
+                "configured spec_dir is not a directory, skipping"
+            );
+        }
+        if !valid.is_empty() {
+            return valid;
+        }
+        tracing::warn!("all configured spec_dirs are invalid — falling back to auto-detection");
     }
 
     // Auto-detect: check config dir, next to binary, then cwd
@@ -610,6 +762,51 @@ pub fn should_fallback_to_shell(
 mod tests {
     use super::*;
     use gc_terminal::Terminal;
+
+    #[test]
+    fn partition_spec_dirs_separates_valid_and_invalid() {
+        // "." is always a directory; the fake paths never are. This keeps
+        // the test dependency-free while still exercising every branch.
+        let configured = vec![
+            ".".to_string(),
+            "/ghost-complete-nonexistent-xyz-1".to_string(),
+            "/ghost-complete-nonexistent-xyz-2".to_string(),
+        ];
+        let (valid, invalid) = partition_spec_dirs(&configured);
+        assert_eq!(valid.len(), 1, "expected only `.` to be valid");
+        assert_eq!(valid[0], PathBuf::from("."));
+        assert_eq!(
+            invalid,
+            vec![
+                "/ghost-complete-nonexistent-xyz-1".to_string(),
+                "/ghost-complete-nonexistent-xyz-2".to_string(),
+            ],
+            "invalid list must preserve raw configured strings in input order"
+        );
+    }
+
+    #[test]
+    fn partition_spec_dirs_empty_input() {
+        let (valid, invalid) = partition_spec_dirs(&[]);
+        assert!(valid.is_empty());
+        assert!(invalid.is_empty());
+    }
+
+    #[test]
+    fn partition_spec_dirs_all_valid() {
+        let configured = vec![".".to_string()];
+        let (valid, invalid) = partition_spec_dirs(&configured);
+        assert_eq!(valid, vec![PathBuf::from(".")]);
+        assert!(invalid.is_empty());
+    }
+
+    #[test]
+    fn partition_spec_dirs_all_invalid() {
+        let configured = vec!["/ghost-complete-fake-path-zzz".to_string()];
+        let (valid, invalid) = partition_spec_dirs(&configured);
+        assert!(valid.is_empty());
+        assert_eq!(invalid, vec!["/ghost-complete-fake-path-zzz".to_string()]);
+    }
 
     #[test]
     fn test_known_terminals_never_fall_back() {

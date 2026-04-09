@@ -1,7 +1,7 @@
 use std::path::Path;
-use std::process::Command;
 
 use anyhow::Result;
+use tokio::process::Command;
 
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 
@@ -21,11 +21,11 @@ pub fn generator_to_query_kind(type_str: &str) -> Option<GitQueryKind> {
     }
 }
 
-pub fn git_suggestions(cwd: &Path, kind: GitQueryKind) -> Result<Vec<Suggestion>> {
+pub async fn git_suggestions(cwd: &Path, kind: GitQueryKind) -> Result<Vec<Suggestion>> {
     let lines = match kind {
-        GitQueryKind::Branches => git_branches(cwd),
-        GitQueryKind::Tags => git_tags(cwd),
-        GitQueryKind::Remotes => git_remotes(cwd),
+        GitQueryKind::Branches => git_branches(cwd).await,
+        GitQueryKind::Tags => git_tags(cwd).await,
+        GitQueryKind::Remotes => git_remotes(cwd).await,
     };
 
     let (suggestion_kind, description) = match kind {
@@ -46,20 +46,25 @@ pub fn git_suggestions(cwd: &Path, kind: GitQueryKind) -> Result<Vec<Suggestion>
         .collect())
 }
 
-fn git_branches(cwd: &Path) -> Vec<String> {
-    run_git(cwd, &["branch", "--format=%(refname:short)"])
+async fn git_branches(cwd: &Path) -> Vec<String> {
+    run_git(cwd, &["branch", "--format=%(refname:short)"]).await
 }
 
-fn git_tags(cwd: &Path) -> Vec<String> {
-    run_git(cwd, &["tag", "--list"])
+async fn git_tags(cwd: &Path) -> Vec<String> {
+    run_git(cwd, &["tag", "--list"]).await
 }
 
-fn git_remotes(cwd: &Path) -> Vec<String> {
-    run_git(cwd, &["remote"])
+async fn git_remotes(cwd: &Path) -> Vec<String> {
+    run_git(cwd, &["remote"]).await
 }
 
-fn run_git(cwd: &Path, args: &[&str]) -> Vec<String> {
-    let output = match Command::new("git").args(args).current_dir(cwd).output() {
+async fn run_git(cwd: &Path, args: &[&str]) -> Vec<String> {
+    let output = match Command::new("git")
+        .args(args)
+        .current_dir(cwd)
+        .output()
+        .await
+    {
         Ok(o) => o,
         Err(e) => {
             tracing::debug!("git command failed: {e}");
@@ -99,19 +104,21 @@ mod tests {
         assert_eq!(generator_to_query_kind("unknown"), None);
     }
 
-    #[test]
-    fn test_git_branches_in_non_git_dir() {
+    #[tokio::test]
+    async fn test_git_branches_in_non_git_dir() {
         let tmp = tempfile::TempDir::new().unwrap();
-        let branches = git_branches(tmp.path());
+        let branches = git_branches(tmp.path()).await;
         assert!(branches.is_empty());
     }
 
-    #[test]
-    fn test_git_suggestions_returns_correct_kind() {
+    #[tokio::test]
+    async fn test_git_suggestions_returns_correct_kind() {
         // Run in workspace root — this is a real git repo
         let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
         if workspace_root.join(".git").exists() {
-            let suggestions = git_suggestions(&workspace_root, GitQueryKind::Branches).unwrap();
+            let suggestions = git_suggestions(&workspace_root, GitQueryKind::Branches)
+                .await
+                .unwrap();
             for s in &suggestions {
                 assert_eq!(s.kind, SuggestionKind::GitBranch);
                 assert_eq!(s.source, SuggestionSource::Git);
