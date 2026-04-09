@@ -173,7 +173,7 @@ pub fn render_popup(
     // by only 1 row beyond its base `layout.height`. The `loading_extra`
     // value computed during rendering (lines ~336–388) matches this: it is
     // `1` in every code path where the loading row actually fits.
-    let space_below = screen_rows.saturating_sub(adj_cursor_row + 1);
+    let space_below = screen_rows.saturating_sub(adj_cursor_row.saturating_add(1));
     let visible_count = suggestions.len().min(effective_max) as u16;
     let loading_extra_deficit: u16 = if loading { 1 } else { 0 };
     let total_height_needed = visible_count + border_pad + loading_extra_deficit;

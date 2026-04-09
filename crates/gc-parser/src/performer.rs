@@ -982,17 +982,14 @@ mod tests {
 
     #[test]
     fn test_osc7770_valid_utf8_accepted() {
-        let mut p = make_parser();
         // Valid UTF-8 (including multi-byte: café) must still work.
-        p.process_bytes("\\x1b]7770;5;café\x07".as_bytes());
-        // The VTE parser splits on `;`, so let's use the raw bytes approach:
         let mut seq = Vec::new();
         seq.extend_from_slice(b"\x1b]7770;4;");
         seq.extend_from_slice("café".as_bytes());
         seq.push(0x07);
 
-        let mut p2 = make_parser();
-        p2.process_bytes(&seq);
-        assert_eq!(p2.state().command_buffer(), Some("café"));
+        let mut p = make_parser();
+        p.process_bytes(&seq);
+        assert_eq!(p.state().command_buffer(), Some("café"));
     }
 }

@@ -236,6 +236,18 @@ impl ThemeConfig {
     /// of `parse_style` is blocked by a dependency cycle: gc-config →
     /// gc-overlay → gc-suggest → gc-config.
     pub fn validate(&self) -> Result<()> {
+        // Validate the preset name so a validated ThemeConfig is guaranteed
+        // to resolve() successfully. Valid names mirror preset_values(); an
+        // empty string is allowed because resolve() treats it as "dark".
+        if !self.preset.is_empty() {
+            match self.preset.as_str() {
+                "dark" | "light" | "catppuccin" | "material-darker" => {}
+                other => bail!(
+                    "invalid theme.preset: {:?} (valid: dark, light, catppuccin, material-darker)",
+                    other
+                ),
+            }
+        }
         validate_opt_style("theme.selected", self.selected.as_deref())?;
         validate_opt_style("theme.description", self.description.as_deref())?;
         validate_opt_style("theme.match_highlight", self.match_highlight.as_deref())?;
@@ -719,6 +731,35 @@ selected = ""
         assert_eq!(resolved.item_text, "");
         assert_eq!(resolved.scrollbar, "dim");
         assert_eq!(resolved.border, "dim");
+    }
+
+    #[test]
+    fn test_validate_accepts_all_known_presets() {
+        for preset in &["", "dark", "light", "catppuccin", "material-darker"] {
+            let config = ThemeConfig {
+                preset: (*preset).into(),
+                ..Default::default()
+            };
+            config
+                .validate()
+                .unwrap_or_else(|e| panic!("preset {preset:?} should validate, got: {e}"));
+        }
+    }
+
+    #[test]
+    fn test_validate_rejects_unknown_preset() {
+        let config = ThemeConfig {
+            preset: "drak".into(),
+            ..Default::default()
+        };
+        let err = config
+            .validate()
+            .expect_err("typo preset must fail validate()");
+        let msg = err.to_string();
+        assert!(
+            msg.contains("theme.preset") && msg.contains("drak"),
+            "error must name the field and the bad value, got: {msg}"
+        );
     }
 
     #[test]

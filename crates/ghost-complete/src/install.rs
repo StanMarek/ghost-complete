@@ -1700,6 +1700,19 @@ mod tests {
             shell_safe_path(path),
             r#"'/home/$(`evil'\''cmd")/init.zsh'"#
         );
+
+        // Space in path — must be single-quoted to prevent word splitting
+        let path = Path::new("/home/my user/config/init.zsh");
+        assert_eq!(shell_safe_path(path), "'/home/my user/config/init.zsh'");
+
+        // Tab in path — must be single-quoted to prevent word splitting
+        let path = Path::new("/home/user\t/init.zsh");
+        assert_eq!(shell_safe_path(path), "'/home/user\t/init.zsh'");
+
+        // Newline in path — must be single-quoted to prevent command
+        // injection via `$'\nrm -rf ~'`-style exploits
+        let path = Path::new("/home/user\n/init.zsh");
+        assert_eq!(shell_safe_path(path), "'/home/user\n/init.zsh'");
     }
 
     #[test]
