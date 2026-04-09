@@ -1,7 +1,6 @@
 mod config_cmd;
 mod doctor;
 mod install;
-mod spec_dirs;
 mod status;
 mod validate;
 

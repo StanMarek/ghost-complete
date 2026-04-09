@@ -1,8 +1,7 @@
 use anyhow::{Context, Result};
+use gc_suggest::spec_dirs::resolve_spec_dirs;
 use gc_suggest::specs::{ArgSpec, CompletionSpec, GeneratorSpec, OptionSpec, SubcommandSpec};
 use gc_suggest::SpecStore;
-
-use crate::spec_dirs::resolve_spec_dirs;
 
 /// Check if a spec tree contains any generators with `requires_js: true`.
 fn has_requires_js(spec: &CompletionSpec) -> bool {
@@ -39,7 +38,7 @@ fn check_subcommands_for_js(subcommands: &[SubcommandSpec]) -> bool {
 
 pub fn run_status(config_path: Option<&str>) -> Result<()> {
     let config = gc_config::GhostConfig::load(config_path).context("failed to load config")?;
-    let dirs = resolve_spec_dirs(&config);
+    let dirs = resolve_spec_dirs(&config.paths.spec_dirs);
 
     let embedded_count = crate::install::EMBEDDED_SPECS.len();
 

@@ -425,8 +425,25 @@ impl InputHandler {
             // CD chaining: predict the buffer after acceptance and
             // immediately show next-level suggestions. Avoids timing
             // issues with the shell's OSC 7770 roundtrip.
+            //
+            // Poison handling mirrors render/accept_suggestion: if the
+            // parser mutex is poisoned we can't predict the next buffer,
+            // so dismiss the popup and return whatever forward bytes
+            // accept_suggestion already produced (empty on poison, normal
+            // backspace+text sequence on a healthy call earlier this
+            // method). Failing here must not crash the proxy.
             let (cwd, predicted_ctx, predicted_buffer, cr, cc, sr, sc) = {
-                let mut p = parser.lock().unwrap();
+                let mut p = match parser.lock() {
+                    Ok(p) => p,
+                    Err(e) => {
+                        tracing::warn!(
+                            "parser mutex poisoned in accept_with_chaining: {e} — \
+                             dismissing popup and skipping CD chaining"
+                        );
+                        self.dismiss(stdout);
+                        return forward;
+                    }
+                };
                 let state = p.state();
                 let buffer = state.command_buffer().unwrap_or("").to_string();
                 let char_cursor = state.buffer_cursor(); // character offset
@@ -518,29 +535,41 @@ impl InputHandler {
     }
 
     pub fn trigger(&mut self, parser: &Arc<Mutex<TerminalParser>>, stdout: &mut dyn Write) {
-        let (buffer, cursor, cwd, cursor_row, cursor_col, screen_rows, screen_cols) = {
-            let mut p = parser.lock().unwrap();
-            // CPR sync means the parser's cursor_row now reflects reality,
-            // so any accumulated scroll deficit from prior renders is stale.
-            if p.state_mut().take_cpr_synced() {
-                self.scroll_deficit = 0;
-            }
-            let state = p.state();
-            let buffer = state.command_buffer().unwrap_or("").to_string();
-            let cursor = state.buffer_cursor();
-            let cwd = state.cwd().cloned().unwrap_or_else(|| PathBuf::from("."));
-            let (cursor_row, cursor_col) = state.cursor_position();
-            let (screen_rows, screen_cols) = state.screen_dimensions();
-            (
-                buffer,
-                cursor,
-                cwd,
-                cursor_row,
-                cursor_col,
-                screen_rows,
-                screen_cols,
-            )
-        };
+        // Poison handling mirrors render/accept_suggestion: trigger() is the
+        // main entry point of the suggestion pipeline (debounce loop, Task B
+        // buffer_dirty/cwd_dirty, SIGWINCH). If the parser mutex is poisoned
+        // we can't read the buffer or cursor, so log and bail out — the next
+        // PTY input drives a retry. Propagating the poison here would crash
+        // the proxy.
+        let (buffer, cursor, cwd, cursor_row, cursor_col, screen_rows, screen_cols) =
+            match parser.lock() {
+                Ok(mut p) => {
+                    // CPR sync means the parser's cursor_row now reflects reality,
+                    // so any accumulated scroll deficit from prior renders is stale.
+                    if p.state_mut().take_cpr_synced() {
+                        self.scroll_deficit = 0;
+                    }
+                    let state = p.state();
+                    let buffer = state.command_buffer().unwrap_or("").to_string();
+                    let cursor = state.buffer_cursor();
+                    let cwd = state.cwd().cloned().unwrap_or_else(|| PathBuf::from("."));
+                    let (cursor_row, cursor_col) = state.cursor_position();
+                    let (screen_rows, screen_cols) = state.screen_dimensions();
+                    (
+                        buffer,
+                        cursor,
+                        cwd,
+                        cursor_row,
+                        cursor_col,
+                        screen_rows,
+                        screen_cols,
+                    )
+                }
+                Err(e) => {
+                    tracing::warn!("parser mutex poisoned in trigger: {e} — skipping trigger");
+                    return;
+                }
+            };
 
         if buffer.is_empty() {
             if self.visible {
@@ -687,6 +716,12 @@ impl InputHandler {
         match rx.try_recv() {
             Ok(dynamic_results) => {
                 self.dynamic_rx = None;
+                // The generator task has completed (it sent its results and
+                // dropped tx). The JoinHandle is now a no-op for `.abort()`
+                // but we still clear it so dismiss()/trigger() don't rely
+                // on an already-completed handle for their orphan-task
+                // cleanup guarantees.
+                self.dynamic_task = None;
                 if dynamic_results.is_empty() {
                     // No results from generators. If the popup is already
                     // visible with static suggestions, leave the suggestions
@@ -718,6 +753,7 @@ impl InputHandler {
                             );
                             self.dynamic_rx = None;
                             self.dynamic_ctx = None;
+                            self.dynamic_task = None;
                             return false;
                         }
                     };
@@ -819,8 +855,13 @@ impl InputHandler {
                 // Clear dynamic_rx AND repaint so the loading indicator
                 // goes away — otherwise on an idle shell the spinner
                 // stays visually stuck forever.
+                // Also clear dynamic_task: the task is already done (tx
+                // dropped), so its JoinHandle is effectively a no-op for
+                // `.abort()`. Leaving it Some would make dismiss()/trigger()'s
+                // abort calls look meaningful when they're not.
                 self.dynamic_rx = None;
                 self.dynamic_ctx = None;
+                self.dynamic_task = None;
                 if self.visible {
                     self.render(parser, stdout);
                 }
@@ -1237,6 +1278,71 @@ mod tests {
         assert!(
             bytes.is_empty(),
             "accept_suggestion with poisoned mutex must return empty, got {bytes:?}"
+        );
+    }
+
+    #[test]
+    fn test_trigger_survives_poisoned_parser_mutex() {
+        // Regression: previously trigger() called `parser.lock().unwrap()`,
+        // which panics on poison. trigger() is the main entry point of the
+        // suggestion pipeline — it runs from the debounce loop, Task B's
+        // buffer_dirty/cwd_dirty branches, and the SIGWINCH handler — so a
+        // poisoned parser (from any prior panic inside a parser lock) must
+        // not propagate up through trigger().
+        let mut handler = make_visible_handler(vec![Suggestion {
+            text: "poisoned".to_string(),
+            ..Default::default()
+        }]);
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+
+        // Poison the mutex by panicking inside a guard.
+        let parser_clone = parser.clone();
+        let _ = std::thread::spawn(move || {
+            let _guard = parser_clone.lock().unwrap();
+            panic!("intentional poison for test");
+        })
+        .join();
+        assert!(parser.is_poisoned(), "setup: mutex must be poisoned");
+
+        // Must not panic — trigger should log a warning and return without
+        // touching the parser on the poisoned path.
+        let mut buf = Vec::new();
+        handler.trigger(&parser, &mut buf);
+    }
+
+    #[test]
+    fn test_accept_with_chaining_survives_poisoned_parser_mutex() {
+        // Regression: previously accept_with_chaining() called
+        // `parser.lock().unwrap()` on the directory-chaining path, which
+        // panics on poison. accept_with_chaining() runs every time the
+        // user Tab-accepts a directory suggestion, so a poisoned parser
+        // must not take down the proxy.
+        let mut handler = make_selected_handler(Suggestion {
+            // Trailing '/' makes is_dir=true, which is what hits the
+            // parser.lock().unwrap() path inside accept_with_chaining.
+            text: "Desktop/".to_string(),
+            kind: SuggestionKind::Directory,
+            source: SuggestionSource::Filesystem,
+            ..Default::default()
+        });
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+
+        // Poison the mutex by panicking inside a guard.
+        let parser_clone = parser.clone();
+        let _ = std::thread::spawn(move || {
+            let _guard = parser_clone.lock().unwrap();
+            panic!("intentional poison for test");
+        })
+        .join();
+        assert!(parser.is_poisoned(), "setup: mutex must be poisoned");
+
+        // Must not panic — accept_with_chaining should log a warning and
+        // return an empty byte vec so Task A forwards nothing to the PTY.
+        let mut buf = Vec::new();
+        let bytes = handler.accept_with_chaining(&parser, &mut buf);
+        assert!(
+            bytes.is_empty(),
+            "accept_with_chaining with poisoned mutex must return empty, got {bytes:?}"
         );
     }
 

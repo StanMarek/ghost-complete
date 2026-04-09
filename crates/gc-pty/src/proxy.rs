@@ -1,5 +1,4 @@
 use std::io::{Read, Write};
-use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use anyhow::{Context, Result};
@@ -10,6 +9,7 @@ use tokio::sync::{mpsc, Notify};
 use gc_config::GhostConfig;
 
 use gc_overlay::{parse_style, PopupTheme};
+use gc_suggest::spec_dirs::resolve_spec_dirs;
 
 use crate::config_watch::spawn_config_watcher;
 use crate::handler::{InputHandler, Keybindings};
@@ -208,6 +208,21 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
 
     // Task E: dynamic merge loop — renders script generator results when shell is idle.
     let dynamic_notify = {
+        // INVARIANT: this lock runs during startup before the handler `Arc`
+        // is shared with any other task (the debounce task spawn above
+        // captures its clone but has not been polled yet, and the stdin /
+        // stdout / merge tasks are spawned further below). At this point
+        // Arc::strong_count is at most 2 (this frame + the debounce clone)
+        // and no background task has been scheduled onto a runtime thread
+        // with a lock on the handler mutex, so poison is impossible.
+        //
+        // If a future refactor shares the handler earlier — for example a
+        // telemetry hook that spawns a task holding an `Arc<Mutex<Handler>>`
+        // before this point, or a synchronous callback that panics inside
+        // `.lock()` — this `.expect()` becomes reachable and must be
+        // converted to a match-with-warn pattern like the other lock sites
+        // in this file (see the stdin/stdout tasks and `dynamic_merge_loop`
+        // below).
         let h = handler.lock().expect("handler mutex poisoned during setup");
         h.dynamic_notify()
     };
@@ -414,10 +429,21 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                             p.state_mut().claim_cpr_response();
                         }
                         Err(poison_err) => {
+                            // If the rollback lock itself fails we can't
+                            // recover — the parser mutex is poisoned AND
+                            // cpr_pending is permanently elevated by 1,
+                            // which would make Task A steal the next real
+                            // application CPR response (from atuin,
+                            // crossterm, etc.) and corrupt downstream
+                            // parsing. Proxy state is corrupted; cascade
+                            // into the same break pattern as the parser
+                            // mutex poison sites earlier in this loop and
+                            // exit Task B immediately.
                             tracing::error!(
                                 "parser mutex poisoned during CPR rollback: {poison_err} \
-                                 — cpr_pending is permanently elevated by 1"
+                                 — cpr_pending permanently elevated, exiting Task B"
                             );
+                            break;
                         }
                     }
                 }
@@ -667,86 +693,6 @@ async fn dynamic_merge_loop(
     }
 }
 
-/// Partition configured spec_dirs into (valid, invalid) after tilde expansion.
-///
-/// A path is valid iff it resolves to an existing directory on disk. The
-/// `invalid` vector preserves the raw configured strings (pre-expansion) in
-/// input order so callers can log warnings that match what the user wrote in
-/// their config file.
-fn partition_spec_dirs(configured: &[String]) -> (Vec<PathBuf>, Vec<String>) {
-    let mut valid: Vec<PathBuf> = Vec::with_capacity(configured.len());
-    let mut invalid: Vec<String> = Vec::new();
-    for raw in configured {
-        let path = expand_tilde(raw);
-        if path.is_dir() {
-            valid.push(path);
-        } else {
-            invalid.push(raw.clone());
-        }
-    }
-    (valid, invalid)
-}
-
-/// Resolve spec directories from config, with tilde expansion.
-/// If config provides directories, use those. Otherwise fall back to auto-detection.
-fn resolve_spec_dirs(configured: &[String]) -> Vec<PathBuf> {
-    if !configured.is_empty() {
-        let (valid, invalid) = partition_spec_dirs(configured);
-        for bad in &invalid {
-            tracing::warn!(
-                configured = %bad,
-                resolved = %expand_tilde(bad).display(),
-                "configured spec_dir is not a directory, skipping"
-            );
-        }
-        if !valid.is_empty() {
-            return valid;
-        }
-        tracing::warn!("all configured spec_dirs are invalid — falling back to auto-detection");
-    }
-
-    // Auto-detect: check config dir, next to binary, then cwd
-    let mut dirs = Vec::new();
-
-    // Config directory (installed by `ghost-complete install`)
-    if let Some(config_dir) = gc_config::config_dir() {
-        let spec_dir = config_dir.join("specs");
-        if spec_dir.is_dir() {
-            dirs.push(spec_dir);
-        }
-    }
-
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(exe_dir) = exe.parent() {
-            let spec_dir = exe_dir.join("specs");
-            if spec_dir.is_dir() {
-                dirs.push(spec_dir);
-            }
-        }
-    }
-
-    // Fall back to specs/ in the current directory (development)
-    let cwd_specs = PathBuf::from("specs");
-    if cwd_specs.is_dir() {
-        dirs.push(cwd_specs);
-    }
-
-    if dirs.is_empty() {
-        dirs.push(PathBuf::from("specs"));
-    }
-
-    dirs
-}
-
-fn expand_tilde(path: &str) -> PathBuf {
-    if let Some(rest) = path.strip_prefix("~/") {
-        if let Some(home) = dirs::home_dir() {
-            return home.join(rest);
-        }
-    }
-    PathBuf::from(path)
-}
-
 /// Returns true if ghost-complete should replace itself with a plain shell
 /// because multi-terminal support is disabled and we're not on Ghostty.
 pub fn should_fallback_to_shell(
@@ -762,51 +708,6 @@ pub fn should_fallback_to_shell(
 mod tests {
     use super::*;
     use gc_terminal::Terminal;
-
-    #[test]
-    fn partition_spec_dirs_separates_valid_and_invalid() {
-        // "." is always a directory; the fake paths never are. This keeps
-        // the test dependency-free while still exercising every branch.
-        let configured = vec![
-            ".".to_string(),
-            "/ghost-complete-nonexistent-xyz-1".to_string(),
-            "/ghost-complete-nonexistent-xyz-2".to_string(),
-        ];
-        let (valid, invalid) = partition_spec_dirs(&configured);
-        assert_eq!(valid.len(), 1, "expected only `.` to be valid");
-        assert_eq!(valid[0], PathBuf::from("."));
-        assert_eq!(
-            invalid,
-            vec![
-                "/ghost-complete-nonexistent-xyz-1".to_string(),
-                "/ghost-complete-nonexistent-xyz-2".to_string(),
-            ],
-            "invalid list must preserve raw configured strings in input order"
-        );
-    }
-
-    #[test]
-    fn partition_spec_dirs_empty_input() {
-        let (valid, invalid) = partition_spec_dirs(&[]);
-        assert!(valid.is_empty());
-        assert!(invalid.is_empty());
-    }
-
-    #[test]
-    fn partition_spec_dirs_all_valid() {
-        let configured = vec![".".to_string()];
-        let (valid, invalid) = partition_spec_dirs(&configured);
-        assert_eq!(valid, vec![PathBuf::from(".")]);
-        assert!(invalid.is_empty());
-    }
-
-    #[test]
-    fn partition_spec_dirs_all_invalid() {
-        let configured = vec!["/ghost-complete-fake-path-zzz".to_string()];
-        let (valid, invalid) = partition_spec_dirs(&configured);
-        assert!(valid.is_empty());
-        assert_eq!(invalid, vec!["/ghost-complete-fake-path-zzz".to_string()]);
-    }
 
     #[test]
     fn test_known_terminals_never_fall_back() {

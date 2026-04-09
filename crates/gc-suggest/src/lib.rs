@@ -15,6 +15,7 @@ pub mod git;
 pub mod history;
 mod provider;
 pub mod script;
+pub mod spec_dirs;
 pub mod specs;
 pub mod ssh;
 pub mod transform;

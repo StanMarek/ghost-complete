@@ -1,8 +1,7 @@
 use std::path::Path;
 
 use anyhow::{Context, Result};
-
-use crate::spec_dirs::resolve_spec_dirs;
+use gc_suggest::spec_dirs::resolve_spec_dirs;
 
 fn count_spec_items(spec: &gc_suggest::CompletionSpec) -> (usize, usize) {
     fn count_subcommands(subs: &[gc_suggest::specs::SubcommandSpec]) -> usize {
@@ -83,7 +82,7 @@ fn validate_dir(dir: &Path) -> Result<(usize, usize)> {
 pub fn run_validate_specs(config_path: Option<&str>) -> Result<()> {
     let config = gc_config::GhostConfig::load(config_path).context("failed to load config")?;
 
-    let dirs = resolve_spec_dirs(&config);
+    let dirs = resolve_spec_dirs(&config.paths.spec_dirs);
     let mut total_valid = 0;
     let mut total_failed = 0;
 
