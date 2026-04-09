@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use std::fs;
 use std::io::Write as _;
+use std::os::unix::fs::OpenOptionsExt;
 use std::path::Path;
 
 const ZSH_INTEGRATION: &str = include_str!("../../../shell/ghost-complete.zsh");
@@ -1384,18 +1385,34 @@ fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()>
     // a single atomic operation — closes the TOCTOU race where two
     // concurrent `ghost-complete install` runs could clobber an existing
     // backup between the exists() check and the subsequent copy.
+    //
+    // Mode preservation: the old `fs::copy` call mirrored the source file's
+    // permissions on the backup. We replicate that here explicitly — create
+    // the file with a restrictive 0o600 so no other process can open a
+    // half-written world-readable copy, then chmod to match the source after
+    // the write completes. This preserves restrictive modes like 0o600 that
+    // security-conscious users may have set on .zshrc containing secrets.
     if zshrc_path.exists() {
         let backup = zshrc_path.with_extension("backup.ghost-complete");
+        let src_perms = fs::metadata(zshrc_path)
+            .with_context(|| format!("failed to stat {}", zshrc_path.display()))?
+            .permissions();
         let zshrc_bytes = fs::read(zshrc_path)
             .with_context(|| format!("failed to read {}", zshrc_path.display()))?;
         match fs::OpenOptions::new()
             .write(true)
             .create_new(true)
+            .mode(0o600)
             .open(&backup)
         {
             Ok(mut file) => {
                 file.write_all(&zshrc_bytes)
                     .with_context(|| format!("failed to backup to {}", backup.display()))?;
+                // Match fs::copy semantics: mirror the source file's mode
+                // on the backup, bypassing umask.
+                fs::set_permissions(&backup, src_perms).with_context(|| {
+                    format!("failed to set permissions on {}", backup.display())
+                })?;
                 println!("  Backed up .zshrc to {}", backup.display());
             }
             Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
@@ -1843,6 +1860,32 @@ mod tests {
         let backup = zshrc.with_extension("backup.ghost-complete");
         let backup_content = fs::read_to_string(&backup).unwrap();
         assert_eq!(backup_content, existing);
+    }
+
+    #[test]
+    fn test_install_backup_preserves_source_mode() {
+        // Regression for the install.rs TOCTOU fix: when fs::copy was replaced
+        // with OpenOptions::create_new(true), mode preservation was silently
+        // dropped and a 0o600 source .zshrc would be backed up as 0o644 (or
+        // whatever the umask left), exposing shell secrets to other users.
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = TempDir::new().unwrap();
+        let zshrc = dir.path().join(".zshrc");
+        let config = dir.path().join("config");
+
+        fs::write(&zshrc, "export SECRET_TOKEN=hunter2\n").unwrap();
+        // Restrict to owner-only, like a security-conscious user might.
+        fs::set_permissions(&zshrc, fs::Permissions::from_mode(0o600)).unwrap();
+
+        install_to(&zshrc, &config, false).unwrap();
+
+        let backup = zshrc.with_extension("backup.ghost-complete");
+        let backup_mode = fs::metadata(&backup).unwrap().permissions().mode() & 0o777;
+        assert_eq!(
+            backup_mode, 0o600,
+            "backup must preserve source mode — got {backup_mode:o}, expected 600"
+        );
     }
 
     #[test]
