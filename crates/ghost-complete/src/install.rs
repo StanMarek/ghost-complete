@@ -1379,15 +1379,32 @@ fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()>
         String::new()
     };
 
-    // 3. Backup (only on first install — preserve the original)
+    // 3. Backup (only on first install — preserve the original).
+    // Uses create_new(true) so the existence check and file creation are
+    // a single atomic operation — closes the TOCTOU race where two
+    // concurrent `ghost-complete install` runs could clobber an existing
+    // backup between the exists() check and the subsequent copy.
     if zshrc_path.exists() {
         let backup = zshrc_path.with_extension("backup.ghost-complete");
-        if !backup.exists() {
-            fs::copy(zshrc_path, &backup)
-                .with_context(|| format!("failed to backup to {}", backup.display()))?;
-            println!("  Backed up .zshrc to {}", backup.display());
-        } else {
-            println!("  Backup already exists at {}", backup.display());
+        let zshrc_bytes = fs::read(zshrc_path)
+            .with_context(|| format!("failed to read {}", zshrc_path.display()))?;
+        match fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&backup)
+        {
+            Ok(mut file) => {
+                file.write_all(&zshrc_bytes)
+                    .with_context(|| format!("failed to backup to {}", backup.display()))?;
+                println!("  Backed up .zshrc to {}", backup.display());
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+                println!("  Backup already exists at {}", backup.display());
+            }
+            Err(e) => {
+                return Err(anyhow::Error::new(e))
+                    .with_context(|| format!("failed to backup to {}", backup.display()));
+            }
         }
     }
 
@@ -1506,6 +1523,9 @@ fn uninstall_from(zshrc_path: &Path, config_dir: &Path) -> Result<()> {
 
 pub fn run_install(dry_run: bool) -> Result<()> {
     // Guard: refuse to install as root — creates root-owned files that break normal user's shell
+    // SAFETY: libc::getuid() has no preconditions on POSIX and cannot fail.
+    // It performs a single read of the real user ID from the kernel and
+    // returns it. No pointer safety, no FFI lifetime concerns, no error path.
     if unsafe { libc::getuid() } == 0 {
         anyhow::bail!(
             "refusing to install as root — this would create root-owned files in your \
