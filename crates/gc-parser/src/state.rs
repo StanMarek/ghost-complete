@@ -135,10 +135,7 @@ impl TerminalState {
     /// Returns `false` for zero or out-of-range values, which indicate an
     /// injected or corrupted CPR response that should be discarded.
     pub fn validate_cpr_coordinates(&self, row_1: u16, col_1: u16) -> bool {
-        row_1 > 0
-            && col_1 > 0
-            && row_1 <= self.screen_rows
-            && col_1 <= self.screen_cols
+        row_1 > 0 && col_1 > 0 && row_1 <= self.screen_rows && col_1 <= self.screen_cols
     }
 
     /// Sync cursor position from a CPR response (1-indexed row/col from

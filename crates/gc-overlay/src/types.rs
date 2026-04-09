@@ -113,7 +113,10 @@ mod tests {
         state.scroll_offset = 5; // leftover from prior scrolling
         state.move_up();
         assert_eq!(state.selected, None);
-        assert_eq!(state.scroll_offset, 0, "scroll_offset must reset when deselecting");
+        assert_eq!(
+            state.scroll_offset, 0,
+            "scroll_offset must reset when deselecting"
+        );
     }
 
     #[test]

@@ -819,10 +819,7 @@ mod tests {
 
     #[test]
     fn test_validate_osc7_cwd_traversal_rejected() {
-        assert_eq!(
-            validate_osc7_cwd(std::path::Path::new("/a/./b/../c")),
-            None
-        );
+        assert_eq!(validate_osc7_cwd(std::path::Path::new("/a/./b/../c")), None);
         assert_eq!(
             validate_osc7_cwd(std::path::Path::new("/a/b/c/../../d")),
             None
@@ -953,7 +950,8 @@ mod tests {
     #[test]
     fn test_predict_command_buffer_clamps_cursor() {
         let mut p = make_parser();
-        p.state_mut().predict_command_buffer("ls -la".to_string(), 9999);
+        p.state_mut()
+            .predict_command_buffer("ls -la".to_string(), 9999);
         assert_eq!(p.state().buffer_cursor(), 6);
     }
 

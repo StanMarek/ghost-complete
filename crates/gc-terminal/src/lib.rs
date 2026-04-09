@@ -127,11 +127,7 @@ impl TerminalProfile {
     /// the terminal and set appropriate strategies.
     pub fn detect() -> Self {
         let term_program = std::env::var("TERM_PROGRAM").unwrap_or_default();
-        let env_is_set = |key: &str| {
-            std::env::var(key)
-                .map(|v| !v.is_empty())
-                .unwrap_or(false)
-        };
+        let env_is_set = |key: &str| std::env::var(key).map(|v| !v.is_empty()).unwrap_or(false);
         let env_is_existing_path = |key: &str| {
             std::env::var(key)
                 .map(|v| !v.is_empty() && std::path::Path::new(&v).exists())

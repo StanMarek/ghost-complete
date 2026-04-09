@@ -447,10 +447,7 @@ mod tests {
         // foo#bar is a single word in shell, not a comment
         assert_eq!(
             words("echo foo#bar"),
-            vec![
-                Token::Word("echo".into()),
-                Token::Word("foo#bar".into()),
-            ]
+            vec![Token::Word("echo".into()), Token::Word("foo#bar".into()),]
         );
     }
 
@@ -600,10 +597,7 @@ mod tests {
     fn test_command_substitution_single_word() {
         assert_eq!(
             words("echo $(whoami)"),
-            vec![
-                Token::Word("echo".into()),
-                Token::Word("$(whoami)".into()),
-            ]
+            vec![Token::Word("echo".into()), Token::Word("$(whoami)".into()),]
         );
     }
 
@@ -658,10 +652,7 @@ mod tests {
         // Bare $ (like $HOME) should not trigger subshell consumption
         assert_eq!(
             words("echo $HOME"),
-            vec![
-                Token::Word("echo".into()),
-                Token::Word("$HOME".into()),
-            ]
+            vec![Token::Word("echo".into()), Token::Word("$HOME".into()),]
         );
     }
 
