@@ -497,19 +497,80 @@ fn write_padding(buf: &mut Vec<u8>, n: usize) {
     }
 }
 
+/// Translate `raw_match_indices` (char indices into `s.text`, as produced by
+/// `gc_suggest::fuzzy::rank` against the raw suggestion text) into char
+/// indices that refer to positions in `sanitized_display_text`.
+///
+/// This collapses two coordinate-space adjustments into one pass:
+///
+///   1. The basename-prefix offset: for `FilePath` / `Directory` suggestions,
+///      `display_text()` drops a leading path prefix (e.g. `"src/"`). Any
+///      match index that lands in that prefix must be discarded — it points
+///      at a character we will never render.
+///   2. The sanitizer offset: `sanitize_display_text()` removes control
+///      characters (ESC, CSI, OSC, BEL, ...) from the basename. Each such
+///      character shortens the emitted string by one without changing the
+///      raw index numbering, so every match index past the stripped char
+///      would otherwise land on the wrong character.
+///
+/// The result is indexed against `sanitized_display_text` and is already
+/// sorted (we walk left-to-right), so the caller can `binary_search` it
+/// directly.
+fn translate_match_indices(
+    raw_basename: &str,
+    sanitized_display_text: &str,
+    prefix_char_count: usize,
+    raw_match_indices: &[u32],
+) -> Vec<u32> {
+    // Fast path: no upstream matches means no translation needed.
+    if raw_match_indices.is_empty() {
+        return Vec::new();
+    }
+
+    let mut out = Vec::with_capacity(raw_match_indices.len());
+    let mut sanitized_char_idx: u32 = 0;
+    for (basename_char_idx, ch) in raw_basename.chars().enumerate() {
+        // The upstream matcher operates on `s.text`, so a basename char at
+        // local index `i` corresponds to raw index `prefix_char_count + i`.
+        let raw_idx = prefix_char_count as u32 + basename_char_idx as u32;
+
+        if ch.is_control() {
+            // Sanitizer drops this char. Do NOT advance sanitized_char_idx,
+            // and do NOT emit an index for it even if it was a "match" —
+            // there is no rendered character to highlight.
+            continue;
+        }
+
+        if raw_match_indices.binary_search(&raw_idx).is_ok() {
+            out.push(sanitized_char_idx);
+        }
+        sanitized_char_idx += 1;
+    }
+
+    // Sanity check in debug builds: the number of non-control chars we walked
+    // must equal the number of chars in `sanitized_display_text`. Any mismatch
+    // would mean the two sanitizers have diverged.
+    debug_assert_eq!(
+        sanitized_char_idx as usize,
+        sanitized_display_text.chars().count(),
+        "translate_match_indices: sanitized walk length mismatch"
+    );
+
+    out
+}
+
 /// Write suggestion text with fuzzy-match highlighting, clipped to
 /// `max_text_chars` display columns. Returns the number of display columns
 /// actually written.
 ///
-/// `match_indices` is indexed against the pre-strip original text, so
-/// `prefix_offset` is added to each loop index when searching. Indices inside
-/// the stripped prefix are smaller than any target we emit here, so
-/// `binary_search` naturally filters them out without an alloc.
+/// `match_indices` MUST be char indices into `display_text` itself — both
+/// inputs share the same post-sanitization, post-prefix-strip coordinate
+/// space. See `translate_match_indices` for how the caller derives them from
+/// the raw upstream indices.
 fn write_highlighted_text(
     buf: &mut Vec<u8>,
     display_text: &str,
     match_indices: &[u32],
-    prefix_offset: u32,
     max_text_chars: usize,
     is_selected: bool,
     theme: &PopupTheme,
@@ -521,9 +582,8 @@ fn write_highlighted_text(
         if cols_written + ch_width > max_text_chars {
             break;
         }
-        let target = char_idx as u32 + prefix_offset;
-        let should_highlight =
-            !theme.match_highlight_on.is_empty() && match_indices.binary_search(&target).is_ok();
+        let should_highlight = !theme.match_highlight_on.is_empty()
+            && match_indices.binary_search(&(char_idx as u32)).is_ok();
         if should_highlight && !in_highlight {
             buf.extend_from_slice(&theme.match_highlight_on);
             in_highlight = true;
@@ -619,12 +679,21 @@ fn format_item(
     let (raw_display_text, prefix_char_count) = display_text(s);
     // Sanitize to prevent ANSI injection via malicious filenames/branches.
     let display_text = sanitize_display_text(raw_display_text);
+    // Translate match indices from the raw-text coordinate space (what the
+    // upstream fuzzy matcher produced) into the sanitized display-text
+    // coordinate space, so `write_highlighted_text` can treat them as direct
+    // char offsets into `display_text` without any skew.
+    let match_indices = translate_match_indices(
+        raw_display_text,
+        &display_text,
+        prefix_char_count,
+        &s.match_indices,
+    );
 
     let cols_written = write_highlighted_text(
         buf,
         &display_text,
-        &s.match_indices,
-        prefix_char_count as u32,
+        &match_indices,
         max_text_chars,
         is_selected,
         theme,
@@ -2177,6 +2246,46 @@ mod tests {
         assert!(
             !output.contains('\x07'),
             "BEL byte should be stripped from description, got: {output:?}"
+        );
+    }
+
+    #[test]
+    fn write_highlighted_text_honors_match_indices_when_source_has_control_chars() {
+        // Regression test for a drift bug between `sanitize_display_text` and
+        // `match_indices`: the latter is computed upstream against the *raw*
+        // suggestion text (see `gc_suggest::fuzzy::rank`), while rendering
+        // iterates over the sanitized string. If sanitization strips bytes,
+        // every index past the stripped position becomes off-by-N.
+        //
+        // Source: "ab\x1bcd" — an embedded ESC byte that
+        // `sanitize_display_text()` will strip. Sanitized: "abcd".
+        // The query "cd" should highlight 'c' and 'd', which are at char
+        // indices 3 and 4 in the raw text but 2 and 3 in the sanitized text.
+        let mut s = make("ab\x1bcd", None, SuggestionKind::Command);
+        s.match_indices = vec![3, 4]; // raw-coordinate indices for 'c' and 'd'
+        let theme = PopupTheme::default();
+        let mut buf = Vec::new();
+        format_item(&mut buf, &s, 40, false, &theme);
+        let output = String::from_utf8_lossy(&buf);
+
+        // Sanitizer must have stripped the ESC.
+        assert!(
+            !output.contains("ab\x1bcd"),
+            "raw ESC should have been stripped from rendered text: {output:?}"
+        );
+        // The highlight must land on 'c' and 'd' contiguously: the sequence
+        // `\x1b[1mcd` (match_highlight_on directly followed by "cd") appears
+        // only when both chars are inside the highlighted span.
+        assert!(
+            output.contains("\x1b[1mcd"),
+            "highlight should cover 'cd' (both matched chars) after sanitization, got: {output:?}"
+        );
+        // Negative: the buggy code would emit `c\x1b[1md` (highlight starting
+        // at 'd' only, because index 3 pointed at 'c' in the raw text but at
+        // 'd' in the sanitized text). Make sure we do NOT see that pattern.
+        assert!(
+            !output.contains("c\x1b[1md"),
+            "highlight must not start at 'd' alone — that would mean indices drifted: {output:?}"
         );
     }
 
