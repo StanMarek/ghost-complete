@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use std::time::Instant;
 
 /// Tracks terminal state derived from the VT escape sequence stream.
 ///
@@ -22,6 +23,7 @@ pub struct TerminalState {
     cursor_sync_requested: bool,
     cpr_synced: bool,
     cpr_pending: u8,
+    shell_cpr_in_flight: Option<Instant>,
 }
 
 impl TerminalState {
@@ -42,6 +44,7 @@ impl TerminalState {
             cursor_sync_requested: false,
             cpr_synced: false,
             cpr_pending: 0,
+            shell_cpr_in_flight: None,
         }
     }
 
@@ -104,7 +107,7 @@ impl TerminalState {
     }
 
     /// Request a CPR-based cursor sync on the next opportunity.
-    pub(crate) fn request_cursor_sync(&mut self) {
+    pub fn request_cursor_sync(&mut self) {
         self.cursor_sync_requested = true;
     }
 
@@ -143,6 +146,30 @@ impl TerminalState {
             true
         } else {
             false
+        }
+    }
+
+    /// Returns true if a shell program has an outstanding CPR request.
+    pub fn is_shell_cpr_in_flight(&self) -> bool {
+        self.shell_cpr_in_flight.is_some()
+    }
+
+    /// Mark that a shell program sent CSI 6n through the PTY.
+    pub fn set_shell_cpr_in_flight(&mut self) {
+        self.shell_cpr_in_flight = Some(std::time::Instant::now());
+    }
+
+    /// Clear the shell CPR in-flight flag.
+    pub fn clear_shell_cpr_in_flight(&mut self) {
+        self.shell_cpr_in_flight = None;
+    }
+
+    /// Clear the flag if it's been set longer than `timeout`.
+    pub fn expire_shell_cpr_in_flight(&mut self, timeout: std::time::Duration) {
+        if let Some(set_at) = self.shell_cpr_in_flight {
+            if set_at.elapsed() >= timeout {
+                self.shell_cpr_in_flight = None;
+            }
         }
     }
 
