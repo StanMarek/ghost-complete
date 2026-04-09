@@ -258,6 +258,12 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                     if pty_writer.flush().is_err() {
                         return;
                     }
+                    // Shell's CPR round-trip is complete — unblock
+                    // ghost-complete's deferred CPR requests.
+                    {
+                        let mut p = parser_for_stdin.lock().unwrap();
+                        p.state_mut().clear_shell_cpr_in_flight();
+                    }
                     continue;
                 }
 
@@ -304,32 +310,37 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
             };
 
             // Feed bytes through the VT parser to track terminal state
-            let needs_cpr = {
+            let (needs_cpr, shell_cpr) = {
                 let mut p = parser_for_stdout.lock().unwrap();
                 p.process_bytes(&buf[..n]);
-                p.state_mut().take_cursor_sync_requested()
+                p.state_mut().expire_shell_cpr_in_flight(
+                    std::time::Duration::from_millis(500),
+                );
+                let needs_cpr = p.state_mut().take_cursor_sync_requested();
+                let shell_cpr = p.state().is_shell_cpr_in_flight();
+                (needs_cpr, shell_cpr)
             };
 
             // Briefly lock stdout for each write — do NOT hold the lock
             // across the entire loop or it deadlocks with Task A.
             {
                 let mut stdout = std::io::stdout().lock();
-                if stdout.write_all(&buf[..n]).is_err() {
+                // Strip ghost-complete's internal OSC sequences (7770, 7771)
+                // before forwarding to the terminal — they can interfere with
+                // prompt rendering (e.g., powerlevel10k right-prompt alignment).
+                let cleaned = strip_internal_osc(&buf[..n]);
+                if stdout.write_all(&cleaned).is_err() {
                     break;
                 }
-                // Send CPR request (CSI 6n) to the REAL terminal so it
-                // reports its actual cursor position. The response
-                // (CSI row;col R) arrives on stdin and is intercepted by
-                // Task A to sync our VT parser's cursor tracking.
-                if needs_cpr {
+                if needs_cpr && !shell_cpr {
                     tracing::debug!("sending CPR request (CSI 6n)");
                     let _ = stdout.write_all(b"\x1b[6n");
-                    // Mark this as our own request so Task A knows to
-                    // consume the response instead of forwarding it to
-                    // the PTY (where programs like atuin may be waiting
-                    // for their own CPR responses).
                     let mut p = parser_for_stdout.lock().unwrap();
                     p.state_mut().increment_cpr_pending();
+                } else if needs_cpr && shell_cpr {
+                    tracing::debug!("deferring CPR request — shell CPR in flight");
+                    let mut p = parser_for_stdout.lock().unwrap();
+                    p.state_mut().request_cursor_sync();
                 }
                 if stdout.flush().is_err() {
                     break;
@@ -595,6 +606,55 @@ fn expand_tilde(path: &str) -> PathBuf {
     PathBuf::from(path)
 }
 
+/// Strip ghost-complete's internal OSC sequences (7770, 7771) from the byte
+/// stream before forwarding to the terminal. These are protocol sequences
+/// between the shell integration and the proxy — the terminal doesn't need
+/// them and they can interfere with prompt rendering (e.g., powerlevel10k
+/// right-prompt width calculation).
+fn strip_internal_osc(buf: &[u8]) -> Vec<u8> {
+    let mut out = Vec::with_capacity(buf.len());
+    let mut i = 0;
+    while i < buf.len() {
+        // Look for ESC ] (OSC start)
+        if buf[i] == 0x1b && i + 1 < buf.len() && buf[i + 1] == b']' {
+            // Check if this is OSC 7770 or OSC 7771
+            let osc_start = i;
+            let after_bracket = i + 2;
+            let is_internal = if after_bracket + 4 <= buf.len() && &buf[after_bracket..after_bracket + 4] == b"7770" {
+                true
+            } else if after_bracket + 4 <= buf.len() && &buf[after_bracket..after_bracket + 4] == b"7771" {
+                true
+            } else {
+                false
+            };
+
+            if is_internal {
+                // Skip until BEL (\x07) or ST (ESC \)
+                i = after_bracket;
+                while i < buf.len() {
+                    if buf[i] == 0x07 {
+                        i += 1; // skip BEL
+                        break;
+                    }
+                    if buf[i] == 0x1b && i + 1 < buf.len() && buf[i + 1] == b'\\' {
+                        i += 2; // skip ST
+                        break;
+                    }
+                    i += 1;
+                }
+                // If we reached EOF without finding terminator, skip from osc_start
+                if i >= buf.len() {
+                    break;
+                }
+                continue;
+            }
+        }
+        out.push(buf[i]);
+        i += 1;
+    }
+    out
+}
+
 /// Returns true if ghost-complete should replace itself with a plain shell
 /// because multi-terminal support is disabled and we're not on Ghostty.
 pub fn should_fallback_to_shell(
@@ -649,5 +709,42 @@ mod tests {
             &Terminal::Unknown("foot".into()),
             true
         ));
+    }
+
+    #[test]
+    fn test_strip_internal_osc_7770_bel() {
+        let input = b"hello\x1b]7770;3;git\x07world";
+        assert_eq!(strip_internal_osc(input), b"helloworld");
+    }
+
+    #[test]
+    fn test_strip_internal_osc_7771_bel() {
+        let input = b"\x1b]7771;A\x07prompt";
+        assert_eq!(strip_internal_osc(input), b"prompt");
+    }
+
+    #[test]
+    fn test_strip_internal_osc_st_terminator() {
+        let input = b"before\x1b]7770;0;\x1b\\after";
+        assert_eq!(strip_internal_osc(input), b"beforeafter");
+    }
+
+    #[test]
+    fn test_strip_preserves_other_osc() {
+        // OSC 133 (semantic prompt) should NOT be stripped
+        let input = b"\x1b]133;A\x07prompt";
+        assert_eq!(strip_internal_osc(input), input.to_vec());
+    }
+
+    #[test]
+    fn test_strip_no_osc() {
+        let input = b"plain text\r\n";
+        assert_eq!(strip_internal_osc(input), input.to_vec());
+    }
+
+    #[test]
+    fn test_strip_multiple_osc() {
+        let input = b"\x1b]7771;A\x07text\x1b]7770;5;hello\x07end";
+        assert_eq!(strip_internal_osc(input), b"textend");
     }
 }

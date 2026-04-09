@@ -90,6 +90,14 @@ impl Perform for TerminalState {
             // ANSI save/restore cursor (SCO sequences)
             's' => self.save_cursor(),
             'u' => self.restore_cursor(),
+            // DSR — Device Status Report (CSI 6n = cursor position query)
+            // When a shell program sends this, we flag it so the proxy
+            // defers its own CSI 6n to avoid stealing the response.
+            'n' => {
+                if csi_param(params, 0, 0) == 6 {
+                    self.set_shell_cpr_in_flight();
+                }
+            }
             _ => {}
         }
     }
@@ -729,11 +737,43 @@ mod tests {
     }
 
     #[test]
+    fn test_csi_6n_sets_shell_cpr_in_flight() {
+        let mut p = make_parser();
+        assert!(!p.state().is_shell_cpr_in_flight());
+        // CSI 6n — Device Status Report (cursor position query)
+        p.process_bytes(b"\x1b[6n");
+        assert!(p.state().is_shell_cpr_in_flight());
+    }
+
+    #[test]
+    fn test_csi_6n_does_not_trigger_on_other_dsr() {
+        let mut p = make_parser();
+        // CSI 5n — Device Status Report (terminal ok query), NOT cursor position
+        p.process_bytes(b"\x1b[5n");
+        assert!(!p.state().is_shell_cpr_in_flight());
+    }
+
+    #[test]
     fn test_percent_decode_non_utf8_bytes() {
         // Bytes 0x80 0x81 are not valid UTF-8, but are valid Unix path bytes
         use std::os::unix::ffi::OsStrExt;
         let result = percent_decode_path("/%80%81");
         let expected = PathBuf::from(std::ffi::OsStr::from_bytes(&[b'/', 0x80, 0x81]));
         assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_shell_cpr_in_flight_default_false() {
+        let p = make_parser();
+        assert!(!p.state().is_shell_cpr_in_flight());
+    }
+
+    #[test]
+    fn test_shell_cpr_in_flight_set_and_clear() {
+        let mut p = make_parser();
+        p.state_mut().set_shell_cpr_in_flight();
+        assert!(p.state().is_shell_cpr_in_flight());
+        p.state_mut().clear_shell_cpr_in_flight();
+        assert!(!p.state().is_shell_cpr_in_flight());
     }
 }
