@@ -181,9 +181,12 @@ pub struct InputHandler {
     /// Command context snapshot captured when generators were spawned.
     /// Used by try_merge_dynamic to drop stale results when the user's
     /// editing has changed WHICH generator would now apply. We compare
-    /// command + args (subcommand path) + preceding_flag + word_index;
-    /// `current_word` is intentionally excluded so typing more characters
-    /// of the same completion still lets results merge.
+    /// command + args (subcommand path) + preceding_flag + word_index.
+    /// `current_word` is also compared, but ONLY when a generator depends
+    /// on it literally (script_template with `{current_token}`); for
+    /// generators that treat it as a fuzzy-filter prefix, typing more
+    /// characters still lets results merge and re-rank.
+    /// See `DynamicCtxSnapshot::capture` and `is_stale_against`.
     dynamic_ctx: Option<DynamicCtxSnapshot>,
     terminal_profile: TerminalProfile,
     /// Accumulated viewport scroll from popup rendering. Persists across
@@ -413,89 +416,99 @@ impl InputHandler {
         let selected_text = self.suggestions[selected_idx].text.clone();
         let selected_kind = self.suggestions[selected_idx].kind;
         let is_dir = selected_text.ends_with('/');
-        let forward = self.accept_suggestion(parser);
 
-        // History entries never chain — they're full commands, not directory paths
+        // Single parser lock for both the accept computation AND the
+        // CD-chaining prediction. Prevents TOCTOU between the two reads and
+        // mirrors the lock-ordering discipline established in proxy.rs.
+        //
+        // Poison handling mirrors render/accept_suggestion: if the parser
+        // mutex is poisoned we can't read the buffer, so dismiss the popup
+        // and return empty bytes. Failing here must not crash the proxy.
+        let mut p = match parser.lock() {
+            Ok(p) => p,
+            Err(e) => {
+                tracing::warn!(
+                    "parser mutex poisoned in accept_with_chaining: {e} — \
+                     dropping accept"
+                );
+                self.dismiss(stdout);
+                return Vec::new();
+            }
+        };
+
+        let (forward, cwd, cursor_position, screen_dimensions) =
+            match self.accept_suggestion_locked(&p) {
+                Some(tuple) => tuple,
+                None => {
+                    drop(p);
+                    self.dismiss(stdout);
+                    return Vec::new();
+                }
+            };
+
+        // History entries never chain — they're full commands, not directory paths.
         if selected_kind == gc_suggest::SuggestionKind::History {
+            drop(p);
             self.dismiss(stdout);
             return forward;
         }
 
-        if is_dir {
-            // CD chaining: predict the buffer after acceptance and
-            // immediately show next-level suggestions. Avoids timing
-            // issues with the shell's OSC 7770 roundtrip.
-            //
-            // Poison handling mirrors render/accept_suggestion: if the
-            // parser mutex is poisoned we can't predict the next buffer,
-            // so dismiss the popup and return whatever forward bytes
-            // accept_suggestion already produced (empty on poison, normal
-            // backspace+text sequence on a healthy call earlier this
-            // method). Failing here must not crash the proxy.
-            let (cwd, predicted_ctx, predicted_buffer, cr, cc, sr, sc) = {
-                let mut p = match parser.lock() {
-                    Ok(p) => p,
-                    Err(e) => {
-                        tracing::warn!(
-                            "parser mutex poisoned in accept_with_chaining: {e} — \
-                             dismissing popup and skipping CD chaining"
-                        );
-                        self.dismiss(stdout);
-                        return forward;
-                    }
-                };
-                let state = p.state();
-                let buffer = state.command_buffer().unwrap_or("").to_string();
-                let char_cursor = state.buffer_cursor(); // character offset
-                let byte_cursor = char_to_byte_offset(&buffer, char_cursor);
-                let old_ctx = parse_command_context(&buffer, char_cursor);
-                let word_start_bytes = byte_cursor - old_ctx.current_word.len();
-
-                let mut predicted = String::with_capacity(buffer.len() + selected_text.len());
-                predicted.push_str(&buffer[..word_start_bytes]);
-                predicted.push_str(&selected_text);
-                if byte_cursor < buffer.len() {
-                    predicted.push_str(&buffer[byte_cursor..]);
-                }
-                // new_cursor is a char offset for predict_command_buffer
-                let word_start_chars = byte_to_char_offset(&buffer, word_start_bytes);
-                let new_cursor = word_start_chars + selected_text.chars().count();
-
-                let cwd = state.cwd().cloned().unwrap_or_else(|| PathBuf::from("."));
-                let ctx = parse_command_context(&predicted, new_cursor);
-                let (cr, cc) = state.cursor_position();
-                let (sr, sc) = state.screen_dimensions();
-
-                let predicted_buf = predicted.clone();
-
-                // Update parser with predicted buffer so subsequent
-                // accept computes correct current_word
-                p.state_mut().predict_command_buffer(predicted, new_cursor);
-
-                (cwd, ctx, predicted_buf, cr, cc, sr, sc)
-            };
-
-            match self
-                .engine
-                .suggest_sync(&predicted_ctx, &cwd, &predicted_buffer)
-            {
-                Ok(result) if !result.suggestions.is_empty() => {
-                    self.suggestions = result.suggestions;
-                    self.overlay.reset();
-                    self.visible = true;
-                    self.render_at(stdout, cr, cc, sr, sc);
-                }
-                _ => {
-                    self.dismiss(stdout);
-                }
-            }
-        } else {
+        if !is_dir {
+            drop(p);
             self.dismiss(stdout);
             // Append trailing space so the user can immediately type the next
             // argument. Skip for text ending in '=' (flag expecting value like
             // --output=) since the user needs to type the value directly.
             if !selected_text.ends_with('=') {
                 return [forward, vec![b' ']].concat();
+            }
+            return forward;
+        }
+
+        // CD chaining: predict the buffer after acceptance and immediately
+        // show next-level suggestions. Avoids timing issues with the shell's
+        // OSC 7770 roundtrip. Reuses the already-held parser lock for the
+        // prediction read and the `predict_command_buffer` mutation.
+        let state = p.state();
+        let buffer = state.command_buffer().unwrap_or("").to_string();
+        let char_cursor = state.buffer_cursor(); // character offset
+        let byte_cursor = char_to_byte_offset(&buffer, char_cursor);
+        let old_ctx = parse_command_context(&buffer, char_cursor);
+        let word_start_bytes = byte_cursor - old_ctx.current_word.len();
+
+        let mut predicted = String::with_capacity(buffer.len() + selected_text.len());
+        predicted.push_str(&buffer[..word_start_bytes]);
+        predicted.push_str(&selected_text);
+        if byte_cursor < buffer.len() {
+            predicted.push_str(&buffer[byte_cursor..]);
+        }
+        // new_cursor is a char offset for predict_command_buffer
+        let word_start_chars = byte_to_char_offset(&buffer, word_start_bytes);
+        let new_cursor = word_start_chars + selected_text.chars().count();
+
+        let predicted_ctx = parse_command_context(&predicted, new_cursor);
+        let predicted_buffer = predicted.clone();
+
+        // Update parser with predicted buffer so subsequent accept computes
+        // correct current_word.
+        p.state_mut().predict_command_buffer(predicted, new_cursor);
+        drop(p);
+
+        let (cr, cc) = cursor_position;
+        let (sr, sc) = screen_dimensions;
+
+        match self
+            .engine
+            .suggest_sync(&predicted_ctx, &cwd, &predicted_buffer)
+        {
+            Ok(result) if !result.suggestions.is_empty() => {
+                self.suggestions = result.suggestions;
+                self.overlay.reset();
+                self.visible = true;
+                self.render_at(stdout, cr, cc, sr, sc);
+            }
+            _ => {
+                self.dismiss(stdout);
             }
         }
 
@@ -722,19 +735,12 @@ impl InputHandler {
                 // on an already-completed handle for their orphan-task
                 // cleanup guarantees.
                 self.dynamic_task = None;
-                if dynamic_results.is_empty() {
-                    // No results from generators. If the popup is already
-                    // visible with static suggestions, leave the suggestions
-                    // alone but re-render so the loading indicator clears —
-                    // render() reads `loading = dynamic_rx.is_some()`, and
-                    // without a repaint the on-screen indicator is a stale
-                    // snapshot from when dynamic_rx was still Some.
-                    self.dynamic_ctx = None;
-                    if self.visible {
-                        self.render(parser, stdout);
-                    }
-                    return false;
-                }
+                // Note: `spawn_generators` only sends when the result is
+                // non-empty, so the empty-Ok case is unreachable in
+                // production. The "all generators returned empty" path is
+                // handled by the Disconnected arm below (tx is dropped
+                // without sending). See the regression test
+                // `test_try_merge_dynamic_disconnected_rerenders_to_clear_loading`.
                 // Parse the current buffer context and verify it still matches
                 // what the generators were spawned against. If the user's
                 // editing changed WHICH generator would apply (different
@@ -745,8 +751,12 @@ impl InputHandler {
                     let p = match parser.lock() {
                         Ok(p) => p,
                         Err(e) => {
-                            // Don't call self.render() — it would also try
-                            // to lock the poisoned parser and double-panic.
+                            // Skip the render call on the poisoned path:
+                            // render() would acquire the same poisoned lock
+                            // and log-and-return as a no-op, so repainting
+                            // here adds nothing. We clear dynamic state so
+                            // the next try_merge_dynamic call starts fresh
+                            // and return false to signal "no merge happened".
                             tracing::warn!(
                                 "parser lock poisoned during dynamic merge re-rank: {e} — \
                                  disabling dynamic_rx"
@@ -816,10 +826,11 @@ impl InputHandler {
                 // full pool is gone.
                 //
                 // Instead, when merging with an empty query, keep the full
-                // pool untruncated. The render path is bounded by
-                // `max_visible` (overlay's `render_popup` uses
-                // `skip(scroll_offset).take(max_visible)`), so large
-                // `self.suggestions` is cheap to render. The next keystroke
+                // pool untruncated. The render path slices
+                // `&suggestions[scroll_offset..scroll_offset + content_height]`
+                // where `content_height` is capped by the visible viewport,
+                // so a large `self.suggestions` is cheap to render — only the
+                // on-screen window is formatted per frame. The next keystroke
                 // that arrives with a non-empty query will trigger a fresh
                 // `suggest_sync` cycle; any retained-but-not-yet-merged
                 // dynamic pool is bounded upstream by
@@ -950,44 +961,47 @@ impl InputHandler {
         self.dynamic_ctx = None;
     }
 
-    fn accept_suggestion(&self, parser: &Arc<Mutex<TerminalParser>>) -> Vec<u8> {
-        let selected_idx = match self.overlay.selected {
-            Some(idx) if idx < self.suggestions.len() => idx,
-            _ => return Vec::new(),
-        };
-
+    /// Compute the accept bytes for the currently-selected suggestion using
+    /// an already-locked parser. Caller owns the lock so additional reads
+    /// (e.g. for CD chaining prediction) can happen under the same critical
+    /// section without a second `parser.lock()` round-trip.
+    ///
+    /// Returns `(forward_bytes, cwd, cursor_position, screen_dimensions)`:
+    /// the first element is what the simple-accept path needs, the remaining
+    /// three are cheap to pull from the same `TerminalState` snapshot and
+    /// are consumed by `accept_with_chaining` when the selection is a
+    /// directory.
+    ///
+    /// Returns `None` when the overlay has no valid selection.
+    fn accept_suggestion_locked(&self, p: &TerminalParser) -> Option<AcceptLockedOutput> {
+        let selected_idx = self.overlay.selected?;
+        if selected_idx >= self.suggestions.len() {
+            return None;
+        }
         let selected = &self.suggestions[selected_idx];
 
-        let (delete_chars, replacement, command) = {
-            // Poison handling mirrors Task B in proxy.rs: if the parser
-            // mutex is poisoned we can't safely read the buffer, so return
-            // empty bytes (caller treats this as "no-op accept"). Failing
-            // here must not crash the proxy.
-            let p = match parser.lock() {
-                Ok(p) => p,
-                Err(e) => {
-                    tracing::warn!(
-                        "parser mutex poisoned in accept_suggestion: {e} — dropping accept"
-                    );
-                    return Vec::new();
-                }
-            };
-            let state = p.state();
-            let buffer = state.command_buffer().unwrap_or("");
-            let cursor = state.buffer_cursor();
-            let ctx = parse_command_context(buffer, cursor);
+        let state = p.state();
+        let buffer = state.command_buffer().unwrap_or("");
+        let cursor = state.buffer_cursor();
+        let ctx = parse_command_context(buffer, cursor);
+        let cwd = state.cwd().cloned().unwrap_or_else(|| PathBuf::from("."));
+        let cursor_position = state.cursor_position();
+        let screen_dimensions = state.screen_dimensions();
 
-            // Defense-in-depth: clamp cursor to buffer length even though
-            // set_command_buffer already clamps, to prevent PTY corruption
-            // if an unclamped value ever reaches here.
-            let safe_cursor = cursor.min(buffer.chars().count());
-
+        let (delete_chars, replacement, command) =
             if selected.kind == gc_suggest::SuggestionKind::History {
-                // History: delete the entire buffer up to cursor, then type the full command.
-                // Cursor is always at buffer end when popup is visible (arrow keys dismiss),
-                // but we use cursor (not buffer.chars().count()) because over-deleting past
-                // cursor into the prompt would be worse than leaving trailing chars.
+                // History: delete the entire buffer up to cursor, then type
+                // the full command. Cursor is always at buffer end when
+                // popup is visible (arrow keys dismiss), but we use cursor
+                // (not buffer.chars().count()) because over-deleting past
+                // cursor into the prompt would be worse than leaving
+                // trailing chars.
+                //
+                // Defense-in-depth: clamp cursor to buffer length even
+                // though set_command_buffer already clamps, to prevent PTY
+                // corruption if an unclamped value ever reaches here.
                 let buf_len = buffer.chars().count();
+                let safe_cursor = cursor.min(buf_len);
                 if safe_cursor != buf_len {
                     tracing::warn!(
                         cursor = safe_cursor,
@@ -1000,8 +1014,7 @@ impl InputHandler {
             } else {
                 let word_len = ctx.current_word.chars().count();
                 (word_len, selected.text.clone(), ctx.command)
-            }
-        };
+            };
 
         // Record accepted completion for frecency scoring.
         // History items are full commands — always keyed without command scope
@@ -1018,7 +1031,25 @@ impl InputHandler {
         let mut bytes = vec![0x7F; delete_chars];
         bytes.extend_from_slice(replacement.as_bytes());
 
-        bytes
+        Some((bytes, cwd, cursor_position, screen_dimensions))
+    }
+
+    fn accept_suggestion(&self, parser: &Arc<Mutex<TerminalParser>>) -> Vec<u8> {
+        // Poison handling mirrors Task B in proxy.rs: if the parser
+        // mutex is poisoned we can't safely read the buffer, so return
+        // empty bytes (caller treats this as "no-op accept"). Failing
+        // here must not crash the proxy.
+        let p = match parser.lock() {
+            Ok(p) => p,
+            Err(e) => {
+                tracing::warn!("parser mutex poisoned in accept_suggestion: {e} — dropping accept");
+                return Vec::new();
+            }
+        };
+        match self.accept_suggestion_locked(&p) {
+            Some((bytes, _cwd, _cursor_position, _screen_dimensions)) => bytes,
+            None => Vec::new(),
+        }
     }
 
     /// Handle terminal resize while popup is visible.
@@ -1037,6 +1068,12 @@ impl InputHandler {
         self.engine.flush_frecency();
     }
 }
+
+/// Return value of `accept_suggestion_locked`: the bytes to forward to the
+/// PTY plus the cwd and terminal geometry read under the same parser lock.
+/// The cwd and geometry are only consumed by the CD-chaining path in
+/// `accept_with_chaining`; the plain accept path discards them.
+type AcceptLockedOutput = (Vec<u8>, PathBuf, (u16, u16), (u16, u16));
 
 const DEFAULT_TRIGGER_CHARS: &[char] = &[' ', '/', '-', '.'];
 
@@ -1195,35 +1232,6 @@ mod tests {
         assert!(
             !buf.is_empty(),
             "Disconnected path must re-render so the loading indicator clears"
-        );
-    }
-
-    #[test]
-    fn test_try_merge_dynamic_empty_ok_rerenders_to_clear_loading() {
-        // Regression: if an `Ok(empty Vec)` ever slips through (defensive
-        // path in the current code), it must behave like Disconnected —
-        // clear dynamic_rx AND repaint.
-        let mut handler = make_visible_handler(vec![Suggestion {
-            text: "static".to_string(),
-            ..Default::default()
-        }]);
-
-        let (tx, rx) = mpsc::channel::<Vec<Suggestion>>(1);
-        tx.try_send(Vec::new()).unwrap();
-        handler.dynamic_rx = Some(rx);
-
-        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
-        let mut buf = Vec::new();
-
-        handler.try_merge_dynamic(&parser, &mut buf);
-
-        assert!(
-            handler.dynamic_rx.is_none(),
-            "dynamic_rx must be cleared on Ok(empty)"
-        );
-        assert!(
-            !buf.is_empty(),
-            "Ok(empty) path must re-render so the loading indicator clears"
         );
     }
 
@@ -1842,5 +1850,225 @@ mod tests {
         // Clear via manual trigger (Ctrl+/)
         handler.process_key(&KeyEvent::CtrlSlash, &parser, &mut buf);
         assert!(!handler.is_debounce_suppressed());
+    }
+
+    // --- DynamicCtxSnapshot staleness truth table ---
+
+    /// Test-only helper: build a `CommandContext` with the minimum field
+    /// set the staleness tests care about. Everything else defaults to the
+    /// "unquoted, first segment, not a flag" configuration.
+    fn ctx(
+        cmd: &str,
+        args: &[&str],
+        preceding_flag: Option<&str>,
+        word_idx: usize,
+        current_word: &str,
+    ) -> gc_buffer::CommandContext {
+        gc_buffer::CommandContext {
+            command: Some(cmd.to_string()),
+            args: args.iter().map(|s| s.to_string()).collect(),
+            current_word: current_word.to_string(),
+            word_index: word_idx,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: preceding_flag.map(|s| s.to_string()),
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
+        }
+    }
+
+    #[test]
+    fn dynamic_ctx_identical_context_is_not_stale() {
+        let base = ctx("git", &["checkout"], None, 2, "");
+        let snap = DynamicCtxSnapshot::capture(&base, false);
+        assert!(
+            !snap.is_stale_against(&base),
+            "identical context must not be stale"
+        );
+    }
+
+    #[test]
+    fn dynamic_ctx_different_command_is_stale() {
+        let base = ctx("git", &["checkout"], None, 2, "");
+        let snap = DynamicCtxSnapshot::capture(&base, false);
+        let changed = ctx("docker", &["checkout"], None, 2, "");
+        assert!(
+            snap.is_stale_against(&changed),
+            "different command must be stale"
+        );
+    }
+
+    #[test]
+    fn dynamic_ctx_different_args_is_stale() {
+        let base = ctx("git", &["checkout"], None, 2, "");
+        let snap = DynamicCtxSnapshot::capture(&base, false);
+        let changed = ctx("git", &["branch"], None, 2, "");
+        assert!(
+            snap.is_stale_against(&changed),
+            "different args must be stale"
+        );
+    }
+
+    #[test]
+    fn dynamic_ctx_different_preceding_flag_is_stale() {
+        let base = ctx("git", &["checkout"], None, 2, "");
+        let snap = DynamicCtxSnapshot::capture(&base, false);
+        let changed = ctx("git", &["checkout"], Some("-b"), 2, "");
+        assert!(
+            snap.is_stale_against(&changed),
+            "different preceding_flag must be stale"
+        );
+    }
+
+    #[test]
+    fn dynamic_ctx_different_word_index_is_stale() {
+        let base = ctx("git", &["checkout"], None, 2, "");
+        let snap = DynamicCtxSnapshot::capture(&base, false);
+        let changed = ctx("git", &["checkout"], None, 3, "");
+        assert!(
+            snap.is_stale_against(&changed),
+            "different word_index must be stale"
+        );
+    }
+
+    #[test]
+    fn dynamic_ctx_spawned_word_unchanged_is_not_stale() {
+        // script_template generator: spawn captured current_word,
+        // current context still has the same current_word.
+        let base = ctx("docker", &["inspect"], None, 2, "ar");
+        let snap = DynamicCtxSnapshot::capture(&base, true);
+        let same_word = ctx("docker", &["inspect"], None, 2, "ar");
+        assert!(
+            !snap.is_stale_against(&same_word),
+            "unchanged spawned current_word must not be stale"
+        );
+    }
+
+    #[test]
+    fn dynamic_ctx_spawned_word_changed_is_stale() {
+        // The `docker inspect ar` vs `docker inspect arg` case: script
+        // template substitutes `{current_token}` literally, so each
+        // invocation produces a disjoint result set.
+        let base = ctx("docker", &["inspect"], None, 2, "ar");
+        let snap = DynamicCtxSnapshot::capture(&base, true);
+        let extended_word = ctx("docker", &["inspect"], None, 2, "arg");
+        assert!(
+            snap.is_stale_against(&extended_word),
+            "changed spawned current_word must be stale"
+        );
+    }
+
+    #[test]
+    fn dynamic_ctx_no_spawned_word_prefix_extension_allowed() {
+        // Non-script-template generators (git branches, fuzzy filters):
+        // capture with `uses_current_word = false`, so typing more
+        // characters of the prefix is not a staleness trigger.
+        let base = ctx("git", &["checkout"], None, 2, "ma");
+        let snap = DynamicCtxSnapshot::capture(&base, false);
+        let extended = ctx("git", &["checkout"], None, 2, "main");
+        assert!(
+            !snap.is_stale_against(&extended),
+            "prefix extension must not be stale when no generator depends on current_word"
+        );
+    }
+
+    #[test]
+    fn dynamic_ctx_capture_with_uses_current_word_true_captures_word() {
+        let c = ctx("docker", &["inspect"], None, 2, "ar");
+        let snap = DynamicCtxSnapshot::capture(&c, true);
+        assert_eq!(snap.spawned_current_word, Some("ar".to_string()));
+    }
+
+    #[test]
+    fn dynamic_ctx_capture_with_uses_current_word_false_no_word() {
+        let c = ctx("git", &["checkout"], None, 2, "ma");
+        let snap = DynamicCtxSnapshot::capture(&c, false);
+        assert!(snap.spawned_current_word.is_none());
+    }
+
+    // --- dismiss/trigger dynamic_task abort verification ---
+
+    #[tokio::test]
+    async fn test_dismiss_clears_dynamic_task_and_rx() {
+        // Regression: dismiss() must abort any in-flight generator task
+        // AND clear dynamic_rx/dynamic_ctx so a subsequent trigger can
+        // start fresh without merging stale results.
+        let mut handler = make_visible_handler(vec![Suggestion {
+            text: "test".to_string(),
+            ..Default::default()
+        }]);
+
+        // Populate dynamic state as if generators were in flight.
+        let (_tx, rx) = mpsc::channel::<Vec<Suggestion>>(1);
+        handler.dynamic_rx = Some(rx);
+        handler.dynamic_ctx = Some(DynamicCtxSnapshot::capture(
+            &ctx("git", &["checkout"], None, 2, ""),
+            false,
+        ));
+        handler.dynamic_task = Some(tokio::spawn(async {
+            // Long-running task that must be aborted.
+            tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+        }));
+
+        let mut stdout_buf = Vec::new();
+        handler.dismiss(&mut stdout_buf);
+
+        assert!(
+            handler.dynamic_task.is_none(),
+            "dismiss must clear dynamic_task"
+        );
+        assert!(
+            handler.dynamic_rx.is_none(),
+            "dismiss must clear dynamic_rx"
+        );
+        assert!(
+            handler.dynamic_ctx.is_none(),
+            "dismiss must clear dynamic_ctx"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_trigger_aborts_in_flight_generators() {
+        // Regression: when trigger() fires with a new context, any
+        // in-flight generator task from a previous trigger must be
+        // aborted and dynamic_rx/dynamic_ctx cleared before the new
+        // generators are spawned. Otherwise stale generator results
+        // could be merged into an unrelated completion site.
+        let mut handler = make_handler();
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+
+        // Set buffer state so trigger() doesn't early-return on empty.
+        {
+            let mut p = parser.lock().unwrap();
+            p.state_mut().predict_command_buffer("git ".to_string(), 4);
+        }
+
+        // Populate in-flight dynamic state mimicking a prior trigger that
+        // spawned generators against a different command.
+        let (_tx, rx) = mpsc::channel::<Vec<Suggestion>>(1);
+        handler.dynamic_rx = Some(rx);
+        handler.dynamic_ctx = Some(DynamicCtxSnapshot::capture(
+            &ctx("old-cmd", &[], None, 0, ""),
+            false,
+        ));
+        handler.dynamic_task = Some(tokio::spawn(async {
+            tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+        }));
+
+        let mut stdout = Vec::new();
+        handler.trigger(&parser, &mut stdout);
+
+        // trigger() may re-populate dynamic_rx/ctx/task if the new buffer
+        // produced new async generators. What matters is that the OLD
+        // values were replaced, not their specific new state.
+        if let Some(ref snapshot) = handler.dynamic_ctx {
+            assert_ne!(
+                snapshot.command.as_deref(),
+                Some("old-cmd"),
+                "trigger() must clear or replace stale dynamic_ctx"
+            );
+        }
     }
 }
