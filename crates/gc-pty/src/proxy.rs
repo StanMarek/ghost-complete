@@ -172,6 +172,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
             .with_theme(theme)
             .with_popup_config(config.popup.max_visible)
             .with_trigger_chars(&config.trigger.auto_chars)
+            .with_auto_trigger(config.trigger.auto_trigger)
             .with_suggest_config(
                 config.suggest.max_results,
                 config.suggest.providers.commands,
@@ -351,7 +352,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                     if h.has_pending_trigger() {
                         h.clear_trigger_request();
                         h.trigger(&parser_for_stdout, &mut render_buf);
-                    } else if delay_ms > 0 && !h.is_debounce_suppressed() {
+                    } else if delay_ms > 0 && h.auto_trigger_enabled() && !h.is_debounce_suppressed() {
                         debounce_notify_b.notify_one();
                     }
                 }
