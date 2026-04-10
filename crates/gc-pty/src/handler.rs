@@ -106,6 +106,7 @@ pub struct InputHandler {
     max_visible: usize,
     trigger_chars: HashSet<char>,
     debounce_suppressed: bool,
+    auto_trigger: bool,
     keybindings: Keybindings,
     theme: PopupTheme,
     dynamic_rx: Option<mpsc::Receiver<Vec<Suggestion>>>,
@@ -129,6 +130,7 @@ impl InputHandler {
             max_visible: DEFAULT_MAX_VISIBLE,
             trigger_chars: DEFAULT_TRIGGER_CHARS.iter().copied().collect(),
             debounce_suppressed: false,
+            auto_trigger: true,
             keybindings: Keybindings::default(),
             theme: PopupTheme::default(),
             dynamic_rx: None,
@@ -149,6 +151,11 @@ impl InputHandler {
 
     pub fn with_trigger_chars(mut self, chars: &[char]) -> Self {
         self.trigger_chars = chars.iter().copied().collect();
+        self
+    }
+
+    pub fn with_auto_trigger(mut self, auto_trigger: bool) -> Self {
+        self.auto_trigger = auto_trigger;
         self
     }
 
@@ -197,11 +204,13 @@ impl InputHandler {
         keybindings: Keybindings,
         trigger_chars: &[char],
         max_visible: usize,
+        auto_trigger: bool,
     ) {
         self.theme = theme;
         self.keybindings = keybindings;
         self.trigger_chars = trigger_chars.iter().copied().collect();
         self.max_visible = max_visible;
+        self.auto_trigger = auto_trigger;
     }
 
     #[allow(dead_code)]
@@ -219,6 +228,10 @@ impl InputHandler {
 
     pub fn is_debounce_suppressed(&self) -> bool {
         self.debounce_suppressed
+    }
+
+    pub fn auto_trigger_enabled(&self) -> bool {
+        self.auto_trigger
     }
 
     /// Process a single key event. Returns the raw bytes to forward to the PTY,
@@ -401,7 +414,7 @@ impl InputHandler {
             KeyEvent::Printable(c) => {
                 self.debounce_suppressed = false;
                 let forward = vec![*c as u8];
-                if self.trigger_chars.contains(c) {
+                if self.auto_trigger && self.trigger_chars.contains(c) {
                     // Defer trigger to Task B after shell processes the keystroke
                     self.trigger_requested = true;
                 }
@@ -861,6 +874,7 @@ mod tests {
             max_visible: DEFAULT_MAX_VISIBLE,
             trigger_chars: DEFAULT_TRIGGER_CHARS.iter().copied().collect(),
             debounce_suppressed: false,
+            auto_trigger: true,
             keybindings: Keybindings::default(),
             theme: PopupTheme::default(),
             dynamic_rx: None,
@@ -1227,7 +1241,7 @@ mod tests {
             borders: true,
         };
 
-        handler.update_config(new_theme, Keybindings::default(), &[' ', '/'], 15);
+        handler.update_config(new_theme, Keybindings::default(), &[' ', '/'], 15, true);
 
         assert_eq!(handler.theme.selected_on, vec![0x1B, b'[', b'1', b'm']);
         assert_eq!(handler.theme.description_on, vec![0x1B, b'[', b'2', b'm']);
@@ -1246,7 +1260,7 @@ mod tests {
             trigger: KeyEvent::Tab,
         };
 
-        handler.update_config(PopupTheme::default(), new_kb.clone(), &[' ', '/'], 10);
+        handler.update_config(PopupTheme::default(), new_kb.clone(), &[' ', '/'], 10, true);
 
         assert_eq!(handler.keybindings, new_kb);
     }
@@ -1260,6 +1274,7 @@ mod tests {
             Keybindings::default(),
             &['@', '#'],
             20,
+            true,
         );
 
         assert_eq!(handler.max_visible, 20);
@@ -1274,6 +1289,7 @@ mod tests {
             Keybindings::default(),
             &['@', '#', '!'],
             10,
+            true,
         );
 
         let expected: HashSet<char> = ['@', '#', '!'].iter().copied().collect();

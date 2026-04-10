@@ -126,6 +126,7 @@ pub fn spawn_config_watcher(config_path: PathBuf, handler: Arc<Mutex<InputHandle
                     keybindings,
                     &config.trigger.auto_chars,
                     config.popup.max_visible,
+                    config.trigger.auto_trigger,
                 );
             }
 
