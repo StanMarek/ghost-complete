@@ -377,7 +377,9 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 let mut render_buf = Vec::new();
                 {
                     let mut h = handler_for_stdout.lock().unwrap();
-                    h.trigger(&parser_for_stdout, &mut render_buf);
+                    if h.auto_trigger_enabled() {
+                        h.trigger(&parser_for_stdout, &mut render_buf);
+                    }
                 }
                 if !render_buf.is_empty() {
                     let mut stdout = std::io::stdout().lock();
