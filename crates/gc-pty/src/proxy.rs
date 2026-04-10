@@ -352,7 +352,10 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                     if h.has_pending_trigger() {
                         h.clear_trigger_request();
                         h.trigger(&parser_for_stdout, &mut render_buf);
-                    } else if delay_ms > 0 && h.auto_trigger_enabled() && !h.is_debounce_suppressed() {
+                    } else if delay_ms > 0
+                        && h.auto_trigger_enabled()
+                        && !h.is_debounce_suppressed()
+                    {
                         debounce_notify_b.notify_one();
                     }
                 }
