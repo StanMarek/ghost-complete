@@ -37,7 +37,7 @@ impl CacheKey {
 struct CacheEntry {
     suggestions: Vec<Suggestion>,
     expires_at: Instant,
-    inserted_at: Instant,
+    last_accessed: Instant,
 }
 
 impl CacheEntry {
@@ -71,8 +71,11 @@ impl GeneratorCache {
     pub fn get(&self, key: &CacheKey) -> Option<Vec<Suggestion>> {
         let mut entries = self.entries.lock().unwrap_or_else(|e| e.into_inner());
         let now = Instant::now();
-        match entries.get(key) {
-            Some(entry) if !entry.is_expired(now) => Some(entry.suggestions.clone()),
+        match entries.get_mut(key) {
+            Some(entry) if !entry.is_expired(now) => {
+                entry.last_accessed = now;
+                Some(entry.suggestions.clone())
+            }
             Some(_) => {
                 // Expired — evict
                 entries.remove(key);
@@ -86,7 +89,7 @@ impl GeneratorCache {
     ///
     /// When the post-insert size exceeds [`CACHE_SWEEP_THRESHOLD`] this also
     /// runs a sweep: first dropping every expired entry, then — if still over
-    /// the threshold — dropping the oldest entries by `inserted_at` until the
+    /// the threshold — dropping the least recently accessed entries until the
     /// size is back at the threshold. This bounds memory in the face of
     /// script-template keys whose argv embeds user input.
     pub fn insert(&self, key: CacheKey, suggestions: Vec<Suggestion>, ttl: Duration) {
@@ -97,7 +100,7 @@ impl GeneratorCache {
             CacheEntry {
                 suggestions,
                 expires_at: now + ttl,
-                inserted_at: now,
+                last_accessed: now,
             },
         );
         Self::sweep_if_oversized(&mut entries, now);
@@ -112,15 +115,15 @@ impl GeneratorCache {
         if entries.len() <= CACHE_SWEEP_THRESHOLD {
             return;
         }
-        // Pass 2: still oversize — drop the oldest entries by `inserted_at`
+        // Pass 2: still oversize — drop the least recently used entries
         // until we're back at the threshold.
         let excess = entries.len() - CACHE_SWEEP_THRESHOLD;
-        let mut by_age: Vec<(Instant, CacheKey)> = entries
+        let mut by_access: Vec<(Instant, CacheKey)> = entries
             .iter()
-            .map(|(k, v)| (v.inserted_at, k.clone()))
+            .map(|(k, v)| (v.last_accessed, k.clone()))
             .collect();
-        by_age.sort_by_key(|(t, _)| *t);
-        for (_, key) in by_age.into_iter().take(excess) {
+        by_access.sort_by_key(|(t, _)| *t);
+        for (_, key) in by_access.into_iter().take(excess) {
             entries.remove(&key);
         }
     }
@@ -247,16 +250,16 @@ mod tests {
 
     #[test]
     fn test_cache_sweep_lru_drops_oldest_when_no_expired() {
-        // 600 entries with future TTLs — none are expired, so the sweep must
-        // fall back to LRU-by-`inserted_at`. End state: exactly the 500 most
-        // recent entries.
+        // 600 entries with future TTLs — none are expired, so the sweep
+        // evicts the least recently accessed entries. End state: exactly
+        // the 500 entries with the most recent access time.
         let cache = GeneratorCache::new();
 
         for i in 0..500 {
             let key = CacheKey::new("spec", &["cmd", &format!("k_{i}")], None);
             cache.insert(key, make_suggestions(), Duration::from_secs(300));
         }
-        // Force a clear `inserted_at` gap so the LRU drop is deterministic:
+        // Force a clear access-time gap so the LRU drop is deterministic:
         // every entry from the second batch is strictly newer than every
         // entry from the first batch.
         std::thread::sleep(Duration::from_millis(2));
@@ -282,6 +285,56 @@ mod tests {
             assert!(
                 cache.get(&key).is_some(),
                 "newest entry k_{i} should remain"
+            );
+        }
+    }
+
+    #[test]
+    fn test_cache_lru_access_prevents_eviction() {
+        // Verify that accessing a cache entry updates its LRU position.
+        // Insert 500 entries, access the first 100, then insert 100 more
+        // to trigger a sweep. The accessed entries should survive; the
+        // non-accessed old entries should be evicted.
+        let cache = GeneratorCache::new();
+
+        for i in 0..500 {
+            let key = CacheKey::new("spec", &["cmd", &format!("k_{i}")], None);
+            cache.insert(key, make_suggestions(), Duration::from_secs(300));
+        }
+
+        std::thread::sleep(Duration::from_millis(2));
+
+        // Access entries 0-99 to refresh their LRU timestamp
+        for i in 0..100 {
+            let key = CacheKey::new("spec", &["cmd", &format!("k_{i}")], None);
+            assert!(cache.get(&key).is_some());
+        }
+
+        std::thread::sleep(Duration::from_millis(2));
+
+        // Insert 100 more to push past the threshold
+        for i in 500..600 {
+            let key = CacheKey::new("spec", &["cmd", &format!("k_{i}")], None);
+            cache.insert(key, make_suggestions(), Duration::from_secs(300));
+        }
+
+        assert_eq!(cache.len(), 500);
+
+        // The accessed entries (0-99) should survive
+        for i in 0..100 {
+            let key = CacheKey::new("spec", &["cmd", &format!("k_{i}")], None);
+            assert!(
+                cache.get(&key).is_some(),
+                "recently accessed k_{i} should survive LRU eviction"
+            );
+        }
+
+        // The non-accessed old entries (100-199) should be evicted first
+        for i in 100..200 {
+            let key = CacheKey::new("spec", &["cmd", &format!("k_{i}")], None);
+            assert!(
+                cache.get(&key).is_none(),
+                "non-accessed k_{i} should be evicted"
             );
         }
     }

@@ -130,7 +130,17 @@ impl TerminalProfile {
         let env_is_set = |key: &str| std::env::var(key).map(|v| !v.is_empty()).unwrap_or(false);
         let env_is_existing_path = |key: &str| {
             std::env::var(key)
-                .map(|v| !v.is_empty() && std::path::Path::new(&v).exists())
+                .map(|v| {
+                    if v.is_empty() {
+                        return false;
+                    }
+                    let path = std::path::Path::new(&v);
+                    // Require the path to exist and NOT be a directory.
+                    // WezTerm/Alacritty sockets are Unix domain sockets —
+                    // a stale env var pointing at a directory (e.g., /tmp)
+                    // should not trigger terminal detection.
+                    path.exists() && !path.is_dir()
+                })
                 .unwrap_or(false)
         };
 

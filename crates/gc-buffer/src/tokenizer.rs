@@ -103,11 +103,29 @@ pub fn tokenize(input: &str) -> TokenizeResult {
                     }
                 } else if ch == '&' {
                     chars.next();
-                    flush_word(&mut current_word, &mut tokens);
                     if chars.peek() == Some(&'&') {
                         chars.next();
+                        flush_word(&mut current_word, &mut tokens);
                         tokens.push(Token::And);
+                    } else if chars.peek() == Some(&'>') {
+                        // &> or &>> — redirect both stdout+stderr (bash/zsh shorthand)
+                        chars.next();
+                        flush_word(&mut current_word, &mut tokens);
+                        if chars.peek() == Some(&'>') {
+                            chars.next();
+                            tokens.push(Token::RedirectAppend);
+                        } else {
+                            tokens.push(Token::RedirectOut);
+                        }
+                    } else if matches!(
+                        tokens.last(),
+                        Some(Token::RedirectOut | Token::RedirectAppend | Token::RedirectIn)
+                    ) {
+                        // & immediately after a redirect operator starts the target
+                        // (e.g., 2>&1 — the &1 is the redirect target, not background)
+                        current_word.push('&');
                     } else {
+                        flush_word(&mut current_word, &mut tokens);
                         tokens.push(Token::Background);
                     }
                 } else if ch == ';' {
@@ -120,8 +138,10 @@ pub fn tokenize(input: &str) -> TokenizeResult {
                     break;
                 } else if ch == '>' {
                     chars.next();
-                    // A single digit immediately before > is an FD number (e.g. 2>/dev/null), not an argument
-                    if current_word.len() == 1 && current_word.as_bytes()[0].is_ascii_digit() {
+                    // A word of all digits immediately before > is an FD number
+                    // (e.g., 2>/dev/null, 10>/tmp/log), not an argument
+                    if !current_word.is_empty() && current_word.bytes().all(|b| b.is_ascii_digit())
+                    {
                         current_word.clear();
                     } else {
                         flush_word(&mut current_word, &mut tokens);
@@ -134,8 +154,9 @@ pub fn tokenize(input: &str) -> TokenizeResult {
                     }
                 } else if ch == '<' {
                     chars.next();
-                    // Same FD number stripping for input redirects (e.g. 0<file)
-                    if current_word.len() == 1 && current_word.as_bytes()[0].is_ascii_digit() {
+                    // Same FD number stripping for input redirects (e.g. 0<file, 3<file)
+                    if !current_word.is_empty() && current_word.bytes().all(|b| b.is_ascii_digit())
+                    {
                         current_word.clear();
                     } else {
                         flush_word(&mut current_word, &mut tokens);
@@ -504,16 +525,76 @@ mod tests {
     }
 
     #[test]
-    fn test_multi_digit_not_stripped() {
-        // "cmd 22>file" — 22 is not a single digit, so it stays as a word
+    fn test_multi_digit_fd_stripped() {
+        // "cmd 22>file" — 22 is an FD number, gets stripped like single-digit FDs
         assert_eq!(
             words("cmd 22>file"),
             vec![
                 Token::Word("cmd".into()),
-                Token::Word("22".into()),
                 Token::RedirectOut,
                 Token::Word("file".into()),
             ]
+        );
+    }
+
+    #[test]
+    fn test_fd_redirect_multi_digit_stripped() {
+        // 10>file — multi-digit FD should be stripped, not left as a word
+        assert_eq!(
+            words("cmd 10>file"),
+            vec![
+                Token::Word("cmd".into()),
+                Token::RedirectOut,
+                Token::Word("file".into()),
+            ]
+        );
+    }
+
+    #[test]
+    fn test_fd_redirect_2_ampersand_1() {
+        // 2>&1 — the & after > starts the redirect target, not background
+        assert_eq!(
+            words("cmd 2>&1"),
+            vec![
+                Token::Word("cmd".into()),
+                Token::RedirectOut,
+                Token::Word("&1".into()),
+            ]
+        );
+    }
+
+    #[test]
+    fn test_ampersand_redirect_stdout_stderr() {
+        // &>file — redirect both stdout and stderr
+        assert_eq!(
+            words("cmd &>file"),
+            vec![
+                Token::Word("cmd".into()),
+                Token::RedirectOut,
+                Token::Word("file".into()),
+            ]
+        );
+    }
+
+    #[test]
+    fn test_ampersand_redirect_append() {
+        // &>>file — append redirect both stdout and stderr
+        assert_eq!(
+            words("cmd &>>file"),
+            vec![
+                Token::Word("cmd".into()),
+                Token::RedirectAppend,
+                Token::Word("file".into()),
+            ]
+        );
+    }
+
+    #[test]
+    fn test_background_still_works() {
+        // Plain & should still be Background
+        assert_eq!(
+            words("cmd &"),
+            vec![Token::Word("cmd".into()), Token::Background,]
         );
     }
 

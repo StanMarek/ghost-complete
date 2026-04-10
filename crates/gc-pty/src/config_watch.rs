@@ -141,7 +141,7 @@ pub fn spawn_config_watcher(config_path: PathBuf, handler: Arc<Mutex<InputHandle
             }
 
             tracing::info!("config reloaded successfully");
-            tracing::info!(
+            tracing::debug!(
                 "note: changes to delay_ms, max_results, providers, spec_dirs, \
                  and [experimental] require a restart to take effect"
             );

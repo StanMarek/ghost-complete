@@ -1063,6 +1063,14 @@ impl InputHandler {
         self.scroll_deficit = 0;
     }
 
+    /// Abort any in-flight dynamic generator task. Called during proxy
+    /// shutdown to prevent orphaned background tasks.
+    pub fn abort_dynamic_task(&mut self) {
+        if let Some(handle) = self.dynamic_task.take() {
+            handle.abort();
+        }
+    }
+
     /// Flush unsaved frecency records to disk. Call on proxy shutdown.
     pub fn flush_frecency(&self) {
         self.engine.flush_frecency();

@@ -260,7 +260,11 @@ impl TerminalState {
     }
 
     pub(crate) fn tab(&mut self) {
-        self.cursor_col = (self.cursor_col.saturating_add(8)) & !7;
+        // Next tab stop: round up to next multiple of 8.
+        // Saturating arithmetic prevents u16 overflow, and the max()
+        // ensures monotonicity — tab never moves the cursor backward.
+        let next = (self.cursor_col.saturating_add(8)) & !7;
+        self.cursor_col = next.max(self.cursor_col);
         self.clamp_cursor_col();
     }
 
@@ -390,11 +394,32 @@ mod tests {
     #[test]
     fn tab_saturating_at_u16_max() {
         let mut state = TerminalState::new(24, 80);
-        state.cursor_col = u16::MAX - 2;
+        let before = u16::MAX - 2;
+        state.cursor_col = before;
         state.tab();
-        // Should not panic or wrap — cursor clamped to screen bounds
+        // Should not panic, wrap, or go backward — cursor clamped to screen bounds
         let (_, col) = state.cursor_position();
         assert!(col < 80);
+    }
+
+    #[test]
+    fn tab_never_moves_backward() {
+        // Verify the raw tab-stop computation never goes backward.
+        // We use a width of 65535 so clamping is (width-1) = 65534.
+        // When cursor_col already exceeds the clamp boundary, the final
+        // position will be clamped down — that's correct, not "backward".
+        let width: u16 = 65535;
+        for start in [65530u16, 65533, 65535, 65528] {
+            let mut state = TerminalState::new(24, width);
+            state.cursor_col = start;
+            let before = start.min(width - 1); // effective position before tab
+            state.tab();
+            let (_, after) = state.cursor_position();
+            assert!(
+                after >= before,
+                "tab moved cursor backward: {before} -> {after}"
+            );
+        }
     }
 
     #[test]

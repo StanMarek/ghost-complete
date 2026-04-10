@@ -603,9 +603,12 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     // remove it for all others. Leaving it set is harmless — init.zsh's tmux
     // branch uses PPID + GHOST_COMPLETE_PANE, not this variable.
 
-    // Flush unsaved frecency records before exit
+    // Abort any in-flight dynamic generator task and flush frecency.
     match handler.lock() {
-        Ok(h) => h.flush_frecency(),
+        Ok(mut h) => {
+            h.abort_dynamic_task();
+            h.flush_frecency();
+        }
         Err(e) => {
             tracing::warn!("handler mutex poisoned at shutdown, frecency data not flushed: {e}")
         }

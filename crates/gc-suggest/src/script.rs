@@ -138,10 +138,35 @@ pub async fn run_script(argv: &[&str], cwd: &Path, timeout_ms: u64) -> Result<St
                 return Ok(String::from_utf8_lossy(&stdout_buf).to_string());
             }
 
-            let status = child
-                .wait()
-                .await
-                .map_err(|e| anyhow::anyhow!("script wait error for {:?}: {e}", argv))?;
+            // Wait for child exit with a deadline. A process that drained
+            // its pipes but hangs (stuck in cleanup, waiting on a lock)
+            // must not block the completion engine forever.
+            let status = match tokio::time::timeout(
+                std::time::Duration::from_millis(timeout_ms),
+                child.wait(),
+            )
+            .await
+            {
+                Ok(Ok(s)) => s,
+                Ok(Err(e)) => {
+                    return Err(anyhow::anyhow!("script wait error for {:?}: {e}", argv));
+                }
+                Err(_) => {
+                    tracing::warn!(
+                        "script process hung after closing pipes, killing: {:?}",
+                        argv
+                    );
+                    let _ = child.kill().await;
+                    let _ = child.wait().await;
+                    // Return Err so the caller does NOT cache the empty result.
+                    // Returning Ok("") here would poison the generator cache
+                    // with an empty entry for the full TTL, suppressing retries.
+                    bail!(
+                        "script process hung after closing pipes: {:?}",
+                        argv
+                    );
+                }
+            };
 
             if !status.success() {
                 let code = status.code().unwrap_or(-1);
@@ -178,6 +203,11 @@ pub async fn run_script(argv: &[&str], cwd: &Path, timeout_ms: u64) -> Result<St
         }
         Ok(Err(e)) => Err(anyhow::anyhow!("script I/O error for {:?}: {e}", argv)),
         Err(_) => {
+            // Explicit kill + reap for belt-and-suspenders safety alongside
+            // kill_on_drop(true). Dropping the future on timeout cancellation
+            // doesn't guarantee immediate SIGKILL delivery on all platforms.
+            let _ = child.kill().await;
+            let _ = child.wait().await;
             bail!("script timed out after {timeout_ms}ms: {:?}", argv);
         }
     }

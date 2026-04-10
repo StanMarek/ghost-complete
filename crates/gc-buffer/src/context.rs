@@ -79,21 +79,28 @@ pub fn parse_command_context(buffer: &str, cursor: usize) -> CommandContext {
             && before_cursor.as_bytes()[before_cursor.len() - 1].is_ascii_whitespace()
             && result.quote_state == QuoteState::None);
 
-    // Collect words from the segment
+    // Collect words from the segment, skipping redirect targets
     let mut words: Vec<&str> = Vec::new();
+    let mut skip_next_word = false;
     for tok in segment {
-        if let Token::Word(w) = tok {
-            words.push(w);
-        } else if matches!(
-            tok,
+        match tok {
+            Token::Word(w) => {
+                if skip_next_word {
+                    skip_next_word = false;
+                } else {
+                    words.push(w);
+                }
+            }
             Token::RedirectOut
-                | Token::RedirectAppend
-                | Token::RedirectIn
-                | Token::Heredoc
-                | Token::HereString
-        ) {
-            // Redirect targets are filenames, not args — skip words after redirects
-            // But for now, just track the redirect operator position
+            | Token::RedirectAppend
+            | Token::RedirectIn
+            | Token::Heredoc
+            | Token::HereString => {
+                skip_next_word = true;
+            }
+            _ => {
+                skip_next_word = false;
+            }
         }
     }
 
@@ -336,6 +343,31 @@ mod tests {
         let ctx = parse_command_context("cat <<EOF ", 10);
         // After <<EOF, cursor expects the delimiter/body — treated like redirect
         assert_eq!(ctx.command, Some("cat".into()));
+    }
+
+    #[test]
+    fn test_redirect_target_not_counted_as_arg() {
+        // "cmd >/tmp/out arg" — /tmp/out is a redirect target, not an argument
+        let ctx = parse_command_context("cmd >/tmp/out arg ", 18);
+        assert_eq!(ctx.command, Some("cmd".into()));
+        assert_eq!(ctx.args, vec!["arg"]);
+        assert_eq!(ctx.word_index, 2);
+    }
+
+    #[test]
+    fn test_redirect_target_heredoc_not_counted_as_arg() {
+        // "cat <<EOF arg " — EOF is the heredoc delimiter, not an argument
+        let ctx = parse_command_context("cat <<EOF arg ", 14);
+        assert_eq!(ctx.command, Some("cat".into()));
+        assert_eq!(ctx.args, vec!["arg"]);
+    }
+
+    #[test]
+    fn test_fd_redirect_2_ampersand_1_not_arg() {
+        // "cmd 2>&1 arg " — 2>&1 should not produce any arguments
+        let ctx = parse_command_context("cmd 2>&1 arg ", 13);
+        assert_eq!(ctx.command, Some("cmd".into()));
+        assert_eq!(ctx.args, vec!["arg"]);
     }
 
     #[test]

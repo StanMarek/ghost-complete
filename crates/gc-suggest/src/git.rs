@@ -58,16 +58,27 @@ async fn git_remotes(cwd: &Path) -> Vec<String> {
     run_git(cwd, &["remote"]).await
 }
 
+/// Git operations should not block completions indefinitely.
+const GIT_TIMEOUT_MS: u64 = 5_000;
+
 async fn run_git(cwd: &Path, args: &[&str]) -> Vec<String> {
-    let output = match Command::new("git")
-        .args(args)
-        .current_dir(cwd)
-        .output()
-        .await
+    let output = match tokio::time::timeout(
+        std::time::Duration::from_millis(GIT_TIMEOUT_MS),
+        Command::new("git")
+            .args(args)
+            .current_dir(cwd)
+            .kill_on_drop(true)
+            .output(),
+    )
+    .await
     {
-        Ok(o) => o,
-        Err(e) => {
+        Ok(Ok(o)) => o,
+        Ok(Err(e)) => {
             tracing::warn!("git command failed: {e}");
+            return Vec::new();
+        }
+        Err(_) => {
+            tracing::warn!(args = ?args, "git command timed out after {GIT_TIMEOUT_MS}ms");
             return Vec::new();
         }
     };

@@ -288,8 +288,10 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
         // Skip flags
         if arg.starts_with('-') {
             // If this flag takes a value in the spec, skip the next arg too
+            // (unless the value is inline via `--flag=value`, where there's
+            // no separate next arg to skip).
             if let Some(opt) = find_option(current_options, arg) {
-                if opt.args.is_some() && arg_idx + 1 < args.len() {
+                if opt.args.is_some() && !arg.contains('=') && arg_idx + 1 < args.len() {
                     arg_idx += 2;
                     continue;
                 }
@@ -418,7 +420,11 @@ fn collect_generators(
 }
 
 fn find_option<'a>(options: &'a [OptionSpec], flag: &str) -> Option<&'a OptionSpec> {
-    options.iter().find(|o| o.name.iter().any(|n| n == flag))
+    // Strip `=value` suffix so `--flag=value` matches an option named `--flag`.
+    let base_flag = flag.split_once('=').map_or(flag, |(base, _)| base);
+    options
+        .iter()
+        .find(|o| o.name.iter().any(|n| n == base_flag))
 }
 
 /// Walk all generators in a spec tree, validate their transform pipelines,
@@ -1149,6 +1155,29 @@ mod tests {
             0,
             "invalid generator in subcommand should be removed"
         );
+    }
+
+    #[test]
+    fn test_find_option_with_equals_value() {
+        let options = vec![OptionSpec {
+            name: vec!["--output".into(), "-o".into()],
+            description: Some("Output format".into()),
+            args: Some(ArgSpec {
+                name: Some("format".into()),
+                description: None,
+                generators: vec![],
+                template: None,
+                suggestions: None,
+            }),
+        }];
+        // Exact match
+        assert!(find_option(&options, "--output").is_some());
+        // With =value suffix
+        assert!(find_option(&options, "--output=json").is_some());
+        // Short flag still works
+        assert!(find_option(&options, "-o").is_some());
+        // Non-existent
+        assert!(find_option(&options, "--format").is_none());
     }
 
     #[test]
