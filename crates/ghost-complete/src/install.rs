@@ -1174,6 +1174,7 @@ const DEFAULT_CONFIG_TOML: &str = "\
 # [trigger]
 # auto_chars = [' ', '/', '-', '.']
 # delay_ms = 150
+# auto_trigger = true  # Set to false to disable all automatic triggers (manual keybinding only)
 
 # [popup]
 # max_visible = 10

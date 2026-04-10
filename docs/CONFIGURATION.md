@@ -14,11 +14,13 @@ Controls when the autocomplete popup appears.
 |-------|------|---------|-------------|
 | `auto_chars` | char[] | `[' ', '/', '-', '.']` | Characters that trigger suggestion after typing |
 | `delay_ms` | integer | `150` | Milliseconds to wait after typing pauses before showing suggestions. Set to `0` to disable debounce (trigger immediately). |
+| `auto_trigger` | boolean | `true` | When `false`, disables all automatic popup triggers (debounce + `auto_chars`). Only the manual keybinding opens the popup. |
 
 ```toml
 [trigger]
 auto_chars = [' ', '/', '-', '.']
 delay_ms = 150
+auto_trigger = true
 ```
 
 ### `[popup]`
@@ -237,6 +239,7 @@ match_highlight = "underline"
 | `[keybindings]` | All fields | Yes |
 | `[trigger]` | `auto_chars` | Yes |
 | `[trigger]` | `delay_ms` | No |
+| `[trigger]` | `auto_trigger` | Yes |
 | `[popup]` | `max_visible` | Yes |
 | `[suggest]` | All fields | No |
 | `[suggest.providers]` | All fields | No |
