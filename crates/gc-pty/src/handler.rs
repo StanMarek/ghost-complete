@@ -1296,6 +1296,57 @@ mod tests {
         assert_eq!(handler.trigger_chars, expected);
     }
 
+    // --- auto_trigger tests ---
+
+    #[test]
+    fn test_auto_trigger_false_suppresses_trigger_on_space() {
+        let mut handler = make_handler().with_auto_trigger(false);
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        handler.process_key(&KeyEvent::Printable(' '), &parser, &mut buf);
+        assert!(!handler.has_pending_trigger());
+    }
+
+    #[test]
+    fn test_auto_trigger_false_allows_manual_trigger() {
+        let mut handler = make_handler().with_auto_trigger(false);
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        handler.process_key(&KeyEvent::CtrlSlash, &parser, &mut buf);
+        // Manual trigger fires immediately — not gated by auto_trigger
+        assert!(!handler.has_pending_trigger());
+    }
+
+    #[test]
+    fn test_auto_trigger_false_suppresses_trigger_on_all_auto_chars() {
+        let mut handler = make_handler().with_auto_trigger(false);
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        for c in [' ', '/', '-', '.'] {
+            handler.process_key(&KeyEvent::Printable(c), &parser, &mut buf);
+            assert!(
+                !handler.has_pending_trigger(),
+                "auto_trigger=false should suppress trigger on '{c}'"
+            );
+        }
+    }
+
+    #[test]
+    fn test_update_config_sets_auto_trigger_false() {
+        let mut handler = make_handler();
+        assert!(handler.auto_trigger_enabled());
+
+        handler.update_config(
+            PopupTheme::default(),
+            Keybindings::default(),
+            &[' ', '/', '-', '.'],
+            10,
+            false,
+        );
+
+        assert!(!handler.auto_trigger_enabled());
+    }
+
     // --- Debounce suppression tests ---
 
     #[test]

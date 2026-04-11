@@ -14,7 +14,7 @@ Controls when the autocomplete popup appears.
 |-------|------|---------|-------------|
 | `auto_chars` | char[] | `[' ', '/', '-', '.']` | Characters that trigger suggestion after typing |
 | `delay_ms` | integer | `150` | Milliseconds to wait after typing pauses before showing suggestions. Set to `0` to disable debounce (trigger immediately). |
-| `auto_trigger` | boolean | `true` | When `false`, disables all automatic popup triggers (debounce + `auto_chars`). Only the manual keybinding opens the popup. |
+| `auto_trigger` | boolean | `true` | When `false`, disables all automatic popup triggers. Only the manual keybinding opens the popup. |
 
 ```toml
 [trigger]

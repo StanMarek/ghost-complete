@@ -351,7 +351,9 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                     let mut h = handler_for_stdout.lock().unwrap();
                     if h.has_pending_trigger() {
                         h.clear_trigger_request();
-                        h.trigger(&parser_for_stdout, &mut render_buf);
+                        if h.auto_trigger_enabled() {
+                            h.trigger(&parser_for_stdout, &mut render_buf);
+                        }
                     } else if delay_ms > 0
                         && h.auto_trigger_enabled()
                         && !h.is_debounce_suppressed()
@@ -366,8 +368,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 }
             }
 
-            // CD chaining: auto-trigger suggestions when CWD changes (OSC 7).
-            // No has_pending_trigger() gate — CWD change is unconditional.
+            // CD chaining: trigger suggestions on CWD change (OSC 7), gated by auto_trigger.
             let cwd_dirty = {
                 let mut p = parser_for_stdout.lock().unwrap();
                 p.state_mut().take_cwd_dirty()
@@ -506,7 +507,7 @@ async fn debounce_loop(
                     continue;
                 }
             };
-            if h.is_debounce_suppressed() {
+            if h.is_debounce_suppressed() || !h.auto_trigger_enabled() {
                 continue;
             }
             h.trigger(&parser, &mut render_buf);
