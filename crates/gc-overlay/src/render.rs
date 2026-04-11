@@ -311,8 +311,7 @@ pub fn render_popup(
         // reports PUA icons as 1 column but they may render as 2. If the
         // actual glyph width differs from GUTTER_COLS, format_item's
         // output is off by 1 column. This move_to guarantees alignment.
-        let scrollbar_col =
-            border_col + (if theme.borders { 1 } else { 0 }) + item_width;
+        let scrollbar_col = border_col + (if theme.borders { 1 } else { 0 }) + item_width;
 
         if needs_scrollbar {
             ansi::move_to(buf, row, scrollbar_col);
