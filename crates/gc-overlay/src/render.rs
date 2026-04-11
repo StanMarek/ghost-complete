@@ -452,12 +452,12 @@ pub fn clear_popup(buf: &mut Vec<u8>, layout: &PopupLayout, profile: &TerminalPr
 
 /// Strip control characters (including ESC) from text to prevent ANSI injection
 /// via malicious filenames, git branches, or other suggestion sources.
-fn sanitize_display_text(text: &str) -> String {
+pub(crate) fn sanitize_display_text(text: &str) -> String {
     text.chars().filter(|c| !c.is_control()).collect()
 }
 
 /// Nerd Font icon character for the gutter of a given suggestion kind.
-fn kind_icon(kind: SuggestionKind) -> char {
+pub(crate) fn kind_icon(kind: SuggestionKind) -> char {
     match kind {
         SuggestionKind::Command => '\u{F120}',    // nf-fa-terminal
         SuggestionKind::Subcommand => '\u{F0DA}', // nf-fa-chevron_right
@@ -516,7 +516,7 @@ fn write_padding(buf: &mut Vec<u8>, n: usize) {
 /// The result is indexed against `sanitized_display_text` and is already
 /// sorted (we walk left-to-right), so the caller can `binary_search` it
 /// directly.
-fn translate_match_indices(
+pub(crate) fn translate_match_indices(
     raw_basename: &str,
     sanitized_display_text: &str,
     prefix_char_count: usize,
