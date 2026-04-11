@@ -1,3 +1,5 @@
+<div align="center">
+
 # Ghost Complete
 
 **Terminal-native autocomplete engine using PTY proxying for macOS terminals.**
@@ -8,24 +10,24 @@
 
 https://github.com/user-attachments/assets/5b6a4384-7cf8-4088-9630-3ddf0ff0e93c
 
+</div>
 
-
-## What is this?
+## Overview
 
 Ghost Complete sits inside your terminal's data stream as a PTY proxy, intercepting I/O between your terminal emulator and your shell. When you type a command, it renders autocomplete suggestions as native ANSI popups — no macOS Accessibility API, no IME hacks, no Electron overlay. Just your terminal, your shell, and fast completions.
 
-Inspired by [Fig](https://fig.io) (RIP). Built from scratch in Rust.
+Inspired by the [Fig](https://fig.io) autocomplete experience. Built from scratch in Rust.
 
 ## Status
 
-This is a personal project I built for my own workflow. I'm happy to share it and welcome contributions, but set your expectations accordingly:
+Ghost Complete is under active development. Contributions and bug reports are welcome.
 
-- **Supports 7 terminals on macOS:** Ghostty, Kitty, WezTerm, Alacritty, Rio, iTerm2, and Terminal.app. All work out of the box — no config flag needed.
-- **zsh is the primary tested shell.** Bash and fish have manual trigger only (Ctrl+/), no auto-trigger on typing.
-- **No stability guarantees.** Config format, spec format, and behavior may change between releases.
+- **7 supported terminals on macOS:** Ghostty, Kitty, WezTerm, Alacritty, Rio, iTerm2, and Terminal.app — all work out of the box with no additional configuration.
+- **zsh is the primary shell.** Bash and fish support manual trigger only (Ctrl+/).
 - **macOS only.** No Linux or Windows support planned at this time.
+- **Pre-1.0.** Config format, spec format, and behavior may change between releases.
 
-If you hit a bug, [open an issue](https://github.com/StanMarek/ghost-complete/issues). I'll fix what I can.
+Found a bug? [Open an issue](https://github.com/StanMarek/ghost-complete/issues).
 
 ## Requirements
 
@@ -223,3 +225,13 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 ## License
 
 [MIT](LICENSE)
+
+---
+
+<div align="center">
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=StanMarek/ghost-complete&type=Date)](https://star-history.com/#StanMarek/ghost-complete&Date)
+
+</div>
