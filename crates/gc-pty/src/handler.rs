@@ -106,6 +106,7 @@ pub struct InputHandler {
     max_visible: usize,
     trigger_chars: HashSet<char>,
     debounce_suppressed: bool,
+    auto_trigger: bool,
     keybindings: Keybindings,
     theme: PopupTheme,
     dynamic_rx: Option<mpsc::Receiver<Vec<Suggestion>>>,
@@ -129,6 +130,7 @@ impl InputHandler {
             max_visible: DEFAULT_MAX_VISIBLE,
             trigger_chars: DEFAULT_TRIGGER_CHARS.iter().copied().collect(),
             debounce_suppressed: false,
+            auto_trigger: true,
             keybindings: Keybindings::default(),
             theme: PopupTheme::default(),
             dynamic_rx: None,
@@ -149,6 +151,11 @@ impl InputHandler {
 
     pub fn with_trigger_chars(mut self, chars: &[char]) -> Self {
         self.trigger_chars = chars.iter().copied().collect();
+        self
+    }
+
+    pub fn with_auto_trigger(mut self, auto_trigger: bool) -> Self {
+        self.auto_trigger = auto_trigger;
         self
     }
 
@@ -191,17 +198,37 @@ impl InputHandler {
 
     /// Update runtime-configurable fields without restarting the proxy.
     /// Called by the config file watcher when config.toml changes on disk.
+    /// Returns cleanup bytes to write to stdout (e.g. popup clear on auto_trigger toggle).
     pub fn update_config(
         &mut self,
         theme: PopupTheme,
         keybindings: Keybindings,
         trigger_chars: &[char],
         max_visible: usize,
-    ) {
+        auto_trigger: bool,
+    ) -> Vec<u8> {
+        let mut cleanup = Vec::new();
+
+        // If auto_trigger is being disabled while popup is visible, clear it.
+        if self.auto_trigger && !auto_trigger && self.visible {
+            if let Some(ref layout) = self.last_layout {
+                clear_popup(&mut cleanup, layout, &self.terminal_profile);
+            }
+            self.visible = false;
+            self.suggestions.clear();
+            self.overlay.reset();
+            self.last_layout = None;
+            self.dynamic_rx = None;
+            self.trigger_requested = false;
+        }
+
         self.theme = theme;
         self.keybindings = keybindings;
         self.trigger_chars = trigger_chars.iter().copied().collect();
         self.max_visible = max_visible;
+        self.auto_trigger = auto_trigger;
+
+        cleanup
     }
 
     #[allow(dead_code)]
@@ -219,6 +246,10 @@ impl InputHandler {
 
     pub fn is_debounce_suppressed(&self) -> bool {
         self.debounce_suppressed
+    }
+
+    pub fn auto_trigger_enabled(&self) -> bool {
+        self.auto_trigger
     }
 
     /// Process a single key event. Returns the raw bytes to forward to the PTY,
@@ -401,7 +432,7 @@ impl InputHandler {
             KeyEvent::Printable(c) => {
                 self.debounce_suppressed = false;
                 let forward = vec![*c as u8];
-                if self.trigger_chars.contains(c) {
+                if self.auto_trigger && self.trigger_chars.contains(c) {
                     // Defer trigger to Task B after shell processes the keystroke
                     self.trigger_requested = true;
                 }
@@ -861,6 +892,7 @@ mod tests {
             max_visible: DEFAULT_MAX_VISIBLE,
             trigger_chars: DEFAULT_TRIGGER_CHARS.iter().copied().collect(),
             debounce_suppressed: false,
+            auto_trigger: true,
             keybindings: Keybindings::default(),
             theme: PopupTheme::default(),
             dynamic_rx: None,
@@ -1227,7 +1259,7 @@ mod tests {
             borders: true,
         };
 
-        handler.update_config(new_theme, Keybindings::default(), &[' ', '/'], 15);
+        handler.update_config(new_theme, Keybindings::default(), &[' ', '/'], 15, true);
 
         assert_eq!(handler.theme.selected_on, vec![0x1B, b'[', b'1', b'm']);
         assert_eq!(handler.theme.description_on, vec![0x1B, b'[', b'2', b'm']);
@@ -1246,7 +1278,7 @@ mod tests {
             trigger: KeyEvent::Tab,
         };
 
-        handler.update_config(PopupTheme::default(), new_kb.clone(), &[' ', '/'], 10);
+        handler.update_config(PopupTheme::default(), new_kb.clone(), &[' ', '/'], 10, true);
 
         assert_eq!(handler.keybindings, new_kb);
     }
@@ -1260,6 +1292,7 @@ mod tests {
             Keybindings::default(),
             &['@', '#'],
             20,
+            true,
         );
 
         assert_eq!(handler.max_visible, 20);
@@ -1274,10 +1307,106 @@ mod tests {
             Keybindings::default(),
             &['@', '#', '!'],
             10,
+            true,
         );
 
         let expected: HashSet<char> = ['@', '#', '!'].iter().copied().collect();
         assert_eq!(handler.trigger_chars, expected);
+    }
+
+    // --- auto_trigger tests ---
+
+    #[test]
+    fn test_auto_trigger_false_suppresses_trigger_on_space() {
+        let mut handler = make_handler().with_auto_trigger(false);
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        handler.process_key(&KeyEvent::Printable(' '), &parser, &mut buf);
+        assert!(!handler.has_pending_trigger());
+    }
+
+    #[test]
+    fn test_auto_trigger_false_allows_manual_trigger() {
+        let mut handler = make_handler().with_auto_trigger(false);
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        handler.process_key(&KeyEvent::CtrlSlash, &parser, &mut buf);
+        // Manual trigger fires immediately — not gated by auto_trigger
+        assert!(!handler.has_pending_trigger());
+    }
+
+    #[test]
+    fn test_auto_trigger_false_suppresses_trigger_on_all_auto_chars() {
+        let mut handler = make_handler().with_auto_trigger(false);
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        for c in [' ', '/', '-', '.'] {
+            handler.process_key(&KeyEvent::Printable(c), &parser, &mut buf);
+            assert!(
+                !handler.has_pending_trigger(),
+                "auto_trigger=false should suppress trigger on '{c}'"
+            );
+        }
+    }
+
+    #[test]
+    fn test_update_config_sets_auto_trigger_false() {
+        let mut handler = make_handler();
+        assert!(handler.auto_trigger_enabled());
+
+        handler.update_config(
+            PopupTheme::default(),
+            Keybindings::default(),
+            &[' ', '/', '-', '.'],
+            10,
+            false,
+        );
+
+        assert!(!handler.auto_trigger_enabled());
+    }
+
+    #[test]
+    fn test_update_config_dismisses_popup_on_auto_trigger_disable() {
+        let suggestion = Suggestion {
+            text: "test".into(),
+            ..Default::default()
+        };
+        let mut handler = make_visible_handler(vec![suggestion]);
+        assert!(handler.is_visible());
+        assert!(handler.auto_trigger_enabled());
+
+        let cleanup = handler.update_config(
+            PopupTheme::default(),
+            Keybindings::default(),
+            &[' ', '/', '-', '.'],
+            10,
+            false,
+        );
+
+        assert!(!handler.is_visible());
+        assert!(!handler.auto_trigger_enabled());
+        assert!(!cleanup.is_empty(), "should emit popup clear sequences");
+    }
+
+    #[test]
+    fn test_update_config_keeps_popup_when_auto_trigger_stays_true() {
+        let suggestion = Suggestion {
+            text: "test".into(),
+            ..Default::default()
+        };
+        let mut handler = make_visible_handler(vec![suggestion]);
+        assert!(handler.is_visible());
+
+        let cleanup = handler.update_config(
+            PopupTheme::default(),
+            Keybindings::default(),
+            &[' ', '/', '-', '.'],
+            10,
+            true,
+        );
+
+        assert!(handler.is_visible());
+        assert!(cleanup.is_empty(), "no cleanup when auto_trigger unchanged");
     }
 
     // --- Debounce suppression tests ---

@@ -60,6 +60,7 @@ impl Default for KeybindingsConfig {
 pub struct TriggerConfig {
     pub auto_chars: Vec<char>,
     pub delay_ms: u64,
+    pub auto_trigger: bool,
 }
 
 impl Default for TriggerConfig {
@@ -67,6 +68,7 @@ impl Default for TriggerConfig {
         Self {
             auto_chars: vec![' ', '/', '-', '.'],
             delay_ms: 150,
+            auto_trigger: true,
         }
     }
 }
@@ -264,6 +266,7 @@ mod tests {
         let config = GhostConfig::default();
         assert_eq!(config.trigger.auto_chars, vec![' ', '/', '-', '.']);
         assert_eq!(config.trigger.delay_ms, 150);
+        assert!(config.trigger.auto_trigger);
         assert_eq!(config.popup.max_visible, 10);
         assert_eq!(config.suggest.max_results, 50);
         assert_eq!(config.suggest.max_history_results, 5);
@@ -571,5 +574,24 @@ max_visible = 5
 "#;
         let config: GhostConfig = toml::from_str(toml_str).unwrap();
         assert!(!config.experimental.multi_terminal);
+    }
+
+    #[test]
+    fn test_auto_trigger_defaults_to_true() {
+        let config = GhostConfig::default();
+        assert!(config.trigger.auto_trigger);
+    }
+
+    #[test]
+    fn test_auto_trigger_false_from_toml() {
+        let toml_str = r#"
+[trigger]
+auto_trigger = false
+"#;
+        let config: GhostConfig = toml::from_str(toml_str).unwrap();
+        assert!(!config.trigger.auto_trigger);
+        // Other trigger defaults preserved
+        assert_eq!(config.trigger.auto_chars, vec![' ', '/', '-', '.']);
+        assert_eq!(config.trigger.delay_ms, 150);
     }
 }
