@@ -25,9 +25,9 @@ pub fn render(frame: &mut Frame, app: &App) {
     let horizontal = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
-            Constraint::Length(18),
-            Constraint::Min(30),
-            Constraint::Length(45),
+            Constraint::Length(16),
+            Constraint::Fill(2),
+            Constraint::Fill(3),
         ])
         .split(main_area);
 
