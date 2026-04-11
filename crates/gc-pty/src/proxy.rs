@@ -614,7 +614,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
         h.abort();
     }
     if let Some(h) = config_watcher_handle {
-        h.abort();
+        h.shutdown();
     }
 
     // Note: we do NOT clean up `tmux setenv GHOST_COMPLETE_ACTIVE` on exit.

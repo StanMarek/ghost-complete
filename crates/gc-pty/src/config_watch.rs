@@ -5,8 +5,9 @@
 
 use std::io::Write;
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use anyhow::Result;
 use gc_config::GhostConfig;
@@ -14,6 +15,23 @@ use gc_overlay::{parse_style, PopupTheme};
 use notify::{EventKind, RecursiveMode, Watcher};
 
 use crate::handler::{InputHandler, Keybindings};
+
+/// Handle returned by [`spawn_config_watcher`] that allows the caller to
+/// signal the watcher thread to shut down.
+pub struct ConfigWatcherHandle {
+    shutdown: Arc<AtomicBool>,
+    join: tokio::task::JoinHandle<()>,
+}
+
+impl ConfigWatcherHandle {
+    /// Signal the watcher thread to exit and abort the wrapping task.
+    /// The blocking thread checks the flag on each `recv_timeout` cycle
+    /// (≤500ms), so it will terminate promptly after this call.
+    pub fn shutdown(&self) {
+        self.shutdown.store(true, Ordering::Release);
+        self.join.abort();
+    }
+}
 
 /// Spawn a background task that watches `config_path` for modifications and
 /// hot-reloads runtime-configurable fields into the handler.
@@ -27,7 +45,7 @@ use crate::handler::{InputHandler, Keybindings};
 pub fn spawn_config_watcher(
     config_path: PathBuf,
     handler: Arc<Mutex<InputHandler>>,
-) -> Result<tokio::task::JoinHandle<()>> {
+) -> Result<ConfigWatcherHandle> {
     let (tx, rx) = std::sync::mpsc::channel::<notify::Result<notify::Event>>();
 
     let watch_dir = config_path
@@ -43,13 +61,27 @@ pub fn spawn_config_watcher(
         .map(|f| f.to_os_string())
         .unwrap_or_default();
 
-    let handle = tokio::task::spawn_blocking(move || {
+    let shutdown = Arc::new(AtomicBool::new(false));
+    let shutdown_clone = Arc::clone(&shutdown);
+
+    let join = tokio::task::spawn_blocking(move || {
         // Keep watcher alive for the lifetime of this blocking task.
         let _watcher = watcher;
         let mut last_reload = Instant::now() - std::time::Duration::from_secs(1);
-        let debounce = std::time::Duration::from_millis(200);
+        let debounce = Duration::from_millis(200);
+        let poll_interval = Duration::from_millis(500);
 
-        for event_result in rx {
+        loop {
+            // Check shutdown flag before blocking on recv
+            if shutdown_clone.load(Ordering::Acquire) {
+                break;
+            }
+
+            let event_result = match rx.recv_timeout(poll_interval) {
+                Ok(result) => result,
+                Err(std::sync::mpsc::RecvTimeoutError::Timeout) => continue,
+                Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => break,
+            };
             let event = match event_result {
                 Ok(e) => e,
                 Err(e) => {
@@ -158,7 +190,7 @@ pub fn spawn_config_watcher(
         }
     });
 
-    Ok(handle)
+    Ok(ConfigWatcherHandle { shutdown, join })
 }
 
 /// Build a `PopupTheme` from a [`gc_config::ResolvedTheme`] (preset merged
