@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-04-11
+
+### Added
+
+- **`auto_trigger` config flag** — disables all automatic triggers (debounce, auto_chars, CWD change) when set to `false`. Only manual keybinding (Ctrl+/) works. Hot-reloadable — toggling false while the popup is visible dismisses it and clears stale state.
+
+### Fixed
+
+- **CPR response forwarding for Atuin and other PTY programs** — ghost-complete was consuming all Cursor Position Report responses, starving programs like Atuin/crossterm that send their own CSI 6n requests. Now tracks pending CPR count and only consumes responses to its own requests, forwarding the rest through the PTY.
+
 ## [0.6.1] - 2026-04-04
 
 ### Fixed
@@ -255,6 +265,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Shell integration** for zsh (full), bash (Ctrl+/), and fish (Ctrl+/)
 - **`validate-specs` subcommand** with colored output and item counts
 
+[0.7.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.7.0
 [0.6.1]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.6.1
 [0.6.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.6.0
 [0.5.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.5.0

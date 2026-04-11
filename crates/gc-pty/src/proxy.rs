@@ -172,6 +172,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
             .with_theme(theme)
             .with_popup_config(config.popup.max_visible)
             .with_trigger_chars(&config.trigger.auto_chars)
+            .with_auto_trigger(config.trigger.auto_trigger)
             .with_suggest_config(
                 config.suggest.max_results,
                 config.suggest.providers.commands,
@@ -476,8 +477,13 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                     };
                     if h.has_pending_trigger() {
                         h.clear_trigger_request();
-                        h.trigger(&parser_for_stdout, &mut render_buf);
-                    } else if delay_ms > 0 && !h.is_debounce_suppressed() {
+                        if h.auto_trigger_enabled() {
+                            h.trigger(&parser_for_stdout, &mut render_buf);
+                        }
+                    } else if delay_ms > 0
+                        && h.auto_trigger_enabled()
+                        && !h.is_debounce_suppressed()
+                    {
                         debounce_notify_b.notify_one();
                     }
                 }
@@ -488,8 +494,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 }
             }
 
-            // CD chaining: auto-trigger suggestions when CWD changes (OSC 7).
-            // No has_pending_trigger() gate — CWD change is unconditional.
+            // CD chaining: trigger suggestions on CWD change (OSC 7), gated by auto_trigger.
             let cwd_dirty = {
                 match parser_for_stdout.lock() {
                     Ok(mut p) => p.state_mut().take_cwd_dirty(),
@@ -510,7 +515,9 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                             break;
                         }
                     };
-                    h.trigger(&parser_for_stdout, &mut render_buf);
+                    if h.auto_trigger_enabled() {
+                        h.trigger(&parser_for_stdout, &mut render_buf);
+                    }
                 }
                 if !render_buf.is_empty() {
                     let mut stdout = std::io::stdout().lock();
@@ -654,7 +661,7 @@ async fn debounce_loop(
                     continue;
                 }
             };
-            if h.is_debounce_suppressed() {
+            if h.is_debounce_suppressed() || !h.auto_trigger_enabled() {
                 continue;
             }
             h.trigger(&parser, &mut render_buf);

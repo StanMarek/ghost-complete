@@ -3,6 +3,7 @@
 //! Watches `config.toml` for modifications and live-updates the handler's
 //! theme, keybindings, trigger chars, and popup dimensions without restarting.
 
+use std::io::Write;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
@@ -124,7 +125,7 @@ pub fn spawn_config_watcher(config_path: PathBuf, handler: Arc<Mutex<InputHandle
             };
 
             // Apply to handler
-            {
+            let cleanup = {
                 let mut h = match handler.lock() {
                     Ok(h) => h,
                     Err(e) => {
@@ -137,7 +138,13 @@ pub fn spawn_config_watcher(config_path: PathBuf, handler: Arc<Mutex<InputHandle
                     keybindings,
                     &config.trigger.auto_chars,
                     config.popup.max_visible,
-                );
+                    config.trigger.auto_trigger,
+                )
+            };
+            if !cleanup.is_empty() {
+                let mut stdout = std::io::stdout().lock();
+                let _ = stdout.write_all(&cleanup);
+                let _ = stdout.flush();
             }
 
             tracing::info!("config reloaded successfully");
