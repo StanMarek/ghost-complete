@@ -198,6 +198,7 @@ impl InputHandler {
 
     /// Update runtime-configurable fields without restarting the proxy.
     /// Called by the config file watcher when config.toml changes on disk.
+    /// Returns cleanup bytes to write to stdout (e.g. popup clear on auto_trigger toggle).
     pub fn update_config(
         &mut self,
         theme: PopupTheme,
@@ -205,12 +206,29 @@ impl InputHandler {
         trigger_chars: &[char],
         max_visible: usize,
         auto_trigger: bool,
-    ) {
+    ) -> Vec<u8> {
+        let mut cleanup = Vec::new();
+
+        // If auto_trigger is being disabled while popup is visible, clear it.
+        if self.auto_trigger && !auto_trigger && self.visible {
+            if let Some(ref layout) = self.last_layout {
+                clear_popup(&mut cleanup, layout, &self.terminal_profile);
+            }
+            self.visible = false;
+            self.suggestions.clear();
+            self.overlay.reset();
+            self.last_layout = None;
+            self.dynamic_rx = None;
+            self.trigger_requested = false;
+        }
+
         self.theme = theme;
         self.keybindings = keybindings;
         self.trigger_chars = trigger_chars.iter().copied().collect();
         self.max_visible = max_visible;
         self.auto_trigger = auto_trigger;
+
+        cleanup
     }
 
     #[allow(dead_code)]
@@ -1345,6 +1363,50 @@ mod tests {
         );
 
         assert!(!handler.auto_trigger_enabled());
+    }
+
+    #[test]
+    fn test_update_config_dismisses_popup_on_auto_trigger_disable() {
+        let suggestion = Suggestion {
+            text: "test".into(),
+            ..Default::default()
+        };
+        let mut handler = make_visible_handler(vec![suggestion]);
+        assert!(handler.is_visible());
+        assert!(handler.auto_trigger_enabled());
+
+        let cleanup = handler.update_config(
+            PopupTheme::default(),
+            Keybindings::default(),
+            &[' ', '/', '-', '.'],
+            10,
+            false,
+        );
+
+        assert!(!handler.is_visible());
+        assert!(!handler.auto_trigger_enabled());
+        assert!(!cleanup.is_empty(), "should emit popup clear sequences");
+    }
+
+    #[test]
+    fn test_update_config_keeps_popup_when_auto_trigger_stays_true() {
+        let suggestion = Suggestion {
+            text: "test".into(),
+            ..Default::default()
+        };
+        let mut handler = make_visible_handler(vec![suggestion]);
+        assert!(handler.is_visible());
+
+        let cleanup = handler.update_config(
+            PopupTheme::default(),
+            Keybindings::default(),
+            &[' ', '/', '-', '.'],
+            10,
+            true,
+        );
+
+        assert!(handler.is_visible());
+        assert!(cleanup.is_empty(), "no cleanup when auto_trigger unchanged");
     }
 
     // --- Debounce suppression tests ---
