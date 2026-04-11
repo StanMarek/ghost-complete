@@ -41,6 +41,16 @@ impl SuggestionKind {
             Self::GitRemote => 2,
             Self::Subcommand => 3,
             Self::Flag => 4,
+            // EnvVar and Command intentionally share priority 5 — they are
+            // peers in the hierarchy (both are "things the user can invoke or
+            // reference at arg position"), and neither should outrank the
+            // other by kind alone. Downstream in `rank_with_history`, the
+            // sort chain is: history-bucket → fuzzy score (desc) → this
+            // priority → text (alphabetic). By the time this tie is reached,
+            // fuzzy scores are already equal, so the final order falls out
+            // alphabetically by text — which is the intended behavior.
+            // Picking different numbers here is a behavior change, not a
+            // code-quality fix.
             Self::EnvVar => 5,
             Self::Command => 5,
             Self::Directory => 6,

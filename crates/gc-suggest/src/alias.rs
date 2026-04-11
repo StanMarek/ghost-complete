@@ -1,4 +1,85 @@
+//! Shell alias loading.
+//!
+//! Aliases let the engine resolve `g` → `git`, `gco` → `git checkout` so that
+//! a user-customized command lands the right spec lookup. The slow-path probe
+//! shells out (`zsh -c alias`) which can take 300–500ms with oh-my-zsh on a
+//! cold start — well over the documented <100ms startup budget. To stay under
+//! budget the [`AliasStore`] returned at startup is empty and a background
+//! thread runs the probe; the first few keystrokes after launch may not see
+//! alias expansion. Once the background thread completes, every subsequent
+//! suggestion request will see the aliases as soon as the write lock is
+//! released. See audit MED-24.
+
 use std::collections::HashMap;
+use std::sync::{Arc, RwLock};
+
+/// Lazy alias map populated by a background loader.
+///
+/// Reads (`get`) take a non-blocking [`RwLock`] read guard so concurrent
+/// suggestion lookups never serialize against each other. The single
+/// background loader thread takes the write lock briefly, just long enough
+/// to swap in the populated map.
+#[derive(Clone, Default)]
+pub struct AliasStore {
+    inner: Arc<RwLock<HashMap<String, String>>>,
+}
+
+impl AliasStore {
+    /// Construct a store and immediately spawn a background thread to run
+    /// [`load_shell_aliases`]. The store is observable as empty until the
+    /// thread completes — this is a deliberate trade-off so startup never
+    /// blocks on a slow shell probe (audit MED-24).
+    pub fn load_async() -> Self {
+        let store = Self::default();
+        let inner = Arc::clone(&store.inner);
+        std::thread::spawn(move || {
+            let started = std::time::Instant::now();
+            let map = load_shell_aliases();
+            let count = map.len();
+            {
+                let mut guard = inner.write().unwrap_or_else(|e| e.into_inner());
+                *guard = map;
+            }
+            tracing::info!(
+                "loaded {count} shell aliases in {}ms (background)",
+                started.elapsed().as_millis()
+            );
+        });
+        store
+    }
+
+    /// Build an empty store with no background load. Used by tests and the
+    /// `with_providers` engine constructor.
+    pub fn empty() -> Self {
+        Self::default()
+    }
+
+    /// Look up an alias and return the resolved command name. Returns `None`
+    /// if the alias isn't known *or* if the background loader hasn't filled
+    /// the store yet.
+    pub fn get(&self, name: &str) -> Option<String> {
+        let guard = self.inner.read().unwrap_or_else(|e| e.into_inner());
+        guard.get(name).cloned()
+    }
+
+    /// Number of aliases currently in the store.
+    pub fn len(&self) -> usize {
+        self.inner.read().unwrap_or_else(|e| e.into_inner()).len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    /// Test/fixture helper — synchronously install a pre-built map. Mirrors
+    /// what the background loader does on completion. Crate-private so
+    /// production code keeps using `load_async`.
+    #[cfg(test)]
+    pub(crate) fn populate(&self, map: HashMap<String, String>) {
+        let mut guard = self.inner.write().unwrap_or_else(|e| e.into_inner());
+        *guard = map;
+    }
+}
 
 /// Parse shell alias definitions into a map from alias name to resolved command.
 ///
@@ -129,7 +210,7 @@ pub fn load_shell_aliases() -> HashMap<String, String> {
         }
     }
 
-    tracing::debug!("no aliases loaded from any source");
+    tracing::warn!("no aliases loaded from any source");
     HashMap::new()
 }
 
@@ -195,5 +276,37 @@ alias ll='ls -la'
         let output = "not an alias line\n";
         let aliases = parse_aliases(output);
         assert!(aliases.is_empty());
+    }
+
+    #[test]
+    fn alias_store_starts_empty_then_fills() {
+        // Models the production async-fill flow: at startup the store is
+        // empty so suggestion lookups return None; once the background
+        // loader populates it (`populate` here stands in for what the
+        // background thread does), the same lookups must hit.
+        let store = AliasStore::empty();
+        assert!(store.is_empty(), "fresh store must be empty");
+        assert_eq!(store.get("gco"), None);
+
+        let mut map = HashMap::new();
+        map.insert("gco".to_string(), "git".to_string());
+        map.insert("k".to_string(), "kubectl".to_string());
+        store.populate(map);
+
+        assert_eq!(store.len(), 2);
+        assert_eq!(store.get("gco"), Some("git".to_string()));
+        assert_eq!(store.get("k"), Some("kubectl".to_string()));
+        assert_eq!(store.get("not-an-alias"), None);
+    }
+
+    #[test]
+    fn alias_store_clones_share_storage() {
+        // Cloning the store must alias the same backing map — otherwise
+        // two callers (e.g. the engine and a future cache invalidator)
+        // would observe divergent state once the loader fills.
+        let store = AliasStore::empty();
+        let store2 = store.clone();
+        store.populate(HashMap::from([("g".to_string(), "git".to_string())]));
+        assert_eq!(store2.get("g"), Some("git".to_string()));
     }
 }

@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use unicode_width::UnicodeWidthChar;
 use vte::Perform;
 
 use crate::state::TerminalState;
@@ -15,8 +16,9 @@ fn csi_param(params: &vte::Params, index: usize, default: u16) -> u16 {
 }
 
 impl Perform for TerminalState {
-    fn print(&mut self, _c: char) {
-        self.advance_col(1);
+    fn print(&mut self, c: char) {
+        let width = UnicodeWidthChar::width(c).unwrap_or(1) as u16;
+        self.advance_col(width);
     }
 
     fn execute(&mut self, byte: u8) {
@@ -33,10 +35,27 @@ impl Perform for TerminalState {
         &mut self,
         params: &vte::Params,
         intermediates: &[u8],
-        _ignore: bool,
+        ignore: bool,
         action: char,
     ) {
-        // Ignore sequences with intermediates we don't handle (e.g. CSI ? sequences for DECSET)
+        // vte sets `ignore = true` when the sequence could not be parsed
+        // cleanly — e.g., parameter list overflowed `MAX_PARAMS` (currently
+        // 32) or too many intermediates arrived. Applying a truncated
+        // sequence would mean acting on garbage coordinates (CUP with a
+        // dropped row/col drifts the cursor), so bail before touching state.
+        if ignore {
+            return;
+        }
+        // Blanket-discard any CSI sequence carrying intermediate bytes.
+        // Examples: `CSI ? 25 h` (DECSET show cursor, intermediate `?`),
+        // `CSI ! p` (DECSTR soft reset, intermediate `!`), `CSI > c` (DA2).
+        // None of these affect the subset of state we track (cursor
+        // position, screen dimensions, prompt/cwd bookkeeping), so the
+        // cleanest handling is to ignore them entirely. This is a
+        // deliberate narrowing of the state machine, not an oversight —
+        // if a future feature ever needs to honor a specific
+        // `CSI <intermediate> <final>` sequence, it MUST pattern-match on
+        // the intermediate BEFORE this early return runs, not after.
         if !intermediates.is_empty() {
             return;
         }
@@ -94,7 +113,12 @@ impl Perform for TerminalState {
         }
     }
 
-    fn esc_dispatch(&mut self, intermediates: &[u8], _ignore: bool, byte: u8) {
+    fn esc_dispatch(&mut self, intermediates: &[u8], ignore: bool, byte: u8) {
+        // See `csi_dispatch`: honor vte's `ignore` flag so we never act on
+        // a truncated/malformed ESC sequence.
+        if ignore {
+            return;
+        }
         // DECSC/DECRC can come as ESC 7 / ESC 8 (no intermediates)
         // or as CSI ? s / CSI ? u (which we don't handle here)
         if intermediates.is_empty() {
@@ -184,11 +208,25 @@ impl Perform for TerminalState {
                 if params.len() < 3 {
                     return;
                 }
-                let cursor = std::str::from_utf8(params[1])
+                let cursor = match std::str::from_utf8(params[1])
                     .ok()
                     .and_then(|s| s.parse::<usize>().ok())
-                    .unwrap_or(0);
-                let buffer = String::from_utf8_lossy(params[2]).into_owned();
+                {
+                    Some(c) => c,
+                    None => {
+                        tracing::warn!(
+                            "OSC 7770 — invalid cursor position, skipping buffer update"
+                        );
+                        return;
+                    }
+                };
+                let buffer = match String::from_utf8(params[2].to_vec()) {
+                    Ok(s) => s,
+                    Err(_) => {
+                        tracing::warn!("OSC 7770 — invalid UTF-8 in buffer report, skipping");
+                        return;
+                    }
+                };
                 tracing::debug!(cursor, "OSC 7770 — buffer update");
                 self.set_command_buffer(buffer, cursor);
             }
@@ -213,6 +251,11 @@ impl Perform for TerminalState {
 }
 
 /// Parse a `file://{host}/{path}` URI from OSC 7 into a `PathBuf`.
+///
+/// Returns `None` if the URI is malformed, the decoded path is not absolute,
+/// or contains traversal components (`.` or `..`). Legitimate shells always
+/// report fully-resolved absolute paths in OSC 7 — traversal components in
+/// the decoded path indicate hostile input and are rejected outright.
 fn parse_osc7_path(uri: &[u8]) -> Option<PathBuf> {
     let s = std::str::from_utf8(uri).ok()?;
     let path_part = s.strip_prefix("file://")?;
@@ -220,7 +263,40 @@ fn parse_osc7_path(uri: &[u8]) -> Option<PathBuf> {
     let slash_idx = path_part.find('/')?;
     let path = &path_part[slash_idx..];
     // Percent-decode the path (handles all percent-encoded bytes)
-    Some(percent_decode_path(path))
+    let decoded = percent_decode_path(path);
+    // Reject non-absolute paths and any path with traversal components
+    validate_osc7_cwd(&decoded)
+}
+
+/// Validate an OSC 7 CWD path: must be absolute with no `.` or `..` components.
+///
+/// Rejects (returns `None`) rather than normalizes — resolving `..` would hand
+/// the attacker the exact directory they targeted. Legitimate shells never emit
+/// traversal components in CWD reports.
+///
+/// Note: `Path::components()` silently absorbs `.` on absolute paths (never
+/// yields `CurDir`), so we also check `ParentDir` via components AND `.`/`..`
+/// via raw `OsStr` path segments.
+fn validate_osc7_cwd(path: &std::path::Path) -> Option<PathBuf> {
+    use std::path::Component;
+
+    if !path.is_absolute() {
+        return None;
+    }
+    // components() catches ".." (yields ParentDir) but silently drops "."
+    for comp in path.components() {
+        if matches!(comp, Component::ParentDir) {
+            return None;
+        }
+    }
+    // Catch "." segments that components() silently normalized away
+    use std::os::unix::ffi::OsStrExt;
+    for segment in path.as_os_str().as_bytes().split(|&b| b == b'/') {
+        if segment == b"." || segment == b".." {
+            return None;
+        }
+    }
+    Some(path.to_path_buf())
 }
 
 /// Minimal percent-decoding for file paths.
@@ -278,6 +354,37 @@ mod tests {
 
     fn make_parser() -> TerminalParser {
         TerminalParser::new(24, 80)
+    }
+
+    // -- Ignore flag honoring --
+
+    #[test]
+    fn test_csi_ignore_flag_honored_on_param_overflow() {
+        // vte sets `ignore = true` on a CSI dispatch when the parameter
+        // list overflows (current MAX_PARAMS = 32 in vte 0.15). The
+        // performer MUST NOT mutate state when ignore is true, otherwise
+        // truncated-param sequences get applied with bogus coordinates.
+        let mut p = make_parser();
+        // Establish a known cursor position first.
+        p.process_bytes(b"\x1b[5;10H");
+        assert_eq!(p.state().cursor_position(), (4, 9));
+
+        // Feed a CSI CUP sequence with 200 `1;` params — well above any
+        // reasonable vte MAX_PARAMS. vte will set ignore=true on dispatch.
+        // Without honoring the ignore flag, the performer would read
+        // params[0] and params[1] and move the cursor to (0, 0).
+        let mut seq: Vec<u8> = b"\x1b[".to_vec();
+        for _ in 0..200 {
+            seq.extend_from_slice(b"1;");
+        }
+        seq.push(b'H');
+        p.process_bytes(&seq);
+
+        assert_eq!(
+            p.state().cursor_position(),
+            (4, 9),
+            "CSI dispatch with ignore=true must not mutate state"
+        );
     }
 
     // -- Basic cursor tracking --
@@ -338,6 +445,53 @@ mod tests {
         let mut p = make_parser();
         p.process_bytes(b"\t");
         assert_eq!(p.state().cursor_position(), (0, 8));
+    }
+
+    #[test]
+    fn test_print_cjk_advances_two_cols() {
+        let mut p = make_parser();
+        // CJK character '日' (U+65E5) is fullwidth — occupies 2 terminal columns
+        p.process_bytes("日".as_bytes());
+        assert_eq!(p.state().cursor_position(), (0, 2));
+    }
+
+    #[test]
+    fn test_print_mixed_ascii_cjk() {
+        let mut p = make_parser();
+        // "a日b" = 1 + 2 + 1 = 4 columns
+        p.process_bytes("a日b".as_bytes());
+        assert_eq!(p.state().cursor_position(), (0, 4));
+    }
+
+    #[test]
+    fn test_print_cjk_wraps_correctly() {
+        let mut p = TerminalParser::new(24, 5);
+        // 3 CJK chars (2 cols each) in a 5-col terminal:
+        // '日' at col 0 → occupies cols 0-1, cursor at col 2
+        // '本' at col 2 → occupies cols 2-3, cursor at col 4
+        // '語' at col 4 → needs 2 cols but only 1 left, wraps first,
+        //   then occupies row 1 cols 0-1, cursor at col 2
+        p.process_bytes("日本語".as_bytes());
+        assert_eq!(p.state().cursor_position(), (1, 2));
+    }
+
+    #[test]
+    fn test_print_cjk_exact_fit_no_early_wrap() {
+        let mut p = TerminalParser::new(24, 4);
+        // 2 CJK chars (2 cols each) in 4-col terminal — exact fit
+        // '日' cols 0-1, '本' cols 2-3, cursor wraps to (1, 0)
+        p.process_bytes("日本".as_bytes());
+        assert_eq!(p.state().cursor_position(), (1, 0));
+    }
+
+    #[test]
+    fn test_print_cjk_wrap_in_3_col_terminal() {
+        let mut p = TerminalParser::new(24, 3);
+        // '日' at col 0 → cols 0-1, cursor at col 2
+        // '本' at col 2 → needs 2 cols, only 1 left, wrap first
+        //   → row 1 cols 0-1, cursor at col 2
+        p.process_bytes("日本".as_bytes());
+        assert_eq!(p.state().cursor_position(), (1, 2));
     }
 
     // -- CSI cursor movement --
@@ -627,6 +781,60 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_osc7_path_traversal_percent_encoded_rejected() {
+        // %2e%2e decodes to ".." — must be REJECTED, not normalized
+        assert_eq!(
+            parse_osc7_path(b"file://host/home/user/%2e%2e/%2e%2e/etc/passwd"),
+            None
+        );
+    }
+
+    #[test]
+    fn test_parse_osc7_path_traversal_past_root_rejected() {
+        assert_eq!(
+            parse_osc7_path(b"file://host/%2e%2e/%2e%2e/%2e%2e/%2e%2e"),
+            None
+        );
+    }
+
+    #[test]
+    fn test_parse_osc7_path_traversal_literal_dotdot_rejected() {
+        assert_eq!(parse_osc7_path(b"file://host/a/b/../c"), None);
+    }
+
+    #[test]
+    fn test_parse_osc7_path_dot_segment_rejected() {
+        assert_eq!(parse_osc7_path(b"file://host/a/./b"), None);
+    }
+
+    #[test]
+    fn test_validate_osc7_cwd_absolute() {
+        assert_eq!(
+            validate_osc7_cwd(std::path::Path::new("/a/b/c")),
+            Some(PathBuf::from("/a/b/c"))
+        );
+    }
+
+    #[test]
+    fn test_validate_osc7_cwd_relative_rejected() {
+        assert_eq!(
+            validate_osc7_cwd(std::path::Path::new("relative/path")),
+            None
+        );
+        assert_eq!(validate_osc7_cwd(std::path::Path::new("../sneaky")), None);
+        assert_eq!(validate_osc7_cwd(std::path::Path::new("")), None);
+    }
+
+    #[test]
+    fn test_validate_osc7_cwd_traversal_rejected() {
+        assert_eq!(validate_osc7_cwd(std::path::Path::new("/a/./b/../c")), None);
+        assert_eq!(
+            validate_osc7_cwd(std::path::Path::new("/a/b/c/../../d")),
+            None
+        );
+    }
+
+    #[test]
     fn test_osc7770_sets_buffer_dirty() {
         let mut p = make_parser();
         assert!(!p.state_mut().take_buffer_dirty());
@@ -728,6 +936,33 @@ mod tests {
         );
     }
 
+    // -- OSC 7770 buffer cursor clamping --
+
+    #[test]
+    fn test_osc7770_cursor_clamped_to_buffer_length() {
+        let mut p = make_parser();
+        // cursor=9999 for a 3-char buffer — must clamp to 3
+        p.process_bytes(b"\x1b]7770;9999;abc\x07");
+        assert_eq!(p.state().command_buffer(), Some("abc"));
+        assert_eq!(p.state().buffer_cursor(), 3);
+    }
+
+    #[test]
+    fn test_osc7770_cursor_exact_length_not_clamped() {
+        let mut p = make_parser();
+        // cursor == buffer length is valid (cursor at end)
+        p.process_bytes(b"\x1b]7770;5;hello\x07");
+        assert_eq!(p.state().buffer_cursor(), 5);
+    }
+
+    #[test]
+    fn test_predict_command_buffer_clamps_cursor() {
+        let mut p = make_parser();
+        p.state_mut()
+            .predict_command_buffer("ls -la".to_string(), 9999);
+        assert_eq!(p.state().buffer_cursor(), 6);
+    }
+
     #[test]
     fn test_percent_decode_non_utf8_bytes() {
         // Bytes 0x80 0x81 are not valid UTF-8, but are valid Unix path bytes
@@ -735,5 +970,34 @@ mod tests {
         let result = percent_decode_path("/%80%81");
         let expected = PathBuf::from(std::ffi::OsStr::from_bytes(&[b'/', 0x80, 0x81]));
         assert_eq!(result, expected);
+    }
+
+    // -- OSC 7770 UTF-8 rejection --
+
+    #[test]
+    fn test_osc7770_invalid_utf8_rejected() {
+        let mut p = make_parser();
+        // Send OSC 7770 with invalid UTF-8 bytes (0xFF 0xFE) in the buffer payload.
+        // Must be silently rejected — no buffer update, no replacement chars.
+        let mut seq = Vec::new();
+        seq.extend_from_slice(b"\x1b]7770;3;");
+        seq.extend_from_slice(&[0xFF, 0xFE, 0x80]); // invalid UTF-8
+        seq.push(0x07); // BEL terminator
+        p.process_bytes(&seq);
+        assert_eq!(p.state().command_buffer(), None);
+        assert_eq!(p.state().buffer_cursor(), 0);
+    }
+
+    #[test]
+    fn test_osc7770_valid_utf8_accepted() {
+        // Valid UTF-8 (including multi-byte: café) must still work.
+        let mut seq = Vec::new();
+        seq.extend_from_slice(b"\x1b]7770;4;");
+        seq.extend_from_slice("café".as_bytes());
+        seq.push(0x07);
+
+        let mut p = make_parser();
+        p.process_bytes(&seq);
+        assert_eq!(p.state().command_buffer(), Some("café"));
     }
 }

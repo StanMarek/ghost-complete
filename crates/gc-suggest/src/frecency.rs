@@ -125,7 +125,7 @@ impl FrecencyDb {
             Some(p) if p.exists() => match std::fs::read_to_string(p) {
                 Ok(s) => Self::deserialize_entries(&s),
                 Err(e) => {
-                    tracing::debug!("frecency file unreadable: {e}");
+                    tracing::warn!("frecency file unreadable: {e}");
                     HashMap::new()
                 }
             },
@@ -203,15 +203,18 @@ impl FrecencyDb {
         }
     }
 
-    /// Persist the current state to disk. Prunes to `MAX_ENTRIES` by evicting
-    /// entries with the lowest actual scores. Uses atomic write (tmp + rename).
+    /// Persist a snapshot of entries to disk. Prunes to `MAX_ENTRIES` by
+    /// evicting entries with the lowest actual scores. Uses atomic write
+    /// (tmp + rename).
     ///
-    /// Note: this is called while the Mutex is held. On NVMe this is sub-ms;
-    /// on networked home dirs it could spike. Acceptable for v1 — a future
-    /// optimization could clone entries and save outside the critical section.
+    /// Takes the snapshot by value — the caller is responsible for cloning
+    /// the entries out from under the mutex *before* invoking this. Disk I/O
+    /// (`create_dir_all`, JSON serialization, `write`, `rename`) all happen
+    /// with no lock held, so concurrent `score()` / `boost_scores()` callers
+    /// are not blocked by a slow filesystem (audit MED-21).
     ///
     /// Returns `true` on success, `false` on any failure.
-    fn save_inner(inner: &FrecencyInner, path: &Option<PathBuf>) -> bool {
+    fn save_snapshot(snapshot: HashMap<String, FrecencyEntry>, path: &Option<PathBuf>) -> bool {
         let Some(ref path) = path else { return true };
         if let Some(parent) = path.parent() {
             if let Err(e) = std::fs::create_dir_all(parent) {
@@ -222,12 +225,14 @@ impl FrecencyDb {
 
         let now = now_secs();
 
-        // Prune if over the cap — keep the highest-scoring entries
-        let entries_to_save = if inner.entries.len() > MAX_ENTRIES {
-            let mut scored: Vec<_> = inner
-                .entries
-                .iter()
-                .map(|(k, v)| (k.clone(), v.clone(), v.actual_score(now)))
+        // Prune if over the cap — keep the highest-scoring entries.
+        let entries_to_save = if snapshot.len() > MAX_ENTRIES {
+            let mut scored: Vec<_> = snapshot
+                .into_iter()
+                .map(|(k, v)| {
+                    let score = v.actual_score(now);
+                    (k, v, score)
+                })
                 .collect();
             scored.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap_or(std::cmp::Ordering::Equal));
             scored.truncate(MAX_ENTRIES);
@@ -236,7 +241,7 @@ impl FrecencyDb {
                 .map(|(k, v, _)| (k, v))
                 .collect::<HashMap<_, _>>()
         } else {
-            inner.entries.clone()
+            snapshot
         };
 
         let json = match serde_json::to_string_pretty(&entries_to_save) {
@@ -265,33 +270,67 @@ impl FrecencyDb {
     /// Record a completion acceptance — decays existing score and adds 1.0.
     /// Batches disk writes: flushes every `SAVE_EVERY` records.
     pub fn record(&self, key: &str) {
-        let mut inner = self.lock_inner();
-        let now = now_secs();
+        // Update the in-memory state under the lock, then either return
+        // empty-handed or hand back a cloned snapshot for the slow disk
+        // write below. The mutex is released as soon as this block exits.
+        let snapshot = {
+            let mut inner = self.lock_inner();
+            let now = now_secs();
 
-        let entry = inner
-            .entries
-            .entry(key.to_string())
-            .or_insert(FrecencyEntry {
-                stored_score: 0.0,
-                reference_secs: now,
-            });
+            let entry = inner
+                .entries
+                .entry(key.to_string())
+                .or_insert(FrecencyEntry {
+                    stored_score: 0.0,
+                    reference_secs: now,
+                });
 
-        // Decay existing score to current time, then add 1.0
-        let actual = entry.actual_score(now);
-        entry.stored_score = actual + 1.0;
-        entry.reference_secs = now;
+            // Decay existing score to current time, then add 1.0
+            let actual = entry.actual_score(now);
+            entry.stored_score = actual + 1.0;
+            entry.reference_secs = now;
 
-        inner.dirty_count += 1;
-        if inner.dirty_count >= SAVE_EVERY && Self::save_inner(&inner, &self.path) {
-            inner.dirty_count = 0;
+            inner.dirty_count += 1;
+            if inner.dirty_count >= SAVE_EVERY {
+                // Eagerly reset under the lock so a concurrent record()
+                // doesn't also try to save the same data. If the disk
+                // write fails we restore the dirty state below.
+                inner.dirty_count = 0;
+                Some(inner.entries.clone())
+            } else {
+                None
+            }
+            // Lock dropped here.
+        };
+
+        if let Some(snapshot) = snapshot {
+            if !Self::save_snapshot(snapshot, &self.path) {
+                // Restore dirty state so the next record() retries the save.
+                let mut inner = self.lock_inner();
+                inner.dirty_count = inner.dirty_count.saturating_add(SAVE_EVERY);
+            }
         }
     }
 
     /// Flush any unsaved records to disk. Call on proxy shutdown.
     pub fn flush(&self) {
-        let mut inner = self.lock_inner();
-        if inner.dirty_count > 0 && Self::save_inner(&inner, &self.path) {
-            inner.dirty_count = 0;
+        let snapshot = {
+            let mut inner = self.lock_inner();
+            if inner.dirty_count == 0 {
+                None
+            } else {
+                inner.dirty_count = 0;
+                Some(inner.entries.clone())
+            }
+            // Lock dropped here.
+        };
+
+        if let Some(snapshot) = snapshot {
+            if !Self::save_snapshot(snapshot, &self.path) {
+                // Restore dirty state so a future flush()/record() retries.
+                let mut inner = self.lock_inner();
+                inner.dirty_count = inner.dirty_count.saturating_add(1);
+            }
         }
     }
 
@@ -715,6 +754,57 @@ mod tests {
             (s - 2.0).abs() < 0.2,
             "expected score near 2.0 after two half-lives, got {s}"
         );
+    }
+
+    #[test]
+    fn concurrent_record_and_score_no_deadlock() {
+        // Stress test: many threads simultaneously record() (which triggers
+        // disk saves every SAVE_EVERY calls) while others score(). Before
+        // MED-21 the save path held the mutex across the entire I/O sequence
+        // so score() would be blocked behind a slow disk write — this test
+        // exercises the released-before-I/O fix and verifies no thread
+        // deadlocks and all expected entries land in the db.
+        use std::sync::Arc;
+        use std::thread;
+
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("frecency.json");
+        let db = Arc::new(FrecencyDb {
+            inner: Mutex::new(FrecencyInner {
+                entries: HashMap::new(),
+                dirty_count: 0,
+            }),
+            path: Some(path),
+        });
+
+        let mut handles = vec![];
+        for t in 0..4 {
+            let db = Arc::clone(&db);
+            handles.push(thread::spawn(move || {
+                for i in 0..50 {
+                    let key = format!("key_{t}_{i}");
+                    db.record(&key);
+                    // Reading must succeed concurrently with peer writers'
+                    // disk saves; if the lock were held across I/O this
+                    // would serialize and slow down dramatically.
+                    let _ = db.score(&key);
+                }
+            }));
+        }
+        for h in handles {
+            h.join().expect("worker thread panicked");
+        }
+
+        db.flush();
+
+        // Sanity: every key recorded should have a positive score, and a
+        // sampled subset must be present.
+        for t in 0..4 {
+            for i in [0_usize, 49] {
+                let key = format!("key_{t}_{i}");
+                assert!(db.score(&key) > 0.0, "expected positive frecency for {key}");
+            }
+        }
     }
 
     #[test]

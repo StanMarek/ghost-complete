@@ -128,6 +128,18 @@ pub fn render_popup(
         };
     }
 
+    // Suppress rendering when terminal is too narrow — must check BEFORE any
+    // terminal state mutation (sync, scrolling, cursor save) to avoid corruption.
+    if screen_cols < min_width {
+        return PopupLayout {
+            start_row: 0,
+            start_col: 0,
+            width: 0,
+            height: 0,
+            scroll_deficit: 0,
+        };
+    }
+
     // Border padding: 2 rows/cols when borders enabled, 0 otherwise
     let border_pad: u16 = if theme.borders { 2 } else { 0 };
 
@@ -152,10 +164,18 @@ pub fn render_popup(
     // Adjust cursor for prior scroll (parser doesn't know about our scrolling)
     let adj_cursor_row = cursor_row.saturating_sub(prior_deficit);
 
-    // Calculate how much more scrolling is needed
-    let space_below = screen_rows.saturating_sub(adj_cursor_row + 1);
+    // Calculate how much more scrolling is needed.
+    //
+    // When `loading`, the loading indicator occupies exactly 1 extra row
+    // regardless of whether borders are enabled: in the bordered case the
+    // loading row overwrites what would have been the bottom border row and
+    // the bottom border is redrawn one row below, so the popup still grows
+    // by only 1 row beyond its base `layout.height`. The `loading_extra`
+    // value computed during rendering (lines ~336–388) matches this: it is
+    // `1` in every code path where the loading row actually fits.
+    let space_below = screen_rows.saturating_sub(adj_cursor_row.saturating_add(1));
     let visible_count = suggestions.len().min(effective_max) as u16;
-    let loading_extra_deficit = if loading { 1u16 } else { 0 };
+    let loading_extra_deficit: u16 = if loading { 1 } else { 0 };
     let total_height_needed = visible_count + border_pad + loading_extra_deficit;
     let new_deficit = total_height_needed.saturating_sub(space_below);
     let total_deficit = prior_deficit + new_deficit;
@@ -363,7 +383,7 @@ pub fn render_popup(
                     ansi::reset(buf);
                     1 // loading row extends 1 row beyond layout.height (border is within that row)
                 } else {
-                    1 // only loading row fit
+                    0 // bottom border was NOT drawn (clipped), no extra row
                 }
             } else {
                 1 // no borders, just the loading row
@@ -430,14 +450,15 @@ pub fn clear_popup(buf: &mut Vec<u8>, layout: &PopupLayout, profile: &TerminalPr
     }
 }
 
-fn format_item(
-    buf: &mut Vec<u8>,
-    s: &Suggestion,
-    width: u16,
-    is_selected: bool,
-    theme: &PopupTheme,
-) {
-    let kind_char = match s.kind {
+/// Strip control characters (including ESC) from text to prevent ANSI injection
+/// via malicious filenames, git branches, or other suggestion sources.
+fn sanitize_display_text(text: &str) -> String {
+    text.chars().filter(|c| !c.is_control()).collect()
+}
+
+/// Nerd Font icon character for the gutter of a given suggestion kind.
+fn kind_icon(kind: SuggestionKind) -> char {
+    match kind {
         SuggestionKind::Command => '\u{F120}',    // nf-fa-terminal
         SuggestionKind::Subcommand => '\u{F0DA}', // nf-fa-chevron_right
         SuggestionKind::Flag => '\u{F024}',       // nf-fa-flag
@@ -448,33 +469,112 @@ fn format_item(
         SuggestionKind::GitRemote => '\u{F0C1}',  // nf-fa-link
         SuggestionKind::History => '\u{F1DA}',    // nf-fa-history
         SuggestionKind::EnvVar => '$',
-    };
+    }
+}
 
-    // Gutter: " K "
+/// Write the leading gutter (`" K "`) for a suggestion row. Always occupies
+/// `layout::GUTTER_COLS` display columns.
+fn write_gutter(buf: &mut Vec<u8>, kind: SuggestionKind) {
+    let kind_char = kind_icon(kind);
     let _ = write!(buf, " {kind_char} ");
+}
 
-    let total_width = width as usize;
-    let max_text_chars = total_width.saturating_sub(3); // 3 = gutter
+/// Re-enable the row's base text style after an `ansi::reset` inside
+/// `format_item`. Selected rows get `selected_on` (reverse video); unselected
+/// rows get `item_text_on` when a custom style is configured.
+fn restore_base_style(buf: &mut Vec<u8>, is_selected: bool, theme: &PopupTheme) {
+    if is_selected {
+        buf.extend_from_slice(&theme.selected_on);
+    } else if !theme.item_text_on.is_empty() {
+        buf.extend_from_slice(&theme.item_text_on);
+    }
+}
 
-    // For filesystem entries, show just the last path component (the user
-    // already typed the prefix, so repeating it wastes popup space).
-    // Also compute the prefix char count for offsetting match indices.
-    let (display_text, prefix_char_count) = display_text(s);
+/// Write `n` padding spaces to `buf`.
+fn write_padding(buf: &mut Vec<u8>, n: usize) {
+    for _ in 0..n {
+        let _ = buf.write_all(b" ");
+    }
+}
 
-    // Build display-relative match index set (offset and filtered)
-    let display_indices: Vec<u32> = s
-        .match_indices
-        .iter()
-        .filter_map(|&idx| {
-            if idx >= prefix_char_count as u32 {
-                Some(idx - prefix_char_count as u32)
-            } else {
-                None
-            }
-        })
-        .collect();
+/// Translate `raw_match_indices` (char indices into `s.text`, as produced by
+/// `gc_suggest::fuzzy::rank` against the raw suggestion text) into char
+/// indices that refer to positions in `sanitized_display_text`.
+///
+/// This collapses two coordinate-space adjustments into one pass:
+///
+///   1. The basename-prefix offset: for `FilePath` / `Directory` suggestions,
+///      `display_text()` drops a leading path prefix (e.g. `"src/"`). Any
+///      match index that lands in that prefix must be discarded — it points
+///      at a character we will never render.
+///   2. The sanitizer offset: `sanitize_display_text()` removes control
+///      characters (ESC, CSI, OSC, BEL, ...) from the basename. Each such
+///      character shortens the emitted string by one without changing the
+///      raw index numbering, so every match index past the stripped char
+///      would otherwise land on the wrong character.
+///
+/// The result is indexed against `sanitized_display_text` and is already
+/// sorted (we walk left-to-right), so the caller can `binary_search` it
+/// directly.
+fn translate_match_indices(
+    raw_basename: &str,
+    sanitized_display_text: &str,
+    prefix_char_count: usize,
+    raw_match_indices: &[u32],
+) -> Vec<u32> {
+    // Fast path: no upstream matches means no translation needed.
+    if raw_match_indices.is_empty() {
+        return Vec::new();
+    }
 
-    // Write text with highlight transitions, tracking display columns
+    let mut out = Vec::with_capacity(raw_match_indices.len());
+    let mut sanitized_char_idx: u32 = 0;
+    for (basename_char_idx, ch) in raw_basename.chars().enumerate() {
+        // The upstream matcher operates on `s.text`, so a basename char at
+        // local index `i` corresponds to raw index `prefix_char_count + i`.
+        let raw_idx = prefix_char_count as u32 + basename_char_idx as u32;
+
+        if ch.is_control() {
+            // Sanitizer drops this char. Do NOT advance sanitized_char_idx,
+            // and do NOT emit an index for it even if it was a "match" —
+            // there is no rendered character to highlight.
+            continue;
+        }
+
+        if raw_match_indices.binary_search(&raw_idx).is_ok() {
+            out.push(sanitized_char_idx);
+        }
+        sanitized_char_idx += 1;
+    }
+
+    // Sanity check in debug builds: the number of non-control chars we walked
+    // must equal the number of chars in `sanitized_display_text`. Any mismatch
+    // would mean the two sanitizers have diverged.
+    debug_assert_eq!(
+        sanitized_char_idx as usize,
+        sanitized_display_text.chars().count(),
+        "translate_match_indices: sanitized walk length mismatch"
+    );
+
+    out
+}
+
+/// Write suggestion text with fuzzy-match highlighting, clipped to
+/// `max_text_chars` display columns. Returns the number of display columns
+/// actually written.
+///
+/// `match_indices` MUST be char indices into `display_text` itself — both
+/// inputs share the same post-sanitization, post-prefix-strip coordinate
+/// space. See `translate_match_indices` for how the caller derives them from
+/// the raw upstream indices.
+fn write_highlighted_text(
+    buf: &mut Vec<u8>,
+    display_text: &str,
+    match_indices: &[u32],
+    max_text_chars: usize,
+    is_selected: bool,
+    theme: &PopupTheme,
+) -> usize {
     let mut in_highlight = false;
     let mut cols_written: usize = 0;
     for (char_idx, ch) in display_text.chars().enumerate() {
@@ -482,78 +582,132 @@ fn format_item(
         if cols_written + ch_width > max_text_chars {
             break;
         }
-
         let should_highlight = !theme.match_highlight_on.is_empty()
-            && display_indices.binary_search(&(char_idx as u32)).is_ok();
-
+            && match_indices.binary_search(&(char_idx as u32)).is_ok();
         if should_highlight && !in_highlight {
             buf.extend_from_slice(&theme.match_highlight_on);
             in_highlight = true;
         } else if !should_highlight && in_highlight {
             ansi::reset(buf);
-            if is_selected {
-                buf.extend_from_slice(&theme.selected_on);
-            } else if !theme.item_text_on.is_empty() {
-                buf.extend_from_slice(&theme.item_text_on);
-            }
+            restore_base_style(buf, is_selected, theme);
             in_highlight = false;
         }
-
-        let _ = write!(buf, "{ch}");
+        let mut utf8 = [0u8; 4];
+        buf.extend_from_slice(ch.encode_utf8(&mut utf8).as_bytes());
         cols_written += ch_width;
     }
-
     // Close highlight if still active at end of text
     if in_highlight {
         ansi::reset(buf);
-        if is_selected {
-            buf.extend_from_slice(&theme.selected_on);
-        } else if !theme.item_text_on.is_empty() {
+        restore_base_style(buf, is_selected, theme);
+    }
+    cols_written
+}
+
+/// Render the description (if any) plus trailing padding to fill the row.
+/// When no description is available or the row is too narrow to fit one,
+/// pads the remainder of the row with spaces.
+///
+/// `gutter_text_len` is the display columns already consumed by the gutter
+/// plus the suggestion text — used to compute how much room is left for the
+/// description and its trailing padding.
+fn write_description(
+    buf: &mut Vec<u8>,
+    desc: Option<&str>,
+    total_width: usize,
+    gutter_text_len: usize,
+    is_selected: bool,
+    theme: &PopupTheme,
+) {
+    // Sanitize to prevent ANSI injection via malicious descriptions.
+    let desc = desc.map(sanitize_display_text).unwrap_or_default();
+    let max_desc_cols = total_width.saturating_sub(
+        gutter_text_len + crate::layout::DESC_GAP_COLS + crate::layout::TRAILING_PAD_COLS,
+    );
+
+    if desc.is_empty() || max_desc_cols <= 2 {
+        write_padding(buf, total_width.saturating_sub(gutter_text_len));
+        return;
+    }
+
+    write_padding(buf, crate::layout::DESC_GAP_COLS);
+    if !is_selected {
+        ansi::reset(buf);
+        buf.extend_from_slice(&theme.description_on);
+    }
+    // Truncate description by display columns, not char count
+    let mut desc_cols: usize = 0;
+    let mut truncated = String::new();
+    for ch in desc.chars() {
+        let w = unicode_width::UnicodeWidthChar::width(ch).unwrap_or(0);
+        if desc_cols + w > max_desc_cols {
+            break;
+        }
+        truncated.push(ch);
+        desc_cols += w;
+    }
+    let _ = write!(buf, "{truncated}");
+    if !is_selected {
+        ansi::reset(buf);
+        if !theme.item_text_on.is_empty() {
             buf.extend_from_slice(&theme.item_text_on);
         }
     }
+    write_padding(
+        buf,
+        total_width.saturating_sub(gutter_text_len + crate::layout::DESC_GAP_COLS + desc_cols),
+    );
+}
 
-    let gutter_text_len = 3 + cols_written;
+/// Thin orchestrator: lay out gutter, highlighted text, and description for a
+/// single suggestion row. All heavy lifting is delegated to helpers above.
+fn format_item(
+    buf: &mut Vec<u8>,
+    s: &Suggestion,
+    width: u16,
+    is_selected: bool,
+    theme: &PopupTheme,
+) {
+    write_gutter(buf, s.kind);
 
-    // Description (if room)
-    let desc = s.description.as_deref().unwrap_or("");
-    let max_desc_cols = total_width.saturating_sub(gutter_text_len + 2 + 1);
+    let total_width = width as usize;
+    let max_text_chars = total_width.saturating_sub(crate::layout::GUTTER_COLS);
 
-    if !desc.is_empty() && max_desc_cols > 2 {
-        let _ = buf.write_all(b"  ");
-        if !is_selected {
-            ansi::reset(buf);
-            buf.extend_from_slice(&theme.description_on);
-        }
-        // Truncate description by display columns, not char count
-        let mut desc_cols: usize = 0;
-        let mut truncated = String::new();
-        for ch in desc.chars() {
-            let w = unicode_width::UnicodeWidthChar::width(ch).unwrap_or(0);
-            if desc_cols + w > max_desc_cols {
-                break;
-            }
-            truncated.push(ch);
-            desc_cols += w;
-        }
-        let _ = write!(buf, "{truncated}");
-        if !is_selected {
-            ansi::reset(buf);
-            if !theme.item_text_on.is_empty() {
-                buf.extend_from_slice(&theme.item_text_on);
-            }
-        }
-        let used = gutter_text_len + 2 + desc_cols;
-        let pad = total_width.saturating_sub(used);
-        for _ in 0..pad {
-            let _ = buf.write_all(b" ");
-        }
-    } else {
-        let pad = total_width.saturating_sub(gutter_text_len);
-        for _ in 0..pad {
-            let _ = buf.write_all(b" ");
-        }
-    }
+    // For filesystem entries, show just the last path component (the user
+    // already typed the prefix, so repeating it wastes popup space).
+    // Also compute the prefix char count for offsetting match indices.
+    let (raw_display_text, prefix_char_count) = display_text(s);
+    // Sanitize to prevent ANSI injection via malicious filenames/branches.
+    let display_text = sanitize_display_text(raw_display_text);
+    // Translate match indices from the raw-text coordinate space (what the
+    // upstream fuzzy matcher produced) into the sanitized display-text
+    // coordinate space, so `write_highlighted_text` can treat them as direct
+    // char offsets into `display_text` without any skew.
+    let match_indices = translate_match_indices(
+        raw_display_text,
+        &display_text,
+        prefix_char_count,
+        &s.match_indices,
+    );
+
+    let cols_written = write_highlighted_text(
+        buf,
+        &display_text,
+        &match_indices,
+        max_text_chars,
+        is_selected,
+        theme,
+    );
+
+    let gutter_text_len = crate::layout::GUTTER_COLS + cols_written;
+    write_description(
+        buf,
+        s.description.as_deref(),
+        total_width,
+        gutter_text_len,
+        is_selected,
+        theme,
+    );
 }
 
 #[cfg(test)]
@@ -1980,5 +2134,191 @@ mod tests {
             layout.height, 4,
             "borderless loading height = content + 1 loading row"
         );
+    }
+
+    #[test]
+    fn test_loading_bordered_deficit_accounts_for_displaced_border() {
+        // With borders + loading near the bottom of the screen, the scroll
+        // deficit must account for the loading row that displaces the bottom
+        // border down by one row — but only by one row, not two: the loading
+        // row overwrites the original bottom border position and the border
+        // is redrawn directly below, for a net +1 row over the base popup
+        // height.
+        let mut buf = Vec::new();
+        let suggestions = make_suggestions(); // 3 items
+        let state = OverlayState::new();
+        // cursor at row 8 in a 10-row terminal — tight fit
+        let layout = render_popup(
+            &mut buf,
+            &suggestions,
+            &state,
+            8,
+            0,
+            10,
+            80,
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &bordered_theme(),
+            0,
+            true,
+            &ghostty_profile(),
+        );
+        // total_height_needed = 3 content + 2 borders + 1 loading_extra_deficit = 6
+        // space_below = 10 - 9 = 1, so new_deficit = 6 - 1 = 5.
+        // Equality (not `>=`) pins the exact value and guards against a
+        // regression in either direction — over-scrolling wastes a row,
+        // under-scrolling clips the bottom border.
+        assert_eq!(
+            layout.scroll_deficit, 5,
+            "scroll_deficit should be exactly 5 for bordered+loading near bottom"
+        );
+    }
+
+    // --- ANSI injection sanitization tests ---
+
+    #[test]
+    fn sanitize_strips_esc_from_text() {
+        assert_eq!(sanitize_display_text("fix\x1bissue"), "fixissue");
+    }
+
+    #[test]
+    fn sanitize_strips_csi_sequence() {
+        // CSI erase display: ESC [ 2 J
+        assert_eq!(sanitize_display_text("bad\x1b[2Jfile"), "bad[2Jfile");
+    }
+
+    #[test]
+    fn sanitize_strips_osc_sequence() {
+        // OSC set title: ESC ] 0 ; pwned BEL
+        assert_eq!(
+            sanitize_display_text("pre\x1b]0;pwned\x07post"),
+            "pre]0;pwnedpost"
+        );
+    }
+
+    #[test]
+    fn sanitize_preserves_normal_text() {
+        let normal = "hello-world_123 (foo)";
+        assert_eq!(sanitize_display_text(normal), normal);
+    }
+
+    #[test]
+    fn sanitize_preserves_unicode() {
+        let unicode = "\u{65E5}\u{672C}\u{8A9E}";
+        assert_eq!(sanitize_display_text(unicode), unicode);
+    }
+
+    #[test]
+    fn format_item_sanitizes_esc_in_text() {
+        let s = make("evil\x1b[2Jname", None, SuggestionKind::Command);
+        let mut buf = Vec::new();
+        format_item(&mut buf, &s, 40, false, &PopupTheme::default());
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            !output.contains('\x1b'),
+            "ESC byte should be stripped from rendered text, got: {output:?}"
+        );
+    }
+
+    #[test]
+    fn format_item_sanitizes_esc_in_description() {
+        let s = make(
+            "clean",
+            Some("desc\x1b[2J\x1b]0;pwned\x07end"),
+            SuggestionKind::Command,
+        );
+        let mut buf = Vec::new();
+        // Wide enough to include description
+        format_item(&mut buf, &s, 60, false, &PopupTheme::default());
+        let output = String::from_utf8_lossy(&buf);
+        // The injected ESC-based sequences should not appear intact.
+        // ESC is stripped, so "\x1b[2J" becomes "[2J" (harmless text).
+        assert!(
+            !output.contains("\x1b[2J"),
+            "CSI erase sequence should not survive sanitization, got: {output:?}"
+        );
+        assert!(
+            !output.contains("\x1b]0;"),
+            "OSC title sequence should not survive sanitization, got: {output:?}"
+        );
+        // BEL (\x07) should also be stripped
+        assert!(
+            !output.contains('\x07'),
+            "BEL byte should be stripped from description, got: {output:?}"
+        );
+    }
+
+    #[test]
+    fn write_highlighted_text_honors_match_indices_when_source_has_control_chars() {
+        // Regression test for a drift bug between `sanitize_display_text` and
+        // `match_indices`: the latter is computed upstream against the *raw*
+        // suggestion text (see `gc_suggest::fuzzy::rank`), while rendering
+        // iterates over the sanitized string. If sanitization strips bytes,
+        // every index past the stripped position becomes off-by-N.
+        //
+        // Source: "ab\x1bcd" — an embedded ESC byte that
+        // `sanitize_display_text()` will strip. Sanitized: "abcd".
+        // The query "cd" should highlight 'c' and 'd', which are at char
+        // indices 3 and 4 in the raw text but 2 and 3 in the sanitized text.
+        let mut s = make("ab\x1bcd", None, SuggestionKind::Command);
+        s.match_indices = vec![3, 4]; // raw-coordinate indices for 'c' and 'd'
+        let theme = PopupTheme::default();
+        let mut buf = Vec::new();
+        format_item(&mut buf, &s, 40, false, &theme);
+        let output = String::from_utf8_lossy(&buf);
+
+        // Sanitizer must have stripped the ESC.
+        assert!(
+            !output.contains("ab\x1bcd"),
+            "raw ESC should have been stripped from rendered text: {output:?}"
+        );
+        // The highlight must land on 'c' and 'd' contiguously: the sequence
+        // `\x1b[1mcd` (match_highlight_on directly followed by "cd") appears
+        // only when both chars are inside the highlighted span.
+        assert!(
+            output.contains("\x1b[1mcd"),
+            "highlight should cover 'cd' (both matched chars) after sanitization, got: {output:?}"
+        );
+        // Negative: the buggy code would emit `c\x1b[1md` (highlight starting
+        // at 'd' only, because index 3 pointed at 'c' in the raw text but at
+        // 'd' in the sanitized text). Make sure we do NOT see that pattern.
+        assert!(
+            !output.contains("c\x1b[1md"),
+            "highlight must not start at 'd' alone — that would mean indices drifted: {output:?}"
+        );
+    }
+
+    #[test]
+    fn test_narrow_terminal_emits_zero_bytes() {
+        // When screen_cols < min_width, render_popup must not emit ANY bytes
+        // to the buffer — no sync, no scrolling, no cursor save/restore.
+        let mut buf = Vec::new();
+        let suggestions = make_suggestions();
+        let state = OverlayState::new();
+        let layout = render_popup(
+            &mut buf,
+            &suggestions,
+            &state,
+            5,
+            0,
+            24,
+            10, // narrow: less than DEFAULT_MIN_POPUP_WIDTH (20)
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &bordered_theme(),
+            0,
+            false,
+            &ghostty_profile(),
+        );
+        assert!(
+            buf.is_empty(),
+            "narrow terminal should produce zero output, got {} bytes: {:?}",
+            buf.len(),
+            String::from_utf8_lossy(&buf)
+        );
+        assert_eq!(layout.width, 0);
+        assert_eq!(layout.height, 0);
     }
 }

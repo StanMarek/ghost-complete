@@ -1,5 +1,4 @@
 use std::io::{Read, Write};
-use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use anyhow::{Context, Result};
@@ -10,6 +9,7 @@ use tokio::sync::{mpsc, Notify};
 use gc_config::GhostConfig;
 
 use gc_overlay::{parse_style, PopupTheme};
+use gc_suggest::spec_dirs::resolve_spec_dirs;
 
 use crate::config_watch::spawn_config_watcher;
 use crate::handler::{InputHandler, Keybindings};
@@ -160,11 +160,11 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
 
     // Initialize suggestion handler with config
     let handler = Arc::new(Mutex::new({
-        let h = match InputHandler::new(&spec_dirs[0], terminal_profile.clone()) {
+        let h = match InputHandler::new(&spec_dirs, terminal_profile.clone()) {
             Ok(h) => h,
             Err(e) => {
                 tracing::warn!("failed to init suggestion engine: {}, trying fallback", e);
-                InputHandler::new(std::path::Path::new("."), terminal_profile)
+                InputHandler::new(&[std::path::PathBuf::from(".")], terminal_profile)
                     .context("fallback handler also failed — cannot start proxy")?
             }
         };
@@ -180,16 +180,23 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 config.suggest.providers.filesystem,
                 config.suggest.providers.specs,
                 config.suggest.providers.git,
+                config.suggest.generator_timeout_ms,
             )
     }));
 
     // Config hot-reload: watch config.toml for changes
-    if let Some(config_dir) = gc_config::config_dir() {
+    let config_watcher_handle = if let Some(config_dir) = gc_config::config_dir() {
         let config_path = config_dir.join("config.toml");
-        if let Err(e) = spawn_config_watcher(config_path, Arc::clone(&handler)) {
-            tracing::warn!("failed to start config watcher: {e}");
+        match spawn_config_watcher(config_path, Arc::clone(&handler)) {
+            Ok(handle) => Some(handle),
+            Err(e) => {
+                tracing::warn!("failed to start config watcher: {e}");
+                None
+            }
         }
-    }
+    } else {
+        None
+    };
 
     // Debounce task: fires suggestions after a typing pause
     let debounce_notify = Arc::new(Notify::new());
@@ -208,7 +215,17 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
 
     // Task E: dynamic merge loop — renders script generator results when shell is idle.
     let dynamic_notify = {
-        let h = handler.lock().unwrap();
+        // This lock runs during startup before the handler `Arc` is shared
+        // with any other task, so poison is extremely unlikely. We still
+        // use the match-with-warn pattern for consistency with every other
+        // lock site in this file.
+        let h = match handler.lock() {
+            Ok(h) => h,
+            Err(e) => {
+                tracing::warn!("handler mutex poisoned during setup: {e}");
+                anyhow::bail!("handler mutex poisoned during setup — cannot start proxy");
+            }
+        };
         h.dynamic_notify()
     };
     let handler_for_merge = Arc::clone(&handler);
@@ -227,8 +244,8 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     let handler_for_stdin = Arc::clone(&handler);
     let stdin_handle = tokio::task::spawn_blocking(move || {
         let mut stdin = std::io::stdin().lock();
-        let mut buf = [0u8; 256];
-        loop {
+        let mut buf = [0u8; 4096];
+        'stdin: loop {
             let n = match stdin.read(&mut buf) {
                 Ok(0) => break, // EOF
                 Ok(n) => n,
@@ -243,10 +260,39 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 // it for cursor sync. Otherwise forward it through the
                 // PTY so programs like atuin/crossterm receive it.
                 if let crate::input::KeyEvent::CursorPositionReport(row, col) = key {
-                    let mut p = parser_for_stdin.lock().unwrap();
+                    let mut p = match parser_for_stdin.lock() {
+                        Ok(p) => p,
+                        Err(e) => {
+                            tracing::warn!("parser mutex poisoned in stdin task: {e}");
+                            break 'stdin;
+                        }
+                    };
                     if p.state_mut().claim_cpr_response() {
-                        tracing::debug!(row, col, "CPR response — syncing cursor position (ours)");
-                        p.state_mut().set_cursor_from_report(*row, *col);
+                        let state = p.state_mut();
+                        if state.validate_cpr_coordinates(*row, *col) {
+                            tracing::debug!(
+                                row,
+                                col,
+                                "CPR response — syncing cursor position (ours)"
+                            );
+                            state.set_cursor_from_report(*row, *col);
+                        } else {
+                            let (screen_rows, screen_cols) = state.screen_dimensions();
+                            tracing::warn!(
+                                row,
+                                col,
+                                screen_rows,
+                                screen_cols,
+                                "CPR coordinates out of screen bounds — ignoring"
+                            );
+                            // Do NOT retry with a new CSI 6n: we can't tell if
+                            // this was the terminal's real response (resize race)
+                            // or an injected fake. Retrying would send a CSI 6n
+                            // whose response may have no matching cpr_pending,
+                            // leaking an unsolicited CPR into the PTY. Instead,
+                            // accept the temporary cursor desync — the next
+                            // prompt (OSC 133) triggers a fresh sync cycle.
+                        }
                         continue;
                     }
                     tracing::debug!(row, col, "CPR response — forwarding to PTY (not ours)");
@@ -267,7 +313,13 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 // with Task B's stdout writes).
                 let mut render_buf = Vec::new();
                 let forward = {
-                    let mut h = handler_for_stdin.lock().unwrap();
+                    let mut h = match handler_for_stdin.lock() {
+                        Ok(h) => h,
+                        Err(e) => {
+                            tracing::warn!("handler mutex poisoned in stdin task: {e}");
+                            break 'stdin;
+                        }
+                    };
                     h.process_key(key, &parser_for_stdin, &mut render_buf)
                 };
                 // Briefly lock stdout to flush any popup rendering
@@ -306,49 +358,124 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
 
             // Feed bytes through the VT parser to track terminal state
             let needs_cpr = {
-                let mut p = parser_for_stdout.lock().unwrap();
+                let mut p = match parser_for_stdout.lock() {
+                    Ok(p) => p,
+                    Err(e) => {
+                        tracing::warn!("parser mutex poisoned in stdout task: {e}");
+                        break;
+                    }
+                };
                 p.process_bytes(&buf[..n]);
                 p.state_mut().take_cursor_sync_requested()
             };
 
             // Briefly lock stdout for each write — do NOT hold the lock
             // across the entire loop or it deadlocks with Task A.
-            {
+            //
+            // CPR accounting invariant: cpr_pending must be incremented
+            // if and only if a corresponding CSI 6n was successfully
+            // flushed to the terminal. Violating this in either direction
+            // causes cursor-sync corruption — under-counting makes Task A
+            // forward our own CPR response to the PTY, over-counting makes
+            // Task A steal the next application CPR response.
+            //
+            // Lock ordering: acquire the parser mutex and drop it BEFORE
+            // taking the stdout lock. A nested (stdout → parser) path is a
+            // latent deadlock trap for any future code that legitimately
+            // takes parser then stdout. cpr_pending is a counter, so
+            // incrementing earlier (before the main buffer write) is
+            // semantically equivalent — Task A always decrements on the
+            // matching CPR response, and we roll back on write failure.
+            let mut cpr_incremented = false;
+            if needs_cpr {
+                match parser_for_stdout.lock() {
+                    Ok(mut p) => {
+                        p.state_mut().increment_cpr_pending();
+                        cpr_incremented = true;
+                    }
+                    Err(e) => {
+                        tracing::warn!(
+                            "parser mutex poisoned before CPR increment: {e} \
+                             — skipping CPR"
+                        );
+                    }
+                }
+            }
+            // If we couldn't increment (poisoned mutex), don't emit the
+            // CSI 6n — under-counting cpr_pending would make Task A
+            // forward our response to the PTY.
+            let send_cpr = needs_cpr && cpr_incremented;
+
+            let write_result: std::io::Result<()> = {
                 let mut stdout = std::io::stdout().lock();
-                if stdout.write_all(&buf[..n]).is_err() {
-                    break;
+                stdout.write_all(&buf[..n]).and_then(|()| {
+                    if send_cpr {
+                        tracing::debug!("sending CPR request (CSI 6n)");
+                        stdout.write_all(b"\x1b[6n").and_then(|()| stdout.flush())
+                    } else {
+                        stdout.flush()
+                    }
+                })
+            };
+
+            if let Err(e) = write_result {
+                // Rollback the CPR increment if the write/flush failed
+                // partway through — the CSI 6n did not reach the terminal
+                // (or at least can't be guaranteed to have reached it) so
+                // no response will arrive. A permanent leak here would
+                // make Task A steal the next application CPR response.
+                if cpr_incremented {
+                    match parser_for_stdout.lock() {
+                        Ok(mut p) => {
+                            // claim_cpr_response decrements cpr_pending.
+                            p.state_mut().claim_cpr_response();
+                        }
+                        Err(poison_err) => {
+                            // If the rollback lock itself fails we can't
+                            // recover — the parser mutex is poisoned AND
+                            // cpr_pending is permanently elevated by 1,
+                            // which would make Task A steal the next real
+                            // application CPR response (from atuin,
+                            // crossterm, etc.) and corrupt downstream
+                            // parsing. Proxy state is corrupted; cascade
+                            // into the same break pattern as the parser
+                            // mutex poison sites earlier in this loop and
+                            // exit Task B immediately.
+                            tracing::error!(
+                                "parser mutex poisoned during CPR rollback: {poison_err} \
+                                 — cpr_pending permanently elevated, exiting Task B"
+                            );
+                            break;
+                        }
+                    }
                 }
-                // Send CPR request (CSI 6n) to the REAL terminal so it
-                // reports its actual cursor position. The response
-                // (CSI row;col R) arrives on stdin and is intercepted by
-                // Task A to sync our VT parser's cursor tracking.
-                if needs_cpr {
-                    tracing::debug!("sending CPR request (CSI 6n)");
-                    let _ = stdout.write_all(b"\x1b[6n");
-                    // Mark this as our own request so Task A knows to
-                    // consume the response instead of forwarding it to
-                    // the PTY (where programs like atuin may be waiting
-                    // for their own CPR responses).
-                    let mut p = parser_for_stdout.lock().unwrap();
-                    p.state_mut().increment_cpr_pending();
-                }
-                if stdout.flush().is_err() {
-                    break;
-                }
+                tracing::debug!("stdout write/flush failed: {e}");
+                break;
             }
 
             // Check if shell reported a buffer update via OSC 7770.
             // Trigger suggestions here (Task B) instead of Task A to ensure
             // we have the shell's updated buffer, fixing the stale-buffer bug.
             let buffer_dirty = {
-                let mut p = parser_for_stdout.lock().unwrap();
-                p.state_mut().take_buffer_dirty()
+                match parser_for_stdout.lock() {
+                    Ok(mut p) => p.state_mut().take_buffer_dirty(),
+                    Err(e) => {
+                        tracing::warn!("parser mutex poisoned in stdout task: {e}");
+                        break;
+                    }
+                }
             };
 
             if buffer_dirty {
                 let mut render_buf = Vec::new();
                 {
-                    let mut h = handler_for_stdout.lock().unwrap();
+                    let mut h = match handler_for_stdout.lock() {
+                        Ok(h) => h,
+                        Err(e) => {
+                            tracing::warn!("handler mutex poisoned in stdout task: {e}");
+                            break;
+                        }
+                    };
                     if h.has_pending_trigger() {
                         h.clear_trigger_request();
                         if h.auto_trigger_enabled() {
@@ -370,14 +497,25 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
 
             // CD chaining: trigger suggestions on CWD change (OSC 7), gated by auto_trigger.
             let cwd_dirty = {
-                let mut p = parser_for_stdout.lock().unwrap();
-                p.state_mut().take_cwd_dirty()
+                match parser_for_stdout.lock() {
+                    Ok(mut p) => p.state_mut().take_cwd_dirty(),
+                    Err(e) => {
+                        tracing::warn!("parser mutex poisoned in stdout task: {e}");
+                        break;
+                    }
+                }
             };
 
             if cwd_dirty {
                 let mut render_buf = Vec::new();
                 {
-                    let mut h = handler_for_stdout.lock().unwrap();
+                    let mut h = match handler_for_stdout.lock() {
+                        Ok(h) => h,
+                        Err(e) => {
+                            tracing::warn!("handler mutex poisoned in stdout task: {e}");
+                            break;
+                        }
+                    };
                     if h.auto_trigger_enabled() {
                         h.trigger(&parser_for_stdout, &mut render_buf);
                     }
@@ -393,7 +531,13 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
             {
                 let mut render_buf = Vec::new();
                 {
-                    let mut h = handler_for_stdout.lock().unwrap();
+                    let mut h = match handler_for_stdout.lock() {
+                        Ok(h) => h,
+                        Err(e) => {
+                            tracing::warn!("handler mutex poisoned in stdout task: {e}");
+                            break;
+                        }
+                    };
                     h.try_merge_dynamic(&parser_for_stdout, &mut render_buf);
                 }
                 if !render_buf.is_empty() {
@@ -427,15 +571,31 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                             tracing::warn!("failed to resize PTY: {}", e);
                         }
                         // Update parser's screen dimensions
-                        {
-                            let mut p = parser.lock().unwrap();
-                            p.state_mut().update_dimensions(size.rows, size.cols);
+                        match parser.lock() {
+                            Ok(mut p) => {
+                                p.state_mut().update_dimensions(size.rows, size.cols);
+                            }
+                            Err(e) => {
+                                tracing::warn!("parser mutex poisoned on SIGWINCH: {e}");
+                            }
                         }
-                        // Re-render popup if visible
-                        {
+                        // Re-render popup if visible — buffer output under the
+                        // handler lock, then write to stdout after releasing it.
+                        // This avoids holding handler+stdout simultaneously (the
+                        // same pattern every other code path uses).
+                        let mut render_buf = Vec::new();
+                        match handler.lock() {
+                            Ok(mut h) => {
+                                h.handle_resize(&parser, &mut render_buf);
+                            }
+                            Err(e) => {
+                                tracing::warn!("handler mutex poisoned on SIGWINCH: {e}");
+                            }
+                        }
+                        if !render_buf.is_empty() {
                             let mut stdout = std::io::stdout().lock();
-                            let mut h = handler.lock().unwrap();
-                            h.handle_resize(&parser, &mut stdout);
+                            let _ = stdout.write_all(&render_buf);
+                            let _ = stdout.flush();
                         }
                     }
                     Err(e) => {
@@ -453,15 +613,21 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     if let Some(h) = debounce_handle {
         h.abort();
     }
+    if let Some(h) = config_watcher_handle {
+        h.shutdown();
+    }
 
     // Note: we do NOT clean up `tmux setenv GHOST_COMPLETE_ACTIVE` on exit.
     // Multiple panes share the session env, so the first pane to exit would
     // remove it for all others. Leaving it set is harmless — init.zsh's tmux
     // branch uses PPID + GHOST_COMPLETE_PANE, not this variable.
 
-    // Flush unsaved frecency records before exit
+    // Abort any in-flight dynamic generator task and flush frecency.
     match handler.lock() {
-        Ok(h) => h.flush_frecency(),
+        Ok(mut h) => {
+            h.abort_dynamic_task();
+            h.flush_frecency();
+        }
         Err(e) => {
             tracing::warn!("handler mutex poisoned at shutdown, frecency data not flushed: {e}")
         }
@@ -547,59 +713,6 @@ async fn dynamic_merge_loop(
             let _ = stdout.flush();
         }
     }
-}
-
-/// Resolve spec directories from config, with tilde expansion.
-/// If config provides directories, use those. Otherwise fall back to auto-detection.
-fn resolve_spec_dirs(configured: &[String]) -> Vec<PathBuf> {
-    if !configured.is_empty() {
-        return configured
-            .iter()
-            .map(|s| expand_tilde(s))
-            .filter(|p| p.is_dir())
-            .collect();
-    }
-
-    // Auto-detect: check config dir, next to binary, then cwd
-    let mut dirs = Vec::new();
-
-    // Config directory (installed by `ghost-complete install`)
-    if let Some(config_dir) = gc_config::config_dir() {
-        let spec_dir = config_dir.join("specs");
-        if spec_dir.is_dir() {
-            dirs.push(spec_dir);
-        }
-    }
-
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(exe_dir) = exe.parent() {
-            let spec_dir = exe_dir.join("specs");
-            if spec_dir.is_dir() {
-                dirs.push(spec_dir);
-            }
-        }
-    }
-
-    // Fall back to specs/ in the current directory (development)
-    let cwd_specs = PathBuf::from("specs");
-    if cwd_specs.is_dir() {
-        dirs.push(cwd_specs);
-    }
-
-    if dirs.is_empty() {
-        dirs.push(PathBuf::from("specs"));
-    }
-
-    dirs
-}
-
-fn expand_tilde(path: &str) -> PathBuf {
-    if let Some(rest) = path.strip_prefix("~/") {
-        if let Some(home) = dirs::home_dir() {
-            return home.join(rest);
-        }
-    }
-    PathBuf::from(path)
 }
 
 /// Returns true if ghost-complete should replace itself with a plain shell

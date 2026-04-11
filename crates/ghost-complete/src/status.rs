@@ -1,32 +1,7 @@
 use anyhow::{Context, Result};
+use gc_suggest::spec_dirs::resolve_spec_dirs;
 use gc_suggest::specs::{ArgSpec, CompletionSpec, GeneratorSpec, OptionSpec, SubcommandSpec};
 use gc_suggest::SpecStore;
-use std::path::PathBuf;
-
-/// Resolve spec directories using the same heuristics as the proxy.
-fn resolve_spec_dirs(config: &gc_config::GhostConfig) -> Vec<PathBuf> {
-    if !config.paths.spec_dirs.is_empty() {
-        return config
-            .paths
-            .spec_dirs
-            .iter()
-            .map(|s| {
-                if s.starts_with('~') {
-                    if let Some(home) = dirs::home_dir() {
-                        return home.join(s.strip_prefix("~/").unwrap_or(s));
-                    }
-                }
-                PathBuf::from(s)
-            })
-            .collect();
-    }
-
-    let mut dirs = Vec::new();
-    if let Some(config_dir) = gc_config::config_dir() {
-        dirs.push(config_dir.join("specs"));
-    }
-    dirs
-}
 
 /// Check if a spec tree contains any generators with `requires_js: true`.
 fn has_requires_js(spec: &CompletionSpec) -> bool {
@@ -63,14 +38,12 @@ fn check_subcommands_for_js(subcommands: &[SubcommandSpec]) -> bool {
 
 pub fn run_status(config_path: Option<&str>) -> Result<()> {
     let config = gc_config::GhostConfig::load(config_path).context("failed to load config")?;
-    let dirs = resolve_spec_dirs(&config);
+    let dirs = resolve_spec_dirs(&config.paths.spec_dirs);
 
-    if dirs.is_empty() {
-        println!("No spec directories configured.");
-        return Ok(());
-    }
+    let embedded_count = crate::install::EMBEDDED_SPECS.len();
 
-    let mut total_specs = 0usize;
+    // Scan filesystem spec directories for overrides / custom specs
+    let mut fs_specs = 0usize;
     let mut fully_functional = 0usize;
     let mut partially_functional = 0usize;
     let mut js_commands: Vec<String> = Vec::new();
@@ -83,7 +56,7 @@ pub fn run_status(config_path: Option<&str>) -> Result<()> {
         specs.sort_by_key(|(name, _)| *name);
 
         for (name, spec) in &specs {
-            total_specs += 1;
+            fs_specs += 1;
             if has_requires_js(spec) {
                 partially_functional += 1;
                 js_commands.push((*name).to_string());
@@ -94,9 +67,12 @@ pub fn run_status(config_path: Option<&str>) -> Result<()> {
 
         if !result.errors.is_empty() {
             println!(
-                "\x1b[33m{} spec(s) failed to load\x1b[0m",
+                "\x1b[33m{} spec(s) failed to load:\x1b[0m",
                 result.errors.len()
             );
+            for err in &result.errors {
+                println!("  \x1b[33m- {err}\x1b[0m");
+            }
         }
     }
 
@@ -104,11 +80,16 @@ pub fn run_status(config_path: Option<&str>) -> Result<()> {
 
     println!("Ghost Complete v{}\n", env!("CARGO_PKG_VERSION"));
     println!("Completion specs:");
-    println!("  Total loaded:          {total_specs}");
-    println!("  \x1b[32mFully functional:\x1b[0m      {fully_functional}");
-    println!(
-        "  \x1b[33mPartially functional:\x1b[0m  {partially_functional} (has requires_js generators)"
-    );
+    println!("  Embedded in binary:    {embedded_count}");
+    if fs_specs > 0 {
+        println!("  Filesystem overrides:  {fs_specs}");
+        println!("  \x1b[32mFully functional:\x1b[0m      {fully_functional}");
+        println!(
+            "  \x1b[33mPartially functional:\x1b[0m  {partially_functional} (has requires_js generators)"
+        );
+    } else {
+        println!("  Filesystem overrides:  0 (run `ghost-complete install` to deploy specs)");
+    }
 
     if !js_commands.is_empty() {
         println!(

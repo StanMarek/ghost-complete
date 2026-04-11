@@ -18,7 +18,10 @@ impl OverlayState {
 
     pub fn move_up(&mut self) {
         match self.selected {
-            Some(0) => self.selected = None,
+            Some(0) => {
+                self.selected = None;
+                self.scroll_offset = 0;
+            }
             Some(n) => {
                 self.selected = Some(n - 1);
                 if n - 1 < self.scroll_offset {
@@ -101,6 +104,19 @@ mod tests {
         state.selected = Some(0);
         state.move_up();
         assert_eq!(state.selected, None);
+    }
+
+    #[test]
+    fn test_move_up_at_zero_resets_scroll_offset() {
+        let mut state = OverlayState::new();
+        state.selected = Some(0);
+        state.scroll_offset = 5; // leftover from prior scrolling
+        state.move_up();
+        assert_eq!(state.selected, None);
+        assert_eq!(
+            state.scroll_offset, 0,
+            "scroll_offset must reset when deselecting"
+        );
     }
 
     #[test]

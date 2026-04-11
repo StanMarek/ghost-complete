@@ -18,8 +18,15 @@ pub fn char_to_byte_offset(s: &str, char_offset: usize) -> usize {
 }
 
 /// Convert a byte offset to a character offset within a UTF-8 string.
+/// Clamps to `s.len()` if out of range, and snaps to the nearest char
+/// boundary (searching backwards) if `byte_offset` falls mid-codepoint.
 pub fn byte_to_char_offset(s: &str, byte_offset: usize) -> usize {
-    s[..byte_offset].chars().count()
+    let safe = byte_offset.min(s.len());
+    let boundary = (0..=safe)
+        .rev()
+        .find(|&i| s.is_char_boundary(i))
+        .unwrap_or(0);
+    s[..boundary].chars().count()
 }
 
 #[cfg(test)]
@@ -51,5 +58,24 @@ mod tests {
         assert_eq!(byte_to_char_offset("ąść", 2), 1);
         assert_eq!(byte_to_char_offset("ąść", 4), 2);
         assert_eq!(byte_to_char_offset("ąść", 6), 3);
+    }
+
+    #[test]
+    fn test_byte_to_char_beyond_end() {
+        assert_eq!(byte_to_char_offset("hi", 999), 2);
+    }
+
+    #[test]
+    fn test_byte_to_char_mid_codepoint() {
+        // "ą" is 2 bytes (0xC4 0x85); offset 1 is mid-codepoint
+        assert_eq!(byte_to_char_offset("ąść", 1), 0);
+        assert_eq!(byte_to_char_offset("ąść", 3), 1);
+        assert_eq!(byte_to_char_offset("ąść", 5), 2);
+    }
+
+    #[test]
+    fn test_byte_to_char_empty_string() {
+        assert_eq!(byte_to_char_offset("", 0), 0);
+        assert_eq!(byte_to_char_offset("", 5), 0);
     }
 }

@@ -12,3 +12,7 @@ gc-suggest = { path = "../gc-suggest" }
 gc-terminal = { path = "../gc-terminal" }
 anyhow = { workspace = true }
 unicode-width = "0.2.2"
+
+[dev-dependencies]
+# Enables the `TerminalProfile::for_*()` fixture constructors for tests only.
+gc-terminal = { path = "../gc-terminal", features = ["test-utils"] }

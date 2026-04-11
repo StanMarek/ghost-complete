@@ -121,7 +121,7 @@ fn transform_benchmarks(c: &mut Criterion) {
     let regex_transforms = vec![
         Transform::Named(NamedTransform::SplitLines),
         Transform::Parameterized(ParameterizedTransform::RegexExtract {
-            pattern: r"^\s*(\S+)\s+(\S+)\s+(.+)$".to_string(),
+            compiled: regex::Regex::new(r"^\s*(\S+)\s+(\S+)\s+(.+)$").unwrap(),
             name: 1,
             description: Some(3),
         }),

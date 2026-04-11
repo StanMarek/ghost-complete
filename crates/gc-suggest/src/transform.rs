@@ -40,8 +40,14 @@ pub enum ParameterizedTransform {
         starts_with: Option<String>,
         contains: Option<String>,
     },
+    /// Pre-compiled regex extraction.
+    ///
+    /// The `Regex` is compiled once at spec-load time (in the `TryFrom`
+    /// `ParameterizedHelper` impl below) so a hot generator running on every
+    /// keystroke does not pay the regex-compilation cost on each invocation.
+    /// See audit LOW-3.
     RegexExtract {
-        pattern: String,
+        compiled: Regex,
         name: usize,
         description: Option<usize>,
     },
@@ -124,9 +130,11 @@ enum ParameterizedHelper {
     },
 }
 
-impl From<ParameterizedHelper> for ParameterizedTransform {
-    fn from(h: ParameterizedHelper) -> Self {
-        match h {
+impl TryFrom<ParameterizedHelper> for ParameterizedTransform {
+    type Error = String;
+
+    fn try_from(h: ParameterizedHelper) -> Result<Self, Self::Error> {
+        Ok(match h {
             ParameterizedHelper::SplitOn { delimiter } => {
                 ParameterizedTransform::SplitOn { delimiter }
             }
@@ -143,11 +151,19 @@ impl From<ParameterizedHelper> for ParameterizedTransform {
                 pattern,
                 name,
                 description,
-            } => ParameterizedTransform::RegexExtract {
-                pattern,
-                name,
-                description,
-            },
+            } => {
+                // Compile the regex once at spec-load time. Surface a clear,
+                // actionable error message that includes the pattern and the
+                // crate-provided regex error so a broken spec is easy to fix.
+                let compiled = Regex::new(&pattern).map_err(|e| {
+                    format!("invalid regex in regex_extract pattern {pattern:?}: {e}")
+                })?;
+                ParameterizedTransform::RegexExtract {
+                    compiled,
+                    name,
+                    description,
+                }
+            }
             ParameterizedHelper::JsonExtract { name, description } => {
                 ParameterizedTransform::JsonExtract { name, description }
             }
@@ -158,7 +174,7 @@ impl From<ParameterizedHelper> for ParameterizedTransform {
                 column,
                 description_column,
             },
-        }
+        })
     }
 }
 
@@ -203,7 +219,8 @@ impl<'de> Visitor<'de> for TransformVisitor {
     {
         let helper: ParameterizedHelper =
             Deserialize::deserialize(de::value::MapAccessDeserializer::new(map))?;
-        Ok(Transform::Parameterized(helper.into()))
+        let parameterized = ParameterizedTransform::try_from(helper).map_err(de::Error::custom)?;
+        Ok(Transform::Parameterized(parameterized))
     }
 }
 
@@ -367,22 +384,17 @@ pub fn apply_error_guard(
     Some(output.to_string())
 }
 
-/// Extract fields from each line using a regex with capture groups.
+/// Extract fields from each line using a pre-compiled regex with capture groups.
 /// Lines that don't match are silently skipped.
+///
+/// Takes the compiled `Regex` by reference — the regex is compiled once at
+/// spec-load time and reused across every invocation. See audit LOW-3.
 pub fn apply_regex_extract(
     lines: &[String],
-    pattern: &str,
+    re: &Regex,
     name_group: usize,
     desc_group: Option<usize>,
 ) -> Vec<Suggestion> {
-    let re = match Regex::new(pattern) {
-        Ok(re) => re,
-        Err(e) => {
-            tracing::warn!("invalid regex in regex_extract: {:?}: {e}", pattern);
-            return Vec::new();
-        }
-    };
-
     lines
         .iter()
         .filter_map(|line| {
@@ -523,14 +535,14 @@ pub fn execute_pipeline(output: &str, transforms: &[Transform]) -> Result<Vec<Su
 
             // Extract transforms: produce Vec<Suggestion>
             Transform::Parameterized(ParameterizedTransform::RegexExtract {
-                pattern,
+                compiled,
                 name,
                 description,
             }) => {
                 let input_lines = lines.take().unwrap_or_else(|| vec![current_output.clone()]);
                 suggestions = Some(apply_regex_extract(
                     &input_lines,
-                    pattern,
+                    compiled,
                     *name,
                     *description,
                 ));
@@ -688,16 +700,36 @@ mod tests {
         .unwrap();
         match t {
             Transform::Parameterized(ParameterizedTransform::RegexExtract {
-                pattern,
+                compiled,
                 name,
                 description,
             }) => {
-                assert_eq!(pattern, r"^(\S+)\s+(.*)");
+                // The compiled pattern should round-trip via `as_str()` so a
+                // valid spec is observably preserved.
+                assert_eq!(compiled.as_str(), r"^(\S+)\s+(.*)");
                 assert_eq!(name, 1);
                 assert_eq!(description, Some(2));
             }
             other => panic!("expected RegexExtract, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn test_deserialize_regex_extract_invalid_pattern_fails() {
+        // Garbage pattern: unbalanced bracket. Deserialization MUST fail with
+        // a clear error message that mentions both the pattern and the regex
+        // crate's diagnostic — otherwise a typo in a spec is undebuggable.
+        let bad = r#"{"type": "regex_extract", "pattern": "[unclosed", "name": 1}"#;
+        let err = serde_json::from_str::<Transform>(bad).unwrap_err();
+        let msg = err.to_string();
+        assert!(
+            msg.contains("regex_extract"),
+            "error must mention transform name: {msg}"
+        );
+        assert!(
+            msg.contains("[unclosed"),
+            "error must echo the broken pattern: {msg}"
+        );
     }
 
     #[test]
@@ -969,7 +1001,8 @@ mod tests {
     #[test]
     fn test_regex_extract() {
         let lines = vec!["nginx   running".into(), "redis   stopped".into()];
-        let result = apply_regex_extract(&lines, r"^(\S+)\s+(\S+)", 1, Some(2));
+        let re = Regex::new(r"^(\S+)\s+(\S+)").unwrap();
+        let result = apply_regex_extract(&lines, &re, 1, Some(2));
         assert_eq!(result.len(), 2);
         assert_eq!(result[0].text, "nginx");
         assert_eq!(result[0].description.as_deref(), Some("running"));
@@ -978,8 +1011,23 @@ mod tests {
     #[test]
     fn test_regex_extract_no_match_skipped() {
         let lines = vec!["matches_pattern".into(), "".into(), "also_matches".into()];
-        let result = apply_regex_extract(&lines, r"^(\S+)$", 1, None);
+        let re = Regex::new(r"^(\S+)$").unwrap();
+        let result = apply_regex_extract(&lines, &re, 1, None);
         assert_eq!(result.len(), 2);
+    }
+
+    #[test]
+    fn test_regex_extract_compiled_once_reused_many_times() {
+        // The whole point of LOW-3: a single compiled regex must be reusable
+        // across many calls without recompiling. Compile once, run a thousand
+        // extractions, verify each call still produces the right result.
+        let re = Regex::new(r"^item_(\d+)$").unwrap();
+        for i in 0..1000 {
+            let line = format!("item_{i}");
+            let result = apply_regex_extract(std::slice::from_ref(&line), &re, 1, None);
+            assert_eq!(result.len(), 1);
+            assert_eq!(result[0].text, i.to_string());
+        }
     }
 
     #[test]

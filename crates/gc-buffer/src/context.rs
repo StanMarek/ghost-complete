@@ -64,26 +64,43 @@ pub fn parse_command_context(buffer: &str, cursor: usize) -> CommandContext {
     let last_token_is_redirect = tokens.last().is_some_and(|t| {
         matches!(
             t,
-            Token::RedirectOut | Token::RedirectAppend | Token::RedirectIn
+            Token::RedirectOut
+                | Token::RedirectAppend
+                | Token::RedirectIn
+                | Token::Heredoc
+                | Token::HereString
         )
     });
 
-    // Determine if cursor is at a word boundary (trailing space) or mid-word
-    let ends_with_space = !before_cursor.is_empty()
-        && before_cursor.as_bytes()[before_cursor.len() - 1].is_ascii_whitespace()
-        && result.quote_state == QuoteState::None;
+    // Determine if cursor is at a word boundary (trailing space) or mid-word.
+    // If we're in a comment, all preceding tokens are complete.
+    let ends_with_space = result.in_comment
+        || (!before_cursor.is_empty()
+            && before_cursor.as_bytes()[before_cursor.len() - 1].is_ascii_whitespace()
+            && result.quote_state == QuoteState::None);
 
-    // Collect words from the segment
+    // Collect words from the segment, skipping redirect targets
     let mut words: Vec<&str> = Vec::new();
+    let mut skip_next_word = false;
     for tok in segment {
-        if let Token::Word(w) = tok {
-            words.push(w);
-        } else if matches!(
-            tok,
-            Token::RedirectOut | Token::RedirectAppend | Token::RedirectIn
-        ) {
-            // Redirect targets are filenames, not args — skip words after redirects
-            // But for now, just track the redirect operator position
+        match tok {
+            Token::Word(w) => {
+                if skip_next_word {
+                    skip_next_word = false;
+                } else {
+                    words.push(w);
+                }
+            }
+            Token::RedirectOut
+            | Token::RedirectAppend
+            | Token::RedirectIn
+            | Token::Heredoc
+            | Token::HereString => {
+                skip_next_word = true;
+            }
+            _ => {
+                skip_next_word = false;
+            }
         }
     }
 
@@ -96,7 +113,9 @@ pub fn parse_command_context(buffer: &str, cursor: usize) -> CommandContext {
         (head, tail.first().copied().unwrap_or(""))
     };
 
-    // First complete word is the command (if any)
+    // First complete word is the command (if any). `word_index` always equals
+    // `complete_words.len()` — that's the slot the cursor (current_word) sits in,
+    // whether or not current_word happens to be empty.
     let (command, args, word_index) = if complete_words.is_empty() {
         // No complete words — cursor is on the first word (command position)
         (None, Vec::new(), 0)
@@ -107,29 +126,14 @@ pub fn parse_command_context(buffer: &str, cursor: usize) -> CommandContext {
         (Some(cmd), args, word_index)
     };
 
-    // Adjust: if current_word is empty and ends_with_space, word_index accounts for it
-    let word_index = if current_word.is_empty() && !complete_words.is_empty() {
-        complete_words.len()
-    } else if current_word.is_empty() && complete_words.is_empty() {
-        0
-    } else {
-        word_index
-    };
-
     let is_flag = current_word.starts_with('-');
     let is_long_flag = current_word.starts_with("--");
 
     // Find preceding flag: last arg that starts with '-' immediately before current position
-    let preceding_flag = if !args.is_empty() {
-        let last_arg = args.last().unwrap();
-        if last_arg.starts_with('-') {
-            Some(last_arg.clone())
-        } else {
-            None
-        }
-    } else {
-        None
-    };
+    let preceding_flag = args
+        .last()
+        .filter(|last_arg| last_arg.starts_with('-'))
+        .cloned();
 
     let in_redirect = last_token_is_redirect;
 
@@ -314,6 +318,73 @@ mod tests {
     #[test]
     fn test_is_first_segment_true_empty() {
         let ctx = parse_command_context("", 0);
+        assert!(ctx.is_first_segment);
+    }
+
+    #[test]
+    fn test_comment_not_counted_as_args() {
+        let ctx = parse_command_context("ls -la # comment", 17);
+        assert_eq!(ctx.command, Some("ls".into()));
+        assert_eq!(ctx.args, vec!["-la"]);
+        assert_eq!(ctx.word_index, 2);
+        assert_eq!(ctx.current_word, "");
+    }
+
+    #[test]
+    fn test_fd_redirect_not_counted_as_arg() {
+        let ctx = parse_command_context("cmd 2>/dev/null ", 16);
+        assert_eq!(ctx.command, Some("cmd".into()));
+        // 2 should NOT appear in args — it's an FD prefix, not an argument
+        assert!(ctx.args.iter().all(|a| a != "2"));
+    }
+
+    #[test]
+    fn test_heredoc_sets_in_redirect() {
+        let ctx = parse_command_context("cat <<EOF ", 10);
+        // After <<EOF, cursor expects the delimiter/body — treated like redirect
+        assert_eq!(ctx.command, Some("cat".into()));
+    }
+
+    #[test]
+    fn test_redirect_target_not_counted_as_arg() {
+        // "cmd >/tmp/out arg" — /tmp/out is a redirect target, not an argument
+        let ctx = parse_command_context("cmd >/tmp/out arg ", 18);
+        assert_eq!(ctx.command, Some("cmd".into()));
+        assert_eq!(ctx.args, vec!["arg"]);
+        assert_eq!(ctx.word_index, 2);
+    }
+
+    #[test]
+    fn test_redirect_target_heredoc_not_counted_as_arg() {
+        // "cat <<EOF arg " — EOF is the heredoc delimiter, not an argument
+        let ctx = parse_command_context("cat <<EOF arg ", 14);
+        assert_eq!(ctx.command, Some("cat".into()));
+        assert_eq!(ctx.args, vec!["arg"]);
+    }
+
+    #[test]
+    fn test_fd_redirect_2_ampersand_1_not_arg() {
+        // "cmd 2>&1 arg " — 2>&1 should not produce any arguments
+        let ctx = parse_command_context("cmd 2>&1 arg ", 13);
+        assert_eq!(ctx.command, Some("cmd".into()));
+        assert_eq!(ctx.args, vec!["arg"]);
+    }
+
+    #[test]
+    fn test_subshell_not_split_into_args() {
+        let ctx = parse_command_context("echo $(git status) ", 19);
+        assert_eq!(ctx.command, Some("echo".into()));
+        // The whole $(git status) is one arg, not three
+        assert_eq!(ctx.args, vec!["$(git status)"]);
+        assert_eq!(ctx.word_index, 2);
+    }
+
+    #[test]
+    fn test_subshell_pipe_stays_in_outer_context() {
+        // Pipe inside $() should NOT affect the outer segment
+        let ctx = parse_command_context("echo $(ls | head) ", 18);
+        assert_eq!(ctx.command, Some("echo".into()));
+        assert!(!ctx.in_pipe);
         assert!(ctx.is_first_segment);
     }
 }
