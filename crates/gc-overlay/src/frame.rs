@@ -208,8 +208,7 @@ pub fn build_content_row(
         });
 
         // Trailing padding to fill row
-        let remaining =
-            total_width.saturating_sub(gutter_text_len + DESC_GAP_COLS + desc_cols);
+        let remaining = total_width.saturating_sub(gutter_text_len + DESC_GAP_COLS + desc_cols);
         if remaining > 0 {
             spans.push(StyledSpan {
                 text: " ".repeat(remaining),
@@ -397,11 +396,41 @@ mod tests {
         assert_eq!(cols, 5);
         // Runs: Plain("h"), Highlight("e"), Plain("l"), Highlight("l"), Plain("o")
         assert_eq!(spans.len(), 5);
-        assert_eq!(spans[0], StyledSpan { text: "h".into(), style: SpanStyle::Plain });
-        assert_eq!(spans[1], StyledSpan { text: "e".into(), style: SpanStyle::MatchHighlight });
-        assert_eq!(spans[2], StyledSpan { text: "l".into(), style: SpanStyle::Plain });
-        assert_eq!(spans[3], StyledSpan { text: "l".into(), style: SpanStyle::MatchHighlight });
-        assert_eq!(spans[4], StyledSpan { text: "o".into(), style: SpanStyle::Plain });
+        assert_eq!(
+            spans[0],
+            StyledSpan {
+                text: "h".into(),
+                style: SpanStyle::Plain
+            }
+        );
+        assert_eq!(
+            spans[1],
+            StyledSpan {
+                text: "e".into(),
+                style: SpanStyle::MatchHighlight
+            }
+        );
+        assert_eq!(
+            spans[2],
+            StyledSpan {
+                text: "l".into(),
+                style: SpanStyle::Plain
+            }
+        );
+        assert_eq!(
+            spans[3],
+            StyledSpan {
+                text: "l".into(),
+                style: SpanStyle::MatchHighlight
+            }
+        );
+        assert_eq!(
+            spans[4],
+            StyledSpan {
+                text: "o".into(),
+                style: SpanStyle::Plain
+            }
+        );
     }
 
     #[test]
@@ -452,17 +481,26 @@ mod tests {
 
     #[test]
     fn content_row_basic_with_description() {
-        let s = make("checkout", Some("Switch branches"), SuggestionKind::Subcommand);
+        let s = make(
+            "checkout",
+            Some("Switch branches"),
+            SuggestionKind::Subcommand,
+        );
         let row = build_content_row(&s, 40, false, ScrollbarCell::None);
         assert!(!row.is_selected);
         assert_eq!(row.scrollbar, ScrollbarCell::None);
 
         // First span should be gutter
         assert_eq!(row.spans[0].style, SpanStyle::Gutter);
-        assert!(row.spans[0].text.contains(kind_icon(SuggestionKind::Subcommand)));
+        assert!(row.spans[0]
+            .text
+            .contains(kind_icon(SuggestionKind::Subcommand)));
 
         // Should contain description span with Description style
-        let has_desc = row.spans.iter().any(|sp| sp.style == SpanStyle::Description);
+        let has_desc = row
+            .spans
+            .iter()
+            .any(|sp| sp.style == SpanStyle::Description);
         assert!(has_desc, "should have a Description-styled span");
 
         // Description text should appear
@@ -475,12 +513,19 @@ mod tests {
 
     #[test]
     fn content_row_selected_desc_uses_plain() {
-        let s = make("checkout", Some("Switch branches"), SuggestionKind::Subcommand);
+        let s = make(
+            "checkout",
+            Some("Switch branches"),
+            SuggestionKind::Subcommand,
+        );
         let row = build_content_row(&s, 40, true, ScrollbarCell::None);
         assert!(row.is_selected);
 
         // When selected, description should use Plain style, not Description
-        let has_desc_style = row.spans.iter().any(|sp| sp.style == SpanStyle::Description);
+        let has_desc_style = row
+            .spans
+            .iter()
+            .any(|sp| sp.style == SpanStyle::Description);
         assert!(
             !has_desc_style,
             "selected row should not have Description style"
@@ -537,10 +582,17 @@ mod tests {
     #[test]
     fn content_row_no_description_narrow() {
         // Very narrow width: no room for description
-        let s = make("ls", Some("List directory contents"), SuggestionKind::Command);
+        let s = make(
+            "ls",
+            Some("List directory contents"),
+            SuggestionKind::Command,
+        );
         // Width 8: GUTTER(4) + "ls"(2) + trailing(1) = 7, only 1 col left for desc
         let row = build_content_row(&s, 8, false, ScrollbarCell::None);
-        let has_desc = row.spans.iter().any(|sp| sp.style == SpanStyle::Description);
+        let has_desc = row
+            .spans
+            .iter()
+            .any(|sp| sp.style == SpanStyle::Description);
         assert!(!has_desc, "too narrow for description");
     }
 
@@ -587,7 +639,11 @@ mod tests {
     #[test]
     fn frame_with_borders() {
         let suggestions = vec![
-            make("checkout", Some("Switch branches"), SuggestionKind::Subcommand),
+            make(
+                "checkout",
+                Some("Switch branches"),
+                SuggestionKind::Subcommand,
+            ),
             make("commit", Some("Record changes"), SuggestionKind::Subcommand),
         ];
         let state = OverlayState::new();
@@ -667,7 +723,10 @@ mod tests {
         // Loading row should contain "  ..."
         if let PopupRow::Loading { ref spans } = frame.rows[2] {
             let text: String = spans.iter().map(|s| s.text.as_str()).collect();
-            assert!(text.contains("..."), "loading row should contain '...': {text}");
+            assert!(
+                text.contains("..."),
+                "loading row should contain '...': {text}"
+            );
             assert!(
                 spans.iter().all(|s| s.style == SpanStyle::Loading),
                 "all loading spans should have Loading style"
@@ -810,4 +869,3 @@ mod tests {
         }
     }
 }
-

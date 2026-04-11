@@ -11,9 +11,7 @@ use toml_edit::{DocumentMut, Item, Value};
 /// - Missing sections are created at the end of the document
 /// - Missing keys in existing sections are inserted
 pub fn patch_toml(source: &str, section: &str, key: &str, value_str: &str) -> Result<String> {
-    let mut doc: DocumentMut = source
-        .parse()
-        .context("failed to parse TOML source")?;
+    let mut doc: DocumentMut = source.parse().context("failed to parse TOML source")?;
 
     let value: Value = value_str
         .parse()
@@ -39,9 +37,7 @@ pub fn patch_toml(source: &str, section: &str, key: &str, value_str: &str) -> Re
             tbl.insert(segment, Item::Table(toml_edit::Table::new()));
         }
 
-        current = tbl
-            .get_mut(segment)
-            .expect("just inserted; must exist");
+        current = tbl.get_mut(segment).expect("just inserted; must exist");
     }
 
     // `current` now points at the target section table.
@@ -151,8 +147,7 @@ mod tests {
 
     #[test]
     fn patch_preserves_comments() {
-        let input =
-            "# Ghost Complete Config\n\n[theme]\n# My custom theme\npreset = \"dark\"\n";
+        let input = "# Ghost Complete Config\n\n[theme]\n# My custom theme\npreset = \"dark\"\n";
         let patched = patch_toml(input, "theme", "preset", "\"catppuccin\"").unwrap();
         assert!(patched.contains("# Ghost Complete Config"));
         assert!(patched.contains("# My custom theme"));

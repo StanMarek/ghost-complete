@@ -68,7 +68,10 @@ impl App {
 
     pub fn current_section_fields(&self) -> Vec<&FieldMeta> {
         let section = self.current_section();
-        self.all_fields.iter().filter(|f| f.section == section).collect()
+        self.all_fields
+            .iter()
+            .filter(|f| f.section == section)
+            .collect()
     }
 
     /// Get the current value of a field from the config as a display string.

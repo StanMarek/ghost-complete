@@ -105,6 +105,11 @@ fn main() -> Result<()> {
             return status::run_status(cli.config.as_deref());
         }
         Some("config") => {
+            if cli.shell_args.get(1).map(|s| s.as_str()) == Some("edit") {
+                init_tracing(&cli.log_level, cli.log_file.as_deref())?;
+                tui::run_config_editor(cli.config.as_deref())?;
+                std::process::exit(0);
+            }
             init_tracing(&cli.log_level, cli.log_file.as_deref())?;
             return config_cmd::run_config(cli.config.as_deref());
         }
