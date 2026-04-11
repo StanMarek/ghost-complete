@@ -5,6 +5,15 @@ use super::app::{App, EditState, Focus};
 use super::fields::FieldType;
 use super::toml_patch;
 
+/// Convert a char-based cursor position to a byte index in a string.
+/// Cursor 0 = byte 0, cursor N = byte offset of the Nth char.
+fn char_to_byte_index(s: &str, char_idx: usize) -> usize {
+    s.char_indices()
+        .nth(char_idx)
+        .map(|(byte, _)| byte)
+        .unwrap_or(s.len())
+}
+
 /// Handle a key event, dispatching to navigation or edit mode as appropriate.
 pub fn handle_key(app: &mut App, key: KeyEvent) {
     // Global keys (always active)
@@ -32,20 +41,22 @@ pub fn handle_key(app: &mut App, key: KeyEvent) {
             }
             KeyCode::Backspace => {
                 if *cursor > 0 {
-                    buffer.remove(*cursor - 1);
                     *cursor -= 1;
+                    let byte_idx = char_to_byte_index(buffer, *cursor);
+                    buffer.remove(byte_idx);
                 }
             }
             KeyCode::Left => {
                 *cursor = cursor.saturating_sub(1);
             }
             KeyCode::Right => {
-                if *cursor < buffer.len() {
+                if *cursor < buffer.chars().count() {
                     *cursor += 1;
                 }
             }
             KeyCode::Char(c) => {
-                buffer.insert(*cursor, c);
+                let byte_idx = char_to_byte_index(buffer, *cursor);
+                buffer.insert(byte_idx, c);
                 *cursor += 1;
             }
             _ => {}
@@ -135,7 +146,7 @@ fn start_edit(app: &mut App) {
         _ => {
             // Enter text edit mode
             let buffer = current_value.clone();
-            let cursor = buffer.len();
+            let cursor = buffer.chars().count();
             app.edit_state = EditState::Text { buffer, cursor };
         }
     }

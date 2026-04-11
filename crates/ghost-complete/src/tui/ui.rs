@@ -117,8 +117,13 @@ fn render_fields(frame: &mut Frame, app: &App, area: Rect) {
         let value_line = if is_selected {
             if let EditState::Text { ref buffer, cursor } = app.edit_state {
                 // In edit mode: show editable buffer with cursor
-                let before = &buffer[..cursor.min(buffer.len())];
-                let after = &buffer[cursor.min(buffer.len())..];
+                let byte_cursor = buffer
+                    .char_indices()
+                    .nth(cursor)
+                    .map(|(b, _)| b)
+                    .unwrap_or(buffer.len());
+                let before = &buffer[..byte_cursor];
+                let after = &buffer[byte_cursor..];
                 Line::from(vec![
                     Span::styled("  > ", Style::default().fg(Color::Green)),
                     Span::raw(before),
