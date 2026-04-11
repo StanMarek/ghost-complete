@@ -2,6 +2,7 @@ mod config_cmd;
 mod doctor;
 mod install;
 mod status;
+mod tui;
 mod validate;
 
 use anyhow::{Context, Result};
