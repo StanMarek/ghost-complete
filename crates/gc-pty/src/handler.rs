@@ -317,16 +317,25 @@ impl InputHandler {
     ) -> Vec<u8> {
         let mut cleanup = Vec::new();
 
-        // If auto_trigger is being disabled while popup is visible, clear it.
-        if self.auto_trigger && !auto_trigger && self.visible {
-            if let Some(ref layout) = self.last_layout {
-                clear_popup(&mut cleanup, layout, &self.terminal_profile);
+        // If auto_trigger is being disabled, tear down all pending state —
+        // not just the visible popup.  A pending trigger_requested or in-flight
+        // dynamic_task can survive without the popup being visible (e.g. the
+        // debounce timer set trigger_requested but trigger() hasn't fired yet).
+        if self.auto_trigger && !auto_trigger {
+            if self.visible {
+                if let Some(ref layout) = self.last_layout {
+                    clear_popup(&mut cleanup, layout, &self.terminal_profile);
+                }
+                self.visible = false;
+                self.suggestions.clear();
+                self.overlay.reset();
+                self.last_layout = None;
             }
-            self.visible = false;
-            self.suggestions.clear();
-            self.overlay.reset();
-            self.last_layout = None;
+            if let Some(handle) = self.dynamic_task.take() {
+                handle.abort();
+            }
             self.dynamic_rx = None;
+            self.dynamic_ctx = None;
             self.trigger_requested = false;
         }
 
@@ -1919,6 +1928,33 @@ mod tests {
         assert!(!handler.visible);
         assert!(!handler.auto_trigger_enabled());
         assert!(!cleanup.is_empty(), "should emit popup clear sequences");
+        assert!(handler.dynamic_rx.is_none(), "dynamic_rx must be cleared");
+        assert!(handler.dynamic_ctx.is_none(), "dynamic_ctx must be cleared");
+        assert!(handler.dynamic_task.is_none(), "dynamic_task must be cleared");
+    }
+
+    #[test]
+    fn test_update_config_clears_pending_trigger_even_when_not_visible() {
+        let mut handler = make_handler();
+        // Simulate a pending trigger (debounce timer fired, trigger() hasn't
+        // run yet) while the popup is NOT visible.
+        handler.trigger_requested = true;
+        assert!(!handler.visible);
+
+        let cleanup = handler.update_config(
+            PopupTheme::default(),
+            Keybindings::default(),
+            &[' ', '/', '-', '.'],
+            10,
+            false,
+        );
+
+        assert!(!handler.has_pending_trigger(), "pending trigger must be cancelled");
+        assert!(handler.dynamic_task.is_none());
+        assert!(handler.dynamic_rx.is_none());
+        assert!(handler.dynamic_ctx.is_none());
+        // No popup was visible, so no visual cleanup needed.
+        assert!(cleanup.is_empty());
     }
 
     #[test]
