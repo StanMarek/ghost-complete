@@ -306,7 +306,16 @@ pub fn render_popup(
 
         format_item(buf, suggestion, item_width, is_selected, theme);
 
+        // Explicit cursor positioning before scrollbar/border to guard
+        // against Nerd Font PUA icon width discrepancies. unicode-width
+        // reports PUA icons as 1 column but they may render as 2. If the
+        // actual glyph width differs from GUTTER_COLS, format_item's
+        // output is off by 1 column. This move_to guarantees alignment.
+        let scrollbar_col =
+            border_col + (if theme.borders { 1 } else { 0 }) + item_width;
+
         if needs_scrollbar {
+            ansi::move_to(buf, row, scrollbar_col);
             let row_idx = i;
             if is_selected {
                 if row_idx >= thumb_pos && row_idx < thumb_pos + thumb_size {
@@ -330,6 +339,8 @@ pub fn render_popup(
 
         // Right border
         if theme.borders {
+            let right_border_col = border_col + layout.width - 1;
+            ansi::move_to(buf, row, right_border_col);
             ansi::reset(buf);
             if !theme.border_on.is_empty() {
                 buf.extend_from_slice(&theme.border_on);
