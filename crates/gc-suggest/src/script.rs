@@ -34,7 +34,8 @@ pub(crate) const MAX_GENERATOR_STDOUT_BYTES: usize = 1024 * 1024;
 /// captured before the timeout fires is dropped — the timeout's async
 /// cancellation discards the inner state; a future improvement could
 /// hoist the buffers via interior mutability).
-/// Non-zero exit codes return an empty string (avoids error messages as suggestions).
+/// Non-zero exit codes return an `Err` so callers can distinguish "no output"
+/// from "generator failed" and avoid caching the empty result.
 pub async fn run_script(argv: &[&str], cwd: &Path, timeout_ms: u64) -> Result<String> {
     if argv.is_empty() {
         bail!("empty script command");
@@ -185,7 +186,11 @@ pub async fn run_script(argv: &[&str], cwd: &Path, timeout_ms: u64) -> Result<St
                         stderr_str.trim_end()
                     );
                 }
-                return Ok(String::new());
+                return Err(anyhow::anyhow!(
+                    "script {:?} exited with status {}",
+                    argv,
+                    code
+                ));
             }
 
             if !stderr_buf.is_empty() {
@@ -343,35 +348,41 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_run_script_nonzero_exit_returns_empty() {
-        let result = run_script(&["sh", "-c", "exit 1"], Path::new("/tmp"), 5000)
-            .await
-            .unwrap();
+    async fn test_run_script_nonzero_exit_returns_err() {
+        let result = run_script(&["sh", "-c", "exit 1"], Path::new("/tmp"), 5000).await;
         assert!(
-            result.is_empty(),
-            "non-zero exit should return empty string, got: {:?}",
+            result.is_err(),
+            "non-zero exit should return Err, got: {:?}",
             result
+        );
+        let err = result.unwrap_err().to_string();
+        assert!(
+            err.contains("exited with status"),
+            "error should mention exit status: {err}"
         );
     }
 
     #[tokio::test]
     async fn test_run_script_nonzero_exit_with_stderr() {
-        // Regression for CRIT-B: a script that fails AND writes to stderr
-        // (e.g. `gh auth status` without credentials) must still return an
-        // empty String to the caller. The stderr contents are logged at
-        // warn! inside run_script — we don't assert on logs here, but the
-        // return contract is what callers rely on.
+        // A script that fails AND writes to stderr (e.g. `gh auth status`
+        // without credentials) must return Err so callers can distinguish
+        // failure from empty output and avoid caching the empty result.
+        // The stderr contents are logged at warn! inside run_script.
         let result = run_script(
             &["sh", "-c", "echo 'fake auth error' >&2; exit 42"],
             Path::new("/tmp"),
             5000,
         )
-        .await
-        .expect("non-zero exit with stderr must not surface as an error");
+        .await;
         assert!(
-            result.is_empty(),
-            "non-zero exit with stderr should return empty string, got: {:?}",
+            result.is_err(),
+            "non-zero exit with stderr should return Err, got: {:?}",
             result
+        );
+        let err = result.unwrap_err().to_string();
+        assert!(
+            err.contains("exited with status"),
+            "error should mention exit status: {err}"
         );
     }
 

@@ -383,7 +383,7 @@ pub fn render_popup(
                     ansi::reset(buf);
                     1 // loading row extends 1 row beyond layout.height (border is within that row)
                 } else {
-                    1 // only loading row fit
+                    0 // bottom border was NOT drawn (clipped), no extra row
                 }
             } else {
                 1 // no borders, just the loading row

@@ -595,19 +595,16 @@ impl SuggestionEngine {
             script_generators,
             wants_filepaths,
             wants_folders_only,
+            preceding_flag_has_args,
+            past_double_dash,
         } = specs::resolve_spec(spec, ctx);
 
-        // When the preceding flag takes an argument (templates or generators
-        // are set from the option's args), show ONLY those arg completions —
-        // not the full subcommand/option list. The user typed e.g.
-        // `curl -o ` and wants files, not more flags.
-        let in_option_arg = ctx.preceding_flag.is_some()
-            && (wants_filepaths
-                || wants_folders_only
-                || !native_generators.is_empty()
-                || !script_generators.is_empty());
+        // Suppress subcommands/options when:
+        // 1. The preceding flag takes an argument (e.g. `curl -o <TAB>`)
+        // 2. We're past `--` (end-of-flags separator) — only positional args
+        let suppress_commands = preceding_flag_has_args || past_double_dash;
 
-        if !in_option_arg {
+        if !suppress_commands {
             candidates.extend(subcommands);
             candidates.extend(options);
         }

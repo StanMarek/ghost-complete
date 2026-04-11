@@ -570,7 +570,8 @@ impl InputHandler {
         match key {
             KeyEvent::Printable(c) => {
                 self.debounce_suppressed = false;
-                let forward = vec![*c as u8];
+                let mut buf = [0u8; 4];
+                let forward = c.encode_utf8(&mut buf).as_bytes().to_vec();
                 if self.auto_trigger && self.trigger_chars.contains(c) {
                     // Defer trigger to Task B after shell processes the keystroke
                     self.trigger_requested = true;
@@ -994,6 +995,8 @@ impl InputHandler {
         self.suggestions.clear();
         self.overlay.reset();
         self.last_layout = None;
+        self.trigger_requested = false;
+        self.debounce_suppressed = false;
         if let Some(handle) = self.dynamic_task.take() {
             handle.abort();
         }
@@ -1156,7 +1159,10 @@ pub fn key_to_bytes(key: &KeyEvent) -> Vec<u8> {
             }
             vec![*c as u8 - 0x60]
         }
-        KeyEvent::Printable(c) => vec![*c as u8],
+        KeyEvent::Printable(c) => {
+            let mut buf = [0u8; 4];
+            c.encode_utf8(&mut buf).as_bytes().to_vec()
+        }
         KeyEvent::CursorPositionReport(_, _) => Vec::new(), // intercepted in proxy
         KeyEvent::Raw(bytes) => bytes.clone(),
     }

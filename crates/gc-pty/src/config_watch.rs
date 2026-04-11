@@ -24,7 +24,10 @@ use crate::handler::{InputHandler, Keybindings};
 /// On reload failure (parse error, invalid theme, etc.) a warning is logged
 /// and the previous config is kept. The proxy never crashes from a bad config
 /// edit.
-pub fn spawn_config_watcher(config_path: PathBuf, handler: Arc<Mutex<InputHandler>>) -> Result<()> {
+pub fn spawn_config_watcher(
+    config_path: PathBuf,
+    handler: Arc<Mutex<InputHandler>>,
+) -> Result<tokio::task::JoinHandle<()>> {
     let (tx, rx) = std::sync::mpsc::channel::<notify::Result<notify::Event>>();
 
     let watch_dir = config_path
@@ -40,7 +43,7 @@ pub fn spawn_config_watcher(config_path: PathBuf, handler: Arc<Mutex<InputHandle
         .map(|f| f.to_os_string())
         .unwrap_or_default();
 
-    tokio::task::spawn_blocking(move || {
+    let handle = tokio::task::spawn_blocking(move || {
         // Keep watcher alive for the lifetime of this blocking task.
         let _watcher = watcher;
         let mut last_reload = Instant::now() - std::time::Duration::from_secs(1);
@@ -155,7 +158,7 @@ pub fn spawn_config_watcher(config_path: PathBuf, handler: Arc<Mutex<InputHandle
         }
     });
 
-    Ok(())
+    Ok(handle)
 }
 
 /// Build a `PopupTheme` from a [`gc_config::ResolvedTheme`] (preset merged

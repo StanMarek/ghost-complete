@@ -208,10 +208,18 @@ impl Perform for TerminalState {
                 if params.len() < 3 {
                     return;
                 }
-                let cursor = std::str::from_utf8(params[1])
+                let cursor = match std::str::from_utf8(params[1])
                     .ok()
                     .and_then(|s| s.parse::<usize>().ok())
-                    .unwrap_or(0);
+                {
+                    Some(c) => c,
+                    None => {
+                        tracing::warn!(
+                            "OSC 7770 — invalid cursor position, skipping buffer update"
+                        );
+                        return;
+                    }
+                };
                 let buffer = match String::from_utf8(params[2].to_vec()) {
                     Ok(s) => s,
                     Err(_) => {

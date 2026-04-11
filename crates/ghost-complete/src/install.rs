@@ -1256,25 +1256,30 @@ fn shell_integration_block(script_path: &Path) -> String {
 /// Strips a managed block delimited by `begin`..`end` markers from `content`.
 /// Returns `(new_content, was_found)`.
 fn remove_block(content: &str, begin: &str, end: &str) -> (String, bool) {
-    let Some(start_idx) = content.find(begin) else {
-        return (content.to_string(), false);
-    };
-    let Some(end_match) = content[start_idx..].find(end) else {
-        return (content.to_string(), false);
-    };
-    let end_idx = start_idx + end_match + end.len();
+    let mut content = content.to_string();
+    let mut found = false;
 
-    let mut result = String::with_capacity(content.len());
-    result.push_str(&content[..start_idx]);
-    // Skip trailing newline after end marker if present
-    let after = if content[end_idx..].starts_with('\n') {
-        &content[end_idx + 1..]
-    } else {
-        &content[end_idx..]
-    };
-    result.push_str(after);
+    while let Some(start_idx) = content.find(begin) {
+        let Some(end_match) = content[start_idx..].find(end) else {
+            break;
+        };
+        let end_idx = start_idx + end_match + end.len();
 
-    (result, true)
+        let mut result = String::with_capacity(content.len());
+        result.push_str(&content[..start_idx]);
+        // Skip trailing newline after end marker if present
+        let after = if content[end_idx..].starts_with('\n') {
+            &content[end_idx + 1..]
+        } else {
+            &content[end_idx..]
+        };
+        result.push_str(after);
+
+        content = result;
+        found = true;
+    }
+
+    (content, found)
 }
 
 fn copy_specs(config_dir: &Path) -> Result<()> {

@@ -185,12 +185,18 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     }));
 
     // Config hot-reload: watch config.toml for changes
-    if let Some(config_dir) = gc_config::config_dir() {
+    let config_watcher_handle = if let Some(config_dir) = gc_config::config_dir() {
         let config_path = config_dir.join("config.toml");
-        if let Err(e) = spawn_config_watcher(config_path, Arc::clone(&handler)) {
-            tracing::warn!("failed to start config watcher: {e}");
+        match spawn_config_watcher(config_path, Arc::clone(&handler)) {
+            Ok(handle) => Some(handle),
+            Err(e) => {
+                tracing::warn!("failed to start config watcher: {e}");
+                None
+            }
         }
-    }
+    } else {
+        None
+    };
 
     // Debounce task: fires suggestions after a typing pause
     let debounce_notify = Arc::new(Notify::new());
@@ -209,22 +215,17 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
 
     // Task E: dynamic merge loop — renders script generator results when shell is idle.
     let dynamic_notify = {
-        // INVARIANT: this lock runs during startup before the handler `Arc`
-        // is shared with any other task (the debounce task spawn above
-        // captures its clone but has not been polled yet, and the stdin /
-        // stdout / merge tasks are spawned further below). At this point
-        // Arc::strong_count is at most 2 (this frame + the debounce clone)
-        // and no background task has been scheduled onto a runtime thread
-        // with a lock on the handler mutex, so poison is impossible.
-        //
-        // If a future refactor shares the handler earlier — for example a
-        // telemetry hook that spawns a task holding an `Arc<Mutex<Handler>>`
-        // before this point, or a synchronous callback that panics inside
-        // `.lock()` — this `.expect()` becomes reachable and must be
-        // converted to a match-with-warn pattern like the other lock sites
-        // in this file (see the stdin/stdout tasks and `dynamic_merge_loop`
-        // below).
-        let h = handler.lock().expect("handler mutex poisoned during setup");
+        // This lock runs during startup before the handler `Arc` is shared
+        // with any other task, so poison is extremely unlikely. We still
+        // use the match-with-warn pattern for consistency with every other
+        // lock site in this file.
+        let h = match handler.lock() {
+            Ok(h) => h,
+            Err(e) => {
+                tracing::warn!("handler mutex poisoned during setup: {e}");
+                anyhow::bail!("handler mutex poisoned during setup — cannot start proxy");
+            }
+        };
         h.dynamic_notify()
     };
     let handler_for_merge = Arc::clone(&handler);
@@ -578,15 +579,23 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                                 tracing::warn!("parser mutex poisoned on SIGWINCH: {e}");
                             }
                         }
-                        // Re-render popup if visible
+                        // Re-render popup if visible — buffer output under the
+                        // handler lock, then write to stdout after releasing it.
+                        // This avoids holding handler+stdout simultaneously (the
+                        // same pattern every other code path uses).
+                        let mut render_buf = Vec::new();
                         match handler.lock() {
                             Ok(mut h) => {
-                                let mut stdout = std::io::stdout().lock();
-                                h.handle_resize(&parser, &mut stdout);
+                                h.handle_resize(&parser, &mut render_buf);
                             }
                             Err(e) => {
                                 tracing::warn!("handler mutex poisoned on SIGWINCH: {e}");
                             }
+                        }
+                        if !render_buf.is_empty() {
+                            let mut stdout = std::io::stdout().lock();
+                            let _ = stdout.write_all(&render_buf);
+                            let _ = stdout.flush();
                         }
                     }
                     Err(e) => {
@@ -602,6 +611,9 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     stdout_handle.abort();
     merge_handle.abort();
     if let Some(h) = debounce_handle {
+        h.abort();
+    }
+    if let Some(h) = config_watcher_handle {
         h.abort();
     }
 

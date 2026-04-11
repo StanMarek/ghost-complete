@@ -268,6 +268,16 @@ pub struct SpecResolution {
     pub script_generators: Vec<GeneratorSpec>,
     pub wants_filepaths: bool,
     pub wants_folders_only: bool,
+    /// True when the preceding flag's own `args` spec contributed generators
+    /// or templates. Used by `engine.rs` to suppress subcommands/options when
+    /// the user is filling in a flag's argument (e.g. `curl -o <TAB>`).
+    /// False when the preceding flag is boolean (no args) — positional-arg
+    /// generators should NOT suppress subcommands/options in that case.
+    pub preceding_flag_has_args: bool,
+    /// True when a `--` (end-of-flags) separator was seen in the args before
+    /// the current position. After `--`, all tokens are positional — the
+    /// engine should suppress both subcommands and options.
+    pub past_double_dash: bool,
 }
 
 /// Walk the spec tree using args from the CommandContext to find the deepest
@@ -278,12 +288,25 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
     let mut current_options = &spec.options;
     let mut current_args = &spec.args;
 
-    // Walk through ctx.args, greedily matching subcommand names
+    // Walk through ctx.args, greedily matching subcommand names.
+    // Once a non-flag, non-subcommand token is encountered (a positional
+    // arg), stop subcommand matching — subsequent tokens are positional
+    // even if they happen to match a subcommand name. Without this guard,
+    // `git push.sh push` would incorrectly match `push` as a subcommand
+    // after the positional `push.sh`.
     let mut arg_idx = 0;
+    let mut past_positional = false;
     let args = &ctx.args;
 
     while arg_idx < args.len() {
         let arg = &args[arg_idx];
+
+        // `--` marks end of flags — all subsequent tokens are positional
+        if arg == "--" {
+            past_positional = true;
+            arg_idx += 1;
+            continue;
+        }
 
         // Skip flags
         if arg.starts_with('-') {
@@ -300,16 +323,21 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
             continue;
         }
 
-        // Try to match a subcommand
-        if let Some(sub) = current_subcommands.iter().find(|s| s.name == *arg) {
-            current_subcommands = &sub.subcommands;
-            current_options = &sub.options;
-            current_args = &sub.args;
-            arg_idx += 1;
-        } else {
-            // Positional argument — don't descend further
-            arg_idx += 1;
+        // Try to match a subcommand (only before the first positional arg)
+        if !past_positional {
+            if let Some(sub) = current_subcommands.iter().find(|s| s.name == *arg) {
+                current_subcommands = &sub.subcommands;
+                current_options = &sub.options;
+                current_args = &sub.args;
+                arg_idx += 1;
+                continue;
+            }
         }
+
+        // Positional argument — all subsequent non-flag tokens are
+        // positional too.
+        past_positional = true;
+        arg_idx += 1;
     }
 
     // Build suggestions from the resolved position
@@ -346,9 +374,16 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
     // If the preceding token was a flag that takes an argument, check
     // the option's arg spec for templates/generators instead of the
     // positional args.
+    let mut preceding_flag_has_args = false;
     if let Some(flag) = &ctx.preceding_flag {
         if let Some(opt) = find_option(current_options, flag) {
             if let Some(arg_spec) = &opt.args {
+                // The flag takes an argument — suppress subcommands/options
+                // regardless of whether the arg spec has explicit generators.
+                // A bare `"args": { "name": "file" }` still means the user
+                // is filling a value, not typing a subcommand.
+                preceding_flag_has_args = true;
+
                 collect_generators(
                     &arg_spec.generators,
                     &mut native_generators,
@@ -388,6 +423,8 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
         script_generators,
         wants_filepaths,
         wants_folders_only,
+        preceding_flag_has_args,
+        past_double_dash: past_positional && ctx.args.iter().any(|a| a == "--"),
     }
 }
 
