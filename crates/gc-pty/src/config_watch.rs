@@ -33,6 +33,13 @@ impl ConfigWatcherHandle {
     }
 }
 
+impl Drop for ConfigWatcherHandle {
+    fn drop(&mut self) {
+        self.shutdown.store(true, Ordering::Release);
+        self.join.abort();
+    }
+}
+
 /// Spawn a background task that watches `config_path` for modifications and
 /// hot-reloads runtime-configurable fields into the handler.
 ///
