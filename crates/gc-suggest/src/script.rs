@@ -161,10 +161,7 @@ pub async fn run_script(argv: &[&str], cwd: &Path, timeout_ms: u64) -> Result<St
                     // Return Err so the caller does NOT cache the empty result.
                     // Returning Ok("") here would poison the generator cache
                     // with an empty entry for the full TTL, suppressing retries.
-                    bail!(
-                        "script process hung after closing pipes: {:?}",
-                        argv
-                    );
+                    bail!("script process hung after closing pipes: {:?}", argv);
                 }
             };
 

@@ -1930,7 +1930,10 @@ mod tests {
         assert!(!cleanup.is_empty(), "should emit popup clear sequences");
         assert!(handler.dynamic_rx.is_none(), "dynamic_rx must be cleared");
         assert!(handler.dynamic_ctx.is_none(), "dynamic_ctx must be cleared");
-        assert!(handler.dynamic_task.is_none(), "dynamic_task must be cleared");
+        assert!(
+            handler.dynamic_task.is_none(),
+            "dynamic_task must be cleared"
+        );
     }
 
     #[test]
@@ -1949,7 +1952,10 @@ mod tests {
             false,
         );
 
-        assert!(!handler.has_pending_trigger(), "pending trigger must be cancelled");
+        assert!(
+            !handler.has_pending_trigger(),
+            "pending trigger must be cancelled"
+        );
         assert!(handler.dynamic_task.is_none());
         assert!(handler.dynamic_rx.is_none());
         assert!(handler.dynamic_ctx.is_none());
