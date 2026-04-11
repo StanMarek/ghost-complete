@@ -93,10 +93,14 @@ pub fn render_preview(frame: &mut Frame, app: &App, area: Rect) {
         inner.height.min(max_visible as u16)
     };
 
+    // Clamp popup width to leave padding inside the preview pane so
+    // popup borders don't overlap the preview Block borders.
+    let popup_width = inner.width.saturating_sub(2).min(60);
+
     let layout = PopupLayout {
         start_row: 0,
         start_col: 0,
-        width: inner.width,
+        width: popup_width,
         height,
         scroll_deficit: 0,
     };
