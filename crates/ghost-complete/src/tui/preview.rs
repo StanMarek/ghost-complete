@@ -130,8 +130,12 @@ pub fn render_preview(frame: &mut Frame, app: &App, area: Rect) {
                     .map(|styled_span| {
                         let style = if content_row.is_selected {
                             match styled_span.style {
+                                // Compose configured match highlight on top of
+                                // the selected row's base style — matches how
+                                // the real renderer layers `match_highlight_on`
+                                // after `selected_on`.
                                 SpanStyle::MatchHighlight => {
-                                    selected_style.add_modifier(Modifier::BOLD)
+                                    selected_style.patch(match_highlight_style)
                                 }
                                 _ => selected_style,
                             }
@@ -155,7 +159,8 @@ pub fn render_preview(frame: &mut Frame, app: &App, area: Rect) {
                         spans.push(Span::styled("\u{2588}", scrollbar_style));
                     }
                     ScrollbarCell::Track => {
-                        spans.push(Span::styled("\u{2502}", scrollbar_style));
+                        // U+2506 ┆ matches the real renderer (render.rs).
+                        spans.push(Span::styled("\u{2506}", scrollbar_style));
                     }
                     ScrollbarCell::None => {}
                 }

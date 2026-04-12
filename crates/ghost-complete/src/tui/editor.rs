@@ -1,5 +1,6 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use gc_config::GhostConfig;
+use toml_edit::Value;
 
 use super::app::{App, EditState, Focus};
 use super::fields::FieldType;
@@ -127,9 +128,9 @@ fn start_edit(app: &mut App) {
         FieldType::Bool => {
             // Toggle immediately
             let new_val = if current_value == "true" {
-                "false"
+                Value::from(false)
             } else {
-                "true"
+                Value::from(true)
             };
             apply_field_change(app, section, key, new_val);
         }
@@ -140,8 +141,12 @@ fn start_edit(app: &mut App) {
                 .position(|o| *o == current_value)
                 .unwrap_or(0);
             let next_idx = (current_idx + 1) % options.len();
-            let toml_value = format!("\"{}\"", options[next_idx]);
-            apply_field_change(app, section, key, &toml_value);
+            apply_field_change(
+                app,
+                section,
+                key,
+                toml_patch::string_value(options[next_idx]),
+            );
         }
         _ => {
             // Enter text edit mode
@@ -166,19 +171,27 @@ fn apply_edit(app: &mut App) {
 
     let section = field.section;
     let key = field.key;
+    let field_key = format!("{section}.{key}");
 
-    // Format as TOML value
-    let toml_value = match field.field_type {
-        FieldType::String | FieldType::StyleString => format!("\"{}\"", buffer),
-        FieldType::CharArray | FieldType::StringArray => buffer.clone(),
-        _ => buffer.clone(), // numbers, etc.
+    // Build the TOML value. Strings go through `Value::from` to handle
+    // embedded quotes/backslashes; numeric/array literals are parsed.
+    let value_result = match field.field_type {
+        FieldType::String | FieldType::StyleString => Ok(toml_patch::string_value(&buffer)),
+        _ => toml_patch::parse_value(&buffer),
     };
 
-    apply_field_change(app, section, key, &toml_value);
+    match value_result {
+        Ok(value) => {
+            apply_field_change(app, section, key, value);
+        }
+        Err(e) => {
+            app.errors.push((field_key, format!("Invalid value: {e}")));
+        }
+    }
     app.edit_state = EditState::None;
 }
 
-fn apply_field_change(app: &mut App, section: &str, key: &str, toml_value: &str) {
+fn apply_field_change(app: &mut App, section: &str, key: &str, toml_value: Value) {
     let field_key = format!("{section}.{key}");
 
     match toml_patch::patch_toml(&app.raw_toml, section, key, toml_value) {
@@ -186,10 +199,35 @@ fn apply_field_change(app: &mut App, section: &str, key: &str, toml_value: &str)
             // Validate by parsing the patched TOML as a full config
             match toml::from_str::<GhostConfig>(&new_toml) {
                 Ok(new_config) => {
+                    // Reject values that would be clamped by `GhostConfig::normalize`
+                    // so the user sees the error at edit time rather than discovering
+                    // on next load that their value was silently changed.
+                    let mut normalized = new_config.clone();
+                    normalized.normalize();
+                    if normalized.popup.max_visible != new_config.popup.max_visible {
+                        app.errors.push((
+                            field_key,
+                            format!(
+                                "value {} out of range: would be clamped to {}",
+                                new_config.popup.max_visible, normalized.popup.max_visible
+                            ),
+                        ));
+                        return;
+                    }
+                    if normalized.suggest.max_results != new_config.suggest.max_results {
+                        app.errors.push((
+                            field_key,
+                            format!(
+                                "value {} out of range: would be clamped to {}",
+                                new_config.suggest.max_results, normalized.suggest.max_results
+                            ),
+                        ));
+                        return;
+                    }
+
                     app.raw_toml = new_toml;
                     app.config = new_config;
                     app.dirty = true;
-                    // Clear errors for this key
                     app.errors.retain(|(k, _)| k != &field_key);
                 }
                 Err(e) => {
@@ -239,5 +277,53 @@ fn save(app: &mut App) {
             app.errors
                 .push(("save".to_string(), format!("Save failed: {e}")));
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    fn make_app(raw_toml: &str) -> App {
+        let config: GhostConfig = toml::from_str(raw_toml).unwrap_or_default();
+        App::new(
+            config,
+            raw_toml.to_string(),
+            PathBuf::from("/tmp/unused.toml"),
+        )
+    }
+
+    #[test]
+    fn apply_field_change_rejects_out_of_range_max_visible() {
+        let mut app = make_app("[popup]\nmax_visible = 8\n");
+        apply_field_change(&mut app, "popup", "max_visible", Value::from(100_000));
+        assert!(!app.dirty, "out-of-range value must not be committed");
+        let err = app
+            .errors
+            .iter()
+            .find(|(k, _)| k == "popup.max_visible")
+            .expect("error should be recorded");
+        assert!(err.1.contains("out of range"), "got: {}", err.1);
+        assert!(err.1.contains("clamped"), "got: {}", err.1);
+    }
+
+    #[test]
+    fn apply_field_change_rejects_out_of_range_max_results() {
+        let mut app = make_app("[suggest]\nmax_results = 50\n");
+        apply_field_change(&mut app, "suggest", "max_results", Value::from(20_000));
+        assert!(!app.dirty);
+        assert!(app
+            .errors
+            .iter()
+            .any(|(k, v)| k == "suggest.max_results" && v.contains("out of range")));
+    }
+
+    #[test]
+    fn apply_field_change_accepts_in_range() {
+        let mut app = make_app("[popup]\nmax_visible = 8\n");
+        apply_field_change(&mut app, "popup", "max_visible", Value::from(12));
+        assert!(app.dirty, "in-range value must commit");
+        assert!(app.errors.is_empty());
     }
 }

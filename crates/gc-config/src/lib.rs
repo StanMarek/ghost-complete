@@ -112,7 +112,7 @@ impl Default for PopupConfig {
 #[serde(default)]
 pub struct SuggestConfig {
     /// Maximum number of ranked suggestions shown in the popup after
-    /// fuzzy matching. Clamped to `[1, 10_000]` by [`GhostConfig::clamp_bounds`].
+    /// fuzzy matching. Clamped to `[1, 10_000]` by [`GhostConfig::normalize`].
     ///
     /// - Upper bound `10_000`: values above are clamped with a warning to
     ///   avoid pathological memory / render cost.
@@ -390,7 +390,10 @@ const MAX_RESULTS_DEFAULT: usize = 50;
 
 impl GhostConfig {
     /// Clamp config values to sane bounds, logging warnings when clamping.
-    fn clamp_bounds(&mut self) {
+    ///
+    /// Exposed for TUI editor validation: callers can clone, normalize, and
+    /// compare to detect out-of-range values without mutating the original.
+    pub fn normalize(&mut self) {
         if self.popup.max_visible > MAX_VISIBLE_UPPER {
             tracing::warn!(
                 "popup.max_visible={} exceeds maximum {}, clamping",
@@ -477,7 +480,7 @@ impl GhostConfig {
             }
         }
 
-        config.clamp_bounds();
+        config.normalize();
 
         Ok(config)
     }
