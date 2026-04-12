@@ -24,6 +24,7 @@ use std::path::PathBuf;
 struct TerminalSession {
     raw_enabled: bool,
     alt_entered: bool,
+    mouse_captured: bool,
 }
 
 impl TerminalSession {
@@ -32,10 +33,12 @@ impl TerminalSession {
         let mut this = Self {
             raw_enabled: true,
             alt_entered: false,
+            mouse_captured: false,
         };
-        execute!(io::stdout(), EnterAlternateScreen, EnableMouseCapture)
-            .context("failed to enter alternate screen")?;
+        execute!(io::stdout(), EnterAlternateScreen).context("failed to enter alternate screen")?;
         this.alt_entered = true;
+        execute!(io::stdout(), EnableMouseCapture).context("failed to enable mouse capture")?;
+        this.mouse_captured = true;
         Ok(this)
     }
 
@@ -48,8 +51,11 @@ impl TerminalSession {
 impl Drop for TerminalSession {
     fn drop(&mut self) {
         // Best-effort cleanup — swallow errors so Drop never panics.
+        if self.mouse_captured {
+            let _ = execute!(io::stdout(), DisableMouseCapture);
+        }
         if self.alt_entered {
-            let _ = execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture);
+            let _ = execute!(io::stdout(), LeaveAlternateScreen);
         }
         if self.raw_enabled {
             let _ = disable_raw_mode();
