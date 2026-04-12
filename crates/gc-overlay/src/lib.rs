@@ -5,11 +5,13 @@
 //! the cursor without destroying scrollback content.
 
 pub mod ansi;
-mod layout;
+pub mod frame;
+pub(crate) mod layout;
 mod render;
 pub mod types;
-mod util;
+pub(crate) mod util;
 
+pub use frame::{ContentRow, PopupFrame, PopupRow, ScrollbarCell, SpanStyle, StyledSpan};
 pub use render::{clear_popup, parse_style, render_popup, PopupTheme};
 pub use types::{
     OverlayState, PopupLayout, DEFAULT_MAX_POPUP_WIDTH, DEFAULT_MAX_VISIBLE,

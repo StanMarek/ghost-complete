@@ -306,7 +306,15 @@ pub fn render_popup(
 
         format_item(buf, suggestion, item_width, is_selected, theme);
 
+        // Explicit cursor positioning before scrollbar/border to guard
+        // against Nerd Font PUA icon width discrepancies. unicode-width
+        // reports PUA icons as 1 column but they may render as 2. If the
+        // actual glyph width differs from GUTTER_COLS, format_item's
+        // output is off by 1 column. This move_to guarantees alignment.
+        let scrollbar_col = border_col + (if theme.borders { 1 } else { 0 }) + item_width;
+
         if needs_scrollbar {
+            ansi::move_to(buf, row, scrollbar_col);
             let row_idx = i;
             if is_selected {
                 if row_idx >= thumb_pos && row_idx < thumb_pos + thumb_size {
@@ -330,6 +338,8 @@ pub fn render_popup(
 
         // Right border
         if theme.borders {
+            let right_border_col = border_col + layout.width - 1;
+            ansi::move_to(buf, row, right_border_col);
             ansi::reset(buf);
             if !theme.border_on.is_empty() {
                 buf.extend_from_slice(&theme.border_on);
@@ -452,12 +462,12 @@ pub fn clear_popup(buf: &mut Vec<u8>, layout: &PopupLayout, profile: &TerminalPr
 
 /// Strip control characters (including ESC) from text to prevent ANSI injection
 /// via malicious filenames, git branches, or other suggestion sources.
-fn sanitize_display_text(text: &str) -> String {
+pub(crate) fn sanitize_display_text(text: &str) -> String {
     text.chars().filter(|c| !c.is_control()).collect()
 }
 
 /// Nerd Font icon character for the gutter of a given suggestion kind.
-fn kind_icon(kind: SuggestionKind) -> char {
+pub(crate) fn kind_icon(kind: SuggestionKind) -> char {
     match kind {
         SuggestionKind::Command => '\u{F120}',    // nf-fa-terminal
         SuggestionKind::Subcommand => '\u{F0DA}', // nf-fa-chevron_right
@@ -516,7 +526,7 @@ fn write_padding(buf: &mut Vec<u8>, n: usize) {
 /// The result is indexed against `sanitized_display_text` and is already
 /// sorted (we walk left-to-right), so the caller can `binary_search` it
 /// directly.
-fn translate_match_indices(
+pub(crate) fn translate_match_indices(
     raw_basename: &str,
     sanitized_display_text: &str,
     prefix_char_count: usize,
