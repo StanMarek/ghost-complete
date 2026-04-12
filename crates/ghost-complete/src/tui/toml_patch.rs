@@ -111,21 +111,58 @@ pub fn backup_config(config_path: &Path) -> Result<PathBuf> {
     Ok(backup_path)
 }
 
+/// RAII guard that removes a temp file on Drop unless `disarm()` is called.
+/// Ensures that a failed write/sync/rename doesn't leak a `.tmp-<pid>` sibling.
+struct TempFileGuard {
+    path: PathBuf,
+    armed: bool,
+}
+
+impl TempFileGuard {
+    fn new(path: PathBuf) -> Self {
+        Self { path, armed: true }
+    }
+
+    fn disarm(mut self) {
+        self.armed = false;
+    }
+}
+
+impl Drop for TempFileGuard {
+    fn drop(&mut self) {
+        if self.armed {
+            let _ = fs::remove_file(&self.path);
+        }
+    }
+}
+
 /// Atomically write `content` to `config_path`.
 ///
-/// Writes to a sibling temp file (`<name>.tmp-<pid>`), fsyncs, preserves the
-/// original file's mode if one existed, then renames over the target. Rename
-/// on the same filesystem is atomic, so a crash mid-write cannot truncate the
-/// live config.
+/// - If `config_path` is a symlink, the symlink is preserved: we resolve it via
+///   `fs::canonicalize` and write to the resolved target so dotfile managers
+///   (chezmoi, stow, etc.) keep their link intact.
+/// - On Unix, the temp file is created with the target's mode from the start
+///   (default `0o600` if the target doesn't exist) so sensitive content is
+///   never visible to other users via the default umask.
+/// - The temp file is cleaned up on any failure via `TempFileGuard`.
+/// - Rename on the same filesystem is atomic, so a crash mid-write cannot
+///   truncate the live config.
 pub fn save_config(config_path: &Path, content: &str) -> Result<()> {
-    let parent = config_path
+    // Resolve symlinks so we write to the real file and preserve the link.
+    let target_path: PathBuf = match fs::symlink_metadata(config_path) {
+        Ok(meta) if meta.file_type().is_symlink() => fs::canonicalize(config_path)
+            .with_context(|| format!("failed to resolve symlink {}", config_path.display()))?,
+        _ => config_path.to_path_buf(),
+    };
+
+    let parent = target_path
         .parent()
         .context("config path has no parent directory")?;
 
     fs::create_dir_all(parent)
         .with_context(|| format!("failed to create directories for {}", parent.display()))?;
 
-    let file_name = config_path
+    let file_name = target_path
         .file_name()
         .context("config path has no file name")?
         .to_string_lossy()
@@ -133,46 +170,53 @@ pub fn save_config(config_path: &Path, content: &str) -> Result<()> {
     let tmp_name = format!("{}.tmp-{}", file_name, process::id());
     let tmp_path = parent.join(&tmp_name);
 
-    let original_mode = fs::metadata(config_path).ok().map(|m| {
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            m.permissions().mode()
-        }
-        #[cfg(not(unix))]
-        {
-            let _ = m;
-            0
-        }
-    });
+    #[cfg(unix)]
+    let target_mode: u32 = {
+        use std::os::unix::fs::PermissionsExt;
+        fs::metadata(&target_path)
+            .ok()
+            .map(|m| m.permissions().mode())
+            .unwrap_or(0o600)
+    };
 
-    // Scope the file handle so it's closed (and flushed) before rename.
+    // Clean up the temp file if anything below fails.
+    let guard = TempFileGuard::new(tmp_path.clone());
+
+    // Open temp file with correct mode from the start (Unix), so sensitive
+    // content never exists on disk under default umask perms.
     {
-        let mut f = fs::File::create(&tmp_path)
+        #[cfg(unix)]
+        let mut f = {
+            use std::os::unix::fs::OpenOptionsExt;
+            fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .mode(target_mode)
+                .open(&tmp_path)
+                .with_context(|| format!("failed to create temp file {}", tmp_path.display()))?
+        };
+        #[cfg(not(unix))]
+        let mut f = fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&tmp_path)
             .with_context(|| format!("failed to create temp file {}", tmp_path.display()))?;
+
         f.write_all(content.as_bytes())
             .with_context(|| format!("failed to write {}", tmp_path.display()))?;
         f.sync_all()
             .with_context(|| format!("failed to sync {}", tmp_path.display()))?;
     }
 
-    #[cfg(unix)]
-    if let Some(mode) = original_mode {
-        use std::os::unix::fs::PermissionsExt;
-        fs::set_permissions(&tmp_path, fs::Permissions::from_mode(mode))
-            .with_context(|| format!("failed to set permissions on {}", tmp_path.display()))?;
-    }
-    #[cfg(not(unix))]
-    let _ = original_mode;
-
-    fs::rename(&tmp_path, config_path).with_context(|| {
+    fs::rename(&tmp_path, &target_path).with_context(|| {
         format!(
             "failed to rename {} to {}",
             tmp_path.display(),
-            config_path.display()
+            target_path.display()
         )
     })?;
 
+    guard.disarm();
     Ok(())
 }
 
@@ -298,6 +342,97 @@ mod tests {
             use std::os::unix::fs::PermissionsExt;
             let mode = fs::metadata(&path).unwrap().permissions().mode() & 0o777;
             assert_eq!(mode, 0o600, "original file mode should be preserved");
+        }
+    }
+
+    #[test]
+    fn save_config_leaves_no_tmp_sibling_after_success() {
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("config.toml");
+        fs::write(&path, "initial = 1\n").unwrap();
+
+        save_config(&path, "updated = 2\n").unwrap();
+
+        let leftovers: Vec<_> = fs::read_dir(tmp.path())
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .filter(|e| e.file_name().to_string_lossy().contains(".tmp-"))
+            .collect();
+        assert!(
+            leftovers.is_empty(),
+            "no .tmp-* sibling should remain after successful save; found: {:?}",
+            leftovers.iter().map(|e| e.path()).collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn save_config_cleans_up_tmp_on_rename_failure() {
+        // Force rename failure by making the target a non-empty directory:
+        // POSIX rename(file, non_empty_dir) fails with ENOTEMPTY/EISDIR.
+        let tmp = tempfile::tempdir().unwrap();
+        let target = tmp.path().join("config.toml");
+        fs::create_dir(&target).unwrap();
+        fs::write(target.join("inhabitant"), "x").unwrap();
+
+        let res = save_config(&target, "updated = 2\n");
+        assert!(res.is_err(), "expected rename over non-empty dir to fail");
+
+        let leftovers: Vec<_> = fs::read_dir(tmp.path())
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .filter(|e| e.file_name().to_string_lossy().contains(".tmp-"))
+            .collect();
+        assert!(
+            leftovers.is_empty(),
+            "temp file must be cleaned up on rename failure; found: {:?}",
+            leftovers.iter().map(|e| e.path()).collect::<Vec<_>>()
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn save_config_preserves_symlink() {
+        use std::os::unix::fs::symlink;
+
+        let tmp = tempfile::tempdir().unwrap();
+        let real_dir = tmp.path().join("real");
+        fs::create_dir(&real_dir).unwrap();
+        let real_path = real_dir.join("config.toml");
+        fs::write(&real_path, "initial = 1\n").unwrap();
+
+        let link_dir = tmp.path().join("link");
+        fs::create_dir(&link_dir).unwrap();
+        let link_path = link_dir.join("config.toml");
+        symlink(&real_path, &link_path).unwrap();
+
+        save_config(&link_path, "updated = 2\n").unwrap();
+
+        // Symlink must still exist and still point at the real file.
+        let link_meta = fs::symlink_metadata(&link_path).unwrap();
+        assert!(
+            link_meta.file_type().is_symlink(),
+            "symlink at config path must be preserved, not replaced with a regular file"
+        );
+        let link_target = fs::read_link(&link_path).unwrap();
+        assert_eq!(link_target, real_path);
+
+        // Real file content should be updated.
+        let got = fs::read_to_string(&real_path).unwrap();
+        assert_eq!(got, "updated = 2\n");
+
+        // No temp file left in either directory.
+        for dir in [&real_dir, &link_dir] {
+            let leftovers: Vec<_> = fs::read_dir(dir)
+                .unwrap()
+                .filter_map(|e| e.ok())
+                .filter(|e| e.file_name().to_string_lossy().contains(".tmp-"))
+                .collect();
+            assert!(
+                leftovers.is_empty(),
+                "no .tmp-* sibling should remain in {}; found: {:?}",
+                dir.display(),
+                leftovers.iter().map(|e| e.path()).collect::<Vec<_>>()
+            );
         }
     }
 }

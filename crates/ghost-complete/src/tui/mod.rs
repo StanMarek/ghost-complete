@@ -17,34 +17,44 @@ use std::io;
 use std::path::PathBuf;
 
 /// RAII guard that restores terminal state on Drop — including during a panic
-/// unwind. Without this, a panic in the draw/event loop leaves the user's
-/// terminal in raw mode + alternate screen with the cursor hidden.
+/// unwind or a partial setup failure. The guard owns each step's flag, so if
+/// `execute!` fails after raw mode was enabled (or the caller drops the
+/// session before a `Terminal` was built), Drop still tears down everything
+/// that was successfully activated.
 struct TerminalSession {
-    terminal: Terminal<CrosstermBackend<io::Stdout>>,
+    raw_enabled: bool,
+    alt_entered: bool,
 }
 
 impl TerminalSession {
     fn new() -> Result<Self> {
         enable_raw_mode().context("failed to enable raw mode")?;
-        let mut stdout = io::stdout();
-        execute!(stdout, EnterAlternateScreen, EnableMouseCapture)
+        let mut this = Self {
+            raw_enabled: true,
+            alt_entered: false,
+        };
+        execute!(io::stdout(), EnterAlternateScreen, EnableMouseCapture)
             .context("failed to enter alternate screen")?;
-        let backend = CrosstermBackend::new(stdout);
-        let terminal = Terminal::new(backend).context("failed to create terminal")?;
-        Ok(Self { terminal })
+        this.alt_entered = true;
+        Ok(this)
+    }
+
+    fn terminal(&self) -> Result<Terminal<CrosstermBackend<io::Stdout>>> {
+        let backend = CrosstermBackend::new(io::stdout());
+        Terminal::new(backend).context("failed to create terminal")
     }
 }
 
 impl Drop for TerminalSession {
     fn drop(&mut self) {
         // Best-effort cleanup — swallow errors so Drop never panics.
-        let _ = disable_raw_mode();
-        let _ = execute!(
-            self.terminal.backend_mut(),
-            LeaveAlternateScreen,
-            DisableMouseCapture
-        );
-        let _ = self.terminal.show_cursor();
+        if self.alt_entered {
+            let _ = execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture);
+        }
+        if self.raw_enabled {
+            let _ = disable_raw_mode();
+        }
+        let _ = execute!(io::stdout(), crossterm::cursor::Show);
     }
 }
 
@@ -69,8 +79,11 @@ pub fn run_config_editor(config_path: Option<&str>) -> Result<()> {
 
     let mut app = app::App::new(config, raw_toml, path);
 
-    let mut session = TerminalSession::new()?;
-    run_event_loop(&mut session.terminal, &mut app)
+    // Session owns the raw-mode + alt-screen state; Terminal is constructed
+    // after, so a Terminal::new failure still triggers session cleanup on drop.
+    let _session = TerminalSession::new()?;
+    let mut terminal = _session.terminal()?;
+    run_event_loop(&mut terminal, &mut app)
 }
 
 fn run_event_loop(
