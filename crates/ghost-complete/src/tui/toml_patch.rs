@@ -57,6 +57,29 @@ pub fn patch_toml(source: &str, section: &str, key: &str, value: Value) -> Resul
     Ok(doc.to_string())
 }
 
+pub fn remove_key(source: &str, section: &str, key: &str) -> Result<String> {
+    let mut doc: DocumentMut = source.parse().context("failed to parse TOML source")?;
+    let segments: Vec<&str> = section.split('.').collect();
+
+    let mut current: &mut Item = doc.as_item_mut();
+
+    for segment in &segments {
+        let Some(next) = current
+            .as_table_like_mut()
+            .and_then(|tbl| tbl.get_mut(segment))
+        else {
+            return Ok(doc.to_string());
+        };
+        current = next;
+    }
+
+    if let Some(tbl) = current.as_table_like_mut() {
+        tbl.remove(key);
+    }
+
+    Ok(doc.to_string())
+}
+
 /// Build a `toml_edit::Value` for a string field. Handles escape-sensitive
 /// characters (`"`, `\`) safely — unlike `format!("\"{s}\"")`.
 pub fn string_value(s: &str) -> Value {
@@ -73,6 +96,7 @@ pub fn parse_value(value_str: &str) -> Result<Value> {
 /// Create a timestamped backup of `config_path`.
 ///
 /// The backup is written alongside the original file with a `.backup.<unix_secs>` suffix.
+/// If that name already exists, a numeric suffix is appended to avoid overwriting it.
 /// Returns the path of the created backup.
 pub fn backup_config(config_path: &Path) -> Result<PathBuf> {
     anyhow::ensure!(
@@ -86,29 +110,105 @@ pub fn backup_config(config_path: &Path) -> Result<PathBuf> {
         .context("system time before UNIX epoch")?
         .as_secs();
 
-    let backup_name = format!(
-        "{}.backup.{}",
-        config_path
+    let contents = fs::read(config_path)
+        .with_context(|| format!("failed to read {}", config_path.display()))?;
+
+    let (reserved_file, backup_path) = create_backup_file(config_path, ts)?;
+    drop(reserved_file);
+    let backup_guard = TempFileGuard::new(backup_path.clone());
+
+    let tmp_name = format!(
+        "{}.tmp-{}",
+        backup_path
             .file_name()
-            .context("config path has no file name")?
+            .context("backup path has no file name")?
             .to_string_lossy(),
-        ts
+        process::id()
     );
-
-    let backup_path = config_path
+    let tmp_path = backup_path
         .parent()
-        .context("config path has no parent directory")?
-        .join(backup_name);
+        .context("backup path has no parent directory")?
+        .join(tmp_name);
+    let tmp_guard = TempFileGuard::new(tmp_path.clone());
 
-    fs::copy(config_path, &backup_path).with_context(|| {
+    let mut backup_file = create_file_with_source_mode(config_path, &tmp_path)?;
+    backup_file
+        .write_all(&contents)
+        .with_context(|| format!("failed to write {}", tmp_path.display()))?;
+    backup_file
+        .sync_all()
+        .with_context(|| format!("failed to sync {}", tmp_path.display()))?;
+
+    fs::rename(&tmp_path, &backup_path).with_context(|| {
         format!(
-            "failed to copy {} to {}",
-            config_path.display(),
+            "failed to rename {} to {}",
+            tmp_path.display(),
             backup_path.display()
         )
     })?;
 
+    tmp_guard.disarm();
+    backup_guard.disarm();
+
     Ok(backup_path)
+}
+
+fn create_backup_file(config_path: &Path, ts: u64) -> Result<(std::fs::File, PathBuf)> {
+    let file_name = config_path
+        .file_name()
+        .context("config path has no file name")?
+        .to_string_lossy();
+    let parent = config_path
+        .parent()
+        .context("config path has no parent directory")?;
+    let base_name = format!("{file_name}.backup.{ts}");
+
+    for suffix in 0u32.. {
+        let candidate = if suffix == 0 {
+            parent.join(&base_name)
+        } else {
+            parent.join(format!("{base_name}.{suffix}"))
+        };
+
+        let open_result = create_file_with_source_mode(config_path, &candidate);
+
+        match open_result {
+            Ok(file) => return Ok((file, candidate)),
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(e) => {
+                return Err(e).with_context(|| format!("failed to create {}", candidate.display()));
+            }
+        }
+    }
+
+    unreachable!("backup suffix loop is unbounded")
+}
+
+fn create_file_with_source_mode(
+    source_path: &Path,
+    destination_path: &Path,
+) -> std::io::Result<std::fs::File> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let source_mode = fs::metadata(source_path)?.permissions().mode() & 0o777;
+
+        use std::os::unix::fs::OpenOptionsExt;
+        fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .mode(source_mode)
+            .open(destination_path)
+    }
+
+    #[cfg(not(unix))]
+    {
+        let _ = source_path;
+        fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(destination_path)
+    }
 }
 
 /// RAII guard that removes a temp file on Drop unless `disarm()` is called.
@@ -387,6 +487,84 @@ mod tests {
             "temp file must be cleaned up on rename failure; found: {:?}",
             leftovers.iter().map(|e| e.path()).collect::<Vec<_>>()
         );
+    }
+
+    #[test]
+    fn save_config_creates_missing_parent_directories() {
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("nested/config/config.toml");
+
+        save_config(&path, "created = true\n").unwrap();
+
+        assert_eq!(fs::read_to_string(&path).unwrap(), "created = true\n");
+
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mode = fs::metadata(&path).unwrap().permissions().mode() & 0o777;
+            assert_eq!(mode, 0o600, "new config should default to mode 0o600");
+        }
+    }
+
+    #[test]
+    fn backup_config_does_not_overwrite_existing_same_second_backup() {
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("config.toml");
+        fs::write(&path, "current = true\n").unwrap();
+
+        let ts = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        let existing_backup = tmp.path().join(format!("config.toml.backup.{ts}"));
+        fs::write(&existing_backup, "older backup\n").unwrap();
+
+        let new_backup = backup_config(&path).unwrap();
+
+        assert_ne!(new_backup, existing_backup, "backup path must be unique");
+        assert_eq!(
+            fs::read_to_string(&existing_backup).unwrap(),
+            "older backup\n"
+        );
+        assert_eq!(fs::read_to_string(&new_backup).unwrap(), "current = true\n");
+    }
+
+    #[test]
+    fn create_backup_file_uses_next_suffix_after_collision() {
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("config.toml");
+        fs::write(&path, "current = true\n").unwrap();
+
+        let existing_backup = tmp.path().join("config.toml.backup.123");
+        fs::write(&existing_backup, "older backup\n").unwrap();
+
+        let (_file, reserved_path) = create_backup_file(&path, 123).unwrap();
+
+        assert_eq!(
+            reserved_path,
+            tmp.path().join("config.toml.backup.123.1"),
+            "backup reservation should advance to the next available suffix"
+        );
+        assert!(
+            reserved_path.exists(),
+            "backup path should be reserved atomically"
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn backup_config_preserves_source_mode() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("config.toml");
+        fs::write(&path, "current = true\n").unwrap();
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o600)).unwrap();
+
+        let backup_path = backup_config(&path).unwrap();
+        let mode = fs::metadata(&backup_path).unwrap().permissions().mode() & 0o777;
+
+        assert_eq!(mode, 0o600, "backup should preserve the source mode");
     }
 
     #[cfg(unix)]

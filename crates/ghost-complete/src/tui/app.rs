@@ -3,6 +3,8 @@ use std::path::PathBuf;
 
 use super::fields::{self, FieldMeta, SECTIONS};
 
+pub const INHERIT_SENTINEL: &str = "<inherit>";
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Focus {
     Sections,
@@ -76,6 +78,10 @@ impl App {
 
     /// Get the current value of a field from the config as a display string.
     pub fn field_value(&self, field: &FieldMeta) -> String {
+        if fields::supports_inherit(field) && !self.has_explicit_field_value(field) {
+            return INHERIT_SENTINEL.to_string();
+        }
+
         let Ok(root) = toml::Value::try_from(&self.config) else {
             return field.default.to_string();
         };
@@ -102,6 +108,30 @@ impl App {
             None => field.default.to_string(),
         }
     }
+
+    fn has_explicit_field_value(&self, field: &FieldMeta) -> bool {
+        let Ok(root) = toml::from_str::<toml::Value>(&self.raw_toml) else {
+            return false;
+        };
+
+        let parts: Vec<&str> = field.section.split('.').collect();
+        let mut current = &root;
+        for part in &parts {
+            let toml::Value::Table(table) = current else {
+                return false;
+            };
+            let Some(next) = table.get(*part) else {
+                return false;
+            };
+            current = next;
+        }
+
+        let toml::Value::Table(table) = current else {
+            return false;
+        };
+
+        table.contains_key(field.key)
+    }
 }
 
 fn format_toml_value(v: &toml::Value) -> String {
@@ -115,5 +145,43 @@ fn format_toml_value(v: &toml::Value) -> String {
             format!("[{}]", items.join(", "))
         }
         _ => v.to_string(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn theme_field(key: &str) -> FieldMeta {
+        fields::all_fields()
+            .into_iter()
+            .find(|field| field.section == "theme" && field.key == key)
+            .expect("theme field should exist")
+    }
+
+    #[test]
+    fn field_value_marks_inherited_theme_override() {
+        let raw_toml = "[theme]\npreset = \"dark\"\n";
+        let config: GhostConfig = toml::from_str(raw_toml).unwrap();
+        let app = App::new(
+            config,
+            raw_toml.to_string(),
+            PathBuf::from("/tmp/config.toml"),
+        );
+
+        assert_eq!(app.field_value(&theme_field("selected")), "<inherit>");
+    }
+
+    #[test]
+    fn field_value_preserves_explicit_empty_theme_override() {
+        let raw_toml = "[theme]\npreset = \"dark\"\nselected = \"\"\n";
+        let config: GhostConfig = toml::from_str(raw_toml).unwrap();
+        let app = App::new(
+            config,
+            raw_toml.to_string(),
+            PathBuf::from("/tmp/config.toml"),
+        );
+
+        assert_eq!(app.field_value(&theme_field("selected")), "");
     }
 }

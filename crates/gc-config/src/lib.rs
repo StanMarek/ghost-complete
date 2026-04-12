@@ -384,6 +384,7 @@ pub struct PathsConfig {
     pub spec_dirs: Vec<String>,
 }
 
+const MAX_VISIBLE_DEFAULT: usize = 10;
 const MAX_VISIBLE_UPPER: usize = 50;
 const MAX_RESULTS_UPPER: usize = 10_000;
 const MAX_RESULTS_DEFAULT: usize = 50;
@@ -394,6 +395,13 @@ impl GhostConfig {
     /// Exposed for TUI editor validation: callers can clone, normalize, and
     /// compare to detect out-of-range values without mutating the original.
     pub fn normalize(&mut self) {
+        if self.popup.max_visible == 0 {
+            tracing::warn!(
+                "popup.max_visible=0 is invalid (would break popup scrolling), clamping to default {}",
+                MAX_VISIBLE_DEFAULT,
+            );
+            self.popup.max_visible = MAX_VISIBLE_DEFAULT;
+        }
         if self.popup.max_visible > MAX_VISIBLE_UPPER {
             tracing::warn!(
                 "popup.max_visible={} exceeds maximum {}, clamping",
@@ -978,6 +986,14 @@ max_visible = 5
         writeln!(tmp, "[suggest]\nmax_results = 0").unwrap();
         let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
         assert_eq!(config.suggest.max_results, MAX_RESULTS_DEFAULT);
+    }
+
+    #[test]
+    fn test_clamp_max_visible_zero_to_default() {
+        let mut tmp = tempfile::NamedTempFile::new().unwrap();
+        writeln!(tmp, "[popup]\nmax_visible = 0").unwrap();
+        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        assert_eq!(config.popup.max_visible, 10);
     }
 
     #[test]

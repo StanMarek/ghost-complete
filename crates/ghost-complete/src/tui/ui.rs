@@ -5,7 +5,7 @@ use ratatui::widgets::{Block, Borders, List, ListItem, ListState, Paragraph};
 use ratatui::Frame;
 
 use super::app::{App, EditState, Focus};
-use super::fields::{self, ReloadBehavior, SECTIONS};
+use super::fields::{self, FieldMeta, ReloadBehavior, SECTIONS};
 use super::preview;
 
 /// Top-level render function. Draws the three-pane layout + footer.
@@ -155,15 +155,7 @@ fn render_fields(frame: &mut Frame, app: &App, area: Rect) {
     }
 
     // Show validation errors at bottom
-    let field_errors: Vec<&(String, String)> = app
-        .errors
-        .iter()
-        .filter(|(key, _)| {
-            section_fields
-                .iter()
-                .any(|f| format!("{}.{}", f.section, f.key) == *key)
-        })
-        .collect();
+    let field_errors = visible_errors(app, &section_fields);
 
     for (key, msg) in &field_errors {
         lines.push(Line::from(Span::styled(
@@ -202,7 +194,7 @@ fn render_footer(frame: &mut Frame, app: &App, area: Rect) {
     }
 
     let footer_line_1 = Line::from(spans);
-    let footer_line_2 = Line::from(vec![
+    let mut footer_line_2_spans = vec![
         Span::styled(
             format!(" Mode: {mode_str}"),
             Style::default().fg(Color::DarkGray),
@@ -212,8 +204,71 @@ fn render_footer(frame: &mut Frame, app: &App, area: Rect) {
             format!("Section: {}", fields::section_label(app.current_section())),
             Style::default().fg(Color::DarkGray),
         ),
-    ]);
+    ];
+
+    if let Some(status) = footer_status(app) {
+        footer_line_2_spans.push(Span::raw("  "));
+        footer_line_2_spans.push(Span::styled(status, Style::default().fg(Color::Red)));
+    }
+
+    let footer_line_2 = Line::from(footer_line_2_spans);
 
     let paragraph = Paragraph::new(vec![footer_line_1, footer_line_2]);
     frame.render_widget(paragraph, area);
+}
+
+fn footer_status(app: &App) -> Option<String> {
+    app.errors
+        .iter()
+        .find(|(key, _)| key == "save")
+        .map(|(_, msg)| msg.clone())
+}
+
+fn visible_errors<'a>(app: &'a App, section_fields: &[&FieldMeta]) -> Vec<&'a (String, String)> {
+    app.errors
+        .iter()
+        .filter(|(key, _)| {
+            section_fields
+                .iter()
+                .any(|f| format!("{}.{}", f.section, f.key) == *key)
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use gc_config::GhostConfig;
+    use std::path::PathBuf;
+
+    #[test]
+    fn visible_errors_exclude_global_save_errors() {
+        let mut app = App::new(
+            GhostConfig::default(),
+            String::new(),
+            PathBuf::from("/tmp/config.toml"),
+        );
+        app.errors
+            .push(("save".to_string(), "write failed".to_string()));
+
+        let section_fields = app.current_section_fields();
+        let visible = visible_errors(&app, &section_fields);
+
+        assert!(!visible
+            .iter()
+            .any(|(key, msg)| key == "save" && msg == "write failed"));
+    }
+
+    #[test]
+    fn footer_status_prefers_save_error() {
+        let mut app = App::new(
+            GhostConfig::default(),
+            String::new(),
+            PathBuf::from("/tmp/config.toml"),
+        );
+        app.errors
+            .push(("save".to_string(), "write failed".to_string()));
+
+        assert_eq!(footer_status(&app), Some("write failed".to_string()));
+    }
 }

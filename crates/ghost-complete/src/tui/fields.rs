@@ -43,6 +43,10 @@ pub const SECTIONS: &[&str] = &[
     "experimental",
 ];
 
+pub fn supports_inherit(field: &FieldMeta) -> bool {
+    field.section == "theme" && field.key != "preset"
+}
+
 pub fn section_label(section: &str) -> &'static str {
     match section {
         "trigger" => "Trigger",
