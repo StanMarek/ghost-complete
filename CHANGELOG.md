@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-04-12
+
+### Fixed
+
+- **Security hardening** — ANSI escape sequences in suggestion text are sanitized (prevents terminal injection via spec output). Shell-injecting paths in `.zshrc` init blocks are properly quoted. OSC 7 CWD reports rejected on path traversal; OSC 7770 buffer reports rejected on non-UTF-8 data. CPR response validation added. Terminal detection hardened — env var sanitization, stale socket detection, `TERM_PROGRAM` sanitization.
+- **Crash resistance** — mutex poison recovery across all 12 proxy lock sites (a panic in one task no longer cascades). Narrow-terminal layouts no longer panic; defense-in-depth guard in `compute_layout`. Saturating arithmetic for u16 overflow, zero-dimension clamping, bounds-safe `spec_dirs` indexing, `byte_to_char_offset` clamping, double-panic recovery.
+- **Unicode correctness** — wide characters (CJK, emoji) use `unicode-width` terminal column width with a CJK early-wrap branch. Cursor restore clamped after terminal resize. CPR count desync race eliminated.
+- **Tokenizer parity** — `#` comments, FD redirects (`2>&1`), heredocs (`<<EOF`), here-strings (`<<<"x"`), and nested command substitution (`$(echo $(date))`) are now parsed correctly.
+- **Stuck loading indicator** — dynamic popup spinner no longer gets stuck on empty/stale/disconnected generator results.
+- **Orphaned generator tasks** — async generator tasks are aborted via `JoinHandle` on dismiss, preventing leaked tasks from older triggers.
+- **Config robustness** — TOCTOU-safe load, atomic `create_new` for default config writes, hot-reload warnings on restart-required fields, non-UTF-8 config paths rejected with warning, unknown-key warnings via two-pass TOML load.
+- **Overlay regressions** — `GUTTER_COLS` constant prevents nerd-font gutter math drift, loading+border deficit formula corrected, `scroll_offset` resets on deselect.
+- **Install/doctor polish** — backup overwrite guard, unreadable entry counting, `doctor` is `multi_terminal`-aware, embedded spec counts, root-user guard, uninstall cleanup note.
+
+### Changed
+
+- **Performance** — script-generator stdout bounded at 1 MiB with concurrent stderr drain (prevents runaway memory). Suggestion cache uses LRU eviction via `CACHE_SWEEP_THRESHOLD`. Alias loading moved to async (`AliasStore` + `RwLock`). Frecency record/flush writes moved out of mutex hold. Full async git migration via `tokio::process` (no more blocking threads for git context). Regex patterns precompiled at spec load time.
+- **Refactor** — `format_item` extracted into 6 helpers, `suggest_sync` branch logic into 8 helpers. `GUTTER_COLS` / `DESC_GAP_COLS` / `TRAILING_PAD_COLS` named constants replace magic numbers. `resolve_spec_dirs` deduplicated into dedicated module. `ThemeConfig::validate()` provides shape-only pre-load checks. Theme overrides now use `Option<String>` with a `ResolvedTheme` struct.
+- **README** — centered header, tightened status language, renamed "What is this?" to "Overview", added star-history.com timeline.
+
 ## [0.7.0] - 2026-04-11
 
 ### Added
@@ -265,6 +285,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Shell integration** for zsh (full), bash (Ctrl+/), and fish (Ctrl+/)
 - **`validate-specs` subcommand** with colored output and item counts
 
+[0.7.1]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.7.1
 [0.7.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.7.0
 [0.6.1]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.6.1
 [0.6.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.6.0
