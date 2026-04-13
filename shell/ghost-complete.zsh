@@ -66,5 +66,28 @@ _gc_report_buffer() {
     printf '\e]7770;%d;%s\a' "$CURSOR" "$BUFFER"
 }
 
-autoload -Uz add-zle-hook-widget
-add-zle-hook-widget line-pre-redraw _gc_report_buffer
+# Chain into the existing zle-line-pre-redraw widget without using
+# add-zle-hook-widget: its dispatcher renames $WIDGET to
+# `azhw:zle-line-pre-redraw`, breaking frameworks (z4h, p10k) that key
+# behavior off $WIDGET inside the hook (e.g., z4h's _zsh_highlight()
+# guard for the post-Enter prompt render).
+_gc_install_zle_hook() {
+    # Idempotent: skip if our wrapper is already installed.
+    if [[ "${widgets[zle-line-pre-redraw]:-}" == *_gc_zle_line_pre_redraw* ]]; then
+        return
+    fi
+    if (( ${+widgets[zle-line-pre-redraw]} )); then
+        local existing="${widgets[zle-line-pre-redraw]}"
+        zle -N _gc_orig_zle_line_pre_redraw "${existing#user:}"
+        _gc_zle_line_pre_redraw() {
+            _gc_report_buffer
+            zle _gc_orig_zle_line_pre_redraw -- "$@"
+        }
+        zle -N zle-line-pre-redraw _gc_zle_line_pre_redraw
+    else
+        zle -N zle-line-pre-redraw _gc_report_buffer
+    fi
+}
+
+_gc_install_zle_hook
+unset -f _gc_install_zle_hook
