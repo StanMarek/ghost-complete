@@ -215,6 +215,20 @@ impl TerminalState {
         }
     }
 
+    /// Drop CPR entries whose age exceeds `max_age`. A misbehaving terminal
+    /// can fail to respond to a `CSI 6n`, leaving orphans in the queue
+    /// forever. This is the leak guard — call once per Task B iteration
+    /// with a generous timeout (e.g. 30s, well past z4h's 5s `read -srt 5`
+    /// deadline). Returns the number of entries dropped so the caller can
+    /// emit a `tracing::warn!`.
+    pub fn prune_stale_cpr(&mut self, max_age: Duration) -> usize {
+        let now = Instant::now();
+        let before = self.cpr_queue.len();
+        self.cpr_queue
+            .retain(|e| now.duration_since(e.enqueued_at) < max_age);
+        before - self.cpr_queue.len()
+    }
+
     /// Number of outstanding CPR requests across both owners. Diagnostics
     /// and tests only — no dispatch logic should branch on this.
     pub fn cpr_queue_len(&self) -> usize {
@@ -550,6 +564,30 @@ mod tests {
         // Task A pops the first Shell entry.
         assert_eq!(state.claim_next_cpr(), Some(CprOwner::Shell));
         assert!(state.rollback_cpr(target));
+        assert_eq!(state.cpr_queue_len(), 1);
+        assert_eq!(state.claim_next_cpr(), Some(CprOwner::Shell));
+    }
+
+    #[test]
+    fn prune_stale_drops_zero_when_all_fresh() {
+        let mut state = TerminalState::new(24, 80);
+        state.enqueue_cpr(CprOwner::Ours);
+        state.enqueue_cpr(CprOwner::Shell);
+        let dropped = state.prune_stale_cpr(Duration::from_secs(30));
+        assert_eq!(dropped, 0);
+        assert_eq!(state.cpr_queue_len(), 2);
+    }
+
+    #[test]
+    fn prune_stale_drops_old_entries_only() {
+        let mut state = TerminalState::new(24, 80);
+        state.enqueue_cpr(CprOwner::Ours);
+        // Ensure the first entry is measurably "old" before the second push.
+        std::thread::sleep(Duration::from_millis(15));
+        state.enqueue_cpr(CprOwner::Shell);
+        // Prune anything older than 10ms — should drop only the first.
+        let dropped = state.prune_stale_cpr(Duration::from_millis(10));
+        assert_eq!(dropped, 1);
         assert_eq!(state.cpr_queue_len(), 1);
         assert_eq!(state.claim_next_cpr(), Some(CprOwner::Shell));
     }
