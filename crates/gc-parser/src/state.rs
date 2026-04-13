@@ -1,4 +1,29 @@
+use std::collections::VecDeque;
 use std::path::PathBuf;
+use std::time::{Duration, Instant};
+
+/// Origin of a pending CPR (Cursor Position Report) request. Used by the
+/// proxy to decide whether an incoming `CSI row;col R` response should be
+/// consumed for ghost-complete's own cursor sync (`Ours`) or forwarded to
+/// the program inside the PTY that asked for it (`Shell`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CprOwner {
+    Ours,
+    Shell,
+}
+
+/// Opaque handle returned by [`TerminalState::enqueue_cpr`]. Pass it to
+/// [`TerminalState::rollback_cpr`] when a `CSI 6n` write fails partway so
+/// the queued entry is removed without corrupting dispatch alignment.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct CprToken(u64);
+
+#[derive(Debug)]
+struct CprEntry {
+    owner: CprOwner,
+    id: u64,
+    enqueued_at: Instant,
+}
 
 /// Tracks terminal state derived from the VT escape sequence stream.
 ///
@@ -21,30 +46,18 @@ pub struct TerminalState {
     cwd_dirty: bool,
     cursor_sync_requested: bool,
     cpr_synced: bool,
-    /// Count of outstanding CPR (Cursor Position Report) requests that
-    /// ghost-complete itself sent, so Task A can distinguish "our" CPR
-    /// responses (consume for cursor sync) from responses belonging to a
-    /// program running inside the PTY like atuin/crossterm (forward to PTY).
+    /// FIFO queue of pending CPR requests in send-order.
     ///
-    /// Access pattern (see `gc-pty/src/proxy.rs`):
-    /// - **Writer:** Task B (PTY → stdout) calls `increment_cpr_pending`
-    ///   strictly BEFORE writing `CSI 6n` to stdout. This ordering matters —
-    ///   Phase 2 MED-15 fix. If Task B incremented AFTER the flush, a fast
-    ///   terminal could reply before Task A saw a pending count, and Task A
-    ///   would forward our own CPR response into the PTY, corrupting the
-    ///   cursor sync cycle.
-    /// - **Reader:** Task A (stdin → PTY) calls `claim_cpr_response` when a
-    ///   CPR arrives from the real terminal. A non-zero count means the
-    ///   response is ours; Task A decrements and consumes it. A zero count
-    ///   means the response belongs to a PTY program and should be forwarded.
-    /// - **Rollback writer:** Task B also calls `claim_cpr_response` on a
-    ///   failed write/flush to undo its own increment, because no response
-    ///   will ever arrive and a permanent leak would make Task A steal the
-    ///   next legitimate application CPR.
-    ///
-    /// External code (any crate other than `gc-pty::proxy`) must not touch
-    /// these helpers — the three call sites above are the entire contract.
-    cpr_pending: u8,
+    /// Terminals respond to `CSI 6n` requests in the same order they
+    /// receive them. The queue head is therefore the owner of the next
+    /// `CSI row;col R` response that will arrive on stdin. Task B pushes
+    /// when it sends or observes a request; Task A pops the head when a
+    /// response arrives. See `gc-pty/src/proxy.rs` for the call sites.
+    cpr_queue: VecDeque<CprEntry>,
+    /// Monotonic counter assigning unique IDs to CPR queue entries so
+    /// `rollback_cpr` can locate and remove an entry even after Task A has
+    /// popped earlier siblings.
+    next_cpr_id: u64,
 }
 
 impl TerminalState {
@@ -64,7 +77,8 @@ impl TerminalState {
             cwd_dirty: false,
             cursor_sync_requested: false,
             cpr_synced: false,
-            cpr_pending: 0,
+            cpr_queue: VecDeque::new(),
+            next_cpr_id: 0,
         }
     }
 
@@ -157,23 +171,10 @@ impl TerminalState {
         synced
     }
 
-    /// Increment the pending CPR counter. Called when ghost-complete sends
-    /// its own `CSI 6n` request so we know to consume the matching response
-    /// rather than forwarding it to the PTY.
-    pub fn increment_cpr_pending(&mut self) {
-        self.cpr_pending = self.cpr_pending.saturating_add(1);
-    }
-
-    /// Try to claim a pending CPR response. Returns `true` if ghost-complete
-    /// has an outstanding CPR request (response should be consumed), `false`
-    /// if the response belongs to a program inside the PTY (should be forwarded).
-    pub fn claim_cpr_response(&mut self) -> bool {
-        if self.cpr_pending > 0 {
-            self.cpr_pending -= 1;
-            true
-        } else {
-            false
-        }
+    /// Number of outstanding CPR requests across both owners. Diagnostics
+    /// and tests only — no dispatch logic should branch on this.
+    pub fn cpr_queue_len(&self) -> usize {
+        self.cpr_queue.len()
     }
 
     /// Override the command buffer with a predicted value (e.g., after Tab
@@ -437,5 +438,11 @@ mod tests {
         let (rows, cols) = state.screen_dimensions();
         assert_eq!(rows, 1);
         assert_eq!(cols, 1);
+    }
+
+    #[test]
+    fn cpr_queue_empty_by_default() {
+        let state = TerminalState::new(24, 80);
+        assert_eq!(state.cpr_queue_len(), 0);
     }
 }
