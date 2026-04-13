@@ -281,9 +281,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                             let mut p = match parser_for_stdin.lock() {
                                 Ok(p) => p,
                                 Err(e) => {
-                                    tracing::warn!(
-                                        "parser mutex poisoned in stdin task: {e}"
-                                    );
+                                    tracing::warn!("parser mutex poisoned in stdin task: {e}");
                                     break 'stdin;
                                 }
                             };
