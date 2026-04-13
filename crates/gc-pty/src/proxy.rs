@@ -269,10 +269,15 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                                 break 'stdin;
                             }
                         };
-                        p.state_mut().claim_next_cpr()
+                        dispatch_cpr_response(p.state_mut(), *row, *col)
                     };
                     match action {
-                        Some(CprOwner::Ours) => {
+                        CprAction::SyncOurs(r, c) => {
+                            // Deliberate re-acquire after the claim-only
+                            // lock above. Narrowing the hold keeps parser
+                            // contention off the dispatch decision; the
+                            // sync below is the only path that needs the
+                            // lock again.
                             let mut p = match parser_for_stdin.lock() {
                                 Ok(p) => p,
                                 Err(e) => {
@@ -283,31 +288,31 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                                 }
                             };
                             let state = p.state_mut();
-                            if state.validate_cpr_coordinates(*row, *col) {
+                            if state.validate_cpr_coordinates(r, c) {
                                 tracing::debug!(
-                                    row,
-                                    col,
+                                    row = r,
+                                    col = c,
                                     "CPR response — syncing cursor position (ours)"
                                 );
-                                state.set_cursor_from_report(*row, *col);
+                                state.set_cursor_from_report(r, c);
                             } else {
                                 let (screen_rows, screen_cols) = state.screen_dimensions();
                                 tracing::warn!(
-                                    row,
-                                    col,
+                                    row = r,
+                                    col = c,
                                     screen_rows,
                                     screen_cols,
                                     "CPR coordinates out of screen bounds — ignoring"
                                 );
                             }
                         }
-                        Some(CprOwner::Shell) => {
+                        CprAction::ForwardToPty(r, c) => {
                             tracing::debug!(
-                                row,
-                                col,
+                                row = r,
+                                col = c,
                                 "CPR response — forwarding to PTY (shell)"
                             );
-                            let cpr = format!("\x1b[{row};{col}R");
+                            let cpr = format!("\x1b[{r};{c}R");
                             if pty_writer.write_all(cpr.as_bytes()).is_err() {
                                 return;
                             }
@@ -315,13 +320,13 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                                 return;
                             }
                         }
-                        None => {
+                        CprAction::DropEmpty(r, c) => {
                             tracing::warn!(
-                                row,
-                                col,
+                                row = r,
+                                col = c,
                                 "CPR response with empty queue — forwarding defensively"
                             );
-                            let cpr = format!("\x1b[{row};{col}R");
+                            let cpr = format!("\x1b[{r};{c}R");
                             if pty_writer.write_all(cpr.as_bytes()).is_err() {
                                 return;
                             }
@@ -439,7 +444,11 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                     match parser_for_stdout.lock() {
                         Ok(mut p) => {
                             if !p.state_mut().rollback_cpr(token) {
-                                tracing::warn!(
+                                // Benign race: write reported failure but the
+                                // bytes already reached the terminal, which
+                                // responded; Task A claimed the entry before
+                                // we got here. No orphan, no action needed.
+                                tracing::debug!(
                                     "CPR rollback no-op — entry already claimed by Task A"
                                 );
                             }
@@ -453,7 +462,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                         }
                     }
                 }
-                tracing::warn!("Task B stdout write failed: {e}");
+                tracing::debug!("Task B stdout write/flush failed: {e}");
                 break;
             }
 
@@ -747,6 +756,27 @@ pub fn should_fallback_to_shell(
     matches!(terminal, gc_terminal::Terminal::Unknown(_)) && !multi_terminal_enabled
 }
 
+/// Outcome of dispatching a CPR response back through the proxy. Pure
+/// transformation over `TerminalState` — extracted from Task A so the
+/// FIFO ordering invariant can be unit-tested without spawning the
+/// full proxy. Both `ForwardToPty` and `DropEmpty` carry the
+/// coordinates so the caller can re-encode and write to the PTY; the
+/// only difference is whether the empty-queue case warrants a warn.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum CprAction {
+    SyncOurs(u16, u16),
+    ForwardToPty(u16, u16),
+    DropEmpty(u16, u16),
+}
+
+fn dispatch_cpr_response(state: &mut gc_parser::TerminalState, row: u16, col: u16) -> CprAction {
+    match state.claim_next_cpr() {
+        Some(CprOwner::Ours) => CprAction::SyncOurs(row, col),
+        Some(CprOwner::Shell) => CprAction::ForwardToPty(row, col),
+        None => CprAction::DropEmpty(row, col),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -790,5 +820,70 @@ mod tests {
             &Terminal::Unknown("foot".into()),
             true
         ));
+    }
+
+    use gc_parser::TerminalParser;
+
+    fn make_state(rows: u16, cols: u16) -> TerminalParser {
+        TerminalParser::new(rows, cols)
+    }
+
+    #[test]
+    fn dispatch_with_ours_at_head_syncs() {
+        let mut p = make_state(24, 80);
+        p.state_mut().enqueue_cpr(CprOwner::Ours);
+        let action = dispatch_cpr_response(p.state_mut(), 5, 10);
+        assert_eq!(action, CprAction::SyncOurs(5, 10));
+    }
+
+    #[test]
+    fn dispatch_with_shell_at_head_forwards() {
+        let mut p = make_state(24, 80);
+        p.state_mut().enqueue_cpr(CprOwner::Shell);
+        let action = dispatch_cpr_response(p.state_mut(), 3, 7);
+        assert_eq!(action, CprAction::ForwardToPty(3, 7));
+    }
+
+    #[test]
+    fn dispatch_with_empty_queue_returns_drop() {
+        let mut p = make_state(24, 80);
+        let action = dispatch_cpr_response(p.state_mut(), 1, 1);
+        assert_eq!(action, CprAction::DropEmpty(1, 1));
+    }
+
+    #[test]
+    fn deferred_sync_reschedules_when_shell_cpr_in_flight() {
+        // Push Shell first (e.g., z4h sent CSI 6n), then Ours (proxy queued
+        // its own request next). The first response goes to Shell, the
+        // second to Ours — never the reverse. This is the bug class
+        // issue #64 exposed.
+        let mut p = make_state(24, 80);
+        p.state_mut().enqueue_cpr(CprOwner::Shell);
+        p.state_mut().enqueue_cpr(CprOwner::Ours);
+        assert_eq!(
+            dispatch_cpr_response(p.state_mut(), 1, 1),
+            CprAction::ForwardToPty(1, 1)
+        );
+        assert_eq!(
+            dispatch_cpr_response(p.state_mut(), 2, 2),
+            CprAction::SyncOurs(2, 2)
+        );
+    }
+
+    #[test]
+    fn shell_cpr_arrives_while_our_cpr_pending() {
+        // Reverse order: proxy queued Ours first, then a shell program
+        // sent CSI 6n. Responses must dispatch in that same order.
+        let mut p = make_state(24, 80);
+        p.state_mut().enqueue_cpr(CprOwner::Ours);
+        p.state_mut().enqueue_cpr(CprOwner::Shell);
+        assert_eq!(
+            dispatch_cpr_response(p.state_mut(), 4, 4),
+            CprAction::SyncOurs(4, 4)
+        );
+        assert_eq!(
+            dispatch_cpr_response(p.state_mut(), 5, 5),
+            CprAction::ForwardToPty(5, 5)
+        );
     }
 }
