@@ -72,8 +72,11 @@ _gc_report_buffer() {
 # behavior off $WIDGET inside the hook (e.g., z4h's _zsh_highlight()
 # guard for the post-Enter prompt render).
 _gc_install_zle_hook() {
-    # Idempotent: skip if our wrapper is already installed.
-    if [[ "${widgets[zle-line-pre-redraw]:-}" == *_gc_zle_line_pre_redraw* ]]; then
+    # Idempotent: skip if our wrapper or the direct-install fallback is
+    # already in place. The two patterns correspond to the two branches
+    # below — both leave a recognizable signature in widgets[].
+    local current="${widgets[zle-line-pre-redraw]:-}"
+    if [[ "$current" == *_gc_zle_line_pre_redraw* || "$current" == *_gc_report_buffer* ]]; then
         return
     fi
     if (( ${+widgets[zle-line-pre-redraw]} )); then
