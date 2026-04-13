@@ -109,6 +109,17 @@ impl Perform for TerminalState {
             // ANSI save/restore cursor (SCO sequences)
             's' => self.save_cursor(),
             'u' => self.restore_cursor(),
+            // DSR — Device Status Report. Param 6 is "report cursor
+            // position" (CSI 6n); the terminal will reply with
+            // `CSI row;col R`. Enqueue with `CprOwner::Shell` so Task A
+            // forwards the response back to the program inside the PTY
+            // that asked for it. Other DSR variants (e.g. CSI 5n) do not
+            // produce a CPR response and must NOT enqueue.
+            'n' => {
+                if csi_param(params, 0, 0) == 6 {
+                    self.enqueue_cpr(crate::state::CprOwner::Shell);
+                }
+            }
             _ => {}
         }
     }
@@ -999,5 +1010,32 @@ mod tests {
         let mut p = make_parser();
         p.process_bytes(&seq);
         assert_eq!(p.state().command_buffer(), Some("café"));
+    }
+
+    // -- CPR auto-enqueue on CSI 6n --
+
+    #[test]
+    fn csi_6n_enqueues_shell() {
+        let mut p = make_parser();
+        assert_eq!(p.state().cpr_queue_len(), 0);
+        p.process_bytes(b"\x1b[6n");
+        assert_eq!(p.state().cpr_queue_len(), 1);
+        assert_eq!(p.state_mut().claim_next_cpr(), Some(crate::CprOwner::Shell));
+    }
+
+    #[test]
+    fn csi_5n_does_not_enqueue() {
+        let mut p = make_parser();
+        p.process_bytes(b"\x1b[5n");
+        assert_eq!(p.state().cpr_queue_len(), 0);
+    }
+
+    #[test]
+    fn multiple_csi_6n_each_enqueue() {
+        let mut p = make_parser();
+        p.process_bytes(b"\x1b[6n\x1b[6n");
+        assert_eq!(p.state().cpr_queue_len(), 2);
+        assert_eq!(p.state_mut().claim_next_cpr(), Some(crate::CprOwner::Shell));
+        assert_eq!(p.state_mut().claim_next_cpr(), Some(crate::CprOwner::Shell));
     }
 }
