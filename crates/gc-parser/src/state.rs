@@ -194,12 +194,19 @@ impl TerminalState {
     }
 
     /// Remove the entry identified by `token` if it is still pending.
-    /// Returns `true` if an entry was removed, `false` if the token had
-    /// already been claimed (or never existed). Used by Task B to undo a
-    /// queued `Ours` entry when the corresponding `CSI 6n` write fails —
-    /// without rollback, the orphan entry would shift dispatch alignment
-    /// for every subsequent CPR until pruned.
+    /// Returns `true` if the entry was removed, `false` if it was already
+    /// claimed by [`Self::claim_next_cpr`] before rollback could run
+    /// (i.e., the response arrived after the write-failure was triggered
+    /// but before Task B reached this code path).
+    ///
+    /// Used by Task B to undo a queued `Ours` entry when the corresponding
+    /// `CSI 6n` write fails — without rollback, the orphan would shift
+    /// dispatch alignment for every subsequent CPR until pruned.
     pub fn rollback_cpr(&mut self, token: CprToken) -> bool {
+        // Queue depth is bounded 0–2 in practice (one Ours + one Shell
+        // in flight at most). VecDeque::remove is O(n) on the slice,
+        // but n is negligible here and rollback is off the hot path —
+        // it fires only on stdout write/flush failure.
         if let Some(pos) = self.cpr_queue.iter().position(|e| e.id == token.0) {
             self.cpr_queue.remove(pos);
             true
