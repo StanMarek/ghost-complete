@@ -171,6 +171,28 @@ impl TerminalState {
         synced
     }
 
+    /// Push a CPR request onto the back of the queue. Returns a token
+    /// usable by [`Self::rollback_cpr`] if the corresponding `CSI 6n`
+    /// write later fails.
+    pub fn enqueue_cpr(&mut self, owner: CprOwner) -> CprToken {
+        let id = self.next_cpr_id;
+        self.next_cpr_id = self.next_cpr_id.wrapping_add(1);
+        self.cpr_queue.push_back(CprEntry {
+            owner,
+            id,
+            enqueued_at: Instant::now(),
+        });
+        CprToken(id)
+    }
+
+    /// Pop the oldest pending CPR entry. The owner identifies whether the
+    /// matching response should be consumed locally (`Ours`) or forwarded
+    /// to the PTY (`Shell`). Returns `None` if no request is outstanding —
+    /// caller should log defensively and forward to the PTY in that case.
+    pub fn claim_next_cpr(&mut self) -> Option<CprOwner> {
+        self.cpr_queue.pop_front().map(|e| e.owner)
+    }
+
     /// Number of outstanding CPR requests across both owners. Diagnostics
     /// and tests only — no dispatch logic should branch on this.
     pub fn cpr_queue_len(&self) -> usize {
@@ -444,5 +466,40 @@ mod tests {
     fn cpr_queue_empty_by_default() {
         let state = TerminalState::new(24, 80);
         assert_eq!(state.cpr_queue_len(), 0);
+    }
+
+    #[test]
+    fn enqueue_then_claim_returns_owner() {
+        let mut state = TerminalState::new(24, 80);
+        state.enqueue_cpr(CprOwner::Ours);
+        assert_eq!(state.cpr_queue_len(), 1);
+        assert_eq!(state.claim_next_cpr(), Some(CprOwner::Ours));
+        assert_eq!(state.cpr_queue_len(), 0);
+    }
+
+    #[test]
+    fn claim_returns_none_when_empty() {
+        let mut state = TerminalState::new(24, 80);
+        assert_eq!(state.claim_next_cpr(), None);
+    }
+
+    #[test]
+    fn interleaved_enqueue_claims_in_fifo_order() {
+        let mut state = TerminalState::new(24, 80);
+        state.enqueue_cpr(CprOwner::Ours);
+        state.enqueue_cpr(CprOwner::Shell);
+        state.enqueue_cpr(CprOwner::Ours);
+        assert_eq!(state.claim_next_cpr(), Some(CprOwner::Ours));
+        assert_eq!(state.claim_next_cpr(), Some(CprOwner::Shell));
+        assert_eq!(state.claim_next_cpr(), Some(CprOwner::Ours));
+        assert_eq!(state.claim_next_cpr(), None);
+    }
+
+    #[test]
+    fn enqueue_returns_unique_tokens() {
+        let mut state = TerminalState::new(24, 80);
+        let a = state.enqueue_cpr(CprOwner::Ours);
+        let b = state.enqueue_cpr(CprOwner::Shell);
+        assert_ne!(a, b);
     }
 }
