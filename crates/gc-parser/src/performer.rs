@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use unicode_width::UnicodeWidthChar;
 use vte::Perform;
 
-use crate::state::TerminalState;
+use crate::state::{CprOwner, TerminalState};
 
 /// Helper: extract the first value from a CSI param subslice, or return the given default.
 fn csi_param(params: &vte::Params, index: usize, default: u16) -> u16 {
@@ -117,7 +117,7 @@ impl Perform for TerminalState {
             // produce a CPR response and must NOT enqueue.
             'n' => {
                 if csi_param(params, 0, 0) == 6 {
-                    self.enqueue_cpr(crate::state::CprOwner::Shell);
+                    self.enqueue_cpr(CprOwner::Shell);
                 }
             }
             _ => {}
@@ -1037,5 +1037,15 @@ mod tests {
         assert_eq!(p.state().cpr_queue_len(), 2);
         assert_eq!(p.state_mut().claim_next_cpr(), Some(crate::CprOwner::Shell));
         assert_eq!(p.state_mut().claim_next_cpr(), Some(crate::CprOwner::Shell));
+    }
+
+    #[test]
+    fn csi_private_6n_does_not_enqueue() {
+        // CSI ? 6n is DEC private DSR — carries an intermediate byte `?`.
+        // The blanket-discard at the top of csi_dispatch drops it before
+        // the 'n' arm fires, so no Shell entry should be enqueued.
+        let mut p = make_parser();
+        p.process_bytes(b"\x1b[?6n");
+        assert_eq!(p.state().cpr_queue_len(), 0);
     }
 }
