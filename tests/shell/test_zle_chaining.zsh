@@ -22,7 +22,7 @@ if [[ ! -f "$INTEGRATION" ]]; then
 fi
 
 # --- Test A: chaining branch (a prior widget exists) ---
-zsh --no-rcs -i -c "
+zsh --no-rcs -c "
     set -e
     zmodload zsh/zle
     _baseline_pre_redraw() { :; }
@@ -46,15 +46,15 @@ zsh --no-rcs -i -c "
 
     # Re-sourcing is idempotent: chain stays a single layer deep.
     source '$INTEGRATION'
-    local count=\$(print -- \"\${widgets[zle-line-pre-redraw]}\" | grep -c _gc_zle_line_pre_redraw || true)
-    if (( count != 1 )); then
-        print -u2 \"FAIL [chain]: re-source produced \${count} chain entries (want 1)\"
+    if [[ \"\${widgets[zle-line-pre-redraw]}\" != *_gc_zle_line_pre_redraw* ]]; then
+        print -u2 'FAIL [chain]: re-source mutated the registration'
+        print -u2 \"  actual: \${widgets[zle-line-pre-redraw]}\"
         exit 1
     fi
 "
 
 # --- Test B: direct-install branch (no prior widget) ---
-zsh --no-rcs -i -c "
+zsh --no-rcs -c "
     set -e
     zmodload zsh/zle
 
