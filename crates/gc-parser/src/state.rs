@@ -193,6 +193,21 @@ impl TerminalState {
         self.cpr_queue.pop_front().map(|e| e.owner)
     }
 
+    /// Remove the entry identified by `token` if it is still pending.
+    /// Returns `true` if an entry was removed, `false` if the token had
+    /// already been claimed (or never existed). Used by Task B to undo a
+    /// queued `Ours` entry when the corresponding `CSI 6n` write fails —
+    /// without rollback, the orphan entry would shift dispatch alignment
+    /// for every subsequent CPR until pruned.
+    pub fn rollback_cpr(&mut self, token: CprToken) -> bool {
+        if let Some(pos) = self.cpr_queue.iter().position(|e| e.id == token.0) {
+            self.cpr_queue.remove(pos);
+            true
+        } else {
+            false
+        }
+    }
+
     /// Number of outstanding CPR requests across both owners. Diagnostics
     /// and tests only — no dispatch logic should branch on this.
     pub fn cpr_queue_len(&self) -> usize {
@@ -501,5 +516,34 @@ mod tests {
         let a = state.enqueue_cpr(CprOwner::Ours);
         let b = state.enqueue_cpr(CprOwner::Shell);
         assert_ne!(a, b);
+    }
+
+    #[test]
+    fn rollback_removes_matching_token() {
+        let mut state = TerminalState::new(24, 80);
+        let token = state.enqueue_cpr(CprOwner::Ours);
+        assert!(state.rollback_cpr(token));
+        assert_eq!(state.cpr_queue_len(), 0);
+    }
+
+    #[test]
+    fn rollback_returns_false_when_already_claimed() {
+        let mut state = TerminalState::new(24, 80);
+        let token = state.enqueue_cpr(CprOwner::Ours);
+        let _ = state.claim_next_cpr();
+        assert!(!state.rollback_cpr(token));
+    }
+
+    #[test]
+    fn rollback_locates_entry_after_earlier_pops() {
+        let mut state = TerminalState::new(24, 80);
+        state.enqueue_cpr(CprOwner::Shell);
+        let target = state.enqueue_cpr(CprOwner::Ours);
+        state.enqueue_cpr(CprOwner::Shell);
+        // Task A pops the first Shell entry.
+        assert_eq!(state.claim_next_cpr(), Some(CprOwner::Shell));
+        assert!(state.rollback_cpr(target));
+        assert_eq!(state.cpr_queue_len(), 1);
+        assert_eq!(state.claim_next_cpr(), Some(CprOwner::Shell));
     }
 }
