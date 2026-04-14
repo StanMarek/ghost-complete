@@ -74,16 +74,21 @@ _gc_report_buffer() {
 _gc_install_zle_hook() {
     # Idempotent: skip if our wrapper or the direct-install fallback is
     # already in place. The two exact strings correspond to the two
-    # branches below — anything else falls through to re-install.
+    # install branches below — anything else falls through to re-evaluate.
     local current="${widgets[zle-line-pre-redraw]:-}"
     if [[ "$current" == "user:_gc_zle_line_pre_redraw" || "$current" == "user:_gc_report_buffer" ]]; then
         return
     fi
-    # Only chain when the existing registration is a plain user widget.
-    # `completion:` / `builtin:` prefixes don't survive `${existing#user:}`
-    # cleanly, and `zle -N` with the prefix baked in produces a nonsense
-    # widget name — safer to direct-install and accept the lost hook.
-    if (( ${+widgets[zle-line-pre-redraw]} )) && [[ "${widgets[zle-line-pre-redraw]}" == user:* ]]; then
+    # Three-way dispatch:
+    #   1. No widget registered         → direct-install _gc_report_buffer.
+    #   2. Existing plain user widget   → chain over it so $WIDGET is preserved.
+    #   3. Existing non-user widget
+    #      (completion:/builtin:/…)     → leave it alone. We can't chain a
+    #      non-user widget safely, and silently clobbering someone else's
+    #      registration is worse than losing our buffer hook.
+    if (( ! ${+widgets[zle-line-pre-redraw]} )); then
+        zle -N zle-line-pre-redraw _gc_report_buffer
+    elif [[ "${widgets[zle-line-pre-redraw]}" == user:* ]]; then
         local existing="${widgets[zle-line-pre-redraw]}"
         zle -N _gc_orig_zle_line_pre_redraw "${existing#user:}"
         _gc_zle_line_pre_redraw() {
@@ -91,9 +96,9 @@ _gc_install_zle_hook() {
             zle _gc_orig_zle_line_pre_redraw -- "$@"
         }
         zle -N zle-line-pre-redraw _gc_zle_line_pre_redraw
-    else
-        zle -N zle-line-pre-redraw _gc_report_buffer
     fi
+    # Non-user widget: intentionally no-op. Ghost Complete loses its buffer
+    # hook in this case; that's acceptable degradation.
 }
 
 _gc_install_zle_hook

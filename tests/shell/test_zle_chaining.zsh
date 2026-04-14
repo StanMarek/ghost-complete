@@ -140,4 +140,52 @@ EEOF
     fi
 fi
 
-print 'PASS: zle chaining preserves widget identity, idempotent in both branches'
+# --- Test D: non-user widget is preserved (not silently clobbered) ---
+# When something has already registered a non-user widget at
+# zle-line-pre-redraw (completion:/builtin:/etc.), Ghost Complete must not
+# overwrite that registration. It's safer to lose our buffer hook than to
+# clobber a hook the user or their framework deliberately installed.
+zsh --no-rcs -c "
+    set -e
+    zmodload zsh/zle
+    # zle -C produces a 'completion:<builtin>:<fn>' registration.
+    _baseline_complete() { :; }
+    zle -C zle-line-pre-redraw list-choices _baseline_complete
+
+    orig=\"\${widgets[zle-line-pre-redraw]}\"
+    if [[ \"\$orig\" != completion:* ]]; then
+        print -u2 \"FAIL [preserve]: baseline non-user widget missing; got '\$orig'\"
+        exit 1
+    fi
+
+    source '$INTEGRATION'
+
+    # The original non-user registration must be intact, byte-for-byte.
+    if [[ \"\${widgets[zle-line-pre-redraw]}\" != \"\$orig\" ]]; then
+        print -u2 'FAIL [preserve]: non-user widget was clobbered'
+        print -u2 \"  expected: \$orig\"
+        print -u2 \"  actual: \${widgets[zle-line-pre-redraw]}\"
+        exit 1
+    fi
+
+    # Neither the wrapper nor the direct-install fallback may be bound at
+    # the canonical name — that would mean we clobbered the baseline.
+    if [[ \"\${widgets[zle-line-pre-redraw]}\" == *_gc_zle_line_pre_redraw* ]]; then
+        print -u2 'FAIL [preserve]: _gc_zle_line_pre_redraw was bound at zle-line-pre-redraw'
+        exit 1
+    fi
+    if [[ \"\${widgets[zle-line-pre-redraw]}\" == *_gc_report_buffer* ]]; then
+        print -u2 'FAIL [preserve]: _gc_report_buffer was bound at zle-line-pre-redraw'
+        exit 1
+    fi
+
+    # Re-sourcing must remain a no-op for the non-user case.
+    source '$INTEGRATION'
+    if [[ \"\${widgets[zle-line-pre-redraw]}\" != \"\$orig\" ]]; then
+        print -u2 'FAIL [preserve]: re-source mutated the non-user registration'
+        print -u2 \"  actual: \${widgets[zle-line-pre-redraw]}\"
+        exit 1
+    fi
+"
+
+print 'PASS: zle chaining preserves widget identity, idempotent, and non-user widgets survive'
