@@ -114,9 +114,13 @@ impl Perform for TerminalState {
             // `CSI row;col R`. Enqueue with `CprOwner::Shell` so Task A
             // forwards the response back to the program inside the PTY
             // that asked for it. Other DSR variants (e.g. CSI 5n) do not
-            // produce a CPR response and must NOT enqueue.
+            // produce a CPR response and must NOT enqueue. The local
+            // intermediates guard is defensive: the blanket-discard
+            // above already drops sequences with intermediates, but
+            // scoping the check here keeps DEC private DSR (`CSI ? 6n`)
+            // safe even if the outer filter is ever relocated.
             'n' => {
-                if csi_param(params, 0, 0) == 6 {
+                if intermediates.is_empty() && csi_param(params, 0, 0) == 6 {
                     self.enqueue_cpr(CprOwner::Shell);
                 }
             }

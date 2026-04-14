@@ -73,13 +73,17 @@ _gc_report_buffer() {
 # guard for the post-Enter prompt render).
 _gc_install_zle_hook() {
     # Idempotent: skip if our wrapper or the direct-install fallback is
-    # already in place. The two patterns correspond to the two branches
-    # below — both leave a recognizable signature in widgets[].
+    # already in place. The two exact strings correspond to the two
+    # branches below — anything else falls through to re-install.
     local current="${widgets[zle-line-pre-redraw]:-}"
-    if [[ "$current" == *_gc_zle_line_pre_redraw* || "$current" == *_gc_report_buffer* ]]; then
+    if [[ "$current" == "user:_gc_zle_line_pre_redraw" || "$current" == "user:_gc_report_buffer" ]]; then
         return
     fi
-    if (( ${+widgets[zle-line-pre-redraw]} )); then
+    # Only chain when the existing registration is a plain user widget.
+    # `completion:` / `builtin:` prefixes don't survive `${existing#user:}`
+    # cleanly, and `zle -N` with the prefix baked in produces a nonsense
+    # widget name — safer to direct-install and accept the lost hook.
+    if (( ${+widgets[zle-line-pre-redraw]} )) && [[ "${widgets[zle-line-pre-redraw]}" == user:* ]]; then
         local existing="${widgets[zle-line-pre-redraw]}"
         zle -N _gc_orig_zle_line_pre_redraw "${existing#user:}"
         _gc_zle_line_pre_redraw() {

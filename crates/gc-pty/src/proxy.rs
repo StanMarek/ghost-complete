@@ -18,6 +18,13 @@ use crate::input::parse_keys;
 use crate::resize::{get_terminal_size, resize_pty};
 use crate::spawn::{spawn_shell, SpawnedShell};
 
+/// Upper bound on how long a queued CPR entry may sit before we prune it.
+/// A misbehaving terminal that silently drops `CSI 6n` would otherwise leak
+/// queue entries forever. A late response after prune lands as
+/// `CprAction::DropEmpty` and is forwarded defensively, which is why the
+/// threshold is generous.
+const CPR_STALE_THRESHOLD: Duration = Duration::from_secs(30);
+
 /// Drop guard that ensures raw mode is always restored, even on panic.
 struct RawModeGuard;
 
@@ -464,13 +471,9 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 break;
             }
 
-            // Safety net: drop entries older than 30s. A misbehaving
-            // terminal that drops a CPR request without responding would
-            // otherwise leak entries indefinitely. 30s is well past
-            // z4h's 5s `read -srt 5` deadline.
             {
                 let dropped = match parser_for_stdout.lock() {
-                    Ok(mut p) => p.state_mut().prune_stale_cpr(Duration::from_secs(30)),
+                    Ok(mut p) => p.state_mut().prune_stale_cpr(CPR_STALE_THRESHOLD),
                     Err(e) => {
                         tracing::warn!("parser mutex poisoned during CPR prune: {e}");
                         0
@@ -851,10 +854,10 @@ mod tests {
 
     #[test]
     fn deferred_sync_reschedules_when_shell_cpr_in_flight() {
-        // Push Shell first (e.g., z4h sent CSI 6n), then Ours (proxy queued
-        // its own request next). The first response goes to Shell, the
-        // second to Ours — never the reverse. This is the bug class
-        // issue #64 exposed.
+        // Push Shell first (e.g., the shell sent CSI 6n), then Ours (proxy
+        // queued its own request next). Responses must dispatch in that
+        // same send-order — never the reverse. This is the bug class the
+        // FIFO ordering fixes.
         let mut p = make_state(24, 80);
         p.state_mut().enqueue_cpr(CprOwner::Shell);
         p.state_mut().enqueue_cpr(CprOwner::Ours);
@@ -883,5 +886,24 @@ mod tests {
             dispatch_cpr_response(p.state_mut(), 5, 5),
             CprAction::ForwardToPty(5, 5)
         );
+    }
+
+    #[test]
+    fn rollback_ours_after_shell_preserves_shell_dispatch() {
+        // Task B enqueues Ours on top of an already-pending Shell entry,
+        // then the stdout write fails before `CSI 6n` reached the terminal.
+        // Rolling back the Ours token must leave the queue with just the
+        // Shell entry, and the next CPR response must still dispatch to
+        // ForwardToPty with no Ours residue.
+        let mut p = make_state(24, 80);
+        p.state_mut().enqueue_cpr(CprOwner::Shell);
+        let ours = p.state_mut().enqueue_cpr(CprOwner::Ours);
+        assert!(p.state_mut().rollback_cpr(ours));
+        assert_eq!(p.state().cpr_queue_len(), 1);
+        assert_eq!(
+            dispatch_cpr_response(p.state_mut(), 7, 3),
+            CprAction::ForwardToPty(7, 3)
+        );
+        assert_eq!(p.state().cpr_queue_len(), 0);
     }
 }

@@ -87,4 +87,57 @@ zsh --no-rcs -c "
     fi
 "
 
+# --- Test C: functional $WIDGET preservation (regression guard for core fix) ---
+# The whole point of manual chaining (vs add-zle-hook-widget) is that when
+# the line editor fires zle-line-pre-redraw, `$WIDGET` inside the chained
+# baseline widget must still read `zle-line-pre-redraw` — not
+# `azhw:zle-line-pre-redraw` and not `_gc_orig_zle_line_pre_redraw`. Drive
+# a real zle session via expect so the line editor itself fires the hook.
+if ! (( ${+commands[expect]} )); then
+    print -u2 'SKIP [functional]: expect(1) not installed; cannot drive zle'
+else
+    DRIVER="$(mktemp -t gc_zle_driver.XXXXXX)"
+    DRIVER_EXP="$(mktemp -t gc_zle_driver_exp.XXXXXX)"
+    WIDGET_OUT="$(mktemp -t gc_zle_widget.XXXXXX)"
+    trap "rm -f '$DRIVER' '$DRIVER_EXP' '$WIDGET_OUT'" EXIT
+
+    cat >"$DRIVER" <<ZEOF
+#!/usr/bin/env zsh
+set -e
+zmodload zsh/zle
+typeset -g CAPTURED_WIDGET="<unset>"
+_baseline_pre_redraw() { CAPTURED_WIDGET="\$WIDGET" }
+zle -N zle-line-pre-redraw _baseline_pre_redraw
+source '$INTEGRATION'
+_exit_line() { zle .accept-line }
+zle -N _exit_line
+bindkey ' ' _exit_line
+typeset -g FOO=""
+vared -p "" FOO
+print -- "\$CAPTURED_WIDGET" > '$WIDGET_OUT'
+ZEOF
+
+    cat >"$DRIVER_EXP" <<'EEOF'
+#!/usr/bin/expect -f
+log_user 0
+set timeout 5
+spawn zsh --no-rcs [lindex $argv 0]
+sleep 0.3
+send " "
+expect eof
+EEOF
+    chmod +x "$DRIVER_EXP"
+
+    if ! "$DRIVER_EXP" "$DRIVER" >/dev/null 2>&1; then
+        print -u2 'FAIL [functional]: expect driver exited non-zero'
+        exit 1
+    fi
+
+    captured="$(<"$WIDGET_OUT")"
+    if [[ "$captured" != "zle-line-pre-redraw" ]]; then
+        print -u2 "FAIL [functional]: \$WIDGET inside baseline was '$captured', expected 'zle-line-pre-redraw'"
+        exit 1
+    fi
+fi
+
 print 'PASS: zle chaining preserves widget identity, idempotent in both branches'
