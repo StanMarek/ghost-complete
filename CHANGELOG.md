@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-04-17
+
+### Fixed
+
+- **Ctrl+L 5s hang under z4h** — replaced the `cpr_pending: u8` counter with a FIFO request queue tagged by origin (`Ours` / `Shell`). Terminals respond to `CSI 6n` in request order, so popping the head dispatches each response to the correct owner without timing heuristics. Eliminates the class of races where overlapping CPRs collapsed into one flag, our-pending-then-shell starved the shell, and the 500ms-vs-5s expiry mismatch stalled redraws.
+- **RPROMPT misalignment under p10k + z4h** — `_gc_report_buffer` is now chained into `zle-line-pre-redraw` directly instead of via `add-zle-hook-widget`. The hook-widget dispatcher renames `$WIDGET` to `azhw:zle-line-pre-redraw`, which broke z4h's `_zsh_highlight()` guard and caused syntax highlighting to run during prompt rendering — inflating the width measurement p10k uses for RPROMPT alignment. The chaining installer is idempotent and preserves any existing `zle-line-pre-redraw` widget identity.
+- **Write-failure recovery for CPR requests** — `rollback_cpr` removes a pending `Ours` entry by token if the `CSI 6n` write fails, so a dropped request doesn't permanently steal a response slot. Stale `Ours` entries older than 30s are pruned once per proxy iteration as a leak guard against terminals that silently drop requests.
+
+### Changed
+
+- **Parser CPR API** — `cpr_pending` / `increment_cpr_pending` / `claim_cpr_response` removed in favor of `enqueue_cpr` / `claim_next_cpr` / `rollback_cpr` / `prune_stale_cpr` / `cpr_queue_len` with a `VecDeque<CprEntry>` backing store. `CprOwner` and `CprToken` are re-exported from `gc-parser`. `CSI 6n` auto-enqueues a `Shell` entry in the `vte::Perform` impl.
+- **Proxy CPR dispatch** — extracted into `dispatch_cpr_response` helper; Task A pops the queue head and matches on owner, Task B enqueues `Ours` with a token and rolls back on write failure.
+- **Shell integration test coverage** — new `tests/shell/test_zle_chaining.zsh` asserts the ZLE wrapper preserves `$WIDGET` and is idempotent across both install branches (chain and direct-install).
+
 ## [0.8.0] - 2026-04-12
 
 ### Added
@@ -291,6 +305,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Shell integration** for zsh (full), bash (Ctrl+/), and fish (Ctrl+/)
 - **`validate-specs` subcommand** with colored output and item counts
 
+[0.8.1]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.8.1
 [0.8.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.8.0
 [0.7.1]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.7.1
 [0.7.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.7.0
