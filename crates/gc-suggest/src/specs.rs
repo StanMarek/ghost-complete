@@ -88,15 +88,40 @@ fn sanitize_text(text: &str) -> String {
     text.chars().filter(|c| !c.is_control()).collect()
 }
 
+/// Fast pre-check: byte-scan for any control codepoint. Catches C0 (0x00–0x1F
+/// and 0x7F) directly and C1 (U+0080..=U+009F, encoded as 0xC2 0x80..=0xC2 0x9F
+/// in UTF-8) via a two-byte match. Avoids per-char UTF-8 decoding + Unicode
+/// table lookups, which dominated `load_from_dir` when `sanitize_spec_strings`
+/// walked every string in 717 specs.
+fn has_control_char(s: &str) -> bool {
+    let bytes = s.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() {
+        let b = bytes[i];
+        if b < 0x20 || b == 0x7F {
+            return true;
+        }
+        if b == 0xC2 {
+            if let Some(&next) = bytes.get(i + 1) {
+                if (0x80..=0x9F).contains(&next) {
+                    return true;
+                }
+            }
+        }
+        i += 1;
+    }
+    false
+}
+
 fn sanitize_string(text: &mut String) {
-    if text.chars().any(|c| c.is_control()) {
+    if has_control_char(text) {
         *text = sanitize_text(text);
     }
 }
 
 fn sanitize_opt(text: &mut Option<String>) {
     if let Some(s) = text.as_ref() {
-        if s.chars().any(|c| c.is_control()) {
+        if has_control_char(s) {
             *text = Some(sanitize_text(s));
         }
     }
@@ -442,10 +467,6 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
     let mut arg_idx = 0;
     let mut past_positional = false;
     let args = &ctx.args;
-    // Index the current options slice for O(1) lookup. Rebuilt each time we
-    // descend into a subcommand because `current_options` flips to that
-    // subcommand's option set.
-    let mut options_index = OptionsIndex::build(current_options);
 
     while arg_idx < args.len() {
         let arg = &args[arg_idx];
@@ -462,7 +483,7 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
             // If this flag takes a value in the spec, skip the next arg too
             // (unless the value is inline via `--flag=value`, where there's
             // no separate next arg to skip).
-            if let Some(opt) = options_index.lookup(current_options, arg) {
+            if let Some(opt) = find_option(current_options, arg) {
                 if opt.args.is_some() && !arg.contains('=') && arg_idx + 1 < args.len() {
                     arg_idx += 2;
                     continue;
@@ -478,8 +499,6 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
                 current_subcommands = &sub.subcommands;
                 current_options = &sub.options;
                 current_args = &sub.args;
-                // New option set — rebuild the alias index.
-                options_index = OptionsIndex::build(current_options);
                 arg_idx += 1;
                 continue;
             }
@@ -527,7 +546,7 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
     // positional args.
     let mut preceding_flag_has_args = false;
     if let Some(flag) = &ctx.preceding_flag {
-        if let Some(opt) = options_index.lookup(current_options, flag) {
+        if let Some(opt) = find_option(current_options, flag) {
             if let Some(arg_spec) = &opt.args {
                 // The flag takes an argument — suppress subcommands/options
                 // regardless of whether the arg spec has explicit generators.
@@ -619,50 +638,19 @@ fn collect_generators(
     }
 }
 
-/// Linear-scan option lookup — the reference semantics used by
-/// `OptionsIndex` tests. Production code paths all go through
-/// `OptionsIndex::lookup`; this helper is retained only so the equivalence
-/// test can compare index vs. linear output.
-#[cfg(test)]
+/// Linear-scan option lookup. Previously guarded a `HashMap`-backed
+/// `OptionsIndex`; the eager-build pattern lost to linear scan in every
+/// realistic `resolve_spec` call (benchmarks regressed 40–62% with the
+/// index) because a typical shell command line performs 0–3 flag lookups
+/// while each subcommand descent rebuilt the map. For 200-option specs the
+/// linear scan is still sub-microsecond — the crossover where a HashMap
+/// would pay off is far outside any real command line.
 fn find_option<'a>(options: &'a [OptionSpec], flag: &str) -> Option<&'a OptionSpec> {
     // Strip `=value` suffix so `--flag=value` matches an option named `--flag`.
     let base_flag = flag.split_once('=').map_or(flag, |(base, _)| base);
     options
         .iter()
         .find(|o| o.name.iter().any(|n| n == base_flag))
-}
-
-/// Alias → index-into-options map built from a `&[OptionSpec]` slice. Turns
-/// `find_option` from an O(options × aliases) linear scan into an O(1)
-/// lookup, which matters when specs have 200+ options (e.g. `curl`, `ffmpeg`)
-/// and a user's command line has a dozen flags — each spec walk would
-/// otherwise do flag_count × options × aliases_per_option comparisons.
-///
-/// Keyed by `String` (not `&str`) so the index outlives borrows of the
-/// backing options without introducing a second lifetime; storing `usize`
-/// index lets `lookup` return a borrow of the original slice without issue.
-struct OptionsIndex {
-    by_alias: HashMap<String, usize>,
-}
-
-impl OptionsIndex {
-    fn build(options: &[OptionSpec]) -> Self {
-        let mut by_alias = HashMap::with_capacity(options.len() * 2);
-        for (idx, opt) in options.iter().enumerate() {
-            for alias in &opt.name {
-                // First alias wins on collision — mirrors the linear-scan
-                // `find`'s first-match semantics.
-                by_alias.entry(alias.clone()).or_insert(idx);
-            }
-        }
-        Self { by_alias }
-    }
-
-    fn lookup<'a>(&self, options: &'a [OptionSpec], flag: &str) -> Option<&'a OptionSpec> {
-        // Strip `=value` suffix so `--flag=value` matches `--flag`.
-        let base_flag = flag.split_once('=').map_or(flag, |(base, _)| base);
-        self.by_alias.get(base_flag).and_then(|&i| options.get(i))
-    }
 }
 
 /// Walk all generators in a spec tree, validate their transform pipelines,
@@ -1415,11 +1403,9 @@ mod tests {
     }
 
     #[test]
-    fn test_options_index_matches_linear_scan_on_large_spec() {
-        // 200 options × 2 aliases each = 400 alias strings. The HashMap
-        // index must resolve every alias to the same OptionSpec that a
-        // linear-scan `find_option` would return, including the
-        // `--flag=value` suffix handling and the unknown-alias case.
+    fn test_find_option_handles_large_spec_with_equals_value() {
+        // 200 options × 2 aliases each. Every alias must resolve correctly —
+        // including `--flag=value` and the unknown-alias case.
         let mut options: Vec<OptionSpec> = Vec::with_capacity(200);
         for i in 0..200 {
             options.push(OptionSpec {
@@ -1439,31 +1425,22 @@ mod tests {
             });
         }
 
-        let index = OptionsIndex::build(&options);
-
-        // Every alias resolves to the same option as the linear scan.
         for i in 0..200 {
-            for alias_variant in [
-                format!("--opt-{i}"),
-                format!("-o{i}"),
-                format!("--opt-{i}=value"),
-            ] {
-                let linear = find_option(&options, &alias_variant);
-                let indexed = index.lookup(&options, &alias_variant);
-                // Compare by the stable `name` vec rather than by pointer —
-                // pointer equality requires some juggling with raw pointers
-                // and the name vec uniquely identifies the option here.
-                assert_eq!(
-                    linear.map(|o| &o.name),
-                    indexed.map(|o| &o.name),
-                    "mismatch on alias {alias_variant:?}"
-                );
-            }
+            let long = format!("--opt-{i}");
+            let short = format!("-o{i}");
+            let eq = format!("--opt-{i}=value");
+            assert_eq!(
+                find_option(&options, &long).map(|o| &o.name[0]),
+                Some(&long),
+            );
+            assert_eq!(
+                find_option(&options, &short).map(|o| &o.name[0]),
+                Some(&long)
+            );
+            assert_eq!(find_option(&options, &eq).map(|o| &o.name[0]), Some(&long));
         }
 
-        // Unknown alias: both return None.
         assert!(find_option(&options, "--nope").is_none());
-        assert!(index.lookup(&options, "--nope").is_none());
     }
 
     #[test]
