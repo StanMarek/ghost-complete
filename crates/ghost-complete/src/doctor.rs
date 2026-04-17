@@ -193,6 +193,59 @@ fn check_terminal(config: &gc_config::GhostConfig) -> CheckResult {
     check_terminal_profile(&profile, config.experimental.multi_terminal)
 }
 
+/// Check 6: Completion specs actually load.
+///
+/// Resolves spec dirs and calls `SpecStore::load_from_dirs` exactly the way
+/// the PTY proxy does at startup, then reports the spec count. This is the
+/// only doctor check that catches the "binary works, but autocomplete is
+/// empty" failure mode that the 2026-04-17 audit found — the proxy path
+/// silently returned zero specs whenever neither `~/.config/ghost-complete/specs`
+/// nor a sibling `specs/` dir existed and the embedded fallback hadn't been
+/// wired up.
+fn check_specs(config: &gc_config::GhostConfig) -> CheckResult {
+    let dirs = gc_suggest::spec_dirs::resolve_spec_dirs(&config.paths.spec_dirs);
+    let dir_count = dirs.len();
+
+    let result = match gc_suggest::SpecStore::load_from_dirs(&dirs) {
+        Ok(r) => r,
+        Err(e) => return CheckResult::fail(format!("Spec load failed: {e}")),
+    };
+
+    let loaded = result.store.len();
+    let dir_summary = dirs
+        .iter()
+        .map(|d| d.display().to_string())
+        .collect::<Vec<_>>()
+        .join(", ");
+
+    if loaded == 0 {
+        // This is the bug the audit caught: zero specs and no error. Loud
+        // FAIL so a user running `doctor` after a fresh `cargo install`
+        // gets an actionable signal instead of silently degraded
+        // autocomplete.
+        return CheckResult::fail(format!(
+            "Completion specs: 0 loaded from {dir_count} directory(ies) \
+             [{dir_summary}] — autocomplete will be missing all per-command \
+             completions. Run `ghost-complete install` to deploy the \
+             bundled spec set."
+        ));
+    }
+
+    let mut msg = format!(
+        "Completion specs: {loaded} loaded from {dir_count} directory(ies) \
+         [{dir_summary}]"
+    );
+    if !result.errors.is_empty() {
+        msg.push_str(&format!(
+            " ({} spec(s) failed to parse — run `ghost-complete \
+             validate-specs` for details)",
+            result.errors.len()
+        ));
+        return CheckResult::warn(msg);
+    }
+    CheckResult::ok(msg)
+}
+
 /// Testable terminal check logic — pure function on profile.
 fn check_terminal_profile(
     profile: &gc_terminal::TerminalProfile,
@@ -249,6 +302,16 @@ pub fn run_doctor(config_path: Option<&str>) -> Result<()> {
         Some(cfg) => results.push(check_terminal(cfg)),
         None => results.push(CheckResult::skip(
             "Terminal support — config invalid, cannot check experimental flags",
+        )),
+    }
+
+    // Check 6: Completion specs load via the same path the PTY proxy uses.
+    // Without this check, doctor reported a healthy install while the proxy
+    // silently ran with zero specs (the 2026-04-17 audit's CRITICAL bug).
+    match &config {
+        Some(cfg) => results.push(check_specs(cfg)),
+        None => results.push(CheckResult::skip(
+            "Completion specs — config invalid, cannot resolve spec dirs",
         )),
     }
 
@@ -328,5 +391,43 @@ mod tests {
         let result = check_terminal_profile(&profile, true);
         assert!(matches!(result.severity, Severity::Ok));
         assert!(result.message.contains("multi_terminal"));
+    }
+
+    /// Pin the user-facing spec health check to the embedded fallback path.
+    ///
+    /// `check_specs` calls `resolve_spec_dirs` + `SpecStore::load_from_dirs`
+    /// — the same chain the PTY proxy uses — and must never report OK with
+    /// zero specs loaded. Before the 2026-04-17 audit fix the proxy could
+    /// silently start with an empty `SpecStore` whenever the on-disk
+    /// auto-detection chain bottomed out; the doctor command happily
+    /// reported the install as healthy.
+    ///
+    /// We can't directly stub the resolver's environment lookups in this
+    /// process, but we *can* assert that with a default config the check
+    /// resolves at least one spec dir and loads at least one spec — which
+    /// implicitly proves that either an on-disk dir was found or the
+    /// embedded fallback materialized a usable one.
+    #[test]
+    fn check_specs_loads_non_empty_with_default_config() {
+        let config = gc_config::GhostConfig::default();
+        let result = check_specs(&config);
+        assert!(
+            !matches!(result.severity, Severity::Fail),
+            "check_specs failed with default config — message: {}",
+            result.message
+        );
+        // The OK / WARN message format always includes a "Completion specs: \
+        // <N> loaded" prefix when at least one spec was loaded.
+        assert!(
+            result.message.starts_with("Completion specs:"),
+            "unexpected message shape: {}",
+            result.message
+        );
+        assert!(
+            !result.message.contains("0 loaded"),
+            "check_specs reported 0 specs loaded — embedded fallback is \
+             not wired up: {}",
+            result.message
+        );
     }
 }

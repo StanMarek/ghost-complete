@@ -6,6 +6,7 @@
 pub mod alias;
 pub mod cache;
 pub mod commands;
+pub mod embedded;
 mod engine;
 mod env;
 mod filesystem;
@@ -21,6 +22,7 @@ pub mod ssh;
 pub mod transform;
 pub mod types;
 
+pub use embedded::EMBEDDED_SPECS;
 pub use engine::{SuggestionEngine, SyncResult};
 pub use specs::{CompletionSpec, SpecLoadResult, SpecStore};
 pub use types::{Suggestion, SuggestionKind, SuggestionSource};
