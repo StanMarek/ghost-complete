@@ -587,12 +587,23 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     // Task C: Signal handling
     let mut sigwinch =
         signal(SignalKind::window_change()).context("failed to register SIGWINCH handler")?;
+    let mut sigterm =
+        signal(SignalKind::terminate()).context("failed to register SIGTERM handler")?;
+    let mut sighup = signal(SignalKind::hangup()).context("failed to register SIGHUP handler")?;
 
     // Wait for either an I/O task to finish or a signal
     loop {
         tokio::select! {
             _ = shutdown_rx.recv() => {
                 tracing::debug!("I/O task finished, shutting down");
+                break;
+            }
+            _ = sigterm.recv() => {
+                tracing::info!("received SIGTERM, shutting down");
+                break;
+            }
+            _ = sighup.recv() => {
+                tracing::info!("received SIGHUP, shutting down");
                 break;
             }
             _ = sigwinch.recv() => {
