@@ -40,20 +40,16 @@ pub fn handle_key(app: &mut App, key: KeyEvent) {
             KeyCode::Enter => {
                 apply_edit(app);
             }
-            KeyCode::Backspace => {
-                if *cursor > 0 {
-                    *cursor -= 1;
-                    let byte_idx = char_to_byte_index(buffer, *cursor);
-                    buffer.remove(byte_idx);
-                }
+            KeyCode::Backspace if *cursor > 0 => {
+                *cursor -= 1;
+                let byte_idx = char_to_byte_index(buffer, *cursor);
+                buffer.remove(byte_idx);
             }
             KeyCode::Left => {
                 *cursor = cursor.saturating_sub(1);
             }
-            KeyCode::Right => {
-                if *cursor < buffer.chars().count() {
-                    *cursor += 1;
-                }
+            KeyCode::Right if *cursor < buffer.chars().count() => {
+                *cursor += 1;
             }
             KeyCode::Char(c) => {
                 let byte_idx = char_to_byte_index(buffer, *cursor);

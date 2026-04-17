@@ -34,11 +34,10 @@ impl OverlayState {
 
     pub fn move_down(&mut self, total_items: usize, max_visible: usize) {
         match self.selected {
-            None => {
-                if total_items > 0 {
-                    self.selected = Some(0);
-                }
+            None if total_items > 0 => {
+                self.selected = Some(0);
             }
+            None => {}
             Some(n) if n + 1 < total_items => {
                 self.selected = Some(n + 1);
                 if n + 1 >= self.scroll_offset + max_visible {
