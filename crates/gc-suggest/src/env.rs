@@ -39,10 +39,6 @@ impl Provider for EnvProvider {
 
         Ok(suggestions)
     }
-
-    fn name(&self) -> &'static str {
-        "env"
-    }
 }
 
 #[cfg(test)]

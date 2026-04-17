@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::io::{Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::time::SystemTime;
@@ -11,6 +12,13 @@ use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 
 pub(crate) const DEFAULT_MAX_HISTORY_ENTRIES: usize = 10_000;
 
+/// Above this file size, [`read_tail`] reads only the last ~2 MiB rather
+/// than slurping the whole file. 2 MiB is roughly 20–30k history entries on
+/// typical zsh lines, comfortably above `DEFAULT_MAX_HISTORY_ENTRIES`, so
+/// tail-reading never drops an entry the caller would have kept.
+const TAIL_THRESHOLD_BYTES: u64 = 2 * 1024 * 1024;
+const TAIL_READ_BYTES: u64 = 2 * 1024 * 1024;
+
 pub struct HistoryProvider {
     state: Mutex<HistoryState>,
     /// `None` for test/bench constructors — never refreshes.
@@ -18,19 +26,43 @@ pub struct HistoryProvider {
     max_entries: usize,
 }
 
+/// Composite freshness key. Pairing mtime with length catches rapid writes
+/// that land on the same mtime second (common on filesystems with 1s mtime
+/// resolution) but produce different content.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct FileFingerprint {
+    mtime: SystemTime,
+    len: u64,
+}
+
+impl FileFingerprint {
+    fn from_metadata(meta: &std::fs::Metadata) -> Option<Self> {
+        let mtime = meta.modified().ok()?;
+        Some(Self {
+            mtime,
+            len: meta.len(),
+        })
+    }
+
+    fn from_path(path: &Path) -> Option<Self> {
+        let meta = std::fs::metadata(path).ok()?;
+        Self::from_metadata(&meta)
+    }
+}
+
 struct HistoryState {
     entries: Vec<String>,
-    mtime: Option<SystemTime>,
+    fingerprint: Option<FileFingerprint>,
 }
 
 impl HistoryProvider {
     pub fn load(max_entries: usize) -> Self {
         let path = Self::history_path().ok();
-        let (entries, mtime) = match &path {
+        let (entries, fingerprint) = match &path {
             Some(p) => {
-                let mtime = std::fs::metadata(p).and_then(|m| m.modified()).ok();
+                let fp = FileFingerprint::from_path(p);
                 match Self::read_history_from(p, max_entries) {
-                    Ok(entries) => (entries, mtime),
+                    Ok(entries) => (entries, fp),
                     Err(e) => {
                         tracing::debug!("failed to load history: {e}");
                         (Vec::new(), None)
@@ -43,7 +75,10 @@ impl HistoryProvider {
             }
         };
         Self {
-            state: Mutex::new(HistoryState { entries, mtime }),
+            state: Mutex::new(HistoryState {
+                entries,
+                fingerprint,
+            }),
             path,
             max_entries,
         }
@@ -54,24 +89,26 @@ impl HistoryProvider {
         Self {
             state: Mutex::new(HistoryState {
                 entries,
-                mtime: None,
+                fingerprint: None,
             }),
             path: None,
             max_entries: 0,
         }
     }
 
-    /// Re-read the history file if its mtime has changed.
-    /// Does nothing if the provider was created via `from_entries()`.
+    /// Re-read the history file if its `(mtime, len)` fingerprint has
+    /// changed. Pairing with length catches rapid edits that land on the
+    /// same mtime second but change content. Does nothing if the provider
+    /// was created via `from_entries()`.
     fn refresh_if_stale(&self) {
         let path = match &self.path {
             Some(p) => p,
             None => return,
         };
 
-        let current_mtime = match std::fs::metadata(path).and_then(|m| m.modified()) {
-            Ok(t) => t,
-            Err(_) => return, // can't stat — keep existing entries
+        let current_fp = match FileFingerprint::from_path(path) {
+            Some(fp) => fp,
+            None => return, // can't stat — keep existing entries
         };
 
         let mut state = match self.state.lock() {
@@ -81,25 +118,26 @@ impl HistoryProvider {
                 return;
             }
         };
-        if state.mtime == Some(current_mtime) {
+        if state.fingerprint == Some(current_fp) {
             return; // unchanged
         }
 
         match Self::read_history_from(path, self.max_entries) {
             Ok(entries) => {
                 state.entries = entries;
-                state.mtime = Some(current_mtime);
+                state.fingerprint = Some(current_fp);
             }
             Err(e) => {
                 tracing::debug!("failed to refresh history: {e}");
-                // keep existing entries, but update mtime so we don't retry every call
-                state.mtime = Some(current_mtime);
+                // keep existing entries, but update fingerprint so we
+                // don't retry every call
+                state.fingerprint = Some(current_fp);
             }
         }
     }
 
     fn read_history_from(path: &Path, max_entries: usize) -> Result<Vec<String>> {
-        let raw = std::fs::read(path)?;
+        let raw = read_tail(path)?;
         // Strict per-line UTF-8: any line that isn't valid UTF-8 is dropped
         // with a debug log instead of being silently corrupted by U+FFFD
         // replacement characters (which would then end up rendered in the
@@ -216,8 +254,14 @@ impl HistoryProvider {
         let mut seen = HashSet::new();
         let mut entries = Vec::new();
 
+        // Merge multi-line commands (zsh writes an unescaped trailing `\`
+        // followed by a newline when a command continues onto the next
+        // physical line) before dedup so fragments don't surface as their
+        // own entries.
+        let merged = merge_multiline_entries(contents);
+
         // Process lines in reverse so we keep the most recent occurrence
-        for line in contents.lines().rev() {
+        for line in merged.iter().rev() {
             let cmd = parse_history_line(line);
             if cmd.is_empty() {
                 continue;
@@ -234,6 +278,35 @@ impl HistoryProvider {
         entries.reverse();
         entries
     }
+}
+
+/// Read the tail of a file up to `TAIL_READ_BYTES`. For small files, read
+/// the whole file. For large files, seek to `len - TAIL_READ_BYTES` then
+/// advance past the first `\n` so the truncated head is never a mid-line
+/// split (which would otherwise either corrupt UTF-8 validation or emit a
+/// fragment into the history suggestions).
+fn read_tail(path: &Path) -> std::io::Result<Vec<u8>> {
+    let mut file = std::fs::File::open(path)?;
+    let len = file.metadata()?.len();
+
+    if len <= TAIL_THRESHOLD_BYTES {
+        let mut buf = Vec::with_capacity(len as usize);
+        file.read_to_end(&mut buf)?;
+        return Ok(buf);
+    }
+
+    let start = len.saturating_sub(TAIL_READ_BYTES);
+    file.seek(SeekFrom::Start(start))?;
+    let mut buf = Vec::with_capacity(TAIL_READ_BYTES as usize + 256);
+    file.read_to_end(&mut buf)?;
+
+    // Advance past the first partial line so we never emit a mid-line
+    // fragment. If the tail happens to begin on a line boundary, the
+    // first `\n` is at index 0 and we simply drop that empty prefix.
+    if let Some(nl) = buf.iter().position(|b| *b == b'\n') {
+        buf.drain(..=nl);
+    }
+    Ok(buf)
 }
 
 /// Returns true if `name` looks like a conventional shell history filename.
@@ -260,6 +333,65 @@ fn is_history_filename(name: &str) -> bool {
     SUFFIXES
         .iter()
         .any(|s| name.len() > s.len() && name.ends_with(s))
+}
+
+/// Merge zsh multi-line history entries. A physical line ending in an
+/// unescaped trailing backslash continues onto the next physical line.
+/// An "unescaped" backslash is one preceded by an even number of
+/// backslashes — e.g. `foo \` continues, but `foo \\` does not.
+fn merge_multiline_entries(contents: &str) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    let mut pending: Option<String> = None;
+
+    for line in contents.lines() {
+        let continues = has_unescaped_trailing_backslash(line);
+        let body = if continues {
+            // Strip the single trailing `\` that marks the continuation.
+            &line[..line.len() - 1]
+        } else {
+            line
+        };
+
+        match pending.as_mut() {
+            Some(acc) => {
+                acc.push('\n');
+                acc.push_str(body);
+            }
+            None => {
+                pending = Some(body.to_string());
+            }
+        }
+
+        if !continues {
+            if let Some(full) = pending.take() {
+                out.push(full);
+            }
+        }
+    }
+
+    // If the file ends mid-continuation (no final newline after the last
+    // `\`), still emit what we accumulated so the user sees the partial.
+    if let Some(full) = pending.take() {
+        out.push(full);
+    }
+    out
+}
+
+fn has_unescaped_trailing_backslash(line: &str) -> bool {
+    if !line.ends_with('\\') {
+        return false;
+    }
+    // Count trailing backslashes; an odd count means the final one is
+    // unescaped (and therefore a continuation marker).
+    let mut count = 0usize;
+    for b in line.bytes().rev() {
+        if b == b'\\' {
+            count += 1;
+        } else {
+            break;
+        }
+    }
+    count % 2 == 1
 }
 
 /// Parse a single history line, handling both zsh extended format and plain.
@@ -306,10 +438,6 @@ impl Provider for HistoryProvider {
             .collect();
 
         Ok(suggestions)
-    }
-
-    fn name(&self) -> &'static str {
-        "history"
     }
 }
 
@@ -411,9 +539,7 @@ mod tests {
         let provider = HistoryProvider {
             state: Mutex::new(HistoryState {
                 entries: HistoryProvider::parse_and_dedup("ls\ncd /tmp\n", 1000),
-                mtime: std::fs::metadata(&hist_path)
-                    .and_then(|m| m.modified())
-                    .ok(),
+                fingerprint: FileFingerprint::from_path(&hist_path),
             }),
             path: Some(hist_path.clone()),
             max_entries: 1000,
@@ -569,5 +695,104 @@ mod tests {
             !entries.iter().any(|e| e.contains('\u{FFFD}')),
             "must not emit replacement chars"
         );
+    }
+
+    // -------- Audit fixes: tail-read + multi-line + fingerprint --------
+
+    #[test]
+    fn test_read_tail_small_file_full_read() {
+        // File under the threshold: read_tail returns the full contents.
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("small_history");
+        let body = b"echo one\necho two\n";
+        std::fs::write(&path, body).unwrap();
+
+        let got = read_tail(&path).unwrap();
+        assert_eq!(got, body);
+    }
+
+    #[test]
+    fn test_read_tail_large_file_returns_tail_only() {
+        // Build a file just over TAIL_THRESHOLD_BYTES. Tail must not
+        // exceed TAIL_READ_BYTES meaningfully and must not start mid-line.
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("big_history");
+
+        let mut f = std::fs::File::create(&path).unwrap();
+        use std::io::Write;
+        let mut i: u64 = 0;
+        let target = 3 * 1024 * 1024_u64;
+        let mut written: u64 = 0;
+        while written < target {
+            let line = format!("line {i:08}\n");
+            f.write_all(line.as_bytes()).unwrap();
+            written += line.len() as u64;
+            i += 1;
+        }
+        f.sync_all().unwrap();
+        drop(f);
+
+        let got = read_tail(&path).unwrap();
+        assert!(
+            (got.len() as u64) <= TAIL_READ_BYTES + 64,
+            "tail length {} must not meaningfully exceed TAIL_READ_BYTES",
+            got.len()
+        );
+        assert!(
+            got.starts_with(b"line "),
+            "tail must begin on a line boundary, got prefix {:?}",
+            &got[..20.min(got.len())]
+        );
+    }
+
+    #[test]
+    fn test_merge_multiline_basic_continuation() {
+        // A command broken across two lines should emerge as one entry.
+        let contents = "first line\nfoo \\\nbar\nthird line\n";
+        let merged = merge_multiline_entries(contents);
+        assert_eq!(
+            merged,
+            vec![
+                "first line".to_string(),
+                "foo \nbar".to_string(),
+                "third line".to_string(),
+            ]
+        );
+    }
+
+    #[test]
+    fn test_merge_multiline_escaped_trailing_backslash_does_not_continue() {
+        // `echo foo\\` is an escaped backslash — not a continuation.
+        let contents = "echo foo\\\\\nnext\n";
+        let merged = merge_multiline_entries(contents);
+        assert_eq!(merged, vec!["echo foo\\\\".to_string(), "next".to_string()]);
+    }
+
+    #[test]
+    fn test_merge_multiline_three_line_continuation() {
+        let contents = "a \\\nb \\\nc\nnext\n";
+        let merged = merge_multiline_entries(contents);
+        assert_eq!(merged, vec!["a \nb \nc".to_string(), "next".to_string()]);
+    }
+
+    #[test]
+    fn test_fingerprint_differs_when_size_changes_same_mtime() {
+        // Two files with the same mtime but different sizes must produce
+        // different fingerprints — otherwise rapid edits land on the same
+        // mtime second and the cache never refreshes.
+        let dir = tempfile::tempdir().unwrap();
+        let p1 = dir.path().join("a");
+        let p2 = dir.path().join("b");
+        std::fs::write(&p1, b"hello").unwrap();
+        std::fs::write(&p2, b"hello world").unwrap();
+
+        let t = SystemTime::now();
+        filetime::set_file_mtime(&p1, filetime::FileTime::from_system_time(t)).unwrap();
+        filetime::set_file_mtime(&p2, filetime::FileTime::from_system_time(t)).unwrap();
+
+        let f1 = FileFingerprint::from_path(&p1).unwrap();
+        let f2 = FileFingerprint::from_path(&p2).unwrap();
+        assert_eq!(f1.mtime, f2.mtime, "sanity: mtimes match");
+        assert_ne!(f1, f2, "fingerprints must differ when size differs");
     }
 }

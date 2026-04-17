@@ -22,6 +22,9 @@ pub struct PopupTheme {
 }
 
 impl Default for PopupTheme {
+    // Fields are Vec<u8> because config_watch.rs/proxy.rs populate them from
+    // parse_style() which returns dynamically-built ANSI sequences; converting
+    // to Cow<'static,[u8]> would require touching those callers (out of scope).
     fn default() -> Self {
         Self {
             selected_on: b"\x1b[7m".to_vec(),

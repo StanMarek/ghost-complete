@@ -1,5 +1,25 @@
+# Build-host path remaps: keep absolute user/homedir paths out of release binaries
+# and debug info. Heuristics cover macOS (`/Users/`) and Linux (`/home/`) build
+# hosts; `$CARGO_HOME` defaults to `~/.cargo` which is already covered by the
+# homedir remap. Applied to every target via [build].
+[build]
+rustflags = [
+    "--remap-path-prefix=/Users/=/user/",
+    "--remap-path-prefix=/home/=/user/",
+]
+
+# Darwin targets need the system linker plus the build-wide remaps
+# (per-target rustflags fully override [build].rustflags, so we repeat here).
 [target.aarch64-apple-darwin]
-rustflags = ["-C", "link-arg=-fuse-ld=/usr/bin/ld"]
+rustflags = [
+    "-C", "link-arg=-fuse-ld=/usr/bin/ld",
+    "--remap-path-prefix=/Users/=/user/",
+    "--remap-path-prefix=/home/=/user/",
+]
 
 [target.x86_64-apple-darwin]
-rustflags = ["-C", "link-arg=-fuse-ld=/usr/bin/ld"]
+rustflags = [
+    "-C", "link-arg=-fuse-ld=/usr/bin/ld",
+    "--remap-path-prefix=/Users/=/user/",
+    "--remap-path-prefix=/home/=/user/",
+]

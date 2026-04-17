@@ -7,6 +7,4 @@ use crate::types::Suggestion;
 
 pub trait Provider: Send + Sync {
     fn provide(&self, ctx: &CommandContext, cwd: &Path) -> Result<Vec<Suggestion>>;
-    #[allow(dead_code)]
-    fn name(&self) -> &'static str;
 }

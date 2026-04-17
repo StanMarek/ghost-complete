@@ -15,7 +15,11 @@
 
 name: Release
 permissions:
-  "contents": "write"
+  contents: write
+  # Required by actions/attest-build-provenance to mint a signing cert via
+  # GitHub's OIDC issuer and upload the attestation to the attestations API.
+  id-token: write
+  attestations: write
 
 # This task will run whenever you push a git tag that looks like a version
 # like "1.0.0", "v0.1.0-prerelease.1", "my-app/0.1.0", "releases/v1.0.0", etc.
@@ -284,6 +288,19 @@ jobs:
         run: |
           # Remove the granular manifests
           rm -f artifacts/*-dist-manifest.json
+      # Produce signed SLSA build provenance for every release artifact before
+      # uploading them. This writes an attestation per file into the GitHub
+      # attestations store (verifiable with `gh attestation verify`).
+      # Narrowed to shipped binary archives (.tar.gz/.tar.xz/.zip); excludes
+      # dist-manifest.json, .sha256 checksums, .sh/.rb installers, and any
+      # other non-binary metadata that would inflate the attestation count.
+      - name: Attest release artifacts (SLSA build provenance)
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            artifacts/*.tar.gz
+            artifacts/*.tar.xz
+            artifacts/*.zip
       - name: Create GitHub Release
         env:
           PRERELEASE_FLAG: "${{ fromJson(steps.host.outputs.manifest).announcement_is_prerelease && '--prerelease' || '' }}"

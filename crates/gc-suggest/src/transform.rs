@@ -472,6 +472,18 @@ pub fn execute_pipeline(output: &str, transforms: &[Transform]) -> Result<Vec<Su
     let mut lines: Option<Vec<String>> = None;
     let mut suggestions: Option<Vec<Suggestion>> = None;
 
+    // Materialize `lines` from `current_output` once on first post-split use;
+    // subsequent stages mutate it in place to avoid per-stage Vec reallocation.
+    fn ensure_lines<'a>(
+        lines: &'a mut Option<Vec<String>>,
+        current_output: &mut String,
+    ) -> &'a mut Vec<String> {
+        if lines.is_none() {
+            *lines = Some(vec![std::mem::take(current_output)]);
+        }
+        lines.as_mut().unwrap()
+    }
+
     for transform in transforms {
         match transform {
             // Pre-split: error_guard
@@ -497,40 +509,44 @@ pub fn execute_pipeline(output: &str, transforms: &[Transform]) -> Result<Vec<Su
                 lines = Some(apply_split_on(&current_output, delimiter));
             }
 
-            // Post-split named transforms
+            // Post-split named transforms — mutate in place
             Transform::Named(NamedTransform::FilterEmpty) => {
-                lines = Some(apply_filter_empty(
-                    lines.take().unwrap_or_else(|| vec![current_output.clone()]),
-                ));
+                let l = ensure_lines(&mut lines, &mut current_output);
+                l.retain(|line| !line.trim().is_empty());
             }
             Transform::Named(NamedTransform::Trim) => {
-                lines = Some(apply_trim(
-                    lines.take().unwrap_or_else(|| vec![current_output.clone()]),
-                ));
+                let l = ensure_lines(&mut lines, &mut current_output);
+                for line in l.iter_mut() {
+                    let end_ws = line.len() - line.trim_end().len();
+                    if end_ws > 0 {
+                        line.truncate(line.len() - end_ws);
+                    }
+                    let start_ws = line.len() - line.trim_start().len();
+                    if start_ws > 0 {
+                        line.drain(..start_ws);
+                    }
+                }
             }
             Transform::Named(NamedTransform::SkipFirst) => {
-                lines = Some(apply_skip_first(
-                    lines.take().unwrap_or_else(|| vec![current_output.clone()]),
-                ));
+                let l = ensure_lines(&mut lines, &mut current_output);
+                if !l.is_empty() {
+                    l.drain(..1);
+                }
             }
             Transform::Named(NamedTransform::Dedup) => {
-                lines = Some(apply_dedup(
-                    lines.take().unwrap_or_else(|| vec![current_output.clone()]),
-                ));
+                let l = ensure_lines(&mut lines, &mut current_output);
+                l.dedup();
             }
 
-            // Post-split parameterized transforms
+            // Post-split parameterized transforms — mutate in place
             Transform::Parameterized(ParameterizedTransform::Skip { n }) => {
-                lines = Some(apply_skip(
-                    lines.take().unwrap_or_else(|| vec![current_output.clone()]),
-                    *n,
-                ));
+                let l = ensure_lines(&mut lines, &mut current_output);
+                let take_n = (*n).min(l.len());
+                l.drain(..take_n);
             }
             Transform::Parameterized(ParameterizedTransform::Take { n }) => {
-                lines = Some(apply_take(
-                    lines.take().unwrap_or_else(|| vec![current_output.clone()]),
-                    *n,
-                ));
+                let l = ensure_lines(&mut lines, &mut current_output);
+                l.truncate(*n);
             }
 
             // Extract transforms: produce Vec<Suggestion>
@@ -539,32 +555,19 @@ pub fn execute_pipeline(output: &str, transforms: &[Transform]) -> Result<Vec<Su
                 name,
                 description,
             }) => {
-                let input_lines = lines.take().unwrap_or_else(|| vec![current_output.clone()]);
-                suggestions = Some(apply_regex_extract(
-                    &input_lines,
-                    compiled,
-                    *name,
-                    *description,
-                ));
+                let l = ensure_lines(&mut lines, &mut current_output);
+                suggestions = Some(apply_regex_extract(l, compiled, *name, *description));
             }
             Transform::Parameterized(ParameterizedTransform::JsonExtract { name, description }) => {
-                let input_lines = lines.take().unwrap_or_else(|| vec![current_output.clone()]);
-                suggestions = Some(apply_json_extract(
-                    &input_lines,
-                    name,
-                    description.as_deref(),
-                ));
+                let l = ensure_lines(&mut lines, &mut current_output);
+                suggestions = Some(apply_json_extract(l, name, description.as_deref()));
             }
             Transform::Parameterized(ParameterizedTransform::ColumnExtract {
                 column,
                 description_column,
             }) => {
-                let input_lines = lines.take().unwrap_or_else(|| vec![current_output.clone()]);
-                suggestions = Some(apply_column_extract(
-                    &input_lines,
-                    *column,
-                    *description_column,
-                ));
+                let l = ensure_lines(&mut lines, &mut current_output);
+                suggestions = Some(apply_column_extract(l, *column, *description_column));
             }
         }
     }

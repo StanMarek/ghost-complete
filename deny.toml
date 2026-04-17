@@ -1,0 +1,87 @@
+# cargo-deny configuration (schema v2, cargo-deny >=0.16).
+# Run with: cargo deny check
+# Targeted subset:   cargo deny check licenses
+#                    cargo deny check bans
+#                    cargo deny check advisories
+#                    cargo deny check sources
+
+[graph]
+# Restrict analysis to the targets we actually ship. Avoids flagging
+# platform-specific deps (e.g. windows-sys) that we never link.
+targets = [
+    { triple = "aarch64-apple-darwin" },
+    { triple = "x86_64-apple-darwin" },
+    { triple = "x86_64-unknown-linux-gnu" }, # Linux CI tripwire
+]
+all-features = false
+no-default-features = false
+
+[output]
+feature-depth = 1
+
+# -----------------------------------------------------------------------------
+# Licenses
+# -----------------------------------------------------------------------------
+[licenses]
+# SPDX identifiers only; any dep expression outside this set fails the gate.
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Unicode-3.0",
+    "MPL-2.0",
+    "Zlib",
+    # CC0-1.0 is a public-domain dedication (FSF-free).
+    # Required by `notify` (pulled in via gc-pty).
+    "CC0-1.0",
+]
+confidence-threshold = 0.93
+# Additional private exceptions can be added here per-crate if needed.
+exceptions = []
+
+# -----------------------------------------------------------------------------
+# Bans / duplicate detection
+# -----------------------------------------------------------------------------
+[bans]
+# Start conservative: warn on duplicate versions so we can review `cargo tree -d`
+# output, then flip to "deny" once tree is clean. Use skip / skip-tree below
+# to whitelist known-unavoidable duplicates (e.g. crates still on syn 1.x).
+multiple-versions = "warn"
+wildcards = "deny"
+# Workspace-internal path deps (e.g. `gc-pty = { path = "../gc-pty" }`) have
+# no version and would otherwise be flagged as wildcards.
+allow-wildcard-paths = true
+highlight = "all"
+workspace-default-features = "allow"
+external-default-features = "allow"
+
+# Crates we never want to depend on (safety rails).
+deny = [
+    # Add specific crate+version bans here as findings accumulate.
+]
+
+# Duplicates we accept today. Revisit whenever upstreams catch up.
+skip = []
+skip-tree = []
+
+# -----------------------------------------------------------------------------
+# Advisories (RustSec)
+# -----------------------------------------------------------------------------
+[advisories]
+version = 2
+db-path = "~/.cargo/advisory-db"
+db-urls = ["https://github.com/rustsec/advisory-db"]
+yanked = "warn"
+ignore = []
+
+# -----------------------------------------------------------------------------
+# Sources
+# -----------------------------------------------------------------------------
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []

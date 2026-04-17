@@ -192,6 +192,81 @@ Ghost Complete auto-detects the terminal via `TERM_PROGRAM` and terminal-specifi
 
 **tmux support:** Ghostty, Kitty, WezTerm, Alacritty, and iTerm2 are detected inside tmux via their respective env vars. Terminal.app inside tmux is not detected (it sets no env var that leaks through tmux).
 
+## Logging
+
+Ghost Complete logs through the `tracing` crate. Logging is configured via CLI flags and the `RUST_LOG` environment variable, not via `config.toml`.
+
+### CLI Flags
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--log-level <level>` | `warn` | One of `trace`, `debug`, `info`, `warn`, `error`. Ignored when `RUST_LOG` is set. |
+| `--log-file <path>` | (see below) | Write logs to this file. When unset in proxy mode, the default path is used. |
+
+### Default Log File
+
+In proxy mode (`ghost-complete` wrapping the shell), logs default to a file — never stderr — to avoid corrupting the terminal stream. The default path is:
+
+```
+$XDG_STATE_HOME/ghost-complete/ghost-complete.log
+```
+
+When `XDG_STATE_HOME` is unset, it falls back to:
+
+```
+~/.local/state/ghost-complete/ghost-complete.log
+```
+
+The parent directory is created automatically on startup. If directory creation fails, Ghost Complete prints a one-line warning to stderr and falls back to stderr logging for the duration of that run.
+
+Subcommands (`status`, `doctor`, `validate-specs`, `config`, `install`, `uninstall`) log to stderr by default; pass `--log-file` to redirect them.
+
+### Level Hierarchy
+
+```
+error < warn < info < debug < trace
+```
+
+Setting `--log-level info` enables `info`, `warn`, and `error` events. `trace` is the most verbose and includes every internal decision point.
+
+### `RUST_LOG` Precedence
+
+`RUST_LOG` is read first and overrides `--log-level` when both are set. It uses the standard [`tracing-subscriber` `EnvFilter` syntax](https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.EnvFilter.html), which supports per-crate, per-module, and per-span filters.
+
+Examples:
+
+```bash
+# Everything at debug or higher
+RUST_LOG=debug ghost-complete
+
+# Debug only in the suggest engine; everything else at warn
+RUST_LOG=warn,gc_suggest=debug ghost-complete
+
+# Debug in the suggest engine and info in the PTY loop
+RUST_LOG=gc_suggest=debug,gc_pty=info ghost-complete
+
+# Trace a single module
+RUST_LOG=gc_parser::osc=trace ghost-complete
+```
+
+Crate names use underscores (e.g. `gc_suggest`), not hyphens. Filter directives are comma-separated; the first bare level (if any) sets the global default.
+
+### Tail-f Recipe
+
+Open the log in a second terminal while reproducing an issue:
+
+```bash
+tail -f "${XDG_STATE_HOME:-$HOME/.local/state}/ghost-complete/ghost-complete.log"
+```
+
+### Generating a Bug Report
+
+1. Start the proxy with verbose logging: `ghost-complete --log-level debug`.
+2. Reproduce the bug in that session.
+3. Attach `$XDG_STATE_HOME/ghost-complete/ghost-complete.log` (or the fallback path) to the GitHub issue.
+
+For crate-targeted investigations, combine `--log-level` with `RUST_LOG`, e.g. `RUST_LOG=gc_pty=trace ghost-complete` to inspect the PTY loop in isolation.
+
 ## Full Example
 
 ```toml

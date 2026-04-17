@@ -1,8 +1,66 @@
-use anyhow::{Context, Result};
+use std::path::PathBuf;
 
+use anyhow::{Context, Result};
+use toml_edit::DocumentMut;
+
+/// Resolve the effective path of the config file the same way
+/// `GhostConfig::load` does: honour an explicit `--config <path>` override,
+/// otherwise fall back to `<config_dir>/config.toml`.
+///
+/// Returns `None` only when both no explicit path was given AND
+/// `gc_config::config_dir()` couldn't resolve (e.g. `$HOME` unset). In that
+/// case there's nothing on disk to read, so we fall through to the
+/// defaults-with-banner branch.
+fn resolve_config_file_path(config_path: Option<&str>) -> Option<PathBuf> {
+    match config_path {
+        Some(p) => Some(PathBuf::from(p)),
+        None => gc_config::config_dir().map(|d| d.join("config.toml")),
+    }
+}
+
+/// Print the user's resolved configuration.
+///
+/// When the config file exists on disk we print it verbatim via
+/// `toml_edit::DocumentMut`, which preserves comments, key order, and
+/// whitespace — users who carefully annotated their `config.toml` would
+/// otherwise lose every comment every time they ran `ghost-complete config`.
+///
+/// When the file is missing, unreadable, or fails to parse as a
+/// round-trippable document, we fall back to serializing the in-memory
+/// `GhostConfig` (which is already what `load()` returned, so this reflects
+/// the defaults the proxy would actually use) and prepend a banner comment
+/// explaining that this is synthesized output rather than the user's file.
 pub fn run_config(config_path: Option<&str>) -> Result<()> {
+    // Load so that bad configs (invalid theme, malformed TOML) still
+    // surface an anyhow error consistent with the rest of the CLI —
+    // even though the "happy path" output below bypasses the typed
+    // representation entirely.
     let config = gc_config::GhostConfig::load(config_path).context("failed to load config")?;
-    let toml_str = toml::to_string_pretty(&config).context("failed to serialize config")?;
-    println!("{toml_str}");
+
+    if let Some(path) = resolve_config_file_path(config_path) {
+        if let Ok(contents) = std::fs::read_to_string(&path) {
+            match contents.parse::<DocumentMut>() {
+                Ok(doc) => {
+                    print!("{doc}");
+                    return Ok(());
+                }
+                Err(e) => {
+                    // Don't surface as a hard error: `load()` already succeeded
+                    // via `toml::from_str`, so the file is valid TOML — the
+                    // `toml_edit` parser disagreeing here would be unusual.
+                    // Fall through to the defaults branch with a note.
+                    tracing::warn!(
+                        "toml_edit could not parse {} for verbatim rendering: {e}; falling back to serialized defaults",
+                        path.display()
+                    );
+                }
+            }
+        }
+    }
+
+    // Fallback: no file, unreadable file, or unparseable-by-toml_edit.
+    let toml_str = toml::to_string_pretty(&config).context("failed to serialize config as TOML")?;
+    println!("# No config file found; showing defaults.");
+    print!("{toml_str}");
     Ok(())
 }

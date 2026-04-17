@@ -36,7 +36,17 @@ fn check_subcommands_for_js(subcommands: &[SubcommandSpec]) -> bool {
     })
 }
 
-pub fn run_status(config_path: Option<&str>) -> Result<()> {
+/// Render the status report. When `strict` is `true`, prints the full report
+/// first and then exits with code 1 if spec health is degraded — meaning any
+/// of:
+///   - zero specs loaded across all configured spec dirs AND no embedded
+///     specs available (nothing to complete against), or
+///   - one or more spec files failed to parse (`SpecLoadResult::errors`
+///     non-empty in at least one dir).
+///
+/// Non-strict mode preserves the prior behaviour: always returns `Ok(())`
+/// regardless of spec health.
+pub fn run_status_with_opts(config_path: Option<&str>, strict: bool) -> Result<()> {
     let config = gc_config::GhostConfig::load(config_path).context("failed to load config")?;
     let dirs = resolve_spec_dirs(&config.paths.spec_dirs);
 
@@ -47,6 +57,7 @@ pub fn run_status(config_path: Option<&str>) -> Result<()> {
     let mut fully_functional = 0usize;
     let mut partially_functional = 0usize;
     let mut js_commands: Vec<String> = Vec::new();
+    let mut total_parse_errors = 0usize;
 
     for dir in &dirs {
         let result = SpecStore::load_from_dir(dir)?;
@@ -66,6 +77,7 @@ pub fn run_status(config_path: Option<&str>) -> Result<()> {
         }
 
         if !result.errors.is_empty() {
+            total_parse_errors += result.errors.len();
             println!(
                 "\x1b[33m{} spec(s) failed to load:\x1b[0m",
                 result.errors.len()
@@ -98,6 +110,28 @@ pub fn run_status(config_path: Option<&str>) -> Result<()> {
         );
         for cmd in &js_commands {
             println!("  {cmd}");
+        }
+    }
+
+    // Strict-mode health check: print the report above first, then exit
+    // non-zero if anything is wrong. "Wrong" = either there's literally
+    // nothing to complete against (no filesystem specs AND no embedded
+    // specs), or at least one spec file failed to parse.
+    if strict {
+        let no_specs_available = fs_specs == 0 && embedded_count == 0;
+        if no_specs_available || total_parse_errors > 0 {
+            println!();
+            if no_specs_available {
+                println!(
+                    "\x1b[31mstrict mode: no specs available (0 embedded, 0 filesystem).\x1b[0m"
+                );
+            }
+            if total_parse_errors > 0 {
+                println!(
+                    "\x1b[31mstrict mode: {total_parse_errors} spec file(s) failed to parse.\x1b[0m"
+                );
+            }
+            std::process::exit(1);
         }
     }
 

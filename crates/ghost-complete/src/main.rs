@@ -12,7 +12,14 @@ use tracing_subscriber::EnvFilter;
 #[derive(Parser)]
 #[command(
     name = "ghost-complete",
-    version,
+    version = concat!(
+        env!("CARGO_PKG_VERSION"),
+        " (",
+        env!("VERGEN_GIT_SHA"),
+        " ",
+        env!("VERGEN_BUILD_TIMESTAMP"),
+        ")"
+    ),
     about = "Terminal-native autocomplete engine",
     after_help = "COMMANDS:\n  install          Install shell integration (zsh)\n  uninstall        Remove shell integration\n  validate-specs   Validate completion spec files\n  status           Show loaded specs and JS compatibility\n  config           Show resolved configuration\n  config edit      Open interactive config editor\n  doctor           Run health checks\n\nSHELL SUPPORT:\n  zsh   Full support (auto-installed into ~/.zshrc)"
 )]
@@ -130,7 +137,11 @@ fn main() -> Result<()> {
         }
         Some("status") => {
             init_tracing(&cli.log_level, cli.log_file.as_deref())?;
-            return status::run_status(cli.config.as_deref());
+            // Mirror `validate-specs --strict` / `install --dry-run`: the
+            // top-level clap parser just collects a trailing arg list, so we
+            // scan it ourselves for `--strict`.
+            let strict = cli.shell_args.iter().any(|s| s == "--strict");
+            return status::run_status_with_opts(cli.config.as_deref(), strict);
         }
         Some("config") => {
             if cli.shell_args.get(1).map(|s| s.as_str()) == Some("edit") {

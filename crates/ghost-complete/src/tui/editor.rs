@@ -2,9 +2,9 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use gc_config::GhostConfig;
 use toml_edit::Value;
 
-use super::app::{App, EditState, Focus};
+use super::app::{App, EditState, Focus, Prompt};
 use super::fields::{self, FieldType};
-use super::toml_patch;
+use super::toml_patch::{self, StaleConfigError};
 
 /// Convert a char-based cursor position to a byte index in a string.
 /// Cursor 0 = byte 0, cursor N = byte offset of the Nth char.
@@ -17,9 +17,16 @@ fn char_to_byte_index(s: &str, char_idx: usize) -> usize {
 
 /// Handle a key event, dispatching to navigation or edit mode as appropriate.
 pub fn handle_key(app: &mut App, key: KeyEvent) {
+    // Modal prompts take priority over every other binding — until the user
+    // answers, nothing else happens.
+    if let Some(prompt) = app.prompt {
+        handle_prompt_key(app, prompt, key);
+        return;
+    }
+
     // Global keys (always active)
     if key.modifiers.contains(KeyModifiers::CONTROL) && key.code == KeyCode::Char('c') {
-        app.should_quit = true;
+        request_quit(app);
         return;
     }
     if key.modifiers.contains(KeyModifiers::CONTROL) && key.code == KeyCode::Char('s') {
@@ -64,7 +71,7 @@ pub fn handle_key(app: &mut App, key: KeyEvent) {
     // Navigation mode (EditState::None)
     match key.code {
         KeyCode::Char('q') | KeyCode::Esc => {
-            app.should_quit = true;
+            request_quit(app);
         }
         KeyCode::Tab | KeyCode::BackTab => {
             app.focus = match app.focus {
@@ -277,20 +284,102 @@ fn set_error(app: &mut App, key: &str, msg: String) {
     }
 }
 
+/// User-initiated quit (q, Esc, Ctrl+C). If dirty, stash the request behind a
+/// confirmation prompt so unsaved edits aren't lost to a stray keystroke.
+fn request_quit(app: &mut App) {
+    if app.dirty {
+        app.prompt = Some(Prompt::ConfirmQuit);
+    } else {
+        app.should_quit = true;
+    }
+}
+
+fn handle_prompt_key(app: &mut App, prompt: Prompt, key: KeyEvent) {
+    match prompt {
+        Prompt::ConfirmQuit => match key.code {
+            KeyCode::Char('y') | KeyCode::Char('Y') => {
+                app.prompt = None;
+                app.should_quit = true;
+            }
+            KeyCode::Char('n') | KeyCode::Char('N') | KeyCode::Esc => {
+                app.prompt = None;
+            }
+            KeyCode::Char('s') | KeyCode::Char('S') => {
+                app.prompt = None;
+                save(app);
+                // Only quit if the save actually cleared dirty; otherwise the
+                // user stays in the editor to see the error.
+                if !app.dirty && !app.errors.iter().any(|(k, _)| k == "save") {
+                    app.should_quit = true;
+                }
+            }
+            _ => {}
+        },
+        Prompt::FileChangedOnDisk => match key.code {
+            KeyCode::Char('r') | KeyCode::Char('R') => {
+                app.prompt = None;
+                reload_from_disk(app);
+            }
+            KeyCode::Char('o') | KeyCode::Char('O') => {
+                // Overwrite: drop the stale mtime so the next save bypasses
+                // the check, then retry.
+                app.prompt = None;
+                app.loaded_mtime = None;
+                save(app);
+            }
+            KeyCode::Char('c') | KeyCode::Char('C') | KeyCode::Esc => {
+                app.prompt = None;
+            }
+            _ => {}
+        },
+    }
+}
+
+fn reload_from_disk(app: &mut App) {
+    match std::fs::read_to_string(&app.config_path) {
+        Ok(raw) => match toml::from_str::<GhostConfig>(&raw) {
+            Ok(cfg) => {
+                app.config = cfg;
+                app.raw_toml = raw;
+                app.dirty = false;
+                app.errors.retain(|(k, _)| k != "save");
+                app.refresh_loaded_mtime();
+            }
+            Err(e) => {
+                set_error(app, "save", format!("Reload parse failed: {e}"));
+            }
+        },
+        Err(e) => {
+            set_error(app, "save", format!("Reload failed: {e}"));
+        }
+    }
+}
+
 fn save(app: &mut App) {
     if !app.dirty {
         return;
     }
 
-    // Create backup on first save if file exists
-    if !app.backup_created && app.config_path.exists() {
+    // Create backup on first save. We no longer pre-check `.exists()` — the
+    // read inside `backup_config` surfaces NotFound naturally, which we treat
+    // as "nothing to back up, first-time save" rather than an error.
+    if !app.backup_created {
         match toml_patch::backup_config(&app.config_path) {
             Ok(_) => {
                 app.backup_created = true;
             }
             Err(e) => {
-                set_error(app, "save", format!("Backup failed: {e}"));
-                return;
+                let is_missing = e
+                    .downcast_ref::<std::io::Error>()
+                    .map(|ioe| ioe.kind() == std::io::ErrorKind::NotFound)
+                    .unwrap_or(false);
+                if is_missing {
+                    // First-time save of a brand-new config — nothing to back up.
+                    app.backup_created = true;
+                } else {
+                    set_error(app, "save", format!("Backup failed: {e}"));
+                    return;
+                }
             }
         }
     }
@@ -301,14 +390,29 @@ fn save(app: &mut App) {
         return;
     }
 
-    match toml_patch::save_config(&app.config_path, &app.raw_toml) {
+    match toml_patch::save_config_with_expected_mtime(
+        &app.config_path,
+        &app.raw_toml,
+        app.loaded_mtime,
+    ) {
         Ok(()) => {
             app.dirty = false;
-            // Clear save-related errors
             app.errors.retain(|(k, _)| k != "save");
+            app.refresh_loaded_mtime();
         }
         Err(e) => {
-            set_error(app, "save", format!("Save failed: {e}"));
+            if e.downcast_ref::<StaleConfigError>().is_some() {
+                // External edit detected — bounce to a prompt so the user can
+                // decide between reload, overwrite, or cancel.
+                app.prompt = Some(Prompt::FileChangedOnDisk);
+                set_error(
+                    app,
+                    "save",
+                    "File changed on disk — choose an action".to_string(),
+                );
+            } else {
+                set_error(app, "save", format!("Save failed: {e}"));
+            }
         }
     }
 }
@@ -476,5 +580,59 @@ mod tests {
             "save error should be replaced in-place"
         );
         assert_eq!(save_errors[0].1, "Save failed: new");
+    }
+
+    #[test]
+    fn request_quit_prompts_when_dirty() {
+        let mut app = make_app("[trigger]\ndelay_ms = 150\n");
+        app.dirty = true;
+
+        request_quit(&mut app);
+
+        assert!(
+            !app.should_quit,
+            "dirty quit must be intercepted by a prompt"
+        );
+        assert_eq!(app.prompt, Some(Prompt::ConfirmQuit));
+    }
+
+    #[test]
+    fn request_quit_exits_immediately_when_clean() {
+        let mut app = make_app("[trigger]\ndelay_ms = 150\n");
+        request_quit(&mut app);
+        assert!(app.should_quit);
+        assert_eq!(app.prompt, None);
+    }
+
+    #[test]
+    fn confirm_quit_prompt_y_discards_and_quits() {
+        let mut app = make_app("[trigger]\ndelay_ms = 150\n");
+        app.dirty = true;
+        app.prompt = Some(Prompt::ConfirmQuit);
+
+        handle_prompt_key(
+            &mut app,
+            Prompt::ConfirmQuit,
+            KeyEvent::new(KeyCode::Char('y'), KeyModifiers::NONE),
+        );
+
+        assert!(app.should_quit);
+        assert_eq!(app.prompt, None);
+    }
+
+    #[test]
+    fn confirm_quit_prompt_n_cancels() {
+        let mut app = make_app("[trigger]\ndelay_ms = 150\n");
+        app.dirty = true;
+        app.prompt = Some(Prompt::ConfirmQuit);
+
+        handle_prompt_key(
+            &mut app,
+            Prompt::ConfirmQuit,
+            KeyEvent::new(KeyCode::Char('n'), KeyModifiers::NONE),
+        );
+
+        assert!(!app.should_quit);
+        assert_eq!(app.prompt, None);
     }
 }

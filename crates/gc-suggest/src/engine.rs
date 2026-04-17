@@ -65,7 +65,12 @@ pub struct SyncResult {
     pub suggestions: Vec<Suggestion>,
     /// Script generators from the spec resolution, if any. The caller passes
     /// these to `run_generators` to avoid re-resolving the spec tree.
-    pub script_generators: Vec<specs::GeneratorSpec>,
+    ///
+    /// `Arc<GeneratorSpec>` not `GeneratorSpec`: this vec is cloned on the
+    /// hot path (handler snapshots it before spawning the async task) and
+    /// each element carries `Vec<Transform>`/`Vec<String>` argv that we do
+    /// NOT want to deep-copy on every keystroke trigger.
+    pub script_generators: Vec<Arc<specs::GeneratorSpec>>,
     /// Native git generators resolved from the spec. The caller dispatches
     /// these asynchronously via `resolve_git` to avoid blocking the runtime.
     pub git_generators: Vec<git::GitQueryKind>,
@@ -213,7 +218,7 @@ impl SuggestionEngine {
     /// resolution.
     pub async fn run_generators(
         &self,
-        generators: &[specs::GeneratorSpec],
+        generators: &[Arc<specs::GeneratorSpec>],
         ctx: &CommandContext,
         cwd: &Path,
         timeout_ms: u64,
@@ -231,6 +236,10 @@ impl SuggestionEngine {
         let mut handles = Vec::new();
 
         for gen in generators {
+            // Borrow the inner GeneratorSpec once; we pass references into
+            // cache-keying and transform-cloning below just like before the
+            // Arc wrapper was added.
+            let gen: &specs::GeneratorSpec = gen.as_ref();
             let argv = resolve_script_argv(gen, ctx);
             if argv.is_empty() {
                 continue;

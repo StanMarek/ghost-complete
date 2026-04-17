@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use serde::Deserialize;
@@ -7,6 +8,21 @@ use serde::Deserialize;
 use crate::transform::Transform;
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 use gc_buffer::CommandContext;
+
+/// Native generator `type` strings that `git_generators_from` and the
+/// filesystem templates actually recognize. Anything outside this list is
+/// treated as unknown at load time — logged once so misconfigured specs
+/// don't silently produce zero completions. Kept in sync with
+/// `git::generator_to_query_kind` and the filepaths/folders template
+/// handling in `collect_generators`.
+pub(crate) const KNOWN_NATIVE_GENERATOR_TYPES: &[&str] = &[
+    "git_branches",
+    "git_tags",
+    "git_remotes",
+    "git_files",
+    "filepaths",
+    "folders",
+];
 
 /// Maximum nesting depth permitted in a spec JSON document. The deepest
 /// real-world spec (atlas.json) is depth 7; capping at 32 leaves comfortable
@@ -389,7 +405,12 @@ pub struct SpecResolution {
     pub subcommands: Vec<Suggestion>,
     pub options: Vec<Suggestion>,
     pub native_generators: Vec<String>,
-    pub script_generators: Vec<GeneratorSpec>,
+    /// `Arc<GeneratorSpec>` rather than `GeneratorSpec`: `collect_generators`
+    /// and the downstream `handler::spawn_generators` copy this vec on the
+    /// hot path (every resolution + every async spawn). Arc'ing makes each
+    /// clone a refcount bump instead of a deep copy of `Vec<Transform>`,
+    /// `Vec<String>` argv, and `Option<CacheConfig>`.
+    pub script_generators: Vec<Arc<GeneratorSpec>>,
     pub wants_filepaths: bool,
     pub wants_folders_only: bool,
     /// True when the preceding flag's own `args` spec contributed generators
@@ -421,6 +442,10 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
     let mut arg_idx = 0;
     let mut past_positional = false;
     let args = &ctx.args;
+    // Index the current options slice for O(1) lookup. Rebuilt each time we
+    // descend into a subcommand because `current_options` flips to that
+    // subcommand's option set.
+    let mut options_index = OptionsIndex::build(current_options);
 
     while arg_idx < args.len() {
         let arg = &args[arg_idx];
@@ -437,7 +462,7 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
             // If this flag takes a value in the spec, skip the next arg too
             // (unless the value is inline via `--flag=value`, where there's
             // no separate next arg to skip).
-            if let Some(opt) = find_option(current_options, arg) {
+            if let Some(opt) = options_index.lookup(current_options, arg) {
                 if opt.args.is_some() && !arg.contains('=') && arg_idx + 1 < args.len() {
                     arg_idx += 2;
                     continue;
@@ -453,6 +478,8 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
                 current_subcommands = &sub.subcommands;
                 current_options = &sub.options;
                 current_args = &sub.args;
+                // New option set — rebuild the alias index.
+                options_index = OptionsIndex::build(current_options);
                 arg_idx += 1;
                 continue;
             }
@@ -500,7 +527,7 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
     // positional args.
     let mut preceding_flag_has_args = false;
     if let Some(flag) = &ctx.preceding_flag {
-        if let Some(opt) = find_option(current_options, flag) {
+        if let Some(opt) = options_index.lookup(current_options, flag) {
             if let Some(arg_spec) = &opt.args {
                 // The flag takes an argument — suppress subcommands/options
                 // regardless of whether the arg spec has explicit generators.
@@ -555,7 +582,7 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
 fn collect_generators(
     generators: &[GeneratorSpec],
     native: &mut Vec<String>,
-    script: &mut Vec<GeneratorSpec>,
+    script: &mut Vec<Arc<GeneratorSpec>>,
     wants_filepaths: &mut bool,
     wants_folders_only: &mut bool,
 ) {
@@ -565,10 +592,22 @@ fn collect_generators(
             continue;
         }
         if let Some(ref gen_type) = gen.generator_type {
-            native.push(gen_type.clone());
+            if KNOWN_NATIVE_GENERATOR_TYPES.contains(&gen_type.as_str()) {
+                native.push(gen_type.clone());
+            } else {
+                // Preserve previous behavior (still push so downstream code
+                // paths are unchanged) but surface the unknown type so a
+                // misconfigured spec doesn't silently produce zero
+                // completions.
+                tracing::warn!(
+                    generator_type = %gen_type,
+                    "unknown generator type — no completions will be produced"
+                );
+                native.push(gen_type.clone());
+            }
         }
         if gen.script.is_some() || gen.script_template.is_some() {
-            script.push(gen.clone());
+            script.push(Arc::new(gen.clone()));
         }
         // Fig specs put template on generators too (e.g., git checkout's
         // `{"template": ["filepaths", "folders"]}`).
@@ -580,12 +619,50 @@ fn collect_generators(
     }
 }
 
+/// Linear-scan option lookup — the reference semantics used by
+/// `OptionsIndex` tests. Production code paths all go through
+/// `OptionsIndex::lookup`; this helper is retained only so the equivalence
+/// test can compare index vs. linear output.
+#[cfg(test)]
 fn find_option<'a>(options: &'a [OptionSpec], flag: &str) -> Option<&'a OptionSpec> {
     // Strip `=value` suffix so `--flag=value` matches an option named `--flag`.
     let base_flag = flag.split_once('=').map_or(flag, |(base, _)| base);
     options
         .iter()
         .find(|o| o.name.iter().any(|n| n == base_flag))
+}
+
+/// Alias → index-into-options map built from a `&[OptionSpec]` slice. Turns
+/// `find_option` from an O(options × aliases) linear scan into an O(1)
+/// lookup, which matters when specs have 200+ options (e.g. `curl`, `ffmpeg`)
+/// and a user's command line has a dozen flags — each spec walk would
+/// otherwise do flag_count × options × aliases_per_option comparisons.
+///
+/// Keyed by `String` (not `&str`) so the index outlives borrows of the
+/// backing options without introducing a second lifetime; storing `usize`
+/// index lets `lookup` return a borrow of the original slice without issue.
+struct OptionsIndex {
+    by_alias: HashMap<String, usize>,
+}
+
+impl OptionsIndex {
+    fn build(options: &[OptionSpec]) -> Self {
+        let mut by_alias = HashMap::with_capacity(options.len() * 2);
+        for (idx, opt) in options.iter().enumerate() {
+            for alias in &opt.name {
+                // First alias wins on collision — mirrors the linear-scan
+                // `find`'s first-match semantics.
+                by_alias.entry(alias.clone()).or_insert(idx);
+            }
+        }
+        Self { by_alias }
+    }
+
+    fn lookup<'a>(&self, options: &'a [OptionSpec], flag: &str) -> Option<&'a OptionSpec> {
+        // Strip `=value` suffix so `--flag=value` matches `--flag`.
+        let base_flag = flag.split_once('=').map_or(flag, |(base, _)| base);
+        self.by_alias.get(base_flag).and_then(|&i| options.get(i))
+    }
 }
 
 /// Walk all generators in a spec tree, validate their transform pipelines,
@@ -1335,6 +1412,58 @@ mod tests {
         assert!(find_option(&options, "-o").is_some());
         // Non-existent
         assert!(find_option(&options, "--format").is_none());
+    }
+
+    #[test]
+    fn test_options_index_matches_linear_scan_on_large_spec() {
+        // 200 options × 2 aliases each = 400 alias strings. The HashMap
+        // index must resolve every alias to the same OptionSpec that a
+        // linear-scan `find_option` would return, including the
+        // `--flag=value` suffix handling and the unknown-alias case.
+        let mut options: Vec<OptionSpec> = Vec::with_capacity(200);
+        for i in 0..200 {
+            options.push(OptionSpec {
+                name: vec![format!("--opt-{i}"), format!("-o{i}")],
+                description: Some(format!("option {i}")),
+                args: if i % 2 == 0 {
+                    Some(ArgSpec {
+                        name: Some("val".into()),
+                        description: None,
+                        generators: vec![],
+                        template: None,
+                        suggestions: None,
+                    })
+                } else {
+                    None
+                },
+            });
+        }
+
+        let index = OptionsIndex::build(&options);
+
+        // Every alias resolves to the same option as the linear scan.
+        for i in 0..200 {
+            for alias_variant in [
+                format!("--opt-{i}"),
+                format!("-o{i}"),
+                format!("--opt-{i}=value"),
+            ] {
+                let linear = find_option(&options, &alias_variant);
+                let indexed = index.lookup(&options, &alias_variant);
+                // Compare by the stable `name` vec rather than by pointer —
+                // pointer equality requires some juggling with raw pointers
+                // and the name vec uniquely identifies the option here.
+                assert_eq!(
+                    linear.map(|o| &o.name),
+                    indexed.map(|o| &o.name),
+                    "mismatch on alias {alias_variant:?}"
+                );
+            }
+        }
+
+        // Unknown alias: both return None.
+        assert!(find_option(&options, "--nope").is_none());
+        assert!(index.lookup(&options, "--nope").is_none());
     }
 
     #[test]

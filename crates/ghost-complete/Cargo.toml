@@ -11,6 +11,10 @@ description = "Terminal-native autocomplete engine using PTY proxying for macOS 
 keywords = ["terminal", "autocomplete", "completion", "pty", "ghostty"]
 categories = ["command-line-utilities"]
 readme = "../../README.md"
+# Binary crate shipped exclusively via cargo-dist releases; keep out of crates.io.
+publish = false
+# Emits VERGEN_GIT_SHA / VERGEN_BUILD_TIMESTAMP for clap's `--version` string.
+build = "build.rs"
 
 [[bin]]
 name = "ghost-complete"

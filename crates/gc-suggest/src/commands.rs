@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
+use std::sync::Arc;
 
 use anyhow::Result;
 use gc_buffer::CommandContext;
@@ -9,7 +10,10 @@ use crate::provider::Provider;
 use crate::types::{Suggestion, SuggestionSource};
 
 pub struct CommandsProvider {
-    commands: Vec<String>,
+    // Arc<str>: per-keystroke iteration bumps a refcount instead of re-allocating
+    // 500-2000 Strings on every trigger. String conversion still happens once per
+    // trigger when building `Suggestion`, but the backing store is stable.
+    commands: Vec<Arc<str>>,
 }
 
 impl CommandsProvider {
@@ -26,13 +30,18 @@ impl CommandsProvider {
 
     /// Test/bench constructor — inject command list directly.
     pub fn from_list(commands: Vec<String>) -> Self {
-        Self { commands }
+        Self {
+            commands: commands.into_iter().map(Arc::from).collect(),
+        }
     }
 
-    fn scan_path() -> Result<Vec<String>> {
+    fn scan_path() -> Result<Vec<Arc<str>>> {
         let path_var = std::env::var("PATH")?;
-        let mut seen = HashSet::new();
-        let mut commands = Vec::new();
+        // `seen` holds the same Arc<str> we push into `commands`, so we
+        // allocate the name string exactly once per unique command instead of
+        // twice (once for the HashSet String key, once for the Arc<str>).
+        let mut seen: HashSet<Arc<str>> = HashSet::new();
+        let mut commands: Vec<Arc<str>> = Vec::new();
 
         for dir in path_var.split(':') {
             let entries = match std::fs::read_dir(dir) {
@@ -59,10 +68,10 @@ impl CommandsProvider {
                 }
 
                 let name = entry.file_name();
-                let name_str = name.to_string_lossy().to_string();
+                let arc_str: Arc<str> = Arc::from(name.to_string_lossy().as_ref());
 
-                if seen.insert(name_str.clone()) {
-                    commands.push(name_str);
+                if seen.insert(Arc::clone(&arc_str)) {
+                    commands.push(arc_str);
                 }
             }
         }
@@ -83,17 +92,13 @@ impl Provider for CommandsProvider {
             .commands
             .iter()
             .map(|cmd| Suggestion {
-                text: cmd.clone(),
+                text: cmd.as_ref().to_string(),
                 source: SuggestionSource::Commands,
                 ..Default::default()
             })
             .collect();
 
         Ok(suggestions)
-    }
-
-    fn name(&self) -> &'static str {
-        "commands"
     }
 }
 
