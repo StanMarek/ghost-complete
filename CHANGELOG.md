@@ -10,7 +10,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Embedded specs auto-materialize to `~/.cache/ghost-complete/embedded-specs/` on first run when no user-installed specs are found (enables zero-config `cargo install ghost-complete` usage).
-- ADR trail in `docs/adr/` documenting PTY proxy vs shell plugin and vte vs vt100 decisions.
 - Logging section in README and CONFIGURATION docs explaining `--log-level`, `--log-file`, `RUST_LOG`, and default log path.
 - `publish = false` on the `ghost-complete` binary crate to prevent accidental publish to crates.io.
 - `--version` output now includes the git short SHA and build timestamp.
