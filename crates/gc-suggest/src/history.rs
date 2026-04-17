@@ -100,19 +100,116 @@ impl HistoryProvider {
 
     fn read_history_from(path: &Path, max_entries: usize) -> Result<Vec<String>> {
         let raw = std::fs::read(path)?;
-        let contents = String::from_utf8_lossy(&raw);
-        Ok(Self::parse_and_dedup(&contents, max_entries))
+        // Strict per-line UTF-8: any line that isn't valid UTF-8 is dropped
+        // with a debug log instead of being silently corrupted by U+FFFD
+        // replacement characters (which would then end up rendered in the
+        // popup and selected back into the user's command line). Splitting
+        // by `\n` first means a single bad line doesn't poison the rest of
+        // the file. See audit follow-up to MED-2.
+        let mut clean = String::with_capacity(raw.len());
+        for line in raw.split(|b| *b == b'\n') {
+            match std::str::from_utf8(line) {
+                Ok(s) => {
+                    clean.push_str(s);
+                    clean.push('\n');
+                }
+                Err(e) => {
+                    tracing::debug!("skipping non-UTF-8 history line in {path:?}: {e}");
+                }
+            }
+        }
+        Ok(Self::parse_and_dedup(&clean, max_entries))
     }
 
+    /// Resolve the history file path from `$HISTFILE` (falling back to
+    /// `~/.zsh_history`) and validate it.
+    ///
+    /// `$HISTFILE` is read from the environment, which a malicious dotfile
+    /// (e.g. a compromised `.zshenv`) can set to anything — `/etc/passwd`,
+    /// `~/.ssh/id_rsa`, `~/.aws/credentials`, etc. Without validation the
+    /// proxy would happily slurp the file, parse it as zsh history, and
+    /// render the contents in the popup. That's a local info-disclosure.
+    ///
+    /// Validation rules (must all pass; on failure we log a `warn!` and
+    /// fall back to `~/.zsh_history`, which itself must validate):
+    ///
+    /// 1. The resolved path (after canonicalizing through symlinks) must
+    ///    live under the canonicalized `$HOME`. If the file doesn't exist
+    ///    yet (fresh install), we canonicalize the parent directory and
+    ///    re-attach the filename — we still need the parent to be inside
+    ///    `$HOME` so an attacker can't point at a symlink chain that
+    ///    eventually escapes.
+    /// 2. The filename must look like a shell history file:
+    ///    - exact match: `.zsh_history`, `.bash_history`, `.fish_history`,
+    ///      `.histfile`, `history`, `.history`
+    ///    - ends in `_history`, `.history`, or `.hist`
+    ///
+    ///   Targets like `/etc/passwd` or `~/.ssh/id_rsa` are rejected by
+    ///   rule 1 or 2 (or both).
     fn history_path() -> Result<PathBuf> {
-        // Check $HISTFILE first, fall back to ~/.zsh_history
+        let home = dirs::home_dir()
+            .ok_or_else(|| anyhow::anyhow!("could not determine home directory"))?;
+
         if let Ok(histfile) = std::env::var("HISTFILE") {
-            return Ok(PathBuf::from(histfile));
+            let candidate = PathBuf::from(&histfile);
+            match Self::validate_history_path(&candidate, &home) {
+                Ok(validated) => return Ok(validated),
+                Err(e) => {
+                    tracing::warn!(
+                        "ignoring $HISTFILE={histfile:?}: {e}; falling back to ~/.zsh_history"
+                    );
+                }
+            }
         }
-        if let Some(home) = dirs::home_dir() {
-            return Ok(home.join(".zsh_history"));
+
+        let default = home.join(".zsh_history");
+        // Default path must also validate (canonicalization could still
+        // escape if $HOME itself is a symlink chain into a weird place,
+        // and the filename rule is already satisfied by ".zsh_history").
+        Self::validate_history_path(&default, &home)
+    }
+
+    /// Validate that `path` is safe to read as a shell history file.
+    /// Returns the (possibly canonicalized) path on success.
+    fn validate_history_path(path: &Path, home: &Path) -> Result<PathBuf> {
+        // Filename check first — cheap and rejects the most obvious abuse
+        // (`HISTFILE=/etc/passwd`, `HISTFILE=~/.ssh/id_rsa`) before we
+        // touch the filesystem.
+        let file_name = path
+            .file_name()
+            .and_then(|s| s.to_str())
+            .ok_or_else(|| anyhow::anyhow!("path has no filename component"))?;
+
+        if !is_history_filename(file_name) {
+            anyhow::bail!("filename {file_name:?} does not look like a shell history file");
         }
-        anyhow::bail!("could not determine history file path")
+
+        // Canonicalize $HOME once so the prefix check uses the resolved
+        // path (matters on macOS where /tmp -> /private/tmp etc.).
+        let home_canon = std::fs::canonicalize(home)
+            .map_err(|e| anyhow::anyhow!("could not canonicalize $HOME: {e}"))?;
+
+        // Resolve the candidate. If the file exists, canonicalize it.
+        // If it doesn't (fresh install — no history yet), canonicalize the
+        // parent so we still detect a symlinked-out parent directory.
+        let canonical = match std::fs::canonicalize(path) {
+            Ok(p) => p,
+            Err(_) => {
+                let parent = path
+                    .parent()
+                    .ok_or_else(|| anyhow::anyhow!("path has no parent directory"))?;
+                let parent_canon = std::fs::canonicalize(parent).map_err(|e| {
+                    anyhow::anyhow!("could not canonicalize parent {parent:?}: {e}")
+                })?;
+                parent_canon.join(file_name)
+            }
+        };
+
+        if !canonical.starts_with(&home_canon) {
+            anyhow::bail!("resolved path {canonical:?} is outside $HOME ({home_canon:?})");
+        }
+
+        Ok(canonical)
     }
 
     fn parse_and_dedup(contents: &str, max_entries: usize) -> Vec<String> {
@@ -137,6 +234,32 @@ impl HistoryProvider {
         entries.reverse();
         entries
     }
+}
+
+/// Returns true if `name` looks like a conventional shell history filename.
+///
+/// Matched by exact name (covers `.zsh_history`, `.bash_history`,
+/// `.fish_history`, `.histfile`, `history`, `.history`) or by suffix
+/// (`_history`, `.history`, `.hist` — covers `something_history`,
+/// `mytool.hist`, etc.). Anything else (`passwd`, `id_rsa`, `credentials`,
+/// `config`, `.env`) is rejected.
+fn is_history_filename(name: &str) -> bool {
+    const EXACT: &[&str] = &[
+        ".zsh_history",
+        ".bash_history",
+        ".fish_history",
+        ".histfile",
+        "history",
+        ".history",
+    ];
+    const SUFFIXES: &[&str] = &["_history", ".history", ".hist"];
+
+    if EXACT.contains(&name) {
+        return true;
+    }
+    SUFFIXES
+        .iter()
+        .any(|s| name.len() > s.len() && name.ends_with(s))
 }
 
 /// Parse a single history line, handling both zsh extended format and plain.
@@ -317,5 +440,134 @@ mod tests {
         let results = provider.provide(&ctx, Path::new("/tmp")).unwrap();
         assert_eq!(results.len(), 3);
         assert!(results.iter().any(|s| s.text == "git status"));
+    }
+
+    // -------- HISTFILE validation (audit fix) --------
+
+    #[test]
+    fn test_is_history_filename_accepts_known_names() {
+        assert!(is_history_filename(".zsh_history"));
+        assert!(is_history_filename(".bash_history"));
+        assert!(is_history_filename(".fish_history"));
+        assert!(is_history_filename(".histfile"));
+        assert!(is_history_filename("history"));
+        assert!(is_history_filename(".history"));
+        // Suffix matches.
+        assert!(is_history_filename("custom_history"));
+        assert!(is_history_filename("mytool.history"));
+        assert!(is_history_filename("repl.hist"));
+    }
+
+    #[test]
+    fn test_is_history_filename_rejects_sensitive_names() {
+        assert!(!is_history_filename("passwd"));
+        assert!(!is_history_filename("id_rsa"));
+        assert!(!is_history_filename("credentials"));
+        assert!(!is_history_filename("config"));
+        assert!(!is_history_filename(".env"));
+        assert!(!is_history_filename("authorized_keys"));
+        // Suffix-only must have content before the suffix.
+        assert!(!is_history_filename("_history"));
+        assert!(!is_history_filename(".hist"));
+    }
+
+    #[test]
+    fn test_validate_rejects_etc_passwd() {
+        // Simulate an attacker dotfile setting HISTFILE=/etc/passwd.
+        // The fake $HOME is a tempdir; /etc/passwd is obviously not under it,
+        // but the filename check fires first and rejects it regardless.
+        let home = tempfile::tempdir().unwrap();
+        let result = HistoryProvider::validate_history_path(Path::new("/etc/passwd"), home.path());
+        assert!(result.is_err(), "must reject /etc/passwd");
+        let err = result.unwrap_err().to_string();
+        assert!(
+            err.contains("does not look like a shell history file"),
+            "expected filename-rejection error, got: {err}"
+        );
+    }
+
+    #[test]
+    fn test_validate_rejects_ssh_key_under_home() {
+        // HISTFILE=~/.ssh/id_rsa — under $HOME but the filename is wrong.
+        let home = tempfile::tempdir().unwrap();
+        std::fs::create_dir_all(home.path().join(".ssh")).unwrap();
+        let key = home.path().join(".ssh/id_rsa");
+        std::fs::write(&key, b"PRIVATE KEY").unwrap();
+        let result = HistoryProvider::validate_history_path(&key, home.path());
+        assert!(result.is_err(), "must reject ~/.ssh/id_rsa");
+        let err = result.unwrap_err().to_string();
+        assert!(
+            err.contains("does not look like a shell history file"),
+            "expected filename-rejection error, got: {err}"
+        );
+    }
+
+    #[test]
+    fn test_validate_accepts_zsh_history_under_home() {
+        let home = tempfile::tempdir().unwrap();
+        let hist = home.path().join(".zsh_history");
+        std::fs::write(&hist, "ls\n").unwrap();
+        let result = HistoryProvider::validate_history_path(&hist, home.path());
+        assert!(result.is_ok(), "expected accept, got: {result:?}");
+    }
+
+    #[test]
+    fn test_validate_accepts_nonexistent_zsh_history() {
+        // Fresh install: file doesn't exist yet but parent does.
+        let home = tempfile::tempdir().unwrap();
+        let hist = home.path().join(".zsh_history");
+        let result = HistoryProvider::validate_history_path(&hist, home.path());
+        assert!(
+            result.is_ok(),
+            "must accept nonexistent file under valid parent: {result:?}"
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn test_validate_rejects_symlink_escaping_home() {
+        // Build a fake $HOME, then put a symlink inside it pointing at
+        // /etc/passwd. Even though the symlink path itself lives under
+        // $HOME, canonicalization must follow it and reject the result.
+        // The filename of the symlink itself is a valid history name, so
+        // the filename check passes — only the canonical-path check
+        // rejects it. This is the load-bearing test for the symlink rule.
+        let home = tempfile::tempdir().unwrap();
+        let link = home.path().join(".zsh_history");
+        std::os::unix::fs::symlink("/etc/passwd", &link).unwrap();
+        let result = HistoryProvider::validate_history_path(&link, home.path());
+        assert!(
+            result.is_err(),
+            "must reject symlink that escapes $HOME, got: {result:?}"
+        );
+        let err = result.unwrap_err().to_string();
+        assert!(
+            err.contains("outside $HOME"),
+            "expected outside-$HOME error, got: {err}"
+        );
+    }
+
+    #[test]
+    fn test_read_history_skips_invalid_utf8_lines() {
+        // Mix of valid UTF-8 lines and one line with invalid bytes.
+        // The invalid line must be dropped; the valid ones survive.
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("custom_history");
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(b"good command one\n");
+        bytes.extend_from_slice(b"bad \xFF\xFE bytes here\n");
+        bytes.extend_from_slice(b"good command two\n");
+        std::fs::write(&path, &bytes).unwrap();
+
+        let entries = HistoryProvider::read_history_from(&path, 1000).unwrap();
+        // Order: parse_and_dedup reverses to most-recent-last, so
+        // "good command two" should be last.
+        assert_eq!(entries.len(), 2, "got entries: {entries:?}");
+        assert!(entries.iter().any(|e| e == "good command one"));
+        assert!(entries.iter().any(|e| e == "good command two"));
+        assert!(
+            !entries.iter().any(|e| e.contains('\u{FFFD}')),
+            "must not emit replacement chars"
+        );
     }
 }

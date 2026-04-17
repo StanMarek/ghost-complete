@@ -5,7 +5,6 @@ use tokio::io::AsyncReadExt;
 use tokio::process::Command;
 
 const MAX_SUBSTITUTION_LEN: usize = 1024;
-const SHELL_METACHARACTERS: &[char] = &['|', ';', '&', '`', '$'];
 
 /// Hard cap on script generator stdout. Anything beyond this is dropped, the
 /// child is killed, and a `tracing::warn!` is emitted. Prevents a runaway or
@@ -39,6 +38,21 @@ pub(crate) const MAX_GENERATOR_STDOUT_BYTES: usize = 1024 * 1024;
 pub async fn run_script(argv: &[&str], cwd: &Path, timeout_ms: u64) -> Result<String> {
     if argv.is_empty() {
         bail!("empty script command");
+    }
+
+    // Reject any argv element containing a NUL byte. NUL is the ONE character
+    // that argv-array execution cannot safely carry: the kernel terminates
+    // each argv string at the first NUL, so an argument like "harmless\0..."
+    // silently truncates and any trailing payload is discarded — but Rust's
+    // `&str` happily contains NULs, so without this check downstream code
+    // would never notice. Shell metacharacters (|, ;, &, `, $) are NOT a
+    // concern here: we exec via an argv array, never via `sh -c`, so they
+    // pass through as inert literal bytes. (The legacy metachar warning was
+    // misleading and has been removed; see audit.)
+    for (i, a) in argv.iter().enumerate() {
+        if a.as_bytes().contains(&0) {
+            bail!("argv[{i}] contains a NUL byte; refusing to exec");
+        }
     }
 
     let mut cmd = Command::new(argv[0]);
@@ -231,38 +245,50 @@ fn truncate_utf8(s: &str, max_bytes: usize) -> &str {
 /// Substitute `{prev_token}` and `{current_token}` placeholders in a command template.
 ///
 /// Each substitution value is truncated to [`MAX_SUBSTITUTION_LEN`] bytes
-/// (at a valid UTF-8 boundary). A warning is logged if the substituted result
-/// contains shell metacharacters.
+/// (at a valid UTF-8 boundary).
+///
+/// If either token contains a NUL byte (`\0`) the token is treated as an
+/// empty string and a `tracing::error!` is logged. NUL truncates argv on
+/// Unix, so substituting it would silently lop off the rest of the
+/// argument; the safe choice is to drop it entirely. `run_script` also
+/// rejects argv with embedded NULs as a defense-in-depth check.
+///
+/// Shell metacharacters (`|`, `;`, `&`, backtick, `$`) are NOT filtered
+/// here — `run_script` execs an argv array, never `sh -c`, so those
+/// characters pass through inert. The previous metachar warning was
+/// misleading about the threat model and has been removed.
 pub fn substitute_template(
     template: &[String],
     prev_token: Option<&str>,
     current_token: Option<&str>,
 ) -> Vec<String> {
+    let prev_safe = sanitize_token("prev_token", prev_token);
+    let current_safe = sanitize_token("current_token", current_token);
+
     template
         .iter()
         .map(|part| {
             let mut result = part.clone();
-            if let Some(prev) = prev_token {
-                let truncated = truncate_utf8(prev, MAX_SUBSTITUTION_LEN);
-                result = result.replace("{prev_token}", truncated);
-            } else {
-                result = result.replace("{prev_token}", "");
-            }
-            if let Some(current) = current_token {
-                let truncated = truncate_utf8(current, MAX_SUBSTITUTION_LEN);
-                result = result.replace("{current_token}", truncated);
-            } else {
-                result = result.replace("{current_token}", "");
-            }
-            if result != *part && result.chars().any(|c| SHELL_METACHARACTERS.contains(&c)) {
-                tracing::warn!(
-                    "shell metacharacter in substituted script argument: {:?}",
-                    result
-                );
-            }
+            result = result.replace("{prev_token}", prev_safe.as_deref().unwrap_or(""));
+            result = result.replace("{current_token}", current_safe.as_deref().unwrap_or(""));
             result
         })
         .collect()
+}
+
+/// Truncate to [`MAX_SUBSTITUTION_LEN`] bytes and reject NUL-containing
+/// input. Returns `None` if the caller passed `None` or if the token
+/// contained a NUL (so substitution falls back to empty string).
+fn sanitize_token(name: &str, token: Option<&str>) -> Option<String> {
+    let raw = token?;
+    if raw.as_bytes().contains(&0) {
+        tracing::error!(
+            "{name} contains a NUL byte; substituting empty string. \
+             NUL truncates argv on Unix and cannot be passed safely."
+        );
+        return None;
+    }
+    Some(truncate_utf8(raw, MAX_SUBSTITUTION_LEN).to_string())
 }
 
 #[cfg(test)]
@@ -466,6 +492,53 @@ mod tests {
         assert!(
             child_vars >= parent_vars.saturating_sub(5),
             "child should inherit full env (got {child_vars} vars, parent has {parent_vars})"
+        );
+    }
+
+    // -------- NUL byte / shell-metachar handling (audit fix) --------
+
+    #[test]
+    fn test_substitute_template_drops_nul_in_prev_token() {
+        // NUL must never reach argv. Substitute empty string so the
+        // template evaluates to an inert flag value.
+        let template = vec!["cmd".to_string(), "--name={prev_token}".to_string()];
+        let result = substitute_template(&template, Some("evil\0payload"), None);
+        assert_eq!(result, vec!["cmd", "--name="]);
+        assert!(
+            !result.iter().any(|a| a.as_bytes().contains(&0)),
+            "NUL must not survive substitution"
+        );
+    }
+
+    #[test]
+    fn test_substitute_template_drops_nul_in_current_token() {
+        let template = vec!["cmd".to_string(), "{current_token}".to_string()];
+        let result = substitute_template(&template, None, Some("a\0b"));
+        assert_eq!(result, vec!["cmd", ""]);
+    }
+
+    #[test]
+    fn test_substitute_template_passes_metachars_unchanged() {
+        // |, ;, &, `, $ are NOT shell-injection vectors when execution
+        // is via argv array. The legacy warning was misleading. The
+        // characters must pass through verbatim with no warning fired
+        // (we don't assert log absence — just verify the literal output).
+        let template = vec!["cmd".to_string(), "{prev_token}".to_string()];
+        let dangerous = "a|b;c&d`e$f";
+        let result = substitute_template(&template, Some(dangerous), None);
+        assert_eq!(result, vec!["cmd", dangerous]);
+    }
+
+    #[tokio::test]
+    async fn test_run_script_rejects_nul_in_argv() {
+        // Defense-in-depth: even if a caller hand-builds an argv with a
+        // NUL (bypassing substitute_template), run_script must refuse.
+        let result = run_script(&["echo", "hello\0world"], Path::new("/tmp"), 5000).await;
+        assert!(result.is_err(), "must reject NUL in argv");
+        let err = result.unwrap_err().to_string();
+        assert!(
+            err.contains("NUL byte"),
+            "expected NUL-byte error, got: {err}"
         );
     }
 }
