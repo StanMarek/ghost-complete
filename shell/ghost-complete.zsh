@@ -41,8 +41,12 @@ _gc_preexec() {
     [[ "$TERM_PROGRAM" != "ghostty" && -z "$GHOSTTY_RESOURCES_DIR" ]] && printf '\e]7771;C\a'
 }
 
-precmd_functions+=(_gc_precmd)
-preexec_functions+=(_gc_preexec)
+# Use add-zsh-hook (which dedups) rather than `precmd_functions+=(…)` /
+# `chpwd_functions+=(…)` which append unconditionally and grow the hook
+# list every time the file is re-sourced.
+autoload -Uz add-zsh-hook
+add-zsh-hook precmd _gc_precmd
+add-zsh-hook preexec _gc_preexec
 
 # Report current working directory via OSC 7 on directory change.
 # This enables the proxy to track CWD and provide correct filesystem completions.
@@ -50,9 +54,8 @@ _gc_chpwd() {
     printf '\e]7;file://%s%s\a' "$HOST" "$(_gc_urlencode_path "$PWD")"
 }
 
-chpwd_functions+=(_gc_chpwd)
+add-zsh-hook chpwd _gc_chpwd
 # Also emit on first prompt in case the shell started in a non-default directory
-autoload -Uz add-zsh-hook
 add-zsh-hook precmd _gc_osc7_precmd
 _gc_osc7_precmd() {
     printf '\e]7;file://%s%s\a' "$HOST" "$(_gc_urlencode_path "$PWD")"

@@ -42,5 +42,11 @@ function _gc_report_buffer
     printf '\e]7770;%d;%s\a' $cursor "$buf"
 end
 
-# Bind Ctrl+/ as manual trigger (0x1F)
-bind \x1f '_gc_report_buffer'
+# Bind Ctrl+/ as manual trigger (0x1F).
+# Guard with a sentinel so re-sourcing the script (e.g. on config reload)
+# doesn't stack duplicate bindings — fish's `bind` happily appends the same
+# binding multiple times.
+if not set -q __gc_bindings_installed
+    set -g __gc_bindings_installed 1
+    bind \x1f '_gc_report_buffer'
+end
