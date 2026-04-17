@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Address findings from 2026-04-17 audit (see PR / commit log) — documentation drift (broken `IMPLEMENTATION_PLAN.md` references, MSRV `1.75 → 1.86`, crate count `7 → 8`, spec metrics, missing `theme.border` field) and repo cleanup (`rust_out` removed and gitignored, empty `tests/integration` and `tests/fixtures` removed, prior audit docs marked archived).
+
 ## [0.8.1] - 2026-04-17
 
 ### Fixed

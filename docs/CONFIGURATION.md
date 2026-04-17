@@ -129,6 +129,7 @@ Customize popup colors and styles. Values are space-separated SGR token strings.
 | `match_highlight` | string | (from preset) | Style for fuzzy-matched characters |
 | `item_text` | string | (from preset) | Style for non-selected item text |
 | `scrollbar` | string | (from preset) | Style for the scrollbar track |
+| `border` | string | (from preset) | Style for the popup border |
 
 ```toml
 [theme]
