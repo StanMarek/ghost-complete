@@ -1,4 +1,29 @@
+use std::collections::VecDeque;
 use std::path::PathBuf;
+use std::time::{Duration, Instant};
+
+/// Origin of a pending CPR (Cursor Position Report) request. Used by the
+/// proxy to decide whether an incoming `CSI row;col R` response should be
+/// consumed for ghost-complete's own cursor sync (`Ours`) or forwarded to
+/// the program inside the PTY that asked for it (`Shell`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CprOwner {
+    Ours,
+    Shell,
+}
+
+/// Opaque handle returned by [`TerminalState::enqueue_cpr`]. Pass it to
+/// [`TerminalState::rollback_cpr`] when a `CSI 6n` write fails partway so
+/// the queued entry is removed without corrupting dispatch alignment.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct CprToken(u64);
+
+#[derive(Debug)]
+struct CprEntry {
+    owner: CprOwner,
+    id: u64,
+    enqueued_at: Instant,
+}
 
 /// Tracks terminal state derived from the VT escape sequence stream.
 ///
@@ -21,30 +46,18 @@ pub struct TerminalState {
     cwd_dirty: bool,
     cursor_sync_requested: bool,
     cpr_synced: bool,
-    /// Count of outstanding CPR (Cursor Position Report) requests that
-    /// ghost-complete itself sent, so Task A can distinguish "our" CPR
-    /// responses (consume for cursor sync) from responses belonging to a
-    /// program running inside the PTY like atuin/crossterm (forward to PTY).
+    /// FIFO queue of pending CPR requests in send-order.
     ///
-    /// Access pattern (see `gc-pty/src/proxy.rs`):
-    /// - **Writer:** Task B (PTY → stdout) calls `increment_cpr_pending`
-    ///   strictly BEFORE writing `CSI 6n` to stdout. This ordering matters —
-    ///   Phase 2 MED-15 fix. If Task B incremented AFTER the flush, a fast
-    ///   terminal could reply before Task A saw a pending count, and Task A
-    ///   would forward our own CPR response into the PTY, corrupting the
-    ///   cursor sync cycle.
-    /// - **Reader:** Task A (stdin → PTY) calls `claim_cpr_response` when a
-    ///   CPR arrives from the real terminal. A non-zero count means the
-    ///   response is ours; Task A decrements and consumes it. A zero count
-    ///   means the response belongs to a PTY program and should be forwarded.
-    /// - **Rollback writer:** Task B also calls `claim_cpr_response` on a
-    ///   failed write/flush to undo its own increment, because no response
-    ///   will ever arrive and a permanent leak would make Task A steal the
-    ///   next legitimate application CPR.
-    ///
-    /// External code (any crate other than `gc-pty::proxy`) must not touch
-    /// these helpers — the three call sites above are the entire contract.
-    cpr_pending: u8,
+    /// Terminals respond to `CSI 6n` requests in the same order they
+    /// receive them. The queue head is therefore the owner of the next
+    /// `CSI row;col R` response that will arrive on stdin. Task B pushes
+    /// when it sends or observes a request; Task A pops the head when a
+    /// response arrives. See `gc-pty/src/proxy.rs` for the call sites.
+    cpr_queue: VecDeque<CprEntry>,
+    /// Monotonic counter assigning unique IDs to CPR queue entries so
+    /// `rollback_cpr` can locate and remove an entry even after Task A has
+    /// popped earlier siblings.
+    next_cpr_id: u64,
 }
 
 impl TerminalState {
@@ -64,7 +77,8 @@ impl TerminalState {
             cwd_dirty: false,
             cursor_sync_requested: false,
             cpr_synced: false,
-            cpr_pending: 0,
+            cpr_queue: VecDeque::new(),
+            next_cpr_id: 0,
         }
     }
 
@@ -157,23 +171,68 @@ impl TerminalState {
         synced
     }
 
-    /// Increment the pending CPR counter. Called when ghost-complete sends
-    /// its own `CSI 6n` request so we know to consume the matching response
-    /// rather than forwarding it to the PTY.
-    pub fn increment_cpr_pending(&mut self) {
-        self.cpr_pending = self.cpr_pending.saturating_add(1);
+    /// Push a CPR request onto the back of the queue. Returns a token
+    /// usable by [`Self::rollback_cpr`] if the corresponding `CSI 6n`
+    /// write later fails.
+    pub fn enqueue_cpr(&mut self, owner: CprOwner) -> CprToken {
+        let id = self.next_cpr_id;
+        self.next_cpr_id = self.next_cpr_id.wrapping_add(1);
+        self.cpr_queue.push_back(CprEntry {
+            owner,
+            id,
+            enqueued_at: Instant::now(),
+        });
+        CprToken(id)
     }
 
-    /// Try to claim a pending CPR response. Returns `true` if ghost-complete
-    /// has an outstanding CPR request (response should be consumed), `false`
-    /// if the response belongs to a program inside the PTY (should be forwarded).
-    pub fn claim_cpr_response(&mut self) -> bool {
-        if self.cpr_pending > 0 {
-            self.cpr_pending -= 1;
+    /// Pop the oldest pending CPR entry. The owner identifies whether the
+    /// matching response should be consumed locally (`Ours`) or forwarded
+    /// to the PTY (`Shell`). Returns `None` if no request is outstanding —
+    /// caller should log defensively and forward to the PTY in that case.
+    pub fn claim_next_cpr(&mut self) -> Option<CprOwner> {
+        self.cpr_queue.pop_front().map(|e| e.owner)
+    }
+
+    /// Remove the entry identified by `token` if it is still pending.
+    /// Returns `true` if the entry was removed, `false` if it was already
+    /// claimed by [`Self::claim_next_cpr`] before rollback could run
+    /// (i.e., the response arrived after the write-failure was triggered
+    /// but before Task B reached this code path).
+    ///
+    /// Used by Task B to undo a queued `Ours` entry when the corresponding
+    /// `CSI 6n` write fails — without rollback, the orphan would shift
+    /// dispatch alignment for every subsequent CPR until pruned.
+    pub fn rollback_cpr(&mut self, token: CprToken) -> bool {
+        // Queue depth is bounded 0–2 in practice (one Ours + one Shell
+        // in flight at most). VecDeque::remove is O(n) on the slice,
+        // but n is negligible here and rollback is off the hot path —
+        // it fires only on stdout write/flush failure.
+        if let Some(pos) = self.cpr_queue.iter().position(|e| e.id == token.0) {
+            self.cpr_queue.remove(pos);
             true
         } else {
             false
         }
+    }
+
+    /// Drop CPR entries whose age exceeds `max_age`. A misbehaving terminal
+    /// can fail to respond to a `CSI 6n`, leaving orphans in the queue
+    /// forever. This is the leak guard — call once per Task B iteration
+    /// with a generous timeout (e.g. 30s, well past z4h's 5s `read -srt 5`
+    /// deadline). Returns the number of entries dropped so the caller can
+    /// emit a `tracing::warn!`.
+    pub fn prune_stale_cpr(&mut self, max_age: Duration) -> usize {
+        let now = Instant::now();
+        let before = self.cpr_queue.len();
+        self.cpr_queue
+            .retain(|e| now.duration_since(e.enqueued_at) < max_age);
+        before - self.cpr_queue.len()
+    }
+
+    /// Number of outstanding CPR requests across both owners. Diagnostics
+    /// and tests only — no dispatch logic should branch on this.
+    pub fn cpr_queue_len(&self) -> usize {
+        self.cpr_queue.len()
     }
 
     /// Override the command buffer with a predicted value (e.g., after Tab
@@ -437,5 +496,99 @@ mod tests {
         let (rows, cols) = state.screen_dimensions();
         assert_eq!(rows, 1);
         assert_eq!(cols, 1);
+    }
+
+    #[test]
+    fn cpr_queue_empty_by_default() {
+        let state = TerminalState::new(24, 80);
+        assert_eq!(state.cpr_queue_len(), 0);
+    }
+
+    #[test]
+    fn enqueue_then_claim_returns_owner() {
+        let mut state = TerminalState::new(24, 80);
+        state.enqueue_cpr(CprOwner::Ours);
+        assert_eq!(state.cpr_queue_len(), 1);
+        assert_eq!(state.claim_next_cpr(), Some(CprOwner::Ours));
+        assert_eq!(state.cpr_queue_len(), 0);
+    }
+
+    #[test]
+    fn claim_returns_none_when_empty() {
+        let mut state = TerminalState::new(24, 80);
+        assert_eq!(state.claim_next_cpr(), None);
+    }
+
+    #[test]
+    fn interleaved_enqueue_claims_in_fifo_order() {
+        let mut state = TerminalState::new(24, 80);
+        state.enqueue_cpr(CprOwner::Ours);
+        state.enqueue_cpr(CprOwner::Shell);
+        state.enqueue_cpr(CprOwner::Ours);
+        assert_eq!(state.claim_next_cpr(), Some(CprOwner::Ours));
+        assert_eq!(state.claim_next_cpr(), Some(CprOwner::Shell));
+        assert_eq!(state.claim_next_cpr(), Some(CprOwner::Ours));
+        assert_eq!(state.claim_next_cpr(), None);
+    }
+
+    #[test]
+    fn enqueue_returns_unique_tokens() {
+        let mut state = TerminalState::new(24, 80);
+        let a = state.enqueue_cpr(CprOwner::Ours);
+        let b = state.enqueue_cpr(CprOwner::Shell);
+        assert_ne!(a, b);
+    }
+
+    #[test]
+    fn rollback_removes_matching_token() {
+        let mut state = TerminalState::new(24, 80);
+        let token = state.enqueue_cpr(CprOwner::Ours);
+        assert!(state.rollback_cpr(token));
+        assert_eq!(state.cpr_queue_len(), 0);
+    }
+
+    #[test]
+    fn rollback_returns_false_when_already_claimed() {
+        let mut state = TerminalState::new(24, 80);
+        let token = state.enqueue_cpr(CprOwner::Ours);
+        let _ = state.claim_next_cpr();
+        assert!(!state.rollback_cpr(token));
+    }
+
+    #[test]
+    fn rollback_locates_entry_after_earlier_pops() {
+        let mut state = TerminalState::new(24, 80);
+        state.enqueue_cpr(CprOwner::Shell);
+        let target = state.enqueue_cpr(CprOwner::Ours);
+        state.enqueue_cpr(CprOwner::Shell);
+        // Task A pops the first Shell entry.
+        assert_eq!(state.claim_next_cpr(), Some(CprOwner::Shell));
+        assert!(state.rollback_cpr(target));
+        assert_eq!(state.cpr_queue_len(), 1);
+        assert_eq!(state.claim_next_cpr(), Some(CprOwner::Shell));
+    }
+
+    #[test]
+    fn prune_stale_drops_zero_when_all_fresh() {
+        let mut state = TerminalState::new(24, 80);
+        state.enqueue_cpr(CprOwner::Ours);
+        state.enqueue_cpr(CprOwner::Shell);
+        let dropped = state.prune_stale_cpr(Duration::from_secs(30));
+        assert_eq!(dropped, 0);
+        assert_eq!(state.cpr_queue_len(), 2);
+    }
+
+    #[test]
+    fn prune_stale_drops_old_entries_only() {
+        let mut state = TerminalState::new(24, 80);
+        state.enqueue_cpr(CprOwner::Ours);
+        // Ensure the first entry is measurably "old" before the second push.
+        std::thread::sleep(Duration::from_millis(15));
+        state.enqueue_cpr(CprOwner::Shell);
+        // Prune anything older than 10ms — should drop only the first.
+        let dropped = state.prune_stale_cpr(Duration::from_millis(10));
+        assert_eq!(dropped, 1);
+        assert_eq!(state.cpr_queue_len(), 1);
+        assert_eq!(state.claim_next_cpr(), Some(CprOwner::Shell));
     }
 }

@@ -1,8 +1,9 @@
 use std::io::{Read, Write};
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 use anyhow::{Context, Result};
-use gc_parser::TerminalParser;
+use gc_parser::{CprOwner, TerminalParser};
 use tokio::signal::unix::{signal, SignalKind};
 use tokio::sync::{mpsc, Notify};
 
@@ -16,6 +17,13 @@ use crate::handler::{InputHandler, Keybindings};
 use crate::input::parse_keys;
 use crate::resize::{get_terminal_size, resize_pty};
 use crate::spawn::{spawn_shell, SpawnedShell};
+
+/// Upper bound on how long a queued CPR entry may sit before we prune it.
+/// A misbehaving terminal that silently drops `CSI 6n` would otherwise leak
+/// queue entries forever. A late response after prune lands as
+/// `CprAction::DropEmpty` and is forwarded defensively, which is why the
+/// threshold is generous.
+const CPR_STALE_THRESHOLD: Duration = Duration::from_secs(30);
 
 /// Drop guard that ensures raw mode is always restored, even on panic.
 struct RawModeGuard;
@@ -260,50 +268,77 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 // it for cursor sync. Otherwise forward it through the
                 // PTY so programs like atuin/crossterm receive it.
                 if let crate::input::KeyEvent::CursorPositionReport(row, col) = key {
-                    let mut p = match parser_for_stdin.lock() {
-                        Ok(p) => p,
-                        Err(e) => {
-                            tracing::warn!("parser mutex poisoned in stdin task: {e}");
-                            break 'stdin;
-                        }
+                    let action = {
+                        let mut p = match parser_for_stdin.lock() {
+                            Ok(p) => p,
+                            Err(e) => {
+                                tracing::warn!("parser mutex poisoned in stdin task: {e}");
+                                break 'stdin;
+                            }
+                        };
+                        dispatch_cpr_response(p.state_mut(), *row, *col)
                     };
-                    if p.state_mut().claim_cpr_response() {
-                        let state = p.state_mut();
-                        if state.validate_cpr_coordinates(*row, *col) {
-                            tracing::debug!(
-                                row,
-                                col,
-                                "CPR response — syncing cursor position (ours)"
-                            );
-                            state.set_cursor_from_report(*row, *col);
-                        } else {
-                            let (screen_rows, screen_cols) = state.screen_dimensions();
-                            tracing::warn!(
-                                row,
-                                col,
-                                screen_rows,
-                                screen_cols,
-                                "CPR coordinates out of screen bounds — ignoring"
-                            );
-                            // Do NOT retry with a new CSI 6n: we can't tell if
-                            // this was the terminal's real response (resize race)
-                            // or an injected fake. Retrying would send a CSI 6n
-                            // whose response may have no matching cpr_pending,
-                            // leaking an unsolicited CPR into the PTY. Instead,
-                            // accept the temporary cursor desync — the next
-                            // prompt (OSC 133) triggers a fresh sync cycle.
+                    match action {
+                        CprAction::SyncOurs(r, c) => {
+                            // Deliberate re-acquire after the claim-only
+                            // lock above. Narrowing the hold keeps parser
+                            // contention off the dispatch decision; the
+                            // sync below is the only path that needs the
+                            // lock again.
+                            let mut p = match parser_for_stdin.lock() {
+                                Ok(p) => p,
+                                Err(e) => {
+                                    tracing::warn!("parser mutex poisoned in stdin task: {e}");
+                                    break 'stdin;
+                                }
+                            };
+                            let state = p.state_mut();
+                            if state.validate_cpr_coordinates(r, c) {
+                                tracing::debug!(
+                                    row = r,
+                                    col = c,
+                                    "CPR response — syncing cursor position (ours)"
+                                );
+                                state.set_cursor_from_report(r, c);
+                            } else {
+                                let (screen_rows, screen_cols) = state.screen_dimensions();
+                                tracing::warn!(
+                                    row = r,
+                                    col = c,
+                                    screen_rows,
+                                    screen_cols,
+                                    "CPR coordinates out of screen bounds — ignoring"
+                                );
+                            }
                         }
-                        continue;
-                    }
-                    tracing::debug!(row, col, "CPR response — forwarding to PTY (not ours)");
-                    drop(p);
-                    // Re-encode as CSI row;col R and forward to PTY
-                    let cpr = format!("\x1b[{row};{col}R");
-                    if pty_writer.write_all(cpr.as_bytes()).is_err() {
-                        return;
-                    }
-                    if pty_writer.flush().is_err() {
-                        return;
+                        CprAction::ForwardToPty(r, c) => {
+                            tracing::debug!(
+                                row = r,
+                                col = c,
+                                "CPR response — forwarding to PTY (shell)"
+                            );
+                            let cpr = format!("\x1b[{r};{c}R");
+                            if pty_writer.write_all(cpr.as_bytes()).is_err() {
+                                return;
+                            }
+                            if pty_writer.flush().is_err() {
+                                return;
+                            }
+                        }
+                        CprAction::DropEmpty(r, c) => {
+                            tracing::warn!(
+                                row = r,
+                                col = c,
+                                "CPR response with empty queue — forwarding defensively"
+                            );
+                            let cpr = format!("\x1b[{r};{c}R");
+                            if pty_writer.write_all(cpr.as_bytes()).is_err() {
+                                return;
+                            }
+                            if pty_writer.flush().is_err() {
+                                return;
+                            }
+                        }
                     }
                     continue;
                 }
@@ -369,42 +404,29 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 p.state_mut().take_cursor_sync_requested()
             };
 
-            // Briefly lock stdout for each write — do NOT hold the lock
-            // across the entire loop or it deadlocks with Task A.
-            //
-            // CPR accounting invariant: cpr_pending must be incremented
-            // if and only if a corresponding CSI 6n was successfully
-            // flushed to the terminal. Violating this in either direction
-            // causes cursor-sync corruption — under-counting makes Task A
-            // forward our own CPR response to the PTY, over-counting makes
-            // Task A steal the next application CPR response.
-            //
-            // Lock ordering: acquire the parser mutex and drop it BEFORE
-            // taking the stdout lock. A nested (stdout → parser) path is a
-            // latent deadlock trap for any future code that legitimately
-            // takes parser then stdout. cpr_pending is a counter, so
-            // incrementing earlier (before the main buffer write) is
-            // semantically equivalent — Task A always decrements on the
-            // matching CPR response, and we roll back on write failure.
-            let mut cpr_incremented = false;
-            if needs_cpr {
+            // Lock ordering: take the parser lock to enqueue Ours, drop
+            // it BEFORE acquiring stdout. Task A holds parser briefly to
+            // pop the queue head; nesting (stdout → parser) here would
+            // deadlock the moment Task A tried to acquire parser while
+            // Task B held stdout.
+            let cpr_token = if needs_cpr {
                 match parser_for_stdout.lock() {
-                    Ok(mut p) => {
-                        p.state_mut().increment_cpr_pending();
-                        cpr_incremented = true;
-                    }
+                    Ok(mut p) => Some(p.state_mut().enqueue_cpr(CprOwner::Ours)),
                     Err(e) => {
                         tracing::warn!(
-                            "parser mutex poisoned before CPR increment: {e} \
+                            "parser mutex poisoned before CPR enqueue: {e} \
                              — skipping CPR"
                         );
+                        None
                     }
                 }
-            }
-            // If we couldn't increment (poisoned mutex), don't emit the
-            // CSI 6n — under-counting cpr_pending would make Task A
+            } else {
+                None
+            };
+            // If we couldn't enqueue (poisoned mutex), don't emit the
+            // CSI 6n — sending without a queue entry would make Task A
             // forward our response to the PTY.
-            let send_cpr = needs_cpr && cpr_incremented;
+            let send_cpr = cpr_token.is_some();
 
             let write_result: std::io::Result<()> = {
                 let mut stdout = std::io::stdout().lock();
@@ -419,38 +441,47 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
             };
 
             if let Err(e) = write_result {
-                // Rollback the CPR increment if the write/flush failed
-                // partway through — the CSI 6n did not reach the terminal
-                // (or at least can't be guaranteed to have reached it) so
-                // no response will arrive. A permanent leak here would
-                // make Task A steal the next application CPR response.
-                if cpr_incremented {
+                // Rollback: the CSI 6n didn't reach the terminal (or we
+                // can't prove it did), so no response will arrive. Remove
+                // the orphan entry before it shifts dispatch alignment
+                // for every subsequent CPR.
+                if let Some(token) = cpr_token {
                     match parser_for_stdout.lock() {
                         Ok(mut p) => {
-                            // claim_cpr_response decrements cpr_pending.
-                            p.state_mut().claim_cpr_response();
+                            if !p.state_mut().rollback_cpr(token) {
+                                // Benign race: write reported failure but the
+                                // bytes already reached the terminal, which
+                                // responded; Task A claimed the entry before
+                                // we got here. No orphan, no action needed.
+                                tracing::debug!(
+                                    "CPR rollback no-op — entry already claimed by Task A"
+                                );
+                            }
                         }
                         Err(poison_err) => {
-                            // If the rollback lock itself fails we can't
-                            // recover — the parser mutex is poisoned AND
-                            // cpr_pending is permanently elevated by 1,
-                            // which would make Task A steal the next real
-                            // application CPR response (from atuin,
-                            // crossterm, etc.) and corrupt downstream
-                            // parsing. Proxy state is corrupted; cascade
-                            // into the same break pattern as the parser
-                            // mutex poison sites earlier in this loop and
-                            // exit Task B immediately.
                             tracing::error!(
                                 "parser mutex poisoned during CPR rollback: {poison_err} \
-                                 — cpr_pending permanently elevated, exiting Task B"
+                                 — orphan entry leaked, exiting Task B"
                             );
                             break;
                         }
                     }
                 }
-                tracing::debug!("stdout write/flush failed: {e}");
+                tracing::debug!("Task B stdout write/flush failed: {e}");
                 break;
+            }
+
+            {
+                let dropped = match parser_for_stdout.lock() {
+                    Ok(mut p) => p.state_mut().prune_stale_cpr(CPR_STALE_THRESHOLD),
+                    Err(e) => {
+                        tracing::warn!("parser mutex poisoned during CPR prune: {e}");
+                        0
+                    }
+                };
+                if dropped > 0 {
+                    tracing::warn!(dropped, "pruned stale CPR queue entries");
+                }
             }
 
             // Check if shell reported a buffer update via OSC 7770.
@@ -726,6 +757,27 @@ pub fn should_fallback_to_shell(
     matches!(terminal, gc_terminal::Terminal::Unknown(_)) && !multi_terminal_enabled
 }
 
+/// Outcome of dispatching a CPR response back through the proxy. Pure
+/// transformation over `TerminalState` — extracted from Task A so the
+/// FIFO ordering invariant can be unit-tested without spawning the
+/// full proxy. Both `ForwardToPty` and `DropEmpty` carry the
+/// coordinates so the caller can re-encode and write to the PTY; the
+/// only difference is whether the empty-queue case warrants a warn.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum CprAction {
+    SyncOurs(u16, u16),
+    ForwardToPty(u16, u16),
+    DropEmpty(u16, u16),
+}
+
+fn dispatch_cpr_response(state: &mut gc_parser::TerminalState, row: u16, col: u16) -> CprAction {
+    match state.claim_next_cpr() {
+        Some(CprOwner::Ours) => CprAction::SyncOurs(row, col),
+        Some(CprOwner::Shell) => CprAction::ForwardToPty(row, col),
+        None => CprAction::DropEmpty(row, col),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -769,5 +821,89 @@ mod tests {
             &Terminal::Unknown("foot".into()),
             true
         ));
+    }
+
+    use gc_parser::TerminalParser;
+
+    fn make_state(rows: u16, cols: u16) -> TerminalParser {
+        TerminalParser::new(rows, cols)
+    }
+
+    #[test]
+    fn dispatch_with_ours_at_head_syncs() {
+        let mut p = make_state(24, 80);
+        p.state_mut().enqueue_cpr(CprOwner::Ours);
+        let action = dispatch_cpr_response(p.state_mut(), 5, 10);
+        assert_eq!(action, CprAction::SyncOurs(5, 10));
+    }
+
+    #[test]
+    fn dispatch_with_shell_at_head_forwards() {
+        let mut p = make_state(24, 80);
+        p.state_mut().enqueue_cpr(CprOwner::Shell);
+        let action = dispatch_cpr_response(p.state_mut(), 3, 7);
+        assert_eq!(action, CprAction::ForwardToPty(3, 7));
+    }
+
+    #[test]
+    fn dispatch_with_empty_queue_returns_drop() {
+        let mut p = make_state(24, 80);
+        let action = dispatch_cpr_response(p.state_mut(), 1, 1);
+        assert_eq!(action, CprAction::DropEmpty(1, 1));
+    }
+
+    #[test]
+    fn deferred_sync_reschedules_when_shell_cpr_in_flight() {
+        // Push Shell first (e.g., the shell sent CSI 6n), then Ours (proxy
+        // queued its own request next). Responses must dispatch in that
+        // same send-order — never the reverse. This is the bug class the
+        // FIFO ordering fixes.
+        let mut p = make_state(24, 80);
+        p.state_mut().enqueue_cpr(CprOwner::Shell);
+        p.state_mut().enqueue_cpr(CprOwner::Ours);
+        assert_eq!(
+            dispatch_cpr_response(p.state_mut(), 1, 1),
+            CprAction::ForwardToPty(1, 1)
+        );
+        assert_eq!(
+            dispatch_cpr_response(p.state_mut(), 2, 2),
+            CprAction::SyncOurs(2, 2)
+        );
+    }
+
+    #[test]
+    fn shell_cpr_arrives_while_our_cpr_pending() {
+        // Reverse order: proxy queued Ours first, then a shell program
+        // sent CSI 6n. Responses must dispatch in that same order.
+        let mut p = make_state(24, 80);
+        p.state_mut().enqueue_cpr(CprOwner::Ours);
+        p.state_mut().enqueue_cpr(CprOwner::Shell);
+        assert_eq!(
+            dispatch_cpr_response(p.state_mut(), 4, 4),
+            CprAction::SyncOurs(4, 4)
+        );
+        assert_eq!(
+            dispatch_cpr_response(p.state_mut(), 5, 5),
+            CprAction::ForwardToPty(5, 5)
+        );
+    }
+
+    #[test]
+    fn rollback_ours_after_shell_preserves_shell_dispatch() {
+        // Task B enqueues Ours on top of an already-pending Shell entry,
+        // then the stdout write fails before `CSI 6n` reached the terminal.
+        // Rolling back the Ours token must leave the queue with just the
+        // Shell entry, and the next CPR response must still dispatch to
+        // ForwardToPty with no Ours residue.
+        let mut p = make_state(24, 80);
+        p.state_mut().enqueue_cpr(CprOwner::Shell);
+        let ours = p.state_mut().enqueue_cpr(CprOwner::Ours);
+        assert!(p.state_mut().rollback_cpr(ours));
+        assert_eq!(p.state().cpr_queue_len(), 1);
+        assert_eq!(
+            dispatch_cpr_response(p.state_mut(), 7, 3),
+            CprAction::ForwardToPty(7, 3)
+        );
+        assert_eq!(p.state().cpr_queue_len(), 0);
     }
 }

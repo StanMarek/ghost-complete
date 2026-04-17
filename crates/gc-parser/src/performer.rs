@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use unicode_width::UnicodeWidthChar;
 use vte::Perform;
 
-use crate::state::TerminalState;
+use crate::state::{CprOwner, TerminalState};
 
 /// Helper: extract the first value from a CSI param subslice, or return the given default.
 fn csi_param(params: &vte::Params, index: usize, default: u16) -> u16 {
@@ -109,6 +109,21 @@ impl Perform for TerminalState {
             // ANSI save/restore cursor (SCO sequences)
             's' => self.save_cursor(),
             'u' => self.restore_cursor(),
+            // DSR — Device Status Report. Param 6 is "report cursor
+            // position" (CSI 6n); the terminal will reply with
+            // `CSI row;col R`. Enqueue with `CprOwner::Shell` so Task A
+            // forwards the response back to the program inside the PTY
+            // that asked for it. Other DSR variants (e.g. CSI 5n) do not
+            // produce a CPR response and must NOT enqueue. The local
+            // intermediates guard is defensive: the blanket-discard
+            // above already drops sequences with intermediates, but
+            // scoping the check here keeps DEC private DSR (`CSI ? 6n`)
+            // safe even if the outer filter is ever relocated.
+            'n' => {
+                if intermediates.is_empty() && csi_param(params, 0, 0) == 6 {
+                    self.enqueue_cpr(CprOwner::Shell);
+                }
+            }
             _ => {}
         }
     }
@@ -999,5 +1014,42 @@ mod tests {
         let mut p = make_parser();
         p.process_bytes(&seq);
         assert_eq!(p.state().command_buffer(), Some("café"));
+    }
+
+    // -- CPR auto-enqueue on CSI 6n --
+
+    #[test]
+    fn csi_6n_enqueues_shell() {
+        let mut p = make_parser();
+        assert_eq!(p.state().cpr_queue_len(), 0);
+        p.process_bytes(b"\x1b[6n");
+        assert_eq!(p.state().cpr_queue_len(), 1);
+        assert_eq!(p.state_mut().claim_next_cpr(), Some(crate::CprOwner::Shell));
+    }
+
+    #[test]
+    fn csi_5n_does_not_enqueue() {
+        let mut p = make_parser();
+        p.process_bytes(b"\x1b[5n");
+        assert_eq!(p.state().cpr_queue_len(), 0);
+    }
+
+    #[test]
+    fn multiple_csi_6n_each_enqueue() {
+        let mut p = make_parser();
+        p.process_bytes(b"\x1b[6n\x1b[6n");
+        assert_eq!(p.state().cpr_queue_len(), 2);
+        assert_eq!(p.state_mut().claim_next_cpr(), Some(crate::CprOwner::Shell));
+        assert_eq!(p.state_mut().claim_next_cpr(), Some(crate::CprOwner::Shell));
+    }
+
+    #[test]
+    fn csi_private_6n_does_not_enqueue() {
+        // CSI ? 6n is DEC private DSR — carries an intermediate byte `?`.
+        // The blanket-discard at the top of csi_dispatch drops it before
+        // the 'n' arm fires, so no Shell entry should be enqueued.
+        let mut p = make_parser();
+        p.process_bytes(b"\x1b[?6n");
+        assert_eq!(p.state().cpr_queue_len(), 0);
     }
 }

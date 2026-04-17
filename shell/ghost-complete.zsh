@@ -66,5 +66,40 @@ _gc_report_buffer() {
     printf '\e]7770;%d;%s\a' "$CURSOR" "$BUFFER"
 }
 
-autoload -Uz add-zle-hook-widget
-add-zle-hook-widget line-pre-redraw _gc_report_buffer
+# Chain into the existing zle-line-pre-redraw widget without using
+# add-zle-hook-widget: its dispatcher renames $WIDGET to
+# `azhw:zle-line-pre-redraw`, breaking frameworks (z4h, p10k) that key
+# behavior off $WIDGET inside the hook (e.g., z4h's _zsh_highlight()
+# guard for the post-Enter prompt render).
+_gc_install_zle_hook() {
+    # Idempotent: skip if our wrapper or the direct-install fallback is
+    # already in place. The two exact strings correspond to the two
+    # install branches below — anything else falls through to re-evaluate.
+    local current="${widgets[zle-line-pre-redraw]:-}"
+    if [[ "$current" == "user:_gc_zle_line_pre_redraw" || "$current" == "user:_gc_report_buffer" ]]; then
+        return
+    fi
+    # Three-way dispatch:
+    #   1. No widget registered         → direct-install _gc_report_buffer.
+    #   2. Existing plain user widget   → chain over it so $WIDGET is preserved.
+    #   3. Existing non-user widget
+    #      (completion:/builtin:/…)     → leave it alone. We can't chain a
+    #      non-user widget safely, and silently clobbering someone else's
+    #      registration is worse than losing our buffer hook.
+    if (( ! ${+widgets[zle-line-pre-redraw]} )); then
+        zle -N zle-line-pre-redraw _gc_report_buffer
+    elif [[ "${widgets[zle-line-pre-redraw]}" == user:* ]]; then
+        local existing="${widgets[zle-line-pre-redraw]}"
+        zle -N _gc_orig_zle_line_pre_redraw "${existing#user:}"
+        _gc_zle_line_pre_redraw() {
+            _gc_report_buffer
+            zle _gc_orig_zle_line_pre_redraw -- "$@"
+        }
+        zle -N zle-line-pre-redraw _gc_zle_line_pre_redraw
+    fi
+    # Non-user widget: intentionally no-op. Ghost Complete loses its buffer
+    # hook in this case; that's acceptable degradation.
+}
+
+_gc_install_zle_hook
+unset -f _gc_install_zle_hook
