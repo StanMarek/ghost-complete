@@ -1,0 +1,17 @@
+# Optional pre-commit hooks for Ghost Complete.
+#
+# Install with:
+#   brew install lefthook && lefthook install
+#
+# Hooks run in parallel. They mirror what CI enforces, so anything that
+# passes locally will also pass on the PR check (or fail fast before push).
+
+pre-commit:
+  parallel: true
+  commands:
+    fmt:
+      glob: "*.rs"
+      run: cargo fmt --check
+    clippy:
+      glob: "*.rs"
+      run: cargo clippy --all-targets -- -D warnings

@@ -73,6 +73,14 @@ Reports are generated at `target/criterion/report/index.html`.
 4. Open a PR against `master`
 5. Fill out the PR template
 
+## Optional: pre-commit hooks
+
+A `lefthook.yml` is checked in that runs `cargo fmt --check` and `cargo clippy --all-targets -- -D warnings` before every commit (mirrors CI). To enable:
+
+```bash
+brew install lefthook && lefthook install
+```
+
 ## Code of Conduct
 
 This project follows the [Contributor Covenant](CODE_OF_CONDUCT.md). Be respectful.
