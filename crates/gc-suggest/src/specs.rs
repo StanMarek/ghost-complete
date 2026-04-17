@@ -642,7 +642,7 @@ fn validate_arg_generators(arg_spec: &mut ArgSpec, spec_name: &str, warnings: &m
         }
     });
     if arg_spec.generators.len() < original_len {
-        tracing::debug!(
+        tracing::warn!(
             "{spec_name}: removed {} generator(s) with invalid transform pipelines",
             original_len - arg_spec.generators.len()
         );

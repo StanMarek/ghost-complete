@@ -2,7 +2,7 @@
 //!
 //! ## Why this exists
 //!
-//! `ghost-complete` ships with ~706 Fig-compatible completion specs baked
+//! `ghost-complete` ships with 709 Fig-compatible completion specs baked
 //! into the binary via `include_str!`. Originally these embedded specs only
 //! existed to be copied to disk by `ghost-complete install`. That left a
 //! latent bug: a user who ran `cargo install ghost-complete` and then
@@ -22,11 +22,12 @@
 //! ## Idempotency
 //!
 //! Materialization writes a `.version` sentinel file containing the binary's
-//! `CARGO_PKG_VERSION` plus the embedded spec count. On every subsequent
-//! invocation, if the sentinel matches and every embedded spec name still
-//! exists on disk, the materialization is a no-op. So the 25 MB of writes
-//! happen once per upgrade, not once per process start. This keeps the
-//! `<100 ms` startup target intact for the steady state.
+//! `CARGO_PKG_VERSION` plus the embedded spec count, and writes the sentinel
+//! LAST so a crash mid-write leaves no sentinel and forces a re-materialize.
+//! On every subsequent invocation, if the sentinel matches, the whole call
+//! is a single small file read. So the 25 MB of writes happen once per
+//! upgrade, not once per process start. This keeps the `<100 ms` startup
+//! target intact for the steady state.
 
 use std::io;
 use std::path::{Path, PathBuf};
@@ -1215,22 +1216,16 @@ fn version_sentinel_contents() -> String {
     format!("{}:{}", env!("CARGO_PKG_VERSION"), EMBEDDED_SPECS.len())
 }
 
-/// True iff `dir` already holds the current embedded spec set: the sentinel
-/// matches the current binary AND every embedded spec file is present. The
-/// per-file existence check is what catches partial-write damage from a
-/// crashed previous run; a stale sentinel alone would let us return early
-/// while half the specs were missing.
+/// True iff `dir` already holds the current embedded spec set. The sentinel
+/// is written last by [`write_embedded_specs`], so a matching sentinel
+/// implies the write completed: a crash mid-write leaves no sentinel (or a
+/// stale one), which forces a full re-materialize.
 fn embedded_dir_is_current(dir: &Path) -> bool {
     let sentinel = dir.join(".version");
     let Ok(contents) = std::fs::read_to_string(&sentinel) else {
         return false;
     };
-    if contents.trim() != version_sentinel_contents() {
-        return false;
-    }
-    EMBEDDED_SPECS
-        .iter()
-        .all(|(name, _)| dir.join(name).exists())
+    contents.trim() == version_sentinel_contents()
 }
 
 /// Write every embedded spec into `dir`, creating the directory if needed.
@@ -1258,10 +1253,9 @@ pub fn write_embedded_specs(dir: &Path) -> io::Result<usize> {
 /// fallback path to offer and the embedded specs are unreachable for this
 /// run — which matches the pre-fix behavior).
 ///
-/// On the steady-state path (sentinel matches, all files present) this is
-/// just two `stat()` calls and a small file read — well under a millisecond.
-/// The 25 MB write only happens on first use after install or after a
-/// version bump.
+/// On the steady-state path (sentinel matches) this is a single small file
+/// read — well under a millisecond. The 25 MB write only happens on first
+/// use after install or after a version bump.
 pub fn materialize_embedded_specs() -> Option<PathBuf> {
     let dir = embedded_cache_dir()?;
     if embedded_dir_is_current(&dir) {
@@ -1353,16 +1347,6 @@ mod tests {
         write_embedded_specs(tmp.path()).unwrap();
         // Tamper with the sentinel — older binary version style.
         std::fs::write(tmp.path().join(".version"), "0.0.0:1").unwrap();
-        assert!(!embedded_dir_is_current(tmp.path()));
-    }
-
-    #[test]
-    fn embedded_dir_is_current_detects_missing_spec_file() {
-        let tmp = TempDir::new().unwrap();
-        write_embedded_specs(tmp.path()).unwrap();
-        // Delete one spec — sentinel still matches but the dir is incomplete.
-        let (first_name, _) = EMBEDDED_SPECS[0];
-        std::fs::remove_file(tmp.path().join(first_name)).unwrap();
         assert!(!embedded_dir_is_current(tmp.path()));
     }
 }
