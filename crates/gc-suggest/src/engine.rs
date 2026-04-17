@@ -666,7 +666,7 @@ impl SuggestionEngine {
         };
         if let Some(text) = parent_text {
             let effective = cwd.join(&ctx.current_word);
-            let at_boundary = effective.canonicalize().ok().map_or(true, |resolved| {
+            let at_boundary = effective.canonicalize().ok().is_none_or(|resolved| {
                 resolved == Path::new("/")
                     || std::env::var("HOME")
                         .ok()

@@ -354,7 +354,7 @@ pub fn apply_take(lines: Vec<String>, n: usize) -> Vec<String> {
 pub fn apply_dedup(lines: Vec<String>) -> Vec<String> {
     let mut result = Vec::with_capacity(lines.len());
     for line in lines {
-        if result.last().map_or(true, |prev: &String| *prev != line) {
+        if result.last().is_none_or(|prev: &String| *prev != line) {
             result.push(line);
         }
     }

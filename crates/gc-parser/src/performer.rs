@@ -119,10 +119,8 @@ impl Perform for TerminalState {
             // above already drops sequences with intermediates, but
             // scoping the check here keeps DEC private DSR (`CSI ? 6n`)
             // safe even if the outer filter is ever relocated.
-            'n' => {
-                if intermediates.is_empty() && csi_param(params, 0, 0) == 6 {
-                    self.enqueue_cpr(CprOwner::Shell);
-                }
+            'n' if intermediates.is_empty() && csi_param(params, 0, 0) == 6 => {
+                self.enqueue_cpr(CprOwner::Shell);
             }
             _ => {}
         }
