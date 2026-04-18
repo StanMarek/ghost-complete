@@ -1297,16 +1297,63 @@ pub fn write_embedded_specs(dir: &Path) -> io::Result<usize> {
     }
 
     let mut count = 0;
-    for (name, contents) in EMBEDDED_SPECS {
+    for (idx, (name, contents)) in EMBEDDED_SPECS.iter().enumerate() {
         let dest = dir.join(name);
-        std::fs::write(&dest, contents)?;
+        // Atomic per-file write via temp-then-rename: `std::fs::write`
+        // follows symlinks, which lets a same-user attacker pre-seed
+        // `<name>.json` as a symlink to `/etc/passwd` (or any file) and
+        // have us truncate the target. `rename` replaces the destination
+        // (symlink and all) with our regular file without dereferencing.
+        atomic_write(&dest, contents.as_bytes(), idx)?;
         count += 1;
     }
     // Write the sentinel last so a crash mid-write leaves a stale-or-missing
     // sentinel that triggers a re-materialize on the next launch, rather
-    // than a fresh sentinel pointing at an incomplete dir.
-    std::fs::write(dir.join(".version"), version_sentinel_contents())?;
+    // than a fresh sentinel pointing at an incomplete dir. Sentinel goes
+    // through the same atomic path so a pre-seeded `.version` symlink
+    // can't be followed either.
+    atomic_write(
+        &dir.join(".version"),
+        version_sentinel_contents().as_bytes(),
+        EMBEDDED_SPECS.len(),
+    )?;
     Ok(count)
+}
+
+/// Write `contents` to `dest` atomically: create a uniquely-named temp
+/// file in the same directory, then `rename` it over `dest`. `rename`
+/// replaces a symlink destination with the new regular file without
+/// following it, closing the symlink/hard-link attack vector that
+/// `std::fs::write` is vulnerable to.
+fn atomic_write(dest: &Path, contents: &[u8], nonce: usize) -> io::Result<()> {
+    let parent = dest.parent().ok_or_else(|| {
+        io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "atomic_write: destination has no parent",
+        )
+    })?;
+    let file_name = dest.file_name().ok_or_else(|| {
+        io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "atomic_write: destination has no file name",
+        )
+    })?;
+    let mut tmp_name = std::ffi::OsString::from(".");
+    tmp_name.push(file_name);
+    tmp_name.push(format!(".tmp.{}.{}", std::process::id(), nonce));
+    let tmp_path = parent.join(tmp_name);
+
+    // Best-effort cleanup of any prior tmp file under the same name (a
+    // previous crash could have left one). Ignore errors — the write
+    // below will fail noisily if something is genuinely wrong.
+    let _ = std::fs::remove_file(&tmp_path);
+
+    std::fs::write(&tmp_path, contents)?;
+    if let Err(e) = std::fs::rename(&tmp_path, dest) {
+        let _ = std::fs::remove_file(&tmp_path);
+        return Err(e);
+    }
+    Ok(())
 }
 
 /// Ensure the embedded-spec cache directory exists and is populated with the
@@ -1320,11 +1367,20 @@ pub fn write_embedded_specs(dir: &Path) -> io::Result<usize> {
 /// use after install or after a version bump.
 pub fn materialize_embedded_specs() -> Option<PathBuf> {
     let dir = embedded_cache_dir()?;
+    materialize_embedded_specs_at(&dir)
+}
+
+/// Testable core of [`materialize_embedded_specs`]: given a caller-chosen
+/// directory, refuse to materialise into a symlink, then write out the
+/// embedded specs if the sentinel indicates they're stale. Returns the
+/// directory on success, or `None` when the symlink guard tripped or the
+/// write failed.
+fn materialize_embedded_specs_at(dir: &Path) -> Option<PathBuf> {
     // Refuse to materialize into a symlink — an attacker who can create the
     // cache dir could point it at any location on the FS, causing the
     // subsequent `read_dir` + `remove_file` purge in `write_embedded_specs`
     // to follow the link and delete files outside our cache.
-    if let Ok(meta) = std::fs::symlink_metadata(&dir) {
+    if let Ok(meta) = std::fs::symlink_metadata(dir) {
         if meta.file_type().is_symlink() {
             tracing::warn!(
                 dir = %dir.display(),
@@ -1334,17 +1390,17 @@ pub fn materialize_embedded_specs() -> Option<PathBuf> {
             return None;
         }
     }
-    if embedded_dir_is_current(&dir) {
-        return Some(dir);
+    if embedded_dir_is_current(dir) {
+        return Some(dir.to_path_buf());
     }
-    match write_embedded_specs(&dir) {
+    match write_embedded_specs(dir) {
         Ok(count) => {
             tracing::info!(
                 count,
                 dir = %dir.display(),
                 "materialized embedded completion specs to cache directory"
             );
-            Some(dir)
+            Some(dir.to_path_buf())
         }
         Err(e) => {
             tracing::warn!(
@@ -1446,5 +1502,73 @@ mod tests {
         let (victim, _) = EMBEDDED_SPECS[0];
         std::fs::remove_file(tmp.path().join(victim)).unwrap();
         assert!(!embedded_dir_is_current(tmp.path()));
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn write_embedded_specs_does_not_follow_destination_symlink() {
+        // Pre-seed one of the target spec files as a symlink to an external
+        // victim file. A `std::fs::write`-based writer would follow the
+        // symlink and truncate the victim; the atomic temp-then-rename
+        // path must replace the symlink in-place with a regular file and
+        // leave the victim untouched.
+        let tmp = TempDir::new().unwrap();
+        let victim = tmp.path().join("victim.txt");
+        std::fs::write(&victim, "DO NOT OVERWRITE").unwrap();
+
+        let cache = tmp.path().join("cache");
+        std::fs::create_dir_all(&cache).unwrap();
+        // Pick the first embedded spec name as the attack target.
+        let (target_name, _) = EMBEDDED_SPECS[0];
+        let target = cache.join(target_name);
+        std::os::unix::fs::symlink(&victim, &target).unwrap();
+
+        write_embedded_specs(&cache).unwrap();
+
+        // The victim's contents must be intact — `rename` replaced the
+        // symlink itself, not the file it pointed at.
+        let victim_after = std::fs::read_to_string(&victim).unwrap();
+        assert_eq!(
+            victim_after, "DO NOT OVERWRITE",
+            "atomic_write must not follow a pre-seeded destination symlink"
+        );
+        // And the target is now a regular file holding the spec contents.
+        let meta = std::fs::symlink_metadata(&target).unwrap();
+        assert!(
+            !meta.file_type().is_symlink(),
+            "destination should have been replaced with a regular file"
+        );
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn materialize_embedded_specs_at_refuses_symlinked_cache_dir() {
+        // When the cache dir itself is a symlink, materialisation must
+        // bail out and return `None` without writing anything through the
+        // link. The `write_embedded_specs` purge step would otherwise
+        // follow the link and start deleting files outside the cache.
+        let tmp = TempDir::new().unwrap();
+        let real = tmp.path().join("real");
+        std::fs::create_dir_all(&real).unwrap();
+        let sneaky_target = tmp.path().join("not-our-cache");
+        std::fs::create_dir_all(&sneaky_target).unwrap();
+        let canary = sneaky_target.join("canary.json");
+        std::fs::write(&canary, "UNTOUCHED").unwrap();
+
+        let link = tmp.path().join("cache");
+        std::os::unix::fs::symlink(&sneaky_target, &link).unwrap();
+
+        let result = materialize_embedded_specs_at(&link);
+        assert!(
+            result.is_none(),
+            "symlinked cache dir must be refused, got: {result:?}"
+        );
+        // The symlink target must not have been modified — no spec files
+        // written, canary still present.
+        assert!(canary.exists(), "canary file outside the cache was deleted");
+        assert_eq!(std::fs::read_to_string(&canary).unwrap(), "UNTOUCHED");
+        // The symlink must still be a symlink (we didn't replace it).
+        let meta = std::fs::symlink_metadata(&link).unwrap();
+        assert!(meta.file_type().is_symlink());
     }
 }
