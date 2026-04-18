@@ -27,18 +27,25 @@ _gc_urlencode_path() {
     printf '%s' "$encoded"
 }
 
+# True when the host terminal already injects native OSC 133, making our
+# redundant OSC 7771 unnecessary. Currently covers Ghostty (native) and
+# Zed (native). VSCode arrives in a later commit.
+_gc_native_osc133() {
+    [[ "$TERM_PROGRAM" == "ghostty" || -n "$GHOSTTY_RESOURCES_DIR" ]] && return 0
+    [[ -n "$ZED_TERM" ]] && return 0
+    return 1
+}
+
 _gc_precmd() {
     # Mark: prompt is about to be displayed
     printf '\e]133;A\a'
-    # OSC 7771: redundant on Ghostty (OSC 133 already handled), needed elsewhere.
-    # Check GHOSTTY_RESOURCES_DIR too — TERM_PROGRAM is overwritten inside tmux.
-    [[ "$TERM_PROGRAM" != "ghostty" && -z "$GHOSTTY_RESOURCES_DIR" ]] && printf '\e]7771;A\a'
+    _gc_native_osc133 || printf '\e]7771;A\a'
 }
 
 _gc_preexec() {
     # Mark: command is about to execute
     printf '\e]133;C\a'
-    [[ "$TERM_PROGRAM" != "ghostty" && -z "$GHOSTTY_RESOURCES_DIR" ]] && printf '\e]7771;C\a'
+    _gc_native_osc133 || printf '\e]7771;C\a'
 }
 
 # Use add-zsh-hook (which dedups) rather than `precmd_functions+=(…)` /
