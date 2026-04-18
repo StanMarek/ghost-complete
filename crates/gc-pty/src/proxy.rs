@@ -592,6 +592,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     let mut sighup = signal(SignalKind::hangup()).context("failed to register SIGHUP handler")?;
 
     // Wait for either an I/O task to finish or a signal
+    let mut signal_shutdown = false;
     loop {
         tokio::select! {
             _ = shutdown_rx.recv() => {
@@ -600,10 +601,12 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
             }
             _ = sigterm.recv() => {
                 tracing::info!("received SIGTERM, shutting down");
+                signal_shutdown = true;
                 break;
             }
             _ = sighup.recv() => {
                 tracing::info!("received SIGHUP, shutting down");
+                signal_shutdown = true;
                 break;
             }
             _ = sigwinch.recv() => {
@@ -677,11 +680,56 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
 
     // _raw_guard drops here, restoring terminal state
 
-    // Wait for child and get exit status
-    let status = child.wait().context("failed to wait for shell process")?;
-    let exit_code = status.exit_code().try_into().unwrap_or(1);
+    // Wait for child and get exit status.
+    //
+    // On signal-driven shutdown, the shell may be blocked on a read of the
+    // inherited master PTY fd. A plain `wait()` would hang forever. Poll
+    // `try_wait` with a bounded deadline, then escalate to `kill()` if the
+    // shell hasn't exited on its own.
+    let exit_code = if signal_shutdown {
+        wait_with_timeout(child.as_mut(), Duration::from_secs(2))
+    } else {
+        let status = child.wait().context("failed to wait for shell process")?;
+        status.exit_code().try_into().unwrap_or(1)
+    };
 
     Ok(exit_code)
+}
+
+/// Poll `try_wait` until `deadline`, then `kill()` and wait once more. Returns
+/// the shell's exit code, or a signal-style `128 + SIGTERM = 143` if we had to
+/// kill it (or if the final wait failed).
+fn wait_with_timeout(
+    child: &mut (dyn portable_pty::Child + Send + Sync),
+    deadline: Duration,
+) -> i32 {
+    let start = std::time::Instant::now();
+    let poll_interval = Duration::from_millis(50);
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) => return status.exit_code().try_into().unwrap_or(1),
+            Ok(None) => {
+                if start.elapsed() >= deadline {
+                    break;
+                }
+                std::thread::sleep(poll_interval);
+            }
+            Err(e) => {
+                tracing::warn!("try_wait failed during signal shutdown: {e}");
+                break;
+            }
+        }
+    }
+    if let Err(e) = child.kill() {
+        tracing::warn!("failed to kill shell on signal shutdown: {e}");
+    }
+    match child.wait() {
+        Ok(status) => status.exit_code().try_into().unwrap_or(143),
+        Err(e) => {
+            tracing::warn!("wait after kill failed: {e}");
+            143
+        }
+    }
 }
 
 /// Debounce loop: waits for buffer-change notifications, resets a timer on each
