@@ -1232,8 +1232,39 @@ fn embedded_dir_is_current(dir: &Path) -> bool {
 /// Returns the number of files written. Used by both the runtime fallback
 /// (via [`materialize_embedded_specs`]) and `ghost-complete install` so the
 /// two paths stay byte-identical.
+///
+/// Purges stale `.json` files before writing. Without this step a previous
+/// version's specs (or stray attacker-dropped files) would remain alongside
+/// the current set — the sentinel check only verifies `<version>:<count>`,
+/// so N stale files + N current files summing to the right count would
+/// still look "current".
 pub fn write_embedded_specs(dir: &Path) -> io::Result<usize> {
     std::fs::create_dir_all(dir)?;
+
+    let expected_names: std::collections::HashSet<&str> =
+        EMBEDDED_SPECS.iter().map(|(n, _)| *n).collect();
+    if let Ok(read_dir) = std::fs::read_dir(dir) {
+        for entry in read_dir.flatten() {
+            let path = entry.path();
+            if path.extension().and_then(|e| e.to_str()) != Some("json") {
+                continue;
+            }
+            let name = match path.file_name().and_then(|n| n.to_str()) {
+                Some(n) => n,
+                None => continue,
+            };
+            if !expected_names.contains(name) {
+                if let Err(e) = std::fs::remove_file(&path) {
+                    tracing::warn!(
+                        "failed to purge stale embedded spec {}: {}",
+                        path.display(),
+                        e
+                    );
+                }
+            }
+        }
+    }
+
     let mut count = 0;
     for (name, contents) in EMBEDDED_SPECS {
         let dest = dir.join(name);
