@@ -1273,6 +1273,28 @@ fn embedded_dir_is_current(dir: &Path) -> bool {
 pub fn write_embedded_specs(dir: &Path) -> io::Result<usize> {
     std::fs::create_dir_all(dir)?;
 
+    // TOCTOU hardening: `materialize_embedded_specs_at` checks that `dir`
+    // isn't a symlink before calling us, but an attacker could swap it
+    // for a symlink between that check and `create_dir_all` (which
+    // happily succeeds against a symlink pointing at an existing dir).
+    // Re-check immediately after create_dir_all and refuse to proceed
+    // if the dir is now a symlink. This doesn't close the race fully —
+    // a directory-fd + openat redesign would — but it eliminates the
+    // simple swap window before the subsequent `read_dir` purge walks
+    // into attacker-controlled territory.
+    if let Ok(meta) = std::fs::symlink_metadata(dir) {
+        if meta.file_type().is_symlink() {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                format!(
+                    "refusing to write embedded specs: cache dir {} is a symlink \
+                     (possibly swapped after the initial check)",
+                    dir.display()
+                ),
+            ));
+        }
+    }
+
     let expected_names: std::collections::HashSet<&str> =
         EMBEDDED_SPECS.iter().map(|(n, _)| *n).collect();
     if let Ok(read_dir) = std::fs::read_dir(dir) {
@@ -1669,6 +1691,38 @@ mod tests {
             leftovers.is_empty(),
             "atomic_write must clean up its temp file on rename error, found: {leftovers:?}"
         );
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn write_embedded_specs_rechecks_symlink_after_create_dir_all() {
+        // MEDIUM TOCTOU fix: `materialize_embedded_specs_at` checks for a
+        // symlinked cache dir up front, but `create_dir_all` + `read_dir`
+        // + subsequent purge all re-traverse the path. If an attacker
+        // swaps the dir for a symlink between the first check and the
+        // purge, the purge walks through the link and starts deleting
+        // files outside the cache. The post-create_dir_all re-check
+        // closes the simple swap window: calling `write_embedded_specs`
+        // directly with a symlinked dir must now error out before any
+        // filesystem mutation happens inside the link target.
+        let tmp = TempDir::new().unwrap();
+        let real_target = tmp.path().join("real_target");
+        std::fs::create_dir_all(&real_target).unwrap();
+        let canary = real_target.join("canary.json");
+        std::fs::write(&canary, "UNTOUCHED").unwrap();
+
+        let link = tmp.path().join("symlinked_cache");
+        std::os::unix::fs::symlink(&real_target, &link).unwrap();
+
+        let err = write_embedded_specs(&link)
+            .expect_err("write_embedded_specs must refuse a symlinked cache dir");
+        assert_eq!(err.kind(), std::io::ErrorKind::InvalidInput);
+
+        // The symlink target must be untouched — the purge never ran.
+        assert_eq!(std::fs::read_to_string(&canary).unwrap(), "UNTOUCHED");
+        // And the symlink still points where it did — we didn't replace it.
+        let meta = std::fs::symlink_metadata(&link).unwrap();
+        assert!(meta.file_type().is_symlink());
     }
 
     #[test]
