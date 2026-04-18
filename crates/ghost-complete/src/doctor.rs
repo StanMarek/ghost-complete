@@ -1,6 +1,8 @@
 use anyhow::Result;
 use std::path::PathBuf;
 
+use crate::sanitize::sanitize_for_terminal;
+
 enum Severity {
     Ok,
     Warn,
@@ -50,7 +52,15 @@ fn print_results(results: &[CheckResult]) {
             Severity::Fail => ("[FAIL]", "\x1b[31m"),
             Severity::Skip => ("[SKIP]", "\x1b[2m"),
         };
-        println!("  {color}{label}\x1b[0m {}", result.message);
+        // Messages are composed from attacker-controllable inputs: config
+        // spec dirs, keybinding/theme values, shell paths, terminal display
+        // strings, OS error text. Strip control chars at the print boundary
+        // so a hostile `~/.config/ghost-complete/config.toml` can't smuggle
+        // CSI/OSC sequences through `ghost-complete doctor` output.
+        println!(
+            "  {color}{label}\x1b[0m {}",
+            sanitize_for_terminal(&result.message)
+        );
     }
 
     let fails = results

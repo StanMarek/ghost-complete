@@ -1,6 +1,7 @@
 mod config_cmd;
 mod doctor;
 mod install;
+mod sanitize;
 mod status;
 mod tui;
 mod validate;

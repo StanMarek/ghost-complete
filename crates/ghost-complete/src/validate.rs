@@ -5,13 +5,7 @@ use gc_suggest::parse_spec_checked_and_sanitized;
 use gc_suggest::spec_dirs::resolve_spec_dirs;
 use gc_suggest::specs::{validate_spec_generators, CompletionSpec, SubcommandSpec};
 
-/// Strip control characters from text headed for the user's terminal.
-/// File paths, spec names, and error strings all reach `writeln!`
-/// unescaped; any of them could smuggle in CSI/OSC sequences without
-/// this guard. Mirrors `sanitize_text` inside `gc-suggest`.
-fn sanitize_for_terminal(text: &str) -> String {
-    text.chars().filter(|c| !c.is_control()).collect()
-}
+use crate::sanitize::sanitize_for_terminal;
 
 /// Counts emitted by [`validate_dir`] / [`run_validate_specs_inner`].
 #[derive(Debug, Default, Clone, Copy)]
