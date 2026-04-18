@@ -16,7 +16,7 @@
 //! the new location on the next save.
 
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard};
 use std::time::SystemTime;
 
@@ -419,15 +419,29 @@ impl FrecencyDb {
             }
         };
 
-        let tmp = path.with_extension("json.tmp");
-        if let Err(e) = std::fs::write(&tmp, &json) {
+        // Each writer gets a unique temp file in the same directory as the
+        // target (so `persist()` is an atomic same-FS rename). A shared temp
+        // name (e.g. `frecency.json.tmp`) would let two concurrent
+        // ghost-complete processes clobber each other's half-written file
+        // before rename — the loser then restores dirty in-memory state that
+        // is lost on exit, silently dropping accepted completions.
+        let parent = match path.parent() {
+            Some(p) if !p.as_os_str().is_empty() => p,
+            _ => Path::new("."),
+        };
+        let mut tmp = match tempfile::NamedTempFile::new_in(parent) {
+            Ok(t) => t,
+            Err(e) => {
+                tracing::warn!("frecency save error (create tmp): {e}");
+                return false;
+            }
+        };
+        if let Err(e) = std::io::Write::write_all(tmp.as_file_mut(), json.as_bytes()) {
             tracing::warn!("frecency save error (write tmp): {e}");
             return false;
         }
-        if let Err(e) = std::fs::rename(&tmp, path) {
-            tracing::warn!("frecency save error (rename): {e}");
-            // Clean up stale temp file
-            let _ = std::fs::remove_file(&tmp);
+        if let Err(e) = tmp.persist(path) {
+            tracing::warn!("frecency save error (persist): {e}");
             return false;
         }
 
