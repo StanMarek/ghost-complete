@@ -345,6 +345,14 @@ impl TerminalProfile {
         Self::new(Terminal::Zed, false)
     }
 
+    /// Test constructor: VSCode profile (Synchronized, OSC 133). Covers
+    /// all VSCode forks (VSCodium, Cursor, Windsurf, Positron) since
+    /// they share the xterm.js frontend and shell-integration model.
+    #[cfg(any(test, feature = "test-utils"))]
+    pub fn for_vscode() -> Self {
+        Self::new(Terminal::VSCode, false)
+    }
+
     /// Test constructor: Unknown terminal profile (PreRenderBuffer, ShellIntegration).
     #[cfg(any(test, feature = "test-utils"))]
     pub fn for_unknown(name: &str) -> Self {
@@ -769,6 +777,14 @@ mod tests {
     fn test_for_zed() {
         let p = TerminalProfile::for_zed();
         assert_eq!(*p.terminal(), Terminal::Zed);
+        assert_eq!(p.render_strategy(), RenderStrategy::Synchronized);
+        assert_eq!(p.prompt_detection(), PromptDetection::Osc133);
+    }
+
+    #[test]
+    fn test_for_vscode() {
+        let p = TerminalProfile::for_vscode();
+        assert_eq!(*p.terminal(), Terminal::VSCode);
         assert_eq!(p.render_strategy(), RenderStrategy::Synchronized);
         assert_eq!(p.prompt_detection(), PromptDetection::Osc133);
     }
