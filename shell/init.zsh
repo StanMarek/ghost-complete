@@ -21,6 +21,7 @@ __ghost_complete_init() {
        [[ -n "$KITTY_WINDOW_ID" ]] || \
        [[ -n "$WEZTERM_UNIX_SOCKET" ]] || \
        [[ -n "$ALACRITTY_SOCKET" ]] || \
+       [[ -n "$ZED_TERM" ]] || \
        [[ -n "$ITERM_SESSION_ID" ]] || \
        [[ "$TERM_PROGRAM" == "rio" ]]; then
       if command -v ghost-complete >/dev/null 2>&1; then
@@ -33,11 +34,11 @@ __ghost_complete_init() {
     # because no multiplexer re-injects it into unrelated shell sessions.
     [[ -n "$GHOST_COMPLETE_ACTIVE" ]] && return
     local supported=0
-    if [[ -n "$KITTY_WINDOW_ID" ]] || [[ -n "$ALACRITTY_SOCKET" ]]; then
+    if [[ -n "$KITTY_WINDOW_ID" ]] || [[ -n "$ALACRITTY_SOCKET" ]] || [[ -n "$ZED_TERM" ]]; then
       supported=1
     else
       case "$TERM_PROGRAM" in
-        ghostty|WezTerm|rio|iTerm.app|Apple_Terminal) supported=1 ;;
+        ghostty|WezTerm|rio|iTerm.app|Apple_Terminal|zed) supported=1 ;;
       esac
     fi
     if [[ $supported -eq 1 ]] && command -v ghost-complete >/dev/null 2>&1; then
