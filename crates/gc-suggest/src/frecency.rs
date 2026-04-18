@@ -321,9 +321,19 @@ impl FrecencyDb {
     /// Returns `None` when the file is missing/unreadable or in a
     /// pre-versioning format. Used by `save_snapshot` to refuse to overwrite
     /// a file written by a newer binary.
+    ///
+    /// Deliberately parses ONLY the `version` field. If a future release
+    /// changes the shape of `entries`, deserializing the whole
+    /// `VersionedStore` here would fail — returning `None` and silently
+    /// defeating the downgrade guard below, which is exactly the scenario
+    /// this function exists to prevent.
     fn peek_disk_version(path: &std::path::Path) -> Option<u32> {
+        #[derive(Deserialize)]
+        struct VersionOnly {
+            version: u32,
+        }
         let json = std::fs::read_to_string(path).ok()?;
-        serde_json::from_str::<VersionedStore>(&json)
+        serde_json::from_str::<VersionOnly>(&json)
             .ok()
             .map(|s| s.version)
     }
