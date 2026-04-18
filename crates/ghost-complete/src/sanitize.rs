@@ -79,7 +79,10 @@ mod tests {
     fn sanitize_path_preserves_plain_path() {
         use std::path::PathBuf;
         let path = PathBuf::from("/Users/alice/.config/ghost-complete/specs");
-        assert_eq!(sanitize_path(&path), "/Users/alice/.config/ghost-complete/specs");
+        assert_eq!(
+            sanitize_path(&path),
+            "/Users/alice/.config/ghost-complete/specs"
+        );
     }
 
     #[test]

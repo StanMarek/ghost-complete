@@ -170,10 +170,7 @@ fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()>
     let script_path = shell_dir.join("ghost-complete.zsh");
 
     if dry_run {
-        println!(
-            "  Would write init script to {}",
-            sanitize_path(&init_path)
-        );
+        println!("  Would write init script to {}", sanitize_path(&init_path));
         println!(
             "  Would write zsh integration to {}",
             sanitize_path(&script_path)
@@ -190,10 +187,7 @@ fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()>
                 sanitize_path(&config_path)
             );
         } else {
-            println!(
-                "  Config already exists at {}",
-                sanitize_path(&config_path)
-            );
+            println!("  Config already exists at {}", sanitize_path(&config_path));
         }
         println!("  Would update {}\n", sanitize_path(zshrc_path));
         println!("  \x1b[36m\u{2139}\x1b[0m  The following would be added to your shell config:\n");
@@ -210,10 +204,7 @@ fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()>
 
     fs::write(&script_path, ZSH_INTEGRATION)
         .with_context(|| format!("failed to write {}", script_path.display()))?;
-    println!(
-        "  Wrote zsh integration to {}",
-        sanitize_path(&script_path)
-    );
+    println!("  Wrote zsh integration to {}", sanitize_path(&script_path));
 
     // 1b. Copy completion specs
     copy_specs(config_dir)?;
@@ -232,16 +223,10 @@ fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()>
         Ok(mut file) => {
             file.write_all(DEFAULT_CONFIG_TOML.as_bytes())
                 .with_context(|| format!("failed to write {}", config_path.display()))?;
-            println!(
-                "  Wrote default config to {}",
-                sanitize_path(&config_path)
-            );
+            println!("  Wrote default config to {}", sanitize_path(&config_path));
         }
         Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
-            println!(
-                "  Config already exists at {}",
-                sanitize_path(&config_path)
-            );
+            println!("  Config already exists at {}", sanitize_path(&config_path));
         }
         Err(e) => {
             return Err(anyhow::Error::new(e))

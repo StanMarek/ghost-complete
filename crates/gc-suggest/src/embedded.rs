@@ -1659,7 +1659,10 @@ mod tests {
             "expected AlreadyExists, got {err:?}"
         );
         // Victim is untouched — the open failed before any write.
-        assert_eq!(std::fs::read_to_string(&victim).unwrap(), "DO NOT OVERWRITE");
+        assert_eq!(
+            std::fs::read_to_string(&victim).unwrap(),
+            "DO NOT OVERWRITE"
+        );
     }
 
     #[test]
@@ -1673,8 +1676,8 @@ mod tests {
         let dest_dir = tmp.path().join("dest_is_dir");
         std::fs::create_dir_all(&dest_dir).unwrap();
 
-        let err = atomic_write(&dest_dir, b"content", 0)
-            .expect_err("rename over a directory must fail");
+        let err =
+            atomic_write(&dest_dir, b"content", 0).expect_err("rename over a directory must fail");
         assert!(
             err.kind() != std::io::ErrorKind::NotFound,
             "rename error expected, not NotFound: {err:?}"
