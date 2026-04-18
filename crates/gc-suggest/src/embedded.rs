@@ -1433,11 +1433,7 @@ mod tests {
         // JSON file. The manifest scan forces a re-materialize.
         let tmp = TempDir::new().unwrap();
         write_embedded_specs(tmp.path()).unwrap();
-        std::fs::write(
-            tmp.path().join("not-a-real-spec.json"),
-            r#"{"name":"x"}"#,
-        )
-        .unwrap();
+        std::fs::write(tmp.path().join("not-a-real-spec.json"), r#"{"name":"x"}"#).unwrap();
         assert!(!embedded_dir_is_current(tmp.path()));
     }
 
