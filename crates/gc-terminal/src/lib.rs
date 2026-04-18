@@ -11,6 +11,11 @@ pub enum Terminal {
     ITerm2,
     TerminalApp,
     Zed,
+    /// VSCode's integrated terminal. Covers all VSCode forks (VSCodium,
+    /// Cursor, Windsurf, Positron, Trae, …) — they share the xterm.js
+    /// frontend, shell-integration model, and env-var surface, so there
+    /// is no capability-level difference to justify per-fork variants.
+    VSCode,
     Unknown(String),
 }
 
@@ -31,6 +36,7 @@ impl Terminal {
             "iTerm2",
             "Terminal.app",
             "Zed",
+            "VSCode",
         ]
     }
 }
@@ -46,6 +52,7 @@ impl fmt::Display for Terminal {
             Terminal::ITerm2 => write!(f, "iTerm2"),
             Terminal::TerminalApp => write!(f, "Terminal.app"),
             Terminal::Zed => write!(f, "Zed"),
+            Terminal::VSCode => write!(f, "VSCode"),
             Terminal::Unknown(name) => write!(f, "{name}"),
         }
     }
@@ -268,7 +275,8 @@ impl TerminalProfile {
             | Terminal::Kitty
             | Terminal::WezTerm
             | Terminal::Rio
-            | Terminal::Zed => (RenderStrategy::Synchronized, PromptDetection::Osc133),
+            | Terminal::Zed
+            | Terminal::VSCode => (RenderStrategy::Synchronized, PromptDetection::Osc133),
             // Synchronized output but no native OSC 133 (Alacritty issue open since 2022)
             Terminal::Alacritty => (
                 RenderStrategy::Synchronized,
@@ -360,14 +368,15 @@ mod tests {
         assert!(Terminal::ITerm2.is_known());
         assert!(Terminal::TerminalApp.is_known());
         assert!(Terminal::Zed.is_known());
+        assert!(Terminal::VSCode.is_known());
         assert!(!Terminal::Unknown("foot".into()).is_known());
         assert!(!Terminal::Unknown("unknown".into()).is_known());
     }
 
     #[test]
     fn test_supported_terminals_count() {
-        // 8 supported terminals: Ghostty, Kitty, WezTerm, Alacritty, Rio, iTerm2, Terminal.app, Zed
-        assert_eq!(Terminal::supported_terminals().len(), 8);
+        // 9 supported terminals: Ghostty, Kitty, WezTerm, Alacritty, Rio, iTerm2, Terminal.app, Zed, VSCode
+        assert_eq!(Terminal::supported_terminals().len(), 9);
     }
 
     #[test]
@@ -383,6 +392,7 @@ mod tests {
                 "iTerm2",
                 "Terminal.app",
                 "Zed",
+                "VSCode",
             ]
         );
     }
@@ -485,6 +495,7 @@ mod tests {
         assert_eq!(Terminal::ITerm2.to_string(), "iTerm2");
         assert_eq!(Terminal::TerminalApp.to_string(), "Terminal.app");
         assert_eq!(Terminal::Zed.to_string(), "Zed");
+        assert_eq!(Terminal::VSCode.to_string(), "VSCode");
         assert_eq!(Terminal::Unknown("foo".into()).to_string(), "foo");
     }
 
