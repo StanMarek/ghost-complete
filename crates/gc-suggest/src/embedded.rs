@@ -1220,12 +1220,43 @@ fn version_sentinel_contents() -> String {
 /// is written last by [`write_embedded_specs`], so a matching sentinel
 /// implies the write completed: a crash mid-write leaves no sentinel (or a
 /// stale one), which forces a full re-materialize.
+///
+/// After the cheap sentinel match, verify the JSON filename set matches the
+/// embedded manifest exactly. A sentinel-only check trusts a version string
+/// that anyone with write access to `~/.cache/ghost-complete/embedded-specs`
+/// can forge; a manifest scan catches both missing-expected-file and
+/// unexpected-extra-file cases so a polluted cache is re-materialized even
+/// when its sentinel happens to match.
 fn embedded_dir_is_current(dir: &Path) -> bool {
     let sentinel = dir.join(".version");
     let Ok(contents) = std::fs::read_to_string(&sentinel) else {
         return false;
     };
-    contents.trim() == version_sentinel_contents()
+    if contents.trim() != version_sentinel_contents() {
+        return false;
+    }
+
+    let expected: std::collections::HashSet<&str> =
+        EMBEDDED_SPECS.iter().map(|(n, _)| *n).collect();
+    let Ok(read_dir) = std::fs::read_dir(dir) else {
+        return false;
+    };
+
+    let mut seen = std::collections::HashSet::with_capacity(expected.len());
+    for entry in read_dir.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|e| e.to_str()) != Some("json") {
+            continue;
+        }
+        let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
+            return false;
+        };
+        if !expected.contains(name) {
+            return false;
+        }
+        seen.insert(name.to_string());
+    }
+    seen.len() == expected.len()
 }
 
 /// Write every embedded spec into `dir`, creating the directory if needed.
@@ -1289,6 +1320,20 @@ pub fn write_embedded_specs(dir: &Path) -> io::Result<usize> {
 /// use after install or after a version bump.
 pub fn materialize_embedded_specs() -> Option<PathBuf> {
     let dir = embedded_cache_dir()?;
+    // Refuse to materialize into a symlink — an attacker who can create the
+    // cache dir could point it at any location on the FS, causing the
+    // subsequent `read_dir` + `remove_file` purge in `write_embedded_specs`
+    // to follow the link and delete files outside our cache.
+    if let Ok(meta) = std::fs::symlink_metadata(&dir) {
+        if meta.file_type().is_symlink() {
+            tracing::warn!(
+                dir = %dir.display(),
+                "embedded spec cache dir is a symlink; refusing to materialize \
+                 (falling back to no on-disk specs for this run)"
+            );
+            return None;
+        }
+    }
     if embedded_dir_is_current(&dir) {
         return Some(dir);
     }
@@ -1378,6 +1423,32 @@ mod tests {
         write_embedded_specs(tmp.path()).unwrap();
         // Tamper with the sentinel — older binary version style.
         std::fs::write(tmp.path().join(".version"), "0.0.0:1").unwrap();
+        assert!(!embedded_dir_is_current(tmp.path()));
+    }
+
+    #[test]
+    fn embedded_dir_is_current_rejects_unexpected_json_file() {
+        // A sentinel that happens to match the current version does not save
+        // a cache directory that was polluted with an extra attacker-dropped
+        // JSON file. The manifest scan forces a re-materialize.
+        let tmp = TempDir::new().unwrap();
+        write_embedded_specs(tmp.path()).unwrap();
+        std::fs::write(
+            tmp.path().join("not-a-real-spec.json"),
+            r#"{"name":"x"}"#,
+        )
+        .unwrap();
+        assert!(!embedded_dir_is_current(tmp.path()));
+    }
+
+    #[test]
+    fn embedded_dir_is_current_rejects_missing_expected_file() {
+        // A missing expected file must also force a re-materialize even when
+        // the sentinel + total file count would otherwise look plausible.
+        let tmp = TempDir::new().unwrap();
+        write_embedded_specs(tmp.path()).unwrap();
+        let (victim, _) = EMBEDDED_SPECS[0];
+        std::fs::remove_file(tmp.path().join(victim)).unwrap();
         assert!(!embedded_dir_is_current(tmp.path()));
     }
 }
