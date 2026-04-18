@@ -29,8 +29,9 @@
 //! upgrade, not once per process start. This keeps the `<100 ms` startup
 //! target intact for the steady state.
 
-use std::io;
+use std::io::{self, Write as _};
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 pub const EMBEDDED_SPECS: &[(&str, &str)] = &[
     ("-.json", include_str!("../../../specs/-.json")),
@@ -1320,11 +1321,38 @@ pub fn write_embedded_specs(dir: &Path) -> io::Result<usize> {
     Ok(count)
 }
 
+/// Monotonic counter mixed into the temp-file suffix. Combined with PID
+/// and the high-resolution wall-clock nanos, this makes the temp path
+/// unpredictable to a same-user attacker racing us between `create_new`
+/// and the subsequent `rename`. `create_new(true) + O_NOFOLLOW` is the
+/// actual security boundary; the counter just avoids accidental
+/// collisions between two atomic writes hitting the same destination
+/// name in quick succession from the same process.
+static ATOMIC_WRITE_COUNTER: AtomicU64 = AtomicU64::new(0);
+
 /// Write `contents` to `dest` atomically: create a uniquely-named temp
-/// file in the same directory, then `rename` it over `dest`. `rename`
-/// replaces a symlink destination with the new regular file without
-/// following it, closing the symlink/hard-link attack vector that
-/// `std::fs::write` is vulnerable to.
+/// file in the same directory with `create_new(true)` + `O_NOFOLLOW`
+/// (on Unix), write + fsync, then `rename` it over `dest`.
+///
+/// Two attack vectors to close:
+/// 1. `std::fs::write` follows symlinks, so a same-user attacker who
+///    pre-seeds `<name>.json` as a symlink to `/etc/passwd` (or any
+///    other user-writable file) gets us to truncate the target. `rename`
+///    replaces the destination (symlink and all) with a regular file
+///    without dereferencing, closing this vector for the final
+///    destination.
+/// 2. The temp path itself was previously predictable
+///    (`.<file>.tmp.<pid>.<nonce>`) and written with `std::fs::write` —
+///    which follows symlinks. Between the `remove_file` and the `write`,
+///    an attacker could recreate the temp path as a symlink to an
+///    arbitrary target. `create_new(true)` + `O_NOFOLLOW` refuses to
+///    open if anything already exists at the temp path (including a
+///    symlink), so the race window collapses.
+///
+/// Cleanup-on-error: any failure after `create_new` succeeds (write,
+/// sync, rename) removes the temp file before returning the error. The
+/// previous implementation only cleaned up on rename failure, leaving
+/// garbage on write/sync failures.
 fn atomic_write(dest: &Path, contents: &[u8], nonce: usize) -> io::Result<()> {
     let parent = dest.parent().ok_or_else(|| {
         io::Error::new(
@@ -1338,21 +1366,55 @@ fn atomic_write(dest: &Path, contents: &[u8], nonce: usize) -> io::Result<()> {
             "atomic_write: destination has no file name",
         )
     })?;
+
+    // Compose an unpredictable temp name: `.<file>.tmp.<pid>.<nonce>.<nanos>.<ctr>`.
+    // PID + nanos + a process-global counter are enough entropy that a
+    // same-user attacker can't reliably pre-seed the exact path; the
+    // create_new + O_NOFOLLOW below is the real defence, but making
+    // the name hard to guess narrows the pre-seeding window further.
+    let ctr = ATOMIC_WRITE_COUNTER.fetch_add(1, Ordering::Relaxed);
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or(0);
     let mut tmp_name = std::ffi::OsString::from(".");
     tmp_name.push(file_name);
-    tmp_name.push(format!(".tmp.{}.{}", std::process::id(), nonce));
+    tmp_name.push(format!(
+        ".tmp.{}.{}.{}.{}",
+        std::process::id(),
+        nonce,
+        nanos,
+        ctr
+    ));
     let tmp_path = parent.join(tmp_name);
 
-    // Best-effort cleanup of any prior tmp file under the same name (a
-    // previous crash could have left one). Ignore errors — the write
-    // below will fail noisily if something is genuinely wrong.
-    let _ = std::fs::remove_file(&tmp_path);
-
-    std::fs::write(&tmp_path, contents)?;
-    if let Err(e) = std::fs::rename(&tmp_path, dest) {
-        let _ = std::fs::remove_file(&tmp_path);
-        return Err(e);
+    let mut opts = std::fs::OpenOptions::new();
+    opts.write(true).create_new(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        // O_NOFOLLOW refuses to open if the final path component is a
+        // symlink. Combined with create_new (O_CREAT | O_EXCL) this means
+        // the open atomically fails if anything — regular file, directory,
+        // symlink, fifo — already exists at tmp_path. No remove-then-write
+        // race window.
+        opts.custom_flags(libc::O_NOFOLLOW);
+        // 0o600: owner-only. The temp file briefly contains the spec
+        // contents before rename; no reason for anyone else to read it.
+        opts.mode(0o600);
     }
+
+    let mut file = opts.open(&tmp_path)?;
+    // Any error after the file is created must clean up the temp file
+    // before returning — previously only rename errors triggered cleanup.
+    let cleanup = |e: io::Error| -> io::Error {
+        let _ = std::fs::remove_file(&tmp_path);
+        e
+    };
+    file.write_all(contents).map_err(cleanup)?;
+    file.sync_all().map_err(cleanup)?;
+    drop(file);
+    std::fs::rename(&tmp_path, dest).map_err(cleanup)?;
     Ok(())
 }
 
@@ -1537,6 +1599,75 @@ mod tests {
         assert!(
             !meta.file_type().is_symlink(),
             "destination should have been replaced with a regular file"
+        );
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn atomic_write_refuses_pre_seeded_temp_symlink() {
+        // Core property: `create_new(true) + O_NOFOLLOW` on the temp path
+        // refuses to open when the temp path already exists as a symlink.
+        // The previous implementation called `std::fs::write` on the temp
+        // path, which follows symlinks — so a same-user attacker who won
+        // the race between `remove_file` and `write` could redirect the
+        // write to an arbitrary victim. Here we construct an `OpenOptions`
+        // identical to the one `atomic_write` uses and confirm it fails
+        // with AlreadyExists when pointed at a pre-existing symlink.
+        use std::os::unix::fs::OpenOptionsExt;
+
+        let tmp = TempDir::new().unwrap();
+        let victim = tmp.path().join("victim.txt");
+        std::fs::write(&victim, "DO NOT OVERWRITE").unwrap();
+
+        let tmp_path = tmp.path().join(".attacker-controlled.tmp");
+        std::os::unix::fs::symlink(&victim, &tmp_path).unwrap();
+
+        let err = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .custom_flags(libc::O_NOFOLLOW)
+            .mode(0o600)
+            .open(&tmp_path)
+            .expect_err("create_new + O_NOFOLLOW must refuse a pre-existing symlink");
+        // create_new yields AlreadyExists when anything exists at the
+        // path (symlink counts — O_NOFOLLOW doesn't dereference).
+        assert_eq!(
+            err.kind(),
+            std::io::ErrorKind::AlreadyExists,
+            "expected AlreadyExists, got {err:?}"
+        );
+        // Victim is untouched — the open failed before any write.
+        assert_eq!(std::fs::read_to_string(&victim).unwrap(), "DO NOT OVERWRITE");
+    }
+
+    #[test]
+    fn atomic_write_cleans_up_temp_on_rename_error() {
+        // If rename fails (e.g. dest parent is read-only, or dest is a
+        // directory), the temp file must be removed — previously only the
+        // rename path cleaned up, but now every post-create error path
+        // must too. We trigger this by passing a dest that is itself a
+        // directory, which `rename(file -> dir)` rejects.
+        let tmp = TempDir::new().unwrap();
+        let dest_dir = tmp.path().join("dest_is_dir");
+        std::fs::create_dir_all(&dest_dir).unwrap();
+
+        let err = atomic_write(&dest_dir, b"content", 0)
+            .expect_err("rename over a directory must fail");
+        assert!(
+            err.kind() != std::io::ErrorKind::NotFound,
+            "rename error expected, not NotFound: {err:?}"
+        );
+
+        // No leftover temp files in the tmp dir — cleanup must have run.
+        let leftovers: Vec<_> = std::fs::read_dir(tmp.path())
+            .unwrap()
+            .flatten()
+            .filter_map(|e| e.file_name().into_string().ok())
+            .filter(|n| n.starts_with(".dest_is_dir.tmp."))
+            .collect();
+        assert!(
+            leftovers.is_empty(),
+            "atomic_write must clean up its temp file on rename error, found: {leftovers:?}"
         );
     }
 
