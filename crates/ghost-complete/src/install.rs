@@ -4,7 +4,7 @@ use std::io::Write as _;
 use std::os::unix::fs::OpenOptionsExt;
 use std::path::Path;
 
-use crate::sanitize::sanitize_path;
+use crate::sanitize::{sanitize_for_terminal, sanitize_path};
 
 // `EMBEDDED_SPECS` was moved into `gc-suggest` so the runtime spec loader can
 // fall back to it when no on-disk spec dir is found. Install still needs to
@@ -70,8 +70,17 @@ const MANAGED_WARNING: &str =
 
 /// Single-quote a path for safe embedding in shell code.
 /// Escapes embedded single quotes with the `'\''` idiom.
+///
+/// Also strips ASCII/C1 control characters (ESC, BEL, NUL, CSI, etc.) from
+/// the path text before quoting. The resulting snippet is later printed to
+/// the user's terminal by `print_shell_blocks`, so a `$HOME`/config-derived
+/// path containing crafted control bytes would otherwise be evaluated by
+/// the terminal — single-quoting does not neutralise terminal escapes, only
+/// shell metacharacters. Single-quote escaping happens after sanitisation
+/// so that a legitimate single quote embedded in the path is still handled
+/// correctly by the `'\''` idiom.
 fn shell_safe_path(path: &Path) -> String {
-    let s = path.display().to_string();
+    let s = sanitize_for_terminal(&path.display().to_string());
     format!("'{}'", s.replace('\'', r"'\''"))
 }
 
@@ -576,14 +585,69 @@ mod tests {
         let path = Path::new("/home/my user/config/init.zsh");
         assert_eq!(shell_safe_path(path), "'/home/my user/config/init.zsh'");
 
-        // Tab in path — must be single-quoted to prevent word splitting
+        // Tab in path — control character is stripped to prevent terminal
+        // escape-sequence smuggling via `print_shell_blocks`, which prints
+        // the rendered snippet directly to stdout.
         let path = Path::new("/home/user\t/init.zsh");
-        assert_eq!(shell_safe_path(path), "'/home/user\t/init.zsh'");
+        assert_eq!(shell_safe_path(path), "'/home/user/init.zsh'");
 
-        // Newline in path — must be single-quoted to prevent command
-        // injection via `$'\nrm -rf ~'`-style exploits
+        // Newline in path — control character is stripped to prevent both
+        // terminal escape-sequence smuggling and shell command injection
+        // via `$'\nrm -rf ~'`-style exploits.
         let path = Path::new("/home/user\n/init.zsh");
-        assert_eq!(shell_safe_path(path), "'/home/user\n/init.zsh'");
+        assert_eq!(shell_safe_path(path), "'/home/user/init.zsh'");
+    }
+
+    #[test]
+    fn test_shell_safe_path_strips_control_bytes() {
+        // ESC-based CSI sequence: must be stripped before it reaches the
+        // user's terminal via `print_shell_blocks`. Single-quote shell
+        // escaping does NOT neutralise terminal escapes.
+        let path = Path::new("/home/alice/\x1b[31mevil\x1b[0m/init.zsh");
+        let quoted = shell_safe_path(path);
+        assert!(
+            !quoted.contains('\x1b'),
+            "ESC byte must be stripped from shell snippet, got: {quoted:?}"
+        );
+        assert_eq!(quoted, "'/home/alice/[31mevil[0m/init.zsh'");
+
+        // BEL (bell) character: commonly terminates OSC sequences.
+        let path = Path::new("/home/\x07bob/init.zsh");
+        let quoted = shell_safe_path(path);
+        assert!(!quoted.contains('\x07'));
+        assert_eq!(quoted, "'/home/bob/init.zsh'");
+
+        // Sanitisation happens before single-quote escaping, so a legitimate
+        // apostrophe in the path is still escaped correctly afterwards.
+        let path = Path::new("/home/o'brien/\x1b[31mx/init.zsh");
+        let quoted = shell_safe_path(path);
+        assert!(!quoted.contains('\x1b'));
+        assert_eq!(quoted, r"'/home/o'\''brien/[31mx/init.zsh'");
+    }
+
+    #[test]
+    fn test_print_shell_blocks_sanitizes_paths() {
+        // End-to-end: a `$HOME`/config-derived path containing ESC bytes
+        // must not appear verbatim in the snippet emitted by the install
+        // blocks. Covers both `init_block` and `shell_integration_block`,
+        // which are the two places `print_shell_blocks` prints.
+        let init = Path::new("/home/\x1b[31mbad/init.zsh");
+        let script = Path::new("/home/\x07evil/ghost-complete.zsh");
+
+        let rendered_init = init_block(init);
+        let rendered_shell = shell_integration_block(script);
+
+        assert!(
+            !rendered_init.contains('\x1b'),
+            "init_block must strip ESC: {rendered_init:?}"
+        );
+        assert!(
+            !rendered_shell.contains('\x07'),
+            "shell_integration_block must strip BEL: {rendered_shell:?}"
+        );
+        // Printable surroundings remain (literal `[31m` / `bad` survive).
+        assert!(rendered_init.contains("[31mbad/init.zsh"));
+        assert!(rendered_shell.contains("evil/ghost-complete.zsh"));
     }
 
     #[test]
