@@ -3,6 +3,8 @@ use std::path::PathBuf;
 use anyhow::{Context, Result};
 use toml_edit::DocumentMut;
 
+use crate::sanitize::sanitize_preserving_whitespace;
+
 /// Resolve the effective path of the config file the same way
 /// `GhostConfig::load` does: honour an explicit `--config <path>` override,
 /// otherwise fall back to `<config_dir>/config.toml`.
@@ -41,7 +43,14 @@ pub fn run_config(config_path: Option<&str>) -> Result<()> {
         if let Ok(contents) = std::fs::read_to_string(&path) {
             match contents.parse::<DocumentMut>() {
                 Ok(doc) => {
-                    print!("{doc}");
+                    // `toml_edit` preserves comments and string-literal trivia
+                    // verbatim. A hostile ~/.config/ghost-complete/config.toml
+                    // containing raw ESC/BEL/NUL inside a comment or string
+                    // would otherwise round-trip straight to the user's
+                    // terminal on `ghost-complete config`. Strip control
+                    // bytes at the print boundary while keeping tabs and
+                    // newlines so multi-line formatting survives.
+                    print!("{}", sanitize_preserving_whitespace(&doc.to_string()));
                     return Ok(());
                 }
                 Err(e) => {
@@ -59,8 +68,11 @@ pub fn run_config(config_path: Option<&str>) -> Result<()> {
     }
 
     // Fallback: no file, unreadable file, or unparseable-by-toml_edit.
+    // `toml::to_string_pretty` escapes control bytes in string values
+    // (so a `\x1b` in a config value comes out as `\u001b`), but run
+    // the output through the same sanitiser anyway as defence in depth.
     let toml_str = toml::to_string_pretty(&config).context("failed to serialize config as TOML")?;
     println!("# No config file found; showing defaults.");
-    print!("{toml_str}");
+    print!("{}", sanitize_preserving_whitespace(&toml_str));
     Ok(())
 }
