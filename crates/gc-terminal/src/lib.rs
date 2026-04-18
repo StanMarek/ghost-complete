@@ -178,6 +178,11 @@ impl TerminalProfile {
         // Zed sets ZED_TERM=true in its integrated terminal. Accept any
         // non-empty value — mirrors the KITTY_WINDOW_ID policy.
         let has_zed_term = env_is_set("ZED_TERM");
+        // VSCode (and forks: VSCodium, Cursor, Windsurf, Positron) set
+        // VSCODE_IPC_HOOK_CLI to an active Unix socket path. The
+        // existing-path check rejects stale env vars pointing at a
+        // dead editor's socket.
+        let has_vscode_ipc = env_is_existing_path("VSCODE_IPC_HOOK_CLI");
 
         Self::detect_from_env(
             &term_program,
@@ -188,6 +193,7 @@ impl TerminalProfile {
             has_wezterm_socket,
             has_alacritty_socket,
             has_zed_term,
+            has_vscode_ipc,
         )
     }
 
@@ -202,6 +208,7 @@ impl TerminalProfile {
         has_wezterm_socket: bool,
         has_alacritty_socket: bool,
         has_zed_term: bool,
+        has_vscode_ipc: bool,
     ) -> Self {
         // Direct terminal detection (not inside tmux)
         if !in_tmux {
@@ -218,6 +225,9 @@ impl TerminalProfile {
             }
             if has_zed_term {
                 return Self::new(Terminal::Zed, false);
+            }
+            if has_vscode_ipc {
+                return Self::new(Terminal::VSCode, false);
             }
             return Self::from_term_program(term_program, false);
         }
@@ -238,6 +248,9 @@ impl TerminalProfile {
         }
         if has_zed_term {
             return Self::new(Terminal::Zed, true);
+        }
+        if has_vscode_ipc {
+            return Self::new(Terminal::VSCode, true);
         }
         if has_iterm_session {
             return Self::new(Terminal::ITerm2, true);
@@ -554,6 +567,7 @@ mod tests {
         wezterm_sock: bool,
         alacritty_sock: bool,
         zed_term: bool,
+        vscode_ipc: bool,
     ) -> TerminalProfile {
         TerminalProfile::detect_from_env(
             term_program,
@@ -564,12 +578,15 @@ mod tests {
             wezterm_sock,
             alacritty_sock,
             zed_term,
+            vscode_ipc,
         )
     }
 
     #[test]
     fn test_detect_ghostty_direct() {
-        let p = detect("ghostty", false, false, false, false, false, false, false);
+        let p = detect(
+            "ghostty", false, false, false, false, false, false, false, false,
+        );
         assert_eq!(*p.terminal(), Terminal::Ghostty);
         assert!(!p.in_tmux());
     }
@@ -577,21 +594,23 @@ mod tests {
     #[test]
     fn test_detect_kitty_direct() {
         // Kitty reports TERM_PROGRAM=xterm-kitty, so detect via KITTY_WINDOW_ID.
-        let p = detect("", false, false, false, true, false, false, false);
+        let p = detect("", false, false, false, true, false, false, false, false);
         assert_eq!(*p.terminal(), Terminal::Kitty);
         assert!(!p.in_tmux());
     }
 
     #[test]
     fn test_detect_wezterm_direct_via_term_program() {
-        let p = detect("WezTerm", false, false, false, false, false, false, false);
+        let p = detect(
+            "WezTerm", false, false, false, false, false, false, false, false,
+        );
         assert_eq!(*p.terminal(), Terminal::WezTerm);
         assert!(!p.in_tmux());
     }
 
     #[test]
     fn test_detect_wezterm_direct_via_socket() {
-        let p = detect("", false, false, false, false, true, false, false);
+        let p = detect("", false, false, false, false, true, false, false, false);
         assert_eq!(*p.terminal(), Terminal::WezTerm);
         assert!(!p.in_tmux());
     }
@@ -599,28 +618,30 @@ mod tests {
     #[test]
     fn test_detect_alacritty_direct() {
         // Alacritty doesn't set TERM_PROGRAM — detected via ALACRITTY_SOCKET
-        let p = detect("", false, false, false, false, false, true, false);
+        let p = detect("", false, false, false, false, false, true, false, false);
         assert_eq!(*p.terminal(), Terminal::Alacritty);
         assert!(!p.in_tmux());
     }
 
     #[test]
     fn test_detect_rio_direct() {
-        let p = detect("rio", false, false, false, false, false, false, false);
+        let p = detect(
+            "rio", false, false, false, false, false, false, false, false,
+        );
         assert_eq!(*p.terminal(), Terminal::Rio);
         assert!(!p.in_tmux());
     }
 
     #[test]
     fn test_detect_zed_direct_via_zed_term() {
-        let p = detect("", false, false, false, false, false, false, true);
+        let p = detect("", false, false, false, false, false, false, true, false);
         assert_eq!(*p.terminal(), Terminal::Zed);
         assert!(!p.in_tmux());
     }
 
     #[test]
     fn test_detect_zed_via_tmux() {
-        let p = detect("", true, false, false, false, false, false, true);
+        let p = detect("", true, false, false, false, false, false, true, false);
         assert_eq!(*p.terminal(), Terminal::Zed);
         assert!(p.in_tmux());
         assert_eq!(p.display_name(), "Zed (via tmux)");
@@ -628,13 +649,56 @@ mod tests {
 
     #[test]
     fn test_detect_ghostty_takes_priority_over_zed_via_tmux() {
-        let p = detect("", true, true, false, false, false, false, true);
+        let p = detect("", true, true, false, false, false, false, true, false);
         assert_eq!(*p.terminal(), Terminal::Ghostty);
     }
 
     #[test]
+    fn test_detect_vscode_direct_via_ipc_hook() {
+        let p = detect("", false, false, false, false, false, false, false, true);
+        assert_eq!(*p.terminal(), Terminal::VSCode);
+        assert!(!p.in_tmux());
+    }
+
+    #[test]
+    fn test_detect_vscode_via_tmux() {
+        let p = detect("", true, false, false, false, false, false, false, true);
+        assert_eq!(*p.terminal(), Terminal::VSCode);
+        assert!(p.in_tmux());
+        assert_eq!(p.display_name(), "VSCode (via tmux)");
+    }
+
+    #[test]
+    fn test_detect_kitty_takes_priority_over_vscode() {
+        let p = detect("", false, false, false, true, false, false, false, true);
+        assert_eq!(*p.terminal(), Terminal::Kitty);
+    }
+
+    #[test]
+    fn test_detect_zed_takes_priority_over_vscode() {
+        // ZED_TERM checked before VSCODE_IPC_HOOK_CLI in detect_from_env.
+        let p = detect("", false, false, false, false, false, false, true, true);
+        assert_eq!(*p.terminal(), Terminal::Zed);
+    }
+
+    #[test]
+    fn test_detect_vscode_takes_priority_over_iterm_via_tmux() {
+        let p = detect("", true, false, true, false, false, false, false, true);
+        assert_eq!(*p.terminal(), Terminal::VSCode);
+    }
+
+    #[test]
+    fn test_detect_vscode_via_term_program_fallback() {
+        // IPC hook missing (rare); TERM_PROGRAM=vscode still triggers detection.
+        let p = detect(
+            "vscode", false, false, false, false, false, false, false, false,
+        );
+        assert_eq!(*p.terminal(), Terminal::VSCode);
+    }
+
+    #[test]
     fn test_detect_ghostty_via_tmux() {
-        let p = detect("", true, true, false, false, false, false, false);
+        let p = detect("", true, true, false, false, false, false, false, false);
         assert_eq!(*p.terminal(), Terminal::Ghostty);
         assert!(p.in_tmux());
         assert_eq!(p.display_name(), "Ghostty (via tmux)");
@@ -642,7 +706,7 @@ mod tests {
 
     #[test]
     fn test_detect_kitty_via_tmux() {
-        let p = detect("", true, false, false, true, false, false, false);
+        let p = detect("", true, false, false, true, false, false, false, false);
         assert_eq!(*p.terminal(), Terminal::Kitty);
         assert!(p.in_tmux());
         assert_eq!(p.display_name(), "Kitty (via tmux)");
@@ -650,7 +714,7 @@ mod tests {
 
     #[test]
     fn test_detect_wezterm_via_tmux() {
-        let p = detect("", true, false, false, false, true, false, false);
+        let p = detect("", true, false, false, false, true, false, false, false);
         assert_eq!(*p.terminal(), Terminal::WezTerm);
         assert!(p.in_tmux());
         assert_eq!(p.display_name(), "WezTerm (via tmux)");
@@ -658,7 +722,7 @@ mod tests {
 
     #[test]
     fn test_detect_alacritty_via_tmux() {
-        let p = detect("", true, false, false, false, false, true, false);
+        let p = detect("", true, false, false, false, false, true, false, false);
         assert_eq!(*p.terminal(), Terminal::Alacritty);
         assert!(p.in_tmux());
         assert_eq!(p.display_name(), "Alacritty (via tmux)");
@@ -669,14 +733,14 @@ mod tests {
         // Rio has no dedicated env var for tmux detection — falls back to TERM_PROGRAM.
         // This documents the expected behavior; if Rio-specific env detection is added
         // later, this test captures the current path.
-        let p = detect("rio", true, false, false, false, false, false, false);
+        let p = detect("rio", true, false, false, false, false, false, false, false);
         assert_eq!(*p.terminal(), Terminal::Rio);
         assert!(p.in_tmux());
     }
 
     #[test]
     fn test_detect_iterm2_via_tmux() {
-        let p = detect("", true, false, true, false, false, false, false);
+        let p = detect("", true, false, true, false, false, false, false, false);
         assert_eq!(*p.terminal(), Terminal::ITerm2);
         assert!(p.in_tmux());
         assert_eq!(p.display_name(), "iTerm2 (via tmux)");
@@ -684,43 +748,43 @@ mod tests {
 
     #[test]
     fn test_detect_tmux_ghostty_takes_priority_over_iterm() {
-        let p = detect("", true, true, true, false, false, false, false);
+        let p = detect("", true, true, true, false, false, false, false, false);
         assert_eq!(*p.terminal(), Terminal::Ghostty);
     }
 
     #[test]
     fn test_detect_tmux_ghostty_takes_priority_over_kitty() {
-        let p = detect("", true, true, false, true, false, false, false);
+        let p = detect("", true, true, false, true, false, false, false, false);
         assert_eq!(*p.terminal(), Terminal::Ghostty);
     }
 
     #[test]
     fn test_detect_tmux_kitty_takes_priority_over_wezterm() {
-        let p = detect("", true, false, false, true, true, false, false);
+        let p = detect("", true, false, false, true, true, false, false, false);
         assert_eq!(*p.terminal(), Terminal::Kitty);
     }
 
     #[test]
     fn test_detect_direct_kitty_takes_priority_over_wezterm() {
-        let p = detect("", false, false, false, true, true, false, false);
+        let p = detect("", false, false, false, true, true, false, false, false);
         assert_eq!(*p.terminal(), Terminal::Kitty);
     }
 
     #[test]
     fn test_detect_direct_wezterm_takes_priority_over_alacritty() {
-        let p = detect("", false, false, false, false, true, true, false);
+        let p = detect("", false, false, false, false, true, true, false, false);
         assert_eq!(*p.terminal(), Terminal::WezTerm);
     }
 
     #[test]
     fn test_detect_tmux_wezterm_takes_priority_over_alacritty() {
-        let p = detect("", true, false, false, false, true, true, false);
+        let p = detect("", true, false, false, false, true, true, false, false);
         assert_eq!(*p.terminal(), Terminal::WezTerm);
     }
 
     #[test]
     fn test_detect_tmux_alacritty_takes_priority_over_iterm() {
-        let p = detect("", true, false, true, false, false, true, false);
+        let p = detect("", true, false, true, false, false, true, false, false);
         assert_eq!(*p.terminal(), Terminal::Alacritty);
     }
 
@@ -735,6 +799,7 @@ mod tests {
             false,
             false,
             false,
+            false,
         );
         assert_eq!(*p.terminal(), Terminal::TerminalApp);
         assert!(p.in_tmux());
@@ -742,7 +807,7 @@ mod tests {
 
     #[test]
     fn test_detect_tmux_unknown_terminal() {
-        let p = detect("", true, false, false, false, false, false, false);
+        let p = detect("", true, false, false, false, false, false, false, false);
         assert!(matches!(p.terminal(), Terminal::Unknown(_)));
         assert!(p.in_tmux());
     }
@@ -864,7 +929,7 @@ mod tests {
     fn test_empty_env_vars_do_not_trigger_detection() {
         // All flags false simulates empty env vars (the real detect() now
         // treats empty strings as absent).
-        let p = detect("", false, false, false, false, false, false, false);
+        let p = detect("", false, false, false, false, false, false, false, false);
         assert!(matches!(p.terminal(), Terminal::Unknown(_)));
         assert!(!p.in_tmux());
     }
@@ -872,7 +937,9 @@ mod tests {
     #[test]
     fn test_empty_tmux_does_not_trigger_tmux_branch() {
         // Even with ghostty_res true, in_tmux=false should use the direct path.
-        let p = detect("ghostty", false, true, false, false, false, false, false);
+        let p = detect(
+            "ghostty", false, true, false, false, false, false, false, false,
+        );
         assert_eq!(*p.terminal(), Terminal::Ghostty);
         assert!(!p.in_tmux());
     }
@@ -881,14 +948,14 @@ mod tests {
     fn test_stale_socket_does_not_trigger_wezterm() {
         // has_wezterm_socket=false simulates a non-existent socket path
         // (the real detect() now checks Path::exists()).
-        let p = detect("", false, false, false, false, false, false, false);
+        let p = detect("", false, false, false, false, false, false, false, false);
         assert!(matches!(p.terminal(), Terminal::Unknown(_)));
     }
 
     #[test]
     fn test_stale_socket_does_not_trigger_alacritty() {
         // has_alacritty_socket=false simulates a non-existent socket path.
-        let p = detect("", false, false, false, false, false, false, false);
+        let p = detect("", false, false, false, false, false, false, false, false);
         assert!(matches!(p.terminal(), Terminal::Unknown(_)));
     }
 
@@ -909,7 +976,7 @@ mod tests {
             !std::path::Path::new(stale).exists(),
             "test precondition: {stale} must not exist"
         );
-        let p = detect("", false, false, false, false, false, false, false);
+        let p = detect("", false, false, false, false, false, false, false, false);
         assert!(
             !matches!(p.terminal(), Terminal::Ghostty),
             "stale GHOSTTY_RESOURCES_DIR should not trigger Ghostty detection"
