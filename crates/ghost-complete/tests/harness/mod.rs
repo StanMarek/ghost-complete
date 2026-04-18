@@ -31,6 +31,12 @@ impl GhostProcess {
 
         let mut cmd = CommandBuilder::new(bin);
         cmd.args(["--log-level", "error", "/bin/sh"]);
+        // Force a known terminal so the proxy does not fall back to plain
+        // shell on CI runners where TERM_PROGRAM is unset. Without this, the
+        // proxy replaces itself with /bin/sh and the popup path never runs
+        // (see should_fallback_to_shell in proxy.rs — Unknown terminals
+        // require `[experimental] multi_terminal = true`).
+        cmd.env("TERM_PROGRAM", "ghostty");
 
         let child = pty_pair
             .slave

@@ -193,13 +193,13 @@ fn test_popup_renders_and_dismisses_on_git_trigger() {
     // is DECSC (`\x1b7` = save cursor). Seeing it after mark_before_trigger
     // proves that the OSC 7770 -> auto-trigger -> render_popup pipeline ran.
     let popup_rendered =
-        proc.wait_for_bytes_after(b"\x1b7", mark_before_trigger, Duration::from_secs(15));
+        proc.wait_for_bytes_after(b"\x1b7", mark_before_trigger, Duration::from_secs(5));
 
     if !popup_rendered {
         let snapshot = proc.output_snapshot();
         let since_trigger = &snapshot[mark_before_trigger..];
         panic!(
-            "Popup did not render within 15s after OSC 7770 injection.\n\
+            "Popup did not render within 5s after OSC 7770 injection.\n\
              Bytes since trigger mark ({} bytes, lossy UTF-8):\n{:?}",
             since_trigger.len(),
             String::from_utf8_lossy(since_trigger),
@@ -239,13 +239,13 @@ fn test_popup_renders_and_dismisses_on_git_trigger() {
 
     // clear_popup emits DECSC + movement + blanks + DECRC. The DECRC
     // (`\x1b8`) appearing after the ESC mark is the dismiss signal.
-    let dismissed = proc.wait_for_bytes_after(b"\x1b8", mark_before_esc, Duration::from_secs(15));
+    let dismissed = proc.wait_for_bytes_after(b"\x1b8", mark_before_esc, Duration::from_secs(5));
 
     if !dismissed {
         let snapshot = proc.output_snapshot();
         let since_esc = &snapshot[mark_before_esc..];
         panic!(
-            "Popup did not dismiss within 15s after ESC.\n\
+            "Popup did not dismiss within 5s after ESC.\n\
              Bytes since ESC mark ({} bytes, lossy UTF-8):\n{:?}",
             since_esc.len(),
             String::from_utf8_lossy(since_esc),
