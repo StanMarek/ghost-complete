@@ -168,6 +168,9 @@ impl TerminalProfile {
         let has_kitty_window_id = env_is_set("KITTY_WINDOW_ID");
         let has_wezterm_socket = env_is_existing_path("WEZTERM_UNIX_SOCKET");
         let has_alacritty_socket = env_is_existing_path("ALACRITTY_SOCKET");
+        // Zed sets ZED_TERM=true in its integrated terminal. Accept any
+        // non-empty value — mirrors the KITTY_WINDOW_ID policy.
+        let has_zed_term = env_is_set("ZED_TERM");
 
         Self::detect_from_env(
             &term_program,
@@ -177,10 +180,12 @@ impl TerminalProfile {
             has_kitty_window_id,
             has_wezterm_socket,
             has_alacritty_socket,
+            has_zed_term,
         )
     }
 
     /// Testable detection logic — takes env values as parameters.
+    #[allow(clippy::too_many_arguments)]
     fn detect_from_env(
         term_program: &str,
         in_tmux: bool,
@@ -189,6 +194,7 @@ impl TerminalProfile {
         has_kitty_window_id: bool,
         has_wezterm_socket: bool,
         has_alacritty_socket: bool,
+        has_zed_term: bool,
     ) -> Self {
         // Direct terminal detection (not inside tmux)
         if !in_tmux {
@@ -202,6 +208,9 @@ impl TerminalProfile {
             // Alacritty doesn't set TERM_PROGRAM — detect via ALACRITTY_SOCKET.
             if has_alacritty_socket {
                 return Self::new(Terminal::Alacritty, false);
+            }
+            if has_zed_term {
+                return Self::new(Terminal::Zed, false);
             }
             return Self::from_term_program(term_program, false);
         }
@@ -219,6 +228,9 @@ impl TerminalProfile {
         }
         if has_alacritty_socket {
             return Self::new(Terminal::Alacritty, true);
+        }
+        if has_zed_term {
+            return Self::new(Terminal::Zed, true);
         }
         if has_iterm_session {
             return Self::new(Terminal::ITerm2, true);
@@ -497,6 +509,7 @@ mod tests {
     // -- detect_from_env (direct + tmux paths) --
 
     // Helper: call detect_from_env with only the specified flags set.
+    #[allow(clippy::too_many_arguments)]
     fn detect(
         term_program: &str,
         in_tmux: bool,
@@ -505,6 +518,7 @@ mod tests {
         kitty_wid: bool,
         wezterm_sock: bool,
         alacritty_sock: bool,
+        zed_term: bool,
     ) -> TerminalProfile {
         TerminalProfile::detect_from_env(
             term_program,
@@ -514,12 +528,13 @@ mod tests {
             kitty_wid,
             wezterm_sock,
             alacritty_sock,
+            zed_term,
         )
     }
 
     #[test]
     fn test_detect_ghostty_direct() {
-        let p = detect("ghostty", false, false, false, false, false, false);
+        let p = detect("ghostty", false, false, false, false, false, false, false);
         assert_eq!(*p.terminal(), Terminal::Ghostty);
         assert!(!p.in_tmux());
     }
@@ -527,21 +542,21 @@ mod tests {
     #[test]
     fn test_detect_kitty_direct() {
         // Kitty reports TERM_PROGRAM=xterm-kitty, so detect via KITTY_WINDOW_ID.
-        let p = detect("", false, false, false, true, false, false);
+        let p = detect("", false, false, false, true, false, false, false);
         assert_eq!(*p.terminal(), Terminal::Kitty);
         assert!(!p.in_tmux());
     }
 
     #[test]
     fn test_detect_wezterm_direct_via_term_program() {
-        let p = detect("WezTerm", false, false, false, false, false, false);
+        let p = detect("WezTerm", false, false, false, false, false, false, false);
         assert_eq!(*p.terminal(), Terminal::WezTerm);
         assert!(!p.in_tmux());
     }
 
     #[test]
     fn test_detect_wezterm_direct_via_socket() {
-        let p = detect("", false, false, false, false, true, false);
+        let p = detect("", false, false, false, false, true, false, false);
         assert_eq!(*p.terminal(), Terminal::WezTerm);
         assert!(!p.in_tmux());
     }
@@ -549,21 +564,42 @@ mod tests {
     #[test]
     fn test_detect_alacritty_direct() {
         // Alacritty doesn't set TERM_PROGRAM — detected via ALACRITTY_SOCKET
-        let p = detect("", false, false, false, false, false, true);
+        let p = detect("", false, false, false, false, false, true, false);
         assert_eq!(*p.terminal(), Terminal::Alacritty);
         assert!(!p.in_tmux());
     }
 
     #[test]
     fn test_detect_rio_direct() {
-        let p = detect("rio", false, false, false, false, false, false);
+        let p = detect("rio", false, false, false, false, false, false, false);
         assert_eq!(*p.terminal(), Terminal::Rio);
         assert!(!p.in_tmux());
     }
 
     #[test]
+    fn test_detect_zed_direct_via_zed_term() {
+        let p = detect("", false, false, false, false, false, false, true);
+        assert_eq!(*p.terminal(), Terminal::Zed);
+        assert!(!p.in_tmux());
+    }
+
+    #[test]
+    fn test_detect_zed_via_tmux() {
+        let p = detect("", true, false, false, false, false, false, true);
+        assert_eq!(*p.terminal(), Terminal::Zed);
+        assert!(p.in_tmux());
+        assert_eq!(p.display_name(), "Zed (via tmux)");
+    }
+
+    #[test]
+    fn test_detect_ghostty_takes_priority_over_zed_via_tmux() {
+        let p = detect("", true, true, false, false, false, false, true);
+        assert_eq!(*p.terminal(), Terminal::Ghostty);
+    }
+
+    #[test]
     fn test_detect_ghostty_via_tmux() {
-        let p = detect("", true, true, false, false, false, false);
+        let p = detect("", true, true, false, false, false, false, false);
         assert_eq!(*p.terminal(), Terminal::Ghostty);
         assert!(p.in_tmux());
         assert_eq!(p.display_name(), "Ghostty (via tmux)");
@@ -571,7 +607,7 @@ mod tests {
 
     #[test]
     fn test_detect_kitty_via_tmux() {
-        let p = detect("", true, false, false, true, false, false);
+        let p = detect("", true, false, false, true, false, false, false);
         assert_eq!(*p.terminal(), Terminal::Kitty);
         assert!(p.in_tmux());
         assert_eq!(p.display_name(), "Kitty (via tmux)");
@@ -579,7 +615,7 @@ mod tests {
 
     #[test]
     fn test_detect_wezterm_via_tmux() {
-        let p = detect("", true, false, false, false, true, false);
+        let p = detect("", true, false, false, false, true, false, false);
         assert_eq!(*p.terminal(), Terminal::WezTerm);
         assert!(p.in_tmux());
         assert_eq!(p.display_name(), "WezTerm (via tmux)");
@@ -587,7 +623,7 @@ mod tests {
 
     #[test]
     fn test_detect_alacritty_via_tmux() {
-        let p = detect("", true, false, false, false, false, true);
+        let p = detect("", true, false, false, false, false, true, false);
         assert_eq!(*p.terminal(), Terminal::Alacritty);
         assert!(p.in_tmux());
         assert_eq!(p.display_name(), "Alacritty (via tmux)");
@@ -598,14 +634,14 @@ mod tests {
         // Rio has no dedicated env var for tmux detection — falls back to TERM_PROGRAM.
         // This documents the expected behavior; if Rio-specific env detection is added
         // later, this test captures the current path.
-        let p = detect("rio", true, false, false, false, false, false);
+        let p = detect("rio", true, false, false, false, false, false, false);
         assert_eq!(*p.terminal(), Terminal::Rio);
         assert!(p.in_tmux());
     }
 
     #[test]
     fn test_detect_iterm2_via_tmux() {
-        let p = detect("", true, false, true, false, false, false);
+        let p = detect("", true, false, true, false, false, false, false);
         assert_eq!(*p.terminal(), Terminal::ITerm2);
         assert!(p.in_tmux());
         assert_eq!(p.display_name(), "iTerm2 (via tmux)");
@@ -613,56 +649,56 @@ mod tests {
 
     #[test]
     fn test_detect_tmux_ghostty_takes_priority_over_iterm() {
-        let p = detect("", true, true, true, false, false, false);
+        let p = detect("", true, true, true, false, false, false, false);
         assert_eq!(*p.terminal(), Terminal::Ghostty);
     }
 
     #[test]
     fn test_detect_tmux_ghostty_takes_priority_over_kitty() {
-        let p = detect("", true, true, false, true, false, false);
+        let p = detect("", true, true, false, true, false, false, false);
         assert_eq!(*p.terminal(), Terminal::Ghostty);
     }
 
     #[test]
     fn test_detect_tmux_kitty_takes_priority_over_wezterm() {
-        let p = detect("", true, false, false, true, true, false);
+        let p = detect("", true, false, false, true, true, false, false);
         assert_eq!(*p.terminal(), Terminal::Kitty);
     }
 
     #[test]
     fn test_detect_direct_kitty_takes_priority_over_wezterm() {
-        let p = detect("", false, false, false, true, true, false);
+        let p = detect("", false, false, false, true, true, false, false);
         assert_eq!(*p.terminal(), Terminal::Kitty);
     }
 
     #[test]
     fn test_detect_direct_wezterm_takes_priority_over_alacritty() {
-        let p = detect("", false, false, false, false, true, true);
+        let p = detect("", false, false, false, false, true, true, false);
         assert_eq!(*p.terminal(), Terminal::WezTerm);
     }
 
     #[test]
     fn test_detect_tmux_wezterm_takes_priority_over_alacritty() {
-        let p = detect("", true, false, false, false, true, true);
+        let p = detect("", true, false, false, false, true, true, false);
         assert_eq!(*p.terminal(), Terminal::WezTerm);
     }
 
     #[test]
     fn test_detect_tmux_alacritty_takes_priority_over_iterm() {
-        let p = detect("", true, false, true, false, false, true);
+        let p = detect("", true, false, true, false, false, true, false);
         assert_eq!(*p.terminal(), Terminal::Alacritty);
     }
 
     #[test]
     fn test_detect_tmux_falls_back_to_term_program() {
-        let p = detect("Apple_Terminal", true, false, false, false, false, false);
+        let p = detect("Apple_Terminal", true, false, false, false, false, false, false);
         assert_eq!(*p.terminal(), Terminal::TerminalApp);
         assert!(p.in_tmux());
     }
 
     #[test]
     fn test_detect_tmux_unknown_terminal() {
-        let p = detect("", true, false, false, false, false, false);
+        let p = detect("", true, false, false, false, false, false, false);
         assert!(matches!(p.terminal(), Terminal::Unknown(_)));
         assert!(p.in_tmux());
     }
@@ -776,7 +812,7 @@ mod tests {
     fn test_empty_env_vars_do_not_trigger_detection() {
         // All flags false simulates empty env vars (the real detect() now
         // treats empty strings as absent).
-        let p = detect("", false, false, false, false, false, false);
+        let p = detect("", false, false, false, false, false, false, false);
         assert!(matches!(p.terminal(), Terminal::Unknown(_)));
         assert!(!p.in_tmux());
     }
@@ -784,7 +820,7 @@ mod tests {
     #[test]
     fn test_empty_tmux_does_not_trigger_tmux_branch() {
         // Even with ghostty_res true, in_tmux=false should use the direct path.
-        let p = detect("ghostty", false, true, false, false, false, false);
+        let p = detect("ghostty", false, true, false, false, false, false, false);
         assert_eq!(*p.terminal(), Terminal::Ghostty);
         assert!(!p.in_tmux());
     }
@@ -793,14 +829,14 @@ mod tests {
     fn test_stale_socket_does_not_trigger_wezterm() {
         // has_wezterm_socket=false simulates a non-existent socket path
         // (the real detect() now checks Path::exists()).
-        let p = detect("", false, false, false, false, false, false);
+        let p = detect("", false, false, false, false, false, false, false);
         assert!(matches!(p.terminal(), Terminal::Unknown(_)));
     }
 
     #[test]
     fn test_stale_socket_does_not_trigger_alacritty() {
         // has_alacritty_socket=false simulates a non-existent socket path.
-        let p = detect("", false, false, false, false, false, false);
+        let p = detect("", false, false, false, false, false, false, false);
         assert!(matches!(p.terminal(), Terminal::Unknown(_)));
     }
 
@@ -821,7 +857,7 @@ mod tests {
             !std::path::Path::new(stale).exists(),
             "test precondition: {stale} must not exist"
         );
-        let p = detect("", false, false, false, false, false, false);
+        let p = detect("", false, false, false, false, false, false, false);
         assert!(
             !matches!(p.terminal(), Terminal::Ghostty),
             "stale GHOSTTY_RESOURCES_DIR should not trigger Ghostty detection"
