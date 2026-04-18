@@ -541,11 +541,27 @@ mod tests {
         assert!(tmux_branch.contains("$ITERM_SESSION_ID"));
         assert!(tmux_branch.contains("\"$TERM_PROGRAM\" == \"rio\""));
         assert!(tmux_branch.contains("$ZED_TERM"));
+        assert!(tmux_branch.contains("$VSCODE_IPC_HOOK_CLI"));
 
         // Direct terminal detection (non-tmux)
         assert!(non_tmux_branch.contains("case \"$TERM_PROGRAM\""));
-        assert!(non_tmux_branch.contains("ghostty|WezTerm|rio|iTerm.app|Apple_Terminal|zed)"));
+        assert!(non_tmux_branch
+            .contains("ghostty|WezTerm|rio|iTerm.app|Apple_Terminal|zed|vscode)"));
         assert!(non_tmux_branch.contains("$ZED_TERM"));
+        assert!(non_tmux_branch.contains("$VSCODE_IPC_HOOK_CLI"));
+
+        // PPID-based reset for inherited GHOST_COMPLETE_ACTIVE so the
+        // `code .` flow still wires the proxy into VSCode's integrated
+        // terminal when the env var propagated from the launching shell.
+        assert!(
+            non_tmux_branch.contains("unset GHOST_COMPLETE_ACTIVE"),
+            "non-tmux branch must reset inherited GHOST_COMPLETE_ACTIVE when \
+             parent isn't ghost-complete"
+        );
+        assert!(
+            non_tmux_branch.contains("ps -o comm= -p \"$PPID\""),
+            "non-tmux branch must check PPID for reset decision"
+        );
     }
 
     #[test]
