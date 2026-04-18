@@ -1078,9 +1078,9 @@ mod tests {
 
     #[test]
     fn test_option_arg_script_generator_suppresses_subcommands() {
-        // MED-19: When a flag's arg has script generators, the in_option_arg
-        // guard should suppress subcommands/options. Previously it only checked
-        // for templates and native generators.
+        // When a flag's arg has script generators, the in_option_arg guard
+        // must suppress subcommands/options. The guard must cover script
+        // generators as well as templates and native generators.
         let spec_dir = tempfile::TempDir::new().unwrap();
         std::fs::write(
             spec_dir.path().join("test-script-arg.json"),
@@ -1379,8 +1379,8 @@ mod tests {
 
     #[test]
     fn test_suggest_sync_returns_git_generators_not_inline() {
-        // MED-18: git generators should be returned for async dispatch,
-        // not resolved inline (which would block the tokio runtime).
+        // Git generators must be returned for async dispatch, not resolved
+        // inline (which would block the tokio runtime).
         let spec_dir = tempfile::TempDir::new().unwrap();
         std::fs::write(
             spec_dir.path().join("test-git-gen.json"),
@@ -1413,7 +1413,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_resolve_git_returns_branches() {
-        // MED-18: resolve_git should work asynchronously
+        // resolve_git must work asynchronously.
         let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
         if !workspace_root.join(".git").exists() {
             return; // skip if not in a git repo

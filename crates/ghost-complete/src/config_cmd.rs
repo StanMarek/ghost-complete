@@ -1,3 +1,4 @@
+use std::io::Write;
 use std::path::PathBuf;
 
 use anyhow::{Context, Result};
@@ -33,6 +34,12 @@ fn resolve_config_file_path(config_path: Option<&str>) -> Option<PathBuf> {
 /// the defaults the proxy would actually use) and prepend a banner comment
 /// explaining that this is synthesized output rather than the user's file.
 pub fn run_config(config_path: Option<&str>) -> Result<()> {
+    let stdout = std::io::stdout();
+    let mut handle = stdout.lock();
+    run_config_inner(config_path, &mut handle)
+}
+
+pub(crate) fn run_config_inner<W: Write>(config_path: Option<&str>, out: &mut W) -> Result<()> {
     // Load so that bad configs (invalid theme, malformed TOML) still
     // surface an anyhow error consistent with the rest of the CLI —
     // even though the "happy path" output below bypasses the typed
@@ -50,7 +57,7 @@ pub fn run_config(config_path: Option<&str>) -> Result<()> {
                     // terminal on `ghost-complete config`. Strip control
                     // bytes at the print boundary while keeping tabs and
                     // newlines so multi-line formatting survives.
-                    print!("{}", sanitize_preserving_whitespace(&doc.to_string()));
+                    write!(out, "{}", sanitize_preserving_whitespace(&doc.to_string()))?;
                     return Ok(());
                 }
                 Err(e) => {
@@ -72,7 +79,67 @@ pub fn run_config(config_path: Option<&str>) -> Result<()> {
     // (so a `\x1b` in a config value comes out as `\u001b`), but run
     // the output through the same sanitiser anyway as defence in depth.
     let toml_str = toml::to_string_pretty(&config).context("failed to serialize config as TOML")?;
-    println!("# No config file found; showing defaults.");
-    print!("{}", sanitize_preserving_whitespace(&toml_str));
+    writeln!(out, "# No config file found; showing defaults.")?;
+    write!(out, "{}", sanitize_preserving_whitespace(&toml_str))?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn config_dump_sanitizes_hostile_comments_and_strings() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let cfg_path = tmp.path().join("config.toml");
+
+        // TOML strings allow `\uXXXX` escapes that decode to control bytes.
+        // A user config could legitimately use them, or a hostile config
+        // could embed them to smuggle terminal escape sequences through
+        // `ghost-complete config`. toml_edit preserves the raw escape
+        // literal in round-trip; writing it as a basic string forces the
+        // sanitiser to be the thing that strips ESC/BEL/NUL.
+        let body = "[paths]\n\
+                    spec_dirs = [\"/tmp/\\u001b[31mbug\\u0007nul\\u0000tail\"]\n";
+        std::fs::write(&cfg_path, body).unwrap();
+
+        let mut out = Vec::new();
+        run_config_inner(Some(cfg_path.to_str().unwrap()), &mut out).unwrap();
+        let emitted = String::from_utf8(out).expect("output must be valid UTF-8");
+
+        assert!(
+            !emitted.contains('\x1b'),
+            "config dump must not leak raw ESC: {emitted:?}"
+        );
+        assert!(
+            !emitted.contains('\x07'),
+            "config dump must not leak raw BEL: {emitted:?}"
+        );
+        assert!(
+            !emitted.contains('\x00'),
+            "config dump must not leak raw NUL: {emitted:?}"
+        );
+    }
+
+    #[test]
+    fn config_dump_defaults_branch_sanitizes_control_bytes() {
+        // Force the fallback (serialize defaults) branch by pointing at a
+        // non-existent config path. Even here, the writer must be routed
+        // through `sanitize_preserving_whitespace` — defence in depth.
+        let tmp = tempfile::TempDir::new().unwrap();
+        let missing = tmp.path().join("does-not-exist.toml");
+
+        let mut out = Vec::new();
+        run_config_inner(Some(missing.to_str().unwrap()), &mut out).unwrap();
+        let emitted = String::from_utf8(out).expect("output must be valid UTF-8");
+
+        assert!(
+            emitted.starts_with("# No config file found; showing defaults."),
+            "fallback banner must be first line, got: {emitted:?}"
+        );
+        assert!(
+            !emitted.contains('\x1b') && !emitted.contains('\x07') && !emitted.contains('\x00'),
+            "default dump must not contain any control bytes"
+        );
+    }
 }

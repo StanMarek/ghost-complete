@@ -1297,24 +1297,31 @@ pub fn write_embedded_specs(dir: &Path) -> io::Result<usize> {
 
     let expected_names: std::collections::HashSet<&str> =
         EMBEDDED_SPECS.iter().map(|(n, _)| *n).collect();
-    if let Ok(read_dir) = std::fs::read_dir(dir) {
-        for entry in read_dir.flatten() {
-            let path = entry.path();
-            if path.extension().and_then(|e| e.to_str()) != Some("json") {
-                continue;
-            }
-            let name = match path.file_name().and_then(|n| n.to_str()) {
-                Some(n) => n,
-                None => continue,
-            };
-            if !expected_names.contains(name) {
-                if let Err(e) = std::fs::remove_file(&path) {
-                    tracing::warn!(
-                        "failed to purge stale embedded spec {}: {}",
-                        path.display(),
-                        e
-                    );
-                }
+    let read_dir = match std::fs::read_dir(dir) {
+        Ok(rd) => rd,
+        Err(e) => {
+            return Err(io::Error::other(format!(
+                "embedded cache purge failed: read_dir({}) errored: {e}",
+                dir.display()
+            )));
+        }
+    };
+    for entry in read_dir.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|e| e.to_str()) != Some("json") {
+            continue;
+        }
+        let name = match path.file_name().and_then(|n| n.to_str()) {
+            Some(n) => n,
+            None => continue,
+        };
+        if !expected_names.contains(name) {
+            if let Err(e) = std::fs::remove_file(&path) {
+                tracing::warn!(
+                    "failed to purge stale embedded spec {}: {}",
+                    path.display(),
+                    e
+                );
             }
         }
     }
@@ -1372,9 +1379,7 @@ static ATOMIC_WRITE_COUNTER: AtomicU64 = AtomicU64::new(0);
 ///    symlink), so the race window collapses.
 ///
 /// Cleanup-on-error: any failure after `create_new` succeeds (write,
-/// sync, rename) removes the temp file before returning the error. The
-/// previous implementation only cleaned up on rename failure, leaving
-/// garbage on write/sync failures.
+/// sync, rename) removes the temp file before returning the error.
 fn atomic_write(dest: &Path, contents: &[u8], nonce: usize) -> io::Result<()> {
     let parent = dest.parent().ok_or_else(|| {
         io::Error::new(
@@ -1428,9 +1433,11 @@ fn atomic_write(dest: &Path, contents: &[u8], nonce: usize) -> io::Result<()> {
 
     let mut file = opts.open(&tmp_path)?;
     // Any error after the file is created must clean up the temp file
-    // before returning — previously only rename errors triggered cleanup.
+    // before returning.
     let cleanup = |e: io::Error| -> io::Error {
-        let _ = std::fs::remove_file(&tmp_path);
+        if let Err(rm) = std::fs::remove_file(&tmp_path) {
+            tracing::warn!("atomic_write leaked temp {}: {}", tmp_path.display(), rm);
+        }
         e
     };
     file.write_all(contents).map_err(cleanup)?;
@@ -1506,8 +1513,7 @@ mod tests {
     fn embedded_specs_slice_is_non_empty() {
         // If this ever fails it means the include_str! table got truncated
         // or the const was emptied — the runtime fallback would silently
-        // load zero specs, which is the exact bug this module was added to
-        // prevent.
+        // load zero specs, defeating the binary-embedded fallback entirely.
         assert!(
             !EMBEDDED_SPECS.is_empty(),
             "EMBEDDED_SPECS must not be empty"
@@ -1629,12 +1635,11 @@ mod tests {
     fn atomic_write_refuses_pre_seeded_temp_symlink() {
         // Core property: `create_new(true) + O_NOFOLLOW` on the temp path
         // refuses to open when the temp path already exists as a symlink.
-        // The previous implementation called `std::fs::write` on the temp
-        // path, which follows symlinks — so a same-user attacker who won
-        // the race between `remove_file` and `write` could redirect the
-        // write to an arbitrary victim. Here we construct an `OpenOptions`
-        // identical to the one `atomic_write` uses and confirm it fails
-        // with AlreadyExists when pointed at a pre-existing symlink.
+        // Here we construct an `OpenOptions` identical to the one
+        // `atomic_write` uses and confirm it fails with AlreadyExists when
+        // pointed at a pre-existing symlink — so a same-user attacker who
+        // pre-seeds the temp path cannot redirect our write to an arbitrary
+        // victim.
         use std::os::unix::fs::OpenOptionsExt;
 
         let tmp = TempDir::new().unwrap();
@@ -1668,10 +1673,10 @@ mod tests {
     #[test]
     fn atomic_write_cleans_up_temp_on_rename_error() {
         // If rename fails (e.g. dest parent is read-only, or dest is a
-        // directory), the temp file must be removed — previously only the
-        // rename path cleaned up, but now every post-create error path
-        // must too. We trigger this by passing a dest that is itself a
-        // directory, which `rename(file -> dir)` rejects.
+        // directory), the temp file must be removed — every post-create
+        // error path must clean up, not just rename. We trigger this by
+        // passing a dest that is itself a directory, which
+        // `rename(file -> dir)` rejects.
         let tmp = TempDir::new().unwrap();
         let dest_dir = tmp.path().join("dest_is_dir");
         std::fs::create_dir_all(&dest_dir).unwrap();
@@ -1699,15 +1704,15 @@ mod tests {
     #[test]
     #[cfg(unix)]
     fn write_embedded_specs_rechecks_symlink_after_create_dir_all() {
-        // MEDIUM TOCTOU fix: `materialize_embedded_specs_at` checks for a
-        // symlinked cache dir up front, but `create_dir_all` + `read_dir`
-        // + subsequent purge all re-traverse the path. If an attacker
-        // swaps the dir for a symlink between the first check and the
-        // purge, the purge walks through the link and starts deleting
-        // files outside the cache. The post-create_dir_all re-check
-        // closes the simple swap window: calling `write_embedded_specs`
-        // directly with a symlinked dir must now error out before any
-        // filesystem mutation happens inside the link target.
+        // `materialize_embedded_specs_at` checks for a symlinked cache
+        // dir up front, but `create_dir_all` + `read_dir` + subsequent
+        // purge all re-traverse the path. If an attacker swaps the dir
+        // for a symlink between the first check and the purge, the
+        // purge walks through the link and deletes files outside the
+        // cache. The post-create_dir_all re-check closes the simple
+        // swap window: `write_embedded_specs` with a symlinked dir
+        // must error out before any filesystem mutation inside the
+        // link target.
         let tmp = TempDir::new().unwrap();
         let real_target = tmp.path().join("real_target");
         std::fs::create_dir_all(&real_target).unwrap();

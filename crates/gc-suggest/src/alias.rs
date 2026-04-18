@@ -8,7 +8,7 @@
 //! thread runs the probe; the first few keystrokes after launch may not see
 //! alias expansion. Once the background thread completes, every subsequent
 //! suggestion request will see the aliases as soon as the write lock is
-//! released. See audit MED-24.
+//! released.
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -193,11 +193,13 @@ fn save_alias_cache(home: &Path, cache_path: &Path, aliases: &HashMap<String, St
         // Don't cache empty results — next startup retries from scratch.
         return;
     }
-    if let Some(parent) = cache_path.parent() {
-        if let Err(e) = std::fs::create_dir_all(parent) {
-            tracing::debug!("alias cache dir creation failed: {e}");
-            return;
-        }
+    let parent = match cache_path.parent() {
+        Some(p) if !p.as_os_str().is_empty() => p.to_path_buf(),
+        _ => PathBuf::from("."),
+    };
+    if let Err(e) = std::fs::create_dir_all(&parent) {
+        tracing::warn!("alias cache dir creation failed: {e}");
+        return;
     }
     let payload = CachedAliases {
         source_mtimes: collect_source_mtimes(home),
@@ -206,18 +208,31 @@ fn save_alias_cache(home: &Path, cache_path: &Path, aliases: &HashMap<String, St
     let json = match serde_json::to_string(&payload) {
         Ok(j) => j,
         Err(e) => {
-            tracing::debug!("alias cache serialize error: {e}");
+            tracing::warn!("alias cache serialize error: {e}");
             return;
         }
     };
-    let tmp = cache_path.with_extension("json.tmp");
-    if let Err(e) = std::fs::write(&tmp, &json) {
-        tracing::debug!("alias cache write failed: {e}");
+    // A unique per-process temp file in the destination's parent dir keeps
+    // `persist()` a single atomic same-FS rename. A shared-name tmp path
+    // (e.g. `aliases-cache.json.tmp`) would let a pre-seeded symlink at
+    // that location redirect the write to an arbitrary target, and two
+    // concurrent launches would race each other.
+    let mut tmp = match tempfile::NamedTempFile::new_in(&parent) {
+        Ok(t) => t,
+        Err(e) => {
+            tracing::warn!("alias cache tmp create failed: {e}");
+            return;
+        }
+    };
+    if let Err(e) = std::io::Write::write_all(tmp.as_file_mut(), json.as_bytes()) {
+        tracing::warn!("alias cache write failed at {}: {e}", cache_path.display());
         return;
     }
-    if let Err(e) = std::fs::rename(&tmp, cache_path) {
-        tracing::debug!("alias cache rename failed: {e}");
-        let _ = std::fs::remove_file(&tmp);
+    if let Err(e) = tmp.persist(cache_path) {
+        tracing::warn!(
+            "alias cache persist failed at {}: {e}",
+            cache_path.display()
+        );
     }
 }
 
@@ -236,7 +251,7 @@ impl AliasStore {
     /// Construct a store and immediately spawn a background thread to run
     /// [`load_shell_aliases`]. The store is observable as empty until the
     /// thread completes — this is a deliberate trade-off so startup never
-    /// blocks on a slow shell probe (audit MED-24).
+    /// blocks on a slow shell probe.
     pub fn load_async() -> Self {
         let store = Self::default();
         let inner = Arc::clone(&store.inner);
@@ -541,8 +556,6 @@ alias ll='ls -la'
         assert_eq!(store2.get("g"), Some("git".to_string()));
     }
 
-    // -------- Audit fix: disk-based alias cache --------
-
     #[test]
     fn alias_cache_roundtrip_and_invalidation() {
         // Fake $HOME with a .zshrc; save cache; reload cache; assert hit.
@@ -628,8 +641,7 @@ alias ll='ls -la'
 
     #[test]
     fn alias_cache_invalidates_when_zsh_aliases_edited() {
-        // Direct end-to-end regression test for the Codex-flagged bug:
-        // the fast path at the top of load_shell_aliases reads .zsh_aliases
+        // The fast path at the top of load_shell_aliases reads .zsh_aliases
         // directly and caches the result. Editing .zsh_aliases must be
         // reflected by a cache miss on the next load.
         let home = tempfile::tempdir().unwrap();
@@ -660,11 +672,10 @@ alias ll='ls -la'
 
     #[test]
     fn alias_cache_invalidates_when_existing_omz_dropin_is_edited() {
-        // Regression guard for the Codex-flagged bug: editing an existing
-        // file inside a tracked directory does NOT bump the directory's
-        // own mtime. Previously we only stat'd the dir itself, so edits to
-        // `~/.oh-my-zsh/custom/aliases.zsh` slipped through. The recursive
-        // max-fingerprint walk in `dir_tree_fingerprint` catches this.
+        // Editing an existing file inside a tracked directory does NOT bump
+        // the directory's own mtime. The recursive max-fingerprint walk in
+        // `dir_tree_fingerprint` must catch this — otherwise edits to
+        // `~/.oh-my-zsh/custom/aliases.zsh` slip through.
         let home = tempfile::tempdir().unwrap();
         let custom = home.path().join(".oh-my-zsh/custom");
         std::fs::create_dir_all(&custom).unwrap();
@@ -776,6 +787,95 @@ alias ll='ls -la'
         assert!(
             load_alias_cache(home.path(), &cache_path).is_none(),
             "adding a drop-in to ~/.oh-my-zsh/custom must invalidate the cache"
+        );
+    }
+
+    #[test]
+    fn save_alias_cache_leaves_no_stale_tmp_files() {
+        let home = tempfile::tempdir().unwrap();
+        std::fs::write(home.path().join(".zshrc"), b"# empty\n").unwrap();
+        let cache_path = home.path().join("aliases-cache.json");
+
+        let mut aliases = HashMap::new();
+        aliases.insert("g".to_string(), "git".to_string());
+        save_alias_cache(home.path(), &cache_path, &aliases);
+
+        assert!(cache_path.exists(), "cache file must be written");
+
+        let leftover: Vec<_> = std::fs::read_dir(home.path())
+            .unwrap()
+            .flatten()
+            .filter_map(|e| e.file_name().into_string().ok())
+            .filter(|n| n.ends_with(".tmp") || n.contains(".json.tmp"))
+            .collect();
+        assert!(
+            leftover.is_empty(),
+            "save_alias_cache must not leave stale temp files; found: {leftover:?}"
+        );
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn save_alias_cache_refuses_pre_seeded_shared_tmp_symlink() {
+        let home = tempfile::tempdir().unwrap();
+        std::fs::write(home.path().join(".zshrc"), b"# empty\n").unwrap();
+        let cache_path = home.path().join("aliases-cache.json");
+
+        let victim = home.path().join("victim.txt");
+        std::fs::write(&victim, b"DO NOT CLOBBER").unwrap();
+
+        let predictable = cache_path.with_extension("json.tmp");
+        std::os::unix::fs::symlink(&victim, &predictable).unwrap();
+
+        let mut aliases = HashMap::new();
+        aliases.insert("g".to_string(), "git".to_string());
+        save_alias_cache(home.path(), &cache_path, &aliases);
+
+        assert_eq!(
+            std::fs::read(&victim).unwrap(),
+            b"DO NOT CLOBBER",
+            "victim must be untouched by alias cache save"
+        );
+        assert!(
+            cache_path.exists(),
+            "cache must still be written to its real path"
+        );
+    }
+
+    #[test]
+    fn concurrent_save_alias_cache_does_not_collide() {
+        use std::sync::Arc;
+
+        let home = Arc::new(tempfile::tempdir().unwrap());
+        std::fs::write(home.path().join(".zshrc"), b"# empty\n").unwrap();
+        let cache_path = home.path().join("aliases-cache.json");
+
+        let mut handles = vec![];
+        for t in 0..4 {
+            let home = Arc::clone(&home);
+            let cache_path = cache_path.clone();
+            handles.push(std::thread::spawn(move || {
+                for i in 0..20 {
+                    let mut aliases = HashMap::new();
+                    aliases.insert(format!("k_{t}_{i}"), "cmd".to_string());
+                    save_alias_cache(home.path(), &cache_path, &aliases);
+                }
+            }));
+        }
+        for h in handles {
+            h.join().unwrap();
+        }
+
+        assert!(cache_path.exists(), "final cache file must exist");
+        let leftover: Vec<_> = std::fs::read_dir(home.path())
+            .unwrap()
+            .flatten()
+            .filter_map(|e| e.file_name().into_string().ok())
+            .filter(|n| n.ends_with(".tmp"))
+            .collect();
+        assert!(
+            leftover.is_empty(),
+            "concurrent saves must not leave temp files behind; found: {leftover:?}"
         );
     }
 }

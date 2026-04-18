@@ -136,7 +136,7 @@ fn test_multiple_commands() {
     proc.exit_with_code(0);
 }
 
-/// End-to-end popup smoke test — audit finding HIGH-6.
+/// End-to-end popup smoke test.
 ///
 /// Verifies the entire UX pipeline: OSC 7770 buffer-report (from simulated
 /// shell integration) -> auto-trigger -> popup renders with git-spec

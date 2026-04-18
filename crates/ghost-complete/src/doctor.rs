@@ -42,8 +42,8 @@ impl CheckResult {
     }
 }
 
-fn print_results(results: &[CheckResult]) {
-    println!("Ghost Complete Doctor\n");
+fn render_results<W: std::io::Write>(results: &[CheckResult], out: &mut W) -> std::io::Result<()> {
+    writeln!(out, "Ghost Complete Doctor\n")?;
 
     for result in results {
         let (label, color) = match result.severity {
@@ -57,10 +57,11 @@ fn print_results(results: &[CheckResult]) {
         // strings, OS error text. Strip control chars at the print boundary
         // so a hostile `~/.config/ghost-complete/config.toml` can't smuggle
         // CSI/OSC sequences through `ghost-complete doctor` output.
-        println!(
+        writeln!(
+            out,
             "  {color}{label}\x1b[0m {}",
             sanitize_for_terminal(&result.message)
-        );
+        )?;
     }
 
     let fails = results
@@ -72,14 +73,19 @@ fn print_results(results: &[CheckResult]) {
         .filter(|r| matches!(r.severity, Severity::Warn))
         .count();
 
-    println!();
+    writeln!(out)?;
     if fails == 0 && warns == 0 {
-        println!("All checks passed.");
+        writeln!(out, "All checks passed.")?;
     } else if fails == 0 {
-        println!("{warns} warning(s).");
+        writeln!(out, "{warns} warning(s).")?;
     } else {
-        println!("{fails} issue(s) found.");
+        writeln!(out, "{fails} issue(s) found.")?;
     }
+    Ok(())
+}
+
+fn print_results(results: &[CheckResult]) {
+    let _ = render_results(results, &mut std::io::stdout().lock());
 }
 
 /// Check 1: Config file valid
@@ -206,12 +212,10 @@ fn check_terminal(config: &gc_config::GhostConfig) -> CheckResult {
 /// Check 6: Completion specs actually load.
 ///
 /// Resolves spec dirs and calls `SpecStore::load_from_dirs` exactly the way
-/// the PTY proxy does at startup, then reports the spec count. This is the
-/// only doctor check that catches the "binary works, but autocomplete is
-/// empty" failure mode that the 2026-04-17 audit found — the proxy path
-/// silently returned zero specs whenever neither `~/.config/ghost-complete/specs`
-/// nor a sibling `specs/` dir existed and the embedded fallback hadn't been
-/// wired up.
+/// the PTY proxy does at startup, then reports the spec count. Catches the
+/// "binary works, but autocomplete is empty" failure mode where neither
+/// `~/.config/ghost-complete/specs` nor a sibling `specs/` dir exists and
+/// the embedded fallback fails to materialize.
 fn check_specs(config: &gc_config::GhostConfig) -> CheckResult {
     let dirs = gc_suggest::spec_dirs::resolve_spec_dirs(&config.paths.spec_dirs);
     let dir_count = dirs.len();
@@ -229,8 +233,7 @@ fn check_specs(config: &gc_config::GhostConfig) -> CheckResult {
         .join(", ");
 
     if loaded == 0 {
-        // This is the bug the audit caught: zero specs and no error. Loud
-        // FAIL so a user running `doctor` after a fresh `cargo install`
+        // Loud FAIL so a user running `doctor` after a fresh `cargo install`
         // gets an actionable signal instead of silently degraded
         // autocomplete.
         return CheckResult::fail(format!(
@@ -316,8 +319,8 @@ pub fn run_doctor(config_path: Option<&str>) -> Result<()> {
     }
 
     // Check 6: Completion specs load via the same path the PTY proxy uses.
-    // Without this check, doctor reported a healthy install while the proxy
-    // silently ran with zero specs (the 2026-04-17 audit's CRITICAL bug).
+    // Without this check, doctor would report a healthy install while the
+    // proxy silently ran with zero specs.
     match &config {
         Some(cfg) => results.push(check_specs(cfg)),
         None => results.push(CheckResult::skip(
@@ -407,10 +410,7 @@ mod tests {
     ///
     /// `check_specs` calls `resolve_spec_dirs` + `SpecStore::load_from_dirs`
     /// — the same chain the PTY proxy uses — and must never report OK with
-    /// zero specs loaded. Before the 2026-04-17 audit fix the proxy could
-    /// silently start with an empty `SpecStore` whenever the on-disk
-    /// auto-detection chain bottomed out; the doctor command happily
-    /// reported the install as healthy.
+    /// zero specs loaded.
     ///
     /// We can't directly stub the resolver's environment lookups in this
     /// process, but we *can* assert that with a default config the check
@@ -438,6 +438,37 @@ mod tests {
             "check_specs reported 0 specs loaded — embedded fallback is \
              not wired up: {}",
             result.message
+        );
+    }
+
+    #[test]
+    fn doctor_renders_sanitize_hostile_message() {
+        let results = vec![CheckResult {
+            severity: Severity::Fail,
+            message: "\x1b[31mboom\x07nul\x00".to_string(),
+        }];
+        let mut buf = Vec::new();
+        render_results(&results, &mut buf).unwrap();
+        let emitted = String::from_utf8(buf).unwrap();
+
+        let (_prefix, body) = emitted.split_once("[FAIL]\x1b[0m ").expect(
+            "render output must contain the [FAIL] label with reset; \
+             body starts after that: {emitted:?}",
+        );
+        let line_end = body.find('\n').unwrap_or(body.len());
+        let rendered_message = &body[..line_end];
+
+        assert!(
+            !rendered_message.contains('\x1b'),
+            "rendered message must not contain ESC bytes: {rendered_message:?}"
+        );
+        assert!(
+            !rendered_message.contains('\x07'),
+            "rendered message must not contain BEL bytes: {rendered_message:?}"
+        );
+        assert!(
+            !rendered_message.contains('\x00'),
+            "rendered message must not contain NUL bytes: {rendered_message:?}"
         );
     }
 }

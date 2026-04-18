@@ -143,7 +143,7 @@ impl HistoryProvider {
         // replacement characters (which would then end up rendered in the
         // popup and selected back into the user's command line). Splitting
         // by `\n` first means a single bad line doesn't poison the rest of
-        // the file. See audit follow-up to MED-2.
+        // the file.
         let mut clean = String::with_capacity(raw.len());
         for line in raw.split(|b| *b == b'\n') {
             match std::str::from_utf8(line) {
@@ -568,8 +568,6 @@ mod tests {
         assert!(results.iter().any(|s| s.text == "git status"));
     }
 
-    // -------- HISTFILE validation (audit fix) --------
-
     #[test]
     fn test_is_history_filename_accepts_known_names() {
         assert!(is_history_filename(".zsh_history"));
@@ -696,8 +694,6 @@ mod tests {
             "must not emit replacement chars"
         );
     }
-
-    // -------- Audit fixes: tail-read + multi-line + fingerprint --------
 
     #[test]
     fn test_read_tail_small_file_full_read() {

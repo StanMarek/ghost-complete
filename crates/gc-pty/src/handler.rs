@@ -96,15 +96,10 @@ pub fn parse_key_name(name: &str) -> anyhow::Result<KeyEvent> {
     }
 }
 
-/// Snapshot of command context at the moment async generators were spawned.
-/// Used to detect whether the current buffer context has diverged enough that
-/// the in-flight generator results are no longer applicable.
-///
-/// When `spawned_current_word` is `Some`, at least one generator consumed
-/// `current_word` (e.g. a script template with `{current_token}`) and the
-/// results are only valid for that exact word. When `None`, no generator
-/// depended on `current_word`, so typing more characters still lets the
-/// results merge and re-rank.
+/// Snapshot of command context at generator-spawn time, so merge-time can
+/// decide whether in-flight results still match the user's current buffer.
+/// `spawned_current_word` is `Some` only for generators that embed the word
+/// literally (e.g. script templates with `{current_token}`).
 #[derive(Debug, Clone)]
 struct DynamicCtxSnapshot {
     command: Option<String>,
@@ -1501,29 +1496,24 @@ mod tests {
 
     #[test]
     fn test_trigger_idempotent_when_buffer_unchanged() {
-        // Regression for the F8 latent popup-behavior bug found during
-        // E2E smoke test development.
-        //
-        // Scenario reproduced:
+        // Scenario:
         //   1. A prior `trigger()` populated the popup with static
         //      suggestions — visible=true, last_trigger_fingerprint is
-        //      set for buffer B (fingerprint was stamped on successful
-        //      render in the `!result.suggestions.is_empty()` arm).
+        //      set for buffer B (fingerprint stamped on successful render
+        //      in the `!result.suggestions.is_empty()` arm).
         //   2. A spurious re-trigger fires with buffer still at B (e.g.
-        //      debounce loop tick, or a SIGWINCH / Task B re-trigger
-        //      without any intervening buffer edit).
-        //   3. Without the idempotency guard, `suggest_sync` would re-run.
-        //      If it returns empty with no async generators, the
-        //      empty-no-generators arm calls `self.dismiss(stdout)` which
-        //      emits a clear-popup ANSI sequence and tears down the popup
-        //      state — the popup disappears silently for no user-driven
-        //      reason.
+        //      debounce loop tick, or SIGWINCH / Task B re-trigger without
+        //      any intervening buffer edit).
+        //   3. Without the idempotency guard, `suggest_sync` re-runs. If
+        //      it returns empty with no async generators, the
+        //      empty-no-generators arm calls `self.dismiss(stdout)`,
+        //      emitting a clear-popup ANSI sequence and tearing down the
+        //      popup — it disappears for no user-driven reason.
         //
-        // Fix: `trigger()` fingerprints (buffer_hash, cursor_offset) and
-        // short-circuits the whole body when the fingerprint matches AND
-        // the popup is still visible. ESC dismiss clears the fingerprint
-        // (via `dismiss()`), and a genuine buffer edit produces a
-        // different fingerprint, so neither of those paths regress.
+        // `trigger()` fingerprints (buffer_hash, cursor_offset) and
+        // short-circuits when the fingerprint matches AND the popup is
+        // still visible. ESC clears the fingerprint (via `dismiss()`),
+        // and a genuine buffer edit produces a different fingerprint.
         let mut handler = make_visible_handler(vec![Suggestion {
             text: "prior-static".to_string(),
             ..Default::default()

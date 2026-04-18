@@ -9,7 +9,7 @@ const MAX_SUBSTITUTION_LEN: usize = 1024;
 /// Hard cap on script generator stdout. Anything beyond this is dropped, the
 /// child is killed, and a `tracing::warn!` is emitted. Prevents a runaway or
 /// malicious generator from allocating arbitrary memory inside the timeout
-/// window. See audit MED-17.
+/// window.
 pub(crate) const MAX_GENERATOR_STDOUT_BYTES: usize = 1024 * 1024;
 
 /// Execute a shell command as an array (no shell interpolation), return stdout.
@@ -47,8 +47,7 @@ pub async fn run_script(argv: &[&str], cwd: &Path, timeout_ms: u64) -> Result<St
     // `&str` happily contains NULs, so without this check downstream code
     // would never notice. Shell metacharacters (|, ;, &, `, $) are NOT a
     // concern here: we exec via an argv array, never via `sh -c`, so they
-    // pass through as inert literal bytes. (The legacy metachar warning was
-    // misleading and has been removed; see audit.)
+    // pass through as inert literal bytes.
     for (i, a) in argv.iter().enumerate() {
         if a.as_bytes().contains(&0) {
             bail!("argv[{i}] contains a NUL byte; refusing to exec");
@@ -60,16 +59,13 @@ pub async fn run_script(argv: &[&str], cwd: &Path, timeout_ms: u64) -> Result<St
         cmd.args(&argv[1..]);
     }
     cmd.current_dir(cwd);
-    // HIGH-13 (DEFERRED): env isolation via a deny-list was rejected because
-    // it silently breaks authenticated completions for gh/aws/kubectl/npm and
-    // similar tools that rely on inherited tokens (GH_TOKEN, AWS_PROFILE,
-    // KUBECONFIG, NPM_TOKEN, ...). If ever revisited, use an allow-list with
-    // explicit per-spec opt-in. See PR #66 body for the full rationale.
-    //
     // Generators inherit the full process environment because many legitimate
     // completions require auth tokens (GITHUB_TOKEN for `gh`, AWS credentials
-    // for `aws`, etc.). The specs are either embedded in the binary (trusted)
-    // or user-installed. If an attacker can write to
+    // for `aws`, etc.). Env isolation via a deny-list would silently break
+    // authenticated completions for gh/aws/kubectl/npm and similar tools that
+    // rely on inherited tokens. If ever revisited, use an allow-list with
+    // explicit per-spec opt-in. The specs are either embedded in the binary
+    // (trusted) or user-installed. If an attacker can write to
     // ~/.config/ghost-complete/specs/, they already have shell access.
     //
     // The only var we strip is our own re-entry guard, so nested shells don't
@@ -476,7 +472,7 @@ mod tests {
     async fn test_run_script_auth_vars_inherited() {
         // Auth tokens MUST be inherited — generators like `gh` need GITHUB_TOKEN,
         // `aws` needs AWS_SECRET_ACCESS_KEY, etc. Stripping these silently breaks
-        // authenticated completions. See audit HIGH-13 discussion.
+        // authenticated completions.
         // We use HOME which always exists and matches secret-like patterns (no it
         // doesn't — but PATH is guaranteed and proves full env inheritance).
         // More importantly: verify no env_clear() is in effect by checking the
@@ -494,8 +490,6 @@ mod tests {
             "child should inherit full env (got {child_vars} vars, parent has {parent_vars})"
         );
     }
-
-    // -------- NUL byte / shell-metachar handling (audit fix) --------
 
     #[test]
     fn test_substitute_template_drops_nul_in_prev_token() {

@@ -318,24 +318,43 @@ impl FrecencyDb {
     }
 
     /// Peek at the envelope version on disk without loading entries.
-    /// Returns `None` when the file is missing/unreadable or in a
-    /// pre-versioning format. Used by `save_snapshot` to refuse to overwrite
-    /// a file written by a newer binary.
+    ///
+    /// Returns `Ok(None)` when the file is absent (benign first-run case).
+    /// Returns `Ok(Some(v))` for a readable versioned envelope, or
+    /// `Ok(Some(0))` for any parse that doesn't match `VersionOnly` — a
+    /// pre-versioning bare map is treated as version 0.
+    ///
+    /// Returns `Err` for any other I/O failure (permission denied, disk
+    /// fault). Collapsing those into "missing" would defeat the downgrade
+    /// guard the caller installs — it would then happily overwrite a file
+    /// it simply can't read right now.
     ///
     /// Deliberately parses ONLY the `version` field. If a future release
     /// changes the shape of `entries`, deserializing the whole
-    /// `VersionedStore` here would fail — returning `None` and silently
-    /// defeating the downgrade guard below, which is exactly the scenario
-    /// this function exists to prevent.
-    fn peek_disk_version(path: &std::path::Path) -> Option<u32> {
+    /// `VersionedStore` here would fail — which is exactly the scenario
+    /// the guard exists to prevent.
+    fn peek_disk_version(path: &std::path::Path) -> std::io::Result<Option<u32>> {
         #[derive(Deserialize)]
         struct VersionOnly {
             version: u32,
         }
-        let json = std::fs::read_to_string(path).ok()?;
-        serde_json::from_str::<VersionOnly>(&json)
-            .ok()
-            .map(|s| s.version)
+        match std::fs::read_to_string(path) {
+            Ok(json) => Ok(Some(
+                serde_json::from_str::<VersionOnly>(&json)
+                    .map(|s| s.version)
+                    .unwrap_or(0),
+            )),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
+            Err(e) => {
+                tracing::warn!(
+                    "frecency peek failed for {}: {} ({:?})",
+                    path.display(),
+                    e,
+                    e.kind()
+                );
+                Err(e)
+            }
+        }
     }
 
     /// Persist a snapshot of entries to disk, merging with any peer that
@@ -343,20 +362,21 @@ impl FrecencyDb {
     /// to `MAX_ENTRIES` by evicting entries with the lowest actual scores.
     /// Uses atomic write (tmp + rename).
     ///
-    /// Merge rules (audit HIGH): for each key present in *either* the
-    /// on-disk file or the in-memory snapshot, we pick the entry with the
-    /// larger decayed score at `now_secs()`. Both sides are normalized to
-    /// the same time origin before comparison so that a peer whose
-    /// reference time is days old doesn't clobber a fresh bump just
-    /// because its raw `stored_score` happens to be larger.
+    /// For each key present in *either* the on-disk file or the in-memory
+    /// snapshot, we pick the entry with the larger decayed score at
+    /// `now_secs()`. Both sides are normalized to the same time origin
+    /// before comparison so that a peer whose reference time is days old
+    /// doesn't clobber a fresh bump just because its raw `stored_score`
+    /// happens to be larger.
     ///
     /// Takes the snapshot by value — the caller is responsible for cloning
     /// the entries out from under the mutex *before* invoking this. Disk I/O
-    /// (`create_dir_all`, JSON serialization, `write`, `rename`) all happen
-    /// with no lock held, so concurrent `score()` / `boost_scores()` callers
-    /// are not blocked by a slow filesystem (audit MED-21).
+    /// happens with no lock held, so concurrent `score()` / `boost_scores()`
+    /// callers are not blocked by a slow filesystem.
     ///
-    /// Returns `true` on success, `false` on any failure.
+    /// Returns `true` on success, `false` on any failure — including the
+    /// case where the existing file is unreadable (refuse to clobber data
+    /// whose contents we can't verify).
     fn save_snapshot(snapshot: HashMap<String, FrecencyEntry>, path: &Option<PathBuf>) -> bool {
         let Some(ref path) = path else { return true };
         if let Some(parent) = path.parent() {
@@ -368,11 +388,22 @@ impl FrecencyDb {
 
         // Forward-compat guard: if a newer binary wrote a higher schema
         // version to this file, don't overwrite it from a downgraded run.
-        if let Some(v) = Self::peek_disk_version(path) {
-            if v > CURRENT_VERSION {
+        // Any I/O error here (permission denied, disk fault, etc.) means
+        // we can't verify the file is safe to overwrite — refuse.
+        match Self::peek_disk_version(path) {
+            Ok(Some(v)) if v > CURRENT_VERSION => {
                 tracing::warn!(
                     "frecency file at {} has newer schema version {v}; refusing to overwrite from running CURRENT_VERSION={CURRENT_VERSION}",
                     path.display()
+                );
+                return false;
+            }
+            Ok(_) => {}
+            Err(e) => {
+                tracing::warn!(
+                    "frecency file at {} unreadable ({:?}); refusing to overwrite: {e}",
+                    path.display(),
+                    e.kind()
                 );
                 return false;
             }
@@ -384,7 +415,15 @@ impl FrecencyDb {
         // while we held our in-memory state, and pick the winner per key.
         let merged = match std::fs::read_to_string(path) {
             Ok(s) => Self::merge_snapshots(Self::deserialize_entries(&s), snapshot, now),
-            Err(_) => snapshot, // no file yet or unreadable — use our data as-is
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => snapshot,
+            Err(e) => {
+                tracing::warn!(
+                    "frecency read-for-merge failed at {} ({:?}); refusing to overwrite: {e}",
+                    path.display(),
+                    e.kind()
+                );
+                return false;
+            }
         };
 
         // Prune if over the cap — keep the highest-scoring entries.
@@ -968,10 +1007,9 @@ mod tests {
     #[test]
     fn concurrent_record_and_score_no_deadlock() {
         // Stress test: many threads simultaneously record() (which triggers
-        // disk saves every SAVE_EVERY calls) while others score(). Before
-        // MED-21 the save path held the mutex across the entire I/O sequence
-        // so score() would be blocked behind a slow disk write — this test
-        // exercises the released-before-I/O fix and verifies no thread
+        // disk saves every SAVE_EVERY calls) while others score(). The save
+        // path must release the mutex before touching disk so score() is not
+        // blocked behind a slow filesystem; this test verifies no thread
         // deadlocks and all expected entries land in the db.
         use std::sync::Arc;
         use std::thread;
@@ -1040,8 +1078,6 @@ mod tests {
             inner.dirty_count
         );
     }
-
-    // -- Audit fixes: versioning, merge-on-save, xdg state, score clamp --
 
     #[test]
     fn versioned_envelope_roundtrip() {
@@ -1263,5 +1299,37 @@ mod tests {
             Some(v) => std::env::set_var("XDG_STATE_HOME", v),
             None => std::env::remove_var("XDG_STATE_HOME"),
         }
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn save_refuses_to_overwrite_unreadable_existing_file() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("frecency.json");
+        let original = br#"{"version":1,"entries":{"preexisting":{"stored_score":7.5,"reference_secs":1700000000}}}"#;
+        std::fs::write(&path, original).unwrap();
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o000)).unwrap();
+
+        let mut snapshot = HashMap::new();
+        snapshot.insert(
+            "new_entry".to_string(),
+            FrecencyEntry {
+                stored_score: 1.0,
+                reference_secs: now_secs(),
+            },
+        );
+
+        let ok = FrecencyDb::save_snapshot(snapshot, &Some(path.clone()));
+        assert!(!ok, "save must refuse to overwrite an unreadable file");
+
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o644)).unwrap();
+        let bytes = std::fs::read(&path).unwrap();
+        assert_eq!(
+            bytes.as_slice(),
+            original.as_slice(),
+            "original bytes must survive the refused save"
+        );
     }
 }

@@ -45,7 +45,6 @@ pub enum ParameterizedTransform {
     /// The `Regex` is compiled once at spec-load time (in the `TryFrom`
     /// `ParameterizedHelper` impl below) so a hot generator running on every
     /// keystroke does not pay the regex-compilation cost on each invocation.
-    /// See audit LOW-3.
     RegexExtract {
         compiled: Regex,
         name: usize,
@@ -388,7 +387,7 @@ pub fn apply_error_guard(
 /// Lines that don't match are silently skipped.
 ///
 /// Takes the compiled `Regex` by reference — the regex is compiled once at
-/// spec-load time and reused across every invocation. See audit LOW-3.
+/// spec-load time and reused across every invocation.
 pub fn apply_regex_extract(
     lines: &[String],
     re: &Regex,
