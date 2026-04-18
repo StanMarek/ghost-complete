@@ -50,12 +50,27 @@ const ALIAS_SOURCE_FILES: &[&str] = &[
 /// drop-in in oh-my-zsh without us having to scan every file on every launch.
 const ALIAS_SOURCE_DIRS: &[&str] = &[".oh-my-zsh/custom", ".config/fish/functions"];
 
+/// Fingerprint of a watched source file. We pair mtime-seconds with
+/// subsecond precision AND the file length so rapid in-place edits inside
+/// the same wall-clock second still invalidate the cache. Dropping nanos
+/// (the original shape here) let a user edit `.zshrc` twice within one
+/// second and miss the second edit — the history/ssh caches in this crate
+/// already use `(mtime, len)` for exactly this reason.
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Copy)]
+struct SourceFingerprint {
+    secs: u64,
+    #[serde(default)]
+    nanos: u32,
+    #[serde(default)]
+    len: u64,
+}
+
 #[derive(Serialize, Deserialize)]
 struct CachedAliases {
-    /// Maps each watched source file (by basename) to the seconds-since-epoch
-    /// of its mtime at the time of capture. On load, we compare the current
-    /// mtime against the stored value: any newer source invalidates.
-    source_mtimes: HashMap<String, u64>,
+    /// Maps each watched source file (by basename) to its fingerprint at
+    /// the time of capture. On load, we compare the current fingerprint
+    /// against the stored value: any difference invalidates.
+    source_mtimes: HashMap<String, SourceFingerprint>,
     aliases: HashMap<String, String>,
 }
 
@@ -80,30 +95,23 @@ fn alias_cache_path() -> Option<PathBuf> {
     })
 }
 
-fn mtime_secs(path: &Path) -> Option<u64> {
+fn file_fingerprint(path: &Path) -> Option<SourceFingerprint> {
     let meta = std::fs::metadata(path).ok()?;
     let mt = meta.modified().ok()?;
-    mt.duration_since(SystemTime::UNIX_EPOCH)
-        .ok()
-        .map(|d| d.as_secs())
+    let d = mt.duration_since(SystemTime::UNIX_EPOCH).ok()?;
+    Some(SourceFingerprint {
+        secs: d.as_secs(),
+        nanos: d.subsec_nanos(),
+        len: meta.len(),
+    })
 }
 
-/// Bounds for [`dir_tree_max_mtime`]. Covers a ~normal oh-my-zsh
-/// installation (custom drop-ins + a few plugin subdirs) without letting a
-/// pathological layout turn startup into a deep FS walk.
-const DIR_WALK_MAX_DEPTH: u32 = 3;
-const DIR_WALK_MAX_FILES: u32 = 500;
-
-/// Returns the max mtime (seconds since epoch) across `root` itself plus
-/// every file and directory reachable within the depth/file budgets. Used
-/// to detect edits inside tracked dirs: the directory's own mtime only
-/// flips on add/remove/rename of direct entries, so on its own it misses
-/// edits to files that already existed in the directory.
-///
-/// Best-effort: unreadable entries are skipped, not surfaced as errors.
-/// Returns `None` if `root` itself cannot be stat'd (treated as absent).
-fn dir_tree_max_mtime(root: &Path) -> Option<u64> {
-    let mut max = mtime_secs(root)?;
+/// Fingerprint a directory tree using the same `(secs, nanos, len)` shape
+/// we use for files. Walks children under the same budget as the original
+/// original walker and keeps the largest (`secs`, then `nanos`, then
+/// `len`) tuple, so any edit inside the tree advances the fingerprint.
+fn dir_tree_fingerprint(root: &Path) -> Option<SourceFingerprint> {
+    let mut best = file_fingerprint(root)?;
     let mut stack: Vec<(PathBuf, u32)> = vec![(root.to_path_buf(), 0)];
     let mut files_seen: u32 = 0;
 
@@ -114,14 +122,14 @@ fn dir_tree_max_mtime(root: &Path) -> Option<u64> {
         };
         for entry in entries.flatten() {
             if files_seen >= DIR_WALK_MAX_FILES {
-                return Some(max);
+                return Some(best);
             }
             files_seen += 1;
 
             let path = entry.path();
-            if let Some(m) = mtime_secs(&path) {
-                if m > max {
-                    max = m;
+            if let Some(fp) = file_fingerprint(&path) {
+                if (fp.secs, fp.nanos, fp.len) > (best.secs, best.nanos, best.len) {
+                    best = fp;
                 }
             }
 
@@ -132,24 +140,31 @@ fn dir_tree_max_mtime(root: &Path) -> Option<u64> {
         }
     }
 
-    Some(max)
+    Some(best)
 }
 
-fn collect_source_mtimes(home: &Path) -> HashMap<String, u64> {
+/// Bounds for [`dir_tree_fingerprint`]. Covers a ~normal oh-my-zsh
+/// installation (custom drop-ins + a few plugin subdirs) without letting a
+/// pathological layout turn startup into a deep FS walk.
+const DIR_WALK_MAX_DEPTH: u32 = 3;
+const DIR_WALK_MAX_FILES: u32 = 500;
+
+fn collect_source_mtimes(home: &Path) -> HashMap<String, SourceFingerprint> {
     let mut out = HashMap::new();
     for name in ALIAS_SOURCE_FILES {
         let p = home.join(name);
-        if let Some(m) = mtime_secs(&p) {
-            out.insert((*name).to_string(), m);
+        if let Some(fp) = file_fingerprint(&p) {
+            out.insert((*name).to_string(), fp);
         }
     }
     for name in ALIAS_SOURCE_DIRS {
         let p = home.join(name);
-        // Recursive max-mtime: the directory's own mtime only flips on
-        // add/remove/rename, so it would miss a user editing an existing
-        // drop-in like `~/.oh-my-zsh/custom/aliases.zsh` in place.
-        if let Some(m) = dir_tree_max_mtime(&p) {
-            out.insert((*name).to_string(), m);
+        // Recursive max-fingerprint: the directory's own mtime only flips
+        // on add/remove/rename, so it would miss a user editing an
+        // existing drop-in like `~/.oh-my-zsh/custom/aliases.zsh` in
+        // place.
+        if let Some(fp) = dir_tree_fingerprint(&p) {
+            out.insert((*name).to_string(), fp);
         }
     }
     out
@@ -649,7 +664,7 @@ alias ll='ls -la'
         // file inside a tracked directory does NOT bump the directory's
         // own mtime. Previously we only stat'd the dir itself, so edits to
         // `~/.oh-my-zsh/custom/aliases.zsh` slipped through. The recursive
-        // max-mtime walk in `dir_tree_max_mtime` catches this.
+        // max-fingerprint walk in `dir_tree_fingerprint` catches this.
         let home = tempfile::tempdir().unwrap();
         let custom = home.path().join(".oh-my-zsh/custom");
         std::fs::create_dir_all(&custom).unwrap();
@@ -684,7 +699,38 @@ alias ll='ls -la'
     }
 
     #[test]
-    fn dir_tree_max_mtime_walks_recursively_within_budget() {
+    fn alias_cache_invalidates_on_same_second_subsecond_edit() {
+        // Regression for the seconds-only-mtime bug: two edits to the
+        // same file within one wall-clock second must still be noticed
+        // because `SourceFingerprint` tracks nanos + length.
+        let home = tempfile::tempdir().unwrap();
+        let rc = home.path().join(".zshrc");
+        std::fs::write(&rc, b"a").unwrap();
+        let cache_path = home.path().join("aliases-cache.json");
+
+        let mut aliases = HashMap::new();
+        aliases.insert("g".to_string(), "git".to_string());
+        save_alias_cache(home.path(), &cache_path, &aliases);
+        assert!(load_alias_cache(home.path(), &cache_path).is_some());
+
+        // Change length without advancing the mtime second — forces the
+        // fingerprint to rely on `(nanos, len)` to detect the change.
+        let fp = file_fingerprint(&rc).unwrap();
+        std::fs::write(&rc, b"ab").unwrap();
+        filetime::set_file_mtime(
+            &rc,
+            filetime::FileTime::from_unix_time(fp.secs as i64, fp.nanos),
+        )
+        .unwrap();
+
+        assert!(
+            load_alias_cache(home.path(), &cache_path).is_none(),
+            "edit that preserves mtime-seconds but changes length must invalidate"
+        );
+    }
+
+    #[test]
+    fn dir_tree_fingerprint_walks_recursively_within_budget() {
         // Nested layout: custom/plugins/myplugin/myplugin.plugin.zsh.
         // The recursive walk must reach two levels down to surface an
         // edit there. Above DIR_WALK_MAX_DEPTH we deliberately stop.
@@ -694,15 +740,15 @@ alias ll='ls -la'
         let leaf = leaf_dir.join("myplugin.plugin.zsh");
         std::fs::write(&leaf, b"alias x=y\n").unwrap();
 
-        let before = dir_tree_max_mtime(tmp.path()).expect("walk must succeed");
+        let before = dir_tree_fingerprint(tmp.path()).expect("walk must succeed");
 
         let future = SystemTime::now() + std::time::Duration::from_secs(120);
         filetime::set_file_mtime(&leaf, filetime::FileTime::from_system_time(future)).unwrap();
 
-        let after = dir_tree_max_mtime(tmp.path()).expect("walk must succeed");
+        let after = dir_tree_fingerprint(tmp.path()).expect("walk must succeed");
         assert!(
-            after > before,
-            "max mtime must reflect the nested-file edit (before={before} after={after})"
+            (after.secs, after.nanos, after.len) > (before.secs, before.nanos, before.len),
+            "fingerprint must advance after nested-file edit (before={before:?} after={after:?})"
         );
     }
 
