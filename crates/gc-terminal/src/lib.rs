@@ -10,6 +10,7 @@ pub enum Terminal {
     Rio,
     ITerm2,
     TerminalApp,
+    Zed,
     Unknown(String),
 }
 
@@ -29,6 +30,7 @@ impl Terminal {
             "Rio",
             "iTerm2",
             "Terminal.app",
+            "Zed",
         ]
     }
 }
@@ -43,6 +45,7 @@ impl fmt::Display for Terminal {
             Terminal::Rio => write!(f, "Rio"),
             Terminal::ITerm2 => write!(f, "iTerm2"),
             Terminal::TerminalApp => write!(f, "Terminal.app"),
+            Terminal::Zed => write!(f, "Zed"),
             Terminal::Unknown(name) => write!(f, "{name}"),
         }
     }
@@ -248,9 +251,11 @@ impl TerminalProfile {
     fn new(terminal: Terminal, in_tmux: bool) -> Self {
         let (render_strategy, prompt_detection) = match &terminal {
             // Full native support: synchronized output + OSC 133 prompt markers
-            Terminal::Ghostty | Terminal::Kitty | Terminal::WezTerm | Terminal::Rio => {
-                (RenderStrategy::Synchronized, PromptDetection::Osc133)
-            }
+            Terminal::Ghostty
+            | Terminal::Kitty
+            | Terminal::WezTerm
+            | Terminal::Rio
+            | Terminal::Zed => (RenderStrategy::Synchronized, PromptDetection::Osc133),
             // Synchronized output but no native OSC 133 (Alacritty issue open since 2022)
             Terminal::Alacritty => (
                 RenderStrategy::Synchronized,
@@ -335,14 +340,15 @@ mod tests {
         assert!(Terminal::Rio.is_known());
         assert!(Terminal::ITerm2.is_known());
         assert!(Terminal::TerminalApp.is_known());
+        assert!(Terminal::Zed.is_known());
         assert!(!Terminal::Unknown("foot".into()).is_known());
         assert!(!Terminal::Unknown("unknown".into()).is_known());
     }
 
     #[test]
     fn test_supported_terminals_count() {
-        // 7 supported terminals: Ghostty, Kitty, WezTerm, Alacritty, Rio, iTerm2, Terminal.app
-        assert_eq!(Terminal::supported_terminals().len(), 7);
+        // 8 supported terminals: Ghostty, Kitty, WezTerm, Alacritty, Rio, iTerm2, Terminal.app, Zed
+        assert_eq!(Terminal::supported_terminals().len(), 8);
     }
 
     #[test]
@@ -357,6 +363,7 @@ mod tests {
                 "Rio",
                 "iTerm2",
                 "Terminal.app",
+                "Zed",
             ]
         );
     }
@@ -450,6 +457,7 @@ mod tests {
         assert_eq!(Terminal::Rio.to_string(), "Rio");
         assert_eq!(Terminal::ITerm2.to_string(), "iTerm2");
         assert_eq!(Terminal::TerminalApp.to_string(), "Terminal.app");
+        assert_eq!(Terminal::Zed.to_string(), "Zed");
         assert_eq!(Terminal::Unknown("foo".into()).to_string(), "foo");
     }
 
