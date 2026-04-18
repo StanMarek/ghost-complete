@@ -133,7 +133,7 @@ The `gc-terminal` crate detects the terminal at startup and assigns capabilities
 - **RenderStrategy** — `Synchronized` (DECSET 2026) or `PreRenderBuffer` (single write)
 - **PromptDetection** — `Osc133` (native) or `ShellIntegration` (OSC 7771 markers)
 
-Detection uses `TERM_PROGRAM` plus terminal-specific env vars (`KITTY_WINDOW_ID`, `WEZTERM_UNIX_SOCKET`, `ALACRITTY_SOCKET`). Inside tmux, these env vars leak through from the outer terminal, allowing detection of the host terminal.
+Detection uses `TERM_PROGRAM` plus terminal-specific env vars (`KITTY_WINDOW_ID`, `WEZTERM_UNIX_SOCKET`, `ALACRITTY_SOCKET`, `ZED_TERM`, `VSCODE_IPC_HOOK_CLI`). Inside tmux, these env vars leak through from the outer terminal, allowing detection of the host terminal.
 
 The overlay and parser crates are strategy-driven — they query the profile for capabilities rather than checking terminal names. Adding a new terminal means adding one enum variant and one match arm in `gc-terminal`; no other crate needs changes.
 
