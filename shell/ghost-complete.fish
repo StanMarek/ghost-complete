@@ -17,14 +17,18 @@ function _gc_urlencode_path
     echo -n $encoded
 end
 
-# True when the host terminal already injects native OSC 133, making our
-# redundant OSC 7771 unnecessary. Currently covers Ghostty (native) and
-# Zed (native). VSCode arrives in a later commit.
+# True when the host terminal already injects native OSC 133 (and any
+# proprietary markers like VSCode's OSC 633), making our redundant
+# OSC 7771 unnecessary. Currently covers Ghostty, Zed, and VSCode
+# (when its shell integration is active via VSCODE_INJECTION=1).
 function _gc_native_osc133
     if test "$TERM_PROGRAM" = ghostty -o -n "$GHOSTTY_RESOURCES_DIR"
         return 0
     end
     if test -n "$ZED_TERM"
+        return 0
+    end
+    if test -n "$VSCODE_INJECTION"
         return 0
     end
     return 1
