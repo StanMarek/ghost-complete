@@ -424,7 +424,7 @@ mod tests {
             result.message
         );
         assert!(
-            !result.message.contains("0 loaded"),
+            !result.message.starts_with("Completion specs: 0 loaded"),
             "check_specs reported 0 specs loaded — embedded fallback is \
              not wired up: {}",
             result.message
