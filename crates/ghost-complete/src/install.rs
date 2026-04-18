@@ -545,8 +545,9 @@ mod tests {
 
         // Direct terminal detection (non-tmux)
         assert!(non_tmux_branch.contains("case \"$TERM_PROGRAM\""));
-        assert!(non_tmux_branch
-            .contains("ghostty|WezTerm|rio|iTerm.app|Apple_Terminal|zed|vscode)"));
+        assert!(
+            non_tmux_branch.contains("ghostty|WezTerm|rio|iTerm.app|Apple_Terminal|zed|vscode)")
+        );
         assert!(non_tmux_branch.contains("$ZED_TERM"));
         assert!(non_tmux_branch.contains("$VSCODE_IPC_HOOK_CLI"));
 
