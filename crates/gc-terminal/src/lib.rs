@@ -318,6 +318,12 @@ impl TerminalProfile {
         Self::new(Terminal::Rio, false)
     }
 
+    /// Test constructor: Zed profile (Synchronized, OSC 133).
+    #[cfg(any(test, feature = "test-utils"))]
+    pub fn for_zed() -> Self {
+        Self::new(Terminal::Zed, false)
+    }
+
     /// Test constructor: Unknown terminal profile (PreRenderBuffer, ShellIntegration).
     #[cfg(any(test, feature = "test-utils"))]
     pub fn for_unknown(name: &str) -> Self {
@@ -690,6 +696,14 @@ mod tests {
     fn test_for_rio() {
         let p = TerminalProfile::for_rio();
         assert_eq!(*p.terminal(), Terminal::Rio);
+        assert_eq!(p.render_strategy(), RenderStrategy::Synchronized);
+        assert_eq!(p.prompt_detection(), PromptDetection::Osc133);
+    }
+
+    #[test]
+    fn test_for_zed() {
+        let p = TerminalProfile::for_zed();
+        assert_eq!(*p.terminal(), Terminal::Zed);
         assert_eq!(p.render_strategy(), RenderStrategy::Synchronized);
         assert_eq!(p.prompt_detection(), PromptDetection::Osc133);
     }
