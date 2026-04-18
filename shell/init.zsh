@@ -22,6 +22,7 @@ __ghost_complete_init() {
        [[ -n "$WEZTERM_UNIX_SOCKET" ]] || \
        [[ -n "$ALACRITTY_SOCKET" ]] || \
        [[ -n "$ZED_TERM" ]] || \
+       [[ -n "$VSCODE_IPC_HOOK_CLI" ]] || \
        [[ -n "$ITERM_SESSION_ID" ]] || \
        [[ "$TERM_PROGRAM" == "rio" ]]; then
       if command -v ghost-complete >/dev/null 2>&1; then
@@ -30,15 +31,30 @@ __ghost_complete_init() {
       fi
     fi
   else
-    # Outside tmux: GHOST_COMPLETE_ACTIVE is a reliable recursion guard
-    # because no multiplexer re-injects it into unrelated shell sessions.
-    [[ -n "$GHOST_COMPLETE_ACTIVE" ]] && return
+    # Outside tmux: GHOST_COMPLETE_ACTIVE is normally a reliable recursion
+    # guard, BUT editors like VSCode/Zed propagate env vars from a launching
+    # shell into their integrated terminal. If a user runs `code .` from a
+    # ghost-complete-managed shell, GHOST_COMPLETE_ACTIVE=1 leaks into
+    # VSCode's integrated zsh and would incorrectly disable the proxy there.
+    # Fix: if the current shell's parent is NOT the ghost-complete binary,
+    # the variable is an inherited leak from an outer shell in a different
+    # terminal — drop it so detection proceeds normally.
+    if [[ -n "$GHOST_COMPLETE_ACTIVE" ]]; then
+      if [[ "$(ps -o comm= -p "$PPID" 2>/dev/null)" != "ghost-complete" ]]; then
+        unset GHOST_COMPLETE_ACTIVE
+      else
+        return
+      fi
+    fi
     local supported=0
-    if [[ -n "$KITTY_WINDOW_ID" ]] || [[ -n "$ALACRITTY_SOCKET" ]] || [[ -n "$ZED_TERM" ]]; then
+    if [[ -n "$KITTY_WINDOW_ID" ]] \
+      || [[ -n "$ALACRITTY_SOCKET" ]] \
+      || [[ -n "$ZED_TERM" ]] \
+      || [[ -n "$VSCODE_IPC_HOOK_CLI" ]]; then
       supported=1
     else
       case "$TERM_PROGRAM" in
-        ghostty|WezTerm|rio|iTerm.app|Apple_Terminal|zed) supported=1 ;;
+        ghostty|WezTerm|rio|iTerm.app|Apple_Terminal|zed|vscode) supported=1 ;;
       esac
     fi
     if [[ $supported -eq 1 ]] && command -v ghost-complete >/dev/null 2>&1; then
