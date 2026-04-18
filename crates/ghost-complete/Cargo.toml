@@ -20,6 +20,11 @@ build = "build.rs"
 name = "ghost-complete"
 path = "src/main.rs"
 
+# publish = false hides this crate from cargo-dist by default; opt back in
+# explicitly so Release builds continue to ship the binary.
+[package.metadata.dist]
+dist = true
+
 [dependencies]
 gc-pty = { path = "../gc-pty" }
 gc-config = { path = "../gc-config" }
