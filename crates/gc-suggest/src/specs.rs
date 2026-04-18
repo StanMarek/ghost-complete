@@ -30,14 +30,14 @@ pub(crate) const KNOWN_NATIVE_GENERATOR_TYPES: &[&str] = &[
 /// would otherwise stack-overflow downstream walkers (or serde_json's own
 /// recursive parser, whose default limit of 128 is too generous for our
 /// fixed-shape spec format).
-pub(crate) const MAX_SPEC_JSON_DEPTH: usize = 32;
+pub const MAX_SPEC_JSON_DEPTH: usize = 32;
 
 /// Reject JSON that nests `[`/`{` deeper than `max_depth`. Runs as a flat
 /// byte scan over the source — no recursion, no allocation, and crucially no
 /// dependency on the structure of the spec types. Done before handing the
 /// bytes to `serde_json::from_str` so a malicious spec cannot exhaust the
 /// stack inside the parser.
-pub(crate) fn check_json_depth(src: &str, max_depth: usize) -> Result<()> {
+pub fn check_json_depth(src: &str, max_depth: usize) -> Result<()> {
     let bytes = src.as_bytes();
     let mut depth: usize = 0;
     let mut i = 0;
@@ -146,7 +146,7 @@ fn sanitize_option_spec(opt: &mut OptionSpec) {
 /// user-visible string field. Iteration (rather than recursion) avoids
 /// re-introducing the recursion-depth attack surface this whole pass is
 /// meant to remove.
-pub(crate) fn sanitize_spec_strings(spec: &mut CompletionSpec) {
+pub fn sanitize_spec_strings(spec: &mut CompletionSpec) {
     sanitize_string(&mut spec.name);
     sanitize_opt(&mut spec.description);
     for arg in &mut spec.args {
@@ -397,11 +397,8 @@ impl SpecStore {
     fn load_spec(path: &Path) -> Result<CompletionSpec> {
         let contents = std::fs::read_to_string(path)
             .with_context(|| format!("failed to read spec file: {}", path.display()))?;
-        check_json_depth(&contents, MAX_SPEC_JSON_DEPTH)
+        let mut spec = parse_spec_checked_and_sanitized(&contents)
             .with_context(|| format!("failed to parse spec file: {}", path.display()))?;
-        let mut spec: CompletionSpec = serde_json::from_str(&contents)
-            .with_context(|| format!("failed to parse spec file: {}", path.display()))?;
-        sanitize_spec_strings(&mut spec);
         let warnings = validate_spec_generators(&mut spec);
         for w in &warnings {
             tracing::warn!("{}: {w}", spec.name);
@@ -424,6 +421,19 @@ impl SpecStore {
     pub fn is_empty(&self) -> bool {
         self.specs.is_empty()
     }
+}
+
+/// Shared entry point for parsing spec JSON. Enforces the nesting-depth cap
+/// BEFORE invoking `serde_json::from_str` (so attacker-crafted input cannot
+/// blow the stack inside the parser), then strips control characters from
+/// every user-facing string. Any caller that hands raw on-disk bytes to the
+/// completion pipeline must go through this function — skipping it
+/// re-introduces the CVE class this cap was added to prevent.
+pub fn parse_spec_checked_and_sanitized(contents: &str) -> Result<CompletionSpec> {
+    check_json_depth(contents, MAX_SPEC_JSON_DEPTH)?;
+    let mut spec: CompletionSpec = serde_json::from_str(contents)?;
+    sanitize_spec_strings(&mut spec);
+    Ok(spec)
 }
 
 pub struct SpecResolution {

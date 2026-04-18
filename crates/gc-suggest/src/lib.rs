@@ -24,5 +24,8 @@ pub mod types;
 
 pub use embedded::EMBEDDED_SPECS;
 pub use engine::{SuggestionEngine, SyncResult};
-pub use specs::{CompletionSpec, SpecLoadResult, SpecStore};
+pub use specs::{
+    check_json_depth, parse_spec_checked_and_sanitized, sanitize_spec_strings, CompletionSpec,
+    SpecLoadResult, SpecStore, MAX_SPEC_JSON_DEPTH,
+};
 pub use types::{Suggestion, SuggestionKind, SuggestionSource};

@@ -1,6 +1,7 @@
 use std::path::Path;
 
 use anyhow::{Context, Result};
+use gc_suggest::parse_spec_checked_and_sanitized;
 use gc_suggest::spec_dirs::resolve_spec_dirs;
 use gc_suggest::specs::{validate_spec_generators, CompletionSpec, SubcommandSpec};
 
@@ -77,7 +78,7 @@ fn validate_dir(dir: &Path, out: &mut dyn std::io::Write) -> Result<ValidateCoun
             }
         };
 
-        match serde_json::from_str::<CompletionSpec>(&contents) {
+        match parse_spec_checked_and_sanitized(&contents) {
             Ok(mut spec) => {
                 let (subs, opts) = count_spec_items(&spec);
                 let warnings = validate_spec_generators(&mut spec);
