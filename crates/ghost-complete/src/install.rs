@@ -540,10 +540,12 @@ mod tests {
         assert!(tmux_branch.contains("$ALACRITTY_SOCKET"));
         assert!(tmux_branch.contains("$ITERM_SESSION_ID"));
         assert!(tmux_branch.contains("\"$TERM_PROGRAM\" == \"rio\""));
+        assert!(tmux_branch.contains("$ZED_TERM"));
 
         // Direct terminal detection (non-tmux)
         assert!(non_tmux_branch.contains("case \"$TERM_PROGRAM\""));
-        assert!(non_tmux_branch.contains("ghostty|WezTerm|rio|iTerm.app|Apple_Terminal)"));
+        assert!(non_tmux_branch.contains("ghostty|WezTerm|rio|iTerm.app|Apple_Terminal|zed)"));
+        assert!(non_tmux_branch.contains("$ZED_TERM"));
     }
 
     #[test]
