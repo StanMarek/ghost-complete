@@ -236,6 +236,7 @@ impl TerminalProfile {
             "WezTerm" => Terminal::WezTerm,
             "alacritty" => Terminal::Alacritty,
             "rio" => Terminal::Rio,
+            "zed" => Terminal::Zed,
             "" => Terminal::Unknown("unknown".into()),
             other => {
                 let sanitized: String = other
@@ -430,6 +431,14 @@ mod tests {
     fn test_rio_profile() {
         let profile = TerminalProfile::from_term_program("rio", false);
         assert_eq!(*profile.terminal(), Terminal::Rio);
+        assert_eq!(profile.render_strategy(), RenderStrategy::Synchronized);
+        assert_eq!(profile.prompt_detection(), PromptDetection::Osc133);
+    }
+
+    #[test]
+    fn test_zed_profile_from_term_program() {
+        let profile = TerminalProfile::from_term_program("zed", false);
+        assert_eq!(*profile.terminal(), Terminal::Zed);
         assert_eq!(profile.render_strategy(), RenderStrategy::Synchronized);
         assert_eq!(profile.prompt_detection(), PromptDetection::Osc133);
     }
