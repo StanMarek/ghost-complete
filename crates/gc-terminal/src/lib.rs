@@ -256,6 +256,7 @@ impl TerminalProfile {
             "alacritty" => Terminal::Alacritty,
             "rio" => Terminal::Rio,
             "zed" => Terminal::Zed,
+            "vscode" => Terminal::VSCode,
             "" => Terminal::Unknown("unknown".into()),
             other => {
                 let sanitized: String = other
@@ -471,6 +472,21 @@ mod tests {
         assert_eq!(*profile.terminal(), Terminal::Zed);
         assert_eq!(profile.render_strategy(), RenderStrategy::Synchronized);
         assert_eq!(profile.prompt_detection(), PromptDetection::Osc133);
+    }
+
+    #[test]
+    fn test_vscode_profile_from_term_program() {
+        let profile = TerminalProfile::from_term_program("vscode", false);
+        assert_eq!(*profile.terminal(), Terminal::VSCode);
+        assert_eq!(profile.render_strategy(), RenderStrategy::Synchronized);
+        assert_eq!(profile.prompt_detection(), PromptDetection::Osc133);
+    }
+
+    #[test]
+    fn test_capitalized_vscode_is_unknown() {
+        // Match the existing strict-casing policy for other terminals.
+        let profile = TerminalProfile::from_term_program("VSCode", false);
+        assert!(matches!(profile.terminal(), Terminal::Unknown(_)));
     }
 
     #[test]
