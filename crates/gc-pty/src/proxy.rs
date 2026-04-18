@@ -678,7 +678,15 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
         }
     }
 
-    // _raw_guard drops here, restoring terminal state
+    // Drop the raw-mode guard eagerly on signal shutdown so the terminal is
+    // returned to cooked mode *before* the bounded `try_wait` loop. Holding
+    // the guard across the 2 s deadline leaves the user staring at a broken
+    // prompt while we wait for the shell to exit. On the normal path the
+    // guard falls out of scope at function return, which is fine — `child.
+    // wait()` there blocks until the shell actually closes the PTY.
+    if signal_shutdown {
+        drop(_raw_guard);
+    }
 
     // Wait for child and get exit status.
     //
