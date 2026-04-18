@@ -5,6 +5,14 @@ use gc_suggest::parse_spec_checked_and_sanitized;
 use gc_suggest::spec_dirs::resolve_spec_dirs;
 use gc_suggest::specs::{validate_spec_generators, CompletionSpec, SubcommandSpec};
 
+/// Strip control characters from text headed for the user's terminal.
+/// File paths, spec names, and error strings all reach `writeln!`
+/// unescaped; any of them could smuggle in CSI/OSC sequences without
+/// this guard. Mirrors `sanitize_text` inside `gc-suggest`.
+fn sanitize_for_terminal(text: &str) -> String {
+    text.chars().filter(|c| !c.is_control()).collect()
+}
+
 /// Counts emitted by [`validate_dir`] / [`run_validate_specs_inner`].
 #[derive(Debug, Default, Clone, Copy)]
 pub struct ValidateCounts {
@@ -34,7 +42,11 @@ fn validate_dir(dir: &Path, out: &mut dyn std::io::Write) -> Result<ValidateCoun
     let mut counts = ValidateCounts::default();
 
     if !dir.exists() {
-        writeln!(out, "  Directory does not exist: {}\n", dir.display())?;
+        writeln!(
+            out,
+            "  Directory does not exist: {}\n",
+            sanitize_for_terminal(&dir.display().to_string())
+        )?;
         return Ok(counts);
     }
 
@@ -67,12 +79,17 @@ fn validate_dir(dir: &Path, out: &mut dyn std::io::Write) -> Result<ValidateCoun
 
     for entry in entries {
         let path = entry.path();
-        let file_name = path.file_name().unwrap_or_default().to_string_lossy();
+        let raw_file_name = path.file_name().unwrap_or_default().to_string_lossy();
+        let file_name = sanitize_for_terminal(&raw_file_name);
 
         let contents = match std::fs::read_to_string(&path) {
             Ok(c) => c,
             Err(e) => {
-                writeln!(out, "  \x1b[31mFAIL\x1b[0m  {file_name}: {e}")?;
+                writeln!(
+                    out,
+                    "  \x1b[31mFAIL\x1b[0m  {file_name}: {}",
+                    sanitize_for_terminal(&e.to_string())
+                )?;
                 counts.failed += 1;
                 continue;
             }
@@ -95,14 +112,18 @@ fn validate_dir(dir: &Path, out: &mut dyn std::io::Write) -> Result<ValidateCoun
                         if warnings.len() == 1 { "" } else { "s" }
                     )?;
                     for w in &warnings {
-                        writeln!(out, "         - {w}")?;
+                        writeln!(out, "         - {}", sanitize_for_terminal(w))?;
                     }
                     counts.warnings += warnings.len();
                 }
                 counts.valid += 1;
             }
             Err(e) => {
-                writeln!(out, "  \x1b[31mFAIL\x1b[0m  {file_name}: {e}")?;
+                writeln!(
+                    out,
+                    "  \x1b[31mFAIL\x1b[0m  {file_name}: {}",
+                    sanitize_for_terminal(&e.to_string())
+                )?;
                 counts.failed += 1;
             }
         }
@@ -134,7 +155,11 @@ pub fn run_validate_specs_inner(
     let mut counts = ValidateCounts::default();
 
     for dir in &dirs {
-        writeln!(out, "Validating specs in {}\n", dir.display())?;
+        writeln!(
+            out,
+            "Validating specs in {}\n",
+            sanitize_for_terminal(&dir.display().to_string())
+        )?;
         let dir_counts = validate_dir(dir, out)?;
         counts.valid += dir_counts.valid;
         counts.failed += dir_counts.failed;
