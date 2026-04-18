@@ -691,7 +691,16 @@ mod tests {
 
     #[test]
     fn test_detect_tmux_falls_back_to_term_program() {
-        let p = detect("Apple_Terminal", true, false, false, false, false, false, false);
+        let p = detect(
+            "Apple_Terminal",
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+        );
         assert_eq!(*p.terminal(), Terminal::TerminalApp);
         assert!(p.in_tmux());
     }
