@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-04-18
+
 ### Added
 
 - Embedded specs auto-materialize to `~/.cache/ghost-complete/embedded-specs/` on first run when no user-installed specs are found (enables zero-config `cargo install ghost-complete` usage).
@@ -17,26 +19,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `deny.toml` + `cargo-deny` license/bans gate.
 - Linux CI tripwire to catch accidental Darwin-only regressions.
 - End-to-end smoke test covering the keystroke → popup → dismiss lifecycle.
+- `cargo audit` workflow — runs `rustsec/audit-check@v2` on pushes to master, on PRs that touch `Cargo.toml`/`Cargo.lock`, and on a weekly cron to catch advisories filed mid-week.
+- Release CI gated on `cargo test` / `cargo clippy -D warnings` / `cargo fmt --check` — a red-on-master tag push can no longer ship a release.
+- Optional `lefthook` pre-commit hooks (fmt + clippy) mirroring CI. Opt-in via `brew install lefthook && lefthook install`.
 
 ### Changed
 
-- `validate-specs` now performs deep validation — regex patterns, transform pipelines, and generator types are checked (previously only top-level JSON parse).
+- **Spec resolution/loading perf regression fix** — removed the eager `OptionsIndex` HashMap (rebuilt per-subcommand descent for zero benefit vs. linear scan over <200 options) and replaced the `chars().any(is_control)` precheck with a flat byte-scan `has_control_char` (catches C0 directly and C1 via a two-byte UTF-8 match). Restores pre-audit numbers: `spec_resolution/shallow` ~3.17µs (was 4.46µs), `spec_resolution/deep` ~1.60µs (was 2.61µs), `spec_loading/load_717` ~70.7ms (was 94.8ms).
+- **`validate-specs` performs deep validation** — regex patterns, transform pipelines, and generator types are now checked (previously only top-level JSON parse). New `--strict` flag promotes warnings to a non-zero exit.
+- **Spec load-path hardening** — `Arc<GeneratorSpec>` eliminates per-keystroke deep clones; `sanitize_spec_strings` scrubs control chars from every user-visible string field; unknown generator types log a `warn!` on load; `validate_spec_generators` is iterative (no stack recursion on deep subcommand chains).
+- **Suggest-engine perf** — in-place transform pipeline (no vec clone per stage); `Vec<Arc<str>>` for `$PATH`; `HashSet<&str>` in `try_merge_dynamic`; `Vec<char>` for trigger chars.
+- **Frecency hardening** — merge-on-save (two-terminal union, max of decayed scores), schema-version envelope, 1e18 score clamp, `$XDG_STATE_HOME` respected with one-shot migration.
+- **History loading** — tail-read for files >2MiB; (mtime,size) fingerprints replace mtime-only; zsh multi-line entry merge; strict-UTF-8 line validation (invalid lines skipped with `debug!` log instead of silently corrupted with U+FFFD).
+- **Alias cache** now tracks every file the fast path reads (`.zsh_aliases`/`.aliases`/`.bash_aliases`), `.*.local` overrides, and a depth-bounded recursive mtime walk over `~/.oh-my-zsh/custom` to catch in-place drop-in edits (directory mtime alone misses them). Cry-wolf log dropped to `debug`.
+- **CPR queue** — soft/hard caps with drop-oldest in `gc-parser`.
+- **Popup trigger fingerprint guard** — fixes re-trigger-on-unchanged dismissing a visible popup with no re-render.
+- **Terminal detection** — `GHOSTTY_RESOURCES_DIR` now requires an existing directory (parity with socket-based detection); a stale env var no longer misidentifies the terminal.
+- **Config TUI editor** — array field round-trip, `Event::Resize` redraw, unsaved-change quit confirmation, mtime compare-and-swap on save, panic hook that restores the terminal, bounded backup suffix loop, `NotFound`-tolerant pre-backup path.
+- **CLI** — `status --strict` flag + non-zero exit; `config` dump preserves comments via `toml_edit::DocumentMut`; `doctor` exercises the real `resolve_spec_dirs` + `SpecStore::load_from_dirs` chain and FAILs with an actionable message when zero specs load.
+- **Build provenance** — `build.rs` emits git short SHA + UTC build timestamp into `--version` (tolerant of missing `.git`); `CARGO_HOME` path remap in `.cargo/config.toml`; release-artifact subject-path globs narrowed.
 - Bash and fish shell integration scripts are idempotent when sourced multiple times (mirrors existing zsh behavior).
 - Bash DEBUG trap chains with any pre-existing user trap instead of overwriting silently.
-- Generator-drop message elevated to the info level for diagnosis visibility.
+- Generator-drop message promoted from `debug` to `warn` so the proxy path surfaces broken pipelines at the same level as `validate-specs`.
+- Workspace `tokio` features narrowed to the minimum required set (`rt-multi-thread`, `macros`, `io-util`, `fs`, `process`, `signal`, `time`, `sync`). Drops unused `net` feature and its `socket2` + `parking_lot` transitive deps.
+- Clippy cleanup — collapse redundant match guards in overlay types and TUI editor; swap `map_or(true, …)` for `is_none_or(…)`; sync documented MSRV to `1.86` across AGENTS.md / CONTRIBUTING.md / Cargo.toml.
 
 ### Fixed
 
+- **`SIGTERM` / `SIGHUP` no longer skip frecency flush** — PTY proxy now registers `SIGTERM` and `SIGHUP` listeners alongside `SIGWINCH` and breaks out to the existing cleanup block. Previously external `kill` or terminal hangup aborted tokio tasks before `flush_frecency()` / `config_watcher_handle.shutdown()` could run, losing accumulated frecency state on every non-EOF exit.
+- **`RUST_LOG` now respected; empty `$SHELL` treated as missing** — `init_tracing` prefers `RUST_LOG` and falls back to `--log-level` only when the env var is unset or invalid. `resolve_default_shell` falls back to `/bin/zsh` when `$SHELL` is empty (previously propagated a cryptic `ENOENT` from the PTY spawn).
 - Documentation drift: `docs/IMPLEMENTATION_PLAN.md` references now point to `docs/ARCHITECTURE.md`; MSRV documented as `1.75` corrected to `1.86`; crate count documented as `7` corrected to `8`; `theme.border` field added to the config table; spec counts synced to `709` specs / `184` requires_js.
 - `rust_out` stray binary removed from repo root and added to `.gitignore`.
 - Prior audit docs (`AUDIT_FINDINGS.md`, `AUDIT_RESOLUTION_PLAN.md`) marked archived.
 
 ### Security
 
-- `$HISTFILE` now validated: must canonicalize under `$HOME` and match a known history-filename pattern. Blocks arbitrary file reads via env var (e.g. `HISTFILE=/etc/passwd`).
-- Script generator argv now rejects NUL bytes (the only char that truncates argv). Removed misleading shell-metacharacter warning — argv execution is inert against `|`, `;`, `&`, backtick, `$`.
-- External spec `name` / `description` / arg names are C0/CSI/OSC-stripped at load time. Blocks terminal-escape injection via malicious user-installed specs.
-- External spec JSON depth capped at 32 levels (iterative pre-scan) to prevent stack overflow from nested-subcommand DoS.
+- **`$HISTFILE` validated** — must canonicalize under canonicalized `$HOME` (catches symlinks escaping `$HOME`) and the basename must match a known history-filename pattern. On rejection, log a `warn!` and fall back to `~/.zsh_history` (which itself re-validates). Blocks arbitrary file reads via env var (e.g. `HISTFILE=/etc/passwd`).
+- **Script generator argv rejects NUL bytes** — the only char that truncates argv on Unix. `substitute_template` substitutes empty for NUL-containing tokens at template time; `run_script` rejects any argv element containing NUL as defense-in-depth. Removed misleading shell-metacharacter warning — the exec path uses an argv array (not `sh -c`), so `|`, `;`, `&`, backtick, `$` are inert literals.
+- **Spec text ANSI injection** — external spec `name` / `description` / subcommand / option fields are C0/CSI/OSC-stripped at load time (`sanitize_spec_strings`). Blocks terminal-escape injection via malicious user-installed specs; mirrors the render-side sanitizer for defense in depth.
+- **Spec JSON depth cap** — external spec JSON rejected above 32 levels (flat byte-scan preflight, `check_json_depth`) to prevent stack overflow from nested-subcommand DoS (serde_json's default 128 was far above our deepest real-world spec at 15). `validate_spec_generators` is also iterative so a future cap relaxation cannot re-introduce the overflow.
 
 ## [0.8.1] - 2026-04-17
 
@@ -336,6 +357,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Shell integration** for zsh (full), bash (Ctrl+/), and fish (Ctrl+/)
 - **`validate-specs` subcommand** with colored output and item counts
 
+[0.8.2]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.8.2
 [0.8.1]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.8.1
 [0.8.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.8.0
 [0.7.1]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.7.1
