@@ -1,6 +1,8 @@
 use anyhow::Result;
 use std::path::PathBuf;
 
+use crate::sanitize::sanitize_for_terminal;
+
 enum Severity {
     Ok,
     Warn,
@@ -40,8 +42,8 @@ impl CheckResult {
     }
 }
 
-fn print_results(results: &[CheckResult]) {
-    println!("Ghost Complete Doctor\n");
+fn render_results<W: std::io::Write>(results: &[CheckResult], out: &mut W) -> std::io::Result<()> {
+    writeln!(out, "Ghost Complete Doctor\n")?;
 
     for result in results {
         let (label, color) = match result.severity {
@@ -50,7 +52,16 @@ fn print_results(results: &[CheckResult]) {
             Severity::Fail => ("[FAIL]", "\x1b[31m"),
             Severity::Skip => ("[SKIP]", "\x1b[2m"),
         };
-        println!("  {color}{label}\x1b[0m {}", result.message);
+        // Messages are composed from attacker-controllable inputs: config
+        // spec dirs, keybinding/theme values, shell paths, terminal display
+        // strings, OS error text. Strip control chars at the print boundary
+        // so a hostile `~/.config/ghost-complete/config.toml` can't smuggle
+        // CSI/OSC sequences through `ghost-complete doctor` output.
+        writeln!(
+            out,
+            "  {color}{label}\x1b[0m {}",
+            sanitize_for_terminal(&result.message)
+        )?;
     }
 
     let fails = results
@@ -62,14 +73,19 @@ fn print_results(results: &[CheckResult]) {
         .filter(|r| matches!(r.severity, Severity::Warn))
         .count();
 
-    println!();
+    writeln!(out)?;
     if fails == 0 && warns == 0 {
-        println!("All checks passed.");
+        writeln!(out, "All checks passed.")?;
     } else if fails == 0 {
-        println!("{warns} warning(s).");
+        writeln!(out, "{warns} warning(s).")?;
     } else {
-        println!("{fails} issue(s) found.");
+        writeln!(out, "{fails} issue(s) found.")?;
     }
+    Ok(())
+}
+
+fn print_results(results: &[CheckResult]) {
+    let _ = render_results(results, &mut std::io::stdout().lock());
 }
 
 /// Check 1: Config file valid
@@ -193,6 +209,56 @@ fn check_terminal(config: &gc_config::GhostConfig) -> CheckResult {
     check_terminal_profile(&profile, config.experimental.multi_terminal)
 }
 
+/// Check 6: Completion specs actually load.
+///
+/// Resolves spec dirs and calls `SpecStore::load_from_dirs` exactly the way
+/// the PTY proxy does at startup, then reports the spec count. Catches the
+/// "binary works, but autocomplete is empty" failure mode where neither
+/// `~/.config/ghost-complete/specs` nor a sibling `specs/` dir exists and
+/// the embedded fallback fails to materialize.
+fn check_specs(config: &gc_config::GhostConfig) -> CheckResult {
+    let dirs = gc_suggest::spec_dirs::resolve_spec_dirs(&config.paths.spec_dirs);
+    let dir_count = dirs.len();
+
+    let result = match gc_suggest::SpecStore::load_from_dirs(&dirs) {
+        Ok(r) => r,
+        Err(e) => return CheckResult::fail(format!("Spec load failed: {e}")),
+    };
+
+    let loaded = result.store.len();
+    let dir_summary = dirs
+        .iter()
+        .map(|d| d.display().to_string())
+        .collect::<Vec<_>>()
+        .join(", ");
+
+    if loaded == 0 {
+        // Loud FAIL so a user running `doctor` after a fresh `cargo install`
+        // gets an actionable signal instead of silently degraded
+        // autocomplete.
+        return CheckResult::fail(format!(
+            "Completion specs: 0 loaded from {dir_count} directory(ies) \
+             [{dir_summary}] — autocomplete will be missing all per-command \
+             completions. Run `ghost-complete install` to deploy the \
+             bundled spec set."
+        ));
+    }
+
+    let mut msg = format!(
+        "Completion specs: {loaded} loaded from {dir_count} directory(ies) \
+         [{dir_summary}]"
+    );
+    if !result.errors.is_empty() {
+        msg.push_str(&format!(
+            " ({} spec(s) failed to parse — run `ghost-complete \
+             validate-specs` for details)",
+            result.errors.len()
+        ));
+        return CheckResult::warn(msg);
+    }
+    CheckResult::ok(msg)
+}
+
 /// Testable terminal check logic — pure function on profile.
 fn check_terminal_profile(
     profile: &gc_terminal::TerminalProfile,
@@ -249,6 +315,16 @@ pub fn run_doctor(config_path: Option<&str>) -> Result<()> {
         Some(cfg) => results.push(check_terminal(cfg)),
         None => results.push(CheckResult::skip(
             "Terminal support — config invalid, cannot check experimental flags",
+        )),
+    }
+
+    // Check 6: Completion specs load via the same path the PTY proxy uses.
+    // Without this check, doctor would report a healthy install while the
+    // proxy silently ran with zero specs.
+    match &config {
+        Some(cfg) => results.push(check_specs(cfg)),
+        None => results.push(CheckResult::skip(
+            "Completion specs — config invalid, cannot resolve spec dirs",
         )),
     }
 
@@ -328,5 +404,71 @@ mod tests {
         let result = check_terminal_profile(&profile, true);
         assert!(matches!(result.severity, Severity::Ok));
         assert!(result.message.contains("multi_terminal"));
+    }
+
+    /// Pin the user-facing spec health check to the embedded fallback path.
+    ///
+    /// `check_specs` calls `resolve_spec_dirs` + `SpecStore::load_from_dirs`
+    /// — the same chain the PTY proxy uses — and must never report OK with
+    /// zero specs loaded.
+    ///
+    /// We can't directly stub the resolver's environment lookups in this
+    /// process, but we *can* assert that with a default config the check
+    /// resolves at least one spec dir and loads at least one spec — which
+    /// implicitly proves that either an on-disk dir was found or the
+    /// embedded fallback materialized a usable one.
+    #[test]
+    fn check_specs_loads_non_empty_with_default_config() {
+        let config = gc_config::GhostConfig::default();
+        let result = check_specs(&config);
+        assert!(
+            !matches!(result.severity, Severity::Fail),
+            "check_specs failed with default config — message: {}",
+            result.message
+        );
+        // The OK / WARN message format always includes a "Completion specs: \
+        // <N> loaded" prefix when at least one spec was loaded.
+        assert!(
+            result.message.starts_with("Completion specs:"),
+            "unexpected message shape: {}",
+            result.message
+        );
+        assert!(
+            !result.message.starts_with("Completion specs: 0 loaded"),
+            "check_specs reported 0 specs loaded — embedded fallback is \
+             not wired up: {}",
+            result.message
+        );
+    }
+
+    #[test]
+    fn doctor_renders_sanitize_hostile_message() {
+        let results = vec![CheckResult {
+            severity: Severity::Fail,
+            message: "\x1b[31mboom\x07nul\x00".to_string(),
+        }];
+        let mut buf = Vec::new();
+        render_results(&results, &mut buf).unwrap();
+        let emitted = String::from_utf8(buf).unwrap();
+
+        let (_prefix, body) = emitted.split_once("[FAIL]\x1b[0m ").expect(
+            "render output must contain the [FAIL] label with reset; \
+             body starts after that: {emitted:?}",
+        );
+        let line_end = body.find('\n').unwrap_or(body.len());
+        let rendered_message = &body[..line_end];
+
+        assert!(
+            !rendered_message.contains('\x1b'),
+            "rendered message must not contain ESC bytes: {rendered_message:?}"
+        );
+        assert!(
+            !rendered_message.contains('\x07'),
+            "rendered message must not contain BEL bytes: {rendered_message:?}"
+        );
+        assert!(
+            !rendered_message.contains('\x00'),
+            "rendered message must not contain NUL bytes: {rendered_message:?}"
+        );
     }
 }

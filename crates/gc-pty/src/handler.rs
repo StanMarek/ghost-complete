@@ -96,15 +96,10 @@ pub fn parse_key_name(name: &str) -> anyhow::Result<KeyEvent> {
     }
 }
 
-/// Snapshot of command context at the moment async generators were spawned.
-/// Used to detect whether the current buffer context has diverged enough that
-/// the in-flight generator results are no longer applicable.
-///
-/// When `spawned_current_word` is `Some`, at least one generator consumed
-/// `current_word` (e.g. a script template with `{current_token}`) and the
-/// results are only valid for that exact word. When `None`, no generator
-/// depended on `current_word`, so typing more characters still lets the
-/// results merge and re-rank.
+/// Snapshot of command context at generator-spawn time, so merge-time can
+/// decide whether in-flight results still match the user's current buffer.
+/// `spawned_current_word` is `Some` only for generators that embed the word
+/// literally (e.g. script templates with `{current_token}`).
 #[derive(Debug, Clone)]
 struct DynamicCtxSnapshot {
     command: Option<String>,
@@ -167,7 +162,8 @@ pub struct InputHandler {
     visible: bool,
     trigger_requested: bool,
     max_visible: usize,
-    trigger_chars: HashSet<char>,
+    // Small Vec<char>: at ~4-element cardinality a linear scan beats hashing.
+    trigger_chars: Vec<char>,
     debounce_suppressed: bool,
     auto_trigger: bool,
     keybindings: Keybindings,
@@ -194,6 +190,16 @@ pub struct InputHandler {
     /// dismiss/re-trigger cycles because viewport scroll is permanent.
     /// Reset when a CPR sync corrects the parser's cursor position (new prompt).
     scroll_deficit: u16,
+    /// Fingerprint (buffer hash + cursor offset) of the last trigger that
+    /// produced a visible popup. Used as an idempotency guard in
+    /// [`InputHandler::trigger`]: when a new trigger arrives with an
+    /// unchanged buffer AND the popup is still visible, we skip re-running
+    /// `suggest_sync` because (1) it would produce the same suggestions —
+    /// wasted work, and (2) an empty-sync + no-generators result would
+    /// silently dismiss a popup populated by a prior trigger's async merge.
+    /// See the bug-repro test `test_trigger_idempotent_when_buffer_unchanged`.
+    /// Reset by `dismiss()` so ESC-then-retrigger on the same buffer still works.
+    last_trigger_fingerprint: Option<(u64, usize)>,
 }
 
 impl InputHandler {
@@ -206,7 +212,7 @@ impl InputHandler {
             visible: false,
             trigger_requested: false,
             max_visible: DEFAULT_MAX_VISIBLE,
-            trigger_chars: DEFAULT_TRIGGER_CHARS.iter().copied().collect(),
+            trigger_chars: DEFAULT_TRIGGER_CHARS.to_vec(),
             debounce_suppressed: false,
             auto_trigger: true,
             keybindings: Keybindings::default(),
@@ -218,6 +224,7 @@ impl InputHandler {
             dynamic_ctx: None,
             terminal_profile,
             scroll_deficit: 0,
+            last_trigger_fingerprint: None,
         })
     }
 
@@ -231,7 +238,7 @@ impl InputHandler {
     }
 
     pub fn with_trigger_chars(mut self, chars: &[char]) -> Self {
-        self.trigger_chars = chars.iter().copied().collect();
+        self.trigger_chars = chars.to_vec();
         self
     }
 
@@ -287,8 +294,12 @@ impl InputHandler {
         generator_timeout_ms: u64,
     ) -> Self {
         // During builder phase the Arc has exactly one reference, so try_unwrap succeeds.
+        // Can't use .expect() directly because SuggestionEngine doesn't derive Debug;
+        // unwrap_or_else with an explicit message gives the same cleaner diagnostic.
         let engine = Arc::try_unwrap(self.engine)
-            .unwrap_or_else(|_| panic!("with_suggest_config called after engine was shared"))
+            .unwrap_or_else(|_| {
+                panic!("internal invariant: engine Arc was captured by shared reference")
+            })
             .with_suggest_config(
                 max_results,
                 commands,
@@ -341,7 +352,7 @@ impl InputHandler {
 
         self.theme = theme;
         self.keybindings = keybindings;
-        self.trigger_chars = trigger_chars.iter().copied().collect();
+        self.trigger_chars = trigger_chars.to_vec();
         self.max_visible = max_visible;
         self.auto_trigger = auto_trigger;
 
@@ -632,6 +643,24 @@ impl InputHandler {
             return;
         }
 
+        // Idempotency guard: if the buffer + cursor are unchanged since the
+        // last trigger that populated a still-visible popup, skip the whole
+        // trigger body. Two reasons:
+        //   1. `suggest_sync` would return the same results — redundant work.
+        //   2. The empty-sync + no-async branch below calls `dismiss()`,
+        //      which would nuke a popup that had been populated by a prior
+        //      trigger's async generator merge (the sync pass sees empty,
+        //      but the visible content came from async). See the bug-repro
+        //      test `test_trigger_idempotent_when_buffer_unchanged`.
+        // `dismiss()` invalidates the fingerprint, and a genuine buffer
+        // edit produces a different fingerprint — so ESC-dismiss and real
+        // edits both take the full trigger path as before. The async
+        // merge path (`try_merge_dynamic`) is separate and unaffected.
+        let fingerprint = buffer_fingerprint(&buffer, cursor);
+        if self.visible && self.last_trigger_fingerprint == Some(fingerprint) {
+            return;
+        }
+
         let ctx = parse_command_context(&buffer, cursor);
 
         // Abort any in-flight generator task before dropping the receiver,
@@ -650,6 +679,7 @@ impl InputHandler {
                 self.overlay.reset();
                 self.visible = true;
                 self.render_at(stdout, cursor_row, cursor_col, screen_rows, screen_cols);
+                self.last_trigger_fingerprint = Some(fingerprint);
                 self.spawn_generators(result.script_generators, result.git_generators, &ctx, &cwd);
             }
             Ok(result) => {
@@ -690,9 +720,14 @@ impl InputHandler {
 
     /// Spawn an async task to run pre-resolved generators (script + git).
     /// Results arrive via `dynamic_rx` and Task E renders them via `dynamic_notify`.
+    ///
+    /// Takes `Arc<GeneratorSpec>` rather than the bare struct so the
+    /// `SyncResult` → `spawn_generators` → `run_generators` chain is a
+    /// refcount bump instead of a deep clone of `Vec<Transform>` + argv on
+    /// every keystroke trigger.
     fn spawn_generators(
         &mut self,
-        script_generators: Vec<gc_suggest::specs::GeneratorSpec>,
+        script_generators: Vec<std::sync::Arc<gc_suggest::specs::GeneratorSpec>>,
         git_generators: Vec<gc_suggest::git::GitQueryKind>,
         ctx: &gc_buffer::CommandContext,
         cwd: &std::path::Path,
@@ -840,14 +875,30 @@ impl InputHandler {
                     self.overlay.reset();
                 }
 
-                // Merge: add dynamic results, dedup by text
-                let mut seen: HashSet<String> =
-                    self.suggestions.iter().map(|s| s.text.clone()).collect();
-                for s in dynamic_results {
-                    if seen.insert(s.text.clone()) {
-                        self.suggestions.push(s);
-                    }
-                }
+                // Merge: add dynamic results, dedup by text. Two borrowed
+                // HashSets avoid the two s.text.clone() calls the previous
+                // owned-HashSet<String> version required per dupe check.
+                let filtered: Vec<Suggestion> = {
+                    let existing: HashSet<&str> =
+                        self.suggestions.iter().map(|s| s.text.as_str()).collect();
+                    dynamic_results
+                        .into_iter()
+                        .filter(|s| !existing.contains(s.text.as_str()))
+                        .collect()
+                };
+                let deduped: Vec<Suggestion> = {
+                    let mut seen: HashSet<&str> = HashSet::with_capacity(filtered.len());
+                    let keep: Vec<bool> = filtered
+                        .iter()
+                        .map(|s| seen.insert(s.text.as_str()))
+                        .collect();
+                    filtered
+                        .into_iter()
+                        .zip(keep)
+                        .filter_map(|(s, k)| if k { Some(s) } else { None })
+                        .collect()
+                };
+                self.suggestions.extend(deduped);
                 let merged = std::mem::take(&mut self.suggestions);
                 // Merge-time rank: when the user has a non-empty query, filter
                 // the pool to matches sorted by relevance and cap at
@@ -1002,6 +1053,10 @@ impl InputHandler {
         }
         self.dynamic_rx = None;
         self.dynamic_ctx = None;
+        // Invalidate the idempotency guard so the next trigger (e.g. after
+        // ESC-then-retrigger on the same buffer) runs a fresh suggest_sync
+        // instead of short-circuiting.
+        self.last_trigger_fingerprint = None;
     }
 
     /// Compute the accept bytes for the currently-selected suggestion using
@@ -1132,6 +1187,21 @@ const DEFAULT_TRIGGER_CHARS: &[char] = &[' ', '/', '-', '.'];
 /// is never called (primarily in tests). Production proxy always passes the
 /// value resolved from `gc_config::SuggestConfig::generator_timeout_ms`.
 pub const DEFAULT_GENERATOR_TIMEOUT_MS: u64 = 5000;
+
+/// Compute a lightweight fingerprint of the current command-line buffer for
+/// the trigger-idempotency guard on `InputHandler::last_trigger_fingerprint`.
+/// Collision resistance doesn't need to be cryptographic — a same-content
+/// match just short-circuits `trigger()` (saving work and avoiding the
+/// stale-dismiss bug); a false collision would at worst miss one re-render,
+/// which the next real buffer edit fixes. `DefaultHasher` on the raw bytes
+/// of the buffer is sufficient.
+fn buffer_fingerprint(buffer: &str, cursor: usize) -> (u64, usize) {
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+    let mut hasher = DefaultHasher::new();
+    buffer.hash(&mut hasher);
+    (hasher.finish(), cursor)
+}
 
 #[cfg(test)]
 /// Check if a printable character should trigger suggestions (using defaults).
@@ -1424,6 +1494,84 @@ mod tests {
         assert!(!stdout_buf.is_empty());
     }
 
+    #[test]
+    fn test_trigger_idempotent_when_buffer_unchanged() {
+        // Scenario:
+        //   1. A prior `trigger()` populated the popup with static
+        //      suggestions — visible=true, last_trigger_fingerprint is
+        //      set for buffer B (fingerprint stamped on successful render
+        //      in the `!result.suggestions.is_empty()` arm).
+        //   2. A spurious re-trigger fires with buffer still at B (e.g.
+        //      debounce loop tick, or SIGWINCH / Task B re-trigger without
+        //      any intervening buffer edit).
+        //   3. Without the idempotency guard, `suggest_sync` re-runs. If
+        //      it returns empty with no async generators, the
+        //      empty-no-generators arm calls `self.dismiss(stdout)`,
+        //      emitting a clear-popup ANSI sequence and tearing down the
+        //      popup — it disappears for no user-driven reason.
+        //
+        // `trigger()` fingerprints (buffer_hash, cursor_offset) and
+        // short-circuits when the fingerprint matches AND the popup is
+        // still visible. ESC clears the fingerprint (via `dismiss()`),
+        // and a genuine buffer edit produces a different fingerprint.
+        let mut handler = make_visible_handler(vec![Suggestion {
+            text: "prior-static".to_string(),
+            ..Default::default()
+        }]);
+
+        // Drive the parser to report a non-empty buffer. OSC 7770 ;
+        // <cursor> ; <buffer> BEL is the shell-integration buffer report
+        // consumed by `gc-parser` (see performer.rs OSC 7770 handler).
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let buffer = "xyzbogus";
+        let cursor = buffer.chars().count();
+        let osc = format!("\x1b]7770;{cursor};{buffer}\x07");
+        parser.lock().unwrap().process_bytes(osc.as_bytes());
+        assert_eq!(
+            parser.lock().unwrap().state().command_buffer(),
+            Some(buffer),
+            "setup: OSC 7770 must land in command_buffer"
+        );
+
+        // Seed the fingerprint as if a prior trigger had populated this
+        // popup for this exact buffer+cursor. This matches what the real
+        // code path sets on the `!result.suggestions.is_empty()` arm.
+        handler.last_trigger_fingerprint = Some(buffer_fingerprint(buffer, cursor));
+
+        // First re-trigger: must be a full no-op (guard short-circuits
+        // BEFORE suggest_sync runs, so no dismiss, no render, no writes).
+        let mut buf1 = Vec::new();
+        handler.trigger(&parser, &mut buf1);
+        assert!(
+            handler.visible,
+            "popup must remain visible after idempotent re-trigger"
+        );
+        assert_eq!(
+            handler.suggestions.len(),
+            1,
+            "prior static suggestion must survive idempotent re-trigger"
+        );
+        assert!(
+            buf1.is_empty(),
+            "idempotent re-trigger must not emit ANY bytes to stdout \
+             (no clear-popup sequence, no re-render), got {:?}",
+            String::from_utf8_lossy(&buf1)
+        );
+
+        // Second re-trigger with unchanged state: still a full no-op.
+        let mut buf2 = Vec::new();
+        handler.trigger(&parser, &mut buf2);
+        assert!(
+            handler.visible,
+            "popup must remain visible after second idempotent re-trigger"
+        );
+        assert!(
+            buf2.is_empty(),
+            "second idempotent re-trigger must not emit ANY bytes, got {:?}",
+            String::from_utf8_lossy(&buf2)
+        );
+    }
+
     fn make_handler() -> InputHandler {
         InputHandler {
             engine: Arc::new(SuggestionEngine::new(&[PathBuf::from(".")]).unwrap()),
@@ -1433,7 +1581,7 @@ mod tests {
             visible: false,
             trigger_requested: false,
             max_visible: DEFAULT_MAX_VISIBLE,
-            trigger_chars: DEFAULT_TRIGGER_CHARS.iter().copied().collect(),
+            trigger_chars: DEFAULT_TRIGGER_CHARS.to_vec(),
             debounce_suppressed: false,
             auto_trigger: true,
             keybindings: Keybindings::default(),
@@ -1445,6 +1593,7 @@ mod tests {
             dynamic_ctx: None,
             terminal_profile: TerminalProfile::for_ghostty(),
             scroll_deficit: 0,
+            last_trigger_fingerprint: None,
         }
     }
 
@@ -1858,8 +2007,7 @@ mod tests {
             true,
         );
 
-        let expected: HashSet<char> = ['@', '#', '!'].iter().copied().collect();
-        assert_eq!(handler.trigger_chars, expected);
+        assert_eq!(handler.trigger_chars, vec!['@', '#', '!']);
     }
 
     // --- auto_trigger tests ---

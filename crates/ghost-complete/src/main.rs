@@ -1,6 +1,7 @@
 mod config_cmd;
 mod doctor;
 mod install;
+mod sanitize;
 mod status;
 mod tui;
 mod validate;
@@ -12,7 +13,14 @@ use tracing_subscriber::EnvFilter;
 #[derive(Parser)]
 #[command(
     name = "ghost-complete",
-    version,
+    version = concat!(
+        env!("CARGO_PKG_VERSION"),
+        " (",
+        env!("VERGEN_GIT_SHA"),
+        " ",
+        env!("VERGEN_BUILD_TIMESTAMP"),
+        ")"
+    ),
     about = "Terminal-native autocomplete engine",
     after_help = "COMMANDS:\n  install          Install shell integration (zsh)\n  uninstall        Remove shell integration\n  validate-specs   Validate completion spec files\n  status           Show loaded specs and JS compatibility\n  config           Show resolved configuration\n  config edit      Open interactive config editor\n  doctor           Run health checks\n\nSHELL SUPPORT:\n  zsh   Full support (auto-installed into ~/.zshrc)"
 )]
@@ -47,7 +55,7 @@ fn default_log_file() -> Option<String> {
     if let Err(e) = std::fs::create_dir_all(&dir) {
         eprintln!(
             "ghost-complete: could not create log directory {}: {e} — falling back to stderr",
-            dir.display()
+            sanitize::sanitize_path(&dir)
         );
         return None;
     }
@@ -58,8 +66,36 @@ fn default_log_file() -> Option<String> {
     )
 }
 
+/// Default fallback shell when `$SHELL` is unset, empty, or unreadable.
+const DEFAULT_FALLBACK_SHELL: &str = "/bin/zsh";
+
+/// Resolve the default shell from `$SHELL`, falling back to [`DEFAULT_FALLBACK_SHELL`].
+///
+/// `env::var("SHELL")` returns `Ok("")` when the variable is set but empty —
+/// passing that straight to the PTY spawn produces an opaque `ENOENT` and a
+/// confused user. Treat empty as missing so the fallback applies.
+fn resolve_default_shell() -> String {
+    resolve_default_shell_from(|name| std::env::var(name).ok())
+}
+
+/// Pure helper used by [`resolve_default_shell`]; takes an env-lookup closure
+/// so the resolution rules can be unit-tested without touching process state.
+fn resolve_default_shell_from<F>(lookup: F) -> String
+where
+    F: Fn(&str) -> Option<String>,
+{
+    lookup("SHELL")
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| DEFAULT_FALLBACK_SHELL.to_string())
+}
+
 fn init_tracing(level: &str, log_file: Option<&str>) -> Result<()> {
-    let filter = EnvFilter::try_new(level).unwrap_or_else(|_| EnvFilter::new("warn"));
+    // Prefer `RUST_LOG` (standard ecosystem env var) when set; fall back to
+    // the `--log-level` flag value otherwise. This matches how every other
+    // tracing/log-based Rust binary behaves and keeps `--log-level` as a
+    // convenient default for users who don't want to export an env var.
+    let filter = EnvFilter::try_from_default_env()
+        .unwrap_or_else(|_| EnvFilter::try_new(level).unwrap_or_else(|_| EnvFilter::new("warn")));
 
     if let Some(path) = log_file {
         let file = std::fs::OpenOptions::new()
@@ -102,7 +138,11 @@ fn main() -> Result<()> {
         }
         Some("status") => {
             init_tracing(&cli.log_level, cli.log_file.as_deref())?;
-            return status::run_status(cli.config.as_deref());
+            // Mirror `validate-specs --strict` / `install --dry-run`: the
+            // top-level clap parser just collects a trailing arg list, so we
+            // scan it ourselves for `--strict`.
+            let strict = cli.shell_args.iter().any(|s| s == "--strict");
+            return status::run_status_with_opts(cli.config.as_deref(), strict);
         }
         Some("config") => {
             if cli.shell_args.get(1).map(|s| s.as_str()) == Some("edit") {
@@ -125,8 +165,7 @@ fn main() -> Result<()> {
     init_tracing(&cli.log_level, log_file.as_deref())?;
 
     let (shell, args) = if cli.shell_args.is_empty() {
-        let default_shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/zsh".to_string());
-        (default_shell, vec![])
+        (resolve_default_shell(), vec![])
     } else {
         let mut iter = cli.shell_args.into_iter();
         let shell = iter.next().unwrap();
@@ -143,4 +182,33 @@ fn main() -> Result<()> {
     let exit_code = rt.block_on(gc_pty::run_proxy(&shell, &args, &config))?;
 
     std::process::exit(exit_code);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{resolve_default_shell_from, DEFAULT_FALLBACK_SHELL};
+
+    #[test]
+    fn resolve_default_shell_uses_env_when_set() {
+        let shell = resolve_default_shell_from(|name| {
+            assert_eq!(name, "SHELL");
+            Some("/usr/local/bin/fish".to_string())
+        });
+        assert_eq!(shell, "/usr/local/bin/fish");
+    }
+
+    #[test]
+    fn resolve_default_shell_falls_back_when_unset() {
+        let shell = resolve_default_shell_from(|_| None);
+        assert_eq!(shell, DEFAULT_FALLBACK_SHELL);
+    }
+
+    #[test]
+    fn resolve_default_shell_falls_back_when_empty() {
+        // Regression: `env::var("SHELL")` returns `Ok("")` when SHELL is set
+        // but empty. Without the empty filter, the PTY spawn fails with a
+        // cryptic ENOENT instead of using the fallback.
+        let shell = resolve_default_shell_from(|_| Some(String::new()));
+        assert_eq!(shell, DEFAULT_FALLBACK_SHELL);
+    }
 }

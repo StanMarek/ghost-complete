@@ -218,6 +218,24 @@ Full config reference lives at [docs/CONFIGURATION.md](docs/CONFIGURATION.md). R
 
 For popup alignment: Ghost Complete uses ANSI cursor positioning within the terminal grid, so popups always track the cursor position directly. This avoids the window-level coordinate issues that plague Accessibility API approaches (the kind of drift reported with tools like Amazon Q / Kiro). If popups are misaligned, it's likely a terminal compatibility issue — please [open an issue](https://github.com/StanMarek/ghost-complete/issues) with your setup details.
 
+## Logging
+
+Ghost Complete logs through `tracing`. In proxy mode the default sink is a file under `$XDG_STATE_HOME/ghost-complete/ghost-complete.log` (falling back to `~/.local/state/ghost-complete/ghost-complete.log` when `XDG_STATE_HOME` is unset). stderr is not used by default in proxy mode, so log output never corrupts the terminal stream.
+
+- `--log-level <trace|debug|info|warn|error>` sets the level (default: `warn`). Level hierarchy: `error` < `warn` < `info` < `debug` < `trace`.
+- `--log-file <path>` overrides the default log path.
+- `RUST_LOG` takes precedence over `--log-level`. It supports per-crate filters, e.g. `RUST_LOG=gc_suggest=debug,gc_pty=info`.
+
+Tail the log in real time:
+
+```bash
+tail -f "${XDG_STATE_HOME:-$HOME/.local/state}/ghost-complete/ghost-complete.log"
+```
+
+Reporting a bug: run with `--log-level debug`, reproduce the issue, and attach the log file to your issue.
+
+See [docs/CONFIGURATION.md](docs/CONFIGURATION.md#logging) for the full reference.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).

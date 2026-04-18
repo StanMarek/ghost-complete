@@ -143,9 +143,24 @@ impl TerminalProfile {
                 })
                 .unwrap_or(false)
         };
+        // Ghostty sets GHOSTTY_RESOURCES_DIR to a directory, so we can't reuse
+        // env_is_existing_path (which rejects directories for socket parity).
+        // Require the path to exist and be a directory — a stale env var from a
+        // previous Ghostty install pointing at a removed path should not
+        // trigger detection.
+        let env_is_existing_dir = |key: &str| {
+            std::env::var(key)
+                .map(|v| {
+                    if v.is_empty() {
+                        return false;
+                    }
+                    std::path::Path::new(&v).is_dir()
+                })
+                .unwrap_or(false)
+        };
 
         let in_tmux = env_is_set("TMUX");
-        let has_ghostty_res = env_is_set("GHOSTTY_RESOURCES_DIR");
+        let has_ghostty_res = env_is_existing_dir("GHOSTTY_RESOURCES_DIR");
         let has_iterm_session = env_is_set("ITERM_SESSION_ID");
         let has_kitty_window_id = env_is_set("KITTY_WINDOW_ID");
         let has_wezterm_socket = env_is_existing_path("WEZTERM_UNIX_SOCKET");
@@ -755,6 +770,31 @@ mod tests {
     fn test_stale_socket_does_not_trigger_alacritty() {
         // has_alacritty_socket=false simulates a non-existent socket path.
         let p = detect("", false, false, false, false, false, false);
+        assert!(matches!(p.terminal(), Terminal::Unknown(_)));
+    }
+
+    #[test]
+    fn test_stale_ghostty_resources_dir_does_not_trigger_ghostty() {
+        // Mirror of test_stale_socket_does_not_trigger_wezterm for
+        // GHOSTTY_RESOURCES_DIR: a stale env var pointing at a non-existent
+        // path (e.g., from an uninstalled Ghostty) must not be treated as
+        // Ghostty. The real detect() resolves has_ghostty_res by checking
+        // that the directory exists; simulate that rejection by passing
+        // ghostty_res=false. With no other terminal-specific env vars and
+        // no TERM_PROGRAM, detection should fall through to Unknown.
+        //
+        // Deterministic: we drive detect_from_env with explicit flags and
+        // never touch the process environment.
+        let stale = "/tmp/nonexistent-ghostty-xyz123";
+        assert!(
+            !std::path::Path::new(stale).exists(),
+            "test precondition: {stale} must not exist"
+        );
+        let p = detect("", false, false, false, false, false, false);
+        assert!(
+            !matches!(p.terminal(), Terminal::Ghostty),
+            "stale GHOSTTY_RESOURCES_DIR should not trigger Ghostty detection"
+        );
         assert!(matches!(p.terminal(), Terminal::Unknown(_)));
     }
 

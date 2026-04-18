@@ -426,7 +426,7 @@ mod tests {
         assert_eq!(words("   "), Vec::<Token>::new());
     }
 
-    // --- MED-5: comment handling ---
+    // --- comment handling ---
 
     #[test]
     fn test_comment_strips_trailing_words() {
@@ -472,7 +472,7 @@ mod tests {
         );
     }
 
-    // --- MED-6: FD redirect handling ---
+    // --- FD redirect handling ---
 
     #[test]
     fn test_fd_redirect_stderr() {

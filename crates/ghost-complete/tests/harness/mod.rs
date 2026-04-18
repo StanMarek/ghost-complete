@@ -31,6 +31,12 @@ impl GhostProcess {
 
         let mut cmd = CommandBuilder::new(bin);
         cmd.args(["--log-level", "error", "/bin/sh"]);
+        // Force a known terminal so the proxy does not fall back to plain
+        // shell on CI runners where TERM_PROGRAM is unset. Without this, the
+        // proxy replaces itself with /bin/sh and the popup path never runs
+        // (see should_fallback_to_shell in proxy.rs — Unknown terminals
+        // require `[experimental] multi_terminal = true`).
+        cmd.env("TERM_PROGRAM", "ghostty");
 
         let child = pty_pair
             .slave
@@ -135,6 +141,47 @@ impl GhostProcess {
         lock.lock().unwrap().clone()
     }
 
+    /// Return the current length of the accumulated output. Used with
+    /// `wait_for_bytes_after` to scan only bytes produced after a mark.
+    #[allow(dead_code)]
+    pub fn output_len(&self) -> usize {
+        let (lock, _) = &*self.output;
+        lock.lock().unwrap().len()
+    }
+
+    /// Block until `needle` bytes appear in the output at or after
+    /// `start_offset`, or `timeout` elapses. Returns `true` on match, `false`
+    /// on timeout — never panics.
+    ///
+    /// Unlike `expect_output`, this works on raw bytes (so ANSI escape
+    /// markers like `\x1b7` can be matched) and does not panic on timeout
+    /// so callers can build non-fatal readiness probes.
+    #[allow(dead_code)]
+    pub fn wait_for_bytes_after(
+        &self,
+        needle: &[u8],
+        start_offset: usize,
+        timeout: Duration,
+    ) -> bool {
+        let start = Instant::now();
+        let (lock, cvar) = &*self.output;
+        loop {
+            let data = lock.lock().unwrap();
+            if data.len() > start_offset && contains_subslice(&data[start_offset..], needle) {
+                return true;
+            }
+            let elapsed = start.elapsed();
+            if elapsed >= timeout {
+                return false;
+            }
+            let remaining = timeout - elapsed;
+            let (data, _) = cvar.wait_timeout(data, remaining).unwrap();
+            if data.len() > start_offset && contains_subslice(&data[start_offset..], needle) {
+                return true;
+            }
+        }
+    }
+
     /// Send `exit <code>` and wait for the process to exit. Returns the exit code.
     pub fn exit_with_code(&mut self, code: i32) -> i32 {
         self.send_line(&format!("exit {}", code));
@@ -172,4 +219,17 @@ impl Drop for GhostProcess {
             self.child.kill().ok();
         }
     }
+}
+
+/// Byte-level substring search — avoids `String::from_utf8_lossy`
+/// allocations on hot polling paths when watching raw ANSI output.
+#[allow(dead_code)]
+fn contains_subslice(haystack: &[u8], needle: &[u8]) -> bool {
+    if needle.is_empty() {
+        return true;
+    }
+    if haystack.len() < needle.len() {
+        return false;
+    }
+    haystack.windows(needle.len()).any(|w| w == needle)
 }

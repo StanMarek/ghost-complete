@@ -49,7 +49,6 @@ impl CacheEntry {
 /// Threshold above which `insert()` triggers an eviction sweep. Script-template
 /// generator keys embed user input (e.g. `git log --author={current_token}`),
 /// so an interactive typing session can manufacture unbounded distinct keys.
-/// See audit MED-20.
 const CACHE_SWEEP_THRESHOLD: usize = 500;
 
 /// In-memory TTL cache for generator results.

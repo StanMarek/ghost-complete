@@ -21,7 +21,16 @@ repository = "https://github.com/StanMarek/ghost-complete"
 homepage = "https://github.com/StanMarek/ghost-complete"
 
 [workspace.dependencies]
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1", features = [
+    "rt-multi-thread",
+    "macros",
+    "io-util",
+    "fs",
+    "process",
+    "signal",
+    "time",
+    "sync",
+] }
 anyhow = "1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }

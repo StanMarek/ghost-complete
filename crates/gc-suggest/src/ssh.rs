@@ -1,13 +1,35 @@
-//! SSH config host parser with mtime-based caching.
+//! SSH config host parser with fingerprint-based caching.
 //!
 //! Reads `~/.ssh/config` and extracts `Host` directive values, skipping
-//! wildcard entries (`*`). Re-parses when the file's mtime changes.
+//! wildcard entries (`*`). Re-parses when the file's `(mtime, len)`
+//! fingerprint changes — pairing size with mtime catches rapid edits that
+//! land on the same mtime second but produce different content.
 
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::time::SystemTime;
 
-/// Cached SSH host list with mtime tracking.
+/// Composite freshness key. Pairing mtime with length catches the rare but
+/// real case where two successive writes land on the same mtime second
+/// (1s resolution filesystems) but change content.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct FileFingerprint {
+    mtime: SystemTime,
+    len: u64,
+}
+
+impl FileFingerprint {
+    fn from_path(path: &Path) -> Option<Self> {
+        let meta = std::fs::metadata(path).ok()?;
+        let mtime = meta.modified().ok()?;
+        Some(Self {
+            mtime,
+            len: meta.len(),
+        })
+    }
+}
+
+/// Cached SSH host list with fingerprint tracking.
 pub struct SshHostCache {
     state: Mutex<SshHostState>,
     path: PathBuf,
@@ -15,7 +37,7 @@ pub struct SshHostCache {
 
 struct SshHostState {
     hosts: Vec<String>,
-    mtime: Option<SystemTime>,
+    fingerprint: Option<FileFingerprint>,
 }
 
 impl SshHostCache {
@@ -24,7 +46,7 @@ impl SshHostCache {
         Self {
             state: Mutex::new(SshHostState {
                 hosts: Vec::new(),
-                mtime: None,
+                fingerprint: None,
             }),
             path,
         }
@@ -73,9 +95,9 @@ impl SshHostCache {
     }
 
     fn refresh_if_stale(&self) {
-        let current_mtime = match std::fs::metadata(&self.path).and_then(|m| m.modified()) {
-            Ok(t) => t,
-            Err(_) => return, // file missing or unreadable — keep existing
+        let current_fp = match FileFingerprint::from_path(&self.path) {
+            Some(fp) => fp,
+            None => return, // file missing or unreadable — keep existing
         };
 
         let mut state = match self.state.lock() {
@@ -85,18 +107,18 @@ impl SshHostCache {
                 return;
             }
         };
-        if state.mtime == Some(current_mtime) {
+        if state.fingerprint == Some(current_fp) {
             return; // unchanged
         }
 
         match std::fs::read_to_string(&self.path) {
             Ok(contents) => {
                 state.hosts = parse_ssh_hosts_from_str(&contents);
-                state.mtime = Some(current_mtime);
+                state.fingerprint = Some(current_fp);
             }
             Err(e) => {
                 tracing::debug!("failed to read SSH config: {e}");
-                state.mtime = Some(current_mtime);
+                state.fingerprint = Some(current_fp);
             }
         }
     }

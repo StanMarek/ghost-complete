@@ -58,3 +58,15 @@ jobs:
           toolchain: "1.86"
       - uses: Swatinem/rust-cache@v2
       - run: cargo check --all-targets
+
+  # Linux tripwire: macOS is the primary target, but we compile-check on Linux
+  # so PRs can't land code that uses macOS-only APIs without review. Not a
+  # full test run — just `cargo check --workspace --all-targets`.
+  linux-tripwire:
+    name: Linux tripwire (compile-check only)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo check --workspace --all-targets

@@ -1,10 +1,10 @@
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Borders, List, ListItem, ListState, Paragraph};
+use ratatui::widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph};
 use ratatui::Frame;
 
-use super::app::{App, EditState, Focus};
+use super::app::{App, EditState, Focus, Prompt};
 use super::fields::{self, FieldMeta, ReloadBehavior, SECTIONS};
 use super::preview;
 
@@ -35,6 +35,68 @@ pub fn render(frame: &mut Frame, app: &App) {
     render_fields(frame, app, horizontal[1]);
     preview::render_preview(frame, app, horizontal[2]);
     render_footer(frame, app, footer_area);
+
+    if let Some(prompt) = app.prompt {
+        render_prompt(frame, size, prompt);
+    }
+}
+
+fn render_prompt(frame: &mut Frame, area: Rect, prompt: Prompt) {
+    let (title, lines) = match prompt {
+        Prompt::ConfirmQuit => (
+            " Unsaved Changes ",
+            vec![
+                Line::from("You have unsaved edits."),
+                Line::from(""),
+                Line::from(vec![
+                    Span::styled("y", Style::default().fg(Color::Cyan)),
+                    Span::raw(" discard & quit   "),
+                    Span::styled("n", Style::default().fg(Color::Cyan)),
+                    Span::raw(" cancel   "),
+                    Span::styled("s", Style::default().fg(Color::Cyan)),
+                    Span::raw(" save & quit"),
+                ]),
+            ],
+        ),
+        Prompt::FileChangedOnDisk => (
+            " File Changed On Disk ",
+            vec![
+                Line::from("The config was modified externally since load."),
+                Line::from("Saving now would overwrite those changes."),
+                Line::from(""),
+                Line::from(vec![
+                    Span::styled("r", Style::default().fg(Color::Cyan)),
+                    Span::raw(" reload   "),
+                    Span::styled("o", Style::default().fg(Color::Cyan)),
+                    Span::raw(" overwrite   "),
+                    Span::styled("c", Style::default().fg(Color::Cyan)),
+                    Span::raw(" cancel"),
+                ]),
+            ],
+        ),
+    };
+
+    let width = 60.min(area.width.saturating_sub(4));
+    let height = (lines.len() as u16 + 2).min(area.height.saturating_sub(4));
+    let x = area.x + area.width.saturating_sub(width) / 2;
+    let y = area.y + area.height.saturating_sub(height) / 2;
+    let rect = Rect {
+        x,
+        y,
+        width,
+        height,
+    };
+
+    let block = Block::default()
+        .title(title)
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Yellow));
+    let paragraph = Paragraph::new(lines).block(block);
+
+    // `Clear` wipes whatever the main layout drew underneath so the modal reads
+    // clearly even on top of dense field rows.
+    frame.render_widget(Clear, rect);
+    frame.render_widget(paragraph, rect);
 }
 
 fn render_sections(frame: &mut Frame, app: &App, area: Rect) {

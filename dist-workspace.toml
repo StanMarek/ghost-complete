@@ -19,3 +19,6 @@ publish-jobs = ["homebrew"]
 install-path = "CARGO_HOME"
 # Whether to install an updater program
 install-updater = false
+# Preserve custom release.yml edits (SLSA attestations, release-gate test job,
+# publish-to-homebrew step) that `dist init` would otherwise revert.
+allow-dirty = ["ci"]

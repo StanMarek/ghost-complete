@@ -18,6 +18,10 @@ serde_json = "1"
 tracing = { workspace = true }
 dirs = "6"
 regex = "1"
+tempfile = "3"
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
 
 [dev-dependencies]
 tempfile = "3"

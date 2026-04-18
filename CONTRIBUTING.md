@@ -4,7 +4,7 @@ Thanks for your interest in contributing! Here's how to get started.
 
 ## Prerequisites
 
-- **Rust 1.75+** (install via [rustup](https://rustup.rs))
+- **Rust 1.86+** (install via [rustup](https://rustup.rs))
 - **macOS** (the PTY proxy uses macOS-specific APIs)
 - **Ghostty** (for manual testing)
 
@@ -32,7 +32,7 @@ cargo run -- --log-level debug        # Enable debug logging
 
 ## Architecture
 
-The project is a Rust workspace with 7 crates under `crates/`. See [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) for the full architecture.
+The project is a Rust workspace with 8 crates under `crates/`. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full architecture.
 
 The short version: Ghost Complete is a PTY proxy. Keystrokes flow in through stdin, get intercepted for popup navigation, or forwarded to the shell. Shell output flows through a VT parser for state tracking, then to the terminal. Suggestions are computed on trigger conditions and rendered as ANSI popups.
 
@@ -72,6 +72,14 @@ Reports are generated at `target/criterion/report/index.html`.
 3. Ensure `cargo test`, `cargo clippy --all-targets -- -D warnings`, and `cargo fmt --check` all pass
 4. Open a PR against `master`
 5. Fill out the PR template
+
+## Optional: pre-commit hooks
+
+A `lefthook.yml` is checked in that runs `cargo fmt --check` and `cargo clippy --all-targets -- -D warnings` before every commit (mirrors CI). To enable:
+
+```bash
+brew install lefthook && lefthook install
+```
 
 ## Code of Conduct
 

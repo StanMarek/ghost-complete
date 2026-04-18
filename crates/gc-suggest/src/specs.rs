@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use serde::Deserialize;
@@ -7,6 +8,167 @@ use serde::Deserialize;
 use crate::transform::Transform;
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 use gc_buffer::CommandContext;
+
+/// Native generator `type` strings that `git_generators_from` and the
+/// filesystem templates actually recognize. Anything outside this list is
+/// treated as unknown at load time — logged once so misconfigured specs
+/// don't silently produce zero completions. Kept in sync with
+/// `git::generator_to_query_kind` and the filepaths/folders template
+/// handling in `collect_generators`.
+pub(crate) const KNOWN_NATIVE_GENERATOR_TYPES: &[&str] = &[
+    "git_branches",
+    "git_tags",
+    "git_remotes",
+    "git_files",
+    "filepaths",
+    "folders",
+];
+
+/// Maximum nesting depth permitted in a spec JSON document. The deepest
+/// real-world spec (atlas.json) is depth 7; capping at 32 leaves comfortable
+/// headroom for legitimate growth while rejecting attacker-crafted input that
+/// would otherwise stack-overflow downstream walkers (or serde_json's own
+/// recursive parser, whose default limit of 128 is too generous for our
+/// fixed-shape spec format).
+pub const MAX_SPEC_JSON_DEPTH: usize = 32;
+
+/// Reject JSON that nests `[`/`{` deeper than `max_depth`. Runs as a flat
+/// byte scan over the source — no recursion, no allocation, and crucially no
+/// dependency on the structure of the spec types. Done before handing the
+/// bytes to `serde_json::from_str` so a malicious spec cannot exhaust the
+/// stack inside the parser.
+pub fn check_json_depth(src: &str, max_depth: usize) -> Result<()> {
+    let bytes = src.as_bytes();
+    let mut depth: usize = 0;
+    let mut i = 0;
+    let mut in_string = false;
+    let mut escape = false;
+    while i < bytes.len() {
+        let b = bytes[i];
+        if in_string {
+            if escape {
+                escape = false;
+            } else if b == b'\\' {
+                escape = true;
+            } else if b == b'"' {
+                in_string = false;
+            }
+            i += 1;
+            continue;
+        }
+        match b {
+            b'"' => in_string = true,
+            b'{' | b'[' => {
+                depth += 1;
+                if depth > max_depth {
+                    anyhow::bail!(
+                        "spec exceeds maximum JSON nesting depth of {max_depth}; \
+                         this is almost certainly a malformed or malicious spec"
+                    );
+                }
+            }
+            b'}' | b']' => {
+                depth = depth.saturating_sub(1);
+            }
+            _ => {}
+        }
+        i += 1;
+    }
+    Ok(())
+}
+
+/// Strip control characters from text loaded from external specs. Mirrors
+/// the policy applied at popup render time in `gc_overlay::render` —
+/// defense in depth so an attacker-writable spec cannot inject CSI/OSC
+/// sequences via `name` or `description`. The two crates can't easily share
+/// this helper without breaking the existing dependency cycle
+/// (`gc-overlay → gc-suggest → gc-config → gc-overlay`); inlining here is
+/// the cheapest fix that keeps both sites consistent.
+fn sanitize_text(text: &str) -> String {
+    text.chars().filter(|c| !c.is_control()).collect()
+}
+
+/// Fast pre-check: byte-scan for any control codepoint. Catches C0 (0x00–0x1F
+/// and 0x7F) directly and C1 (U+0080..=U+009F, encoded as 0xC2 0x80..=0xC2 0x9F
+/// in UTF-8) via a two-byte match. Avoids per-char UTF-8 decoding + Unicode
+/// table lookups, which dominated `load_from_dir` when `sanitize_spec_strings`
+/// walked every string in 717 specs.
+fn has_control_char(s: &str) -> bool {
+    let bytes = s.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() {
+        let b = bytes[i];
+        if b < 0x20 || b == 0x7F {
+            return true;
+        }
+        if b == 0xC2 {
+            if let Some(&next) = bytes.get(i + 1) {
+                if (0x80..=0x9F).contains(&next) {
+                    return true;
+                }
+            }
+        }
+        i += 1;
+    }
+    false
+}
+
+fn sanitize_string(text: &mut String) {
+    if has_control_char(text) {
+        *text = sanitize_text(text);
+    }
+}
+
+fn sanitize_opt(text: &mut Option<String>) {
+    if let Some(s) = text.as_ref() {
+        if has_control_char(s) {
+            *text = Some(sanitize_text(s));
+        }
+    }
+}
+
+fn sanitize_arg_spec(arg: &mut ArgSpec) {
+    sanitize_opt(&mut arg.name);
+    sanitize_opt(&mut arg.description);
+}
+
+fn sanitize_option_spec(opt: &mut OptionSpec) {
+    sanitize_opt(&mut opt.description);
+    for n in &mut opt.name {
+        sanitize_string(n);
+    }
+    if let Some(ref mut arg) = opt.args {
+        sanitize_arg_spec(arg);
+    }
+}
+
+/// Walk the spec tree iteratively and strip control characters from every
+/// user-visible string field. Iteration (rather than recursion) avoids
+/// re-introducing the recursion-depth attack surface this whole pass is
+/// meant to remove.
+pub fn sanitize_spec_strings(spec: &mut CompletionSpec) {
+    sanitize_string(&mut spec.name);
+    sanitize_opt(&mut spec.description);
+    for arg in &mut spec.args {
+        sanitize_arg_spec(arg);
+    }
+    for opt in &mut spec.options {
+        sanitize_option_spec(opt);
+    }
+
+    let mut stack: Vec<&mut SubcommandSpec> = spec.subcommands.iter_mut().collect();
+    while let Some(sub) = stack.pop() {
+        sanitize_string(&mut sub.name);
+        sanitize_opt(&mut sub.description);
+        for arg in &mut sub.args {
+            sanitize_arg_spec(arg);
+        }
+        for opt in &mut sub.options {
+            sanitize_option_spec(opt);
+        }
+        stack.extend(sub.subcommands.iter_mut());
+    }
+}
 
 /// Deserialize `args` as either a single object or an array of objects.
 fn deserialize_args_one_or_many<'de, D>(
@@ -235,7 +397,7 @@ impl SpecStore {
     fn load_spec(path: &Path) -> Result<CompletionSpec> {
         let contents = std::fs::read_to_string(path)
             .with_context(|| format!("failed to read spec file: {}", path.display()))?;
-        let mut spec: CompletionSpec = serde_json::from_str(&contents)
+        let mut spec = parse_spec_checked_and_sanitized(&contents)
             .with_context(|| format!("failed to parse spec file: {}", path.display()))?;
         let warnings = validate_spec_generators(&mut spec);
         for w in &warnings {
@@ -261,11 +423,29 @@ impl SpecStore {
     }
 }
 
+/// Shared entry point for parsing spec JSON. Enforces the nesting-depth cap
+/// BEFORE invoking `serde_json::from_str` (so attacker-crafted input cannot
+/// blow the stack inside the parser), then strips control characters from
+/// every user-facing string. Any caller that hands raw on-disk bytes to the
+/// completion pipeline must go through this function — skipping it
+/// re-introduces the CVE class this cap was added to prevent.
+pub fn parse_spec_checked_and_sanitized(contents: &str) -> Result<CompletionSpec> {
+    check_json_depth(contents, MAX_SPEC_JSON_DEPTH)?;
+    let mut spec: CompletionSpec = serde_json::from_str(contents)?;
+    sanitize_spec_strings(&mut spec);
+    Ok(spec)
+}
+
 pub struct SpecResolution {
     pub subcommands: Vec<Suggestion>,
     pub options: Vec<Suggestion>,
     pub native_generators: Vec<String>,
-    pub script_generators: Vec<GeneratorSpec>,
+    /// `Arc<GeneratorSpec>` rather than `GeneratorSpec`: `collect_generators`
+    /// and the downstream `handler::spawn_generators` copy this vec on the
+    /// hot path (every resolution + every async spawn). Arc'ing makes each
+    /// clone a refcount bump instead of a deep copy of `Vec<Transform>`,
+    /// `Vec<String>` argv, and `Option<CacheConfig>`.
+    pub script_generators: Vec<Arc<GeneratorSpec>>,
     pub wants_filepaths: bool,
     pub wants_folders_only: bool,
     /// True when the preceding flag's own `args` spec contributed generators
@@ -431,7 +611,7 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
 fn collect_generators(
     generators: &[GeneratorSpec],
     native: &mut Vec<String>,
-    script: &mut Vec<GeneratorSpec>,
+    script: &mut Vec<Arc<GeneratorSpec>>,
     wants_filepaths: &mut bool,
     wants_folders_only: &mut bool,
 ) {
@@ -441,10 +621,22 @@ fn collect_generators(
             continue;
         }
         if let Some(ref gen_type) = gen.generator_type {
-            native.push(gen_type.clone());
+            if KNOWN_NATIVE_GENERATOR_TYPES.contains(&gen_type.as_str()) {
+                native.push(gen_type.clone());
+            } else {
+                // Preserve previous behavior (still push so downstream code
+                // paths are unchanged) but surface the unknown type so a
+                // misconfigured spec doesn't silently produce zero
+                // completions.
+                tracing::warn!(
+                    generator_type = %gen_type,
+                    "unknown generator type — no completions will be produced"
+                );
+                native.push(gen_type.clone());
+            }
         }
         if gen.script.is_some() || gen.script_template.is_some() {
-            script.push(gen.clone());
+            script.push(Arc::new(gen.clone()));
         }
         // Fig specs put template on generators too (e.g., git checkout's
         // `{"template": ["filepaths", "folders"]}`).
@@ -456,6 +648,13 @@ fn collect_generators(
     }
 }
 
+/// Linear-scan option lookup. Previously guarded a `HashMap`-backed
+/// `OptionsIndex`; the eager-build pattern lost to linear scan in every
+/// realistic `resolve_spec` call (benchmarks regressed 40–62% with the
+/// index) because a typical shell command line performs 0–3 flag lookups
+/// while each subcommand descent rebuilt the map. For 200-option specs the
+/// linear scan is still sub-microsecond — the crossover where a HashMap
+/// would pay off is far outside any real command line.
 fn find_option<'a>(options: &'a [OptionSpec], flag: &str) -> Option<&'a OptionSpec> {
     // Strip `=value` suffix so `--flag=value` matches an option named `--flag`.
     let base_flag = flag.split_once('=').map_or(flag, |(base, _)| base);
@@ -467,7 +666,10 @@ fn find_option<'a>(options: &'a [OptionSpec], flag: &str) -> Option<&'a OptionSp
 /// Walk all generators in a spec tree, validate their transform pipelines,
 /// and remove generators with invalid pipelines. Returns warnings for each
 /// removed generator.
-fn validate_spec_generators(spec: &mut CompletionSpec) -> Vec<String> {
+///
+/// Iterative on purpose: a deeply nested attacker-supplied spec must not be
+/// able to stack-overflow this walker even if it slips past the depth cap.
+pub fn validate_spec_generators(spec: &mut CompletionSpec) -> Vec<String> {
     let mut warnings = Vec::new();
     validate_args_generators(&mut spec.args, &spec.name, &mut warnings);
     for opt in &mut spec.options {
@@ -475,26 +677,19 @@ fn validate_spec_generators(spec: &mut CompletionSpec) -> Vec<String> {
             validate_arg_generators(arg_spec, &spec.name, &mut warnings);
         }
     }
-    for sub in &mut spec.subcommands {
-        validate_subcommand_generators(sub, &spec.name, &mut warnings);
-    }
-    warnings
-}
 
-fn validate_subcommand_generators(
-    sub: &mut SubcommandSpec,
-    spec_name: &str,
-    warnings: &mut Vec<String>,
-) {
-    validate_args_generators(&mut sub.args, spec_name, warnings);
-    for opt in &mut sub.options {
-        if let Some(ref mut arg_spec) = opt.args {
-            validate_arg_generators(arg_spec, spec_name, warnings);
+    let mut stack: Vec<&mut SubcommandSpec> = spec.subcommands.iter_mut().collect();
+    while let Some(sub) = stack.pop() {
+        validate_args_generators(&mut sub.args, &spec.name, &mut warnings);
+        for opt in &mut sub.options {
+            if let Some(ref mut arg_spec) = opt.args {
+                validate_arg_generators(arg_spec, &spec.name, &mut warnings);
+            }
         }
+        stack.extend(sub.subcommands.iter_mut());
     }
-    for nested_sub in &mut sub.subcommands {
-        validate_subcommand_generators(nested_sub, spec_name, warnings);
-    }
+
+    warnings
 }
 
 fn validate_args_generators(args: &mut [ArgSpec], spec_name: &str, warnings: &mut Vec<String>) {
@@ -522,7 +717,7 @@ fn validate_arg_generators(arg_spec: &mut ArgSpec, spec_name: &str, warnings: &m
         }
     });
     if arg_spec.generators.len() < original_len {
-        tracing::debug!(
+        tracing::warn!(
             "{spec_name}: removed {} generator(s) with invalid transform pipelines",
             original_len - arg_spec.generators.len()
         );
@@ -1218,6 +1413,47 @@ mod tests {
     }
 
     #[test]
+    fn test_find_option_handles_large_spec_with_equals_value() {
+        // 200 options × 2 aliases each. Every alias must resolve correctly —
+        // including `--flag=value` and the unknown-alias case.
+        let mut options: Vec<OptionSpec> = Vec::with_capacity(200);
+        for i in 0..200 {
+            options.push(OptionSpec {
+                name: vec![format!("--opt-{i}"), format!("-o{i}")],
+                description: Some(format!("option {i}")),
+                args: if i % 2 == 0 {
+                    Some(ArgSpec {
+                        name: Some("val".into()),
+                        description: None,
+                        generators: vec![],
+                        template: None,
+                        suggestions: None,
+                    })
+                } else {
+                    None
+                },
+            });
+        }
+
+        for i in 0..200 {
+            let long = format!("--opt-{i}");
+            let short = format!("-o{i}");
+            let eq = format!("--opt-{i}=value");
+            assert_eq!(
+                find_option(&options, &long).map(|o| &o.name[0]),
+                Some(&long),
+            );
+            assert_eq!(
+                find_option(&options, &short).map(|o| &o.name[0]),
+                Some(&long)
+            );
+            assert_eq!(find_option(&options, &eq).map(|o| &o.name[0]), Some(&long));
+        }
+
+        assert!(find_option(&options, "--nope").is_none());
+    }
+
+    #[test]
     fn test_validate_spec_option_args() {
         // Ensure validation walks into option arg specs
         let dir = tempfile::TempDir::new().unwrap();
@@ -1246,5 +1482,188 @@ mod tests {
             0,
             "double-split generator in option args should be removed"
         );
+    }
+
+    /// Build a JSON string with `depth` levels of `subcommands` nesting and
+    /// return it. The structure is:
+    ///   { "name": "x", "subcommands": [ { "name": "x", "subcommands": [ ... ] } ] }
+    fn build_nested_subcommands(depth: usize) -> String {
+        let mut s = String::with_capacity(depth * 32);
+        for _ in 0..depth {
+            s.push_str(r#"{"name":"x","subcommands":["#);
+        }
+        s.push_str(r#"{"name":"leaf"}"#);
+        for _ in 0..depth {
+            s.push_str("]}");
+        }
+        s
+    }
+
+    #[test]
+    fn test_load_spec_rejects_pathologically_nested_json() {
+        // Attacker-writable spec with 10k nested subcommands must be rejected
+        // at parse time, before any spec walker runs. Without a depth cap this
+        // overflows the stack on serde_json's recursive parser.
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("evil.json"),
+            build_nested_subcommands(10_000),
+        )
+        .unwrap();
+
+        let result = SpecStore::load_from_dir(dir.path()).unwrap();
+        assert!(
+            result.store.get("x").is_none() && result.store.get("leaf").is_none(),
+            "pathologically nested spec must not load"
+        );
+        assert_eq!(result.errors.len(), 1, "expected one load error");
+        assert!(
+            result.errors[0].contains("evil.json"),
+            "error should reference evil.json: {:?}",
+            result.errors
+        );
+    }
+
+    #[test]
+    fn test_load_spec_rejects_moderately_nested_json_above_cap() {
+        // Real-world max is 7; the cap is 32. A depth-100 spec is well below
+        // serde_json's default 128 recursion limit but well above our cap, so
+        // it must be rejected by our own preflight depth check before it can
+        // exercise our recursive walkers.
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(dir.path().join("evil.json"), build_nested_subcommands(100)).unwrap();
+
+        let result = SpecStore::load_from_dir(dir.path()).unwrap();
+        assert!(
+            result.store.get("x").is_none() && result.store.get("leaf").is_none(),
+            "depth-100 spec must be rejected by our own cap (serde_json's 128 default would still let it through)"
+        );
+        assert_eq!(result.errors.len(), 1, "expected one load error");
+    }
+
+    #[test]
+    fn test_load_spec_accepts_real_world_depth() {
+        // The deepest real-world spec (atlas.json) has subcommand depth ~7
+        // (each subcommand adds two JSON levels: `{"subcommands":[`). The
+        // 12-deep fixture below corresponds to 24 JSON levels + the leaf —
+        // well within the 32-level cap and well above any real spec.
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(dir.path().join("ok.json"), build_nested_subcommands(12)).unwrap();
+
+        let result = SpecStore::load_from_dir(dir.path()).unwrap();
+        assert!(
+            result.errors.is_empty(),
+            "depth-12 spec should parse cleanly, got errors: {:?}",
+            result.errors
+        );
+        assert!(
+            result.store.get("x").is_some(),
+            "depth-12 spec should be loaded"
+        );
+    }
+
+    #[test]
+    fn test_load_spec_strips_ansi_from_name_and_description() {
+        // Malicious spec with CSI/OSC sequences in name and description must
+        // be sanitized at load time so a downstream renderer cannot be tricked
+        // into emitting an injected escape sequence.
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("evil.json"),
+            "{\
+                \"name\": \"evil\\u001b[2J\",\
+                \"description\": \"steal\\u001b]0;pwned\\u0007rest\",\
+                \"subcommands\": [\
+                    {\"name\": \"sub\\u001b[2J\", \"description\": \"d\\u001bx\"}\
+                ],\
+                \"options\": [\
+                    {\"name\": [\"--flag\"], \"description\": \"o\\u001b[2J\"}\
+                ]\
+            }",
+        )
+        .unwrap();
+
+        let result = SpecStore::load_from_dir(dir.path()).unwrap();
+        let spec = result
+            .store
+            .get("evil[2J")
+            .expect("spec should load with sanitized name");
+        assert!(
+            !spec.name.contains('\x1b'),
+            "name kept ESC: {:?}",
+            spec.name
+        );
+        assert!(
+            !spec.description.as_deref().unwrap_or("").contains('\x1b'),
+            "description kept ESC: {:?}",
+            spec.description
+        );
+        assert!(
+            !spec.description.as_deref().unwrap_or("").contains('\x07'),
+            "description kept BEL: {:?}",
+            spec.description
+        );
+        assert!(
+            !spec.subcommands[0].name.contains('\x1b'),
+            "subcommand name kept ESC: {:?}",
+            spec.subcommands[0].name
+        );
+        assert!(
+            !spec.subcommands[0]
+                .description
+                .as_deref()
+                .unwrap_or("")
+                .contains('\x1b'),
+            "subcommand description kept ESC"
+        );
+        assert!(
+            !spec.options[0]
+                .description
+                .as_deref()
+                .unwrap_or("")
+                .contains('\x1b'),
+            "option description kept ESC"
+        );
+    }
+
+    #[test]
+    fn test_check_json_depth_accepts_well_within_cap() {
+        let src = build_nested_subcommands(7);
+        assert!(check_json_depth(&src, MAX_SPEC_JSON_DEPTH).is_ok());
+    }
+
+    #[test]
+    fn test_check_json_depth_ignores_brackets_inside_strings() {
+        // A string literal full of `{` must not contribute to the depth count.
+        let src = format!(r#"{{"name":"{}"}}"#, "{".repeat(1000));
+        assert!(check_json_depth(&src, 4).is_ok());
+    }
+
+    #[test]
+    fn test_validate_spec_generators_iterative_handles_deep_subcommand_chain() {
+        // Even a depth-200 chain (which could blow the stack on the old
+        // recursive walker) must run without overflowing because the new
+        // implementation is iterative.
+        let mut spec = CompletionSpec {
+            name: "deep".into(),
+            description: None,
+            subcommands: Vec::new(),
+            options: Vec::new(),
+            args: Vec::new(),
+        };
+        let mut tail = &mut spec.subcommands;
+        for i in 0..200 {
+            tail.push(SubcommandSpec {
+                name: format!("s{i}"),
+                description: None,
+                subcommands: Vec::new(),
+                options: Vec::new(),
+                args: Vec::new(),
+            });
+            tail = &mut tail[0].subcommands;
+        }
+        // Should not panic / stack-overflow
+        let warnings = validate_spec_generators(&mut spec);
+        assert!(warnings.is_empty());
     }
 }

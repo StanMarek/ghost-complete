@@ -14,6 +14,8 @@
 
 use std::path::PathBuf;
 
+use crate::embedded;
+
 /// Partition result from [`partition_spec_dirs`]: tilde-expanded valid
 /// directories and the raw (pre-expansion) strings for entries that don't
 /// resolve to an existing directory.
@@ -54,10 +56,14 @@ pub fn partition_spec_dirs(configured: &[String]) -> SpecDirPartition {
 ///   1. `~/.config/ghost-complete/specs` (installed by `ghost-complete install`)
 ///   2. `<current_exe_dir>/specs` (development / `cargo run`)
 ///   3. `./specs` (cwd, development)
+///   4. `~/.cache/ghost-complete/embedded-specs` (materialized lazily from
+///      `gc_suggest::embedded::EMBEDDED_SPECS` via
+///      [`embedded::materialize_embedded_specs`])
 ///
-/// If the auto-detection list is empty, the function returns a single
-/// `PathBuf::from("specs")` as a last-ditch fallback so callers always get
-/// at least one path to try.
+/// The embedded fallback is what closes the
+/// `cargo install ghost-complete && ghost-complete` (no `install` step) case
+/// — without it the proxy would start with zero specs and silently degrade
+/// autocomplete.
 pub fn resolve_spec_dirs(configured: &[String]) -> Vec<PathBuf> {
     if !configured.is_empty() {
         let partition = partition_spec_dirs(configured);
@@ -101,7 +107,20 @@ pub fn resolve_spec_dirs(configured: &[String]) -> Vec<PathBuf> {
     }
 
     if dirs.is_empty() {
-        dirs.push(PathBuf::from("specs"));
+        // Last-ditch: materialize the binary-embedded spec set into a cache
+        // dir and use that. This is what makes `cargo install
+        // ghost-complete` followed by `ghost-complete` (without the install
+        // subcommand) actually load the 700+ shipped specs instead of
+        // running with an empty `SpecStore`.
+        if let Some(embedded_dir) = embedded::materialize_embedded_specs() {
+            dirs.push(embedded_dir);
+        } else {
+            tracing::warn!(
+                "no spec directory available — autocomplete will fall back \
+                 to filesystem/history/$PATH only. Run `ghost-complete \
+                 install` to deploy the bundled completion specs."
+            );
+        }
     }
 
     dirs
@@ -165,6 +184,43 @@ mod tests {
         assert_eq!(
             partition.invalid,
             vec!["/ghost-complete-fake-path-zzz".to_string()]
+        );
+    }
+
+    /// Exercises the end-to-end chain the proxy hits: the embedded spec set
+    /// must be reachable from `gc-suggest` and must load into a non-empty
+    /// `SpecStore` via `load_from_dirs`. If `EMBEDDED_SPECS` is ever moved
+    /// out of `gc-suggest`, or if the materialization helper stops actually
+    /// writing files, this test will fail rather than silently regress
+    /// autocomplete.
+    #[test]
+    fn embedded_fallback_yields_non_empty_spec_store() {
+        // Materialize into a private tempdir rather than touching the user's
+        // real `~/.cache/...`. This mirrors what
+        // `embedded::materialize_embedded_specs` does internally and what
+        // the spec loader will see when the auto-detection chain bottoms
+        // out on a bare-install system.
+        let tmp = tempfile::TempDir::new().unwrap();
+        let count = embedded::write_embedded_specs(tmp.path()).unwrap();
+        assert!(
+            count > 0,
+            "embedded spec set must contain at least one entry"
+        );
+
+        let result = crate::specs::SpecStore::load_from_dirs(&[tmp.path().to_path_buf()]).unwrap();
+        assert!(
+            !result.store.is_empty(),
+            "SpecStore must be non-empty after loading from the embedded \
+             fallback dir — empty here would mean the runtime fallback is \
+             still broken"
+        );
+        // A few well-known commands every embedded set should contain. If
+        // ALL three are missing the embedded set was truncated in transit.
+        let known = ["git", "docker", "cargo"];
+        assert!(
+            known.iter().any(|cmd| result.store.get(cmd).is_some()),
+            "expected at least one of {known:?} to be loaded from the \
+             embedded fallback; the fallback may be empty"
         );
     }
 }

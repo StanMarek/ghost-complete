@@ -135,3 +135,122 @@ fn test_multiple_commands() {
     proc.expect_output("ccc");
     proc.exit_with_code(0);
 }
+
+/// End-to-end popup smoke test.
+///
+/// Verifies the entire UX pipeline: OSC 7770 buffer-report (from simulated
+/// shell integration) -> auto-trigger -> popup renders with git-spec
+/// subcommand text -> ESC dismisses the popup.
+///
+/// Architecture notes:
+/// - The harness wraps `/bin/sh` (no shell integration). Without shell
+///   integration, the shell will NOT emit OSC 7770 buffer-report sequences,
+///   so the parser's `command_buffer` stays empty, and `handler.trigger()`
+///   would dismiss immediately (see gc-pty/src/handler.rs: `if
+///   buffer.is_empty() { return; }`).
+/// - To simulate shell integration without installing it, we have the
+///   inner shell print OSC 7770 itself: `printf '\033]7770;4;git \007'`.
+///   The shell executes printf, emits the raw ANSI bytes to its stdout,
+///   which flow through gc-parser's VT state machine and set
+///   `command_buffer = "git "` with cursor = 4. This also sets
+///   `buffer_dirty = true`, which Task B (stdout -> terminal loop) notices
+///   and uses to fire `trigger()` automatically.
+/// - No manual Ctrl+/ is needed — the auto-trigger path from OSC 7770 is
+///   exactly what real shell integration does on every keystroke.
+///
+/// Assumptions:
+///   - Embedded `git` spec contains well-known subcommands (status, commit,
+///     branch, etc.). Verified: specs/git.json has ~30 `"name": "status"`
+///     occurrences and is always embedded via include_str!.
+///   - Trigger char ' ' is in the default `auto_chars` list, so the space
+///     at the end of "git " activates the auto-trigger path.
+///   - `clear_popup` emits DECSC (`\x1b7`) followed by blanking writes and
+///     DECRC (`\x1b8`). DECRC appearing after our ESC mark = dismissed.
+///   - Default dismiss keybind is ESC (see Keybindings::default()).
+///
+/// Determinism: byte-level polling with condvar-based wakeup, 5s timeouts,
+/// no blind sleeps.
+#[test]
+fn test_popup_renders_and_dismisses_on_git_trigger() {
+    let mut proc = GhostProcess::spawn();
+
+    // Settle the shell so our printf doesn't race with any banner output.
+    proc.send_line("echo smoke_popup_ready_marker");
+    proc.expect_output("smoke_popup_ready_marker");
+
+    // Mark the pre-trigger offset — popup render bytes must appear after.
+    let mark_before_trigger = proc.output_len();
+
+    // Inject OSC 7770 via shell printf. Format:
+    //     OSC ] 7770 ; <cursor-char-offset> ; <buffer> BEL
+    //     \x1b]7770;4;git \x07
+    // The shell executes printf, emits the raw bytes to stdout, gc-parser
+    // consumes them and sets command_buffer = "git " with cursor = 4.
+    // The buffer_dirty flag causes Task B to auto-fire trigger().
+    proc.send_line(r"printf '\033]7770;4;git \007'");
+
+    // Wait for the popup render. The overlay's first emitted byte sequence
+    // is DECSC (`\x1b7` = save cursor). Seeing it after mark_before_trigger
+    // proves that the OSC 7770 -> auto-trigger -> render_popup pipeline ran.
+    let popup_rendered =
+        proc.wait_for_bytes_after(b"\x1b7", mark_before_trigger, Duration::from_secs(5));
+
+    if !popup_rendered {
+        let snapshot = proc.output_snapshot();
+        let since_trigger = &snapshot[mark_before_trigger..];
+        panic!(
+            "Popup did not render within 5s after OSC 7770 injection.\n\
+             Bytes since trigger mark ({} bytes, lossy UTF-8):\n{:?}",
+            since_trigger.len(),
+            String::from_utf8_lossy(since_trigger),
+        );
+    }
+
+    // Assert the popup contains git subcommand text. We accept any of a
+    // handful of well-known git subcommands because the exact ordering on
+    // the first page depends on nucleo's empty-query ordering and the
+    // spec's declared order. Tolerating several known-good names keeps the
+    // test deterministic across future spec updates.
+    let snapshot_after_popup = proc.output_snapshot();
+    let popup_slice = &snapshot_after_popup[mark_before_trigger..];
+    let popup_text = String::from_utf8_lossy(popup_slice);
+
+    let git_subcommands = ["status", "commit", "branch", "checkout", "clone", "add"];
+    let found: Vec<&&str> = git_subcommands
+        .iter()
+        .filter(|needle| popup_text.contains(**needle))
+        .collect();
+
+    assert!(
+        !found.is_empty(),
+        "Popup rendered (DECSC seen) but no git-spec subcommand found in its output. \
+         Expected one of {:?}.\nPopup slice ({} bytes, lossy UTF-8):\n{:?}",
+        git_subcommands,
+        popup_slice.len(),
+        popup_text,
+    );
+
+    // Mark offset before dismiss — dismissal bytes must appear after.
+    let mark_before_esc = proc.output_len();
+
+    // Send a lone ESC (0x1B). The input parser treats a lone ESC at end
+    // of buffer as KeyEvent::Escape, which dispatches dismiss().
+    proc.write_raw(&[0x1B]);
+
+    // clear_popup emits DECSC + movement + blanks + DECRC. The DECRC
+    // (`\x1b8`) appearing after the ESC mark is the dismiss signal.
+    let dismissed = proc.wait_for_bytes_after(b"\x1b8", mark_before_esc, Duration::from_secs(5));
+
+    if !dismissed {
+        let snapshot = proc.output_snapshot();
+        let since_esc = &snapshot[mark_before_esc..];
+        panic!(
+            "Popup did not dismiss within 5s after ESC.\n\
+             Bytes since ESC mark ({} bytes, lossy UTF-8):\n{:?}",
+            since_esc.len(),
+            String::from_utf8_lossy(since_esc),
+        );
+    }
+
+    proc.exit_with_code(0);
+}

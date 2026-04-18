@@ -587,12 +587,26 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     // Task C: Signal handling
     let mut sigwinch =
         signal(SignalKind::window_change()).context("failed to register SIGWINCH handler")?;
+    let mut sigterm =
+        signal(SignalKind::terminate()).context("failed to register SIGTERM handler")?;
+    let mut sighup = signal(SignalKind::hangup()).context("failed to register SIGHUP handler")?;
 
     // Wait for either an I/O task to finish or a signal
+    let mut signal_shutdown = false;
     loop {
         tokio::select! {
             _ = shutdown_rx.recv() => {
                 tracing::debug!("I/O task finished, shutting down");
+                break;
+            }
+            _ = sigterm.recv() => {
+                tracing::info!("received SIGTERM, shutting down");
+                signal_shutdown = true;
+                break;
+            }
+            _ = sighup.recv() => {
+                tracing::info!("received SIGHUP, shutting down");
+                signal_shutdown = true;
                 break;
             }
             _ = sigwinch.recv() => {
@@ -664,13 +678,90 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
         }
     }
 
-    // _raw_guard drops here, restoring terminal state
+    // Drop the raw-mode guard eagerly on signal shutdown so the terminal is
+    // returned to cooked mode *before* the bounded `try_wait` loop. Holding
+    // the guard across the 2 s deadline leaves the user staring at a broken
+    // prompt while we wait for the shell to exit. On the normal path the
+    // guard falls out of scope at function return, which is fine — `child.
+    // wait()` there blocks until the shell actually closes the PTY.
+    if signal_shutdown {
+        drop(_raw_guard);
+    }
 
-    // Wait for child and get exit status
-    let status = child.wait().context("failed to wait for shell process")?;
-    let exit_code = status.exit_code().try_into().unwrap_or(1);
+    // Wait for child and get exit status.
+    //
+    // On signal-driven shutdown, the shell may be blocked on a read of the
+    // inherited master PTY fd. A plain `wait()` would hang forever. Poll
+    // `try_wait` with a bounded deadline, then escalate to `kill()` if the
+    // shell hasn't exited on its own.
+    let exit_code = if signal_shutdown {
+        wait_with_timeout(child.as_mut(), Duration::from_secs(2))
+    } else {
+        let status = child.wait().context("failed to wait for shell process")?;
+        status.exit_code().try_into().unwrap_or(1)
+    };
 
     Ok(exit_code)
+}
+
+/// Poll `try_wait` until `deadline`, then `kill()` and re-poll with a bounded
+/// reap deadline. Returns the shell's exit code, or a signal-style
+/// `128 + SIGTERM = 143` if we had to kill it (or if the child is still alive
+/// after the reap deadline).
+///
+/// Every wait path is bounded — no plain blocking `wait()` on the signal path,
+/// because the shell can be stuck on an inherited PTY fd and hang forever.
+fn wait_with_timeout(
+    child: &mut (dyn portable_pty::Child + Send + Sync),
+    deadline: Duration,
+) -> i32 {
+    let poll_interval = Duration::from_millis(50);
+    let reap_deadline = Duration::from_millis(500);
+    let pid = child.process_id();
+
+    if let Some(code) = poll_until(child, deadline, poll_interval) {
+        return code;
+    }
+
+    if let Err(e) = child.kill() {
+        tracing::warn!("failed to kill shell on signal shutdown: {e}");
+    }
+
+    if let Some(code) = poll_until(child, reap_deadline, poll_interval) {
+        return code;
+    }
+
+    tracing::error!(
+        "shell pid={:?} survived kill and {}ms reap deadline; proxy exiting with 143, process may be orphaned",
+        pid,
+        reap_deadline.as_millis()
+    );
+    143
+}
+
+/// Poll `try_wait` until the child exits or `deadline` elapses. Returns
+/// `Some(exit_code)` if the child reaped before the deadline, `None` otherwise.
+fn poll_until(
+    child: &mut (dyn portable_pty::Child + Send + Sync),
+    deadline: Duration,
+    poll_interval: Duration,
+) -> Option<i32> {
+    let start = std::time::Instant::now();
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) => return Some(status.exit_code().try_into().unwrap_or(1)),
+            Ok(None) => {
+                if start.elapsed() >= deadline {
+                    return None;
+                }
+                std::thread::sleep(poll_interval);
+            }
+            Err(e) => {
+                tracing::warn!("try_wait failed during signal shutdown: {e}");
+                return None;
+            }
+        }
+    }
 }
 
 /// Debounce loop: waits for buffer-change notifications, resets a timer on each
@@ -905,5 +996,91 @@ mod tests {
             CprAction::ForwardToPty(7, 3)
         );
         assert_eq!(p.state().cpr_queue_len(), 0);
+    }
+
+    struct SpawnedTestChild {
+        child: Box<dyn portable_pty::Child + Send + Sync>,
+        // Held so the slave side of the PTY stays open — dropping the master
+        // elsewhere would SIGHUP the child and invalidate the exit code.
+        _master: Box<dyn portable_pty::MasterPty + Send>,
+    }
+
+    fn spawn_child(argv: &[&str]) -> SpawnedTestChild {
+        use portable_pty::{native_pty_system, CommandBuilder, PtySize};
+        let pty_system = native_pty_system();
+        let pair = pty_system
+            .openpty(PtySize {
+                rows: 24,
+                cols: 80,
+                pixel_width: 0,
+                pixel_height: 0,
+            })
+            .expect("openpty");
+        let mut cmd = CommandBuilder::new(argv[0]);
+        for a in &argv[1..] {
+            cmd.arg(a);
+        }
+        let child = pair.slave.spawn_command(cmd).expect("spawn_command");
+        drop(pair.slave);
+        SpawnedTestChild {
+            child,
+            _master: pair.master,
+        }
+    }
+
+    #[test]
+    fn wait_with_timeout_returns_before_deadline_for_live_child() {
+        let mut spawned = spawn_child(&["sleep", "30"]);
+        let pid_before = spawned.child.process_id();
+        let start = std::time::Instant::now();
+        let code = wait_with_timeout(spawned.child.as_mut(), Duration::from_millis(200));
+        let elapsed = start.elapsed();
+        assert!(
+            elapsed < Duration::from_millis(1500),
+            "wait_with_timeout must return promptly, took {elapsed:?}"
+        );
+        assert!(
+            matches!(spawned.child.try_wait(), Ok(Some(_))),
+            "child must be reaped (pid was {pid_before:?})"
+        );
+        // portable-pty maps signal-killed children to exit code 1 (since
+        // `std::process::ExitStatus::code()` is `None` for signalled
+        // termination). The bounded kill-then-reap path must not return 143.
+        assert_ne!(
+            code, 143,
+            "live child must be reaped within bound, not reported as orphan"
+        );
+    }
+
+    #[test]
+    fn wait_with_timeout_kills_child_that_ignores_sigterm() {
+        let mut spawned = spawn_child(&["sh", "-c", "trap \"\" TERM; sleep 30"]);
+        let start = std::time::Instant::now();
+        let code = wait_with_timeout(spawned.child.as_mut(), Duration::from_millis(200));
+        let elapsed = start.elapsed();
+        assert!(
+            elapsed < Duration::from_millis(2000),
+            "SIGTERM-ignoring child must still be reaped within bound, took {elapsed:?}"
+        );
+        assert!(
+            matches!(spawned.child.try_wait(), Ok(Some(_))),
+            "SIGTERM-ignoring child must have been SIGKILLed and reaped"
+        );
+        assert_ne!(
+            code, 143,
+            "SIGKILL path must reap the child, not leave it orphaned"
+        );
+    }
+
+    #[test]
+    fn wait_with_timeout_returns_exit_code_of_already_exited_child() {
+        let mut spawned = spawn_child(&["sh", "-c", "exit 7"]);
+        // Give the shell enough time to exit cleanly.
+        std::thread::sleep(Duration::from_millis(200));
+        let code = wait_with_timeout(spawned.child.as_mut(), Duration::from_millis(500));
+        assert_eq!(
+            code, 7,
+            "already-exited child must return its real exit code"
+        );
     }
 }

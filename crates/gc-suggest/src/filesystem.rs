@@ -19,10 +19,6 @@ impl Provider for FilesystemProvider {
         let (dir, prefix) = resolve_path(&ctx.current_word, cwd);
         list_entries(&dir, &prefix, &ctx.current_word)
     }
-
-    fn name(&self) -> &'static str {
-        "filesystem"
-    }
 }
 
 /// Resolve the current_word into a directory to list and a display prefix.

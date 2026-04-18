@@ -99,12 +99,8 @@ pub fn parse_value(value_str: &str) -> Result<Value> {
 /// If that name already exists, a numeric suffix is appended to avoid overwriting it.
 /// Returns the path of the created backup.
 pub fn backup_config(config_path: &Path) -> Result<PathBuf> {
-    anyhow::ensure!(
-        config_path.exists(),
-        "config file does not exist: {}",
-        config_path.display()
-    );
-
+    // Don't `.exists()`-check first — that is a TOCTOU racing the read below.
+    // Let the read surface NotFound naturally so callers see the real OS error.
     let ts = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .context("system time before UNIX epoch")?
@@ -163,7 +159,11 @@ fn create_backup_file(config_path: &Path, ts: u64) -> Result<(std::fs::File, Pat
         .context("config path has no parent directory")?;
     let base_name = format!("{file_name}.backup.{ts}");
 
-    for suffix in 0u32.. {
+    // Bounded retry — if 10 000 consecutive suffixes in the same second all
+    // collide, something is very wrong (stuck clock, permission issue). Return
+    // a real error instead of an `unreachable!` panic.
+    const MAX_BACKUP_ATTEMPTS: u32 = 10_000;
+    for suffix in 0u32..MAX_BACKUP_ATTEMPTS {
         let candidate = if suffix == 0 {
             parent.join(&base_name)
         } else {
@@ -181,7 +181,11 @@ fn create_backup_file(config_path: &Path, ts: u64) -> Result<(std::fs::File, Pat
         }
     }
 
-    unreachable!("backup suffix loop is unbounded")
+    anyhow::bail!(
+        "could not reserve a backup file after {MAX_BACKUP_ATTEMPTS} attempts; \
+         cleanup old backups in {}",
+        parent.display()
+    )
 }
 
 fn create_file_with_source_mode(
@@ -236,7 +240,7 @@ impl Drop for TempFileGuard {
     }
 }
 
-/// Atomically write `content` to `config_path`.
+/// Atomically write `content` to `config_path`, without mtime-freshness check.
 ///
 /// - If `config_path` is a symlink, the symlink is preserved: we resolve it via
 ///   `fs::canonicalize` and write to the resolved target so dotfile managers
@@ -247,7 +251,36 @@ impl Drop for TempFileGuard {
 /// - The temp file is cleaned up on any failure via `TempFileGuard`.
 /// - Rename on the same filesystem is atomic, so a crash mid-write cannot
 ///   truncate the live config.
+///
+/// Thin wrapper around [`save_config_with_expected_mtime`] for callers that
+/// don't need the stale-file check. The TUI always passes its tracked mtime.
+#[allow(dead_code)]
 pub fn save_config(config_path: &Path, content: &str) -> Result<()> {
+    save_config_with_expected_mtime(config_path, content, None)
+}
+
+/// Error returned by [`save_config_with_expected_mtime`] when the on-disk mtime
+/// no longer matches the expected baseline. Surfaced distinctly so the TUI can
+/// show a "file changed on disk, reload?" prompt instead of clobbering.
+#[derive(Debug)]
+pub struct StaleConfigError;
+
+impl std::fmt::Display for StaleConfigError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("config file changed on disk after it was loaded")
+    }
+}
+
+impl std::error::Error for StaleConfigError {}
+
+/// Like [`save_config`], but verifies `config_path`'s mtime matches
+/// `expected_mtime` just before the final rename. Returns [`StaleConfigError`]
+/// (via `anyhow`) if an external edit landed between load and save.
+pub fn save_config_with_expected_mtime(
+    config_path: &Path,
+    content: &str,
+    expected_mtime: Option<SystemTime>,
+) -> Result<()> {
     // Resolve symlinks so we write to the real file and preserve the link.
     let target_path: PathBuf = match fs::symlink_metadata(config_path) {
         Ok(meta) if meta.file_type().is_symlink() => fs::canonicalize(config_path)
@@ -306,6 +339,21 @@ pub fn save_config(config_path: &Path, content: &str) -> Result<()> {
             .with_context(|| format!("failed to write {}", tmp_path.display()))?;
         f.sync_all()
             .with_context(|| format!("failed to sync {}", tmp_path.display()))?;
+    }
+
+    // Final check: if the caller tracked an expected mtime and the file has
+    // been modified externally, abort before the rename so we don't silently
+    // overwrite someone else's edits. The temp guard cleans up tmp on drop.
+    if let Some(expected) = expected_mtime {
+        let current_mtime = fs::metadata(&target_path)
+            .ok()
+            .and_then(|m| m.modified().ok());
+        match current_mtime {
+            Some(now) if now != expected => {
+                return Err(anyhow::Error::new(StaleConfigError));
+            }
+            _ => {}
+        }
     }
 
     fs::rename(&tmp_path, &target_path).with_context(|| {

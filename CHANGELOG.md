@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Embedded specs auto-materialize to `~/.cache/ghost-complete/embedded-specs/` on first run when no user-installed specs are found (enables zero-config `cargo install ghost-complete` usage).
+- Logging section in README and CONFIGURATION docs explaining `--log-level`, `--log-file`, `RUST_LOG`, and default log path.
+- `publish = false` on the `ghost-complete` binary crate to prevent accidental publish to crates.io.
+- `--version` output now includes the git short SHA and build timestamp.
+- SBOM / build provenance attestation on release artifacts.
+- `deny.toml` + `cargo-deny` license/bans gate.
+- Linux CI tripwire to catch accidental Darwin-only regressions.
+- End-to-end smoke test covering the keystroke → popup → dismiss lifecycle.
+
+### Changed
+
+- `validate-specs` now performs deep validation — regex patterns, transform pipelines, and generator types are checked (previously only top-level JSON parse).
+- Bash and fish shell integration scripts are idempotent when sourced multiple times (mirrors existing zsh behavior).
+- Bash DEBUG trap chains with any pre-existing user trap instead of overwriting silently.
+- Generator-drop message elevated to the info level for diagnosis visibility.
+
+### Fixed
+
+- Documentation drift: `docs/IMPLEMENTATION_PLAN.md` references now point to `docs/ARCHITECTURE.md`; MSRV documented as `1.75` corrected to `1.86`; crate count documented as `7` corrected to `8`; `theme.border` field added to the config table; spec counts synced to `709` specs / `184` requires_js.
+- `rust_out` stray binary removed from repo root and added to `.gitignore`.
+- Prior audit docs (`AUDIT_FINDINGS.md`, `AUDIT_RESOLUTION_PLAN.md`) marked archived.
+
+### Security
+
+- `$HISTFILE` now validated: must canonicalize under `$HOME` and match a known history-filename pattern. Blocks arbitrary file reads via env var (e.g. `HISTFILE=/etc/passwd`).
+- Script generator argv now rejects NUL bytes (the only char that truncates argv). Removed misleading shell-metacharacter warning — argv execution is inert against `|`, `;`, `&`, backtick, `$`.
+- External spec `name` / `description` / arg names are C0/CSI/OSC-stripped at load time. Blocks terminal-escape injection via malicious user-installed specs.
+- External spec JSON depth capped at 32 levels (iterative pre-scan) to prevent stack overflow from nested-subcommand DoS.
+
 ## [0.8.1] - 2026-04-17
 
 ### Fixed
