@@ -4,6 +4,8 @@ use std::io::Write as _;
 use std::os::unix::fs::OpenOptionsExt;
 use std::path::Path;
 
+use crate::sanitize::sanitize_path;
+
 // `EMBEDDED_SPECS` was moved into `gc-suggest` so the runtime spec loader can
 // fall back to it when no on-disk spec dir is found. Install still needs to
 // write the same set to `~/.config/ghost-complete/specs`, so we re-export
@@ -138,7 +140,10 @@ fn copy_specs(config_dir: &Path) -> Result<()> {
             .with_context(|| format!("failed to write spec: {}", dest_file.display()))?;
         count += 1;
     }
-    println!("  Installed {count} completion specs to {}", dest.display());
+    println!(
+        "  Installed {count} completion specs to {}",
+        sanitize_path(&dest)
+    );
     Ok(())
 }
 
@@ -165,20 +170,32 @@ fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()>
     let script_path = shell_dir.join("ghost-complete.zsh");
 
     if dry_run {
-        println!("  Would write init script to {}", init_path.display());
-        println!("  Would write zsh integration to {}", script_path.display());
+        println!(
+            "  Would write init script to {}",
+            sanitize_path(&init_path)
+        );
+        println!(
+            "  Would write zsh integration to {}",
+            sanitize_path(&script_path)
+        );
         println!(
             "  Would install {} completion specs to {}",
             EMBEDDED_SPECS.len(),
-            config_dir.join("specs").display()
+            sanitize_path(&config_dir.join("specs"))
         );
         let config_path = config_dir.join("config.toml");
         if !config_path.exists() {
-            println!("  Would write default config to {}", config_path.display());
+            println!(
+                "  Would write default config to {}",
+                sanitize_path(&config_path)
+            );
         } else {
-            println!("  Config already exists at {}", config_path.display());
+            println!(
+                "  Config already exists at {}",
+                sanitize_path(&config_path)
+            );
         }
-        println!("  Would update {}\n", zshrc_path.display());
+        println!("  Would update {}\n", sanitize_path(zshrc_path));
         println!("  \x1b[36m\u{2139}\x1b[0m  The following would be added to your shell config:\n");
         print_shell_blocks(&init_path, &script_path);
         return Ok(());
@@ -189,11 +206,14 @@ fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()>
 
     fs::write(&init_path, ZSH_INIT)
         .with_context(|| format!("failed to write {}", init_path.display()))?;
-    println!("  Wrote init script to {}", init_path.display());
+    println!("  Wrote init script to {}", sanitize_path(&init_path));
 
     fs::write(&script_path, ZSH_INTEGRATION)
         .with_context(|| format!("failed to write {}", script_path.display()))?;
-    println!("  Wrote zsh integration to {}", script_path.display());
+    println!(
+        "  Wrote zsh integration to {}",
+        sanitize_path(&script_path)
+    );
 
     // 1b. Copy completion specs
     copy_specs(config_dir)?;
@@ -212,10 +232,16 @@ fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()>
         Ok(mut file) => {
             file.write_all(DEFAULT_CONFIG_TOML.as_bytes())
                 .with_context(|| format!("failed to write {}", config_path.display()))?;
-            println!("  Wrote default config to {}", config_path.display());
+            println!(
+                "  Wrote default config to {}",
+                sanitize_path(&config_path)
+            );
         }
         Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
-            println!("  Config already exists at {}", config_path.display());
+            println!(
+                "  Config already exists at {}",
+                sanitize_path(&config_path)
+            );
         }
         Err(e) => {
             return Err(anyhow::Error::new(e))
@@ -264,10 +290,10 @@ fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()>
                 fs::set_permissions(&backup, src_perms).with_context(|| {
                     format!("failed to set permissions on {}", backup.display())
                 })?;
-                println!("  Backed up .zshrc to {}", backup.display());
+                println!("  Backed up .zshrc to {}", sanitize_path(&backup));
             }
             Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
-                println!("  Backup already exists at {}", backup.display());
+                println!("  Backup already exists at {}", sanitize_path(&backup));
             }
             Err(e) => {
                 return Err(anyhow::Error::new(e))
@@ -295,14 +321,14 @@ fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()>
     // 6. Write .zshrc — graceful fallback if permission denied (e.g. nix-managed)
     match fs::write(zshrc_path, &new_zshrc) {
         Ok(()) => {
-            println!("  Updated {}", zshrc_path.display());
+            println!("  Updated {}", sanitize_path(zshrc_path));
             println!("\nghost-complete installed successfully!");
             println!("Restart your shell or run: source ~/.zshrc");
         }
         Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
             println!(
                 "\n  \x1b[33m\u{26a0}  Could not write to {} (permission denied)\x1b[0m\n",
-                zshrc_path.display()
+                sanitize_path(zshrc_path)
             );
             print_shell_blocks(&init_path, &script_path);
             println!(
@@ -332,15 +358,21 @@ fn uninstall_from(zshrc_path: &Path, config_dir: &Path) -> Result<()> {
         if found_init || found_shell {
             fs::write(zshrc_path, &content)
                 .with_context(|| format!("failed to write {}", zshrc_path.display()))?;
-            println!("  Removed managed blocks from {}", zshrc_path.display());
+            println!(
+                "  Removed managed blocks from {}",
+                sanitize_path(zshrc_path)
+            );
         } else {
             println!(
                 "  No ghost-complete blocks found in {}",
-                zshrc_path.display()
+                sanitize_path(zshrc_path)
             );
         }
     } else {
-        println!("  {} does not exist, nothing to do", zshrc_path.display());
+        println!(
+            "  {} does not exist, nothing to do",
+            sanitize_path(zshrc_path)
+        );
     }
 
     // 2. Remove shell integration scripts
@@ -354,7 +386,7 @@ fn uninstall_from(zshrc_path: &Path, config_dir: &Path) -> Result<()> {
         if script_path.exists() {
             fs::remove_file(&script_path)
                 .with_context(|| format!("failed to remove {}", script_path.display()))?;
-            println!("  Removed {}", script_path.display());
+            println!("  Removed {}", sanitize_path(&script_path));
         }
     }
 
@@ -375,14 +407,17 @@ fn uninstall_from(zshrc_path: &Path, config_dir: &Path) -> Result<()> {
         if has_specs {
             eprintln!(
                 "    - {} ({} specs)",
-                specs_dir.display(),
+                sanitize_path(&specs_dir),
                 fs::read_dir(&specs_dir).map(|d| d.count()).unwrap_or(0)
             );
         }
         if has_config {
-            eprintln!("    - {}", config_dir.join("config.toml").display());
+            eprintln!("    - {}", sanitize_path(&config_dir.join("config.toml")));
         }
-        eprintln!("  To remove everything: rm -rf {}", config_dir.display());
+        eprintln!(
+            "  To remove everything: rm -rf {}",
+            sanitize_path(config_dir)
+        );
     }
 
     println!("\nghost-complete uninstalled successfully!");

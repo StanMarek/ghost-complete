@@ -55,7 +55,7 @@ fn default_log_file() -> Option<String> {
     if let Err(e) = std::fs::create_dir_all(&dir) {
         eprintln!(
             "ghost-complete: could not create log directory {}: {e} — falling back to stderr",
-            dir.display()
+            sanitize::sanitize_path(&dir)
         );
         return None;
     }
