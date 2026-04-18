@@ -17,11 +17,22 @@ function _gc_urlencode_path
     echo -n $encoded
 end
 
+# True when the host terminal already injects native OSC 133, making our
+# redundant OSC 7771 unnecessary. Currently covers Ghostty (native) and
+# Zed (native). VSCode arrives in a later commit.
+function _gc_native_osc133
+    if test "$TERM_PROGRAM" = ghostty -o -n "$GHOSTTY_RESOURCES_DIR"
+        return 0
+    end
+    if test -n "$ZED_TERM"
+        return 0
+    end
+    return 1
+end
+
 function _gc_prompt --on-event fish_prompt
     printf '\e]133;A\a'
-    # OSC 7771: skip on Ghostty where OSC 133 already handles prompt detection.
-    # Check GHOSTTY_RESOURCES_DIR too — TERM_PROGRAM is overwritten inside tmux.
-    if test "$TERM_PROGRAM" != ghostty -a -z "$GHOSTTY_RESOURCES_DIR"
+    if not _gc_native_osc133
         printf '\e]7771;A\a'
     end
     # Report current working directory via OSC 7 for filesystem completions
@@ -30,7 +41,7 @@ end
 
 function _gc_preexec --on-event fish_preexec
     printf '\e]133;C\a'
-    if test "$TERM_PROGRAM" != ghostty -a -z "$GHOSTTY_RESOURCES_DIR"
+    if not _gc_native_osc133
         printf '\e]7771;C\a'
     end
 end
