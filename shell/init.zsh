@@ -18,6 +18,7 @@ _gc_ancestor_is_proxy() {
       return 2
     fi
     pid="${pid// /}"
+    [[ -z "$pid" ]] && return 2
     (( depth++ ))
     (( depth > 32 )) && return 2
   done
@@ -60,8 +61,8 @@ __ghost_complete_init() {
     # shell into their integrated terminal. If a user runs `code .` from a
     # ghost-complete-managed shell, GHOST_COMPLETE_ACTIVE=1 leaks into
     # VSCode's integrated zsh and would incorrectly disable the proxy there.
-    # Fix: if $$ is not a descendant of a ghost-complete process, the
-    # variable is a leak from a sibling terminal — drop it. We walk the
+    # Fix: if our parent-process ancestry does not include a ghost-complete
+    # process, the variable is a leak from a sibling terminal — drop it. We walk the
     # full PPID ancestry (not just $PPID) so subshells like `zsh`/`bash`
     # typed at the prompt still hit the guard via their grandparent
     # ghost-complete process. If the walk is inconclusive (ps failure),

@@ -11,14 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **VSCode terminal support** — Ghost Complete now runs as a first-class PTY proxy inside VSCode's integrated terminal, plus **VSCodium, Cursor, Windsurf, Positron, and Trae** (all detected via `VSCODE_IPC_HOOK_CLI`). Capability profile: `Synchronized` (DECSET 2026 via xterm.js) + native OSC 133. Coexists with VSCode's own shell integration (OSC 633) — the proxy forwards editor sequences untouched so command decorations, sticky scroll, and "run recent command" continue to work. Previously VSCode's integrated terminal fell through to the unknown-terminal `exec` fallback (plain shell, no proxy); it is now a first-class supported target.
+- **VSCode terminal support** — Ghost Complete now runs as a first-class PTY proxy inside VSCode's integrated terminal, plus **VSCodium, Cursor, Windsurf, Positron, and Trae** (all detected via `VSCODE_IPC_HOOK_CLI`). Capability profile: `Synchronized` (DECSET 2026 via xterm.js) + native OSC 133. Coexists with VSCode's own shell integration (OSC 633) — the proxy forwards editor sequences untouched so command decorations, sticky scroll, and "run recent command" continue to work. Previously `shell/init.zsh`'s allowlist did not match VSCode, so users got a plain interactive shell with no proxy; it is now a first-class supported target.
 - **Zed terminal support** — first-class support for Zed's integrated terminal, detected via `ZED_TERM=true`. Same capability profile as Ghostty/Kitty (Synchronized + native OSC 133).
 - **`supported_terminals()`** grows from 7 to 9. `Terminal::Zed` and `Terminal::VSCode` enum variants added to `gc-terminal`; `for_zed()` and `for_vscode()` test constructors available behind `test-utils`.
 
 ### Changed
 
 - **`shell/ghost-complete.{zsh,bash,fish}`** — introduced a `_gc_native_osc133` helper that short-circuits OSC 7771 emission when the host terminal already injects native OSC 133 (Ghostty, Zed) or its own shell integration that emits OSC 133 alongside proprietary markers (VSCode, signalled by `VSCODE_INJECTION=1`). Eliminates redundant/conflicting prompt markers in editor-hosted terminals.
-- **`shell/init.zsh`** — non-tmux branch now resets an inherited `GHOST_COMPLETE_ACTIVE` when the parent process is not `ghost-complete`. This fixes the `code .` flow: a user launching VSCode from a ghost-complete-managed shell now gets the proxy in VSCode's integrated terminal instead of short-circuiting on the leaked env var. Tmux branch unchanged (`GHOSTTY_RESOURCES_DIR` / `VSCODE_IPC_HOOK_CLI` / `ZED_TERM` added to the supported allowlist).
+- **`shell/init.zsh`** — non-tmux branch now resets an inherited `GHOST_COMPLETE_ACTIVE` when the parent process is not `ghost-complete`. This fixes the `code .` flow: a user launching VSCode from a ghost-complete-managed shell now gets the proxy in VSCode's integrated terminal instead of short-circuiting on the leaked env var. Tmux branch: `$ZED_TERM` and `$VSCODE_IPC_HOOK_CLI` added to the supported-terminals allowlist.
 
 ## [0.8.2] - 2026-04-18
 
