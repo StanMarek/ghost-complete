@@ -10,6 +10,8 @@ pub enum Terminal {
     Rio,
     ITerm2,
     TerminalApp,
+    /// Zed's integrated terminal. Same capability profile as Ghostty/Kitty
+    /// (Synchronized + native OSC 133), detected via ZED_TERM.
     Zed,
     /// VSCode's integrated terminal. Covers all VSCode forks (VSCodium,
     /// Cursor, Windsurf, Positron, Trae, …) — they share the xterm.js
@@ -178,10 +180,11 @@ impl TerminalProfile {
         // Zed sets ZED_TERM=true in its integrated terminal. Accept any
         // non-empty value — mirrors the KITTY_WINDOW_ID policy.
         let has_zed_term = env_is_set("ZED_TERM");
-        // VSCode (and forks: VSCodium, Cursor, Windsurf, Positron) set
-        // VSCODE_IPC_HOOK_CLI to an active Unix socket path. The
-        // existing-path check rejects stale env vars pointing at a
-        // dead editor's socket.
+        // VSCode (and forks: VSCodium, Cursor, Windsurf, Positron, Trae)
+        // set VSCODE_IPC_HOOK_CLI to a Unix socket path. The existing-path
+        // check rejects stale env vars pointing at a removed socket path.
+        // A leftover socket file from an abruptly-terminated editor still
+        // passes; connect-time validation is out of scope.
         let has_vscode_ipc = env_is_existing_path("VSCODE_IPC_HOOK_CLI");
 
         Self::detect_from_env(
@@ -360,7 +363,7 @@ impl TerminalProfile {
     }
 
     /// Test constructor: VSCode profile (Synchronized, OSC 133). Covers
-    /// all VSCode forks (VSCodium, Cursor, Windsurf, Positron) since
+    /// all VSCode forks (VSCodium, Cursor, Windsurf, Positron, Trae) since
     /// they share the xterm.js frontend and shell-integration model.
     #[cfg(any(test, feature = "test-utils"))]
     pub fn for_vscode() -> Self {
@@ -499,6 +502,13 @@ mod tests {
     fn test_capitalized_vscode_is_unknown() {
         // Match the existing strict-casing policy for other terminals.
         let profile = TerminalProfile::from_term_program("VSCode", false);
+        assert!(matches!(profile.terminal(), Terminal::Unknown(_)));
+    }
+
+    #[test]
+    fn test_capitalized_zed_is_unknown() {
+        // Match the existing strict-casing policy for other terminals.
+        let profile = TerminalProfile::from_term_program("Zed", false);
         assert!(matches!(profile.terminal(), Terminal::Unknown(_)));
     }
 
@@ -679,6 +689,58 @@ mod tests {
         // ZED_TERM checked before VSCODE_IPC_HOOK_CLI in detect_from_env.
         let p = detect("", false, false, false, false, false, false, true, true);
         assert_eq!(*p.terminal(), Terminal::Zed);
+    }
+
+    #[test]
+    fn test_detect_zed_direct_with_both_zed_term_and_term_program() {
+        // Direct path: both ZED_TERM and TERM_PROGRAM=zed set. ZED_TERM is
+        // the reliable signal and is checked before the TERM_PROGRAM fallback.
+        let p = detect("zed", false, false, false, false, false, false, true, false);
+        assert_eq!(*p.terminal(), Terminal::Zed);
+        assert!(!p.in_tmux());
+    }
+
+    #[test]
+    fn test_detect_zed_via_tmux_with_term_program_overwritten() {
+        // Inside tmux, TERM_PROGRAM is typically mangled to "tmux-256color".
+        // Only ZED_TERM is set — it's the reliable signal inside tmux.
+        let p = detect(
+            "tmux-256color",
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+        );
+        assert_eq!(*p.terminal(), Terminal::Zed);
+        assert!(p.in_tmux());
+    }
+
+    #[test]
+    fn test_detect_zed_takes_priority_over_iterm_via_tmux() {
+        // ZED_TERM checked before ITERM_SESSION_ID in the tmux branch.
+        let p = detect("", true, false, true, false, false, false, true, false);
+        assert_eq!(*p.terminal(), Terminal::Zed);
+        assert!(p.in_tmux());
+    }
+
+    #[test]
+    fn test_detect_tmux_kitty_takes_priority_over_zed() {
+        // KITTY_WINDOW_ID checked before ZED_TERM in the tmux branch.
+        let p = detect("", true, false, false, true, false, false, true, false);
+        assert_eq!(*p.terminal(), Terminal::Kitty);
+        assert!(p.in_tmux());
+    }
+
+    #[test]
+    fn test_detect_tmux_kitty_takes_priority_over_vscode() {
+        // KITTY_WINDOW_ID checked before VSCODE_IPC_HOOK_CLI in the tmux branch.
+        let p = detect("", true, false, false, true, false, false, false, true);
+        assert_eq!(*p.terminal(), Terminal::Kitty);
+        assert!(p.in_tmux());
     }
 
     #[test]
@@ -1027,5 +1089,27 @@ mod tests {
         assert!(PromptDetection::ShellIntegration
             .to_string()
             .contains("7771"));
+    }
+
+    #[test]
+    fn test_detection_does_not_read_vscode_injection_env_var() {
+        // Guard rail: the shell-integration suppression env var is NOT a
+        // detection signal. If this file starts reading it, someone is
+        // conflating suppression with detection — the two must stay
+        // independent so VSCode users without shell integration still
+        // get correct detection + OSC 7771 emission.
+        //
+        // We scan only the production code (above `mod tests`) so that the
+        // literal in this test body doesn't trip its own assertion.
+        let source = include_str!("lib.rs");
+        let prod_src = source
+            .split_once("#[cfg(test)]")
+            .map(|(before, _)| before)
+            .unwrap_or(source);
+        let forbidden = concat!("VSCODE_", "INJECTION");
+        assert!(
+            !prod_src.contains(forbidden),
+            "gc-terminal detection must not read the shell-integration suppression env var"
+        );
     }
 }

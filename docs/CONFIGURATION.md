@@ -187,7 +187,7 @@ multi_terminal = true
 Ghost Complete auto-detects the terminal via `TERM_PROGRAM` and terminal-specific env vars (`KITTY_WINDOW_ID`, `WEZTERM_UNIX_SOCKET`, `ALACRITTY_SOCKET`, `ZED_TERM`, `VSCODE_IPC_HOOK_CLI`), then selects the appropriate rendering strategy:
 
 - **Ghostty, Kitty, WezTerm, Rio, Zed** — DECSET 2026 synchronized output, native OSC 133 prompt markers.
-- **VSCode** (and forks: VSCodium, Cursor, Windsurf, Positron) — DECSET 2026 synchronized output via xterm.js, native OSC 133. Coexists with VSCode's own shell integration: the proxy forwards the editor's OSC 633 sequences untouched so command decorations / sticky scroll / "run recent command" keep working, and Ghost Complete's own shell integration suppresses its redundant OSC 7771 emission when `VSCODE_INJECTION=1` is set.
+- **VSCode** (and forks: VSCodium, Cursor, Windsurf, Positron, Trae) — DECSET 2026 synchronized output via xterm.js, native OSC 133. Coexists with VSCode's own shell integration: the proxy forwards the editor's OSC 633 sequences untouched so command decorations / sticky scroll / "run recent command" keep working, and Ghost Complete's own shell integration suppresses its redundant OSC 7771 emission when `VSCODE_INJECTION=1` is set.
 - **Alacritty** — DECSET 2026 synchronized output, OSC 7771 shell integration prompt markers (Alacritty does not support OSC 133).
 - **iTerm2 / Terminal.app** — pre-render buffer (single `write()` atomicity), OSC 7771 shell integration prompt markers.
 

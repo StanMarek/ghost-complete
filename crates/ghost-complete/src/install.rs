@@ -551,17 +551,76 @@ mod tests {
         assert!(non_tmux_branch.contains("$ZED_TERM"));
         assert!(non_tmux_branch.contains("$VSCODE_IPC_HOOK_CLI"));
 
-        // PPID-based reset for inherited GHOST_COMPLETE_ACTIVE so the
-        // `code .` flow still wires the proxy into VSCode's integrated
-        // terminal when the env var propagated from the launching shell.
+        // Ancestor-walk-based reset for inherited GHOST_COMPLETE_ACTIVE so the
+        // `code .` flow still wires the proxy into VSCode's integrated terminal
+        // when the env var propagated from the launching shell — while still
+        // honoring the guard for subshells whose $PPID is another shell.
+        assert!(
+            non_tmux_branch.contains("_gc_ancestor_is_proxy"),
+            "non-tmux branch must walk PPID ancestry to distinguish subshell \
+             from leaked env var"
+        );
         assert!(
             non_tmux_branch.contains("unset GHOST_COMPLETE_ACTIVE"),
             "non-tmux branch must reset inherited GHOST_COMPLETE_ACTIVE when \
-             parent isn't ghost-complete"
+             ancestry walk confirms leak"
+        );
+        // Both branches must coexist: honor the guard when the walk says
+        // "descendant" (0) or "uncertain/ps failed" (2), and reset only when
+        // the walk confirms the var is leaked (1).
+        assert!(
+            non_tmux_branch.matches("return").count() >= 2,
+            "non-tmux branch must honor the guard on both 'descendant' and \
+             'ps uncertain' outcomes"
+        );
+    }
+
+    #[test]
+    fn test_zsh_integration_native_osc133_helper() {
+        assert!(
+            ZSH_INTEGRATION.contains("_gc_native_osc133()"),
+            "zsh integration must define _gc_native_osc133 helper"
+        );
+        assert!(ZSH_INTEGRATION.contains("ZED_TERM"));
+        assert!(ZSH_INTEGRATION.contains("VSCODE_INJECTION"));
+        assert!(
+            ZSH_INTEGRATION.contains("ghostty")
+                || ZSH_INTEGRATION.contains("GHOSTTY_RESOURCES_DIR"),
+            "helper must cover Ghostty"
         );
         assert!(
-            non_tmux_branch.contains("ps -o comm= -p \"$PPID\""),
-            "non-tmux branch must check PPID for reset decision"
+            ZSH_INTEGRATION.contains("_gc_native_osc133 || printf '\\e]7771;A"),
+            "_gc_precmd must suppress OSC 7771 when terminal parses OSC 133 natively"
+        );
+        assert!(
+            ZSH_INTEGRATION.contains("_gc_native_osc133 || printf '\\e]7771;C"),
+            "_gc_preexec must suppress OSC 7771 when terminal parses OSC 133 natively"
+        );
+    }
+
+    #[test]
+    fn test_zsh_integration_vscode_injection_not_ipc_hook() {
+        // Extract just the _gc_native_osc133 helper body to avoid matching
+        // the unrelated __ghost_complete_init block (which does check
+        // VSCODE_IPC_HOOK_CLI). The semantic split: detection uses the IPC
+        // hook (gc-terminal), suppression uses INJECTION (shell integration).
+        let start = ZSH_INTEGRATION
+            .find("_gc_native_osc133()")
+            .expect("helper must be defined");
+        let after = &ZSH_INTEGRATION[start..];
+        let end = after.find("\n}").expect("helper must have closing brace");
+        let helper_body = &after[..end];
+
+        assert!(
+            helper_body.contains("VSCODE_INJECTION"),
+            "suppression helper must check VSCODE_INJECTION (the shell-integration signal)"
+        );
+        assert!(
+            !helper_body.contains("VSCODE_IPC_HOOK_CLI"),
+            "suppression helper must NOT check VSCODE_IPC_HOOK_CLI — that env var is for \
+             detection, not suppression. Confusing the two would silently disable OSC 7771 \
+             for VSCode users who have the integrated terminal open but haven't enabled \
+             VSCode's shell integration."
         );
     }
 

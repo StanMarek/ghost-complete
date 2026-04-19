@@ -27,10 +27,13 @@ _gc_urlencode_path() {
     printf '%s' "$encoded"
 }
 
-# True when the host terminal already injects native OSC 133 (and any
-# proprietary markers like VSCode's OSC 633), making our redundant
-# OSC 7771 unnecessary. Currently covers Ghostty, Zed, and VSCode
-# (when its shell integration is active via VSCODE_INJECTION=1).
+# True when the host terminal natively parses OSC 133 for its own prompt
+# tracking (or emits its own proprietary markers on top, like VSCode's
+# OSC 633). In those terminals our OSC 7771 fallback is redundant — the
+# terminal already understands the OSC 133 we emit below, and OSC 7771
+# only exists for terminals that mangle OSC 133. Currently covers
+# Ghostty, Zed, and VSCode (the latter only once its shell integration
+# is active, signalled by VSCODE_INJECTION being set).
 _gc_native_osc133() {
     [[ "$TERM_PROGRAM" == "ghostty" || -n "$GHOSTTY_RESOURCES_DIR" ]] && return 0
     [[ -n "$ZED_TERM" ]] && return 0
