@@ -22,7 +22,7 @@ Inspired by the [Fig](https://fig.io) autocomplete experience. Built from scratc
 
 Ghost Complete is under active development. Contributions and bug reports are welcome.
 
-- **7 supported terminals on macOS:** Ghostty, Kitty, WezTerm, Alacritty, Rio, iTerm2, and Terminal.app — all work out of the box with no additional configuration.
+- **9 supported terminals on macOS:** Ghostty, Kitty, WezTerm, Alacritty, Rio, iTerm2, Terminal.app, Zed, and VSCode (incl. VSCodium, Cursor, Windsurf, Positron) — all work out of the box with no additional configuration.
 - **zsh is the primary shell.** Bash and fish support manual trigger only (Ctrl+/).
 - **macOS only.** No Linux or Windows support planned at this time.
 - **Pre-1.0.** Config format, spec format, and behavior may change between releases.
@@ -109,10 +109,13 @@ Ghost Complete auto-detects your terminal and selects the best rendering strateg
 | [Rio](https://raphamorim.io/rio/) | Synchronized (DECSET 2026) | OSC 133 (native) | — |
 | [iTerm2](https://iterm2.com) | Pre-render buffer | Shell integration | Yes |
 | Terminal.app | Pre-render buffer | Shell integration | No |
+| [Zed](https://zed.dev) | Synchronized (DECSET 2026) | OSC 133 (native) | Yes |
+| [VSCode](https://code.visualstudio.com) (and forks) | Synchronized (DECSET 2026) | OSC 133 (native) | Yes |
 
 **Notes:**
 - Terminal.app inside tmux is not detected (it sets no env var that leaks through tmux).
 - Alacritty does not support OSC 133 natively; Ghost Complete uses its own shell integration markers instead. No functional difference — just a different detection path.
+- VSCode detection covers **all Electron-based VSCode forks**: VSCodium, Cursor, Windsurf, Positron, Trae. They share the xterm.js frontend and shell integration model. Ghost Complete coexists with VSCode's own shell integration (OSC 633) — the proxy forwards editor sequences untouched so command decorations, sticky scroll, and "run recent command" continue to work.
 - Unsupported terminals can be enabled with `[experimental] multi_terminal = true` in config.
 
 ## Configuration

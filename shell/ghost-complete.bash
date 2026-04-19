@@ -27,10 +27,23 @@ _gc_urlencode_path() {
     printf '%s' "$encoded"
 }
 
+# True when the host terminal natively parses OSC 133 for its own prompt
+# tracking (or emits its own proprietary markers on top, like VSCode's
+# OSC 633). In those terminals our OSC 7771 fallback is redundant — the
+# terminal already understands the OSC 133 we emit below, and OSC 7771
+# only exists for terminals that mangle OSC 133. Currently covers
+# Ghostty, Zed, and VSCode (the latter only once its shell integration
+# is active, signalled by VSCODE_INJECTION being set).
+_gc_native_osc133() {
+    [[ "$TERM_PROGRAM" == "ghostty" || -n "$GHOSTTY_RESOURCES_DIR" ]] && return 0
+    [[ -n "$ZED_TERM" ]] && return 0
+    [[ -n "$VSCODE_INJECTION" ]] && return 0
+    return 1
+}
+
 _gc_prompt_command() {
     printf '\e]133;A\a'
-    # Check GHOSTTY_RESOURCES_DIR too — TERM_PROGRAM is overwritten inside tmux
-    [[ "$TERM_PROGRAM" != "ghostty" && -z "$GHOSTTY_RESOURCES_DIR" ]] && printf '\e]7771;A\a'
+    _gc_native_osc133 || printf '\e]7771;A\a'
     # Report current working directory via OSC 7 for filesystem completions
     printf '\e]7;file://%s%s\a' "${HOSTNAME:-}" "$(_gc_urlencode_path "$PWD")"
 }
@@ -45,7 +58,7 @@ _gc_debug_trap() {
     if [[ "$_gc_preexec_enabled" == true ]]; then
         _gc_preexec_enabled=false
         printf '\e]133;C\a'
-        [[ "$TERM_PROGRAM" != "ghostty" && -z "$GHOSTTY_RESOURCES_DIR" ]] && printf '\e]7771;C\a'
+        _gc_native_osc133 || printf '\e]7771;C\a'
     fi
     # Re-invoke any pre-existing DEBUG trap captured at install time so we
     # don't silently clobber the user's own (or another tool's) trap.

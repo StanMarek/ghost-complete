@@ -177,20 +177,21 @@ Opt-in features that are not yet considered stable.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `multi_terminal` | bool | `false` | Enable unsupported/unknown terminals. All 7 supported terminals (Ghostty, Kitty, WezTerm, Alacritty, Rio, iTerm2, Terminal.app) work without this flag. Set to `true` only if you want to try Ghost Complete on an unlisted terminal. |
+| `multi_terminal` | bool | `false` | Enable unsupported/unknown terminals. All 9 supported terminals (Ghostty, Kitty, WezTerm, Alacritty, Rio, iTerm2, Terminal.app, Zed, VSCode) work without this flag. Set to `true` only if you want to try Ghost Complete on an unlisted terminal. |
 
 ```toml
 [experimental]
 multi_terminal = true
 ```
 
-Ghost Complete auto-detects the terminal via `TERM_PROGRAM` and terminal-specific env vars, then selects the appropriate rendering strategy:
+Ghost Complete auto-detects the terminal via `TERM_PROGRAM` and terminal-specific env vars (`KITTY_WINDOW_ID`, `WEZTERM_UNIX_SOCKET`, `ALACRITTY_SOCKET`, `ZED_TERM`, `VSCODE_IPC_HOOK_CLI`), then selects the appropriate rendering strategy:
 
-- **Ghostty, Kitty, WezTerm, Rio** — DECSET 2026 synchronized output, native OSC 133 prompt markers
-- **Alacritty** — DECSET 2026 synchronized output, OSC 7771 shell integration prompt markers (Alacritty does not support OSC 133)
-- **iTerm2 / Terminal.app** — pre-render buffer (single `write()` atomicity), OSC 7771 shell integration prompt markers
+- **Ghostty, Kitty, WezTerm, Rio, Zed** — DECSET 2026 synchronized output, native OSC 133 prompt markers.
+- **VSCode** (and forks: VSCodium, Cursor, Windsurf, Positron, Trae) — DECSET 2026 synchronized output via xterm.js, native OSC 133. Coexists with VSCode's own shell integration: the proxy forwards the editor's OSC 633 sequences untouched so command decorations / sticky scroll / "run recent command" keep working, and Ghost Complete's own shell integration suppresses its redundant OSC 7771 emission when `VSCODE_INJECTION=1` is set.
+- **Alacritty** — DECSET 2026 synchronized output, OSC 7771 shell integration prompt markers (Alacritty does not support OSC 133).
+- **iTerm2 / Terminal.app** — pre-render buffer (single `write()` atomicity), OSC 7771 shell integration prompt markers.
 
-**tmux support:** Ghostty, Kitty, WezTerm, Alacritty, and iTerm2 are detected inside tmux via their respective env vars. Terminal.app inside tmux is not detected (it sets no env var that leaks through tmux).
+**tmux support:** Ghostty, Kitty, WezTerm, Alacritty, iTerm2, Zed, and VSCode are detected inside tmux via their respective env vars. Terminal.app inside tmux is not detected (it sets no env var that leaks through tmux).
 
 ## Logging
 
