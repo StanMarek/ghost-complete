@@ -501,7 +501,7 @@ impl SuggestionEngine {
             }
         }
         SyncResult {
-            suggestions: self.rank_with_history(ctx, cwd, buffer, candidates),
+            suggestions: self.rank_with_history(ctx, cwd, buffer, candidates, true),
             script_generators: Vec::new(),
             git_generators: Vec::new(),
         }
@@ -519,7 +519,7 @@ impl SuggestionEngine {
             }
         }
         SyncResult {
-            suggestions: self.rank_with_history(ctx, cwd, buffer, candidates),
+            suggestions: self.rank_with_history(ctx, cwd, buffer, candidates, true),
             script_generators: Vec::new(),
             git_generators: Vec::new(),
         }
@@ -608,19 +608,29 @@ impl SuggestionEngine {
             past_double_dash,
         } = specs::resolve_spec(spec, ctx);
 
+        let git_generators = self.git_generators_from(&native_generators);
+
         // Suppress subcommands/options when:
         // 1. The preceding flag takes an argument (e.g. `curl -o <TAB>`)
         // 2. We're past `--` (end-of-flags separator) — only positional args
-        let suppress_commands = preceding_flag_has_args || past_double_dash;
+        // 3. Native git ref generators are pending for a positional token.
+        //    Rendering flags/files before branch/tag results arrive makes
+        //    `git checkout <TAB>` look flag-first even though refs are the
+        //    primary completion target.
+        let defer_to_git_refs =
+            !git_generators.is_empty() && !ctx.is_flag && !looks_like_path(&ctx.current_word);
+        let suppress_commands = preceding_flag_has_args || past_double_dash || defer_to_git_refs;
 
         if !suppress_commands {
             candidates.extend(subcommands);
             candidates.extend(options);
         }
 
-        let git_generators = self.git_generators_from(&native_generators);
-
-        // Add filesystem: folders-only or all filepaths.
+        // Add filesystem: folders-only or all filepaths. Runs even when
+        // deferring to git refs so `git checkout <file>` keeps completing
+        // paths while branches/tags are loading. The handler's empty-query
+        // merge re-sorts by kind priority (branches < tags < files), so
+        // branches still land at the top once generators resolve.
         if wants_folders_only && self.providers_filesystem {
             self.extend_with_folders(ctx, cwd, &mut candidates);
         } else if wants_filepaths && self.providers_filesystem {
@@ -636,8 +646,15 @@ impl SuggestionEngine {
             .filter(|g| !g.requires_js)
             .collect();
 
+        // When deferring to git refs, skip history: otherwise `rank_with_history`
+        // would fuzzy-match the buffer against the shell history and jam the
+        // last N `git checkout ...` invocations ahead of the branches that are
+        // about to arrive. Filesystem candidates stay in the pool so file-path
+        // checkouts still work during the async window.
+        let suggestions = self.rank_with_history(ctx, cwd, buffer, candidates, !defer_to_git_refs);
+
         Ok(SyncResult {
-            suggestions: self.rank_with_history(ctx, cwd, buffer, candidates),
+            suggestions,
             script_generators,
             git_generators,
         })
@@ -720,7 +737,7 @@ impl SuggestionEngine {
             }
         }
         SyncResult {
-            suggestions: self.rank_with_history(ctx, cwd, buffer, candidates),
+            suggestions: self.rank_with_history(ctx, cwd, buffer, candidates, true),
             script_generators: Vec::new(),
             git_generators: Vec::new(),
         }
@@ -729,18 +746,22 @@ impl SuggestionEngine {
     /// Rank main candidates with current_word, then separately rank history
     /// candidates with the full buffer, and append history results at the end.
     /// All suggestions receive a frecency bonus so frequently/recently accepted
-    /// completions sort higher.
+    /// completions sort higher. When `include_history` is false, history is
+    /// skipped entirely — used for contexts where history entries would
+    /// outrank imminent async results (e.g. `git checkout <TAB>` waiting on
+    /// branch/tag generators).
     fn rank_with_history(
         &self,
         ctx: &CommandContext,
         cwd: &Path,
         buffer: &str,
         candidates: Vec<Suggestion>,
+        include_history: bool,
     ) -> Vec<Suggestion> {
         let mut results = fuzzy::rank(&ctx.current_word, candidates, self.max_results);
 
         // History doesn't belong in redirect context — user expects filenames, not commands
-        if self.max_history_results > 0 && !ctx.in_redirect {
+        if include_history && self.max_history_results > 0 && !ctx.in_redirect {
             let remaining = self
                 .max_history_results
                 .min(self.max_results.saturating_sub(results.len()));
@@ -884,6 +905,170 @@ mod tests {
             results.iter().any(|s| s.text == "-m"),
             "expected '-m' in results: {results:?}"
         );
+    }
+
+    #[test]
+    fn test_git_checkout_waits_for_ref_generators_in_arg_position() {
+        let engine = make_engine();
+        let ctx = make_ctx(Some("git"), vec!["checkout"], "", 2);
+        let results = engine
+            .suggest_sync(&ctx, Path::new("/tmp"), "git checkout ")
+            .unwrap();
+
+        assert!(
+            results
+                .git_generators
+                .contains(&crate::git::GitQueryKind::Branches),
+            "git checkout should dispatch branch generator: {results:?}"
+        );
+        assert!(
+            results
+                .git_generators
+                .contains(&crate::git::GitQueryKind::Tags),
+            "git checkout should dispatch tag generator: {results:?}"
+        );
+        // Flags/subcommands must not leak through while refs are pending —
+        // filesystem and tempdir entries are allowed so `git checkout <file>`
+        // keeps working.
+        assert!(
+            !results
+                .suggestions
+                .iter()
+                .any(|s| matches!(s.kind, SuggestionKind::Flag | SuggestionKind::Subcommand)),
+            "flags/subcommands must be suppressed while branch/tag generators are pending: {:?}",
+            results.suggestions,
+        );
+    }
+
+    #[test]
+    fn test_git_checkout_suppresses_matching_history_while_refs_pending() {
+        // Regression for "history appears before branches on git checkout <TAB>":
+        // when native git ref generators are pending, the sync pass must not emit
+        // history entries that fuzzy-match the buffer. Otherwise the popup shows
+        // a history-only view for the few ms before branches arrive.
+        let spec_store = SpecStore::load_from_dir(&spec_dir()).unwrap().store;
+        let history = HistoryProvider::from_entries(vec![
+            "git checkout main".into(),
+            "git checkout -b feature".into(),
+            "git checkout demo".into(),
+        ]);
+        let commands = CommandsProvider::from_list(vec!["git".into()]);
+        let engine = SuggestionEngine::with_providers(spec_store, history, commands);
+
+        let ctx = make_ctx(Some("git"), vec!["checkout"], "", 2);
+        let results = engine
+            .suggest_sync(&ctx, Path::new("/tmp"), "git checkout ")
+            .unwrap();
+
+        assert!(
+            !results
+                .suggestions
+                .iter()
+                .any(|s| s.source == SuggestionSource::History),
+            "history must be suppressed while git ref generators are pending: {:?}",
+            results.suggestions
+        );
+    }
+
+    #[test]
+    fn test_git_checkout_still_offers_filesystem_when_refs_pending() {
+        // `git checkout <file>` is a valid restore-file invocation. Deferring
+        // to git refs must NOT swallow filesystem completions — the user might
+        // be mid-word on a filename.
+        let tmp = tempfile::TempDir::new().unwrap();
+        std::fs::write(tmp.path().join("Makefile"), "").unwrap();
+        std::fs::write(tmp.path().join("README.md"), "").unwrap();
+
+        let engine = make_engine();
+        let ctx = make_ctx(Some("git"), vec!["checkout"], "", 2);
+        let results = engine
+            .suggest_sync(&ctx, tmp.path(), "git checkout ")
+            .unwrap();
+
+        assert!(
+            results
+                .suggestions
+                .iter()
+                .any(|s| s.text == "Makefile" || s.text == "README.md"),
+            "filesystem completions must still appear while git ref generators \
+             are pending so `git checkout <file>` keeps working: {:?}",
+            results.suggestions,
+        );
+    }
+
+    #[test]
+    fn test_git_checkout_with_flag_prefix_still_shows_flags() {
+        // Locks in the `!ctx.is_flag` half of `defer_to_git_refs`. Typing `-`
+        // after `git checkout` is an explicit signal the user wants flags —
+        // the ref-deferral path must NOT swallow them. Branch/tag generators
+        // should still be dispatched in parallel so refs keep loading async.
+        let engine = make_engine();
+        let ctx = make_ctx(Some("git"), vec!["checkout"], "-", 2);
+        let results = engine
+            .suggest_sync(&ctx, Path::new("/tmp"), "git checkout -")
+            .unwrap();
+
+        assert!(
+            results
+                .suggestions
+                .iter()
+                .any(|s| s.kind == SuggestionKind::Flag),
+            "flags must appear when current_word starts with '-': {:?}",
+            results.suggestions,
+        );
+        assert!(
+            results
+                .git_generators
+                .contains(&crate::git::GitQueryKind::Branches),
+            "branch generator must still be dispatched even with flag prefix: {results:?}"
+        );
+        assert!(
+            results
+                .git_generators
+                .contains(&crate::git::GitQueryKind::Tags),
+            "tag generator must still be dispatched even with flag prefix: {results:?}"
+        );
+    }
+
+    #[test]
+    fn test_git_checkout_with_path_like_word_does_not_defer_to_refs() {
+        // Locks in the `!looks_like_path(&ctx.current_word)` half of
+        // `defer_to_git_refs`. When the user has signalled a path
+        // (leading `.`, leading `~`, or embedded `/`), history must NOT be
+        // suppressed — otherwise `git checkout ./foo`, `git checkout ../bar`,
+        // `git checkout ~/baz`, and `git checkout src/main` would lose their
+        // matching history entries for the few ms before branches arrive.
+        //
+        // Filesystem is disabled on the engine so the assertion targets the
+        // `include_history` branch directly — otherwise real-world filesystem
+        // entries for `../`, `~/`, etc. crowd out history via `max_results`
+        // saturation and obscure the signal we care about.
+        let path_markers = ["./", "../src", "~/proj", "src/main"];
+
+        for marker in path_markers {
+            let tmp = tempfile::TempDir::new().unwrap();
+            let spec_store = SpecStore::load_from_dir(&spec_dir()).unwrap().store;
+            // History entry is crafted so the buffer fuzzy-matches it,
+            // proving history candidates ARE reachable on this path.
+            let history_entry = format!("git checkout {marker}");
+            let history = HistoryProvider::from_entries(vec![history_entry.clone()]);
+            let commands = CommandsProvider::from_list(vec!["git".into()]);
+            let mut engine = SuggestionEngine::with_providers(spec_store, history, commands);
+            engine.providers_filesystem = false;
+
+            let ctx = make_ctx(Some("git"), vec!["checkout"], marker, 2);
+            let buffer = format!("git checkout {marker}");
+            let results = engine.suggest_sync(&ctx, tmp.path(), &buffer).unwrap();
+
+            assert!(
+                results
+                    .suggestions
+                    .iter()
+                    .any(|s| s.source == SuggestionSource::History),
+                "path-like word {marker:?} must NOT suppress history: {:?}",
+                results.suggestions,
+            );
+        }
     }
 
     #[test]

@@ -938,7 +938,19 @@ impl InputHandler {
                 // the pathological-provider case entirely. Deferred until a
                 // real-world report of a >10k-item provider.
                 self.suggestions = if current_word.is_empty() {
-                    merged
+                    // Sort by kind priority so dynamic arrivals (git branches,
+                    // tags, remotes — priorities 0/1/2) land above any sync
+                    // residuals (flags=4, files=7, history=8). Without this,
+                    // the extend above leaves branches glued to the tail of
+                    // the sync pool on `git checkout <TAB>`.
+                    let mut m = merged;
+                    m.sort_by(|a, b| {
+                        a.kind
+                            .sort_priority()
+                            .cmp(&b.kind.sort_priority())
+                            .then_with(|| a.text.cmp(&b.text))
+                    });
+                    m
                 } else {
                     gc_suggest::fuzzy::rank(&current_word, merged, self.max_visible * 5)
                 };
@@ -1321,6 +1333,136 @@ mod tests {
         assert_eq!(key_to_bytes(&KeyEvent::Ctrl('a')), vec![0x01]);
         assert_eq!(key_to_bytes(&KeyEvent::Ctrl('d')), vec![0x04]);
         assert_eq!(key_to_bytes(&KeyEvent::Ctrl('z')), vec![0x1A]);
+    }
+
+    #[test]
+    fn test_try_merge_dynamic_empty_query_sorts_branches_before_history_and_files() {
+        // Regression: on `git checkout <TAB>` the sync pass returns
+        // [filesystem files, history], the popup paints, and then async git
+        // branches arrive. Previously the empty-query branch of
+        // `try_merge_dynamic` skipped sorting entirely and just `extend`-ed,
+        // which left branches stranded BELOW the earlier rows. Branches must
+        // sort to the top by kind priority.
+        use gc_suggest::SuggestionKind;
+
+        let mut handler = make_visible_handler(vec![
+            Suggestion {
+                text: "Makefile".to_string(),
+                kind: SuggestionKind::FilePath,
+                source: SuggestionSource::Filesystem,
+                ..Default::default()
+            },
+            Suggestion {
+                text: "git checkout demo".to_string(),
+                kind: SuggestionKind::History,
+                source: SuggestionSource::History,
+                ..Default::default()
+            },
+        ]);
+
+        // Prime the snapshot so the staleness check against a freshly-parsed
+        // empty buffer passes (both ends resolve to command=None, args=[], word_index=0).
+        let base_ctx = gc_buffer::parse_command_context("", 0);
+        handler.dynamic_ctx = Some(DynamicCtxSnapshot::capture(&base_ctx, false));
+
+        let (tx, rx) = mpsc::channel::<Vec<Suggestion>>(1);
+        tx.try_send(vec![
+            Suggestion {
+                text: "main".to_string(),
+                kind: SuggestionKind::GitBranch,
+                source: SuggestionSource::Git,
+                ..Default::default()
+            },
+            Suggestion {
+                text: "v1.0".to_string(),
+                kind: SuggestionKind::GitTag,
+                source: SuggestionSource::Git,
+                ..Default::default()
+            },
+        ])
+        .unwrap();
+        drop(tx);
+        handler.dynamic_rx = Some(rx);
+
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+
+        let merged = handler.try_merge_dynamic(&parser, &mut buf);
+
+        assert!(merged, "merge should have happened");
+        let kinds: Vec<SuggestionKind> = handler.suggestions.iter().map(|s| s.kind).collect();
+        assert_eq!(
+            kinds,
+            vec![
+                SuggestionKind::GitBranch,
+                SuggestionKind::GitTag,
+                SuggestionKind::FilePath,
+                SuggestionKind::History,
+            ],
+            "branches and tags must land above files and history on empty query: {:?}",
+            handler.suggestions,
+        );
+    }
+
+    #[test]
+    fn test_try_merge_dynamic_empty_query_stable_tiebreak_by_text() {
+        // When two dynamic arrivals share the same `sort_priority` (e.g. two
+        // `GitBranch` entries), the comparator falls through to
+        // `then_with(|| a.text.cmp(&b.text))` so the popup order is
+        // alphabetic rather than channel-arrival order. Locks in both tiers
+        // of the comparator: kind-priority first, text second.
+        use gc_suggest::SuggestionKind;
+
+        let mut handler = make_visible_handler(vec![Suggestion {
+            text: "Makefile".to_string(),
+            kind: SuggestionKind::FilePath,
+            source: SuggestionSource::Filesystem,
+            ..Default::default()
+        }]);
+
+        let base_ctx = gc_buffer::parse_command_context("", 0);
+        handler.dynamic_ctx = Some(DynamicCtxSnapshot::capture(&base_ctx, false));
+
+        let (tx, rx) = mpsc::channel::<Vec<Suggestion>>(1);
+        tx.try_send(vec![
+            Suggestion {
+                text: "zeta".to_string(),
+                kind: SuggestionKind::GitBranch,
+                source: SuggestionSource::Git,
+                ..Default::default()
+            },
+            Suggestion {
+                text: "alpha".to_string(),
+                kind: SuggestionKind::GitBranch,
+                source: SuggestionSource::Git,
+                ..Default::default()
+            },
+        ])
+        .unwrap();
+        drop(tx);
+        handler.dynamic_rx = Some(rx);
+
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+
+        let merged = handler.try_merge_dynamic(&parser, &mut buf);
+
+        assert!(merged, "merge should have happened");
+        let ordered: Vec<(SuggestionKind, String)> = handler
+            .suggestions
+            .iter()
+            .map(|s| (s.kind, s.text.clone()))
+            .collect();
+        assert_eq!(
+            ordered,
+            vec![
+                (SuggestionKind::GitBranch, "alpha".to_string()),
+                (SuggestionKind::GitBranch, "zeta".to_string()),
+                (SuggestionKind::FilePath, "Makefile".to_string()),
+            ],
+            "same-priority branches must tiebreak alphabetically and both land above files: {:?}",
+            handler.suggestions,
+        );
     }
 
     #[test]
