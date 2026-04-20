@@ -8,7 +8,7 @@
 [![GitHub Release](https://img.shields.io/github/v/release/StanMarek/ghost-complete)](https://github.com/StanMarek/ghost-complete/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-<video src="https://github.com/StanMarek/ghost-complete/raw/master/assets/demo_ghost-complete.mov" controls width="100%"></video>
+<video src="https://github.com/StanMarek/ghost-complete/raw/master/assets/demo_ghost-complete.mp4" controls width="100%"></video>
 
 </div>
 
@@ -120,7 +120,7 @@ Ghost Complete auto-detects your terminal and selects the best rendering strateg
 
 <div align="center">
 
-<video src="https://github.com/StanMarek/ghost-complete/raw/master/assets/zed_vscode_demo.mov" controls width="100%"></video>
+<video src="https://github.com/StanMarek/ghost-complete/raw/master/assets/zed_vscode_demo.mp4" controls width="100%"></video>
 
 <sub>Ghost Complete running inside Zed and VSCode's integrated terminals.</sub>
 
