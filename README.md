@@ -8,7 +8,7 @@
 [![GitHub Release](https://img.shields.io/github/v/release/StanMarek/ghost-complete)](https://github.com/StanMarek/ghost-complete/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-https://github.com/user-attachments/assets/5b6a4384-7cf8-4088-9630-3ddf0ff0e93c
+<video src="https://github.com/StanMarek/ghost-complete/raw/master/assets/demo_ghost-complete.mov" controls width="100%"></video>
 
 </div>
 
@@ -117,6 +117,14 @@ Ghost Complete auto-detects your terminal and selects the best rendering strateg
 - Alacritty does not support OSC 133 natively; Ghost Complete uses its own shell integration markers instead. No functional difference — just a different detection path.
 - VSCode detection covers **all Electron-based VSCode forks**: VSCodium, Cursor, Windsurf, Positron, Trae. They share the xterm.js frontend and shell integration model. Ghost Complete coexists with VSCode's own shell integration (OSC 633) — the proxy forwards editor sequences untouched so command decorations, sticky scroll, and "run recent command" continue to work.
 - Unsupported terminals can be enabled with `[experimental] multi_terminal = true` in config.
+
+<div align="center">
+
+<video src="https://github.com/StanMarek/ghost-complete/raw/master/assets/zed_vscode_demo.mov" controls width="100%"></video>
+
+<sub>Ghost Complete running inside Zed and VSCode's integrated terminals.</sub>
+
+</div>
 
 ## Configuration
 
