@@ -997,6 +997,81 @@ mod tests {
     }
 
     #[test]
+    fn test_git_checkout_with_flag_prefix_still_shows_flags() {
+        // Locks in the `!ctx.is_flag` half of `defer_to_git_refs`. Typing `-`
+        // after `git checkout` is an explicit signal the user wants flags —
+        // the ref-deferral path must NOT swallow them. Branch/tag generators
+        // should still be dispatched in parallel so refs keep loading async.
+        let engine = make_engine();
+        let ctx = make_ctx(Some("git"), vec!["checkout"], "-", 2);
+        let results = engine
+            .suggest_sync(&ctx, Path::new("/tmp"), "git checkout -")
+            .unwrap();
+
+        assert!(
+            results
+                .suggestions
+                .iter()
+                .any(|s| s.kind == SuggestionKind::Flag),
+            "flags must appear when current_word starts with '-': {:?}",
+            results.suggestions,
+        );
+        assert!(
+            results
+                .git_generators
+                .contains(&crate::git::GitQueryKind::Branches),
+            "branch generator must still be dispatched even with flag prefix: {results:?}"
+        );
+        assert!(
+            results
+                .git_generators
+                .contains(&crate::git::GitQueryKind::Tags),
+            "tag generator must still be dispatched even with flag prefix: {results:?}"
+        );
+    }
+
+    #[test]
+    fn test_git_checkout_with_path_like_word_does_not_defer_to_refs() {
+        // Locks in the `!looks_like_path(&ctx.current_word)` half of
+        // `defer_to_git_refs`. When the user has signalled a path
+        // (leading `.`, leading `~`, or embedded `/`), history must NOT be
+        // suppressed — otherwise `git checkout ./foo`, `git checkout ../bar`,
+        // `git checkout ~/baz`, and `git checkout src/main` would lose their
+        // matching history entries for the few ms before branches arrive.
+        //
+        // Filesystem is disabled on the engine so the assertion targets the
+        // `include_history` branch directly — otherwise real-world filesystem
+        // entries for `../`, `~/`, etc. crowd out history via `max_results`
+        // saturation and obscure the signal we care about.
+        let path_markers = ["./", "../src", "~/proj", "src/main"];
+
+        for marker in path_markers {
+            let tmp = tempfile::TempDir::new().unwrap();
+            let spec_store = SpecStore::load_from_dir(&spec_dir()).unwrap().store;
+            // History entry is crafted so the buffer fuzzy-matches it,
+            // proving history candidates ARE reachable on this path.
+            let history_entry = format!("git checkout {marker}");
+            let history = HistoryProvider::from_entries(vec![history_entry.clone()]);
+            let commands = CommandsProvider::from_list(vec!["git".into()]);
+            let mut engine = SuggestionEngine::with_providers(spec_store, history, commands);
+            engine.providers_filesystem = false;
+
+            let ctx = make_ctx(Some("git"), vec!["checkout"], marker, 2);
+            let buffer = format!("git checkout {marker}");
+            let results = engine.suggest_sync(&ctx, tmp.path(), &buffer).unwrap();
+
+            assert!(
+                results
+                    .suggestions
+                    .iter()
+                    .any(|s| s.source == SuggestionSource::History),
+                "path-like word {marker:?} must NOT suppress history: {:?}",
+                results.suggestions,
+            );
+        }
+    }
+
+    #[test]
     fn test_redirect_gives_filesystem() {
         let engine = make_engine();
         let tmp = tempfile::TempDir::new().unwrap();
