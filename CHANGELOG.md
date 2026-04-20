@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-04-20
+
+### Fixed
+
+- **`git checkout <TAB>`** — native git ref generators now consistently surface branches/tags/remotes above history and filesystem residuals. When refs are still pending, the sync pass suppresses commands/options/history (but preserves filesystem candidates so `git checkout <path>` still works). The dynamic merge's empty-query branch sorts by `SuggestionKind` priority, so refs land at the top instead of being appended after sync residuals. (#73)
+
+### Changed
+
+- **README** — embed demo videos from `assets/` as mp4 (h.264) with clickable poster images; point at v0.9.0 release assets for hosted playback.
+
 ## [0.9.0] - 2026-04-19
 
 ### Added
@@ -370,6 +380,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Shell integration** for zsh (full), bash (Ctrl+/), and fish (Ctrl+/)
 - **`validate-specs` subcommand** with colored output and item counts
 
+[0.9.1]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.9.1
 [0.9.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.9.0
 [0.8.2]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.8.2
 [0.8.1]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.8.1
