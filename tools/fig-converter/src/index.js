@@ -591,12 +591,13 @@ function runWorkerBatch({ batch, outputDir, dryRun, heapMb }) {
       },
     });
 
+    const STDOUT_BUF_CAP = 4096;
     let stdoutBuf = '';
     let stderrTail = '';
     const STDERR_TAIL_CAP = 500;
 
     child.stdout.on('data', (buf) => {
-      stdoutBuf += buf.toString('utf8');
+      stdoutBuf = (stdoutBuf + buf.toString('utf8')).slice(-STDOUT_BUF_CAP);
     });
 
     // Mirror stderr live so the user sees progress in real time, but also
@@ -613,13 +614,14 @@ function runWorkerBatch({ batch, outputDir, dryRun, heapMb }) {
       process.stderr.write(
         `[converter] failed to spawn worker: ${err.message}\n`
       );
+      const totals = makeEmptyTotals();
+      totals.failed = batch.length;
       resolvePromise({
-        totals: makeEmptyTotals(),
+        totals,
         errors: batch.map((spec) => ({
           spec,
           error: `worker spawn failed: ${err.message}`,
         })),
-        totals_failed_override: batch.length,
       });
     });
 
