@@ -81,6 +81,25 @@ describe('matchPostProcess', () => {
       assert.equal(jsonTransform.name, 'Name');
       assert.equal(jsonTransform.json_extract, undefined);
     });
+
+    it('JSON.parse without resolvable field is marked requires_js (no silent "name" fallback)', () => {
+      // JSON.parse is present but the extracted value isn't bound to a
+      // `name:` key via any of the strategies (direct, bracket, or variable
+      // assignment + name: access). The old matcher guessed `name: "name"`
+      // here — wrong for inputs like j.metadata.id. New behaviour: defer to JS.
+      const fn = `(out) => out.split("\\n").filter(Boolean).map(line => { const j = JSON.parse(line); return j.metadata.id; })`;
+      const result = matchPostProcess(fn);
+      assert.equal(result.requires_js, true);
+      assert.equal(result.transforms, null);
+      assert.equal(result.js_source, fn);
+      // Specifically: it must NOT fall back to {type: 'json_extract', name: 'name'}.
+      assert.ok(
+        !Array.isArray(result.transforms) ||
+          !result.transforms.some(
+            t => typeof t === 'object' && t.type === 'json_extract' && t.name === 'name'
+          )
+      );
+    });
   });
 
   describe('regex extraction', () => {
@@ -107,25 +126,24 @@ describe('matchPostProcess', () => {
   });
 
   describe('column/substring extraction', () => {
-    it('matches substring extraction', () => {
+    it('substring extraction is marked requires_js', () => {
+      // .substring(0, N) is a byte-offset slice, NOT the whitespace-delimited
+      // column_extract transform. The old matcher emitted column_extract
+      // here and produced wrong completions at runtime — the correct
+      // behaviour is to defer to JS.
       const fn = `(out) => out.split("\\n").map(line => ({ name: line.substring(0, 7) }))`;
       const result = matchPostProcess(fn);
-      assert.equal(result.requires_js, false);
-      const colTransform = result.transforms.find(
-        t => typeof t === 'object' && t.type === 'column_extract'
-      );
-      assert.ok(colTransform);
-      assert.equal(colTransform.start, 0);
-      assert.equal(colTransform.end, 7);
+      assert.equal(result.requires_js, true);
+      assert.equal(result.transforms, null);
+      assert.equal(result.js_source, fn);
     });
 
-    it('matches slice extraction', () => {
+    it('slice extraction is marked requires_js', () => {
       const fn = `(out) => out.split("\\n").map(line => ({ name: line.slice(0, 12) }))`;
       const result = matchPostProcess(fn);
-      assert.equal(result.requires_js, false);
-      assert.ok(result.transforms.some(
-        t => typeof t === 'object' && t.type === 'column_extract'
-      ));
+      assert.equal(result.requires_js, true);
+      assert.equal(result.transforms, null);
+      assert.equal(result.js_source, fn);
     });
   });
 
@@ -194,18 +212,16 @@ describe('matchPostProcess', () => {
       assert.ok(result.transforms.includes('split_lines'));
     });
 
-    it('matches git error guard + split + substring pattern', () => {
+    it('git error guard + split + substring is marked requires_js', () => {
+      // This real-world Fig postProcess uses .substring(0,7) to grab a short
+      // git SHA — a byte-offset slice that has no correct lowering to
+      // column_extract. We must defer the whole function to JS rather than
+      // silently produce wrong completions.
       const fn = 'function(e){let t=D(e);return t.startsWith("fatal:")?[]:t.split(`\n`).map(i=>({name:i.substring(0,7),icon:"fig://icon?type=node",description:i.substring(8)}))}';
       const result = matchPostProcess(fn);
-      assert.equal(result.requires_js, false);
-      assert.deepStrictEqual(result.transforms[0], {
-        type: 'error_guard',
-        starts_with: 'fatal:',
-      });
-      assert.ok(result.transforms.includes('split_lines'));
-      assert.ok(result.transforms.some(
-        t => typeof t === 'object' && t.type === 'column_extract'
-      ));
+      assert.equal(result.requires_js, true);
+      assert.equal(result.transforms, null);
+      assert.equal(result.js_source, fn);
     });
   });
 });

@@ -48,24 +48,28 @@ export function matchPostProcess(fnSource) {
     transforms.push('trim');
   }
 
-  // Phase 4: Check for JSON.parse extraction
+  // Phase 4: Substring/slice are byte-offset operations and CANNOT be
+  // represented by our whitespace-delimited column_extract transform. Any
+  // function that relies on .substring/.slice to derive a completion value
+  // must be deferred to JS execution — there is no safe native lowering.
+  if (hasSubstringOrSlice(body)) {
+    return { transforms: null, requires_js: true, js_source: fnSource };
+  }
+
+  // Phase 5: Check for JSON.parse extraction
   const jsonExtract = matchJsonExtract(body);
+  if (jsonExtract === REQUIRES_JS) {
+    return { transforms: null, requires_js: true, js_source: fnSource };
+  }
   if (jsonExtract) {
     transforms.push(jsonExtract);
     return { transforms, requires_js: false };
   }
 
-  // Phase 5: Check for regex extraction
+  // Phase 6: Check for regex extraction
   const regexExtract = matchRegexExtract(body);
   if (regexExtract) {
     transforms.push(regexExtract);
-    return { transforms, requires_js: false };
-  }
-
-  // Phase 6: Check for substring/column extraction
-  const columnExtract = matchColumnExtract(body);
-  if (columnExtract) {
-    transforms.push(columnExtract);
     return { transforms, requires_js: false };
   }
 
@@ -83,6 +87,9 @@ export function matchPostProcess(fnSource) {
   // If we got here with just split+filter, that's still a valid basic match
   return { transforms, requires_js: false };
 }
+
+// Sentinel returned by matchers that detect a pattern they can't safely lower.
+const REQUIRES_JS = Symbol('requires_js');
 
 // --- Pattern matchers ---
 
@@ -219,8 +226,10 @@ function matchJsonExtract(body) {
     return result;
   }
 
-  // Generic JSON.parse without clear field access
-  return { type: 'json_extract', name: 'name' };
+  // JSON.parse is present but we can't identify which field is being
+  // accessed (e.g. `JSON.parse(x); return x.metadata.id`). Guessing "name"
+  // here produced wrong completions at runtime — defer to JS instead.
+  return REQUIRES_JS;
 }
 
 /**
@@ -255,20 +264,17 @@ function matchRegexExtract(body) {
 }
 
 /**
- * Match column/substring extraction.
- * e.g., line.substring(0, 7), line.slice(0, 7)
+ * Detect substring/slice byte-offset operations.
+ *
+ * These are byte-offset slices (like `line.substring(0, 7)` grabbing the
+ * first 7 characters of a git SHA) and are NOT equivalent to the
+ * whitespace-delimited `column_extract` transform in the Rust pipeline.
+ * The previous implementation emitted `column_extract` here, which silently
+ * produced wrong completions. Now we detect the pattern so the caller can
+ * defer to JS instead.
  */
-function matchColumnExtract(body) {
-  const substringMatch = body.match(
-    /\.(?:substring|slice)\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)/
-  );
-  if (substringMatch) {
-    return {
-      type: 'column_extract',
-      column: parseInt(substringMatch[1], 10),
-    };
-  }
-  return null;
+function hasSubstringOrSlice(body) {
+  return /\.(?:substring|slice)\s*\(\s*\d+\s*,\s*\d+\s*\)/.test(body);
 }
 
 /**
