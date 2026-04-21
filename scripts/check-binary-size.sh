@@ -159,9 +159,13 @@ case "$mode" in
         delta=$(( actual_bytes - baseline_bytes ))
         limit_mb="$(bytes_to_mb "$limit_bytes")"
         baseline_mb="$(bytes_to_mb "$baseline_bytes")"
-        delta_mb="$(bytes_to_mb "$(( delta < 0 ? 0 : delta ))")"
+        if (( delta < 0 )); then
+            delta_mb="-$(bytes_to_mb "$(( -delta ))")"
+        else
+            delta_mb="+$(bytes_to_mb "$delta")"
+        fi
 
-        log "Binary size: ${actual_mb}  Baseline: ${baseline_mb}  Delta: +${delta_mb}  Limit: ${limit_mb}"
+        log "Binary size: ${actual_mb}  Baseline: ${baseline_mb}  Delta: ${delta_mb}  Limit: ${limit_mb}"
 
         if (( delta > limit_bytes )); then
             printf 'FAIL: binary growth %s exceeds delta limit %s (baseline: %s, current: %s)\n' \

@@ -93,6 +93,18 @@ printf '{}' > "$SCRATCH/specs/__snapshots__/foo.snap"
 assert_exit_code "--dry-run exits 0" 0 run_patched --dry-run
 assert_exit_code "CI_DRY_RUN=1 exits 0" 0 env CI_DRY_RUN=1 bash "$PATCHED"
 
+# Matching snapshots → exit 0
+# foo.json and foo.snap are already identical (both '{}' written above)
+assert_exit_code "matching snapshots → exit 0" 0 run_patched
+
+# Differing snapshots → exit 1
+# Mutate foo.json so it no longer matches the snapshot
+printf '{"changed":true}' > "$SCRATCH/specs/foo.json"
+assert_exit_code "differing snapshots → exit 1" 1 run_patched
+
+# Restore for any future tests
+printf '{}' > "$SCRATCH/specs/foo.json"
+
 # ---- done --------------------------------------------------------------------
 
 finish
