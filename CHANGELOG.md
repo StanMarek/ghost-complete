@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Corrected
+
+- **Substring/slice misconversion.** The spec converter previously emitted
+  `column_extract` for `.substring(0, N)` and `.slice(0, N)` patterns, which are
+  byte-offset operations, not whitespace-delimited columns. Affected generators
+  now correctly report as requires-JS until a proper fix lands in Phase 2/3A.
+  Affected specs: chezmoi, pass, pre-commit.
+- **JSON.parse silent fallback.** When `JSON.parse` appeared without a resolvable
+  field access, the converter silently emitted `{type: "json_extract", name: "name"}`,
+  producing wrong completions. These generators now report as requires-JS.
+  Affected specs: docker, podman.
+
+Generators affected by either correction are tagged in the embedded specs with
+`_corrected_in: "v0.10.0"`. `ghost-complete doctor` surfaces the count and names
+them under the new corrected-generator warning check so users know which specs
+silently changed behaviour.
+
+`git.json` and `cd.json` have related deferred work tracked in
+`docs/phase-minus-1-followups.md`.
+
 ## [0.9.1] - 2026-04-20
 
 ### Fixed
