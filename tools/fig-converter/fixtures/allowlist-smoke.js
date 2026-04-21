@@ -55,15 +55,19 @@ export default function allowlistSmoke(out) {
   const dec2 = decodeURI(enc2);
   const gt = globalThis;
 
-  // `module_globals` section
+  // `module_globals` section — every identifier must be referenced in
+  // real (non-comment) code so the CI smoke-check covers removals.
+  // `typeof X` is the cleanest probe: it's syntactically valid on unbound
+  // names (no ReferenceError at runtime) and still surfaces the identifier
+  // to the analyzer as a ReferencedIdentifier, exercising the allowlist.
   const env = process.env.HOME;
-  // `require`, `module`, `exports`, `__dirname`, `__filename` are referenced
-  // below via strings in comments to avoid CJS/ESM conflict at parse time;
-  // we still want them in the allowlist JSON because *Fig specs* are CJS.
-  // A cleaner exercise would use them, but this fixture is loaded as ESM
-  // so bare `require`/`module`/etc. would either resolve as free or be
-  // disallowed. The allowlist still covers them — see case 8 where a name
-  // *not* in the allowlist is flagged.
+  const moduleGlobals = {
+    hasRequire: typeof require === 'function',
+    hasModule: typeof module === 'object',
+    hasExports: typeof exports === 'object',
+    hasDirname: typeof __dirname === 'string',
+    hasFilename: typeof __filename === 'string',
+  };
 
   // Use the locals so an aggressive future analyzer doesn't dead-code-drop.
   return [
@@ -71,5 +75,5 @@ export default function allowlistSmoke(out) {
     i, f, fin, n, buf, u, nn, inf, sym, d, px, keys,
     i8, i16, i32, u8, u16, u32, u8c, f32, f64, bi, bi64, bu64,
     se, rfe, ev, uri, enc, dec, enc2, dec2, gt, env,
-  ].map((v) => ({ name: String(v) }));
+  ].map((v) => ({ name: String(v), info: moduleGlobals }));
 }

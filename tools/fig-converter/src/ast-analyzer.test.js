@@ -180,6 +180,22 @@ describe('analyzeGenerator — shape fingerprint', () => {
     assert.equal(straight.shape.has_conditional, false);
   });
 
+  it('case 14b: has_conditional true for nullish coalescing (??)', () => {
+    // `??` is a branch: right-hand side only evaluates when left is null/undefined.
+    // Pinning this so the bucket classifier stays predictable (plan §1).
+    const nullish = analyzeGenerator(`(x) => x ?? 1`);
+    assert.equal(nullish.parse_error, null);
+    assert.equal(nullish.shape.has_conditional, true);
+  });
+
+  it('case 14c: has_conditional true for short-circuit &&', () => {
+    // Short-circuit `&&` as defensive property access is a branch.
+    // Pinning this so the bucket classifier stays predictable (plan §1).
+    const shortCircuit = analyzeGenerator(`(x) => x.foo && x.foo.bar`);
+    assert.equal(shortCircuit.parse_error, null);
+    assert.equal(shortCircuit.shape.has_conditional, true);
+  });
+
   it('case 15: has_substring_or_slice distinguishes substring/slice from other calls', () => {
     const sub = analyzeGenerator(`(s) => s.substring(0, 5)`);
     assert.equal(sub.parse_error, null);
