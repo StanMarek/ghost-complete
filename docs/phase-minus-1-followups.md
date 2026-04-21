@@ -47,6 +47,12 @@ not been regenerated since v0.2.0.
 break the cycle with a console warning, and re-enable full regeneration of
 these two specs.
 
+**Resolved in 5afed5a (cycle guard) + d13c3a2 (spec regen).** `resolveLoadSpecs`
+now threads a `visited: Set<string>`, initialised with the top-level spec name,
+and emits a single `console.warn` when a cycle is detected. `simctl.json` grew
+from 59 B to 30.6 KB (37 subcommands); `xcrun.json` grew from 65 B to 58.1 KB
+(3 subcommands). Full-corpus regen surfaced no latent cycles beyond these two.
+
 ## 3. Single-process `npm run convert` OOMs at 705 specs
 
 **Status:** pre-existing, worked around in this branch.
@@ -60,6 +66,14 @@ is a fresh Node process.
 **Proposed fix:** either (a) add a batching mode to `src/index.js` with
 explicit flush points, or (b) switch `convert` to spawn workers and parallelise.
 Option (a) is smaller; option (b) is faster.
+
+**Resolved in 4ac85c8 (batching) + 4f4aab4 (failure-count + stdout-buffer fixes)
++ a273961 (integration test).** `npm run convert` now spawns a fresh Node worker
+per batch of 30 specs (configurable via `--batch-size`); each child exits after
+its batch, freeing its module cache. One command still does the whole run. Worker
+body is factored as `runConversionBatch` so the in-process fast path and the
+subprocess workers share logic. Measured on a 716-spec run: 2.83 s wall-clock,
+peak RSS ~772 MB (well under the 2 GB target).
 
 ## 4. specs/__snapshots__ baseline (Phase 0 prerequisite)
 
