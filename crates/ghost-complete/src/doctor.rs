@@ -259,6 +259,111 @@ fn check_specs(config: &gc_config::GhostConfig) -> CheckResult {
     CheckResult::ok(msg)
 }
 
+/// Count generators on a single spec that carry a `_corrected_in` marker.
+/// Walks args, options, and the full subcommand tree iteratively to avoid
+/// re-introducing the recursion-depth attack surface removed from the other
+/// spec walkers.
+fn count_corrected_generators_in_spec(spec: &gc_suggest::CompletionSpec) -> usize {
+    use gc_suggest::specs::{ArgSpec, OptionSpec, SubcommandSpec};
+
+    fn count_in_args(args: &[ArgSpec]) -> usize {
+        args.iter()
+            .flat_map(|a| a.generators.iter())
+            .filter(|g| g.corrected_in.is_some())
+            .count()
+    }
+
+    fn count_in_options(options: &[OptionSpec]) -> usize {
+        options
+            .iter()
+            .filter_map(|o| o.args.as_ref())
+            .flat_map(|a| a.generators.iter())
+            .filter(|g| g.corrected_in.is_some())
+            .count()
+    }
+
+    let mut total = count_in_args(&spec.args) + count_in_options(&spec.options);
+
+    let mut stack: Vec<&SubcommandSpec> = spec.subcommands.iter().collect();
+    while let Some(sub) = stack.pop() {
+        total += count_in_args(&sub.args);
+        total += count_in_options(&sub.options);
+        stack.extend(sub.subcommands.iter());
+    }
+
+    total
+}
+
+/// Check 7: Corrected generators. Walks the loaded SpecStore and counts
+/// generators whose prior conversion was mis-lowered and has since been
+/// corrected (see plan §-1.4). If any are found, emits a Warn result so
+/// users who upgrade see _why_ some completions changed behaviour.
+///
+/// Re-loads specs with the same resolver `check_specs` uses — cheaper than
+/// plumbing the store out of Check 6, and keeps the two checks independent
+/// (a broken spec dir still produces a skip here rather than a hard fail).
+fn check_corrections(config: &gc_config::GhostConfig) -> CheckResult {
+    let dirs = gc_suggest::spec_dirs::resolve_spec_dirs(&config.paths.spec_dirs);
+    let result = match gc_suggest::SpecStore::load_from_dirs(&dirs) {
+        Ok(r) => r,
+        // Spec load already failed in check_specs — no point duplicating the
+        // failure; skip so the doctor output stays readable.
+        Err(_) => {
+            return CheckResult::skip(
+                "Corrected generators — spec load failed (see Completion specs check)",
+            );
+        }
+    };
+
+    check_corrections_for_store(&result.store)
+}
+
+/// Pure accounting logic — separated from directory resolution so it can be
+/// unit-tested against an in-memory `SpecStore`.
+fn check_corrections_for_store(store: &gc_suggest::SpecStore) -> CheckResult {
+    let mut affected_specs: Vec<(&str, usize)> = store
+        .iter()
+        .filter_map(|(name, spec)| {
+            let n = count_corrected_generators_in_spec(spec);
+            if n == 0 {
+                None
+            } else {
+                Some((name, n))
+            }
+        })
+        .collect();
+
+    if affected_specs.is_empty() {
+        return CheckResult::ok("No corrected-generator warnings");
+    }
+
+    // Stable, alphabetical spec ordering so repeated runs produce identical
+    // messages (useful for diffing doctor output across CI runs).
+    affected_specs.sort_by_key(|(name, _)| *name);
+
+    let total_generators: usize = affected_specs.iter().map(|(_, n)| *n).sum();
+    let spec_count = affected_specs.len();
+    const PREVIEW_LIMIT: usize = 5;
+
+    let preview: Vec<&str> = affected_specs
+        .iter()
+        .take(PREVIEW_LIMIT)
+        .map(|(name, _)| *name)
+        .collect();
+    let preview_str = preview.join(", ");
+    let tail = if spec_count > PREVIEW_LIMIT {
+        format!(", ...and {} more", spec_count - PREVIEW_LIMIT)
+    } else {
+        String::new()
+    };
+
+    CheckResult::warn(format!(
+        "Warning: {total_generators} generator(s) across {spec_count} spec(s) were \
+         previously returning incorrect completions and are now disabled pending \
+         proper handling. See CHANGELOG. Affected specs: {preview_str}{tail}"
+    ))
+}
+
 /// Testable terminal check logic — pure function on profile.
 fn check_terminal_profile(
     profile: &gc_terminal::TerminalProfile,
@@ -325,6 +430,18 @@ pub fn run_doctor(config_path: Option<&str>) -> Result<()> {
         Some(cfg) => results.push(check_specs(cfg)),
         None => results.push(CheckResult::skip(
             "Completion specs — config invalid, cannot resolve spec dirs",
+        )),
+    }
+
+    // Check 7: Corrected generators. Surfaces generators whose prior
+    // conversion was mis-lowered and has since been corrected so users who
+    // upgrade see _why_ some previously-working completions are now
+    // requires_js until a JS runtime lands. Skip if config invalid (same
+    // dependency rule as Check 6).
+    match &config {
+        Some(cfg) => results.push(check_corrections(cfg)),
+        None => results.push(CheckResult::skip(
+            "Corrected generators — config invalid, cannot resolve spec dirs",
         )),
     }
 
@@ -439,6 +556,185 @@ mod tests {
              not wired up: {}",
             result.message
         );
+    }
+
+    /// Build a `SpecStore` by writing fixtures to a temp directory and
+    /// loading them via the normal loader. Keeps the test honest — exercises
+    /// the same deserialization path real specs go through.
+    fn store_from_json_fixtures(
+        fixtures: &[(&str, &str)],
+    ) -> (gc_suggest::SpecStore, tempfile::TempDir) {
+        let dir = tempfile::TempDir::new().unwrap();
+        for (file, body) in fixtures {
+            std::fs::write(dir.path().join(file), body).unwrap();
+        }
+        let result = gc_suggest::SpecStore::load_from_dirs(&[dir.path().to_path_buf()]).unwrap();
+        assert!(
+            result.errors.is_empty(),
+            "fixture load errors: {:?}",
+            result.errors
+        );
+        (result.store, dir)
+    }
+
+    #[test]
+    fn check_corrections_for_store_reports_ok_when_none() {
+        // A store with one spec whose generators have no _corrected_in must
+        // produce an OK result.
+        let (store, _dir) = store_from_json_fixtures(&[(
+            "clean.json",
+            r#"{
+                "name": "clean",
+                "args": [{
+                    "name": "target",
+                    "generators": [{"type": "git_branches"}]
+                }]
+            }"#,
+        )]);
+        let result = check_corrections_for_store(&store);
+        assert!(matches!(result.severity, Severity::Ok));
+        assert!(
+            result.message.contains("No corrected-generator"),
+            "unexpected message: {}",
+            result.message
+        );
+    }
+
+    #[test]
+    fn check_corrections_for_store_warns_when_present() {
+        // One generator with _corrected_in, one without, in the same spec.
+        // Accounting must count exactly one.
+        let (store, _dir) = store_from_json_fixtures(&[(
+            "affected.json",
+            r#"{
+                "name": "affected",
+                "args": [{
+                    "name": "target",
+                    "generators": [
+                        {"type": "git_branches"},
+                        {"requires_js": true, "js_source": "fn", "_corrected_in": "v0.10.0"}
+                    ]
+                }]
+            }"#,
+        )]);
+        let result = check_corrections_for_store(&store);
+        assert!(
+            matches!(result.severity, Severity::Warn),
+            "expected Warn, got message: {}",
+            result.message
+        );
+        assert!(
+            result.message.contains("affected"),
+            "message must name the affected spec: {}",
+            result.message
+        );
+        assert!(
+            result.message.contains("1 generator(s)"),
+            "message must count generators: {}",
+            result.message
+        );
+        assert!(
+            result.message.contains("1 spec(s)"),
+            "message must count specs: {}",
+            result.message
+        );
+        assert!(
+            result.message.contains("CHANGELOG"),
+            "message must direct user to CHANGELOG: {}",
+            result.message
+        );
+    }
+
+    #[test]
+    fn check_corrections_for_store_truncates_to_five_with_suffix() {
+        // Seven affected specs — first five listed, rest summarized as
+        // "...and 2 more". Alphabetical ordering for stable output.
+        let fixtures: Vec<(String, String)> = (b'a'..=b'g')
+            .map(|ch| {
+                let name = format!("spec-{}", ch as char);
+                let body = format!(
+                    r#"{{
+                        "name": "{name}",
+                        "args": [{{
+                            "name": "t",
+                            "generators": [
+                                {{"requires_js": true, "js_source": "fn", "_corrected_in": "v0.10.0"}}
+                            ]
+                        }}]
+                    }}"#
+                );
+                (format!("{name}.json"), body)
+            })
+            .collect();
+        let refs: Vec<(&str, &str)> = fixtures
+            .iter()
+            .map(|(a, b)| (a.as_str(), b.as_str()))
+            .collect();
+        let (store, _dir) = store_from_json_fixtures(&refs);
+
+        let result = check_corrections_for_store(&store);
+        assert!(matches!(result.severity, Severity::Warn));
+        // Alphabetical: a..e in preview, f and g summarized.
+        assert!(result.message.contains("spec-a"));
+        assert!(result.message.contains("spec-e"));
+        assert!(
+            result.message.contains("...and 2 more"),
+            "expected truncation suffix, got: {}",
+            result.message
+        );
+        // Later specs must NOT appear verbatim in the preview.
+        assert!(
+            !result.message.contains("spec-f"),
+            "spec-f should be truncated: {}",
+            result.message
+        );
+        // Totals: 7 generators across 7 specs.
+        assert!(
+            result.message.contains("7 generator(s) across 7 spec(s)"),
+            "bad totals in message: {}",
+            result.message
+        );
+    }
+
+    #[test]
+    fn count_corrected_generators_walks_nested_subcommands_and_option_args() {
+        // Generators live in all three positions — top-level args, option
+        // args, and nested subcommand args. All three must be counted.
+        let spec: gc_suggest::CompletionSpec = serde_json::from_str(
+            r#"{
+                "name": "tree",
+                "args": [{
+                    "name": "root",
+                    "generators": [
+                        {"requires_js": true, "_corrected_in": "v0.10.0"}
+                    ]
+                }],
+                "options": [{
+                    "name": ["-f"],
+                    "args": {
+                        "name": "val",
+                        "generators": [
+                            {"requires_js": true, "_corrected_in": "v0.10.0"}
+                        ]
+                    }
+                }],
+                "subcommands": [{
+                    "name": "nested",
+                    "subcommands": [{
+                        "name": "deeper",
+                        "args": [{
+                            "name": "leaf",
+                            "generators": [
+                                {"requires_js": true, "_corrected_in": "v0.10.0"},
+                                {"type": "git_branches"}
+                            ]
+                        }]
+                    }]
+                }]
+            }"#,
+        )
+        .unwrap();
+        assert_eq!(count_corrected_generators_in_spec(&spec), 3);
     }
 
     #[test]

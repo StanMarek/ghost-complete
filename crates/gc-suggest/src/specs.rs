@@ -303,6 +303,11 @@ pub struct GeneratorSpec {
     #[serde(default)]
     pub requires_js: bool,
     pub js_source: Option<String>,
+    /// Set by the converter when a generator was previously mis-converted and has been
+    /// corrected in the named release. Used by `ghost-complete doctor` to surface
+    /// generators that silently changed behaviour.
+    #[serde(default, rename = "_corrected_in")]
+    pub corrected_in: Option<String>,
     /// Fig-compatible template field on generators (e.g., "filepaths", "folders",
     /// or ["filepaths", "folders"]). Treated the same as `ArgSpec.template`.
     #[serde(default, deserialize_with = "deserialize_template")]
@@ -1233,6 +1238,27 @@ mod tests {
         .unwrap();
         assert!(gen.requires_js);
         assert_eq!(gen.js_source.as_deref(), Some("module.exports = { ... }"));
+    }
+
+    #[test]
+    fn test_deserialize_corrected_in_generator() {
+        // The converter emits `_corrected_in` on generators that were
+        // previously mis-converted. Verify it round-trips through the
+        // `#[serde(rename = "_corrected_in")]` field.
+        let gen: GeneratorSpec = serde_json::from_str(
+            r#"{"requires_js": true, "js_source": "fn body", "_corrected_in": "v0.10.0"}"#,
+        )
+        .unwrap();
+        assert!(gen.requires_js);
+        assert_eq!(gen.corrected_in.as_deref(), Some("v0.10.0"));
+    }
+
+    #[test]
+    fn test_deserialize_corrected_in_defaults_to_none() {
+        // Generators that were correctly converted have no `_corrected_in`
+        // field. Ensure the default is None so every existing spec parses.
+        let gen: GeneratorSpec = serde_json::from_str(r#"{"type": "git_branches"}"#).unwrap();
+        assert!(gen.corrected_in.is_none());
     }
 
     #[test]

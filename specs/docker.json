@@ -1157,14 +1157,9 @@
                 "--format",
                 "{{ json . }}"
               ],
-              "transforms": [
-                "split_lines",
-                "filter_empty",
-                {
-                  "type": "json_extract",
-                  "name": "name"
-                }
-              ]
+              "requires_js": true,
+              "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.ID}`,displayName:`${n.Repository} - ${n.ID}`,icon:\"fig://icon?type=docker\"}))}",
+              "_corrected_in": "v0.10.0"
             }
           ]
         },
@@ -1436,14 +1431,9 @@
               "--format",
               "{{ json . }}"
             ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "type": "json_extract",
-                "name": "name"
-              }
-            ]
+            "requires_js": true,
+            "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.ID}`,displayName:`${n.Repository} - ${n.ID}`,icon:\"fig://icon?type=docker\"}))}",
+            "_corrected_in": "v0.10.0"
           }
         ]
       }
@@ -1598,14 +1588,9 @@
               "--format",
               "{{ json . }}"
             ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "type": "json_extract",
-                "name": "name"
-              }
-            ]
+            "requires_js": true,
+            "js_source": "function(t){return t.split(`\n`).map(i=>JSON.parse(i)).map(i=>({name:i.ID,displayName:`[con] ${i.ID} (${i.Image})`}))}",
+            "_corrected_in": "v0.10.0"
           },
           {
             "script": [
@@ -1615,14 +1600,9 @@
               "--format",
               "{{ json . }}"
             ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "type": "json_extract",
-                "name": "name"
-              }
-            ]
+            "requires_js": true,
+            "js_source": "function(t){return t.split(`\n`).map(i=>JSON.parse(i)).map(i=>{let s;return i.Repository===\"<none>\"?s=i.ID:(s=i.Repository,i.Tag!==\"<none>\"&&(s+=`:${i.Tag}`)),{name:i.ID,displayName:`[img] ${s}`}})}",
+            "_corrected_in": "v0.10.0"
           },
           {
             "script": [
@@ -1632,14 +1612,9 @@
               "--format",
               "{{ json . }}"
             ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "type": "json_extract",
-                "name": "name"
-              }
-            ]
+            "requires_js": true,
+            "js_source": "function(t){return t.split(`\n`).map(i=>JSON.parse(i)).map(i=>({name:i.Name,displayName:`[vol] ${i.Name}`}))}",
+            "_corrected_in": "v0.10.0"
           }
         ]
       }
@@ -2165,14 +2140,9 @@
               "--format",
               "{{ json . }}"
             ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "type": "json_extract",
-                "name": "name"
-              }
-            ]
+            "requires_js": true,
+            "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.ID}`,displayName:`${n.Repository} - ${n.ID}`,icon:\"fig://icon?type=docker\"}))}",
+            "_corrected_in": "v0.10.0"
           }
         ]
       }
@@ -3109,14 +3079,9 @@
               "--format",
               "{{ json . }}"
             ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "type": "json_extract",
-                "name": "name"
-              }
-            ]
+            "requires_js": true,
+            "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.ID}`,displayName:`${n.Repository} - ${n.ID}`,icon:\"fig://icon?type=docker\"}))}",
+            "_corrected_in": "v0.10.0"
           }
         ]
       }
@@ -3284,14 +3249,9 @@
               "--format",
               "{{ json . }}"
             ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "type": "json_extract",
-                "name": "name"
-              }
-            ]
+            "requires_js": true,
+            "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Repository,displayName:`${n.Repository} - ${n.ID}`,icon:\"fig://icon?type=docker\"}))}",
+            "_corrected_in": "v0.10.0"
           }
         ]
       }
@@ -4952,14 +4912,9 @@
                     "--format",
                     "{{ json . }}"
                   ],
-                  "transforms": [
-                    "split_lines",
-                    "filter_empty",
-                    {
-                      "type": "json_extract",
-                      "name": "name"
-                    }
-                  ]
+                  "requires_js": true,
+                  "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.ID}`,displayName:`${n.Repository} - ${n.ID}`,icon:\"fig://icon?type=docker\"}))}",
+                  "_corrected_in": "v0.10.0"
                 }
               ]
             },
@@ -7067,14 +7022,9 @@
                     "--format",
                     "{{ json . }}"
                   ],
-                  "transforms": [
-                    "split_lines",
-                    "filter_empty",
-                    {
-                      "type": "json_extract",
-                      "name": "name"
-                    }
-                  ]
+                  "requires_js": true,
+                  "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,description:n.Description,icon:\"fig://icon?type=docker\"}))}",
+                  "_corrected_in": "v0.10.0"
                 }
               ]
             },
@@ -7139,14 +7089,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,description:n.Description,icon:\"fig://icon?type=docker\"}))}",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -7219,14 +7164,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,description:n.Description,icon:\"fig://icon?type=docker\"}))}",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -7314,14 +7254,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,description:n.Description,icon:\"fig://icon?type=docker\"}))}",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -7349,14 +7284,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,description:n.Description,icon:\"fig://icon?type=docker\"}))}",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -7623,14 +7553,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.ID}`,displayName:`${n.Repository} - ${n.ID}`,icon:\"fig://icon?type=docker\"}))}",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -7699,14 +7624,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.ID}`,displayName:`${n.Repository} - ${n.ID}`,icon:\"fig://icon?type=docker\"}))}",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -7919,14 +7839,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.ID}`,displayName:`${n.Repository} - ${n.ID}`,icon:\"fig://icon?type=docker\"}))}",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -7957,14 +7872,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.ID}`,displayName:`${n.Repository} - ${n.ID}`,icon:\"fig://icon?type=docker\"}))}",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -8053,14 +7963,9 @@
                     "--format",
                     "{{ json . }}"
                   ],
-                  "transforms": [
-                    "split_lines",
-                    "filter_empty",
-                    {
-                      "type": "json_extract",
-                      "name": "name"
-                    }
-                  ]
+                  "requires_js": true,
+                  "js_source": "t=>t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,description:n.ID,icon:\"fig://icon?type=docker\"}))",
+                  "_corrected_in": "v0.10.0"
                 }
               ]
             },
@@ -8251,14 +8156,9 @@
                     "--format",
                     "{{ json . }}"
                   ],
-                  "transforms": [
-                    "split_lines",
-                    "filter_empty",
-                    {
-                      "type": "json_extract",
-                      "name": "name"
-                    }
-                  ]
+                  "requires_js": true,
+                  "js_source": "t=>t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,description:n.ID,icon:\"fig://icon?type=docker\"}))",
+                  "_corrected_in": "v0.10.0"
                 }
               ]
             },
@@ -8319,14 +8219,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "t=>t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,description:n.ID,icon:\"fig://icon?type=docker\"}))",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -8406,14 +8301,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "t=>t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,description:n.ID,icon:\"fig://icon?type=docker\"}))",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -8439,14 +8329,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.ID,displayName:`${n.ID} - ${n.Hostname}`,description:n.Status,icon:\"fig://icon?type=docker\"}))}",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -8484,14 +8369,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.ID,displayName:`${n.ID} - ${n.Hostname}`,description:n.Status,icon:\"fig://icon?type=docker\"}))}",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -8543,14 +8423,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.ID,displayName:`${n.ID} - ${n.Hostname}`,description:n.Status,icon:\"fig://icon?type=docker\"}))}",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -8610,14 +8485,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.ID,displayName:`${n.ID} - ${n.Hostname}`,description:n.Status,icon:\"fig://icon?type=docker\"}))}",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -8646,14 +8516,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.ID,displayName:`${n.ID} - ${n.Hostname}`,description:n.Status,icon:\"fig://icon?type=docker\"}))}",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -8711,14 +8576,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.ID,displayName:`${n.ID} - ${n.Hostname}`,description:n.Status,icon:\"fig://icon?type=docker\"}))}",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -9696,14 +9556,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "t=>t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,description:n.ID,icon:\"fig://icon?type=docker\"}))",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -9733,14 +9588,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "t=>t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,description:n.ID,icon:\"fig://icon?type=docker\"}))",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -9772,14 +9622,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "t=>t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,description:n.ID,icon:\"fig://icon?type=docker\"}))",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -9903,14 +9748,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "t=>t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,description:n.ID,icon:\"fig://icon?type=docker\"}))",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -9930,14 +9770,9 @@
                     "--format",
                     "{{ json . }}"
                   ],
-                  "transforms": [
-                    "split_lines",
-                    "filter_empty",
-                    {
-                      "type": "json_extract",
-                      "name": "name"
-                    }
-                  ]
+                  "requires_js": true,
+                  "js_source": "t=>t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,description:n.ID,icon:\"fig://icon?type=docker\"}))",
+                  "_corrected_in": "v0.10.0"
                 }
               ]
             },
@@ -9982,14 +9817,9 @@
                     "--format",
                     "{{ json . }}"
                   ],
-                  "transforms": [
-                    "split_lines",
-                    "filter_empty",
-                    {
-                      "type": "json_extract",
-                      "name": "name"
-                    }
-                  ]
+                  "requires_js": true,
+                  "js_source": "t=>t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,description:n.ID,icon:\"fig://icon?type=docker\"}))",
+                  "_corrected_in": "v0.10.0"
                 }
               ]
             },
@@ -10081,14 +9911,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "t=>t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,description:n.ID,icon:\"fig://icon?type=docker\"}))",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -10140,14 +9965,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "t=>t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,description:n.ID,icon:\"fig://icon?type=docker\"}))",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -10812,14 +10632,9 @@
                     "--format",
                     "{{ json . }}"
                   ],
-                  "transforms": [
-                    "split_lines",
-                    "filter_empty",
-                    {
-                      "type": "json_extract",
-                      "name": "name"
-                    }
-                  ]
+                  "requires_js": true,
+                  "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.ID}`,displayName:`${n.Repository} - ${n.ID}`,icon:\"fig://icon?type=docker\"}))}",
+                  "_corrected_in": "v0.10.0"
                 }
               ]
             },
@@ -10862,14 +10677,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,description:n.Image,icon:\"fig://icon?type=docker\"}))}",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -10953,14 +10763,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,description:n.Image,icon:\"fig://icon?type=docker\"}))}",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -11052,14 +10857,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,description:n.Image,icon:\"fig://icon?type=docker\"}))}",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -11079,14 +10879,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,description:n.Image,icon:\"fig://icon?type=docker\"}))}",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -11121,14 +10916,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,description:n.Image,icon:\"fig://icon?type=docker\"}))}",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -11157,14 +10947,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.Name}=`,description:n.Image,icon:\"fig://icon?type=docker\"}))}",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -11970,14 +11755,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,description:n.Image,icon:\"fig://icon?type=docker\"}))}",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -12125,14 +11905,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,icon:\"fig://icon?type=docker\"}))}",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -12163,14 +11938,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,icon:\"fig://icon?type=docker\"}))}",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -12226,14 +11996,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,icon:\"fig://icon?type=docker\"}))}",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -12806,14 +12571,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.ID}`,displayName:`${n.Repository} - ${n.ID}`,icon:\"fig://icon?type=docker\"}))}",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -12840,14 +12600,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.ID}`,displayName:`${n.Repository} - ${n.ID}`,icon:\"fig://icon?type=docker\"}))}",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -12923,14 +12678,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,icon:\"fig://icon?type=docker\"}))}",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }
@@ -13013,14 +12763,9 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "name"
-                  }
-                ]
+                "requires_js": true,
+                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,icon:\"fig://icon?type=docker\"}))}",
+                "_corrected_in": "v0.10.0"
               }
             ]
           }

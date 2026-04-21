@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { convertSingleSpec, listSpecNames } from './index.js';
+import { convertSingleSpec, listSpecNames, cleanGenerator } from './index.js';
 
 describe('listSpecNames', () => {
   it('returns an array of spec names', async () => {
@@ -182,5 +182,56 @@ describe('convertSingleSpec', () => {
         assert.ok(json.includes('"type":"error_guard"'));
       }
     });
+  });
+});
+
+describe('cleanGenerator', () => {
+  it('strips generic underscore-prefixed keys', () => {
+    const result = cleanGenerator({
+      script: ['cmd'],
+      _postProcessSource: 'foo',
+      _custom: true,
+      _internal: 'secret',
+    });
+    assert.deepStrictEqual(result, { script: ['cmd'] });
+  });
+
+  it('preserves _corrected_in (format-extension allowlist)', () => {
+    // _corrected_in is a persistent spec-format extension, not an internal
+    // marker. It must survive cleaning so downstream tools (doctor, etc.)
+    // can see which generators were re-classified.
+    const result = cleanGenerator({
+      requires_js: true,
+      js_source: 'fn body',
+      _corrected_in: 'v0.10.0',
+      _postProcessSource: 'should be stripped',
+    });
+    assert.equal(result._corrected_in, 'v0.10.0');
+    assert.equal(result.requires_js, true);
+    assert.equal(result.js_source, 'fn body');
+    assert.equal(result._postProcessSource, undefined);
+  });
+
+  it('preserves non-underscore keys unchanged', () => {
+    const gen = {
+      type: 'git_branches',
+      cache: { ttl_seconds: 300 },
+      transforms: ['split_lines'],
+    };
+    const result = cleanGenerator(gen);
+    assert.deepStrictEqual(result, gen);
+  });
+
+  it('does not treat arbitrary underscore-keys as allowlisted', () => {
+    // Defense-in-depth: the allowlist must be exact, not a prefix match.
+    // A hypothetical future typo like `_corrected_in_` or `_corrected` must
+    // still be stripped.
+    const result = cleanGenerator({
+      script: ['cmd'],
+      _corrected: 'nope',
+      _corrected_in_v2: 'nope',
+      _CORRECTED_IN: 'nope',
+    });
+    assert.deepStrictEqual(result, { script: ['cmd'] });
   });
 });

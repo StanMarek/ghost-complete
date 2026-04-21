@@ -203,6 +203,11 @@ function processGenerator(gen, specName) {
       if (match.requires_js) {
         result.requires_js = true;
         if (match.js_source) result.js_source = match.js_source;
+        // Propagate the _corrected_in marker set by the matcher for the
+        // specific bug-class paths (substring/slice, JSON.parse
+        // unresolvable-field). Passed through cleanGenerator via its
+        // allowlist so it survives into the final JSON on disk.
+        if (match._corrected_in) result._corrected_in = match._corrected_in;
       } else {
         result.transforms = match.transforms;
       }
@@ -240,12 +245,23 @@ function processGenerator(gen, specName) {
 }
 
 /**
- * Remove internal markers (prefixed with _) from a generator.
+ * Generator fields that start with `_` but are intentionally preserved into
+ * the final JSON on disk. These are persistent format extensions (see plan
+ * §-1.4) — allowlisted rather than ad-hoc'd so the pattern scales as future
+ * extensions are embraced. Keep this set intentionally small; do NOT add a
+ * matching allowlist to `cleanSpec`, which must keep stripping underscore
+ * keys on spec roots to prevent accidental leakage of future internal markers.
  */
-function cleanGenerator(gen) {
+const GENERATOR_FIELD_ALLOWLIST = new Set(['_corrected_in']);
+
+/**
+ * Remove internal markers (prefixed with _) from a generator, except those
+ * on the format-extension allowlist. Exported for focused unit tests.
+ */
+export function cleanGenerator(gen) {
   const result = {};
   for (const [key, value] of Object.entries(gen)) {
-    if (!key.startsWith('_')) {
+    if (!key.startsWith('_') || GENERATOR_FIELD_ALLOWLIST.has(key)) {
       result[key] = value;
     }
   }
