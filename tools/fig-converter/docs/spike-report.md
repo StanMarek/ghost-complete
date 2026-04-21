@@ -172,9 +172,10 @@ All six §1.6 exit criteria were met within the hard 2-week timebox.
 | `tools/fig-converter/src/ast-analyzer.test.js` | 3 new test cases (commit `03790b4`; case 18 strengthened in `bab976e`) |
 | `tools/fig-converter/docs/spike-report.md` | This document |
 
-**Four commits on `feature/phase-1-spike` on top of base `0c4e376`:**
+**Five commits on `feature/phase-1-spike` on top of base `0c4e376`:**
 
 1. `045baf7` — initial shape inventory + candidate providers driver
 2. `03790b4` — analyzer two-stage parse fix + tests (recovers bare function expressions)
 3. `f357ad6` — composite bucketing + revised verdict priority (split buckets by shape)
 4. `bab976e` — code-review fixes (drop timestamp, dedupe verdict call, consolidate walker)
+5. This document (`spike-report.md`)
