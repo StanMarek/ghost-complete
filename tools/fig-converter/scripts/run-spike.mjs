@@ -100,25 +100,33 @@ function deriveSlugCandidate(fingerprint) {
   return fallback || 'unknown';
 }
 
+// Assigns unique shape_id slugs to composite-keyed buckets. Returns a
+// Map<bucketKey, slug> where bucketKey is "<fingerprint>|<hasFigApiRefs>".
+// Slug rules:
+//   - Base slug derived from fingerprint.
+//   - If bucket has fig api refs, append "-with-fig-refs" suffix (BEFORE
+//     any numeric collision suffix).
+//   - Collision suffix (-2, -3, ...) applies per variant independently.
 function assignSlugs(buckets) {
   const entries = [...buckets.entries()].sort((a, b) => b[1].count - a[1].count);
-  const slugToFingerprint = new Map();
+  const claimedSlugs = new Set();
   const result = new Map();
 
-  for (const [fingerprint] of entries) {
-    const candidate = deriveSlugCandidate(fingerprint);
-    if (!slugToFingerprint.has(candidate)) {
-      slugToFingerprint.set(candidate, fingerprint);
-      result.set(fingerprint, candidate);
+  for (const [key, bucket] of entries) {
+    const base = deriveSlugCandidate(bucket.fingerprint);
+    let candidate = bucket.hasFigApiRefs ? `${base}-with-fig-refs` : base;
+    if (!claimedSlugs.has(candidate)) {
+      claimedSlugs.add(candidate);
+      result.set(key, candidate);
     } else {
       let n = 2;
       let slug;
       do {
         slug = `${candidate}-${n}`;
         n++;
-      } while (slugToFingerprint.has(slug));
-      slugToFingerprint.set(slug, fingerprint);
-      result.set(fingerprint, slug);
+      } while (claimedSlugs.has(slug));
+      claimedSlugs.add(slug);
+      result.set(key, slug);
     }
   }
 
@@ -129,6 +137,18 @@ function assignSlugs(buckets) {
 // Verdict assignment
 // ---------------------------------------------------------------------------
 
+// Revised verdict priority (post-review):
+//   1. parse_error non-null → hand_audit_required
+//   2. has_fig_api_refs: true (ANY ref, any kind) → hand_audit_required
+//   3. has_await: true → requires_runtime
+//   4. has_json_parse: true:
+//        - fingerprint contains 2+ .PROP hops after JSON.parse → needs_dotted_path_json_extract
+//        - else → existing_transforms (single-field json_extract is already supported)
+//   5. All shape booleans false → existing_transforms (simple line-oriented archetype)
+//   6. has_regex_match: true → needs_new_transform_regex_match
+//   7. has_substring_or_slice: true → needs_new_transform_substring_slice
+//   8. has_conditional: true → needs_new_transform_conditional_split
+//   9. Fallback → needs_new_transform_misc
 function assignVerdict(shape, hasFigApiRefs, hasParseError) {
   if (hasParseError) return 'hand_audit_required';
   if (hasFigApiRefs) return 'hand_audit_required';
@@ -144,24 +164,23 @@ function assignVerdict(shape, hasFigApiRefs, hasParseError) {
         return propMatches >= 2;
       })();
     if (hasDottedPath) return 'needs_dotted_path_json_extract';
-    return 'needs_new_transform_json_parse_simple';
+    // Single-field json_extract is already in the existing transform pipeline.
+    return 'existing_transforms';
   }
 
   if (
-    !shape.has_json_parse &&
     !shape.has_regex_match &&
     !shape.has_substring_or_slice &&
-    !shape.has_conditional &&
-    !shape.has_await
+    !shape.has_conditional
   ) {
     return 'existing_transforms';
   }
 
   if (shape.has_regex_match) return 'needs_new_transform_regex_match';
-  if (shape.has_substring_or_slice && !shape.has_conditional) return 'needs_new_transform_substring_slice';
+  if (shape.has_substring_or_slice) return 'needs_new_transform_substring_slice';
   if (shape.has_conditional) return 'needs_new_transform_conditional_split';
 
-  return 'needs_new_transform_multi_step';
+  return 'needs_new_transform_misc';
 }
 
 // ---------------------------------------------------------------------------
@@ -374,23 +393,59 @@ async function main() {
     };
   });
 
-  // Bucket by fingerprint
+  // Bucket by COMPOSITE key (fingerprint, hasFigApiRefs, full shape flags).
+  //
+  // Why all the shape flags are in the key: the fingerprint only captures
+  // the top-level return expression's call chain. Two generators with the
+  // same fingerprint may have different shape booleans when (e.g.) one
+  // wraps the return in an async function with `await` in the setup code.
+  // That means their individual verdicts differ — one is `requires_runtime`,
+  // the other is `existing_transforms`. Bucketing by fingerprint alone
+  // would force them into the same bucket and pick one verdict for both,
+  // mis-classifying the minority members.
+  //
+  // Including the flags in the key guarantees every bucket is homogeneous:
+  // every member has the same shape booleans → every member gets the same
+  // verdict → the bucket-level verdict is valid for ALL members.
+  //
+  // `has_fig_api_refs` is also in the key (per review issue 2) so that
+  // minified-bundle free-ref false-positives don't poison clean siblings.
+  //
+  // Parse-error items collapse into a single bucket regardless of flags
+  // (their shape struct is zero-filled because analysis short-circuits).
   const buckets = new Map();
   for (const item of analyzed) {
     const fp = item.fingerprintKey;
-    if (!buckets.has(fp)) {
-      buckets.set(fp, {
+    const refsFlag = item.hasFigApiRefs;
+    let key;
+    if (fp === '<parse_error>') {
+      key = '<parse_error>|false';
+    } else {
+      const s = item.shape;
+      key = [
+        fp,
+        refsFlag,
+        s.has_json_parse,
+        s.has_regex_match,
+        s.has_substring_or_slice,
+        s.has_conditional,
+        s.has_await,
+      ].join('|');
+    }
+    if (!buckets.has(key)) {
+      buckets.set(key, {
+        key,
         fingerprint: fp,
+        hasFigApiRefs: refsFlag,
+        shape: item.shape,
         count: 0,
         generators: [],
-        anyFigApiRefs: false,
         exampleSpec: null,
       });
     }
-    const bucket = buckets.get(fp);
+    const bucket = buckets.get(key);
     bucket.count++;
     bucket.generators.push(item);
-    if (item.hasFigApiRefs) bucket.anyFigApiRefs = true;
     if (!bucket.exampleSpec) bucket.exampleSpec = item.specBasename + '.json';
   }
 
@@ -398,18 +453,19 @@ async function main() {
 
   const shapes = [...buckets.entries()]
     .sort((a, b) => b[1].count - a[1].count)
-    .map(([fingerprint, bucket]) => {
-      const bucketHasFigApiRefs = bucket.anyFigApiRefs;
-      const bucketHasParseError = fingerprint === '<parse_error>';
-      const firstItem = bucket.generators[0];
-      const verdict = assignVerdict(firstItem.shape, bucketHasFigApiRefs, bucketHasParseError);
+    .map(([key, bucket]) => {
+      const bucketHasFigApiRefs = bucket.hasFigApiRefs;
+      const bucketHasParseError = bucket.fingerprint === '<parse_error>';
+      // bucket.shape is the canonical shape for all members (guaranteed
+      // homogeneous by the composite key).
+      const verdict = assignVerdict(bucket.shape, bucketHasFigApiRefs, bucketHasParseError);
 
       return {
-        shape_id: slugMap.get(fingerprint),
-        fingerprint,
+        shape_id: slugMap.get(key),
+        fingerprint: bucket.fingerprint,
         count: bucket.count,
         verdict,
-        has_fig_api_refs: bucket.anyFigApiRefs,
+        has_fig_api_refs: bucketHasFigApiRefs,
         example_spec: bucket.exampleSpec,
         generator_ids: bucket.generators.map(g => g.id).sort(),
       };
