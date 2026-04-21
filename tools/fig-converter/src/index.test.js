@@ -1,5 +1,10 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { convertSingleSpec, listSpecNames, cleanGenerator, runConversionBatch } from './index.js';
 
 describe('listSpecNames', () => {
@@ -288,5 +293,55 @@ describe('runConversionBatch', () => {
     assert.equal(totals.failed, 1);
     assert.equal(errors.length, 1);
     assert.equal(errors[0].spec, 'this_spec_does_not_exist_xyz');
+  });
+});
+
+describe('batched convert integration', () => {
+  it('batched subprocess output matches direct convertSingleSpec output', { timeout: 60000 }, async () => {
+    const specs = ['ls', 'cat', 'echo', 'brew', 'git', 'npm', 'docker', 'grep', 'tar', 'curl'];
+    const tempDir = await mkdtemp(join(tmpdir(), 'gc-convert-it-'));
+    try {
+      // Run the orchestrator as a real subprocess with --batch-size 3, which
+      // forces 10 specs to split into 4 batches (ceil(10/3) = 4), exercising
+      // the subprocess-per-batch code path rather than the in-process fast path.
+      const indexPath = fileURLToPath(new URL('./index.js', import.meta.url));
+      const child = spawn(
+        process.execPath,
+        [indexPath, '--output', tempDir, '--specs', specs.join(','), '--batch-size', '3'],
+        { stdio: ['ignore', 'pipe', 'pipe'] },
+      );
+
+      let stderr = '';
+      child.stderr.on('data', (b) => { stderr += b.toString(); });
+      let stdout = '';
+      child.stdout.on('data', (b) => { stdout += b.toString(); });
+
+      const exitCode = await new Promise((resolve) => child.on('close', resolve));
+      assert.equal(exitCode, 0, `orchestrator exited ${exitCode}.\nstdout:\n${stdout}\nstderr:\n${stderr}`);
+
+      // Confirm the batched subprocess path was actually exercised: the
+      // orchestrator emits "[batch-N/M]" progress lines on stderr.
+      assert.match(stderr, /\[batch-\d+\/\d+\]/, `expected batching progress in stderr, got:\n${stderr}`);
+
+      // Compare each batched output file against an in-process convertSingleSpec
+      // call. They must be structurally identical post-parse.
+      for (const name of specs) {
+        const direct = await convertSingleSpec(name);
+        if (!direct) {
+          // Should not happen for the chosen specs, but skip gracefully rather
+          // than failing the entire test if the upstream dep is missing it.
+          console.log(`[integration] convertSingleSpec returned null for '${name}', skipping`);
+          continue;
+        }
+
+        const batchedPath = join(tempDir, `${name}.json`);
+        const batchedRaw = await readFile(batchedPath, 'utf8');
+        const batched = JSON.parse(batchedRaw);
+
+        assert.deepStrictEqual(batched, direct.spec, `output mismatch for spec '${name}'`);
+      }
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
   });
 });
