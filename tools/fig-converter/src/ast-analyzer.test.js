@@ -135,6 +135,47 @@ describe('analyzeGenerator — Fig API detection', () => {
     assert.equal(result.parse_error, null);
     assert.deepEqual(result.fig_api_refs, []);
   });
+
+  it('case 16: recovers bare function expression via paren-wrap fallback', () => {
+    // Bare `function(a){...}` is invalid at statement position under
+    // sourceType: 'module' (the parser expects a FunctionDeclaration with
+    // a name). The two-stage parser wraps in parens to force expression
+    // context. Real corpus example: amplify.json's JSON.parse(a).envs.map(...).
+    const src = `function(a){ return a.split("\\n") }`;
+    const result = analyzeGenerator(src);
+    assert.equal(result.parse_error, null, `expected clean parse, got: ${result.parse_error}`);
+    assert.equal(result.shape.fingerprint, '.split(STR)');
+    assert.deepEqual(result.fig_api_refs, []);
+  });
+
+  it('case 17: recovers object-literal return via paren-wrap fallback', () => {
+    // `{ name: "x" }` at statement position is a BlockStatement, not an
+    // ObjectExpression. Wrapping in parens disambiguates it as an expression.
+    const src = `{ name: "x", description: "y" }`;
+    const result = analyzeGenerator(src);
+    assert.equal(result.parse_error, null, `expected clean parse, got: ${result.parse_error}`);
+    // Fingerprint for a bare object literal is the OBJ placeholder token.
+    assert.equal(result.shape.fingerprint, 'OBJ');
+    assert.deepEqual(result.fig_api_refs, []);
+  });
+
+  it('case 18: genuinely malformed input still returns parse_error after fallback', () => {
+    // An unclosed string/paren fails BOTH the plain parse and the wrapped
+    // parse, so the error surfaces with the original module-mode message.
+    const src = '(out) => out.split("'; // unterminated string, unclosed paren
+    const result = analyzeGenerator(src);
+    assert.ok(result.parse_error, 'expected parse_error to be set after fallback');
+    assert.equal(typeof result.parse_error, 'string');
+    assert.deepEqual(result.fig_api_refs, []);
+    assert.deepEqual(result.shape, {
+      fingerprint: '',
+      has_json_parse: false,
+      has_regex_match: false,
+      has_substring_or_slice: false,
+      has_conditional: false,
+      has_await: false,
+    });
+  });
 });
 
 describe('analyzeGenerator — shape fingerprint', () => {
