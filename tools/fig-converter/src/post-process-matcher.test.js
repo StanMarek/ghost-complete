@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { matchPostProcess } from './post-process-matcher.js';
+import { matchPostProcess, CORRECTED_IN_VERSION } from './post-process-matcher.js';
 
 describe('matchPostProcess', () => {
   describe('split by newline patterns', () => {
@@ -92,6 +92,10 @@ describe('matchPostProcess', () => {
       assert.equal(result.requires_js, true);
       assert.equal(result.transforms, null);
       assert.equal(result.js_source, fn);
+      // This is a corrected path — marker must be present so doctor can
+      // surface the behaviour change to users after upgrade.
+      assert.equal(result._corrected_in, CORRECTED_IN_VERSION);
+      assert.equal(result._corrected_in, 'v0.10.0');
       // Specifically: it must NOT fall back to {type: 'json_extract', name: 'name'}.
       assert.ok(
         !Array.isArray(result.transforms) ||
@@ -136,6 +140,9 @@ describe('matchPostProcess', () => {
       assert.equal(result.requires_js, true);
       assert.equal(result.transforms, null);
       assert.equal(result.js_source, fn);
+      // Corrected path — marker present for doctor surfacing.
+      assert.equal(result._corrected_in, CORRECTED_IN_VERSION);
+      assert.equal(result._corrected_in, 'v0.10.0');
     });
 
     it('slice extraction is marked requires_js', () => {
@@ -144,6 +151,9 @@ describe('matchPostProcess', () => {
       assert.equal(result.requires_js, true);
       assert.equal(result.transforms, null);
       assert.equal(result.js_source, fn);
+      // Corrected path — marker present.
+      assert.equal(result._corrected_in, CORRECTED_IN_VERSION);
+      assert.equal(result._corrected_in, 'v0.10.0');
     });
   });
 
@@ -201,6 +211,37 @@ describe('matchPostProcess', () => {
       const fn = `function(out) { const items = []; for (const line of out.split("\\n")) { items.push({name: line}); } return items; }`;
       const result = matchPostProcess(fn);
       assert.equal(result.requires_js, true);
+    });
+
+    it('does NOT set _corrected_in on un-matched-from-day-one patterns', () => {
+      // Explicit for-loop — this has always been requires_js, it was never
+      // silently mis-converted. Only the specific bug-class paths (substring/
+      // slice and JSON.parse unresolvable field) get the corrected-in marker.
+      const fn = `function(out) { const items = []; for (const line of out.split("\\n")) { items.push({name: line}); } return items; }`;
+      const result = matchPostProcess(fn);
+      assert.equal(result.requires_js, true);
+      assert.equal(result._corrected_in, undefined);
+    });
+
+    it('does NOT set _corrected_in on functions without a split pattern', () => {
+      // No split — bails in Phase 2, which is also not a corrected path.
+      const fn = `(out) => [{ name: out.trim() }]`;
+      const result = matchPostProcess(fn);
+      assert.equal(result.requires_js, true);
+      assert.equal(result._corrected_in, undefined);
+    });
+
+    it('does NOT set _corrected_in on null/undefined input', () => {
+      // Defensive early-return — never a corrected path.
+      assert.equal(matchPostProcess(null)._corrected_in, undefined);
+      assert.equal(matchPostProcess(undefined)._corrected_in, undefined);
+    });
+
+    it('does NOT set _corrected_in on complex-logic bail-outs (Set usage)', () => {
+      const fn = `function(out) { const seen = new Set(); return out.split("\\n").filter(l => { if (seen.has(l)) return false; seen.add(l); return true; }).map(l => ({ name: l })); }`;
+      const result = matchPostProcess(fn);
+      assert.equal(result.requires_js, true);
+      assert.equal(result._corrected_in, undefined);
     });
   });
 

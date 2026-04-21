@@ -13,10 +13,20 @@
  */
 
 /**
+ * Version tag stamped on generators whose prior conversion produced incorrect
+ * completions and has now been fixed (see plan §-1.4 "Spec format extension").
+ * Only applied to the specific bug-class paths — substring/slice short-circuit
+ * and the JSON.parse unresolvable-field sentinel. Generic "can't match"
+ * requires_js returns are NOT tagged, because those were never mis-converted
+ * in the first place.
+ */
+export const CORRECTED_IN_VERSION = 'v0.10.0';
+
+/**
  * Analyze a postProcess function body and return a match result.
  *
  * @param {string} fnSource - The function source code (from .toString())
- * @returns {{ transforms: Array, requires_js: boolean, js_source?: string }}
+ * @returns {{ transforms: Array, requires_js: boolean, js_source?: string, _corrected_in?: string }}
  */
 export function matchPostProcess(fnSource) {
   if (!fnSource || typeof fnSource !== 'string') {
@@ -52,14 +62,30 @@ export function matchPostProcess(fnSource) {
   // represented by our whitespace-delimited column_extract transform. Any
   // function that relies on .substring/.slice to derive a completion value
   // must be deferred to JS execution — there is no safe native lowering.
+  // This is a corrected path: the old matcher emitted column_extract here
+  // and silently produced wrong completions. Tag with _corrected_in so
+  // `ghost-complete doctor` can surface the behaviour change.
   if (hasSubstringOrSlice(body)) {
-    return { transforms: null, requires_js: true, js_source: fnSource };
+    return {
+      transforms: null,
+      requires_js: true,
+      js_source: fnSource,
+      _corrected_in: CORRECTED_IN_VERSION,
+    };
   }
 
   // Phase 5: Check for JSON.parse extraction
   const jsonExtract = matchJsonExtract(body);
   if (jsonExtract === REQUIRES_JS) {
-    return { transforms: null, requires_js: true, js_source: fnSource };
+    // Corrected path: the old matcher guessed `name: "name"` when the
+    // extracted field couldn't be resolved, yielding wrong completions for
+    // shapes like `j.metadata.id`. Tag with _corrected_in for doctor.
+    return {
+      transforms: null,
+      requires_js: true,
+      js_source: fnSource,
+      _corrected_in: CORRECTED_IN_VERSION,
+    };
   }
   if (jsonExtract) {
     transforms.push(jsonExtract);

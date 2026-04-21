@@ -1674,6 +1674,7 @@ mod tests {
             cache: None,
             requires_js: false,
             js_source: None,
+            corrected_in: None,
             template: None,
         };
         let ctx = make_ctx(Some("test"), vec![], "", 1);
@@ -1691,6 +1692,7 @@ mod tests {
             cache: None,
             requires_js: false,
             js_source: None,
+            corrected_in: None,
             template: None,
         };
         let ctx = make_ctx(Some("test"), vec!["arg1"], "", 2);
