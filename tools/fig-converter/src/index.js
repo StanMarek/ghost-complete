@@ -53,11 +53,23 @@ async function loadFigSpec(specName) {
  * Resolve loadSpec references by inlining the referenced sub-spec.
  * Walks the converted spec tree and replaces _loadSpec markers with actual content.
  *
+ * A cycle guard tracks the set of loadSpec targets already on the current
+ * resolution path (threaded via `visited`). When a target is already visited,
+ * a single `console.warn` is emitted with the would-be cycle chain and the
+ * load is skipped. The `_loadSpec` marker is still stripped so the subcommand
+ * remains in the cleaned output (carrying whatever static content it had).
+ *
  * @param {object} spec - The converted spec (from static-converter)
- * @param {string} specName - The parent spec name (for resolving relative paths)
+ * @param {string} specName - The parent spec name (used in the cycle warning)
+ * @param {Set<string>} visited - Targets already resolved on this path; callers
+ *   should pass `new Set([specName])` at the top level so direct self-refs are
+ *   caught. Must not be mutated by the caller across sibling invocations — a
+ *   fresh branch is forked for each loadSpec descent.
+ * @param {(name: string) => Promise<object|null>} loader - Injectable loader
+ *   for tests. Defaults to `loadFigSpec` (dynamic import from BUILD_DIR).
  * @returns {object} The spec with loadSpec references resolved
  */
-async function resolveLoadSpecs(spec, specName) {
+export async function resolveLoadSpecs(spec, specName, visited = new Set([specName]), loader = loadFigSpec) {
   if (!spec || typeof spec !== 'object') return spec;
 
   if (spec.subcommands && Array.isArray(spec.subcommands)) {
@@ -67,33 +79,49 @@ async function resolveLoadSpecs(spec, specName) {
         const loadSpec = sub._loadSpec;
         delete sub._loadSpec;
 
-        if (typeof loadSpec === 'string') {
-          // Simple string reference — load and inline
-          const loaded = await loadFigSpec(loadSpec);
-          if (loaded) {
-            const converted = convertSpec(loaded);
-            // Merge the loaded spec into this subcommand
-            if (converted.subcommands) sub.subcommands = converted.subcommands;
-            if (converted.options) sub.options = converted.options;
-            if (converted.args) sub.args = converted.args;
-          }
-        } else if (typeof loadSpec === 'object' && loadSpec.specName) {
-          // Object with specName property
-          const loaded = await loadFigSpec(loadSpec.specName);
-          if (loaded) {
-            const converted = convertSpec(loaded);
-            if (converted.subcommands) sub.subcommands = converted.subcommands;
-            if (converted.options) sub.options = converted.options;
-            if (converted.args) sub.args = converted.args;
-          }
-        } else if (typeof loadSpec === 'function') {
+        const targetName =
+          typeof loadSpec === 'string'
+            ? loadSpec
+            : typeof loadSpec === 'object' && loadSpec && typeof loadSpec.specName === 'string'
+              ? loadSpec.specName
+              : null;
+
+        if (typeof loadSpec === 'function') {
           // Dynamic function — can't resolve statically
           sub.requires_js = true;
+        } else if (targetName !== null) {
+          if (visited.has(targetName)) {
+            // Cycle detected — emit a single warning and skip the load.
+            // The subcommand keeps its existing content; we still recurse
+            // into it below so inner loadSpecs further down still resolve.
+            const cyclePath = [...visited, targetName].join(' → ');
+            console.warn(
+              `[converter] loadSpec cycle detected in "${specName}": "${cyclePath}" already resolved; skipping to avoid infinite recursion`
+            );
+          } else {
+            const loaded = await loader(targetName);
+            if (loaded) {
+              const converted = convertSpec(loaded);
+              // Merge the loaded spec into this subcommand
+              if (converted.subcommands) sub.subcommands = converted.subcommands;
+              if (converted.options) sub.options = converted.options;
+              if (converted.args) sub.args = converted.args;
+
+              // Descend into the freshly-inlined sub-spec with a forked
+              // visited set so sibling loadSpecs to the same target don't
+              // false-positive on each other.
+              const nextVisited = new Set(visited);
+              nextVisited.add(targetName);
+              await resolveLoadSpecs(sub, specName, nextVisited, loader);
+              continue;
+            }
+          }
         }
       }
 
-      // Recurse into subcommands
-      await resolveLoadSpecs(sub, specName);
+      // Recurse into subcommands with the current visited set (no new frame
+      // was pushed — this branch didn't cross a loadSpec boundary).
+      await resolveLoadSpecs(sub, specName, visited, loader);
     }
   }
 
