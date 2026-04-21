@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { convertSingleSpec, listSpecNames, cleanGenerator } from './index.js';
+import { convertSingleSpec, listSpecNames, cleanGenerator, runConversionBatch } from './index.js';
 
 describe('listSpecNames', () => {
   it('returns an array of spec names', async () => {
@@ -233,5 +233,60 @@ describe('cleanGenerator', () => {
       _CORRECTED_IN: 'nope',
     });
     assert.deepStrictEqual(result, { script: ['cmd'] });
+  });
+});
+
+describe('runConversionBatch', () => {
+  it('aggregates totals from multiple small specs (in-process smoke test)', async () => {
+    // Sanity-check the shared worker body: converting three small specs via
+    // the batch function should yield totals equal to the sum of calling
+    // convertSingleSpec on each individually. This locks the in-process /
+    // subprocess-worker code paths to the same semantics without spawning
+    // a subprocess.
+    const specs = ['ls', 'cat', 'echo'];
+
+    // Reference totals: sum of per-spec stats.
+    const reference = {
+      converted: 0,
+      subcommands: 0,
+      options: 0,
+      generators: 0,
+    };
+    for (const name of specs) {
+      const r = await convertSingleSpec(name);
+      assert.ok(r, `${name} should convert`);
+      reference.converted++;
+      reference.subcommands += r.stats.subcommands;
+      reference.options += r.stats.options;
+      reference.generators += r.stats.generators;
+    }
+
+    const { totals, errors } = await runConversionBatch({
+      specNames: specs,
+      outputDir: null,
+      dryRun: true,
+    });
+
+    assert.deepStrictEqual(errors, []);
+    assert.equal(totals.converted, reference.converted);
+    assert.equal(totals.failed, 0);
+    assert.equal(totals.subcommands, reference.subcommands);
+    assert.equal(totals.options, reference.options);
+    assert.equal(totals.generators, reference.generators);
+  });
+
+  it('records per-spec failures in errors without aborting the batch', async () => {
+    // A nonexistent spec must surface as an error but must not prevent
+    // subsequent real specs in the same batch from being counted.
+    const { totals, errors } = await runConversionBatch({
+      specNames: ['cat', 'this_spec_does_not_exist_xyz', 'echo'],
+      outputDir: null,
+      dryRun: true,
+    });
+
+    assert.equal(totals.converted, 2);
+    assert.equal(totals.failed, 1);
+    assert.equal(errors.length, 1);
+    assert.equal(errors[0].spec, 'this_spec_does_not_exist_xyz');
   });
 });

@@ -16,11 +16,26 @@
  *      d. script (function) → requires_js: true
  *      e. custom generators → requires_js: true
  *   5. Write JSON to output directory
+ *
+ * Batched orchestration:
+ *   Single-process conversion of the full @withfig/autocomplete corpus (~705
+ *   specs) exceeds Node's heap even at --max-old-space-size=8192 because the
+ *   ESM dynamic import cache retains every spec module. The orchestrator
+ *   therefore splits the spec list into batches (default 30) and spawns a
+ *   fresh Node subprocess per batch; each child exits after its batch,
+ *   freeing its entire module cache. Small explicit --specs runs (≤ batch
+ *   size) stay in-process for snappy debugging.
+ *
+ *   Workers are invoked via the internal --batch-worker flag. Workers emit
+ *   exactly one line of JSON on stdout ({totals, errors}); progress goes to
+ *   stderr. See §3 of docs/phase-minus-1-followups.md.
  */
 
 import { readdir, mkdir, writeFile } from 'node:fs/promises';
 import { join, basename, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
+import { spawn } from 'node:child_process';
 import { convertSpec } from './static-converter.js';
 import { matchPostProcess } from './post-process-matcher.js';
 import { matchNativeGenerator } from './native-map.js';
@@ -420,41 +435,12 @@ export async function listSpecNames() {
     .map(f => f.replace(/\.js$/, ''));
 }
 
-// --- CLI entry point ---
-
-async function main() {
-  const { values } = parseArgs({
-    options: {
-      output: { type: 'string', short: 'o' },
-      specs: { type: 'string', short: 's' },
-      'dry-run': { type: 'boolean' },
-    },
-  });
-
-  const outputDir = values.output ? resolve(values.output) : null;
-  const isDryRun = values['dry-run'] || false;
-
-  if (!outputDir && !isDryRun) {
-    console.error('Usage: node src/index.js --output <dir> [--specs name1,name2] [--dry-run]');
-    process.exit(1);
-  }
-
-  // Create output directory
-  if (outputDir) {
-    await mkdir(outputDir, { recursive: true });
-  }
-
-  // Determine which specs to convert
-  let specNames;
-  if (values.specs) {
-    specNames = values.specs.split(',').map(s => s.trim());
-  } else {
-    specNames = await listSpecNames();
-  }
-
-  console.log(`Converting ${specNames.length} specs...`);
-
-  const totals = {
+/**
+ * Empty totals shape shared by worker and orchestrator. Kept as a function
+ * (not a constant) so each caller gets a fresh, independently-mutable object.
+ */
+function makeEmptyTotals() {
+  return {
     converted: 0,
     failed: 0,
     subcommands: 0,
@@ -464,7 +450,23 @@ async function main() {
     transformGenerators: 0,
     requiresJsGenerators: 0,
   };
+}
 
+/**
+ * Run the per-spec conversion loop over a list of spec names, writing each
+ * resulting JSON to `outputDir` (unless `dryRun`). Per-spec failures are
+ * recorded in `errors` and do not abort the batch. This is the shared worker
+ * body — used both in-process (small --specs runs) and inside each
+ * subprocess (--batch-worker mode).
+ *
+ * @param {object} opts
+ * @param {string[]} opts.specNames
+ * @param {string|null} opts.outputDir - Absolute path, or null for dry run.
+ * @param {boolean} [opts.dryRun=false]
+ * @returns {Promise<{totals: object, errors: Array<{spec: string, error: string}>}>}
+ */
+export async function runConversionBatch({ specNames, outputDir, dryRun = false }) {
+  const totals = makeEmptyTotals();
   const errors = [];
 
   for (const specName of specNames) {
@@ -478,8 +480,7 @@ async function main() {
 
       const { spec, stats } = result;
 
-      // Write to file
-      if (outputDir) {
+      if (outputDir && !dryRun) {
         const outputPath = join(outputDir, `${specName}.json`);
         // Ensure subdirectories exist (for specs like aws/s3)
         const dir = join(outputDir, ...specName.split('/').slice(0, -1));
@@ -502,7 +503,24 @@ async function main() {
     }
   }
 
-  // Print summary
+  return { totals, errors };
+}
+
+/**
+ * Merge a per-batch result into the running orchestrator aggregate. Mutates
+ * `agg` in place.
+ */
+function mergeTotals(agg, batchTotals) {
+  for (const key of Object.keys(agg)) {
+    agg[key] += batchTotals[key] || 0;
+  }
+}
+
+/**
+ * Print the final conversion summary to stdout. This is the human/CI-readable
+ * block and its format is considered stable — downstream docs reference it.
+ */
+function printSummary(totals, errors) {
   console.log(`\n--- Conversion Summary ---`);
   console.log(`Converted:          ${totals.converted}`);
   console.log(`Failed:             ${totals.failed}`);
@@ -522,6 +540,248 @@ async function main() {
       console.log(`  ... and ${errors.length - 20} more`);
     }
   }
+}
+
+/**
+ * Split an array into contiguous batches of up to `size` elements. Last
+ * batch may be smaller. `size` is assumed ≥ 1 (caller validates).
+ */
+function chunk(arr, size) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) {
+    out.push(arr.slice(i, i + size));
+  }
+  return out;
+}
+
+/**
+ * Spawn a worker subprocess for one batch and await its JSON-on-stdout
+ * result. Progress (and any console.warn/error from the child) is inherited
+ * to this process's stderr. Returns a best-effort result object even when
+ * the child exits non-zero: in that failure case, the batch's specs are all
+ * reported as failed, and up to 500 chars of stderr tail are forwarded to
+ * this process's stderr for operator context.
+ */
+function runWorkerBatch({ batch, outputDir, dryRun, heapMb }) {
+  return new Promise((resolvePromise) => {
+    // Use `--flag=value` form for string args so values that happen to start
+    // with `-` (e.g. the `-` spec from @withfig/autocomplete) or paths with
+    // unusual characters are not misparsed as flags by the worker's
+    // parseArgs. `--batch-worker` and `--dry-run` are booleans and pass
+    // plain.
+    const args = [
+      fileURLToPath(import.meta.url),
+      '--batch-worker',
+      `--specs=${batch.join(',')}`,
+    ];
+    if (outputDir) {
+      args.push(`--output=${outputDir}`);
+    }
+    if (dryRun) {
+      args.push('--dry-run');
+    }
+
+    const child = spawn(process.execPath, args, {
+      // stderr inherits so progress + warnings stream live. stdout is piped
+      // so we can capture the final JSON line. stdin is closed.
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: {
+        ...process.env,
+        NODE_OPTIONS: `${process.env.NODE_OPTIONS ?? ''} --max-old-space-size=${heapMb}`.trim(),
+      },
+    });
+
+    let stdoutBuf = '';
+    let stderrTail = '';
+    const STDERR_TAIL_CAP = 500;
+
+    child.stdout.on('data', (buf) => {
+      stdoutBuf += buf.toString('utf8');
+    });
+
+    // Mirror stderr live so the user sees progress in real time, but also
+    // keep a rolling tail for failure diagnostics.
+    child.stderr.on('data', (buf) => {
+      const s = buf.toString('utf8');
+      process.stderr.write(s);
+      stderrTail = (stderrTail + s).slice(-STDERR_TAIL_CAP);
+    });
+
+    child.on('error', (err) => {
+      // Spawn failed outright (e.g., execPath missing). Treat the whole
+      // batch as failed and move on.
+      process.stderr.write(
+        `[converter] failed to spawn worker: ${err.message}\n`
+      );
+      resolvePromise({
+        totals: makeEmptyTotals(),
+        errors: batch.map((spec) => ({
+          spec,
+          error: `worker spawn failed: ${err.message}`,
+        })),
+        totals_failed_override: batch.length,
+      });
+    });
+
+    child.on('close', (code) => {
+      if (code !== 0) {
+        process.stderr.write(
+          `[converter] worker exited with code ${code}. Last stderr:\n${stderrTail}\n`
+        );
+        const totals = makeEmptyTotals();
+        totals.failed = batch.length;
+        resolvePromise({
+          totals,
+          errors: batch.map((spec) => ({
+            spec,
+            error: `worker exited ${code}`,
+          })),
+        });
+        return;
+      }
+
+      // Parse the last non-empty line of stdout as the result JSON. The
+      // worker emits exactly one line, but defensively take the last.
+      const lines = stdoutBuf.split('\n').filter((l) => l.trim().length > 0);
+      const last = lines[lines.length - 1];
+      if (!last) {
+        process.stderr.write(
+          `[converter] worker produced no stdout; marking batch failed\n`
+        );
+        const totals = makeEmptyTotals();
+        totals.failed = batch.length;
+        resolvePromise({
+          totals,
+          errors: batch.map((spec) => ({ spec, error: 'worker stdout empty' })),
+        });
+        return;
+      }
+
+      try {
+        const parsed = JSON.parse(last);
+        resolvePromise({
+          totals: { ...makeEmptyTotals(), ...(parsed.totals || {}) },
+          errors: Array.isArray(parsed.errors) ? parsed.errors : [],
+        });
+      } catch (err) {
+        process.stderr.write(
+          `[converter] could not parse worker stdout as JSON: ${err.message}\n`
+        );
+        const totals = makeEmptyTotals();
+        totals.failed = batch.length;
+        resolvePromise({
+          totals,
+          errors: batch.map((spec) => ({
+            spec,
+            error: `worker stdout not JSON: ${err.message}`,
+          })),
+        });
+      }
+    });
+  });
+}
+
+// --- CLI entry point ---
+
+async function main() {
+  const { values } = parseArgs({
+    options: {
+      output: { type: 'string', short: 'o' },
+      specs: { type: 'string', short: 's' },
+      'dry-run': { type: 'boolean' },
+      'batch-size': { type: 'string' },
+      'batch-worker': { type: 'boolean' },
+    },
+  });
+
+  const outputDir = values.output ? resolve(values.output) : null;
+  const isDryRun = values['dry-run'] || false;
+  const isWorker = values['batch-worker'] || false;
+
+  if (!outputDir && !isDryRun) {
+    console.error('Usage: node src/index.js --output <dir> [--specs name1,name2] [--dry-run] [--batch-size N]');
+    process.exit(1);
+  }
+
+  if (outputDir) {
+    await mkdir(outputDir, { recursive: true });
+  }
+
+  // Determine which specs to process
+  let specNames;
+  if (values.specs) {
+    specNames = values.specs.split(',').map((s) => s.trim()).filter(Boolean);
+  } else {
+    specNames = await listSpecNames();
+  }
+
+  // --- Worker mode: do one batch in-process and emit JSON on stdout ---
+  if (isWorker) {
+    console.error(`[worker] converting ${specNames.length} specs`);
+    const { totals, errors } = await runConversionBatch({
+      specNames,
+      outputDir,
+      dryRun: isDryRun,
+    });
+    // EXACTLY one line of JSON on stdout; nothing else.
+    process.stdout.write(JSON.stringify({ totals, errors }) + '\n');
+    return;
+  }
+
+  // --- Orchestrator mode ---
+  const batchSizeRaw = values['batch-size'];
+  const batchSize = batchSizeRaw !== undefined ? Number.parseInt(batchSizeRaw, 10) : 30;
+  if (!Number.isFinite(batchSize) || batchSize < 1) {
+    console.error(`Invalid --batch-size ${batchSizeRaw}; must be a positive integer`);
+    process.exit(1);
+  }
+
+  const heapMb = Number.parseInt(process.env.CONVERT_WORKER_HEAP_MB ?? '2048', 10);
+  if (!Number.isFinite(heapMb) || heapMb < 128) {
+    console.error(`Invalid CONVERT_WORKER_HEAP_MB=${process.env.CONVERT_WORKER_HEAP_MB}; must be an integer ≥ 128`);
+    process.exit(1);
+  }
+
+  console.log(`Converting ${specNames.length} specs...`);
+
+  // Fast path: small explicit --specs runs stay in-process. Keeps
+  // iteration snappy and avoids subprocess startup tax when the user is
+  // actively debugging a handful of specs.
+  if (specNames.length <= batchSize) {
+    const { totals, errors } = await runConversionBatch({
+      specNames,
+      outputDir,
+      dryRun: isDryRun,
+    });
+    printSummary(totals, errors);
+    return;
+  }
+
+  // Batched path: spawn one Node subprocess per batch. Each child exits
+  // after its batch, freeing its ESM module cache. Sequential on purpose
+  // (parallelism is a separate plan — this fix is "don't OOM").
+  const batches = chunk(specNames, batchSize);
+  const aggregateTotals = makeEmptyTotals();
+  const aggregateErrors = [];
+
+  for (let i = 0; i < batches.length; i++) {
+    const batch = batches[i];
+    const first = batch[0];
+    const last = batch[batch.length - 1];
+    process.stderr.write(
+      `[batch-${i + 1}/${batches.length}] converting ${batch.length} specs: ${first}..${last}\n`
+    );
+    const { totals, errors } = await runWorkerBatch({
+      batch,
+      outputDir,
+      dryRun: isDryRun,
+      heapMb,
+    });
+    mergeTotals(aggregateTotals, totals);
+    for (const e of errors) aggregateErrors.push(e);
+  }
+
+  printSummary(aggregateTotals, aggregateErrors);
 }
 
 // Run main only when executed directly (not imported)
