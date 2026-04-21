@@ -109,10 +109,10 @@ These steps require repo admin access. Without them the gates run but **do not b
 2. Edit the branch protection rule for `master`, or create one if none exists.
 3. Enable **"Require status checks to pass before merging"**.
 4. In the status check search box, add the following checks by their **exact names** (these are the human-readable `name:` values from the CI YAML, not the YAML job keys):
-   - `Binary size gate`
    - `Snapshot diff gate`
    - `Oracle gate (fig-converter)`
    - `Bench regression gate`
+   - `Binary size gate` — **DELAY adding this one.** The absolute-ceiling check currently fails red (binary is ~47 MB, ceiling is 30 MB). Requiring this check today blocks every PR. Add it only after the requires-js-specs work shrinks the binary below 30 MB. In the meantime the gate still runs and reports red, keeping the goal visible.
 5. Save the rule.
 
 These four checks are added **alongside** any existing required checks (e.g. `Check`, `Test`, `Clippy`, `Format`, `MSRV (1.86)`, `Linux tripwire (compile-check only)`). They replace nothing.
