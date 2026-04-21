@@ -162,10 +162,22 @@ describe('analyzeGenerator — Fig API detection', () => {
   it('case 18: genuinely malformed input still returns parse_error after fallback', () => {
     // An unclosed string/paren fails BOTH the plain parse and the wrapped
     // parse, so the error surfaces with the original module-mode message.
+    //
+    // This also PINS the error-position guarantee: the module-mode parse
+    // reports the unterminated-string at column 19, while the paren-wrapped
+    // parse would report it at column 20 (shifted by the leading `(`).
+    // The analyzer returns the ORIGINAL module-mode error so diagnostics
+    // point at the true offset in the source the caller passed in.
     const src = '(out) => out.split("'; // unterminated string, unclosed paren
     const result = analyzeGenerator(src);
     assert.ok(result.parse_error, 'expected parse_error to be set after fallback');
     assert.equal(typeof result.parse_error, 'string');
+    // Exact module-mode message; the wrapped-parse message has (1:20).
+    assert.equal(
+      result.parse_error,
+      'Unterminated string constant. (1:19)',
+      'expected original module-mode error (col 19), not the wrapped-parse error (col 20)',
+    );
     assert.deepEqual(result.fig_api_refs, []);
     assert.deepEqual(result.shape, {
       fingerprint: '',

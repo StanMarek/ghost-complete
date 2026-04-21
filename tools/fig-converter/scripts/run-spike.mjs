@@ -49,16 +49,18 @@ function* walkGenerators(obj, path) {
   } else if (obj !== null && typeof obj === 'object') {
     for (const [k, v] of Object.entries(obj)) {
       if (k === 'generators' && Array.isArray(v)) {
-        for (let i = 0; i < v.length; i++) {
-          const g = v[i];
-          if (g && typeof g === 'object' && g.requires_js === true && typeof g.js_source === 'string') {
-            yield { path: `${path}/generators[${i}]`, gen: g };
-          }
-        }
-        // Still recurse into generators for nested structures (though rare)
+        // Single-pass: yield qualifying generators AND recurse into each
+        // entry, without re-visiting. No real spec has a `generators` array
+        // nested inside a `generators` entry today, but the old two-pass
+        // structure would have double-yielded such a case. This pattern is
+        // semantically identical on today's corpus (1889 still) and safe
+        // against future nesting.
         for (let i = 0; i < v.length; i++) {
           const g = v[i];
           if (g && typeof g === 'object') {
+            if (g.requires_js === true && typeof g.js_source === 'string') {
+              yield { path: `${path}/generators[${i}]`, gen: g };
+            }
             yield* walkGenerators(g, `${path}/generators[${i}]`);
           }
         }
@@ -137,6 +139,27 @@ function assignSlugs(buckets) {
 // Verdict assignment
 // ---------------------------------------------------------------------------
 
+/**
+ * Compose the composite bucket key used by both the bucketing pass and
+ * the per-item → bucket lookup for candidate-providers. Extracted so both
+ * call sites share one key construction and can never drift.
+ *
+ * Parse-error items collapse into a single bucket regardless of shape
+ * flags (their shape is zero-filled because analysis short-circuits).
+ */
+function composeBucketKey(fingerprintKey, shape, hasFigApiRefs) {
+  if (fingerprintKey === '<parse_error>') return '<parse_error>|false';
+  return [
+    fingerprintKey,
+    hasFigApiRefs,
+    shape.has_json_parse,
+    shape.has_regex_match,
+    shape.has_substring_or_slice,
+    shape.has_conditional,
+    shape.has_await,
+  ].join('|');
+}
+
 // Revised verdict priority (post-review):
 //   1. parse_error non-null → hand_audit_required
 //   2. has_fig_api_refs: true (ANY ref, any kind) → hand_audit_required
@@ -187,10 +210,16 @@ function assignVerdict(shape, hasFigApiRefs, hasParseError) {
 // Qualification heuristics for candidate-providers
 // ---------------------------------------------------------------------------
 
-function qualifyCommand(command, generators) {
+/**
+ * @param {string} command
+ * @param {Array<{gen: object, verdict: string}>} members  per-generator verdict
+ *        looked up from the bucket-level verdict map — NOT recomputed here.
+ *        This keeps `assignVerdict` the sole oracle for verdicts.
+ */
+function qualifyCommand(command, members) {
   const scriptCommands = [];
   const seenScripts = new Set();
-  for (const { gen } of generators) {
+  for (const { gen } of members) {
     if (gen.script) {
       const s = typeof gen.script === 'string' ? gen.script :
         Array.isArray(gen.script) ? gen.script.join(' ') : String(gen.script);
@@ -219,10 +248,8 @@ function qualifyCommand(command, generators) {
   ]);
   const noFileSystemParsing = !fsParsingCommands.has(commandLower);
 
-  const totalGens = generators.length;
-  const existingTransformCount = generators.filter(({ analysis }) =>
-    analysis && analysis.verdict === 'existing_transforms'
-  ).length;
+  const totalGens = members.length;
+  const existingTransformCount = members.filter(m => m.verdict === 'existing_transforms').length;
   const stableLineOutput = existingTransformCount > 0 &&
     (existingTransformCount / totalGens) >= 0.5;
 
@@ -371,12 +398,15 @@ async function main() {
   console.log(`Found ${allGenerators.length} requires_js generators with js_source.`);
 
   console.log('Analyzing generators...');
+  // Per-item analysis stops at the shape + refs flags. Verdicts are
+  // computed ONCE per bucket below — never per item — so `assignVerdict`
+  // has exactly one call site.
   const analyzed = allGenerators.map(({ id, specBasename, js_source, gen }) => {
     const result = analyzeGenerator(js_source);
     const hasFigApiRefs = result.fig_api_refs.length > 0;
     const hasParseError = result.parse_error !== null;
     const fingerprintKey = hasParseError ? '<parse_error>' : result.shape.fingerprint;
-    const verdict = assignVerdict(result.shape, hasFigApiRefs, hasParseError);
+    const bucketKey = composeBucketKey(fingerprintKey, result.shape, hasFigApiRefs);
 
     return {
       id,
@@ -389,7 +419,7 @@ async function main() {
       hasFigApiRefs,
       hasParseError,
       fingerprintKey,
-      verdict,
+      bucketKey,
     };
   });
 
@@ -415,28 +445,12 @@ async function main() {
   // (their shape struct is zero-filled because analysis short-circuits).
   const buckets = new Map();
   for (const item of analyzed) {
-    const fp = item.fingerprintKey;
-    const refsFlag = item.hasFigApiRefs;
-    let key;
-    if (fp === '<parse_error>') {
-      key = '<parse_error>|false';
-    } else {
-      const s = item.shape;
-      key = [
-        fp,
-        refsFlag,
-        s.has_json_parse,
-        s.has_regex_match,
-        s.has_substring_or_slice,
-        s.has_conditional,
-        s.has_await,
-      ].join('|');
-    }
+    const key = item.bucketKey;
     if (!buckets.has(key)) {
       buckets.set(key, {
         key,
-        fingerprint: fp,
-        hasFigApiRefs: refsFlag,
+        fingerprint: item.fingerprintKey,
+        hasFigApiRefs: item.hasFigApiRefs,
         shape: item.shape,
         count: 0,
         generators: [],
@@ -451,25 +465,29 @@ async function main() {
 
   const slugMap = assignSlugs(buckets);
 
+  // Compute verdicts ONCE per bucket. This Map is the sole source of truth
+  // for verdict lookups downstream (both the inventory output and the
+  // candidate-providers qualification flow read from it).
+  const verdictByBucketKey = new Map();
+  for (const [key, bucket] of buckets) {
+    const bucketHasParseError = bucket.fingerprint === '<parse_error>';
+    verdictByBucketKey.set(
+      key,
+      assignVerdict(bucket.shape, bucket.hasFigApiRefs, bucketHasParseError),
+    );
+  }
+
   const shapes = [...buckets.entries()]
     .sort((a, b) => b[1].count - a[1].count)
-    .map(([key, bucket]) => {
-      const bucketHasFigApiRefs = bucket.hasFigApiRefs;
-      const bucketHasParseError = bucket.fingerprint === '<parse_error>';
-      // bucket.shape is the canonical shape for all members (guaranteed
-      // homogeneous by the composite key).
-      const verdict = assignVerdict(bucket.shape, bucketHasFigApiRefs, bucketHasParseError);
-
-      return {
-        shape_id: slugMap.get(key),
-        fingerprint: bucket.fingerprint,
-        count: bucket.count,
-        verdict,
-        has_fig_api_refs: bucketHasFigApiRefs,
-        example_spec: bucket.exampleSpec,
-        generator_ids: bucket.generators.map(g => g.id).sort(),
-      };
-    });
+    .map(([key, bucket]) => ({
+      shape_id: slugMap.get(key),
+      fingerprint: bucket.fingerprint,
+      count: bucket.count,
+      verdict: verdictByBucketKey.get(key),
+      has_fig_api_refs: bucket.hasFigApiRefs,
+      example_spec: bucket.exampleSpec,
+      generator_ids: bucket.generators.map(g => g.id).sort(),
+    }));
 
   const totalInShapes = shapes.reduce((s, sh) => s + sh.count, 0);
   if (totalInShapes !== allGenerators.length) {
@@ -482,25 +500,30 @@ async function main() {
     shapes,
   };
 
-  // Candidate providers
+  // Candidate providers — group generators by command (spec basename).
+  // Per-item verdict comes from the bucket verdict map; qualifyCommand
+  // never calls assignVerdict itself.
   const commandMap = new Map();
   for (const item of analyzed) {
     if (!commandMap.has(item.specBasename)) {
-      commandMap.set(item.specBasename, { generators: [], analyzedItems: [] });
+      commandMap.set(item.specBasename, []);
     }
-    commandMap.get(item.specBasename).generators.push({ gen: item.gen, analysis: item });
-    commandMap.get(item.specBasename).analyzedItems.push(item);
+    commandMap.get(item.specBasename).push({
+      gen: item.gen,
+      hasFigApiRefs: item.hasFigApiRefs,
+      verdict: verdictByBucketKey.get(item.bucketKey),
+    });
   }
 
   const candidates = [];
-  for (const [command, { generators, analyzedItems }] of commandMap.entries()) {
-    const { scriptCommands, qualification } = qualifyCommand(command, generators);
+  for (const [command, members] of commandMap.entries()) {
+    const { scriptCommands, qualification } = qualifyCommand(command, members);
     const qualifies = Object.values(qualification).every(Boolean);
-    const figApiRefCount = analyzedItems.filter(i => i.hasFigApiRefs).length;
+    const figApiRefCount = members.filter(m => m.hasFigApiRefs).length;
 
     candidates.push({
       command,
-      total_requires_js_generators: generators.length,
+      total_requires_js_generators: members.length,
       fig_api_ref_generators: figApiRefCount,
       script_commands_observed: scriptCommands,
       qualification,
@@ -514,9 +537,9 @@ async function main() {
     return b.total_requires_js_generators - a.total_requires_js_generators;
   });
 
+  // No `generated_at` timestamp: keeps the file byte-stable across reruns.
   const candidateProviders = {
     schema_version: '1.0',
-    generated_at: new Date().toISOString(),
     candidates,
   };
 
