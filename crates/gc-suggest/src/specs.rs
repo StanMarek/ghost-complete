@@ -638,29 +638,46 @@ fn collect_generators(
             tracing::info!("skipping generator requiring JS runtime");
             continue;
         }
-        if let Some(ref gen_type) = gen.generator_type {
+        // Three-way dispatch on `generator_type`, with script fall-through
+        // ONLY on the unknown-type path. A generator that names a registered
+        // provider or a known native type wins outright — the script block
+        // is intentionally skipped so a spec with both `type` and `script`
+        // does not double-dispatch (native/provider result set + script
+        // result set merged together). Our converter never emits both, but
+        // Phase 3A T2-T9 provider tests need to assert "provider path wins"
+        // cleanly, which requires exactly this guard.
+        let handled_by_type = if let Some(ref gen_type) = gen.generator_type {
             if let Some(kind) = providers::kind_from_type_str(gen_type) {
                 // Phase 3A native provider — routed to the async
                 // provider pipeline instead of the legacy native/script
-                // paths. Do NOT also push onto `native` or fall through
-                // to the script branch below; the provider IS the
-                // implementation.
+                // paths. The provider IS the implementation; do not
+                // also push onto `native` or fall through to the script
+                // branch below.
                 provider.push(kind);
+                true
             } else if KNOWN_NATIVE_GENERATOR_TYPES.contains(&gen_type.as_str()) {
                 native.push(gen_type.clone());
+                true
             } else {
-                // Preserve previous behavior (still push so downstream code
-                // paths are unchanged) but surface the unknown type so a
-                // misconfigured spec doesn't silently produce zero
-                // completions.
+                // Unknown type — preserve previous behavior (still push
+                // to `native` so downstream code paths are unchanged,
+                // and surface a warning so misconfigured specs don't
+                // silently produce zero completions). We deliberately
+                // DO fall through to the script branch: a spec that
+                // pairs an unrecognized type string with a real
+                // `script` block should still run the script, matching
+                // pre-Phase-3A behavior.
                 tracing::warn!(
                     generator_type = %gen_type,
                     "unknown generator type — no completions will be produced"
                 );
                 native.push(gen_type.clone());
+                false
             }
-        }
-        if gen.script.is_some() || gen.script_template.is_some() {
+        } else {
+            false
+        };
+        if !handled_by_type && (gen.script.is_some() || gen.script_template.is_some()) {
             script.push(Arc::new(gen.clone()));
         }
         // Fig specs put template on generators too (e.g., git checkout's
@@ -1748,6 +1765,99 @@ mod tests {
             res.provider_generators.is_empty(),
             "expected empty provider_generators for non-provider spec: {:?}",
             res.provider_generators
+        );
+    }
+
+    #[test]
+    fn test_resolve_spec_known_type_plus_script_does_not_double_dispatch() {
+        // A GeneratorSpec with BOTH a recognized `type` and a `script`
+        // must dispatch ONLY to the native/provider path, never also to
+        // the script pipeline. Otherwise a spec carrying a type string
+        // alongside a script body (today hypothetical for the git types,
+        // tomorrow a real concern for Phase 3A providers) would merge
+        // two result sets into the same popup.
+        //
+        // Uses `git_branches` — the empty `ProviderKind` at T1 means we
+        // cannot exercise the provider arm here; the native arm exercises
+        // the same `handled_by_type` guard, so the invariant is covered.
+        let spec: CompletionSpec = serde_json::from_str(
+            r#"{
+                "name": "test-dual-dispatch",
+                "args": [{
+                    "name": "target",
+                    "generators": [
+                        {"type": "git_branches", "script": ["echo", "should-not-run"]}
+                    ]
+                }]
+            }"#,
+        )
+        .unwrap();
+        let ctx = CommandContext {
+            command: Some("test-dual-dispatch".into()),
+            args: vec![],
+            current_word: String::new(),
+            word_index: 1,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: None,
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
+        };
+        let res = resolve_spec(&spec, &ctx);
+        assert!(
+            res.native_generators.contains(&"git_branches".to_string()),
+            "native arm must win when `type` is a known native"
+        );
+        assert!(
+            res.script_generators.is_empty(),
+            "script must NOT also dispatch when `type` matched a native arm: got {:?}",
+            res.script_generators
+        );
+    }
+
+    #[test]
+    fn test_resolve_spec_unknown_type_plus_script_still_dispatches_script() {
+        // Complement to the double-dispatch test above: when `type` is
+        // an unrecognized string (unknown-type warn path), the script
+        // block MUST still dispatch. This preserves pre-Phase-3A
+        // behavior — specs that paired a junk type string with a real
+        // script were relying on the script to run.
+        let spec: CompletionSpec = serde_json::from_str(
+            r#"{
+                "name": "test-unknown-plus-script",
+                "args": [{
+                    "name": "target",
+                    "generators": [
+                        {"type": "nonexistent_provider", "script": ["echo", "ok"]}
+                    ]
+                }]
+            }"#,
+        )
+        .unwrap();
+        let ctx = CommandContext {
+            command: Some("test-unknown-plus-script".into()),
+            args: vec![],
+            current_word: String::new(),
+            word_index: 1,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: None,
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
+        };
+        let res = resolve_spec(&spec, &ctx);
+        assert!(
+            res.provider_generators.is_empty(),
+            "unknown type must not route to providers"
+        );
+        assert_eq!(
+            res.script_generators.len(),
+            1,
+            "script must still dispatch on unknown-type + script combo"
         );
     }
 

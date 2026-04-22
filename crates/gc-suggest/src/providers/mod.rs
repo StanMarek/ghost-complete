@@ -102,11 +102,8 @@ pub enum ProviderKind {}
 /// `provider_generators` instead of the script path. New providers
 /// (T2–T9) add one arm each.
 pub fn kind_from_type_str(type_str: &str) -> Option<ProviderKind> {
-    // Catchall-only at T1: no providers are registered yet. Each future
-    // provider task adds a single `"<name>" => Some(ProviderKind::<Variant>),`
-    // arm above the catchall and removes this allow. Written as a match
-    // (rather than an immediate `None`) to preserve the shape future
-    // tasks extend, not to gesture at a real dispatch today.
+    // TODO(Phase 3A T2): remove `#[allow(clippy::match_single_binding)]` when the first
+    // variant lands — the catchall shape is intentional scaffolding during T1.
     #[allow(clippy::match_single_binding)]
     match type_str {
         _ => None,
