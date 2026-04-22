@@ -5,6 +5,7 @@ use std::sync::Arc;
 use anyhow::{Context, Result};
 use serde::Deserialize;
 
+use crate::providers::{self, ProviderKind};
 use crate::transform::Transform;
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 use gc_buffer::CommandContext;
@@ -445,6 +446,13 @@ pub struct SpecResolution {
     pub subcommands: Vec<Suggestion>,
     pub options: Vec<Suggestion>,
     pub native_generators: Vec<String>,
+    /// Phase 3A native providers resolved from the spec (e.g.
+    /// `cargo_targets`). The engine dispatches these asynchronously
+    /// via `resolve_providers`. Parallel to `native_generators` — we
+    /// translate the `"type"` string into `ProviderKind` at spec
+    /// resolution time so the engine does not re-parse strings on the
+    /// keystroke hot path. See `providers::kind_from_type_str`.
+    pub provider_generators: Vec<ProviderKind>,
     /// `Arc<GeneratorSpec>` rather than `GeneratorSpec`: `collect_generators`
     /// and the downstream `handler::spawn_generators` copy this vec on the
     /// hot path (every resolution + every async spawn). Arc'ing makes each
@@ -552,6 +560,7 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
 
     // Collect generator types from args at the resolved position
     let mut native_generators = Vec::new();
+    let mut provider_generators = Vec::new();
     let mut script_generators = Vec::new();
     let mut wants_filepaths = false;
     let mut wants_folders_only = false;
@@ -572,6 +581,7 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
                 collect_generators(
                     &arg_spec.generators,
                     &mut native_generators,
+                    &mut provider_generators,
                     &mut script_generators,
                     &mut wants_filepaths,
                     &mut wants_folders_only,
@@ -590,6 +600,7 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
         collect_generators(
             &arg_spec.generators,
             &mut native_generators,
+            &mut provider_generators,
             &mut script_generators,
             &mut wants_filepaths,
             &mut wants_folders_only,
@@ -605,6 +616,7 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
         subcommands: subcommand_suggestions,
         options: option_suggestions,
         native_generators,
+        provider_generators,
         script_generators,
         wants_filepaths,
         wants_folders_only,
@@ -616,6 +628,7 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
 fn collect_generators(
     generators: &[GeneratorSpec],
     native: &mut Vec<String>,
+    provider: &mut Vec<ProviderKind>,
     script: &mut Vec<Arc<GeneratorSpec>>,
     wants_filepaths: &mut bool,
     wants_folders_only: &mut bool,
@@ -626,7 +639,14 @@ fn collect_generators(
             continue;
         }
         if let Some(ref gen_type) = gen.generator_type {
-            if KNOWN_NATIVE_GENERATOR_TYPES.contains(&gen_type.as_str()) {
+            if let Some(kind) = providers::kind_from_type_str(gen_type) {
+                // Phase 3A native provider — routed to the async
+                // provider pipeline instead of the legacy native/script
+                // paths. Do NOT also push onto `native` or fall through
+                // to the script branch below; the provider IS the
+                // implementation.
+                provider.push(kind);
+            } else if KNOWN_NATIVE_GENERATOR_TYPES.contains(&gen_type.as_str()) {
                 native.push(gen_type.clone());
             } else {
                 // Preserve previous behavior (still push so downstream code
@@ -1691,5 +1711,85 @@ mod tests {
         // Should not panic / stack-overflow
         let warnings = validate_spec_generators(&mut spec);
         assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn test_resolve_spec_provider_generators_empty_by_default() {
+        // Specs that use only git/filepath generators must leave
+        // `provider_generators` empty. Locks in that the scaffolding
+        // does not accidentally route existing native types into the
+        // Phase 3A pipeline.
+        let spec: CompletionSpec = serde_json::from_str(
+            r#"{
+                "name": "test-no-providers",
+                "args": [{
+                    "name": "target",
+                    "generators": [{"type": "git_branches"}],
+                    "template": "filepaths"
+                }]
+            }"#,
+        )
+        .unwrap();
+        let ctx = CommandContext {
+            command: Some("test-no-providers".into()),
+            args: vec![],
+            current_word: String::new(),
+            word_index: 1,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: None,
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
+        };
+        let res = resolve_spec(&spec, &ctx);
+        assert!(
+            res.provider_generators.is_empty(),
+            "expected empty provider_generators for non-provider spec: {:?}",
+            res.provider_generators
+        );
+    }
+
+    #[test]
+    fn test_resolve_spec_unknown_provider_type_does_not_route_to_providers() {
+        // A spec that names a `type` we have not registered (and which
+        // is not in `KNOWN_NATIVE_GENERATOR_TYPES`) must NOT end up in
+        // `provider_generators`. The existing unknown-type warn path
+        // still owns that string — falls through to `native_generators`
+        // so downstream behavior is unchanged at T1.
+        let spec: CompletionSpec = serde_json::from_str(
+            r#"{
+                "name": "test-unknown-provider",
+                "args": [{
+                    "name": "target",
+                    "generators": [{"type": "nonexistent_provider"}]
+                }]
+            }"#,
+        )
+        .unwrap();
+        let ctx = CommandContext {
+            command: Some("test-unknown-provider".into()),
+            args: vec![],
+            current_word: String::new(),
+            word_index: 1,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: None,
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
+        };
+        let res = resolve_spec(&spec, &ctx);
+        assert!(
+            res.provider_generators.is_empty(),
+            "unknown generator_type must not be routed to provider_generators"
+        );
+        assert!(
+            res.native_generators
+                .contains(&"nonexistent_provider".to_string()),
+            "unknown generator_type should still land in native_generators (preserves unknown-type warn path)"
+        );
     }
 }

@@ -16,6 +16,7 @@ use crate::fuzzy;
 use crate::git;
 use crate::history::{HistoryProvider, DEFAULT_MAX_HISTORY_ENTRIES};
 use crate::provider::Provider;
+use crate::providers::{self, ProviderCtx, ProviderKind};
 use crate::script::{run_script, substitute_template};
 use crate::specs::{self, GeneratorSpec, SpecStore};
 use crate::ssh::SshHostCache;
@@ -74,6 +75,13 @@ pub struct SyncResult {
     /// Native git generators resolved from the spec. The caller dispatches
     /// these asynchronously via `resolve_git` to avoid blocking the runtime.
     pub git_generators: Vec<git::GitQueryKind>,
+    /// Phase 3A native providers resolved from the spec (e.g.
+    /// `cargo_targets`). The caller dispatches these asynchronously via
+    /// `resolve_providers`. Empty at T1 because no concrete providers
+    /// are registered yet, but the plumbing is in place so T2–T9 only
+    /// have to add enum variants + dispatch arms — not thread new
+    /// fields through every `SyncResult` constructor.
+    pub provider_generators: Vec<ProviderKind>,
 }
 
 impl SyncResult {
@@ -410,6 +418,41 @@ impl SuggestionEngine {
         Ok(fuzzy::rank(query, all, MAX_DYNAMIC_CANDIDATES))
     }
 
+    /// Resolve Phase 3A native providers asynchronously. Mirrors
+    /// `resolve_git`: per-kind failures are downgraded to
+    /// `tracing::warn!` + empty vec so a single slow or broken
+    /// provider cannot block the rest of the pool. Empty-query case
+    /// skips `fuzzy::rank` to preserve the raw kind-ordering for the
+    /// handler's eventual re-rank (same rationale as `resolve_git`).
+    ///
+    /// At T1 `kinds` is always empty (no providers registered), but the
+    /// method is wired into the handler via `SyncResult.provider_generators`
+    /// so T2–T9 only need to add enum variants + dispatch arms, not new
+    /// plumbing through the engine.
+    pub async fn resolve_providers(
+        &self,
+        kinds: &[ProviderKind],
+        ctx: &ProviderCtx,
+        query: &str,
+    ) -> Result<Vec<Suggestion>> {
+        if kinds.is_empty() {
+            return Ok(Vec::new());
+        }
+        let mut all = Vec::new();
+        for &kind in kinds {
+            match providers::resolve(kind, ctx).await {
+                Ok(suggestions) => all.extend(suggestions),
+                Err(e) => {
+                    tracing::warn!(provider = ?kind, "provider failed: {e}");
+                }
+            }
+        }
+        if query.is_empty() {
+            return Ok(all);
+        }
+        Ok(fuzzy::rank(query, all, MAX_DYNAMIC_CANDIDATES))
+    }
+
     /// Convenience method that resolves the spec and runs script generators.
     /// Prefer `run_generators` in the handler to avoid redundant spec resolution.
     pub async fn suggest_dynamic(
@@ -504,6 +547,7 @@ impl SuggestionEngine {
             suggestions: self.rank_with_history(ctx, cwd, buffer, candidates, true),
             script_generators: Vec::new(),
             git_generators: Vec::new(),
+            provider_generators: Vec::new(),
         }
     }
 
@@ -522,6 +566,7 @@ impl SuggestionEngine {
             suggestions: self.rank_with_history(ctx, cwd, buffer, candidates, true),
             script_generators: Vec::new(),
             git_generators: Vec::new(),
+            provider_generators: Vec::new(),
         }
     }
 
@@ -601,6 +646,7 @@ impl SuggestionEngine {
             subcommands,
             options,
             native_generators,
+            provider_generators,
             script_generators,
             wants_filepaths,
             wants_folders_only,
@@ -657,6 +703,7 @@ impl SuggestionEngine {
             suggestions,
             script_generators,
             git_generators,
+            provider_generators,
         })
     }
 
@@ -740,6 +787,7 @@ impl SuggestionEngine {
             suggestions: self.rank_with_history(ctx, cwd, buffer, candidates, true),
             script_generators: Vec::new(),
             git_generators: Vec::new(),
+            provider_generators: Vec::new(),
         }
     }
 
@@ -1594,6 +1642,25 @@ mod tests {
             results.git_generators[0],
             crate::git::GitQueryKind::Branches,
         );
+    }
+
+    #[tokio::test]
+    async fn test_resolve_providers_empty_slice() {
+        // At T1 no concrete providers are registered, so `resolve_providers`
+        // is always called with an empty slice. The method must no-op
+        // cleanly (empty Vec, no panic) for both the empty-query and
+        // non-empty-query paths. Once T2–T9 land, this test still
+        // doubles as a regression guard for the empty-kinds shortcut.
+        let engine = make_engine();
+        let ctx = crate::providers::ProviderCtx {
+            cwd: Path::new("/tmp").to_path_buf(),
+            env: std::sync::Arc::new(std::collections::HashMap::new()),
+            current_token: String::new(),
+        };
+        let empty_query = engine.resolve_providers(&[], &ctx, "").await.unwrap();
+        assert!(empty_query.is_empty());
+        let non_empty_query = engine.resolve_providers(&[], &ctx, "foo").await.unwrap();
+        assert!(non_empty_query.is_empty());
     }
 
     #[tokio::test]

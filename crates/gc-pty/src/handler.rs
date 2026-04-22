@@ -680,11 +680,18 @@ impl InputHandler {
                 self.visible = true;
                 self.render_at(stdout, cursor_row, cursor_col, screen_rows, screen_cols);
                 self.last_trigger_fingerprint = Some(fingerprint);
-                self.spawn_generators(result.script_generators, result.git_generators, &ctx, &cwd);
+                self.spawn_generators(
+                    result.script_generators,
+                    result.git_generators,
+                    result.provider_generators,
+                    &ctx,
+                    &cwd,
+                );
             }
             Ok(result) => {
-                let has_async =
-                    !result.script_generators.is_empty() || !result.git_generators.is_empty();
+                let has_async = !result.script_generators.is_empty()
+                    || !result.git_generators.is_empty()
+                    || !result.provider_generators.is_empty();
                 if has_async {
                     // No static suggestions but generators are pending.
                     // If a popup is currently visible (e.g. from a previous
@@ -702,6 +709,7 @@ impl InputHandler {
                     self.spawn_generators(
                         result.script_generators,
                         result.git_generators,
+                        result.provider_generators,
                         &ctx,
                         &cwd,
                     );
@@ -729,10 +737,14 @@ impl InputHandler {
         &mut self,
         script_generators: Vec<std::sync::Arc<gc_suggest::specs::GeneratorSpec>>,
         git_generators: Vec<gc_suggest::git::GitQueryKind>,
+        provider_generators: Vec<gc_suggest::providers::ProviderKind>,
         ctx: &gc_buffer::CommandContext,
         cwd: &std::path::Path,
     ) {
-        if script_generators.is_empty() && git_generators.is_empty() {
+        if script_generators.is_empty()
+            && git_generators.is_empty()
+            && provider_generators.is_empty()
+        {
             return;
         }
         // Snapshot the command context so try_merge_dynamic can drop results
@@ -757,10 +769,22 @@ impl InputHandler {
         let handle = tokio::spawn(async move {
             let mut all_results = Vec::new();
 
-            // Run script generators and git generators concurrently
-            let (script_res, git_res) = tokio::join!(
+            // Build ProviderCtx once — the env snapshot is shared across
+            // every provider in this resolution pass. At T1 this is
+            // cheap (always an empty kinds slice) but the construction
+            // is kept here so T2–T9 add real providers without touching
+            // the handler.
+            let provider_ctx = gc_suggest::providers::ProviderCtx {
+                cwd: cwd.clone(),
+                env: Arc::new(std::env::vars().collect()),
+                current_token: ctx.current_word.clone(),
+            };
+
+            // Run script generators, git generators, and providers concurrently.
+            let (script_res, git_res, provider_res) = tokio::join!(
                 engine.run_generators(&script_generators, &ctx, &cwd, timeout),
                 engine.resolve_git(&git_generators, &cwd, &ctx.current_word),
+                engine.resolve_providers(&provider_generators, &provider_ctx, &ctx.current_word,),
             );
 
             match script_res {
@@ -770,6 +794,10 @@ impl InputHandler {
             match git_res {
                 Ok(results) => all_results.extend(results),
                 Err(e) => tracing::warn!("git suggestions failed: {e}"),
+            }
+            match provider_res {
+                Ok(results) => all_results.extend(results),
+                Err(e) => tracing::warn!("provider suggestions failed: {e}"),
             }
 
             if !all_results.is_empty() {

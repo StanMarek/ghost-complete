@@ -15,6 +15,7 @@ pub mod fuzzy;
 pub mod git;
 pub mod history;
 mod provider;
+pub mod providers;
 pub mod script;
 pub mod spec_dirs;
 pub mod specs;
