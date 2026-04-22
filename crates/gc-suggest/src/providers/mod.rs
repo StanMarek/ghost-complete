@@ -42,6 +42,7 @@ use anyhow::Result;
 use crate::types::Suggestion;
 
 pub mod arduino_cli;
+pub mod macos_defaults;
 pub mod mamba;
 pub mod multipass;
 
@@ -99,6 +100,9 @@ pub enum ProviderKind {
     /// `arduino-cli board list --format json`, projecting `port.address`
     /// out of each entry that has at least one matching board.
     ArduinoCliPorts,
+    /// `defaults domains`, splitting the single-line comma-separated
+    /// output into individual macOS preference domain identifiers.
+    DefaultsDomains,
     /// `conda env list`, projecting the first whitespace-delimited
     /// token of each data row (the env name). Used by the mamba spec,
     /// which wraps conda's CLI.
@@ -120,6 +124,7 @@ pub fn kind_from_type_str(type_str: &str) -> Option<ProviderKind> {
     match type_str {
         "arduino_cli_boards" => Some(ProviderKind::ArduinoCliBoards),
         "arduino_cli_ports" => Some(ProviderKind::ArduinoCliPorts),
+        "defaults_domains" => Some(ProviderKind::DefaultsDomains),
         "mamba_envs" => Some(ProviderKind::MambaEnvs),
         "multipass_list" => Some(ProviderKind::MultipassList),
         _ => None,
@@ -132,6 +137,7 @@ pub async fn resolve(kind: ProviderKind, ctx: &ProviderCtx) -> Result<Vec<Sugges
     match kind {
         ProviderKind::ArduinoCliBoards => arduino_cli::ArduinoCliBoards.generate(ctx).await,
         ProviderKind::ArduinoCliPorts => arduino_cli::ArduinoCliPorts.generate(ctx).await,
+        ProviderKind::DefaultsDomains => macos_defaults::DefaultsDomains.generate(ctx).await,
         ProviderKind::MambaEnvs => mamba::MambaEnvs.generate(ctx).await,
         ProviderKind::MultipassList => multipass::MultipassList.generate(ctx).await,
     }
@@ -166,6 +172,10 @@ mod tests {
         assert_eq!(
             kind_from_type_str("arduino_cli_ports"),
             Some(ProviderKind::ArduinoCliPorts)
+        );
+        assert_eq!(
+            kind_from_type_str("defaults_domains"),
+            Some(ProviderKind::DefaultsDomains)
         );
         assert_eq!(
             kind_from_type_str("mamba_envs"),
