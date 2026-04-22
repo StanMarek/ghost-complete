@@ -41,6 +41,7 @@ use anyhow::Result;
 
 use crate::types::Suggestion;
 
+pub mod ansible_doc;
 pub mod arduino_cli;
 pub mod macos_defaults;
 pub mod mamba;
@@ -95,6 +96,10 @@ pub trait Provider: Send + Sync {
 /// concrete provider lands.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ProviderKind {
+    /// `ansible-doc --list --json`, projecting each key (fully
+    /// qualified module name) of the top-level JSON object with its
+    /// short description as the suggestion description.
+    AnsibleDocModules,
     /// `arduino-cli board list --format json`, projecting the first
     /// matching board's FQBN out of each detected port entry.
     ArduinoCliBoards,
@@ -129,6 +134,7 @@ pub enum ProviderKind {
 /// (T2–T9) add one arm each.
 pub fn kind_from_type_str(type_str: &str) -> Option<ProviderKind> {
     match type_str {
+        "ansible_doc_modules" => Some(ProviderKind::AnsibleDocModules),
         "arduino_cli_boards" => Some(ProviderKind::ArduinoCliBoards),
         "arduino_cli_ports" => Some(ProviderKind::ArduinoCliPorts),
         "defaults_domains" => Some(ProviderKind::DefaultsDomains),
@@ -144,6 +150,7 @@ pub fn kind_from_type_str(type_str: &str) -> Option<ProviderKind> {
 /// the slice of kinds from a `SpecResolution` and awaits each.
 pub async fn resolve(kind: ProviderKind, ctx: &ProviderCtx) -> Result<Vec<Suggestion>> {
     match kind {
+        ProviderKind::AnsibleDocModules => ansible_doc::AnsibleDocModules.generate(ctx).await,
         ProviderKind::ArduinoCliBoards => arduino_cli::ArduinoCliBoards.generate(ctx).await,
         ProviderKind::ArduinoCliPorts => arduino_cli::ArduinoCliPorts.generate(ctx).await,
         ProviderKind::DefaultsDomains => macos_defaults::DefaultsDomains.generate(ctx).await,
@@ -176,6 +183,10 @@ mod tests {
         // Locks in the string contract for each registered provider —
         // converter output and runtime dispatch must agree on the exact
         // spelling.
+        assert_eq!(
+            kind_from_type_str("ansible_doc_modules"),
+            Some(ProviderKind::AnsibleDocModules)
+        );
         assert_eq!(
             kind_from_type_str("arduino_cli_boards"),
             Some(ProviderKind::ArduinoCliBoards)
