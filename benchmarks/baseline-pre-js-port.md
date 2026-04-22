@@ -173,8 +173,95 @@ find specs -maxdepth 1 -name '*.json' -print0 \
 
 ### Regenerating the baseline
 
-```bash
-cargo bench 2>&1 | tee /tmp/cargo-bench-phase0.log
-# Rebuild benchmarks/baseline-pre-js-port.json from target/criterion/**/new/estimates.json
-# (see git log for scripts/check-bench.sh / T4a patch for the exact jq recipe)
-```
+This recipe is self-sufficient — running it from a clean
+`target/criterion/` tree (i.e. right after `cargo bench`) reproduces
+the committed `benchmarks/baseline-pre-js-port.json` value-for-value.
+
+1. Run the full benchmark suite. Expect **~3 minutes** of wall time on
+   the reference hardware documented above (Apple M2 Pro, 12 cores):
+
+    ```bash
+    cargo bench 2>&1 | tee /tmp/cargo-bench-phase0.log
+    ```
+
+    Criterion drops one `target/criterion/<group>/<bench>/new/estimates.json`
+    per benchmark; the recipe below is what turns that tree into the
+    JSON baseline.
+
+2. Walk every `estimates.json`, project `.median` into the schema
+    `scripts/check-bench.sh` reads, then fold into the nested
+    `{groups: {group: {bench: {median_ns, lower_ns, upper_ns}}}}` layout:
+
+    ```bash
+    find target/criterion -name 'estimates.json' -path '*/new/*' | while read -r f; do
+        group="$(echo "$f" | awk -F'/' '{print $(NF-3)}')"
+        bench="$(echo "$f" | awk -F'/' '{print $(NF-2)}')"
+        jq -r --arg group "$group" --arg bench "$bench" '
+          {
+            group: $group,
+            bench: $bench,
+            median_ns: (.median.point_estimate | round),
+            lower_ns: (.median.confidence_interval.lower_bound | round),
+            upper_ns: (.median.confidence_interval.upper_bound | round)
+          }' "$f"
+    done | jq -s '
+        group_by(.group)
+        | map({
+            key: .[0].group,
+            value: (
+              sort_by(.bench)
+              | map({key: .bench, value: {median_ns, lower_ns, upper_ns}})
+              | from_entries
+            )
+          })
+        | from_entries
+        | {
+            schema_version: "1.0",
+            captured_at:    (now | todate),
+            commit_sha:     "<fill in>",
+            groups:         .
+          }
+    ' > benchmarks/baseline-pre-js-port.json
+    ```
+
+3. Fill in `commit_sha` manually with the commit at which the baseline
+    was captured, typically:
+
+    ```bash
+    jq --arg sha "$(git rev-parse HEAD)" '.commit_sha = $sha' \
+       benchmarks/baseline-pre-js-port.json \
+       > benchmarks/baseline-pre-js-port.json.tmp \
+    && mv benchmarks/baseline-pre-js-port.json.tmp benchmarks/baseline-pre-js-port.json
+    ```
+
+    This field is metadata only — `scripts/check-bench.sh` does not
+    read it — but it lets future maintainers correlate a baseline
+    with the tree that produced it.
+
+4. Verify value-equivalence against the current committed baseline.
+    `scripts/check-bench.sh` compares values only, so byte identity
+    is not required; canonicalise both sides and diff:
+
+    ```bash
+    diff <(jq -S '.groups' benchmarks/baseline-pre-js-port.json) \
+         <(jq -S '.groups' /path/to/old/baseline-pre-js-port.json)
+    ```
+
+    An empty diff confirms every `(group, bench) → {median_ns,
+    lower_ns, upper_ns}` triple is identical.
+
+**Notes for future maintainers:**
+
+- **Key ordering in the committed JSON** reflects `find` discovery
+  order at original capture time (Phase 0 T4a) rather than alphabetical.
+  The recipe above emits alphabetically-sorted groups and benches
+  (`sort_by(.bench)` + jq's `from_entries` which preserves insertion
+  order on the group level); values are identical, only key order
+  differs. Use `jq -S` for canonical comparison.
+- **Manual post-processing at capture time (T4a):** none beyond
+  filling in `commit_sha`. Values were taken directly from
+  Criterion's `estimates.json`; the per-group Markdown tables in this
+  file were hand-typed from the same numbers for readability (ns →
+  µs/ms conversion done by the `cargo bench` report).
+- **If the `schema_version` changes**, update both this recipe and
+  `scripts/check-bench.sh` in the same PR.

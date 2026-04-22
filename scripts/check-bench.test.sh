@@ -192,6 +192,31 @@ write_estimate g b 5000
 assert_exit_code "--dry-run over regression → exit 0" 0 run_patched --dry-run
 assert_exit_code "CI_DRY_RUN=1 over regression → exit 0" 0 env CI_DRY_RUN=1 bash "$PATCHED"
 
+# ---- malformed JSON inputs surface file path + exit 2 -----------------------
+
+# Malformed baseline → exit 2, stderr names the offending file
+reset_scratch
+mkdir -p "$SCRATCH/benchmarks"
+printf '%s\n' '{not valid json' > "$SCRATCH/benchmarks/baseline-pre-js-port.json"
+mkdir -p "$SCRATCH/target/criterion/g/b/new"
+write_estimate g b 1000
+assert_exit_code "malformed baseline JSON → exit 2" 2 run_patched
+assert_stderr_contains "malformed baseline → stderr names baseline filename" \
+    "baseline-pre-js-port.json" run_patched
+assert_stderr_contains "malformed baseline → stderr says 'failed to parse'" \
+    "failed to parse" run_patched
+
+# Malformed estimates.json → exit 2, stderr names the offending file
+reset_scratch
+write_baseline '{"schema_version":"1.0","groups":{"g":{"b":{"median_ns":1000}}}}'
+mkdir -p "$SCRATCH/target/criterion/g/b/new"
+printf '%s\n' '{broken' > "$SCRATCH/target/criterion/g/b/new/estimates.json"
+assert_exit_code "malformed estimates.json → exit 2" 2 run_patched
+assert_stderr_contains "malformed estimates.json → stderr names estimates.json path" \
+    "estimates.json" run_patched
+assert_stderr_contains "malformed estimates.json → stderr says 'failed to parse'" \
+    "failed to parse" run_patched
+
 # ---- done --------------------------------------------------------------------
 
 finish

@@ -112,11 +112,37 @@ if [[ ! -d "$CRITERION_DIR" ]]; then
     exit 0
 fi
 
+# ---- scratch dir (used for safe_jq err capture + the TSV join later) ----------
+# Created early so safe_jq has a stable place to drop stderr buffers.
+
+work_dir="$(mktemp -d)"
+trap 'rm -rf "$work_dir"' EXIT
+
+# safe_jq <file> <jq-args...>
+#
+# Runs `jq <args> <file>` and prints stdout on success.  On jq parse/runtime
+# failure, captures stderr and invokes `die` with a message that NAMES the
+# offending file — exits 2 (the script's documented "script/usage error"
+# code, which also covers malformed input data).  Without this wrapper, a
+# corrupt JSON file would surface in CI logs as the bare `jq: parse error`
+# line with exit 5 and no context about which file failed.
+safe_jq() {
+    local file="$1"; shift
+    local err_file="$work_dir/jq-err.$$"
+    local out
+    if ! out="$(jq "$@" "$file" 2>"$err_file")"; then
+        local err; err="$(cat "$err_file")"
+        rm -f "$err_file"
+        die "failed to parse $file: $err"
+    fi
+    rm -f "$err_file"
+    printf '%s' "$out"
+}
+
 # ---- collect baseline entries -------------------------------------------------
 # Emits TSV: group<TAB>bench<TAB>median_ns
 
-baseline_tsv="$(
-    jq -r '
+baseline_tsv="$(safe_jq "$BASELINE_FILE" -r '
       .groups
       | to_entries[]
       | .key as $group
@@ -124,8 +150,7 @@ baseline_tsv="$(
       | to_entries[]
       | [$group, .key, (.value.median_ns|tostring)]
       | @tsv
-    ' "$BASELINE_FILE"
-)"
+    ')"
 
 if [[ -z "$baseline_tsv" ]]; then
     printf 'warning: baseline file has no benchmark entries — skipping check\n' >&2
@@ -154,7 +179,7 @@ for group_dir in "$CRITERION_DIR"/*/; do
         [[ -f "$est" ]] || est="$bench_dir/base/estimates.json"
         [[ -f "$est" ]] || continue
 
-        median_ns="$(jq -r '.median.point_estimate' "$est")"
+        median_ns="$(safe_jq "$est" -r '.median.point_estimate')"
         # skip null/NaN
         [[ -z "$median_ns" || "$median_ns" == "null" ]] && continue
 
@@ -178,9 +203,6 @@ regressions=0
 checked=0
 baseline_only=0
 current_only=0
-
-work_dir="$(mktemp -d)"
-trap 'rm -rf "$work_dir"' EXIT
 
 baseline_keyed="$work_dir/baseline.keyed"
 current_keyed="$work_dir/current.keyed"
