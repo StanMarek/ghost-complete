@@ -70,3 +70,66 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo check --workspace --all-targets
+
+  binary-size-gate:
+    name: Binary size gate
+    needs: [check]
+    runs-on: macos-latest
+    env:
+      PHASE_BUDGET: 2MB
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build release binary
+        run: cargo build --release
+      - name: Absolute ceiling (30MB)
+        run: scripts/check-binary-size.sh --absolute-max 30MB
+      - name: Per-phase delta budget
+        run: scripts/check-binary-size.sh --delta-max "$PHASE_BUDGET"
+
+  snapshot-diff-gate:
+    name: Snapshot diff gate
+    needs: [check, binary-size-gate]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Diff specs/__snapshots__
+        run: scripts/check-snapshots.sh
+
+  oracle-gate:
+    name: Oracle gate (fig-converter)
+    needs: [check]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v6
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            fig_converter:
+              - 'tools/fig-converter/**'
+      - name: Set up Node
+        if: steps.filter.outputs.fig_converter == 'true'
+        uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+      - name: Install fig-converter dependencies
+        if: steps.filter.outputs.fig_converter == 'true'
+        run: npm ci
+        working-directory: tools/fig-converter
+      - name: Run oracle stub
+        if: steps.filter.outputs.fig_converter == 'true'
+        run: npm run oracle:changed
+        working-directory: tools/fig-converter
+
+  bench-regression:
+    name: Bench regression gate
+    needs: [check]
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Bench regression check (threshold 10%)
+        run: scripts/check-bench.sh --threshold 10
