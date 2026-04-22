@@ -43,6 +43,7 @@ use crate::types::Suggestion;
 
 pub mod arduino_cli;
 pub mod mamba;
+pub mod multipass;
 
 /// Context passed to every provider's `generate` call. Owned by the
 /// engine; providers receive it by reference so the shared env map is
@@ -102,6 +103,9 @@ pub enum ProviderKind {
     /// token of each data row (the env name). Used by the mamba spec,
     /// which wraps conda's CLI.
     MambaEnvs,
+    /// `multipass list --format=json`, projecting the `name` field of
+    /// each entry in the top-level `list` array.
+    MultipassList,
 }
 
 /// Map a spec's `"type"` string to a `ProviderKind`, or `None` if the
@@ -117,6 +121,7 @@ pub fn kind_from_type_str(type_str: &str) -> Option<ProviderKind> {
         "arduino_cli_boards" => Some(ProviderKind::ArduinoCliBoards),
         "arduino_cli_ports" => Some(ProviderKind::ArduinoCliPorts),
         "mamba_envs" => Some(ProviderKind::MambaEnvs),
+        "multipass_list" => Some(ProviderKind::MultipassList),
         _ => None,
     }
 }
@@ -128,6 +133,7 @@ pub async fn resolve(kind: ProviderKind, ctx: &ProviderCtx) -> Result<Vec<Sugges
         ProviderKind::ArduinoCliBoards => arduino_cli::ArduinoCliBoards.generate(ctx).await,
         ProviderKind::ArduinoCliPorts => arduino_cli::ArduinoCliPorts.generate(ctx).await,
         ProviderKind::MambaEnvs => mamba::MambaEnvs.generate(ctx).await,
+        ProviderKind::MultipassList => multipass::MultipassList.generate(ctx).await,
     }
 }
 
@@ -164,6 +170,10 @@ mod tests {
         assert_eq!(
             kind_from_type_str("mamba_envs"),
             Some(ProviderKind::MambaEnvs)
+        );
+        assert_eq!(
+            kind_from_type_str("multipass_list"),
+            Some(ProviderKind::MultipassList)
         );
     }
 
