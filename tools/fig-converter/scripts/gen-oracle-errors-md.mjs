@@ -12,11 +12,16 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DOCS = resolve(__dirname, '..', 'docs');
 const AUDIT = resolve(__dirname, '..', 'correctness-audit');
+const FIXTURES_DIR = resolve(AUDIT, 'fixtures');
 
-const FIXTURED = new Set([
-  'parse-map', 'split-map', 'empty', 'parse-map-2', 'parse-map-3',
-  'unknown-3', 'entries-sort-map', 'empty-2',
-]);
+// Compute FIXTURED dynamically from the fixtures directory so the tally here
+// stays in sync whenever a fixture is added or removed. Previously this set
+// was hardcoded and silently drifted when fixtures were added.
+const FIXTURED = new Set(
+  fs.readdirSync(FIXTURES_DIR)
+    .filter(f => f.endsWith('.json'))
+    .map(f => f.replace(/\.json$/, ''))
+);
 
 const inv = JSON.parse(fs.readFileSync(resolve(DOCS, 'shape-inventory.json'), 'utf8'));
 const safeShapes = inv.shapes.filter(s => !s.has_fig_api_refs);
@@ -65,7 +70,7 @@ lines.push('## Summary');
 lines.push('');
 lines.push(`- Safe-subset size: **${results.safe_subset_size}**`);
 lines.push(`- Outcome totals: pass=${results.summary.pass}, fail=${results.summary.fail}, oracle_error=${results.summary.oracle_error}`);
-lines.push(`- Shapes fixtured (${FIXTURED.size}): \`parse-map\`, \`split-map\`, \`empty\`, \`parse-map-2\`, \`parse-map-3\`, \`unknown-3\`, \`entries-sort-map\`, \`empty-2\``);
+lines.push(`- Shapes fixtured (${FIXTURED.size}): ${[...FIXTURED].map(s => `\`${s}\``).join(', ')}`);
 lines.push('- Every `oracle_error` in this run has class `missing_fixture` (no `js_exception`, `js_timeout`, `rust_exception`, or `source_missing` observed).');
 lines.push('');
 

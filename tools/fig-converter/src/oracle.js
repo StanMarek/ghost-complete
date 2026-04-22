@@ -187,6 +187,35 @@ export function runRustPipeline(rustBin, transforms, input) {
 // with no JS counterpart and are ignored.
 //
 // Returns `{ equal: true }` on match, `{ equal: false, reason }` otherwise.
+//
+// Ordering assumption (IMPORTANT for fixture authors):
+//
+//   The oracle does strict index-by-index comparison. It assumes BOTH the JS
+//   generator and the Rust transform pipeline produce outputs in the SAME
+//   order for a given input. The 8 current fixtures don't exercise this —
+//   their outputs are either empty or single-item — but multi-item fixtures
+//   added later could flake if one side's ordering isn't deterministic (e.g.
+//   hash/map-iteration order, sort stability differences, parallelism).
+//
+//   Guidance for T3/T5 authors adding multi-item fixtures:
+//     1. Prefer inputs where both pipelines produce the SAME ordering. This
+//        is almost always the case when the JS source uses plain `.map(...)`
+//        over a deterministic iteration source (split lines, array of known
+//        shape) — which matches how the Rust `split_lines` / `regex_extract`
+//        chain behaves.
+//     2. If an input naturally produces unordered output (hash/map iteration,
+//        set enumeration, JSON.parse + `Object.entries`), split the fixture
+//        into single-item inputs instead of one multi-item input. Single-item
+//        outputs sidestep ordering entirely.
+//     3. DO NOT silently switch to unordered comparison by default. If an
+//        unordered-comparison mode ever becomes necessary, add an explicit
+//        fixture-level opt-in flag (e.g. `unordered: true` in the fixture
+//        JSON) so the oracle's default behaviour stays deterministic and
+//        reviewers see the opt-in in diffs.
+//
+//   This comment is documentation only — the `unordered` flag is NOT
+//   implemented here. Implement it when (and only when) a fixture actually
+//   requires it.
 export function compareResults(jsValue, rustValue) {
   if (!Array.isArray(jsValue)) {
     return { equal: false, reason: `js returned non-array: ${typeof jsValue} ${JSON.stringify(jsValue)?.slice(0, 80)}` };
@@ -259,7 +288,25 @@ function ensureRustHelper({ skipBuild = false } = {}) {
 //   - any fail                             => fail
 //   - no pass + all oracle_error same class => oracle_error (with that class)
 //   - no pass + mixed oracle_error classes  => oracle_error (first class seen)
-function summarizeInputs(inputResults) {
+//
+// Multi-error aggregation (fixing issue I2):
+//
+//   When a generator errors on 2+ inputs, `exception` and `exception_class`
+//   still surface the FIRST error (backward-compatible — existing consumers
+//   that only read those two fields keep working). But we ALSO:
+//
+//     1. Suffix `(+N more errors)` to the `exception` message whenever the
+//        generator had >1 error, so a reader eyeballing `exception` alone
+//        knows there's more than one data point.
+//     2. When the errors span multiple distinct classes, add an
+//        `exception_classes` sibling field containing every distinct class
+//        (insertion-ordered) so disposition authors can see the full picture
+//        in `oracle-results.json`. Homogeneous-class runs omit this field to
+//        keep the JSON diff small.
+//
+//   This is a pure additive change on the JSON schema — no existing field is
+//   removed or renamed.
+export function summarizeInputs(inputResults) {
   const passes = inputResults.filter(r => r.kind === 'pass');
   const fails = inputResults.filter(r => r.kind === 'fail');
   const errors = inputResults.filter(r => r.kind === 'oracle_error');
@@ -270,13 +317,30 @@ function summarizeInputs(inputResults) {
   if (passes.length > 0 && errors.length === 0) {
     return { outcome: 'pass' };
   }
-  if (passes.length > 0 && errors.length > 0) {
-    // Some inputs errored, some passed — treat as oracle_error: a fixture
-    // input that errors probably shouldn't have been added.
-    return { outcome: 'oracle_error', exception: errors[0].exception, exception_class: errors[0].exception_class };
-  }
+  // Both the "some passed, some errored" branch and the "all errored" branch
+  // share the same aggregation logic — keep the paths unified.
   if (errors.length > 0) {
-    return { outcome: 'oracle_error', exception: errors[0].exception, exception_class: errors[0].exception_class };
+    const first = errors[0];
+    const distinctClasses = [];
+    for (const e of errors) {
+      if (!distinctClasses.includes(e.exception_class)) {
+        distinctClasses.push(e.exception_class);
+      }
+    }
+    let exception = first.exception;
+    const extra = errors.length - 1;
+    if (extra > 0) {
+      exception = `${exception} (+${extra} more error${extra === 1 ? '' : 's'})`;
+    }
+    const summary = {
+      outcome: 'oracle_error',
+      exception,
+      exception_class: first.exception_class,
+    };
+    if (distinctClasses.length > 1) {
+      summary.exception_classes = distinctClasses;
+    }
+    return summary;
   }
   return { outcome: 'oracle_error', exception: 'no inputs in fixture', exception_class: 'missing_fixture' };
 }
@@ -378,6 +442,9 @@ export async function runOracle({ skipBuild = false } = {}) {
       if (summary.outcome === 'oracle_error') {
         entry.exception = summary.exception;
         entry.exception_class = summary.exception_class;
+        if (summary.exception_classes) {
+          entry.exception_classes = summary.exception_classes;
+        }
       }
       results.push(entry);
       bumpShape(shape.shape_id, summary.outcome);

@@ -8,7 +8,7 @@ _Canonical machine-readable data: `../../docs/oracle-results.json`._
 
 - Safe-subset size: **1038**
 - Outcome totals: pass=439, fail=1, oracle_error=598
-- Shapes fixtured (8): `parse-map`, `split-map`, `empty`, `parse-map-2`, `parse-map-3`, `unknown-3`, `entries-sort-map`, `empty-2`
+- Shapes fixtured (8): `empty-2`, `empty`, `entries-sort-map`, `parse-map-2`, `parse-map-3`, `parse-map`, `split-map`, `unknown-3`
 - Every `oracle_error` in this run has class `missing_fixture` (no `js_exception`, `js_timeout`, `rust_exception`, or `source_missing` observed).
 
 ## Auto-disposition: missing_fixture

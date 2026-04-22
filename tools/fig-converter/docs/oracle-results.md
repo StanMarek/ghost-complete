@@ -3,7 +3,7 @@
 _Canonical machine-readable data: [oracle-results.json](./oracle-results.json)_
 
 - **Safe subset size**: 1038
-- **Ran at**: 2026-04-22T19:15:47Z
+- **Ran at**: 2026-04-22T19:30:53Z
 
 ## Summary
 
