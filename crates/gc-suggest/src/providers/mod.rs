@@ -45,6 +45,7 @@ pub mod arduino_cli;
 pub mod macos_defaults;
 pub mod mamba;
 pub mod multipass;
+pub mod pandoc;
 
 /// Context passed to every provider's `generate` call. Owned by the
 /// engine; providers receive it by reference so the shared env map is
@@ -110,6 +111,12 @@ pub enum ProviderKind {
     /// `multipass list --format=json`, projecting the `name` field of
     /// each entry in the top-level `list` array.
     MultipassList,
+    /// `pandoc --list-input-formats`, emitting one format identifier
+    /// per non-empty line.
+    PandocInputFormats,
+    /// `pandoc --list-output-formats`, emitting one format identifier
+    /// per non-empty line.
+    PandocOutputFormats,
 }
 
 /// Map a spec's `"type"` string to a `ProviderKind`, or `None` if the
@@ -127,6 +134,8 @@ pub fn kind_from_type_str(type_str: &str) -> Option<ProviderKind> {
         "defaults_domains" => Some(ProviderKind::DefaultsDomains),
         "mamba_envs" => Some(ProviderKind::MambaEnvs),
         "multipass_list" => Some(ProviderKind::MultipassList),
+        "pandoc_input_formats" => Some(ProviderKind::PandocInputFormats),
+        "pandoc_output_formats" => Some(ProviderKind::PandocOutputFormats),
         _ => None,
     }
 }
@@ -140,6 +149,8 @@ pub async fn resolve(kind: ProviderKind, ctx: &ProviderCtx) -> Result<Vec<Sugges
         ProviderKind::DefaultsDomains => macos_defaults::DefaultsDomains.generate(ctx).await,
         ProviderKind::MambaEnvs => mamba::MambaEnvs.generate(ctx).await,
         ProviderKind::MultipassList => multipass::MultipassList.generate(ctx).await,
+        ProviderKind::PandocInputFormats => pandoc::PandocInputFormats.generate(ctx).await,
+        ProviderKind::PandocOutputFormats => pandoc::PandocOutputFormats.generate(ctx).await,
     }
 }
 
@@ -184,6 +195,14 @@ mod tests {
         assert_eq!(
             kind_from_type_str("multipass_list"),
             Some(ProviderKind::MultipassList)
+        );
+        assert_eq!(
+            kind_from_type_str("pandoc_input_formats"),
+            Some(ProviderKind::PandocInputFormats)
+        );
+        assert_eq!(
+            kind_from_type_str("pandoc_output_formats"),
+            Some(ProviderKind::PandocOutputFormats)
         );
     }
 
