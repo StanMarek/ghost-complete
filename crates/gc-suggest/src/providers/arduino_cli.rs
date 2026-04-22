@@ -73,9 +73,19 @@ pub(crate) struct MatchingBoard {
 /// malformed JSON), always logged via `tracing::warn!` with structured
 /// context. T3's port provider will reuse this helper unchanged.
 pub(crate) async fn run_board_list(cwd: &Path) -> Option<ArduinoBoardListOutput> {
+    run_board_list_with_binary(cwd, "arduino-cli").await
+}
+
+// Parametric binary name lets T3–T9 subprocess-failure tests inject a
+// nonexistent path without mutating $PATH. Production callers go through
+// `run_board_list` which hardcodes the real binary.
+pub(crate) async fn run_board_list_with_binary(
+    cwd: &Path,
+    binary: &str,
+) -> Option<ArduinoBoardListOutput> {
     let output = match tokio::time::timeout(
         Duration::from_millis(ARDUINO_CLI_TIMEOUT_MS),
-        Command::new("arduino-cli")
+        Command::new(binary)
             .args(["board", "list", "--format", "json"])
             .current_dir(cwd)
             .kill_on_drop(true)
@@ -179,8 +189,6 @@ impl Provider for ArduinoCliBoards {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashMap;
-    use std::sync::Arc;
 
     #[test]
     fn parses_wrapped_shape() {
@@ -286,42 +294,18 @@ mod tests {
 
     #[tokio::test]
     async fn subprocess_failure_returns_empty_vec() {
-        // If `arduino-cli` is not on PATH — the common case on CI and
-        // most developer machines — `run_board_list` must return None,
-        // the provider's `generate` must return Ok(empty), and nothing
-        // must panic. We force a cwd that a functioning arduino-cli
-        // would still parse as valid; the failure mode we're exercising
-        // is spawn-time "file not found", not a semantic arduino-cli
-        // error.
+        // Exercises the spawn-time "file not found" path by injecting a
+        // binary name that cannot resolve anywhere on disk. No global
+        // state is mutated, so this test is safe to run in parallel
+        // alongside any other test in the workspace — and the same
+        // pattern will serve T3–T9 without duplication.
         let tmp = tempfile::TempDir::new().unwrap();
-        // Shadow PATH so any real arduino-cli on the host doesn't
-        // accidentally succeed and pull real boards into the test.
-        let original_path = std::env::var_os("PATH");
-        // SAFETY: set_var is unsafe on newer toolchains because other
-        // threads may read the env concurrently. This test is serial
-        // within its own process, and tokio's runtime does not read
-        // PATH on the hot path.
-        unsafe {
-            std::env::set_var("PATH", tmp.path());
-        }
-        let ctx = ProviderCtx {
-            cwd: tmp.path().to_path_buf(),
-            env: Arc::new(HashMap::new()),
-            current_token: String::new(),
-        };
-        let result = ArduinoCliBoards.generate(&ctx).await;
-        // Restore PATH before asserting so a panic doesn't leave the
-        // test process in a degraded state for later tests.
-        unsafe {
-            match original_path {
-                Some(p) => std::env::set_var("PATH", p),
-                None => std::env::remove_var("PATH"),
-            }
-        }
-        let suggestions = result.expect("generate must never propagate errors");
+        let result =
+            run_board_list_with_binary(tmp.path(), "/nonexistent/arduino-cli-definitely-not-real")
+                .await;
         assert!(
-            suggestions.is_empty(),
-            "expected empty Vec when arduino-cli is missing, got {suggestions:?}"
+            result.is_none(),
+            "expected None when the arduino-cli binary does not exist"
         );
     }
 }
