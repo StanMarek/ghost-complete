@@ -107,12 +107,26 @@ export function analyzeGenerator(jsSource) {
       allowReturnOutsideFunction: true,
       plugins: [],
     });
-  } catch (err) {
-    return {
-      shape: zeroShape(),
-      fig_api_refs: [],
-      parse_error: err.message,
-    };
+  } catch (errModule) {
+    // Second attempt: wrap in parens to force expression context. Recovers
+    // bare function expressions (`function(a){...}`) and object-literal
+    // returns (`{ name: "x" }`) that are invalid at statement position
+    // under sourceType: 'module' but valid inside a parenthesized expression.
+    try {
+      ast = parse(`(${jsSource})`, {
+        sourceType: 'module',
+        allowReturnOutsideFunction: true,
+        plugins: [],
+      });
+    } catch (_errWrapped) {
+      // Return the ORIGINAL module-mode error so diagnostics point at the
+      // true token position, not the wrapped offset.
+      return {
+        shape: zeroShape(),
+        fig_api_refs: [],
+        parse_error: errModule.message,
+      };
+    }
   }
 
   const shape = zeroShape();
