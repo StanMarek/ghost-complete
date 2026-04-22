@@ -4,7 +4,7 @@
   "shapes": [
     {
       "shape_id": "parse-map",
-      "fingerprint": "JSON.parse(...).map(FN)",
+      "fingerprint": "JSON.parse(...).map(<OBJ>)",
       "count": 174,
       "verdict": "existing_transforms",
       "has_fig_api_refs": false,
@@ -350,7 +350,7 @@
     },
     {
       "shape_id": "startswith-split-map-with-fig-refs",
-      "fingerprint": "(.startsWith(STR) ? ARR : .split(STR).map(FN))",
+      "fingerprint": "(.startsWith(STR) ? ARR : .split(STR).map(<OBJ>))",
       "count": 68,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -502,8 +502,8 @@
       ]
     },
     {
-      "shape_id": "split-map",
-      "fingerprint": ".split(STR).map(FN).map(FN)",
+      "shape_id": "split-map-parse",
+      "fingerprint": ".split(STR).map(<JSON.parse(...)>).map(<OBJ>)",
       "count": 63,
       "verdict": "existing_transforms",
       "has_fig_api_refs": false,
@@ -643,8 +643,8 @@
       ]
     },
     {
-      "shape_id": "ue-fn-with-fig-refs",
-      "fingerprint": "ue(...,...,...,FN)",
+      "shape_id": "ue-with-fig-refs",
+      "fingerprint": "ue(...,...,...,<>)",
       "count": 51,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -764,68 +764,8 @@
       ]
     },
     {
-      "shape_id": "parse-map-2",
-      "fingerprint": "JSON.parse(...).map(FN)",
-      "count": 50,
-      "verdict": "existing_transforms",
-      "has_fig_api_refs": false,
-      "example_spec": "elm-json.json",
-      "generator_ids": [
-        "elm-json:/subcommands[1]/args[0]/generators[0]",
-        "elm-json:/subcommands[3]/args[0]/generators[0]",
-        "elm-json:/subcommands[4]/args[0]/generators[0]",
-        "elm:/subcommands[3]/args/generators[0]",
-        "nativescript:/subcommands[9]/options[0]/args/generators[0]",
-        "ns:/subcommands[9]/options[0]/args/generators[0]",
-        "tns:/subcommands[9]/options[0]/args/generators[0]",
-        "tsh:/options[1]/args/generators[0]",
-        "tsh:/subcommands[10]/options[1]/args/generators[0]",
-        "tsh:/subcommands[11]/options[1]/args/generators[0]",
-        "tsh:/subcommands[12]/options[1]/args/generators[0]",
-        "tsh:/subcommands[13]/options[1]/args/generators[0]",
-        "tsh:/subcommands[14]/options[1]/args/generators[0]",
-        "tsh:/subcommands[15]/options[1]/args/generators[0]",
-        "tsh:/subcommands[15]/subcommands[0]/options[1]/args/generators[0]",
-        "tsh:/subcommands[15]/subcommands[1]/options[1]/args/generators[0]",
-        "tsh:/subcommands[15]/subcommands[2]/options[1]/args/generators[0]",
-        "tsh:/subcommands[15]/subcommands[3]/options[1]/args/generators[0]",
-        "tsh:/subcommands[16]/options[1]/args/generators[0]",
-        "tsh:/subcommands[16]/subcommands[0]/options[1]/args/generators[0]",
-        "tsh:/subcommands[16]/subcommands[1]/options[1]/args/generators[0]",
-        "tsh:/subcommands[16]/subcommands[2]/options[1]/args/generators[0]",
-        "tsh:/subcommands[16]/subcommands[3]/options[1]/args/generators[0]",
-        "tsh:/subcommands[16]/subcommands[4]/options[1]/args/generators[0]",
-        "tsh:/subcommands[17]/options[1]/args/generators[0]",
-        "tsh:/subcommands[17]/subcommands[0]/options[1]/args/generators[0]",
-        "tsh:/subcommands[17]/subcommands[1]/options[1]/args/generators[0]",
-        "tsh:/subcommands[17]/subcommands[2]/options[1]/args/generators[0]",
-        "tsh:/subcommands[18]/options[1]/args/generators[0]",
-        "tsh:/subcommands[1]/args/generators[0]",
-        "tsh:/subcommands[2]/options[1]/args/generators[0]",
-        "tsh:/subcommands[3]/options[1]/args/generators[0]",
-        "tsh:/subcommands[3]/subcommands[0]/options[1]/args/generators[0]",
-        "tsh:/subcommands[3]/subcommands[1]/options[1]/args/generators[0]",
-        "tsh:/subcommands[3]/subcommands[2]/options[1]/args/generators[0]",
-        "tsh:/subcommands[3]/subcommands[3]/options[1]/args/generators[0]",
-        "tsh:/subcommands[4]/options[1]/args/generators[0]",
-        "tsh:/subcommands[4]/subcommands[0]/options[1]/args/generators[0]",
-        "tsh:/subcommands[4]/subcommands[1]/options[1]/args/generators[0]",
-        "tsh:/subcommands[5]/options[1]/args/generators[0]",
-        "tsh:/subcommands[5]/subcommands[0]/options[1]/args/generators[0]",
-        "tsh:/subcommands[5]/subcommands[1]/options[1]/args/generators[0]",
-        "tsh:/subcommands[5]/subcommands[2]/options[1]/args/generators[0]",
-        "tsh:/subcommands[5]/subcommands[3]/options[1]/args/generators[0]",
-        "tsh:/subcommands[5]/subcommands[4]/options[1]/args/generators[0]",
-        "tsh:/subcommands[5]/subcommands[5]/options[1]/args/generators[0]",
-        "tsh:/subcommands[6]/options[1]/args/generators[0]",
-        "tsh:/subcommands[7]/options[1]/args/generators[0]",
-        "tsh:/subcommands[8]/options[1]/args/generators[0]",
-        "tsh:/subcommands[9]/options[1]/args/generators[0]"
-      ]
-    },
-    {
-      "shape_id": "match-map",
-      "fingerprint": ".match(REGEX).map(FN).map(FN).map(FN)",
+      "shape_id": "match-map-split-trim",
+      "fingerprint": ".match(REGEX).map(<.split(STR)>).map(<.map(<.trim()>)>).map(<OBJ>)",
       "count": 50,
       "verdict": "needs_new_transform_regex_match",
       "has_fig_api_refs": false,
@@ -885,7 +825,7 @@
     },
     {
       "shape_id": "map-with-fig-refs",
-      "fingerprint": "o(...).map(FN)",
+      "fingerprint": "o(...).map(<OBJ>)",
       "count": 45,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -993,59 +933,6 @@
       ]
     },
     {
-      "shape_id": "a-fn-with-fig-refs",
-      "fingerprint": "A(...,...,...,FN)",
-      "count": 43,
-      "verdict": "hand_audit_required",
-      "has_fig_api_refs": true,
-      "example_spec": "cargo.json",
-      "generator_ids": [
-        "cargo:/options[2]/args/generators[0]",
-        "cargo:/subcommands[0]/options[14]/args/generators[0]",
-        "cargo:/subcommands[10]/options[5]/args/generators[0]",
-        "cargo:/subcommands[11]/options[18]/args/generators[0]",
-        "cargo:/subcommands[12]/options[3]/args/generators[0]",
-        "cargo:/subcommands[13]/options[2]/args/generators[0]",
-        "cargo:/subcommands[14]/options[2]/args/generators[0]",
-        "cargo:/subcommands[15]/options[5]/args/generators[0]",
-        "cargo:/subcommands[16]/options[5]/args/generators[0]",
-        "cargo:/subcommands[17]/options[6]/args/generators[0]",
-        "cargo:/subcommands[18]/options[8]/args/generators[0]",
-        "cargo:/subcommands[19]/options[3]/args/generators[0]",
-        "cargo:/subcommands[1]/options[15]/args/generators[0]",
-        "cargo:/subcommands[20]/options[10]/args/generators[0]",
-        "cargo:/subcommands[21]/options[2]/args/generators[0]",
-        "cargo:/subcommands[22]/options[1]/args/generators[0]",
-        "cargo:/subcommands[22]/subcommands[0]/options[3]/args/generators[0]",
-        "cargo:/subcommands[22]/subcommands[1]/options[1]/args/generators[0]",
-        "cargo:/subcommands[23]/options[11]/args/generators[0]",
-        "cargo:/subcommands[24]/options[15]/args/generators[0]",
-        "cargo:/subcommands[25]/options[13]/args/generators[0]",
-        "cargo:/subcommands[26]/options[4]/args/generators[0]",
-        "cargo:/subcommands[27]/options[14]/args/generators[0]",
-        "cargo:/subcommands[28]/options[13]/args/generators[0]",
-        "cargo:/subcommands[29]/options[4]/args/generators[0]",
-        "cargo:/subcommands[2]/options[14]/args/generators[0]",
-        "cargo:/subcommands[30]/options[4]/args/generators[0]",
-        "cargo:/subcommands[31]/options[3]/args/generators[0]",
-        "cargo:/subcommands[32]/options[2]/args/generators[0]",
-        "cargo:/subcommands[33]/options[1]/args/generators[0]",
-        "cargo:/subcommands[34]/options[5]/args/generators[0]",
-        "cargo:/subcommands[35]/options[1]/args/generators[0]",
-        "cargo:/subcommands[3]/options[6]/args/generators[0]",
-        "cargo:/subcommands[4]/options[1]/args/generators[0]",
-        "cargo:/subcommands[4]/subcommands[0]/options[3]/args/generators[0]",
-        "cargo:/subcommands[4]/subcommands[1]/options[1]/args/generators[0]",
-        "cargo:/subcommands[5]/options[12]/args/generators[0]",
-        "cargo:/subcommands[6]/options[3]/args/generators[0]",
-        "cargo:/subcommands[7]/options[14]/args/generators[0]",
-        "cargo:/subcommands[8]/options[2]/args/generators[0]",
-        "cargo:/subcommands[9]/options[1]/args/generators[0]",
-        "gh:/subcommands[17]/subcommands[8]/subcommands[0]/args/generators[0]",
-        "gh:/subcommands[17]/subcommands[8]/subcommands[1]/args/generators[0]"
-      ]
-    },
-    {
       "shape_id": "typewithoutname-with-fig-refs",
       "fingerprint": ".typeWithoutName(...)",
       "count": 42,
@@ -1095,6 +982,109 @@
         "kubectl:/subcommands[4]/subcommands[2]/args[1]/generators[0]",
         "kubectl:/subcommands[6]/subcommands[0]/args[2]/generators[0]",
         "kubectl:/subcommands[7]/args[1]/generators[0]"
+      ]
+    },
+    {
+      "shape_id": "parse-map-2",
+      "fingerprint": "JSON.parse(...).map(<.PROP>)",
+      "count": 42,
+      "verdict": "existing_transforms",
+      "has_fig_api_refs": false,
+      "example_spec": "tsh.json",
+      "generator_ids": [
+        "tsh:/options[1]/args/generators[0]",
+        "tsh:/subcommands[10]/options[1]/args/generators[0]",
+        "tsh:/subcommands[11]/options[1]/args/generators[0]",
+        "tsh:/subcommands[12]/options[1]/args/generators[0]",
+        "tsh:/subcommands[13]/options[1]/args/generators[0]",
+        "tsh:/subcommands[14]/options[1]/args/generators[0]",
+        "tsh:/subcommands[15]/options[1]/args/generators[0]",
+        "tsh:/subcommands[15]/subcommands[0]/options[1]/args/generators[0]",
+        "tsh:/subcommands[15]/subcommands[1]/options[1]/args/generators[0]",
+        "tsh:/subcommands[15]/subcommands[2]/options[1]/args/generators[0]",
+        "tsh:/subcommands[15]/subcommands[3]/options[1]/args/generators[0]",
+        "tsh:/subcommands[16]/options[1]/args/generators[0]",
+        "tsh:/subcommands[16]/subcommands[0]/options[1]/args/generators[0]",
+        "tsh:/subcommands[16]/subcommands[1]/options[1]/args/generators[0]",
+        "tsh:/subcommands[16]/subcommands[2]/options[1]/args/generators[0]",
+        "tsh:/subcommands[16]/subcommands[3]/options[1]/args/generators[0]",
+        "tsh:/subcommands[16]/subcommands[4]/options[1]/args/generators[0]",
+        "tsh:/subcommands[17]/options[1]/args/generators[0]",
+        "tsh:/subcommands[17]/subcommands[0]/options[1]/args/generators[0]",
+        "tsh:/subcommands[17]/subcommands[1]/options[1]/args/generators[0]",
+        "tsh:/subcommands[17]/subcommands[2]/options[1]/args/generators[0]",
+        "tsh:/subcommands[18]/options[1]/args/generators[0]",
+        "tsh:/subcommands[2]/options[1]/args/generators[0]",
+        "tsh:/subcommands[3]/options[1]/args/generators[0]",
+        "tsh:/subcommands[3]/subcommands[0]/options[1]/args/generators[0]",
+        "tsh:/subcommands[3]/subcommands[1]/options[1]/args/generators[0]",
+        "tsh:/subcommands[3]/subcommands[2]/options[1]/args/generators[0]",
+        "tsh:/subcommands[3]/subcommands[3]/options[1]/args/generators[0]",
+        "tsh:/subcommands[4]/options[1]/args/generators[0]",
+        "tsh:/subcommands[4]/subcommands[0]/options[1]/args/generators[0]",
+        "tsh:/subcommands[4]/subcommands[1]/options[1]/args/generators[0]",
+        "tsh:/subcommands[5]/options[1]/args/generators[0]",
+        "tsh:/subcommands[5]/subcommands[0]/options[1]/args/generators[0]",
+        "tsh:/subcommands[5]/subcommands[1]/options[1]/args/generators[0]",
+        "tsh:/subcommands[5]/subcommands[2]/options[1]/args/generators[0]",
+        "tsh:/subcommands[5]/subcommands[3]/options[1]/args/generators[0]",
+        "tsh:/subcommands[5]/subcommands[4]/options[1]/args/generators[0]",
+        "tsh:/subcommands[5]/subcommands[5]/options[1]/args/generators[0]",
+        "tsh:/subcommands[6]/options[1]/args/generators[0]",
+        "tsh:/subcommands[7]/options[1]/args/generators[0]",
+        "tsh:/subcommands[8]/options[1]/args/generators[0]",
+        "tsh:/subcommands[9]/options[1]/args/generators[0]"
+      ]
+    },
+    {
+      "shape_id": "a-m-with-fig-refs",
+      "fingerprint": "A(...,...,...,<M(...,...,...,...)>)",
+      "count": 41,
+      "verdict": "hand_audit_required",
+      "has_fig_api_refs": true,
+      "example_spec": "cargo.json",
+      "generator_ids": [
+        "cargo:/options[2]/args/generators[0]",
+        "cargo:/subcommands[0]/options[14]/args/generators[0]",
+        "cargo:/subcommands[10]/options[5]/args/generators[0]",
+        "cargo:/subcommands[11]/options[18]/args/generators[0]",
+        "cargo:/subcommands[12]/options[3]/args/generators[0]",
+        "cargo:/subcommands[13]/options[2]/args/generators[0]",
+        "cargo:/subcommands[14]/options[2]/args/generators[0]",
+        "cargo:/subcommands[15]/options[5]/args/generators[0]",
+        "cargo:/subcommands[16]/options[5]/args/generators[0]",
+        "cargo:/subcommands[17]/options[6]/args/generators[0]",
+        "cargo:/subcommands[18]/options[8]/args/generators[0]",
+        "cargo:/subcommands[19]/options[3]/args/generators[0]",
+        "cargo:/subcommands[1]/options[15]/args/generators[0]",
+        "cargo:/subcommands[20]/options[10]/args/generators[0]",
+        "cargo:/subcommands[21]/options[2]/args/generators[0]",
+        "cargo:/subcommands[22]/options[1]/args/generators[0]",
+        "cargo:/subcommands[22]/subcommands[0]/options[3]/args/generators[0]",
+        "cargo:/subcommands[22]/subcommands[1]/options[1]/args/generators[0]",
+        "cargo:/subcommands[23]/options[11]/args/generators[0]",
+        "cargo:/subcommands[24]/options[15]/args/generators[0]",
+        "cargo:/subcommands[25]/options[13]/args/generators[0]",
+        "cargo:/subcommands[26]/options[4]/args/generators[0]",
+        "cargo:/subcommands[27]/options[14]/args/generators[0]",
+        "cargo:/subcommands[28]/options[13]/args/generators[0]",
+        "cargo:/subcommands[29]/options[4]/args/generators[0]",
+        "cargo:/subcommands[2]/options[14]/args/generators[0]",
+        "cargo:/subcommands[30]/options[4]/args/generators[0]",
+        "cargo:/subcommands[31]/options[3]/args/generators[0]",
+        "cargo:/subcommands[32]/options[2]/args/generators[0]",
+        "cargo:/subcommands[33]/options[1]/args/generators[0]",
+        "cargo:/subcommands[34]/options[5]/args/generators[0]",
+        "cargo:/subcommands[35]/options[1]/args/generators[0]",
+        "cargo:/subcommands[3]/options[6]/args/generators[0]",
+        "cargo:/subcommands[4]/options[1]/args/generators[0]",
+        "cargo:/subcommands[4]/subcommands[0]/options[3]/args/generators[0]",
+        "cargo:/subcommands[4]/subcommands[1]/options[1]/args/generators[0]",
+        "cargo:/subcommands[5]/options[12]/args/generators[0]",
+        "cargo:/subcommands[6]/options[3]/args/generators[0]",
+        "cargo:/subcommands[7]/options[14]/args/generators[0]",
+        "cargo:/subcommands[8]/options[2]/args/generators[0]",
+        "cargo:/subcommands[9]/options[1]/args/generators[0]"
       ]
     },
     {
@@ -1149,7 +1139,7 @@
     },
     {
       "shape_id": "keys-map",
-      "fingerprint": "Object.keys(...).map(FN)",
+      "fingerprint": "Object.keys(...).map(<...>)",
       "count": 38,
       "verdict": "needs_new_transform_conditional_split",
       "has_fig_api_refs": false,
@@ -1193,51 +1183,6 @@
         "pass:/subcommands[2]/subcommands[17]/args[0]/generators[0]",
         "pre-commit:/subcommands[6]/options[13]/args/generators[0]",
         "pre-commit:/subcommands[8]/options[13]/args/generators[0]"
-      ]
-    },
-    {
-      "shape_id": "parse-map-3",
-      "fingerprint": "JSON.parse(...).PROP.map(FN)",
-      "count": 35,
-      "verdict": "existing_transforms",
-      "has_fig_api_refs": false,
-      "example_spec": "cargo.json",
-      "generator_ids": [
-        "cargo:/subcommands[0]/options[4]/args/generators[0]",
-        "cargo:/subcommands[0]/options[5]/args/generators[0]",
-        "cargo:/subcommands[18]/options[3]/args/generators[0]",
-        "cargo:/subcommands[18]/options[4]/args/generators[0]",
-        "cargo:/subcommands[19]/args/generators[0]",
-        "cargo:/subcommands[19]/options[0]/args/generators[0]",
-        "cargo:/subcommands[1]/options[0]/args/generators[0]",
-        "cargo:/subcommands[1]/options[1]/args/generators[0]",
-        "cargo:/subcommands[20]/options[4]/args/generators[0]",
-        "cargo:/subcommands[22]/subcommands[0]/options[1]/args/generators[0]",
-        "cargo:/subcommands[23]/options[2]/args/generators[0]",
-        "cargo:/subcommands[24]/options[0]/args/generators[0]",
-        "cargo:/subcommands[25]/options[0]/args/generators[0]",
-        "cargo:/subcommands[27]/options[4]/args/generators[0]",
-        "cargo:/subcommands[27]/options[5]/args/generators[0]",
-        "cargo:/subcommands[28]/options[1]/args/generators[0]",
-        "cargo:/subcommands[28]/options[2]/args/generators[0]",
-        "cargo:/subcommands[2]/options[0]/args/generators[0]",
-        "cargo:/subcommands[2]/options[1]/args/generators[0]",
-        "cargo:/subcommands[36]/options[11]/args/generators[0]",
-        "cargo:/subcommands[37]/options[3]/args/generators[0]",
-        "cargo:/subcommands[3]/options[0]/args/generators[0]",
-        "cargo:/subcommands[5]/options[0]/args/generators[0]",
-        "cargo:/subcommands[5]/options[1]/args/generators[0]",
-        "cargo:/subcommands[7]/options[0]/args/generators[0]",
-        "cargo:/subcommands[7]/options[1]/args/generators[0]",
-        "multipass:/subcommands[13]/args/generators[0]",
-        "multipass:/subcommands[14]/args/generators[0]",
-        "multipass:/subcommands[16]/args/generators[0]",
-        "multipass:/subcommands[17]/args/generators[0]",
-        "multipass:/subcommands[18]/args/generators[0]",
-        "multipass:/subcommands[19]/args/generators[0]",
-        "multipass:/subcommands[2]/args/generators[0]",
-        "multipass:/subcommands[3]/args[0]/generators[0]",
-        "multipass:/subcommands[7]/args/generators[0]"
       ]
     },
     {
@@ -1285,8 +1230,8 @@
       ]
     },
     {
-      "shape_id": "de-fn-with-fig-refs",
-      "fingerprint": "de(...,...,...,FN)",
+      "shape_id": "de-with-fig-refs",
+      "fingerprint": "de(...,...,...,<>)",
       "count": 28,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -1361,8 +1306,44 @@
       ]
     },
     {
-      "shape_id": "r-fn-with-fig-refs",
-      "fingerprint": "R(...,...,...,FN)",
+      "shape_id": "parse-map-3",
+      "fingerprint": "JSON.parse(...).PROP.map(<OBJ>)",
+      "count": 26,
+      "verdict": "existing_transforms",
+      "has_fig_api_refs": false,
+      "example_spec": "cargo.json",
+      "generator_ids": [
+        "cargo:/subcommands[0]/options[4]/args/generators[0]",
+        "cargo:/subcommands[0]/options[5]/args/generators[0]",
+        "cargo:/subcommands[18]/options[3]/args/generators[0]",
+        "cargo:/subcommands[18]/options[4]/args/generators[0]",
+        "cargo:/subcommands[19]/args/generators[0]",
+        "cargo:/subcommands[19]/options[0]/args/generators[0]",
+        "cargo:/subcommands[1]/options[0]/args/generators[0]",
+        "cargo:/subcommands[1]/options[1]/args/generators[0]",
+        "cargo:/subcommands[20]/options[4]/args/generators[0]",
+        "cargo:/subcommands[22]/subcommands[0]/options[1]/args/generators[0]",
+        "cargo:/subcommands[23]/options[2]/args/generators[0]",
+        "cargo:/subcommands[24]/options[0]/args/generators[0]",
+        "cargo:/subcommands[25]/options[0]/args/generators[0]",
+        "cargo:/subcommands[27]/options[4]/args/generators[0]",
+        "cargo:/subcommands[27]/options[5]/args/generators[0]",
+        "cargo:/subcommands[28]/options[1]/args/generators[0]",
+        "cargo:/subcommands[28]/options[2]/args/generators[0]",
+        "cargo:/subcommands[2]/options[0]/args/generators[0]",
+        "cargo:/subcommands[2]/options[1]/args/generators[0]",
+        "cargo:/subcommands[36]/options[11]/args/generators[0]",
+        "cargo:/subcommands[37]/options[3]/args/generators[0]",
+        "cargo:/subcommands[3]/options[0]/args/generators[0]",
+        "cargo:/subcommands[5]/options[0]/args/generators[0]",
+        "cargo:/subcommands[5]/options[1]/args/generators[0]",
+        "cargo:/subcommands[7]/options[0]/args/generators[0]",
+        "cargo:/subcommands[7]/options[1]/args/generators[0]"
+      ]
+    },
+    {
+      "shape_id": "r-d-with-fig-refs",
+      "fingerprint": "R(...,...,...,<D(...,...)>)",
       "count": 25,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -1396,8 +1377,8 @@
       ]
     },
     {
-      "shape_id": "pe-fn-with-fig-refs",
-      "fingerprint": "pe(...,...,...,FN)",
+      "shape_id": "pe-with-fig-refs",
+      "fingerprint": "pe(...,...,...,<>)",
       "count": 24,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -1463,8 +1444,8 @@
       ]
     },
     {
-      "shape_id": "re-fn-with-fig-refs",
-      "fingerprint": "Re(...,...,...,FN)",
+      "shape_id": "re-with-fig-refs",
+      "fingerprint": "Re(...,...,...,<>)",
       "count": 22,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -1495,8 +1476,8 @@
       ]
     },
     {
-      "shape_id": "entries-sort-map",
-      "fingerprint": "Object.entries(...).sort(FN).map(FN)",
+      "shape_id": "entries-sort-localecompare-map",
+      "fingerprint": "Object.entries(...).sort(<(... ? ... : (... ? NUM : .localeCompare(...)))>).map(<OBJ>)",
       "count": 22,
       "verdict": "existing_transforms",
       "has_fig_api_refs": false,
@@ -1589,7 +1570,7 @@
     },
     {
       "shape_id": "trim-split-map-with-fig-refs",
-      "fingerprint": ".trim().split(STR).map(FN)",
+      "fingerprint": ".trim().split(STR).map(<OBJ>)",
       "count": 19,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -1618,7 +1599,7 @@
     },
     {
       "shape_id": "filter-map",
-      "fingerprint": ".filter(FN).map(FN)",
+      "fingerprint": ".filter(<...>).map(<OBJ>)",
       "count": 19,
       "verdict": "existing_transforms",
       "has_fig_api_refs": false,
@@ -1835,8 +1816,8 @@
       ]
     },
     {
-      "shape_id": "le-fn-with-fig-refs",
-      "fingerprint": "le(...,...,...,FN)",
+      "shape_id": "le-with-fig-refs",
+      "fingerprint": "le(...,...,...,<>)",
       "count": 15,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -1886,7 +1867,7 @@
     },
     {
       "shape_id": "trim-split-filter-map",
-      "fingerprint": ".trim().split(STR).filter(FN).map(FN)",
+      "fingerprint": ".trim().split(STR).filter(<(... && ...)>).map(<OBJ>)",
       "count": 15,
       "verdict": "requires_runtime",
       "has_fig_api_refs": false,
@@ -1911,7 +1892,7 @@
     },
     {
       "shape_id": "keys-map-2",
-      "fingerprint": "Object.keys(...).map(FN)",
+      "fingerprint": "Object.keys(...).map(<OBJ>)",
       "count": 14,
       "verdict": "existing_transforms",
       "has_fig_api_refs": false,
@@ -1934,32 +1915,8 @@
       ]
     },
     {
-      "shape_id": "parse-map-4",
-      "fingerprint": "JSON.parse(...).PROP.PROP.map(FN)",
-      "count": 14,
-      "verdict": "needs_dotted_path_json_extract",
-      "has_fig_api_refs": false,
-      "example_spec": "expo-cli.json",
-      "generator_ids": [
-        "expo-cli:/subcommands[37]/options[6]/args/generators[0]",
-        "expo-cli:/subcommands[37]/options[7]/args/generators[0]",
-        "expo:/subcommands[37]/options[6]/args/generators[0]",
-        "expo:/subcommands[37]/options[7]/args/generators[0]",
-        "pnpx:/subcommands[1]/subcommands[16]/options[1]/args/generators[0]",
-        "pnpx:/subcommands[1]/subcommands[16]/options[2]/args/generators[0]",
-        "react-native:/subcommands[16]/options[1]/args/generators[0]",
-        "react-native:/subcommands[16]/options[2]/args/generators[0]",
-        "scarb:/subcommands[0]/options[1]/args/generators[0]",
-        "scarb:/subcommands[12]/options[0]/args/generators[0]",
-        "scarb:/subcommands[13]/options[7]/args/generators[0]",
-        "scarb:/subcommands[1]/options[1]/args/generators[0]",
-        "scarb:/subcommands[2]/options[0]/args/generators[0]",
-        "scarb:/subcommands[7]/options[3]/args/generators[0]"
-      ]
-    },
-    {
-      "shape_id": "ce-fn-with-fig-refs",
-      "fingerprint": "ce(...,...,...,FN)",
+      "shape_id": "ce-with-fig-refs",
+      "fingerprint": "ce(...,...,...,<>)",
       "count": 12,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -2002,8 +1959,8 @@
       ]
     },
     {
-      "shape_id": "split-map-2",
-      "fingerprint": ".split(STR).map(FN).map(FN)",
+      "shape_id": "split-map",
+      "fingerprint": ".split(STR).map(<.split(STR)>).map(<OBJ>)",
       "count": 11,
       "verdict": "requires_runtime",
       "has_fig_api_refs": false,
@@ -2043,8 +2000,8 @@
       ]
     },
     {
-      "shape_id": "ge-fn-with-fig-refs",
-      "fingerprint": "ge(...,...,...,FN)",
+      "shape_id": "ge-with-fig-refs",
+      "fingerprint": "ge(...,...,...,<>)",
       "count": 9,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -2062,8 +2019,8 @@
       ]
     },
     {
-      "shape_id": "ae-fn-with-fig-refs",
-      "fingerprint": "ae(...,...,...,FN)",
+      "shape_id": "ae-with-fig-refs",
+      "fingerprint": "ae(...,...,...,<>)",
       "count": 9,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -2082,7 +2039,7 @@
     },
     {
       "shape_id": "split-map-filter-with-fig-refs",
-      "fingerprint": ".split(STR).map(FN).filter(FN).map(FN)",
+      "fingerprint": ".split(STR).map(<>).filter(<(... && ...)>).map(<OBJ>)",
       "count": 9,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -2100,8 +2057,27 @@
       ]
     },
     {
-      "shape_id": "split-map-3",
-      "fingerprint": ".split(STR).map(FN)",
+      "shape_id": "parse-map-4",
+      "fingerprint": "JSON.parse(...).PROP.map(<>)",
+      "count": 9,
+      "verdict": "existing_transforms",
+      "has_fig_api_refs": false,
+      "example_spec": "multipass.json",
+      "generator_ids": [
+        "multipass:/subcommands[13]/args/generators[0]",
+        "multipass:/subcommands[14]/args/generators[0]",
+        "multipass:/subcommands[16]/args/generators[0]",
+        "multipass:/subcommands[17]/args/generators[0]",
+        "multipass:/subcommands[18]/args/generators[0]",
+        "multipass:/subcommands[19]/args/generators[0]",
+        "multipass:/subcommands[2]/args/generators[0]",
+        "multipass:/subcommands[3]/args[0]/generators[0]",
+        "multipass:/subcommands[7]/args/generators[0]"
+      ]
+    },
+    {
+      "shape_id": "split-map-2",
+      "fingerprint": ".split(STR).map(<OBJ>)",
       "count": 8,
       "verdict": "requires_runtime",
       "has_fig_api_refs": false,
@@ -2118,21 +2094,39 @@
       ]
     },
     {
-      "shape_id": "split-map-4",
-      "fingerprint": ".split(STR).map(FN).map(FN)",
+      "shape_id": "parse-map-5",
+      "fingerprint": "JSON.parse(...).map(<OBJ>)",
       "count": 8,
       "verdict": "existing_transforms",
       "has_fig_api_refs": false,
-      "example_spec": "docker.json",
+      "example_spec": "elm-json.json",
       "generator_ids": [
-        "docker:/subcommands[13]/args/generators[1]",
-        "podman:/subcommands[13]/args/generators[1]",
-        "podman:/subcommands[42]/subcommands[0]/args[0]/generators[0]",
-        "podman:/subcommands[42]/subcommands[2]/args[0]/generators[0]",
-        "podman:/subcommands[42]/subcommands[3]/args/generators[0]",
-        "podman:/subcommands[42]/subcommands[6]/args/generators[0]",
-        "podman:/subcommands[43]/subcommands[1]/args/generators[0]",
-        "podman:/subcommands[43]/subcommands[3]/args/generators[0]"
+        "elm-json:/subcommands[1]/args[0]/generators[0]",
+        "elm-json:/subcommands[3]/args[0]/generators[0]",
+        "elm-json:/subcommands[4]/args[0]/generators[0]",
+        "elm:/subcommands[3]/args/generators[0]",
+        "nativescript:/subcommands[9]/options[0]/args/generators[0]",
+        "ns:/subcommands[9]/options[0]/args/generators[0]",
+        "tns:/subcommands[9]/options[0]/args/generators[0]",
+        "tsh:/subcommands[1]/args/generators[0]"
+      ]
+    },
+    {
+      "shape_id": "parse-map-6",
+      "fingerprint": "JSON.parse(...).PROP.PROP.map(<OBJ>)",
+      "count": 8,
+      "verdict": "needs_dotted_path_json_extract",
+      "has_fig_api_refs": false,
+      "example_spec": "expo-cli.json",
+      "generator_ids": [
+        "expo-cli:/subcommands[37]/options[6]/args/generators[0]",
+        "expo-cli:/subcommands[37]/options[7]/args/generators[0]",
+        "expo:/subcommands[37]/options[6]/args/generators[0]",
+        "expo:/subcommands[37]/options[7]/args/generators[0]",
+        "pnpx:/subcommands[1]/subcommands[16]/options[1]/args/generators[0]",
+        "pnpx:/subcommands[1]/subcommands[16]/options[2]/args/generators[0]",
+        "react-native:/subcommands[16]/options[1]/args/generators[0]",
+        "react-native:/subcommands[16]/options[2]/args/generators[0]"
       ]
     },
     {
@@ -2154,8 +2148,8 @@
       ]
     },
     {
-      "shape_id": "parse-map-5",
-      "fingerprint": "JSON.parse(...).PROP.map(FN)",
+      "shape_id": "parse-map-7",
+      "fingerprint": "JSON.parse(...).PROP.map(<OBJ>)",
       "count": 7,
       "verdict": "existing_transforms",
       "has_fig_api_refs": false,
@@ -2171,8 +2165,8 @@
       ]
     },
     {
-      "shape_id": "trim-split-filter-map-2",
-      "fingerprint": ".trim().split(STR).filter(FN).map(FN).map(FN)",
+      "shape_id": "trim-split-filter-startswith-map-replace",
+      "fingerprint": ".trim().split(STR).filter(<.startsWith(...)>).map(<.replace(REGEX,STR)>).map(<OBJ>)",
       "count": 7,
       "verdict": "requires_runtime",
       "has_fig_api_refs": false,
@@ -2189,7 +2183,7 @@
     },
     {
       "shape_id": "split-map-with-fig-refs",
-      "fingerprint": ".split(STR).map(FN)",
+      "fingerprint": ".split(STR).map(<OBJ>)",
       "count": 7,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -2239,8 +2233,8 @@
       ]
     },
     {
-      "shape_id": "k-fn-with-fig-refs",
-      "fingerprint": "k(...,...,...,FN)",
+      "shape_id": "k-w-with-fig-refs",
+      "fingerprint": "k(...,...,...,<W(...,...)>)",
       "count": 7,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -2274,7 +2268,7 @@
     },
     {
       "shape_id": "from-map",
-      "fingerprint": "Array.from(...).map(FN)",
+      "fingerprint": "Array.from(...).map(<OBJ>)",
       "count": 7,
       "verdict": "needs_new_transform_substring_slice",
       "has_fig_api_refs": false,
@@ -2290,8 +2284,8 @@
       ]
     },
     {
-      "shape_id": "split-map-5",
-      "fingerprint": ".split(STR).map(FN)",
+      "shape_id": "split-map-3",
+      "fingerprint": ".split(STR).map(<OBJ>)",
       "count": 6,
       "verdict": "existing_transforms",
       "has_fig_api_refs": false,
@@ -2338,8 +2332,8 @@
       ]
     },
     {
-      "shape_id": "me-fn-with-fig-refs",
-      "fingerprint": "me(...,...,...,FN)",
+      "shape_id": "me-with-fig-refs",
+      "fingerprint": "me(...,...,...,<>)",
       "count": 6,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -2354,8 +2348,40 @@
       ]
     },
     {
+      "shape_id": "split-map-parse-2",
+      "fingerprint": ".split(STR).map(<JSON.parse(...)>).map(<OBJ>)",
+      "count": 6,
+      "verdict": "existing_transforms",
+      "has_fig_api_refs": false,
+      "example_spec": "podman.json",
+      "generator_ids": [
+        "podman:/subcommands[42]/subcommands[0]/args[0]/generators[0]",
+        "podman:/subcommands[42]/subcommands[2]/args[0]/generators[0]",
+        "podman:/subcommands[42]/subcommands[3]/args/generators[0]",
+        "podman:/subcommands[42]/subcommands[6]/args/generators[0]",
+        "podman:/subcommands[43]/subcommands[1]/args/generators[0]",
+        "podman:/subcommands[43]/subcommands[3]/args/generators[0]"
+      ]
+    },
+    {
+      "shape_id": "parse-map-split",
+      "fingerprint": "JSON.parse(...).PROP.PROP.map(<.split(STR)[COMPUTED]>)",
+      "count": 6,
+      "verdict": "needs_dotted_path_json_extract",
+      "has_fig_api_refs": false,
+      "example_spec": "scarb.json",
+      "generator_ids": [
+        "scarb:/subcommands[0]/options[1]/args/generators[0]",
+        "scarb:/subcommands[12]/options[0]/args/generators[0]",
+        "scarb:/subcommands[13]/options[7]/args/generators[0]",
+        "scarb:/subcommands[1]/options[1]/args/generators[0]",
+        "scarb:/subcommands[2]/options[0]/args/generators[0]",
+        "scarb:/subcommands[7]/options[3]/args/generators[0]"
+      ]
+    },
+    {
       "shape_id": "trim-split-map",
-      "fingerprint": ".trim().split(STR)[COMPUTED].split(STR)[COMPUTED].split(STR)[COMPUTED].split(STR).map(FN)",
+      "fingerprint": ".trim().split(STR)[COMPUTED].split(STR)[COMPUTED].split(STR)[COMPUTED].split(STR).map(<OBJ>)",
       "count": 5,
       "verdict": "existing_transforms",
       "has_fig_api_refs": false,
@@ -2369,8 +2395,8 @@
       ]
     },
     {
-      "shape_id": "fe-fn-with-fig-refs",
-      "fingerprint": "Fe(...,...,...,FN)",
+      "shape_id": "fe-with-fig-refs",
+      "fingerprint": "Fe(...,...,...,<>)",
       "count": 5,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -2385,7 +2411,7 @@
     },
     {
       "shape_id": "from-map-2",
-      "fingerprint": "Array.from(...).map(FN)",
+      "fingerprint": "Array.from(...).map(<OBJ>)",
       "count": 5,
       "verdict": "existing_transforms",
       "has_fig_api_refs": false,
@@ -2399,23 +2425,8 @@
       ]
     },
     {
-      "shape_id": "j-fn-with-fig-refs",
-      "fingerprint": "j(...,...,...,FN)",
-      "count": 5,
-      "verdict": "hand_audit_required",
-      "has_fig_api_refs": true,
-      "example_spec": "file.json",
-      "generator_ids": [
-        "file:/options[24]/args/generators[0]",
-        "swift:/options[11]/args/generators[0]",
-        "swift:/options[35]/args/generators[0]",
-        "swift:/options[54]/args/generators[0]",
-        "swift:/options[8]/args/generators[0]"
-      ]
-    },
-    {
-      "shape_id": "filter-map-with-fig-refs",
-      "fingerprint": "await c(STR,...,...,STR).filter(FN).map(FN)",
+      "shape_id": "filter-trim-tolowercase-startswith-map-with-fig-refs",
+      "fingerprint": "await c(STR,...,...,STR).filter(<(.trim().toLowerCase().startsWith(STR) && ...)>).map(<OBJ>)",
       "count": 5,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -2444,8 +2455,8 @@
       ]
     },
     {
-      "shape_id": "fe-fn-with-fig-refs-2",
-      "fingerprint": "fe(...,...,...,FN)",
+      "shape_id": "fe-with-fig-refs-2",
+      "fingerprint": "fe(...,...,...,<>)",
       "count": 4,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -2529,7 +2540,7 @@
     },
     {
       "shape_id": "keys-map-3",
-      "fingerprint": "Object.keys(...).map(FN)",
+      "fingerprint": "Object.keys(...).map(<OBJ>)",
       "count": 4,
       "verdict": "requires_runtime",
       "has_fig_api_refs": false,
@@ -2542,8 +2553,8 @@
       ]
     },
     {
-      "shape_id": "t-fn-with-fig-refs",
-      "fingerprint": "T(...,...,...,FN)",
+      "shape_id": "t-q-with-fig-refs",
+      "fingerprint": "T(...,...,...,<q(...,...)>)",
       "count": 4,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -2556,8 +2567,8 @@
       ]
     },
     {
-      "shape_id": "filter-map-with-fig-refs-2",
-      "fingerprint": "await d(STR,...,...,STR).filter(FN).map(FN)",
+      "shape_id": "filter-trim-tolowercase-startswith-map-with-fig-refs-2",
+      "fingerprint": "await d(STR,...,...,STR).filter(<(.trim().toLowerCase().startsWith(STR) && ...)>).map(<OBJ>)",
       "count": 4,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -2567,6 +2578,20 @@
         "scp:/args[1]/generators[1]",
         "sftp:/args[0]/generators[1]",
         "sftp:/args[1]/generators[1]"
+      ]
+    },
+    {
+      "shape_id": "j-q-with-fig-refs",
+      "fingerprint": "j(...,...,...,<q(...,...,...,...)>)",
+      "count": 4,
+      "verdict": "hand_audit_required",
+      "has_fig_api_refs": true,
+      "example_spec": "swift.json",
+      "generator_ids": [
+        "swift:/options[11]/args/generators[0]",
+        "swift:/options[35]/args/generators[0]",
+        "swift:/options[54]/args/generators[0]",
+        "swift:/options[8]/args/generators[0]"
       ]
     },
     {
@@ -2583,8 +2608,8 @@
       ]
     },
     {
-      "shape_id": "te-fn-with-fig-refs",
-      "fingerprint": "Te(...,...,...,FN)",
+      "shape_id": "te-arr-with-fig-refs",
+      "fingerprint": "Te(...,...,...,<((... && ...) ? ... : ARR)>)",
       "count": 3,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -2609,8 +2634,8 @@
       ]
     },
     {
-      "shape_id": "filter",
-      "fingerprint": ".filter(FN)",
+      "shape_id": "filter-has",
+      "fingerprint": ".filter(<(.has(...) ? ... : ...)>)",
       "count": 3,
       "verdict": "needs_new_transform_substring_slice",
       "has_fig_api_refs": false,
@@ -2635,8 +2660,8 @@
       ]
     },
     {
-      "shape_id": "x-fn-with-fig-refs",
-      "fingerprint": "x(...,...,...,FN)",
+      "shape_id": "x-j-with-fig-refs",
+      "fingerprint": "x(...,...,...,<j(...,...)>)",
       "count": 3,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -2713,8 +2738,8 @@
       ]
     },
     {
-      "shape_id": "ye-fn-with-fig-refs",
-      "fingerprint": "ye(...,...,...,FN)",
+      "shape_id": "ye-with-fig-refs",
+      "fingerprint": "ye(...,...,...,<>)",
       "count": 3,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -2726,8 +2751,8 @@
       ]
     },
     {
-      "shape_id": "parse-map-6",
-      "fingerprint": "JSON.parse(...).map(FN)",
+      "shape_id": "parse-map-8",
+      "fingerprint": "JSON.parse(...).map(<OBJ>)",
       "count": 3,
       "verdict": "existing_transforms",
       "has_fig_api_refs": false,
@@ -2740,7 +2765,7 @@
     },
     {
       "shape_id": "keys-map-4",
-      "fingerprint": "Object.keys(...).map(FN)",
+      "fingerprint": "Object.keys(...).map(<OBJ>)",
       "count": 2,
       "verdict": "existing_transforms",
       "has_fig_api_refs": false,
@@ -2751,8 +2776,8 @@
       ]
     },
     {
-      "shape_id": "g-fn-with-fig-refs",
-      "fingerprint": "G(...,...,...,FN)",
+      "shape_id": "g-te-with-fig-refs",
+      "fingerprint": "G(...,...,...,<te(...,...)>)",
       "count": 2,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -2763,8 +2788,8 @@
       ]
     },
     {
-      "shape_id": "g-fn-with-fig-refs-2",
-      "fingerprint": "G(...,...,...,FN)",
+      "shape_id": "g-te-with-fig-refs-2",
+      "fingerprint": "G(...,...,...,<te(...,...)>)",
       "count": 2,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -2776,7 +2801,7 @@
     },
     {
       "shape_id": "trim-split-slice-map-with-fig-refs",
-      "fingerprint": ".trim().split(STR).slice(NUM).map(FN)",
+      "fingerprint": ".trim().split(STR).slice(NUM).map(<OBJ>)",
       "count": 2,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -2799,6 +2824,30 @@
       ]
     },
     {
+      "shape_id": "split-map-parse-3",
+      "fingerprint": ".split(STR).map(<JSON.parse(...)>).map(<...>)",
+      "count": 2,
+      "verdict": "existing_transforms",
+      "has_fig_api_refs": false,
+      "example_spec": "docker.json",
+      "generator_ids": [
+        "docker:/subcommands[13]/args/generators[1]",
+        "podman:/subcommands[13]/args/generators[1]"
+      ]
+    },
+    {
+      "shape_id": "a-g-with-fig-refs",
+      "fingerprint": "A(...,...,...,<G(...,...,...,...)>)",
+      "count": 2,
+      "verdict": "hand_audit_required",
+      "has_fig_api_refs": true,
+      "example_spec": "gh.json",
+      "generator_ids": [
+        "gh:/subcommands[17]/subcommands[8]/subcommands[0]/args/generators[0]",
+        "gh:/subcommands[17]/subcommands[8]/subcommands[1]/args/generators[0]"
+      ]
+    },
+    {
       "shape_id": "unknown-9",
       "fingerprint": "...",
       "count": 2,
@@ -2811,8 +2860,8 @@
       ]
     },
     {
-      "shape_id": "he-fn-with-fig-refs",
-      "fingerprint": "he(...,...,...,FN)",
+      "shape_id": "he-with-fig-refs",
+      "fingerprint": "he(...,...,...,<>)",
       "count": 2,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -2823,8 +2872,8 @@
       ]
     },
     {
-      "shape_id": "q-fn-with-fig-refs",
-      "fingerprint": "q(...,...,...,FN)",
+      "shape_id": "q-j-with-fig-refs",
+      "fingerprint": "q(...,...,...,<j(...,...)>)",
       "count": 2,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -2836,7 +2885,7 @@
     },
     {
       "shape_id": "entries-map-reduce-with-fig-refs",
-      "fingerprint": "Object.entries(...).map(FN).reduce(FN,ARR).map(FN)",
+      "fingerprint": "Object.entries(...).map(<...>).reduce(<ARR>,ARR).map(<OBJ>)",
       "count": 2,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -2847,8 +2896,8 @@
       ]
     },
     {
-      "shape_id": "parse-map-7",
-      "fingerprint": "JSON.parse(...).map(FN)",
+      "shape_id": "parse-map-9",
+      "fingerprint": "JSON.parse(...).map(<OBJ>)",
       "count": 2,
       "verdict": "requires_runtime",
       "has_fig_api_refs": false,
@@ -2860,7 +2909,7 @@
     },
     {
       "shape_id": "map-with-fig-refs-2",
-      "fingerprint": "(... ? .PROP.PROP.map(FN) : ARR)",
+      "fingerprint": "(... ? .PROP.PROP.map(<OBJ>) : ARR)",
       "count": 2,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -2872,7 +2921,7 @@
     },
     {
       "shape_id": "values-map-with-fig-refs",
-      "fingerprint": "Object.values(...).map(FN)",
+      "fingerprint": "Object.values(...).map(<OBJ>)",
       "count": 2,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -2883,8 +2932,8 @@
       ]
     },
     {
-      "shape_id": "we-fn-with-fig-refs",
-      "fingerprint": "we(...,...,...,FN)",
+      "shape_id": "we-with-fig-refs",
+      "fingerprint": "we(...,...,...,<>)",
       "count": 2,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -2907,8 +2956,8 @@
       ]
     },
     {
-      "shape_id": "i-fn-with-fig-refs",
-      "fingerprint": "I(...,...,...,FN)",
+      "shape_id": "i-h-with-fig-refs",
+      "fingerprint": "I(...,...,...,<H(...,...)>)",
       "count": 1,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -2919,7 +2968,7 @@
     },
     {
       "shape_id": "slice-some-map",
-      "fingerprint": "(.slice(NUM,...).some(FN) ? ARR.map(FN) : ARR.map(FN))",
+      "fingerprint": "(.slice(NUM,...).some(<...>) ? ARR.map(<OBJ>) : ARR.map(<OBJ>))",
       "count": 1,
       "verdict": "needs_new_transform_substring_slice",
       "has_fig_api_refs": false,
@@ -2951,8 +3000,8 @@
       ]
     },
     {
-      "shape_id": "d-fn-with-fig-refs",
-      "fingerprint": "D(...,...,...,FN)",
+      "shape_id": "d-c-with-fig-refs",
+      "fingerprint": "D(...,...,...,<C(...,...)>)",
       "count": 1,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -2973,8 +3022,8 @@
       ]
     },
     {
-      "shape_id": "parse-map-8",
-      "fingerprint": "JSON.parse(...).map(FN)",
+      "shape_id": "parse-map-10",
+      "fingerprint": "JSON.parse(...).map(<OBJ>)",
       "count": 1,
       "verdict": "requires_runtime",
       "has_fig_api_refs": false,
@@ -2985,7 +3034,7 @@
     },
     {
       "shape_id": "entries-map-with-fig-refs",
-      "fingerprint": "(... ? ARR : Object.entries(...).map(FN))",
+      "fingerprint": "(... ? ARR : Object.entries(...).map(<OBJ>))",
       "count": 1,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -2995,8 +3044,8 @@
       ]
     },
     {
-      "shape_id": "parse-map-9",
-      "fingerprint": "JSON.parse(...).PROP.map(FN)",
+      "shape_id": "parse-map-11",
+      "fingerprint": "JSON.parse(...).PROP.map(<OBJ>)",
       "count": 1,
       "verdict": "existing_transforms",
       "has_fig_api_refs": false,
@@ -3007,7 +3056,7 @@
     },
     {
       "shape_id": "map",
-      "fingerprint": ".PROP.map(FN)",
+      "fingerprint": ".PROP.map(<OBJ>)",
       "count": 1,
       "verdict": "existing_transforms",
       "has_fig_api_refs": false,
@@ -3018,7 +3067,7 @@
     },
     {
       "shape_id": "includes-map-with-fig-refs",
-      "fingerprint": "(.includes(...) ? [COMPUTED].map(FN) : ARR)",
+      "fingerprint": "(.includes(...) ? [COMPUTED].map(<OBJ>) : ARR)",
       "count": 1,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -3040,7 +3089,7 @@
     },
     {
       "shape_id": "startswith-keys-map",
-      "fingerprint": "((... || [COMPUTED].startsWith(STR)) ? Object.keys(...).map(FN) : ARR)",
+      "fingerprint": "((... || [COMPUTED].startsWith(STR)) ? Object.keys(...).map(<OBJ>) : ARR)",
       "count": 1,
       "verdict": "needs_new_transform_conditional_split",
       "has_fig_api_refs": false,
@@ -3051,7 +3100,7 @@
     },
     {
       "shape_id": "values-map",
-      "fingerprint": "Object.values(...).map(FN)",
+      "fingerprint": "Object.values(...).map(<OBJ>)",
       "count": 1,
       "verdict": "existing_transforms",
       "has_fig_api_refs": false,
@@ -3061,14 +3110,25 @@
       ]
     },
     {
-      "shape_id": "k-fn-with-fig-refs-2",
-      "fingerprint": "k(...,...,...,FN)",
+      "shape_id": "k-w-with-fig-refs-2",
+      "fingerprint": "k(...,...,...,<W(...,...)>)",
       "count": 1,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
       "example_spec": "esbuild.json",
       "generator_ids": [
         "esbuild:/options[11]/args/generators[0]"
+      ]
+    },
+    {
+      "shape_id": "j-p-with-fig-refs",
+      "fingerprint": "j(...,...,...,<P(...,...,...,...)>)",
+      "count": 1,
+      "verdict": "hand_audit_required",
+      "has_fig_api_refs": true,
+      "example_spec": "file.json",
+      "generator_ids": [
+        "file:/options[24]/args/generators[0]"
       ]
     },
     {
@@ -3084,7 +3144,7 @@
     },
     {
       "shape_id": "map-with-fig-refs-3",
-      "fingerprint": "h(ARR,FN).map(FN)",
+      "fingerprint": "h(ARR,<...>).map(<((.PROP && ...) ? OBJ : OBJ)>)",
       "count": 1,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -3095,7 +3155,7 @@
     },
     {
       "shape_id": "map-reverse-with-fig-refs",
-      "fingerprint": "ARR.map(FN).reverse()",
+      "fingerprint": "ARR.map(<OBJ>).reverse()",
       "count": 1,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -3116,8 +3176,8 @@
       ]
     },
     {
-      "shape_id": "filter-map-2",
-      "fingerprint": ".filter(FN).map(FN)",
+      "shape_id": "filter-every-includes-map",
+      "fingerprint": ".filter(<.every(<.includes(...)>)>).map(<>)",
       "count": 1,
       "verdict": "requires_runtime",
       "has_fig_api_refs": false,
@@ -3139,7 +3199,7 @@
     },
     {
       "shape_id": "trim-split-map-2",
-      "fingerprint": ".trim().split(STR).map(FN)",
+      "fingerprint": ".trim().split(STR).map(<OBJ>)",
       "count": 1,
       "verdict": "needs_new_transform_substring_slice",
       "has_fig_api_refs": false,
@@ -3150,7 +3210,7 @@
     },
     {
       "shape_id": "map-2",
-      "fingerprint": "ARR.map(FN)",
+      "fingerprint": "ARR.map(<OBJ>)",
       "count": 1,
       "verdict": "existing_transforms",
       "has_fig_api_refs": false,
@@ -3161,7 +3221,7 @@
     },
     {
       "shape_id": "map-3",
-      "fingerprint": ".map(FN)",
+      "fingerprint": ".map(<OBJ>)",
       "count": 1,
       "verdict": "needs_new_transform_regex_match",
       "has_fig_api_refs": false,
@@ -3172,7 +3232,7 @@
     },
     {
       "shape_id": "map-4",
-      "fingerprint": ".map(FN)",
+      "fingerprint": ".map(<OBJ>)",
       "count": 1,
       "verdict": "needs_new_transform_conditional_split",
       "has_fig_api_refs": false,
@@ -3182,8 +3242,8 @@
       ]
     },
     {
-      "shape_id": "f-fn-with-fig-refs",
-      "fingerprint": "F(...,...,...,FN)",
+      "shape_id": "f-e-with-fig-refs",
+      "fingerprint": "F(...,...,...,<E(...,...)>)",
       "count": 1,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -3204,8 +3264,8 @@
       ]
     },
     {
-      "shape_id": "split-filter-map",
-      "fingerprint": ".split(STR).filter(FN).map(FN)",
+      "shape_id": "split-filter-endswith-map",
+      "fingerprint": ".split(STR).filter(<.endsWith(STR)>).map(<OBJ>)",
       "count": 1,
       "verdict": "requires_runtime",
       "has_fig_api_refs": false,
@@ -3227,7 +3287,7 @@
     },
     {
       "shape_id": "parse-map-with-fig-refs-2",
-      "fingerprint": "JSON.parse(...).map(FN)",
+      "fingerprint": "JSON.parse(...).map(<OBJ>)",
       "count": 1,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -3237,8 +3297,8 @@
       ]
     },
     {
-      "shape_id": "ln-fn-with-fig-refs",
-      "fingerprint": "ln(...,...,...,FN)",
+      "shape_id": "ln-with-fig-refs",
+      "fingerprint": "ln(...,...,...,<>)",
       "count": 1,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -3271,7 +3331,7 @@
     },
     {
       "shape_id": "map-5",
-      "fingerprint": "ARR.map(FN).map(FN)",
+      "fingerprint": "ARR.map(<[COMPUTED]>).map(<OBJ>)",
       "count": 1,
       "verdict": "requires_runtime",
       "has_fig_api_refs": false,
@@ -3282,7 +3342,7 @@
     },
     {
       "shape_id": "keys-reduce",
-      "fingerprint": "Object.keys(...).reduce(FN,ARR)",
+      "fingerprint": "Object.keys(...).reduce(<ARR>,ARR)",
       "count": 1,
       "verdict": "existing_transforms",
       "has_fig_api_refs": false,
@@ -3292,8 +3352,8 @@
       ]
     },
     {
-      "shape_id": "t-fn-with-fig-refs-2",
-      "fingerprint": "T(...,...,...,FN)",
+      "shape_id": "t-q-with-fig-refs-2",
+      "fingerprint": "T(...,...,...,<q(...,...)>)",
       "count": 1,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -3303,8 +3363,8 @@
       ]
     },
     {
-      "shape_id": "flatmap-filter-sort-map-with-fig-refs",
-      "fingerprint": ".PROP.PROP.flatMap(FN).filter(FN).sort(FN).map(FN)",
+      "shape_id": "flatmap-filter-sort-localecompare-map-with-fig-refs",
+      "fingerprint": ".PROP.PROP.flatMap(<...>).filter(<...>).sort(<.PROP.localeCompare(...)>).map(<OBJ>)",
       "count": 1,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -3314,8 +3374,8 @@
       ]
     },
     {
-      "shape_id": "split-filter-map-with-fig-refs",
-      "fingerprint": ".split(STR).filter(FN).map(FN)",
+      "shape_id": "split-filter-test-map-with-fig-refs",
+      "fingerprint": ".split(STR).filter(<.test(...)>).map(<OBJ>)",
       "count": 1,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -3326,7 +3386,7 @@
     },
     {
       "shape_id": "map-with-fig-refs-4",
-      "fingerprint": "ARR.map(FN)",
+      "fingerprint": "ARR.map(<OBJ>)",
       "count": 1,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -3336,8 +3396,8 @@
       ]
     },
     {
-      "shape_id": "pe-fn-with-fig-refs-2",
-      "fingerprint": "Pe(...,...,...,FN)",
+      "shape_id": "pe-with-fig-refs-2",
+      "fingerprint": "Pe(...,...,...,<>)",
       "count": 1,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -3348,7 +3408,7 @@
     },
     {
       "shape_id": "entries-map-with-fig-refs-2",
-      "fingerprint": "Object.entries(...).map(FN)",
+      "fingerprint": "Object.entries(...).map(<...>)",
       "count": 1,
       "verdict": "hand_audit_required",
       "has_fig_api_refs": true,
@@ -3359,7 +3419,7 @@
     },
     {
       "shape_id": "trim-slice-split-filter-map",
-      "fingerprint": ".trim().slice(NUM,...).split(STR).filter(FN).map(FN)",
+      "fingerprint": ".trim().slice(NUM,...).split(STR).filter(<...>).map(<OBJ>)",
       "count": 1,
       "verdict": "needs_new_transform_substring_slice",
       "has_fig_api_refs": false,
@@ -3381,7 +3441,7 @@
     },
     {
       "shape_id": "map-6",
-      "fingerprint": "ARR.map(FN)",
+      "fingerprint": "ARR.map(<OBJ>)",
       "count": 1,
       "verdict": "needs_new_transform_conditional_split",
       "has_fig_api_refs": false,
@@ -3392,7 +3452,7 @@
     },
     {
       "shape_id": "split-slice-map",
-      "fingerprint": ".split(STR).slice(NUM).map(FN)",
+      "fingerprint": ".split(STR).slice(NUM).map(<OBJ>)",
       "count": 1,
       "verdict": "requires_runtime",
       "has_fig_api_refs": false,

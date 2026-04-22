@@ -177,15 +177,7 @@
                 "description": "Fully qualified board name",
                 "generators": [
                   {
-                    "js_source": "t=>{try{return JSON.parse(t).filter(i=>i.matching_boards).map(i=>({name:i.matching_boards[0].fqbn,description:`${i.matching_boards[0].name} on port ${i.port.address}`}))}catch{return[]}}",
-                    "requires_js": true,
-                    "script": [
-                      "arduino-cli",
-                      "board",
-                      "list",
-                      "--format",
-                      "json"
-                    ]
+                    "type": "arduino_cli_boards"
                   }
                 ],
                 "name": "FQBN"
@@ -208,15 +200,7 @@
                 "description": "Arduino board port connection",
                 "generators": [
                   {
-                    "js_source": "t=>{try{return JSON.parse(t).filter(i=>i.matching_boards).map(i=>({name:i.port.address,description:`${i.matching_boards[0].name} port connection`}))}catch{return[]}}",
-                    "requires_js": true,
-                    "script": [
-                      "arduino-cli",
-                      "board",
-                      "list",
-                      "--format",
-                      "json"
-                    ]
+                    "type": "arduino_cli_ports"
                   }
                 ],
                 "name": "port"
@@ -255,15 +239,7 @@
                 "description": "Fully qualified board name",
                 "generators": [
                   {
-                    "js_source": "t=>{try{return JSON.parse(t).filter(i=>i.matching_boards).map(i=>({name:i.matching_boards[0].fqbn,description:`${i.matching_boards[0].name} on port ${i.port.address}`}))}catch{return[]}}",
-                    "requires_js": true,
-                    "script": [
-                      "arduino-cli",
-                      "board",
-                      "list",
-                      "--format",
-                      "json"
-                    ]
+                    "type": "arduino_cli_boards"
                   }
                 ],
                 "name": "FQBN"
@@ -328,15 +304,7 @@
                 "description": "Fully qualified board name",
                 "generators": [
                   {
-                    "js_source": "t=>{try{return JSON.parse(t).filter(i=>i.matching_boards).map(i=>({name:i.matching_boards[0].fqbn,description:`${i.matching_boards[0].name} on port ${i.port.address}`}))}catch{return[]}}",
-                    "requires_js": true,
-                    "script": [
-                      "arduino-cli",
-                      "board",
-                      "list",
-                      "--format",
-                      "json"
-                    ]
+                    "type": "arduino_cli_boards"
                   }
                 ],
                 "name": "FQBN"
@@ -431,15 +399,7 @@
             "description": "Fully qualified board name",
             "generators": [
               {
-                "js_source": "t=>{try{return JSON.parse(t).filter(i=>i.matching_boards).map(i=>({name:i.matching_boards[0].fqbn,description:`${i.matching_boards[0].name} on port ${i.port.address}`}))}catch{return[]}}",
-                "requires_js": true,
-                "script": [
-                  "arduino-cli",
-                  "board",
-                  "list",
-                  "--format",
-                  "json"
-                ]
+                "type": "arduino_cli_boards"
               }
             ],
             "name": "FQBN"
@@ -462,15 +422,7 @@
             "description": "Arduino board port connection",
             "generators": [
               {
-                "js_source": "t=>{try{return JSON.parse(t).filter(i=>i.matching_boards).map(i=>({name:i.port.address,description:`${i.matching_boards[0].name} port connection`}))}catch{return[]}}",
-                "requires_js": true,
-                "script": [
-                  "arduino-cli",
-                  "board",
-                  "list",
-                  "--format",
-                  "json"
-                ]
+                "type": "arduino_cli_ports"
               }
             ],
             "name": "port"
@@ -620,15 +572,7 @@
             "description": "Fully qualified board name",
             "generators": [
               {
-                "js_source": "t=>{try{return JSON.parse(t).filter(i=>i.matching_boards).map(i=>({name:i.matching_boards[0].fqbn,description:`${i.matching_boards[0].name} on port ${i.port.address}`}))}catch{return[]}}",
-                "requires_js": true,
-                "script": [
-                  "arduino-cli",
-                  "board",
-                  "list",
-                  "--format",
-                  "json"
-                ]
+                "type": "arduino_cli_boards"
               }
             ],
             "name": "FQBN"
@@ -712,15 +656,7 @@
             "description": "Arduino board port connection",
             "generators": [
               {
-                "js_source": "t=>{try{return JSON.parse(t).filter(i=>i.matching_boards).map(i=>({name:i.port.address,description:`${i.matching_boards[0].name} port connection`}))}catch{return[]}}",
-                "requires_js": true,
-                "script": [
-                  "arduino-cli",
-                  "board",
-                  "list",
-                  "--format",
-                  "json"
-                ]
+                "type": "arduino_cli_ports"
               }
             ],
             "name": "port"
@@ -1223,15 +1159,7 @@
             "description": "Arduino board port connection",
             "generators": [
               {
-                "js_source": "t=>{try{return JSON.parse(t).filter(i=>i.matching_boards).map(i=>({name:i.port.address,description:`${i.matching_boards[0].name} port connection`}))}catch{return[]}}",
-                "requires_js": true,
-                "script": [
-                  "arduino-cli",
-                  "board",
-                  "list",
-                  "--format",
-                  "json"
-                ]
+                "type": "arduino_cli_ports"
               }
             ],
             "name": "port"
@@ -1272,15 +1200,7 @@
             "description": "Fully qualified board name",
             "generators": [
               {
-                "js_source": "t=>{try{return JSON.parse(t).filter(i=>i.matching_boards).map(i=>({name:i.matching_boards[0].fqbn,description:`${i.matching_boards[0].name} on port ${i.port.address}`}))}catch{return[]}}",
-                "requires_js": true,
-                "script": [
-                  "arduino-cli",
-                  "board",
-                  "list",
-                  "--format",
-                  "json"
-                ]
+                "type": "arduino_cli_boards"
               }
             ],
             "name": "FQBN"
@@ -1350,15 +1270,7 @@
             "description": "Arduino board port connection",
             "generators": [
               {
-                "js_source": "t=>{try{return JSON.parse(t).filter(i=>i.matching_boards).map(i=>({name:i.port.address,description:`${i.matching_boards[0].name} port connection`}))}catch{return[]}}",
-                "requires_js": true,
-                "script": [
-                  "arduino-cli",
-                  "board",
-                  "list",
-                  "--format",
-                  "json"
-                ]
+                "type": "arduino_cli_ports"
               }
             ],
             "name": "port"
@@ -1412,15 +1324,7 @@
                 "description": "Fully qualified board name",
                 "generators": [
                   {
-                    "js_source": "t=>{try{return JSON.parse(t).filter(i=>i.matching_boards).map(i=>({name:i.matching_boards[0].fqbn,description:`${i.matching_boards[0].name} on port ${i.port.address}`}))}catch{return[]}}",
-                    "requires_js": true,
-                    "script": [
-                      "arduino-cli",
-                      "board",
-                      "list",
-                      "--format",
-                      "json"
-                    ]
+                    "type": "arduino_cli_boards"
                   }
                 ],
                 "name": "FQBN"
@@ -1473,15 +1377,7 @@
                 "description": "Arduino board port connection",
                 "generators": [
                   {
-                    "js_source": "t=>{try{return JSON.parse(t).filter(i=>i.matching_boards).map(i=>({name:i.port.address,description:`${i.matching_boards[0].name} port connection`}))}catch{return[]}}",
-                    "requires_js": true,
-                    "script": [
-                      "arduino-cli",
-                      "board",
-                      "list",
-                      "--format",
-                      "json"
-                    ]
+                    "type": "arduino_cli_ports"
                   }
                 ],
                 "name": "port"
@@ -1584,15 +1480,7 @@
                 "description": "Fully qualified board name",
                 "generators": [
                   {
-                    "js_source": "t=>{try{return JSON.parse(t).filter(i=>i.matching_boards).map(i=>({name:i.matching_boards[0].fqbn,description:`${i.matching_boards[0].name} on port ${i.port.address}`}))}catch{return[]}}",
-                    "requires_js": true,
-                    "script": [
-                      "arduino-cli",
-                      "board",
-                      "list",
-                      "--format",
-                      "json"
-                    ]
+                    "type": "arduino_cli_boards"
                   }
                 ],
                 "name": "FQBN"
@@ -1677,15 +1565,7 @@
                 "description": "Fully qualified board name",
                 "generators": [
                   {
-                    "js_source": "t=>{try{return JSON.parse(t).filter(i=>i.matching_boards).map(i=>({name:i.matching_boards[0].fqbn,description:`${i.matching_boards[0].name} on port ${i.port.address}`}))}catch{return[]}}",
-                    "requires_js": true,
-                    "script": [
-                      "arduino-cli",
-                      "board",
-                      "list",
-                      "--format",
-                      "json"
-                    ]
+                    "type": "arduino_cli_boards"
                   }
                 ],
                 "name": "FQBN"
@@ -1816,15 +1696,7 @@
             "description": "Fully qualified board name",
             "generators": [
               {
-                "js_source": "t=>{try{return JSON.parse(t).filter(i=>i.matching_boards).map(i=>({name:i.matching_boards[0].fqbn,description:`${i.matching_boards[0].name} on port ${i.port.address}`}))}catch{return[]}}",
-                "requires_js": true,
-                "script": [
-                  "arduino-cli",
-                  "board",
-                  "list",
-                  "--format",
-                  "json"
-                ]
+                "type": "arduino_cli_boards"
               }
             ],
             "name": "FQBN"
@@ -1847,15 +1719,7 @@
             "description": "Arduino board port connection",
             "generators": [
               {
-                "js_source": "t=>{try{return JSON.parse(t).filter(i=>i.matching_boards).map(i=>({name:i.port.address,description:`${i.matching_boards[0].name} port connection`}))}catch{return[]}}",
-                "requires_js": true,
-                "script": [
-                  "arduino-cli",
-                  "board",
-                  "list",
-                  "--format",
-                  "json"
-                ]
+                "type": "arduino_cli_ports"
               }
             ],
             "name": "port"
@@ -2054,15 +1918,7 @@
             "description": "Fully qualified board name",
             "generators": [
               {
-                "js_source": "t=>{try{return JSON.parse(t).filter(i=>i.matching_boards).map(i=>({name:i.matching_boards[0].fqbn,description:`${i.matching_boards[0].name} on port ${i.port.address}`}))}catch{return[]}}",
-                "requires_js": true,
-                "script": [
-                  "arduino-cli",
-                  "board",
-                  "list",
-                  "--format",
-                  "json"
-                ]
+                "type": "arduino_cli_boards"
               }
             ],
             "name": "FQBN"
@@ -2106,15 +1962,7 @@
             "description": "Arduino board port connection",
             "generators": [
               {
-                "js_source": "t=>{try{return JSON.parse(t).filter(i=>i.matching_boards).map(i=>({name:i.port.address,description:`${i.matching_boards[0].name} port connection`}))}catch{return[]}}",
-                "requires_js": true,
-                "script": [
-                  "arduino-cli",
-                  "board",
-                  "list",
-                  "--format",
-                  "json"
-                ]
+                "type": "arduino_cli_ports"
               }
             ],
             "name": "port"

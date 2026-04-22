@@ -233,7 +233,22 @@ function qualifyCommand(command, members) {
   const allScripts = scriptCommands.join(' ').toLowerCase();
   const commandLower = command.toLowerCase();
 
-  const authKeywords = ['oauth', 'login', 'token', 'saml', 'auth', 'credential', 'secret', 'api-key', 'apikey'];
+  // Brand keywords for CLIs whose PRIMARY function requires auth (flyctl, firebase,
+  // tsh/teleport, pulumi, amplify, stepzen, deployctl, bosh). Added because the
+  // generic substrings above (oauth/login/token/...) miss brand-only matches.
+  // See spike-report.md §9 question 3.
+  const authKeywords = [
+    'oauth', 'login', 'token', 'saml', 'auth', 'credential', 'secret',
+    'api-key', 'apikey',
+    'flyctl', 'flyc', 'fly.io',
+    'firebase', 'firebase-tools',
+    'tsh', 'teleport',
+    'pulumi',
+    'amplify',
+    'stepzen',
+    'deployctl', 'deno-deploy',
+    'bosh',
+  ];
   const noAuth = !authKeywords.some(kw => commandLower.includes(kw) || allScripts.includes(kw));
 
   const paginationKeywords = ['--page', '--limit', '--offset', '--cursor', 'pagination', 'paginate'];
@@ -581,7 +596,14 @@ async function main() {
   }
 }
 
-main().catch(err => {
-  console.error('Fatal error:', err);
-  process.exit(1);
-});
+// Guarded CLI entry point — only runs when invoked directly (not when
+// imported from tests). Exports below let tests unit-test qualifyCommand
+// without triggering the spike walk.
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch(err => {
+    console.error('Fatal error:', err);
+    process.exit(1);
+  });
+}
+
+export { qualifyCommand };

@@ -230,7 +230,7 @@ function processGenerator(gen, specName) {
 
   // Case: has a script array — check native map first
   if (gen.script && Array.isArray(gen.script)) {
-    const nativeGen = matchNativeGenerator(specName, gen.script);
+    const nativeGen = matchNativeGenerator(specName, gen.script, gen._postProcessSource);
     if (nativeGen) {
       // Native generator takes priority — emit type-only generator
       const result = { ...nativeGen };

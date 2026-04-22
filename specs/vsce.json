@@ -141,28 +141,7 @@
             "name": "branch",
             "generators": [
               {
-                "script": [
-                  "git",
-                  "--no-optional-locks",
-                  "branch",
-                  "-a",
-                  "--no-color",
-                  "--sort=-committerdate"
-                ],
-                "transforms": [
-                  {
-                    "type": "error_guard",
-                    "starts_with": "fatal:"
-                  },
-                  "split_lines",
-                  "filter_empty",
-                  "trim",
-                  {
-                    "type": "regex_extract",
-                    "pattern": "\\S+",
-                    "name": 0
-                  }
-                ]
+                "type": "git_branches"
               }
             ]
           }
@@ -176,28 +155,7 @@
             "name": "branch",
             "generators": [
               {
-                "script": [
-                  "git",
-                  "--no-optional-locks",
-                  "branch",
-                  "-a",
-                  "--no-color",
-                  "--sort=-committerdate"
-                ],
-                "transforms": [
-                  {
-                    "type": "error_guard",
-                    "starts_with": "fatal:"
-                  },
-                  "split_lines",
-                  "filter_empty",
-                  "trim",
-                  {
-                    "type": "regex_extract",
-                    "pattern": "\\S+",
-                    "name": 0
-                  }
-                ]
+                "type": "git_branches"
               }
             ]
           }
@@ -379,28 +337,7 @@
             "name": "branch",
             "generators": [
               {
-                "script": [
-                  "git",
-                  "--no-optional-locks",
-                  "branch",
-                  "-a",
-                  "--no-color",
-                  "--sort=-committerdate"
-                ],
-                "transforms": [
-                  {
-                    "type": "error_guard",
-                    "starts_with": "fatal:"
-                  },
-                  "split_lines",
-                  "filter_empty",
-                  "trim",
-                  {
-                    "type": "regex_extract",
-                    "pattern": "\\S+",
-                    "name": 0
-                  }
-                ]
+                "type": "git_branches"
               }
             ]
           }
@@ -414,28 +351,7 @@
             "name": "branch",
             "generators": [
               {
-                "script": [
-                  "git",
-                  "--no-optional-locks",
-                  "branch",
-                  "-a",
-                  "--no-color",
-                  "--sort=-committerdate"
-                ],
-                "transforms": [
-                  {
-                    "type": "error_guard",
-                    "starts_with": "fatal:"
-                  },
-                  "split_lines",
-                  "filter_empty",
-                  "trim",
-                  {
-                    "type": "regex_extract",
-                    "pattern": "\\S+",
-                    "name": 0
-                  }
-                ]
+                "type": "git_branches"
               }
             ]
           }

@@ -16,6 +16,7 @@ pub mod git;
 pub mod history;
 pub mod pipeline;
 mod provider;
+pub mod providers;
 pub mod script;
 pub mod spec_dirs;
 pub mod specs;

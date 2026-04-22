@@ -11,14 +11,7 @@
       "args": {
         "generators": [
           {
-            "script": [
-              "pandoc",
-              "--list-input-formats"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty"
-            ]
+            "type": "pandoc_input_formats"
           }
         ],
         "name": "format"
@@ -35,14 +28,7 @@
       "args": {
         "generators": [
           {
-            "script": [
-              "pandoc",
-              "--list-output-formats"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty"
-            ]
+            "type": "pandoc_output_formats"
           }
         ],
         "name": "format"
@@ -142,20 +128,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "function(e){return Array.from(new Set(e.split(`\n`))).map(n=>({name:n,icon:`fig://icon?type=${n}`}))}",
-            "requires_js": true,
-            "script": [
-              "pandoc",
-              "--list-input-formats"
-            ]
+            "type": "pandoc_input_formats"
           },
           {
-            "js_source": "function(e){return Array.from(new Set(e.split(`\n`))).map(n=>({name:n,icon:`fig://icon?type=${n}`}))}",
-            "requires_js": true,
-            "script": [
-              "pandoc",
-              "--list-output-formats"
-            ]
+            "type": "pandoc_output_formats"
           }
         ],
         "isOptional": true,
@@ -374,14 +350,7 @@
       "args": {
         "generators": [
           {
-            "script": [
-              "pandoc",
-              "--list-output-formats"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty"
-            ]
+            "type": "pandoc_output_formats"
           }
         ],
         "name": "format"

@@ -3868,27 +3868,7 @@
             {
               "generators": [
                 {
-                  "script": [
-                    "git",
-                    "--no-optional-locks",
-                    "branch",
-                    "--no-color",
-                    "--sort=-committerdate"
-                  ],
-                  "transforms": [
-                    {
-                      "starts_with": "fatal:",
-                      "type": "error_guard"
-                    },
-                    "split_lines",
-                    "filter_empty",
-                    "trim",
-                    {
-                      "name": 0,
-                      "pattern": "\\S+",
-                      "type": "regex_extract"
-                    }
-                  ]
+                  "type": "git_branches"
                 }
               ],
               "isOptional": true,
@@ -3903,27 +3883,7 @@
             {
               "generators": [
                 {
-                  "script": [
-                    "git",
-                    "--no-optional-locks",
-                    "branch",
-                    "--no-color",
-                    "--sort=-committerdate"
-                  ],
-                  "transforms": [
-                    {
-                      "starts_with": "fatal:",
-                      "type": "error_guard"
-                    },
-                    "split_lines",
-                    "filter_empty",
-                    "trim",
-                    {
-                      "name": 0,
-                      "pattern": "\\S+",
-                      "type": "regex_extract"
-                    }
-                  ]
+                  "type": "git_branches"
                 }
               ],
               "isOptional": true,
@@ -4984,14 +4944,7 @@
             {
               "generators": [
                 {
-                  "js_source": "function(e){let t=e.split(`\n`).reduce((i,o)=>{let a=o.split(\"\t\"),r=a[0],s=a[1].split(\" \")[0];return i[r]=s,i},{});return Object.keys(t).map(i=>{let o=t[i],a=\"box\";return o.includes(\"github.com\")&&(a=\"github\"),o.includes(\"gitlab.com\")&&(a=\"gitlab\"),o.includes(\"heroku.com\")&&(a=\"heroku\"),{name:i,icon:`fig://icon?type=${a}`,description:\"Remote\"}})}",
-                  "requires_js": true,
-                  "script": [
-                    "git",
-                    "--no-optional-locks",
-                    "remote",
-                    "-v"
-                  ]
+                  "type": "git_remotes"
                 }
               ],
               "isOptional": true,
@@ -5000,27 +4953,7 @@
             {
               "generators": [
                 {
-                  "script": [
-                    "git",
-                    "--no-optional-locks",
-                    "branch",
-                    "--no-color",
-                    "--sort=-committerdate"
-                  ],
-                  "transforms": [
-                    {
-                      "starts_with": "fatal:",
-                      "type": "error_guard"
-                    },
-                    "split_lines",
-                    "filter_empty",
-                    "trim",
-                    {
-                      "name": 0,
-                      "pattern": "\\S+",
-                      "type": "regex_extract"
-                    }
-                  ]
+                  "type": "git_branches"
                 }
               ],
               "isOptional": true,
@@ -5270,14 +5203,7 @@
             {
               "generators": [
                 {
-                  "js_source": "function(e){let t=e.split(`\n`).reduce((i,o)=>{let a=o.split(\"\t\"),r=a[0],s=a[1].split(\" \")[0];return i[r]=s,i},{});return Object.keys(t).map(i=>{let o=t[i],a=\"box\";return o.includes(\"github.com\")&&(a=\"github\"),o.includes(\"gitlab.com\")&&(a=\"gitlab\"),o.includes(\"heroku.com\")&&(a=\"heroku\"),{name:i,icon:`fig://icon?type=${a}`,description:\"Remote\"}})}",
-                  "requires_js": true,
-                  "script": [
-                    "git",
-                    "--no-optional-locks",
-                    "remote",
-                    "-v"
-                  ]
+                  "type": "git_remotes"
                 }
               ],
               "isOptional": true,
@@ -5286,27 +5212,7 @@
             {
               "generators": [
                 {
-                  "script": [
-                    "git",
-                    "--no-optional-locks",
-                    "branch",
-                    "--no-color",
-                    "--sort=-committerdate"
-                  ],
-                  "transforms": [
-                    {
-                      "starts_with": "fatal:",
-                      "type": "error_guard"
-                    },
-                    "split_lines",
-                    "filter_empty",
-                    "trim",
-                    {
-                      "name": 0,
-                      "pattern": "\\S+",
-                      "type": "regex_extract"
-                    }
-                  ]
+                  "type": "git_branches"
                 }
               ],
               "isOptional": true,
@@ -5320,14 +5226,7 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "function(e){let t=e.split(`\n`).reduce((i,o)=>{let a=o.split(\"\t\"),r=a[0],s=a[1].split(\" \")[0];return i[r]=s,i},{});return Object.keys(t).map(i=>{let o=t[i],a=\"box\";return o.includes(\"github.com\")&&(a=\"github\"),o.includes(\"gitlab.com\")&&(a=\"gitlab\"),o.includes(\"heroku.com\")&&(a=\"heroku\"),{name:i,icon:`fig://icon?type=${a}`,description:\"Remote\"}})}",
-                    "requires_js": true,
-                    "script": [
-                      "git",
-                      "--no-optional-locks",
-                      "remote",
-                      "-v"
-                    ]
+                    "type": "git_remotes"
                   }
                 ],
                 "isOptional": true,
@@ -5910,28 +5809,7 @@
                 ]
               },
               {
-                "script": [
-                  "git",
-                  "--no-optional-locks",
-                  "branch",
-                  "-a",
-                  "--no-color",
-                  "--sort=-committerdate"
-                ],
-                "transforms": [
-                  {
-                    "starts_with": "fatal:",
-                    "type": "error_guard"
-                  },
-                  "split_lines",
-                  "filter_empty",
-                  "trim",
-                  {
-                    "name": 0,
-                    "pattern": "\\S+",
-                    "type": "regex_extract"
-                  }
-                ]
+                "type": "git_branches"
               },
               {
                 "js_source": "function(e){return e.includes(\"--staged\")||e.includes(\"--cached\")?[\"bash\",\"-c\",\"git --no-optional-locks status --short | sed -ne '/^M /p' -e '/A /p'\"]:[\"bash\",\"-c\",\"git --no-optional-locks status --short | sed -ne '/M /p' -e '/A /p'\"]}",
@@ -6046,28 +5924,7 @@
                 ]
               },
               {
-                "script": [
-                  "git",
-                  "--no-optional-locks",
-                  "branch",
-                  "-a",
-                  "--no-color",
-                  "--sort=-committerdate"
-                ],
-                "transforms": [
-                  {
-                    "starts_with": "fatal:",
-                    "type": "error_guard"
-                  },
-                  "split_lines",
-                  "filter_empty",
-                  "trim",
-                  {
-                    "name": 0,
-                    "pattern": "\\S+",
-                    "type": "regex_extract"
-                  }
-                ]
+                "type": "git_branches"
               }
             ],
             "isOptional": true,
@@ -6383,14 +6240,7 @@
                 {
                   "generators": [
                     {
-                      "js_source": "function(e){let t=e.split(`\n`).reduce((i,o)=>{let a=o.split(\"\t\"),r=a[0],s=a[1].split(\" \")[0];return i[r]=s,i},{});return Object.keys(t).map(i=>{let o=t[i],a=\"box\";return o.includes(\"github.com\")&&(a=\"github\"),o.includes(\"gitlab.com\")&&(a=\"gitlab\"),o.includes(\"heroku.com\")&&(a=\"heroku\"),{name:i,icon:`fig://icon?type=${a}`,description:\"Remote\"}})}",
-                      "requires_js": true,
-                      "script": [
-                        "git",
-                        "--no-optional-locks",
-                        "remote",
-                        "-v"
-                      ]
+                      "type": "git_remotes"
                     }
                   ],
                   "name": "name"
@@ -6424,14 +6274,7 @@
                 {
                   "generators": [
                     {
-                      "js_source": "function(e){let t=e.split(`\n`).reduce((i,o)=>{let a=o.split(\"\t\"),r=a[0],s=a[1].split(\" \")[0];return i[r]=s,i},{});return Object.keys(t).map(i=>{let o=t[i],a=\"box\";return o.includes(\"github.com\")&&(a=\"github\"),o.includes(\"gitlab.com\")&&(a=\"gitlab\"),o.includes(\"heroku.com\")&&(a=\"heroku\"),{name:i,icon:`fig://icon?type=${a}`,description:\"Remote\"}})}",
-                      "requires_js": true,
-                      "script": [
-                        "git",
-                        "--no-optional-locks",
-                        "remote",
-                        "-v"
-                      ]
+                      "type": "git_remotes"
                     }
                   ],
                   "name": "name"
@@ -6456,14 +6299,7 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "function(e){let t=e.split(`\n`).reduce((i,o)=>{let a=o.split(\"\t\"),r=a[0],s=a[1].split(\" \")[0];return i[r]=s,i},{});return Object.keys(t).map(i=>{let o=t[i],a=\"box\";return o.includes(\"github.com\")&&(a=\"github\"),o.includes(\"gitlab.com\")&&(a=\"gitlab\"),o.includes(\"heroku.com\")&&(a=\"heroku\"),{name:i,icon:`fig://icon?type=${a}`,description:\"Remote\"}})}",
-                    "requires_js": true,
-                    "script": [
-                      "git",
-                      "--no-optional-locks",
-                      "remote",
-                      "-v"
-                    ]
+                    "type": "git_remotes"
                   }
                 ],
                 "name": "remote"
@@ -6476,14 +6312,7 @@
                 {
                   "generators": [
                     {
-                      "js_source": "function(e){let t=e.split(`\n`).reduce((i,o)=>{let a=o.split(\"\t\"),r=a[0],s=a[1].split(\" \")[0];return i[r]=s,i},{});return Object.keys(t).map(i=>{let o=t[i],a=\"box\";return o.includes(\"github.com\")&&(a=\"github\"),o.includes(\"gitlab.com\")&&(a=\"gitlab\"),o.includes(\"heroku.com\")&&(a=\"heroku\"),{name:i,icon:`fig://icon?type=${a}`,description:\"Remote\"}})}",
-                      "requires_js": true,
-                      "script": [
-                        "git",
-                        "--no-optional-locks",
-                        "remote",
-                        "-v"
-                      ]
+                      "type": "git_remotes"
                     }
                   ],
                   "name": "old remote"
@@ -6499,14 +6328,7 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "function(e){let t=e.split(`\n`).reduce((i,o)=>{let a=o.split(\"\t\"),r=a[0],s=a[1].split(\" \")[0];return i[r]=s,i},{});return Object.keys(t).map(i=>{let o=t[i],a=\"box\";return o.includes(\"github.com\")&&(a=\"github\"),o.includes(\"gitlab.com\")&&(a=\"gitlab\"),o.includes(\"heroku.com\")&&(a=\"heroku\"),{name:i,icon:`fig://icon?type=${a}`,description:\"Remote\"}})}",
-                    "requires_js": true,
-                    "script": [
-                      "git",
-                      "--no-optional-locks",
-                      "remote",
-                      "-v"
-                    ]
+                    "type": "git_remotes"
                   }
                 ],
                 "name": "name"
@@ -6533,14 +6355,7 @@
                 {
                   "generators": [
                     {
-                      "js_source": "function(e){let t=e.split(`\n`).reduce((i,o)=>{let a=o.split(\"\t\"),r=a[0],s=a[1].split(\" \")[0];return i[r]=s,i},{});return Object.keys(t).map(i=>{let o=t[i],a=\"box\";return o.includes(\"github.com\")&&(a=\"github\"),o.includes(\"gitlab.com\")&&(a=\"gitlab\"),o.includes(\"heroku.com\")&&(a=\"heroku\"),{name:i,icon:`fig://icon?type=${a}`,description:\"Remote\"}})}",
-                      "requires_js": true,
-                      "script": [
-                        "git",
-                        "--no-optional-locks",
-                        "remote",
-                        "-v"
-                      ]
+                      "type": "git_remotes"
                     }
                   ],
                   "name": "name"
@@ -6580,14 +6395,7 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "function(e){let t=e.split(`\n`).reduce((i,o)=>{let a=o.split(\"\t\"),r=a[0],s=a[1].split(\" \")[0];return i[r]=s,i},{});return Object.keys(t).map(i=>{let o=t[i],a=\"box\";return o.includes(\"github.com\")&&(a=\"github\"),o.includes(\"gitlab.com\")&&(a=\"gitlab\"),o.includes(\"heroku.com\")&&(a=\"heroku\"),{name:i,icon:`fig://icon?type=${a}`,description:\"Remote\"}})}",
-                    "requires_js": true,
-                    "script": [
-                      "git",
-                      "--no-optional-locks",
-                      "remote",
-                      "-v"
-                    ]
+                    "type": "git_remotes"
                   }
                 ],
                 "isVariadic": true,
@@ -6608,14 +6416,7 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "function(e){let t=e.split(`\n`).reduce((i,o)=>{let a=o.split(\"\t\"),r=a[0],s=a[1].split(\" \")[0];return i[r]=s,i},{});return Object.keys(t).map(i=>{let o=t[i],a=\"box\";return o.includes(\"github.com\")&&(a=\"github\"),o.includes(\"gitlab.com\")&&(a=\"gitlab\"),o.includes(\"heroku.com\")&&(a=\"heroku\"),{name:i,icon:`fig://icon?type=${a}`,description:\"Remote\"}})}",
-                    "requires_js": true,
-                    "script": [
-                      "git",
-                      "--no-optional-locks",
-                      "remote",
-                      "-v"
-                    ]
+                    "type": "git_remotes"
                   }
                 ],
                 "isVariadic": true,
@@ -6668,14 +6469,7 @@
             {
               "generators": [
                 {
-                  "js_source": "function(e){let t=e.split(`\n`).reduce((i,o)=>{let a=o.split(\"\t\"),r=a[0],s=a[1].split(\" \")[0];return i[r]=s,i},{});return Object.keys(t).map(i=>{let o=t[i],a=\"box\";return o.includes(\"github.com\")&&(a=\"github\"),o.includes(\"gitlab.com\")&&(a=\"gitlab\"),o.includes(\"heroku.com\")&&(a=\"heroku\"),{name:i,icon:`fig://icon?type=${a}`,description:\"Remote\"}})}",
-                  "requires_js": true,
-                  "script": [
-                    "git",
-                    "--no-optional-locks",
-                    "remote",
-                    "-v"
-                  ]
+                  "type": "git_remotes"
                 }
               ],
               "isOptional": true,
@@ -6684,27 +6478,7 @@
             {
               "generators": [
                 {
-                  "script": [
-                    "git",
-                    "--no-optional-locks",
-                    "branch",
-                    "--no-color",
-                    "--sort=-committerdate"
-                  ],
-                  "transforms": [
-                    {
-                      "starts_with": "fatal:",
-                      "type": "error_guard"
-                    },
-                    "split_lines",
-                    "filter_empty",
-                    "trim",
-                    {
-                      "name": 0,
-                      "pattern": "\\S+",
-                      "type": "regex_extract"
-                    }
-                  ]
+                  "type": "git_branches"
                 }
               ],
               "isOptional": true,
@@ -7325,27 +7099,7 @@
                 {
                   "generators": [
                     {
-                      "script": [
-                        "git",
-                        "--no-optional-locks",
-                        "branch",
-                        "--no-color",
-                        "--sort=-committerdate"
-                      ],
-                      "transforms": [
-                        {
-                          "starts_with": "fatal:",
-                          "type": "error_guard"
-                        },
-                        "split_lines",
-                        "filter_empty",
-                        "trim",
-                        {
-                          "name": 0,
-                          "pattern": "\\S+",
-                          "type": "regex_extract"
-                        }
-                      ]
+                      "type": "git_branches"
                     }
                   ],
                   "name": "branch"
@@ -8397,54 +8151,14 @@
                 {
                   "generators": [
                     {
-                      "script": [
-                        "git",
-                        "--no-optional-locks",
-                        "branch",
-                        "--no-color",
-                        "--sort=-committerdate"
-                      ],
-                      "transforms": [
-                        {
-                          "starts_with": "fatal:",
-                          "type": "error_guard"
-                        },
-                        "split_lines",
-                        "filter_empty",
-                        "trim",
-                        {
-                          "name": 0,
-                          "pattern": "\\S+",
-                          "type": "regex_extract"
-                        }
-                      ]
+                      "type": "git_branches"
                     }
                   ]
                 },
                 {
                   "generators": [
                     {
-                      "script": [
-                        "git",
-                        "--no-optional-locks",
-                        "branch",
-                        "--no-color",
-                        "--sort=-committerdate"
-                      ],
-                      "transforms": [
-                        {
-                          "starts_with": "fatal:",
-                          "type": "error_guard"
-                        },
-                        "split_lines",
-                        "filter_empty",
-                        "trim",
-                        {
-                          "name": 0,
-                          "pattern": "\\S+",
-                          "type": "regex_extract"
-                        }
-                      ]
+                      "type": "git_branches"
                     }
                   ]
                 }
@@ -8460,54 +8174,14 @@
                 {
                   "generators": [
                     {
-                      "script": [
-                        "git",
-                        "--no-optional-locks",
-                        "branch",
-                        "--no-color",
-                        "--sort=-committerdate"
-                      ],
-                      "transforms": [
-                        {
-                          "starts_with": "fatal:",
-                          "type": "error_guard"
-                        },
-                        "split_lines",
-                        "filter_empty",
-                        "trim",
-                        {
-                          "name": 0,
-                          "pattern": "\\S+",
-                          "type": "regex_extract"
-                        }
-                      ]
+                      "type": "git_branches"
                     }
                   ]
                 },
                 {
                   "generators": [
                     {
-                      "script": [
-                        "git",
-                        "--no-optional-locks",
-                        "branch",
-                        "--no-color",
-                        "--sort=-committerdate"
-                      ],
-                      "transforms": [
-                        {
-                          "starts_with": "fatal:",
-                          "type": "error_guard"
-                        },
-                        "split_lines",
-                        "filter_empty",
-                        "trim",
-                        {
-                          "name": 0,
-                          "pattern": "\\S+",
-                          "type": "regex_extract"
-                        }
-                      ]
+                      "type": "git_branches"
                     }
                   ]
                 }
@@ -8547,27 +8221,7 @@
               "args": {
                 "generators": [
                   {
-                    "script": [
-                      "git",
-                      "--no-optional-locks",
-                      "branch",
-                      "--no-color",
-                      "--sort=-committerdate"
-                    ],
-                    "transforms": [
-                      {
-                        "starts_with": "fatal:",
-                        "type": "error_guard"
-                      },
-                      "split_lines",
-                      "filter_empty",
-                      "trim",
-                      {
-                        "name": 0,
-                        "pattern": "\\S+",
-                        "type": "regex_extract"
-                      }
-                    ]
+                    "type": "git_branches"
                   }
                 ]
               },
@@ -8694,27 +8348,7 @@
                 {
                   "generators": [
                     {
-                      "script": [
-                        "git",
-                        "--no-optional-locks",
-                        "branch",
-                        "--no-color",
-                        "--sort=-committerdate"
-                      ],
-                      "transforms": [
-                        {
-                          "starts_with": "fatal:",
-                          "type": "error_guard"
-                        },
-                        "split_lines",
-                        "filter_empty",
-                        "trim",
-                        {
-                          "name": 0,
-                          "pattern": "\\S+",
-                          "type": "regex_extract"
-                        }
-                      ]
+                      "type": "git_branches"
                     }
                   ],
                   "name": "branch"
@@ -8748,54 +8382,14 @@
                 {
                   "generators": [
                     {
-                      "script": [
-                        "git",
-                        "--no-optional-locks",
-                        "branch",
-                        "--no-color",
-                        "--sort=-committerdate"
-                      ],
-                      "transforms": [
-                        {
-                          "starts_with": "fatal:",
-                          "type": "error_guard"
-                        },
-                        "split_lines",
-                        "filter_empty",
-                        "trim",
-                        {
-                          "name": 0,
-                          "pattern": "\\S+",
-                          "type": "regex_extract"
-                        }
-                      ]
+                      "type": "git_branches"
                     }
                   ]
                 },
                 {
                   "generators": [
                     {
-                      "script": [
-                        "git",
-                        "--no-optional-locks",
-                        "branch",
-                        "--no-color",
-                        "--sort=-committerdate"
-                      ],
-                      "transforms": [
-                        {
-                          "starts_with": "fatal:",
-                          "type": "error_guard"
-                        },
-                        "split_lines",
-                        "filter_empty",
-                        "trim",
-                        {
-                          "name": 0,
-                          "pattern": "\\S+",
-                          "type": "regex_extract"
-                        }
-                      ]
+                      "type": "git_branches"
                     }
                   ],
                   "isOptional": true
@@ -8810,27 +8404,7 @@
               "args": {
                 "generators": [
                   {
-                    "script": [
-                      "git",
-                      "--no-optional-locks",
-                      "branch",
-                      "--no-color",
-                      "--sort=-committerdate"
-                    ],
-                    "transforms": [
-                      {
-                        "starts_with": "fatal:",
-                        "type": "error_guard"
-                      },
-                      "split_lines",
-                      "filter_empty",
-                      "trim",
-                      {
-                        "name": 0,
-                        "pattern": "\\S+",
-                        "type": "regex_extract"
-                      }
-                    ]
+                    "type": "git_branches"
                   }
                 ],
                 "isOptional": true,
@@ -8846,27 +8420,7 @@
               "args": {
                 "generators": [
                   {
-                    "script": [
-                      "git",
-                      "--no-optional-locks",
-                      "branch",
-                      "--no-color",
-                      "--sort=-committerdate"
-                    ],
-                    "transforms": [
-                      {
-                        "starts_with": "fatal:",
-                        "type": "error_guard"
-                      },
-                      "split_lines",
-                      "filter_empty",
-                      "trim",
-                      {
-                        "name": 0,
-                        "pattern": "\\S+",
-                        "type": "regex_extract"
-                      }
-                    ]
+                    "type": "git_branches"
                   }
                 ],
                 "isOptional": true,
@@ -8958,41 +8512,10 @@
               "description": "Branch, file, tag or commit to switch to",
               "generators": [
                 {
-                  "script": [
-                    "git",
-                    "--no-optional-locks",
-                    "branch",
-                    "-a",
-                    "--no-color",
-                    "--sort=-committerdate"
-                  ],
-                  "transforms": [
-                    {
-                      "starts_with": "fatal:",
-                      "type": "error_guard"
-                    },
-                    "split_lines",
-                    "filter_empty",
-                    "trim",
-                    {
-                      "name": 0,
-                      "pattern": "\\S+",
-                      "type": "regex_extract"
-                    }
-                  ]
+                  "type": "git_branches"
                 },
                 {
-                  "script": [
-                    "git",
-                    "--no-optional-locks",
-                    "tag",
-                    "--list",
-                    "--sort=-committerdate"
-                  ],
-                  "transforms": [
-                    "split_lines",
-                    "filter_empty"
-                  ]
+                  "type": "git_tags"
                 },
                 {
                   "template": [
@@ -9933,28 +9456,7 @@
           "args": {
             "generators": [
               {
-                "script": [
-                  "git",
-                  "--no-optional-locks",
-                  "branch",
-                  "-a",
-                  "--no-color",
-                  "--sort=-committerdate"
-                ],
-                "transforms": [
-                  {
-                    "starts_with": "fatal:",
-                    "type": "error_guard"
-                  },
-                  "split_lines",
-                  "filter_empty",
-                  "trim",
-                  {
-                    "name": 0,
-                    "pattern": "\\S+",
-                    "type": "regex_extract"
-                  }
-                ]
+                "type": "git_branches"
               }
             ],
             "isOptional": true,
@@ -10347,17 +9849,7 @@
             "description": "Select a tag",
             "generators": [
               {
-                "script": [
-                  "git",
-                  "--no-optional-locks",
-                  "tag",
-                  "--list",
-                  "--sort=-committerdate"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty"
-                ]
+                "type": "git_tags"
               }
             ],
             "isOptional": true,
@@ -10633,27 +10125,7 @@
               "description": "Branch or commit to switch to",
               "generators": [
                 {
-                  "script": [
-                    "git",
-                    "--no-optional-locks",
-                    "branch",
-                    "--no-color",
-                    "--sort=-committerdate"
-                  ],
-                  "transforms": [
-                    {
-                      "starts_with": "fatal:",
-                      "type": "error_guard"
-                    },
-                    "split_lines",
-                    "filter_empty",
-                    "trim",
-                    {
-                      "name": 0,
-                      "pattern": "\\S+",
-                      "type": "regex_extract"
-                    }
-                  ]
+                  "type": "git_branches"
                 }
               ],
               "name": "branch name",
@@ -10823,27 +10295,7 @@
                 {
                   "generators": [
                     {
-                      "script": [
-                        "git",
-                        "--no-optional-locks",
-                        "branch",
-                        "--no-color",
-                        "--sort=-committerdate"
-                      ],
-                      "transforms": [
-                        {
-                          "starts_with": "fatal:",
-                          "type": "error_guard"
-                        },
-                        "split_lines",
-                        "filter_empty",
-                        "trim",
-                        {
-                          "name": 0,
-                          "pattern": "\\S+",
-                          "type": "regex_extract"
-                        }
-                      ]
+                      "type": "git_branches"
                     }
                   ],
                   "name": "branch"
@@ -10877,54 +10329,14 @@
                 {
                   "generators": [
                     {
-                      "script": [
-                        "git",
-                        "--no-optional-locks",
-                        "branch",
-                        "--no-color",
-                        "--sort=-committerdate"
-                      ],
-                      "transforms": [
-                        {
-                          "starts_with": "fatal:",
-                          "type": "error_guard"
-                        },
-                        "split_lines",
-                        "filter_empty",
-                        "trim",
-                        {
-                          "name": 0,
-                          "pattern": "\\S+",
-                          "type": "regex_extract"
-                        }
-                      ]
+                      "type": "git_branches"
                     }
                   ]
                 },
                 {
                   "generators": [
                     {
-                      "script": [
-                        "git",
-                        "--no-optional-locks",
-                        "branch",
-                        "--no-color",
-                        "--sort=-committerdate"
-                      ],
-                      "transforms": [
-                        {
-                          "starts_with": "fatal:",
-                          "type": "error_guard"
-                        },
-                        "split_lines",
-                        "filter_empty",
-                        "trim",
-                        {
-                          "name": 0,
-                          "pattern": "\\S+",
-                          "type": "regex_extract"
-                        }
-                      ]
+                      "type": "git_branches"
                     }
                   ],
                   "isOptional": true

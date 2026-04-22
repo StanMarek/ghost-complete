@@ -538,28 +538,7 @@
           "args": {
             "generators": [
               {
-                "script": [
-                  "git",
-                  "--no-optional-locks",
-                  "branch",
-                  "-a",
-                  "--no-color",
-                  "--sort=-committerdate"
-                ],
-                "transforms": [
-                  {
-                    "starts_with": "fatal:",
-                    "type": "error_guard"
-                  },
-                  "split_lines",
-                  "filter_empty",
-                  "trim",
-                  {
-                    "name": 0,
-                    "pattern": "\\S+",
-                    "type": "regex_extract"
-                  }
-                ]
+                "type": "git_branches"
               }
             ],
             "name": "REMOTE_BRANCH"
@@ -573,27 +552,7 @@
           "args": {
             "generators": [
               {
-                "script": [
-                  "git",
-                  "--no-optional-locks",
-                  "branch",
-                  "--no-color",
-                  "--sort=-committerdate"
-                ],
-                "transforms": [
-                  {
-                    "starts_with": "fatal:",
-                    "type": "error_guard"
-                  },
-                  "split_lines",
-                  "filter_empty",
-                  "trim",
-                  {
-                    "name": 0,
-                    "pattern": "\\S+",
-                    "type": "regex_extract"
-                  }
-                ]
+                "type": "git_branches"
               }
             ],
             "name": "LOCAL_BRANCH"
@@ -664,14 +623,7 @@
           "args": {
             "generators": [
               {
-                "js_source": "function(i){let e=i.split(`\n`).reduce((t,s)=>{let n=s.split(\"\t\"),o=n[0],r=n[1].split(\" \")[0];return t[o]=r,t},{});return Object.keys(e).map(t=>{let s=e[t],n=\"box\";return s.includes(\"github.com\")&&(n=\"github\"),s.includes(\"gitlab.com\")&&(n=\"gitlab\"),s.includes(\"heroku.com\")&&(n=\"heroku\"),{name:t,icon:`fig://icon?type=${n}`,description:\"Remote\"}})}",
-                "requires_js": true,
-                "script": [
-                  "git",
-                  "--no-optional-locks",
-                  "remote",
-                  "-v"
-                ]
+                "type": "git_remotes"
               }
             ],
             "name": "REMOTE_NAME"
@@ -900,28 +852,7 @@
           "args": {
             "generators": [
               {
-                "script": [
-                  "git",
-                  "--no-optional-locks",
-                  "branch",
-                  "-a",
-                  "--no-color",
-                  "--sort=-committerdate"
-                ],
-                "transforms": [
-                  {
-                    "starts_with": "fatal:",
-                    "type": "error_guard"
-                  },
-                  "split_lines",
-                  "filter_empty",
-                  "trim",
-                  {
-                    "name": 0,
-                    "pattern": "\\S+",
-                    "type": "regex_extract"
-                  }
-                ]
+                "type": "git_branches"
               }
             ],
             "name": "REMOTE_BRANCH"
@@ -935,27 +866,7 @@
           "args": {
             "generators": [
               {
-                "script": [
-                  "git",
-                  "--no-optional-locks",
-                  "branch",
-                  "--no-color",
-                  "--sort=-committerdate"
-                ],
-                "transforms": [
-                  {
-                    "starts_with": "fatal:",
-                    "type": "error_guard"
-                  },
-                  "split_lines",
-                  "filter_empty",
-                  "trim",
-                  {
-                    "name": 0,
-                    "pattern": "\\S+",
-                    "type": "regex_extract"
-                  }
-                ]
+                "type": "git_branches"
               }
             ],
             "name": "LOCAL_BRANCH"
@@ -1026,14 +937,7 @@
           "args": {
             "generators": [
               {
-                "js_source": "function(i){let e=i.split(`\n`).reduce((t,s)=>{let n=s.split(\"\t\"),o=n[0],r=n[1].split(\" \")[0];return t[o]=r,t},{});return Object.keys(e).map(t=>{let s=e[t],n=\"box\";return s.includes(\"github.com\")&&(n=\"github\"),s.includes(\"gitlab.com\")&&(n=\"gitlab\"),s.includes(\"heroku.com\")&&(n=\"heroku\"),{name:t,icon:`fig://icon?type=${n}`,description:\"Remote\"}})}",
-                "requires_js": true,
-                "script": [
-                  "git",
-                  "--no-optional-locks",
-                  "remote",
-                  "-v"
-                ]
+                "type": "git_remotes"
               }
             ],
             "name": "REMOTE_NAME"
