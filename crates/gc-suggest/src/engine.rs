@@ -1473,24 +1473,42 @@ mod tests {
 
     #[test]
     fn test_history_matches_full_buffer_at_arg_position() {
-        let spec_store = SpecStore::load_from_dir(&spec_dir()).unwrap().store;
+        // Uses a made-up `myapp` spec with only plain subcommands — no
+        // filepath args, no generators. This avoids colliding with native
+        // generators (e.g. `git push` now dispatches to the `git_remotes`
+        // provider, which triggers the defer-to-git-refs history-suppression
+        // path introduced in 0e10f7c) and keeps filesystem fallback from
+        // flooding `max_results` before history is appended.
+        let spec_json = r#"{
+            "name": "myapp",
+            "subcommands": [
+                {"name": "deploy", "subcommands": [
+                    {"name": "production"},
+                    {"name": "staging"}
+                ]},
+                {"name": "build"}
+            ]
+        }"#;
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(dir.path().join("myapp.json"), spec_json).unwrap();
+        let spec_store = SpecStore::load_from_dir(dir.path()).unwrap().store;
         let history = HistoryProvider::from_entries(vec![
-            "git push origin main".into(),
-            "git checkout -b feature".into(),
+            "myapp deploy production".into(),
+            "myapp build release".into(),
         ]);
-        let commands = CommandsProvider::from_list(vec!["git".into()]);
+        let commands = CommandsProvider::from_list(vec!["myapp".into()]);
         let engine = SuggestionEngine::with_providers(spec_store, history, commands);
 
-        let ctx = make_ctx(Some("git"), vec!["push"], "", 2);
+        let ctx = make_ctx(Some("myapp"), vec!["deploy"], "", 2);
         let results = engine
-            .suggest_sync(&ctx, Path::new("/tmp"), "git push ")
+            .suggest_sync(&ctx, Path::new("/tmp"), "myapp deploy ")
             .unwrap();
         let hist: Vec<_> = results
             .iter()
             .filter(|s| s.source == crate::types::SuggestionSource::History)
             .collect();
         assert!(
-            hist.iter().any(|s| s.text == "git push origin main"),
+            hist.iter().any(|s| s.text == "myapp deploy production"),
             "expected full history entry in results: {hist:?}"
         );
     }
