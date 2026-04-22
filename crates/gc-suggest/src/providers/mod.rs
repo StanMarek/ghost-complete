@@ -7,8 +7,8 @@
 //! - `ProviderCtx` is the context handed to each `generate` call (cwd,
 //!   environment, current token).
 //! - `ProviderKind` is a closed enum listing every registered provider.
-//!   Concrete variants are added by T2–T9; the enum is intentionally
-//!   empty at T1 so the scaffolding lands ahead of any implementations.
+//!   Concrete variants are added by T2–T9 as each lands; the first
+//!   variant (T2's `ArduinoCliBoards`) is in place.
 //! - `kind_from_type_str` is the string→kind dispatcher wired up from
 //!   spec loading. Specs reference providers via `{"type": "<name>"}`
 //!   exactly like the existing `git_branches` / `filepaths` native
@@ -40,6 +40,8 @@ use std::sync::Arc;
 use anyhow::Result;
 
 use crate::types::Suggestion;
+
+pub mod arduino_cli;
 
 /// Context passed to every provider's `generate` call. Owned by the
 /// engine; providers receive it by reference so the shared env map is
@@ -85,13 +87,14 @@ pub trait Provider: Send + Sync {
     ) -> impl std::future::Future<Output = Result<Vec<Suggestion>>> + Send;
 }
 
-/// Registered native providers. Variants are added by T2–T9; empty at
-/// T1 is intentional. An empty enum compiles and `match kind {}` is a
-/// sound exhaustive match with zero arms, so every downstream site
-/// that dispatches on `ProviderKind` remains well-typed without a
-/// placeholder variant.
+/// Registered native providers. Variants are added by T2–T9 as each
+/// concrete provider lands.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ProviderKind {}
+pub enum ProviderKind {
+    /// `arduino-cli board list --format json`, projecting the first
+    /// matching board's FQBN out of each detected port entry.
+    ArduinoCliBoards,
+}
 
 /// Map a spec's `"type"` string to a `ProviderKind`, or `None` if the
 /// string does not name a registered native provider.
@@ -102,23 +105,18 @@ pub enum ProviderKind {}
 /// `provider_generators` instead of the script path. New providers
 /// (T2–T9) add one arm each.
 pub fn kind_from_type_str(type_str: &str) -> Option<ProviderKind> {
-    // TODO(Phase 3A T2): remove `#[allow(clippy::match_single_binding)]` when the first
-    // variant lands — the catchall shape is intentional scaffolding during T1.
-    #[allow(clippy::match_single_binding)]
     match type_str {
+        "arduino_cli_boards" => Some(ProviderKind::ArduinoCliBoards),
         _ => None,
     }
 }
 
 /// Dispatch a single provider kind against `ctx`. The engine iterates
 /// the slice of kinds from a `SpecResolution` and awaits each.
-///
-/// At T1 `ProviderKind` has no variants, so the body is the unreachable
-/// empty match. Each concrete provider task turns this into a real
-/// dispatch arm: instantiate the provider (cheaply — these are stateless
-/// structs) and call `generate(ctx).await`.
-pub async fn resolve(kind: ProviderKind, _ctx: &ProviderCtx) -> Result<Vec<Suggestion>> {
-    match kind {}
+pub async fn resolve(kind: ProviderKind, ctx: &ProviderCtx) -> Result<Vec<Suggestion>> {
+    match kind {
+        ProviderKind::ArduinoCliBoards => arduino_cli::ArduinoCliBoards.generate(ctx).await,
+    }
 }
 
 #[cfg(test)]
@@ -136,6 +134,17 @@ mod tests {
         assert!(kind_from_type_str("git_branches").is_none());
         assert!(kind_from_type_str("nonexistent_provider").is_none());
         assert!(kind_from_type_str("filepaths").is_none());
+    }
+
+    #[test]
+    fn test_kind_from_type_str_known_providers() {
+        // Locks in the string contract for each registered provider —
+        // converter output and runtime dispatch must agree on the exact
+        // spelling.
+        assert_eq!(
+            kind_from_type_str("arduino_cli_boards"),
+            Some(ProviderKind::ArduinoCliBoards)
+        );
     }
 
     #[test]
