@@ -279,3 +279,147 @@ describe('analyzeGenerator — shape fingerprint', () => {
     assert.equal(result.shape.has_json_parse, false);
   });
 });
+
+describe('analyzeGenerator — gap fixes (property access + destructure-from-arg)', () => {
+  // -- Gap A: property-access against callback parameters --------------
+  // A property name on a callback-param receiver (e.g. `.map(x => x.context)`)
+  // must NOT be classified as a Fig API ref, even when the property name
+  // happens to match a FIG_API_NAME. Only bare references or members of a
+  // genuinely-free Fig identifier should flag.
+
+  it('gap A.1: property on callback param is NOT a Fig ref (context)', () => {
+    const src = `(out) => out.split('\\n').map(x => x.context.value)`;
+    const result = analyzeGenerator(src);
+    assert.equal(result.parse_error, null);
+    assert.deepEqual(
+      result.fig_api_refs,
+      [],
+      `expected no refs, got: ${JSON.stringify(result.fig_api_refs)}`,
+    );
+  });
+
+  it('gap A.2: property on callback param is NOT a Fig ref (currentWorkingDirectory)', () => {
+    const src = `(out) => out.filter(t => t.currentWorkingDirectory).map(t => t.name)`;
+    const result = analyzeGenerator(src);
+    assert.equal(result.parse_error, null);
+    assert.deepEqual(
+      result.fig_api_refs,
+      [],
+      `expected no refs, got: ${JSON.stringify(result.fig_api_refs)}`,
+    );
+  });
+
+  it('gap A.3: member access on genuinely-free `fig` still flags executeShellCommand + fig', () => {
+    const src = `(out) => fig.executeShellCommand({ command: "ls" })`;
+    const result = analyzeGenerator(src);
+    assert.equal(result.parse_error, null);
+    // Don't over-correct: `fig` here is a free identifier, not a param,
+    // and `.executeShellCommand` is a direct Fig API call.
+    const names = refNames(result);
+    assert.ok(names.includes('executeShellCommand'), `expected executeShellCommand, got: ${names}`);
+    assert.ok(names.includes('fig'), `expected fig, got: ${names}`);
+  });
+
+  it('gap A.4: nested property on callback param is NOT a Fig ref', () => {
+    const src = `(out) => out.map(x => ({...x, context: x.context}))`;
+    const result = analyzeGenerator(src);
+    assert.equal(result.parse_error, null);
+    assert.deepEqual(
+      result.fig_api_refs,
+      [],
+      `expected no refs, got: ${JSON.stringify(result.fig_api_refs)}`,
+    );
+  });
+
+  it('gap A.5: method CALL on callback param is NOT a Fig ref', () => {
+    // The strongest form of Gap A: `.map(x => x.executeShellCommand(...))`.
+    // Here `x` is a callback-param binding (from `.map`), so `x.executeShellCommand`
+    // is an unrelated method call on the input data — NOT a Fig API ref.
+    // Pre-fix: the `CallExpression` visitor blindly pushes `executeShellCommand`
+    // as `direct` for any `<obj>.FIG_API_NAME(args)` without checking whether
+    // `<obj>` resolves to a callback-param binding.
+    const src = `(out) => out.map(x => x.executeShellCommand(y))`;
+    const result = analyzeGenerator(src);
+    assert.equal(result.parse_error, null);
+    const escRef = findRef(result, 'executeShellCommand');
+    assert.equal(
+      escRef,
+      undefined,
+      `expected no executeShellCommand ref, got: ${JSON.stringify(result.fig_api_refs)}`,
+    );
+  });
+
+  it('gap A.6: method CALL on callback param is NOT a Fig ref (runCommand)', () => {
+    const src = `(out) => out.map(x => x.runCommand())`;
+    const result = analyzeGenerator(src);
+    assert.equal(result.parse_error, null);
+    assert.deepEqual(
+      result.fig_api_refs,
+      [],
+      `expected no refs, got: ${JSON.stringify(result.fig_api_refs)}`,
+    );
+  });
+
+  it('gap A.7: top-level arrow param (Fig ctx) method call STILL flags', () => {
+    // Regression guard — don't over-correct. `(ctx) => ctx.executeShellCommand(...)`
+    // is the canonical Fig-generator shape (see case 1). The top-level arrow
+    // param is conventionally Fig context; we continue to flag this.
+    const src = `(ctx) => ctx.executeShellCommand({ command: "git status" })`;
+    const result = analyzeGenerator(src);
+    assert.equal(result.parse_error, null);
+    const ref = findRef(result, 'executeShellCommand');
+    assert.ok(ref, 'expected executeShellCommand ref on top-level arrow param');
+    assert.equal(ref.kind, 'direct');
+  });
+
+  // -- Gap B: destructure-from-arg (callback param) --------------------
+  // Destructured names from an arbitrary callback param (e.g. array
+  // element) are lexical to the arrow/callback, not pulled from a Fig
+  // source. They must NOT be classified as Fig-API refs.
+
+  it('gap B.1: destructure inside `.map(({searchTerm, context}) => …)` is NOT a Fig ref', () => {
+    const src = `(out) => JSON.parse(out).map(({searchTerm, context}) => ({name: searchTerm}))`;
+    const result = analyzeGenerator(src);
+    assert.equal(result.parse_error, null);
+    assert.deepEqual(
+      result.fig_api_refs,
+      [],
+      `expected no refs, got: ${JSON.stringify(result.fig_api_refs)}`,
+    );
+  });
+
+  it('gap B.2: module-scope destructuring from `fig` still flags executeShellCommand', () => {
+    // Regression guard — don't over-correct the destructure exemption.
+    const src = `
+      const { executeShellCommand } = fig;
+      export default (out) => executeShellCommand(out);
+    `;
+    const result = analyzeGenerator(src);
+    assert.equal(result.parse_error, null);
+    const ref = findRef(result, 'executeShellCommand');
+    assert.ok(ref, 'expected executeShellCommand ref');
+    assert.equal(ref.kind, 'destructured');
+  });
+
+  it('gap B.3: destructure in `.filter(({name}) => …)` is NOT a Fig ref', () => {
+    const src = `(out) => out.filter(({name}) => name != null)`;
+    const result = analyzeGenerator(src);
+    assert.equal(result.parse_error, null);
+    assert.deepEqual(
+      result.fig_api_refs,
+      [],
+      `expected no refs, got: ${JSON.stringify(result.fig_api_refs)}`,
+    );
+  });
+
+  it('gap B.4: destructure inside two-arg arrow param is NOT a Fig ref', () => {
+    const src = `(_, args) => args.map(({context}) => context)`;
+    const result = analyzeGenerator(src);
+    assert.equal(result.parse_error, null);
+    assert.deepEqual(
+      result.fig_api_refs,
+      [],
+      `expected no refs, got: ${JSON.stringify(result.fig_api_refs)}`,
+    );
+  });
+});
