@@ -14,6 +14,7 @@ pub mod frecency;
 pub mod fuzzy;
 pub mod git;
 pub mod history;
+pub mod pipeline;
 mod provider;
 pub mod script;
 pub mod spec_dirs;
@@ -24,6 +25,7 @@ pub mod types;
 
 pub use embedded::EMBEDDED_SPECS;
 pub use engine::{SuggestionEngine, SyncResult};
+pub use pipeline::{run_pipeline, try_run_pipeline};
 pub use specs::{
     check_json_depth, parse_spec_checked_and_sanitized, sanitize_spec_strings, CompletionSpec,
     SpecLoadResult, SpecStore, MAX_SPEC_JSON_DEPTH,
