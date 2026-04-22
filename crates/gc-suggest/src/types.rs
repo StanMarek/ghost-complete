@@ -70,6 +70,10 @@ pub enum SuggestionSource {
     Script,
     Env,
     SshConfig,
+    /// Phase 3A native providers (e.g. `arduino_cli_boards`). Distinct
+    /// from `Spec`/`Script` so providers are identifiable in telemetry
+    /// and downstream filtering without overlapping the legacy paths.
+    Provider,
 }
 
 #[derive(Debug, Clone)]

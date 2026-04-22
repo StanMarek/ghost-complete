@@ -74,13 +74,7 @@
         "isVariadic": true,
         "generators": [
           {
-            "script": [
-              "multipass",
-              "list",
-              "--format=json"
-            ],
-            "requires_js": true,
-            "js_source": "a=>JSON.parse(a).list.map(e=>{if(e.state!==\"Deleted\")return{name:e.name,description:e.release}})"
+            "type": "multipass_list"
           }
         ]
       }
@@ -94,13 +88,7 @@
           "description": "Name of the instance to run the command on",
           "generators": [
             {
-              "script": [
-                "multipass",
-                "list",
-                "--format=json"
-              ],
-              "requires_js": true,
-              "js_source": "a=>JSON.parse(a).list.map(e=>{if(e.state!==\"Deleted\")return{name:e.name,description:e.release}})"
+              "type": "multipass_list"
             }
           ]
         },
@@ -235,13 +223,7 @@
         "isVariadic": true,
         "generators": [
           {
-            "script": [
-              "multipass",
-              "list",
-              "--format=json"
-            ],
-            "requires_js": true,
-            "js_source": "a=>JSON.parse(a).list.map(e=>{if(e.state!==\"Deleted\")return{name:e.name,description:e.release}})"
+            "type": "multipass_list"
           }
         ]
       }
@@ -458,13 +440,7 @@
         "isVariadic": true,
         "generators": [
           {
-            "script": [
-              "multipass",
-              "list",
-              "--format=json"
-            ],
-            "requires_js": true,
-            "js_source": "a=>JSON.parse(a).list.map(e=>{if(e.state===\"Deleted\")return{name:e.name,description:e.release}})"
+            "type": "multipass_list"
           }
         ]
       }
@@ -496,13 +472,7 @@
         "isOptional": true,
         "generators": [
           {
-            "script": [
-              "multipass",
-              "list",
-              "--format=json"
-            ],
-            "requires_js": true,
-            "js_source": "a=>JSON.parse(a).list.map(e=>{if(e.state!==\"Deleted\")return{name:e.name,description:e.release}})"
+            "type": "multipass_list"
           }
         ]
       }
@@ -556,13 +526,7 @@
         "isOptional": true,
         "generators": [
           {
-            "script": [
-              "multipass",
-              "list",
-              "--format=json"
-            ],
-            "requires_js": true,
-            "js_source": "a=>JSON.parse(a).list.map(e=>{if(e.state!==\"Deleted\")return{name:e.name,description:e.release}})"
+            "type": "multipass_list"
           }
         ]
       }
@@ -594,13 +558,7 @@
         "isOptional": true,
         "generators": [
           {
-            "script": [
-              "multipass",
-              "list",
-              "--format=json"
-            ],
-            "requires_js": true,
-            "js_source": "a=>JSON.parse(a).list.map(e=>{if(e.state===\"Stopped\")return{name:e.name,description:e.release}})"
+            "type": "multipass_list"
           }
         ]
       }
@@ -640,13 +598,7 @@
         "isOptional": true,
         "generators": [
           {
-            "script": [
-              "multipass",
-              "list",
-              "--format=json"
-            ],
-            "requires_js": true,
-            "js_source": "a=>JSON.parse(a).list.map(e=>{if(e.state===\"Running\")return{name:e.name,description:e.release}})"
+            "type": "multipass_list"
           }
         ]
       }
@@ -669,13 +621,7 @@
         "isOptional": true,
         "generators": [
           {
-            "script": [
-              "multipass",
-              "list",
-              "--format=json"
-            ],
-            "requires_js": true,
-            "js_source": "a=>JSON.parse(a).list.map(e=>{if(e.state===\"Running\")return{name:e.name,description:e.release}})"
+            "type": "multipass_list"
           }
         ]
       }
