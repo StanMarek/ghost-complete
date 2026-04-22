@@ -1,0 +1,14 @@
+{
+  "shape_id": "empty",
+  "rationale": "Fingerprint is empty — source body is almost always a try/catch that returns `[]` on any parse failure (arduino-cli board list, etc.). This bucket has 6 distinct JS sources across 50 generators; no single Rust pipeline matches them all on real-world input (each variant reads different JSON paths). Strategy: feed inputs that all JS variants route through their catch / empty-filter branches — `\"[]\"` makes `JSON.parse(\"[]\").filter(...) = []` and `.map(...) = []`; `\"\"` and garbage strings throw inside `JSON.parse`, caught, return `[]`. Rust `split_lines+filter_empty+json_extract(sentinel)` also emits `[]` for these inputs (no object has the sentinel key). Happy-path fixtures for this bucket await the proposed `json_array_extract` transform.",
+  "expected_transforms": [
+    "split_lines",
+    "filter_empty",
+    { "type": "json_extract", "name": "__sentinel_no_field__" }
+  ],
+  "inputs": [
+    "[]",
+    "",
+    "not valid json"
+  ]
+}

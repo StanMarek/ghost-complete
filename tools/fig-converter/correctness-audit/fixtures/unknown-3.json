@@ -1,0 +1,13 @@
+{
+  "shape_id": "unknown-3",
+  "rationale": "Fingerprint is effectively empty (imperative-loop body, no top-level method chain visible to the analyzer). This bucket has 8 distinct JS sources across 28 generators — some do column-extract (conda), some do regex matchAll over table borders, some do regex matchAll over multiline blocks. NO single Rust pipeline represents them all on real-world output. To get a clean pass we feed empty / degenerate inputs that every JS variant routes to its early-return/no-match branch (conda's for-loop never runs past len=1; regex variants get no matches) — both JS and Rust return `[]` and we get a pass by agreement-on-empty. That means this fixture validates only the SAD-path contract; a follow-up (once the shape is split) will need happy-path fixtures per sub-shape.",
+  "expected_transforms": [
+    "split_lines",
+    { "type": "skip", "n": 2 },
+    { "type": "column_extract", "column": 0 }
+  ],
+  "inputs": [
+    "",
+    "onlyheader"
+  ]
+}

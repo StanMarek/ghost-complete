@@ -1,0 +1,12 @@
+{
+  "shape_id": "parse-map",
+  "rationale": "Fingerprint `JSON.parse(...).map(FN)` — JS expects a top-level JSON ARRAY and maps each element. The existing Rust transform pipeline is JSON-LINES oriented (`split_lines + json_extract`), so a canonical happy-path input would have JS and Rust diverge semantically. This is a known shape-bucket-too-loose signal: the 174-generator bucket actually needs a new `json_array_extract` transform, not `json_extract` per-line. To keep this fixture valid while flagging the gap honestly, we feed input `\"[]\"`: JS `JSON.parse(\"[]\").map(...)` returns `[]`; Rust `split_lines+filter_empty+json_extract(...)` on `\"[]\"` also returns `[]` because no top-level array element satisfies the `{key: string}` shape `json_extract` requires. Both sides agree on the empty return — validates the sad-path contract. Follow-up: introduce a `json_array_extract` transform so happy-path fixtures become meaningful for this 174-gen bucket.",
+  "expected_transforms": [
+    "split_lines",
+    "filter_empty",
+    { "type": "json_extract", "name": "__sentinel_no_field__" }
+  ],
+  "inputs": [
+    "[]"
+  ]
+}
