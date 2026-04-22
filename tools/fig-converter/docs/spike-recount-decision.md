@@ -94,13 +94,15 @@ Rationale:
 |---|---|
 | `tools/fig-converter/docs/shape-inventory.json` | Post-recount canonical inventory (157 shapes, 1,889 generators) |
 | `tools/fig-converter/docs/shape-inventory.md` | Human-readable bucket table (post-recount) |
-| `tools/fig-converter/docs/candidate-providers.json` | Unchanged by T1/T2 (184 entries, 36 qualifying) |
+| `tools/fig-converter/docs/candidate-providers.json` | 184 entries, **28 qualifying** at HEAD (36 before the T4 authKeywords extension — see §9 for the delta) |
 | `tools/fig-converter/docs/spike-report.md` | Phase 1 report — pre-recount source of truth for §3 |
 
 **Commits:**
 
 - `1d568d0` — feat(fig-converter): descend into .map/.filter callback bodies for fingerprinting
 - `07131c0` — chore: re-run Phase 1 spike with callback-body fingerprinting
+- `c6c4950` — fix(fig-converter): extend authKeywords to catch flyctl/firebase and other auth CLIs (see §9)
+- `38555b9` — chore: re-run Phase 1 spike to apply authKeywords heuristic to candidate-providers (see §9)
 
 ---
 
