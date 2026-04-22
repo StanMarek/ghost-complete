@@ -1,0 +1,38 @@
+{
+  "args": {
+    "description": "Script to run from your package.json",
+    "generators": [
+      {
+        "cache": {
+          "cache_by_directory": true
+        },
+        "js_source": "function(e,[n]){if(e.trim()==\"\")return[];try{let i=JSON.parse(e),s=i.scripts,t=i.fig||{};if(s)return Object.entries(s).map(([o,r])=>{let d=n===\"yarn\"?\"fig://icon?type=yarn\":\"fig://icon?type=npm\",m=t[o];return{name:o,icon:d,description:r,priority:51,...m}})}catch(i){console.error(i)}return[]}",
+        "requires_js": true,
+        "script": [
+          "bash",
+          "-c",
+          "until [[ -f package.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat package.json"
+        ]
+      }
+    ],
+    "name": "Scripts"
+  },
+  "description": "Run arbitrary package scripts for rush project. analogous to npm run",
+  "name": "rushx",
+  "options": [
+    {
+      "description": "Show this help message and exit",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Hide rushx startup information",
+      "name": [
+        "-q",
+        "--quiet"
+      ]
+    }
+  ]
+}

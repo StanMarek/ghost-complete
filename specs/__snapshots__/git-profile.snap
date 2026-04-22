@@ -1,0 +1,40 @@
+{
+  "description": "Switch profiles",
+  "name": "git-profile",
+  "options": [
+    {
+      "description": "Help for git-profile script",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "description": "Config file (default \"~/.gitprofile\")",
+      "name": [
+        "--config",
+        "-c"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "description": "Profile you want to apply in this repository",
+        "generators": [
+          {
+            "js_source": "i=>Array.from(i.matchAll(/^\\[(.+?)\\]$/gm)).map(e=>({name:e[1],description:`Use profile \"${e[1]}\"`}))",
+            "requires_js": true,
+            "script": [
+              "git-profile",
+              "list"
+            ]
+          }
+        ],
+        "name": "profile"
+      },
+      "description": "Use a profile",
+      "name": "use"
+    }
+  ]
+}

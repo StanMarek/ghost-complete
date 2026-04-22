@@ -1,0 +1,125 @@
+{
+  "description": "Utility for managing the Directory Service cache",
+  "name": "dscacheutil",
+  "subcommands": [
+    {
+      "description": "List the options for calling dscacheutil",
+      "name": "-h"
+    },
+    {
+      "args": {
+        "description": "Category to query",
+        "name": "category",
+        "suggestions": [
+          {
+            "name": "group"
+          },
+          {
+            "name": "host"
+          },
+          {
+            "name": "mount"
+          },
+          {
+            "name": "protocol"
+          },
+          {
+            "name": "rpc"
+          },
+          {
+            "name": "service"
+          },
+          {
+            "name": "user"
+          }
+        ]
+      },
+      "description": "Query the Directory Service cache",
+      "name": "-q",
+      "options": [
+        {
+          "args": [
+            {
+              "generators": [
+                {
+                  "js_source": "async(e,n)=>{let t=e[e.length-3];return c.includes(t)?o[t].map(a=>({name:a})):[]}",
+                  "requires_js": true
+                }
+              ],
+              "name": "attributeKey"
+            },
+            {
+              "generators": [
+                {
+                  "js_source": "async(e,n)=>{let t=e[e.length-4],a=e[e.length-2];return d({attributeKey:a})((await n({command:\"dscacheutil\",args:[\"-q\",t]})).stdout,e)}",
+                  "requires_js": true
+                }
+              ],
+              "name": "attributeValue"
+            }
+          ],
+          "description": "Attribute to query",
+          "name": [
+            "-a"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Get an overview of the cache by default",
+      "name": "-cachedump",
+      "options": [
+        {
+          "description": "Get an overview of the cache by default",
+          "name": [
+            "-buckets"
+          ]
+        },
+        {
+          "args": {
+            "name": "entry",
+            "suggestions": [
+              {
+                "name": "group"
+              },
+              {
+                "name": "host"
+              },
+              {
+                "name": "mount"
+              },
+              {
+                "name": "protocol"
+              },
+              {
+                "name": "rpc"
+              },
+              {
+                "name": "service"
+              },
+              {
+                "name": "user"
+              }
+            ]
+          },
+          "description": "Dump detailed information about cache entries",
+          "name": [
+            "-entries"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Get the current configuration information, such as the search policy and cache parameters",
+      "name": "-configuration"
+    },
+    {
+      "description": "Flush the entire cache",
+      "name": "-flushcache"
+    },
+    {
+      "description": "Get statistics from the cache, including an overview an detailed call statistics",
+      "name": "-statistics"
+    }
+  ]
+}

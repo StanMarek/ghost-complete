@@ -1,0 +1,3820 @@
+{
+  "description": "Hasura GraphQL engine command line tool",
+  "name": "hasura",
+  "options": [
+    {
+      "args": {
+        "name": "string",
+        "template": "filepaths"
+      },
+      "description": ".env filename to load ENV vars from",
+      "name": [
+        "--envfile"
+      ]
+    },
+    {
+      "description": "Help for hasura",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "args": {
+        "name": "string",
+        "suggestions": [
+          {
+            "name": "DEBUG"
+          },
+          {
+            "name": "INFO"
+          },
+          {
+            "name": "WARN"
+          },
+          {
+            "name": "ERROR"
+          },
+          {
+            "name": "FATAL"
+          }
+        ]
+      },
+      "description": "Log level",
+      "name": [
+        "--log-level"
+      ]
+    },
+    {
+      "description": "Do not colorize output",
+      "name": [
+        "--no-color"
+      ]
+    },
+    {
+      "args": {
+        "name": "string",
+        "template": "folders"
+      },
+      "description": "Directory where commands are executed",
+      "name": [
+        "--project"
+      ]
+    },
+    {
+      "description": "Skip automatic update check on command execution",
+      "name": [
+        "--skip-update-check"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Manage Hasura actions",
+      "name": "actions",
+      "options": [
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Admin secret for Hasura GraphQL engine",
+          "name": [
+            "--admin-secret"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "template": "filepaths"
+          },
+          "description": "Path to a cert file for the certificate authority",
+          "name": [
+            "--certificate-authority"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Http(s) endpoint for Hasura GraphQL engine (env `HASURA_GRAPHQL_ENDPOINT`)",
+          "name": [
+            "--endpoint"
+          ]
+        },
+        {
+          "description": "Skip TLS verification and disable cert checking",
+          "name": [
+            "--insecure-skip-tls-verify"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "template": "filepaths"
+          },
+          "description": ".env filename to load ENV vars from",
+          "name": [
+            "--envfile"
+          ]
+        },
+        {
+          "description": "Help for hasura",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "suggestions": [
+              {
+                "name": "DEBUG"
+              },
+              {
+                "name": "INFO"
+              },
+              {
+                "name": "WARN"
+              },
+              {
+                "name": "ERROR"
+              },
+              {
+                "name": "FATAL"
+              }
+            ]
+          },
+          "description": "Log level",
+          "name": [
+            "--log-level"
+          ]
+        },
+        {
+          "description": "Do not colorize output",
+          "name": [
+            "--no-color"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "template": "folders"
+          },
+          "description": "Directory where commands are executed",
+          "name": [
+            "--project"
+          ]
+        },
+        {
+          "description": "Skip automatic update check on command execution",
+          "name": [
+            "--skip-update-check"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": {
+            "isOptional": true,
+            "isVariadic": true,
+            "name": "action name"
+          },
+          "description": "Generate code for actions",
+          "name": "codegen",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Derive action from a hasura operation",
+              "name": [
+                "--derive-from"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Admin secret for Hasura GraphQL engine",
+              "name": [
+                "--admin-secret"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": "Path to a cert file for the certificate authority",
+              "name": [
+                "--certificate-authority"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Http(s) endpoint for Hasura GraphQL engine (env `HASURA_GRAPHQL_ENDPOINT`)",
+              "name": [
+                "--endpoint"
+              ]
+            },
+            {
+              "description": "Skip TLS verification and disable cert checking",
+              "name": [
+                "--insecure-skip-tls-verify"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": ".env filename to load ENV vars from",
+              "name": [
+                "--envfile"
+              ]
+            },
+            {
+              "description": "Help for hasura",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "name": "DEBUG"
+                  },
+                  {
+                    "name": "INFO"
+                  },
+                  {
+                    "name": "WARN"
+                  },
+                  {
+                    "name": "ERROR"
+                  },
+                  {
+                    "name": "FATAL"
+                  }
+                ]
+              },
+              "description": "Log level",
+              "name": [
+                "--log-level"
+              ]
+            },
+            {
+              "description": "Do not colorize output",
+              "name": [
+                "--no-color"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "folders"
+              },
+              "description": "Directory where commands are executed",
+              "name": [
+                "--project"
+              ]
+            },
+            {
+              "description": "Skip automatic update check on command execution",
+              "name": [
+                "--skip-update-check"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "action name"
+          },
+          "description": "Create a Hasura action",
+          "name": "create",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Derive action from a Hasura operation",
+              "name": [
+                "--derive-from"
+              ]
+            },
+            {
+              "args": {
+                "isOptional": true,
+                "name": "string",
+                "suggestions": [
+                  {
+                    "name": "synchronous"
+                  },
+                  {
+                    "name": "asynchronous"
+                  }
+                ]
+              },
+              "description": "Kind to use in action",
+              "name": [
+                "--kind"
+              ]
+            },
+            {
+              "args": {
+                "isOptional": true,
+                "name": "webhook"
+              },
+              "description": "Webhook to use in action",
+              "name": [
+                "--webhook"
+              ]
+            },
+            {
+              "description": "Create action along with codegen",
+              "name": [
+                "--with-codegen"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Admin secret for Hasura GraphQL engine",
+              "name": [
+                "--admin-secret"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": "Path to a cert file for the certificate authority",
+              "name": [
+                "--certificate-authority"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Http(s) endpoint for Hasura GraphQL engine (env `HASURA_GRAPHQL_ENDPOINT`)",
+              "name": [
+                "--endpoint"
+              ]
+            },
+            {
+              "description": "Skip TLS verification and disable cert checking",
+              "name": [
+                "--insecure-skip-tls-verify"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": ".env filename to load ENV vars from",
+              "name": [
+                "--envfile"
+              ]
+            },
+            {
+              "description": "Help for hasura",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "name": "DEBUG"
+                  },
+                  {
+                    "name": "INFO"
+                  },
+                  {
+                    "name": "WARN"
+                  },
+                  {
+                    "name": "ERROR"
+                  },
+                  {
+                    "name": "FATAL"
+                  }
+                ]
+              },
+              "description": "Log level",
+              "name": [
+                "--log-level"
+              ]
+            },
+            {
+              "description": "Do not colorize output",
+              "name": [
+                "--no-color"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "folders"
+              },
+              "description": "Directory where commands are executed",
+              "name": [
+                "--project"
+              ]
+            },
+            {
+              "description": "Skip automatic update check on command execution",
+              "name": [
+                "--skip-update-check"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Use the codegen to generate code for Hasura actions",
+          "name": "use-codegen",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Framework to be used by codegen",
+              "name": [
+                "--framework"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "folders"
+              },
+              "description": "Directory to create the codegen files",
+              "name": [
+                "--output-dir"
+              ]
+            },
+            {
+              "description": "Clone starter kit for a framework",
+              "name": [
+                "--with-starter-kit"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Admin secret for Hasura GraphQL engine",
+              "name": [
+                "--admin-secret"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": "Path to a cert file for the certificate authority",
+              "name": [
+                "--certificate-authority"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Http(s) endpoint for Hasura GraphQL engine (env `HASURA_GRAPHQL_ENDPOINT`)",
+              "name": [
+                "--endpoint"
+              ]
+            },
+            {
+              "description": "Skip TLS verification and disable cert checking",
+              "name": [
+                "--insecure-skip-tls-verify"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": ".env filename to load ENV vars from",
+              "name": [
+                "--envfile"
+              ]
+            },
+            {
+              "description": "Help for hasura",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "name": "DEBUG"
+                  },
+                  {
+                    "name": "INFO"
+                  },
+                  {
+                    "name": "WARN"
+                  },
+                  {
+                    "name": "ERROR"
+                  },
+                  {
+                    "name": "FATAL"
+                  }
+                ]
+              },
+              "description": "Log level",
+              "name": [
+                "--log-level"
+              ]
+            },
+            {
+              "description": "Do not colorize output",
+              "name": [
+                "--no-color"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "folders"
+              },
+              "description": "Directory where commands are executed",
+              "name": [
+                "--project"
+              ]
+            },
+            {
+              "description": "Skip automatic update check on command execution",
+              "name": [
+                "--skip-update-check"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "shell",
+        "suggestions": [
+          {
+            "name": "bash"
+          },
+          {
+            "name": "zsh"
+          }
+        ]
+      },
+      "description": "Generate auto completion code",
+      "name": "completions",
+      "options": [
+        {
+          "args": {
+            "name": "string",
+            "template": "filepaths"
+          },
+          "description": "File to which output has to be written",
+          "name": [
+            "--file"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "template": "filepaths"
+          },
+          "description": ".env filename to load ENV vars from",
+          "name": [
+            "--envfile"
+          ]
+        },
+        {
+          "description": "Help for hasura",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "suggestions": [
+              {
+                "name": "DEBUG"
+              },
+              {
+                "name": "INFO"
+              },
+              {
+                "name": "WARN"
+              },
+              {
+                "name": "ERROR"
+              },
+              {
+                "name": "FATAL"
+              }
+            ]
+          },
+          "description": "Log level",
+          "name": [
+            "--log-level"
+          ]
+        },
+        {
+          "description": "Do not colorize output",
+          "name": [
+            "--no-color"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "template": "folders"
+          },
+          "description": "Directory where commands are executed",
+          "name": [
+            "--project"
+          ]
+        },
+        {
+          "description": "Skip automatic update check on command execution",
+          "name": [
+            "--skip-update-check"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Open the console to manage the database and try out APIs",
+      "name": "console",
+      "options": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "string"
+          },
+          "description": "Address to serve console and migration API from",
+          "name": [
+            "--address"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "string"
+          },
+          "description": "Port for serving migrate api",
+          "name": [
+            "--api-port"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Open console in a specific browser",
+          "name": [
+            "--browser"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "string"
+          },
+          "description": "Port for serving console",
+          "name": [
+            "--console-port"
+          ]
+        },
+        {
+          "description": "Skip TLS verification and disable cert checking",
+          "name": [
+            "--insecure-skip-tls-verify"
+          ]
+        },
+        {
+          "description": "Do not automatically open console in browser",
+          "name": [
+            "--no-browser"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "template": "folders"
+          },
+          "description": "Directory where static assets mentioned in the console html template can be served from",
+          "name": [
+            "--static-dir"
+          ]
+        },
+        {
+          "description": "When rendering console, use assets provided by HGE server",
+          "name": [
+            "--use-server-assets"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Admin secret for Hasura GraphQL engine",
+          "name": [
+            "--admin-secret"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "template": "filepaths"
+          },
+          "description": "Path to a cert file for the certificate authority",
+          "name": [
+            "--certificate-authority"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Http(s) endpoint for Hasura GraphQL engine (env `HASURA_GRAPHQL_ENDPOINT`)",
+          "name": [
+            "--endpoint"
+          ]
+        },
+        {
+          "description": "Skip TLS verification and disable cert checking",
+          "name": [
+            "--insecure-skip-tls-verify"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "template": "filepaths"
+          },
+          "description": ".env filename to load ENV vars from",
+          "name": [
+            "--envfile"
+          ]
+        },
+        {
+          "description": "Help for hasura",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "suggestions": [
+              {
+                "name": "DEBUG"
+              },
+              {
+                "name": "INFO"
+              },
+              {
+                "name": "WARN"
+              },
+              {
+                "name": "ERROR"
+              },
+              {
+                "name": "FATAL"
+              }
+            ]
+          },
+          "description": "Log level",
+          "name": [
+            "--log-level"
+          ]
+        },
+        {
+          "description": "Do not colorize output",
+          "name": [
+            "--no-color"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "template": "folders"
+          },
+          "description": "Directory where commands are executed",
+          "name": [
+            "--project"
+          ]
+        },
+        {
+          "description": "Skip automatic update check on command execution",
+          "name": [
+            "--skip-update-check"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "directory name"
+      },
+      "description": "Initialize a directory for Hasura GraphQL engine migrations",
+      "name": "init",
+      "options": [
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Admin secret for Hasura GraphQL engine",
+          "name": [
+            "--admin-secret"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Http(s) endpoint for Hasura GraphQL engine (env `HASURA_GRAPHQL_ENDPOINT`)",
+          "name": [
+            "--endpoint"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Install manifest to be cloned",
+          "name": [
+            "--install-manifest"
+          ]
+        },
+        {
+          "args": {
+            "name": "int"
+          },
+          "description": "Config version to be used",
+          "name": [
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "md",
+      "options": [
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Admin secret for Hasura GraphQL engine",
+          "name": [
+            "--admin-secret"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "template": "filepaths"
+          },
+          "description": "Path to a cert file for the certificate authority",
+          "name": [
+            "--certificate-authority"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Http(s) endpoint for Hasura GraphQL engine (env `HASURA_GRAPHQL_ENDPOINT`)",
+          "name": [
+            "--endpoint"
+          ]
+        },
+        {
+          "description": "Skip TLS verification and disable cert checking",
+          "name": [
+            "--insecure-skip-tls-verify"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "template": "filepaths"
+          },
+          "description": ".env filename to load ENV vars from",
+          "name": [
+            "--envfile"
+          ]
+        },
+        {
+          "description": "Help for hasura",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "suggestions": [
+              {
+                "name": "DEBUG"
+              },
+              {
+                "name": "INFO"
+              },
+              {
+                "name": "WARN"
+              },
+              {
+                "name": "ERROR"
+              },
+              {
+                "name": "FATAL"
+              }
+            ]
+          },
+          "description": "Log level",
+          "name": [
+            "--log-level"
+          ]
+        },
+        {
+          "description": "Do not colorize output",
+          "name": [
+            "--no-color"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "template": "folders"
+          },
+          "description": "Directory where commands are executed",
+          "name": [
+            "--project"
+          ]
+        },
+        {
+          "description": "Skip automatic update check on command execution",
+          "name": [
+            "--skip-update-check"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Apply Hasura metadata on a database",
+          "name": "apply",
+          "options": [
+            {
+              "description": "Show metadata generated from project directory without applying to server",
+              "name": [
+                "--dry-run"
+              ]
+            },
+            {
+              "args": {
+                "isOptional": true,
+                "name": "string",
+                "suggestions": [
+                  {
+                    "name": "json"
+                  },
+                  {
+                    "name": "yaml"
+                  }
+                ]
+              },
+              "description": "Specify an output format to show applied metadata",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Admin secret for Hasura GraphQL engine",
+              "name": [
+                "--admin-secret"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": "Path to a cert file for the certificate authority",
+              "name": [
+                "--certificate-authority"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Http(s) endpoint for Hasura GraphQL engine (env `HASURA_GRAPHQL_ENDPOINT`)",
+              "name": [
+                "--endpoint"
+              ]
+            },
+            {
+              "description": "Skip TLS verification and disable cert checking",
+              "name": [
+                "--insecure-skip-tls-verify"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": ".env filename to load ENV vars from",
+              "name": [
+                "--envfile"
+              ]
+            },
+            {
+              "description": "Help for hasura",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "name": "DEBUG"
+                  },
+                  {
+                    "name": "INFO"
+                  },
+                  {
+                    "name": "WARN"
+                  },
+                  {
+                    "name": "ERROR"
+                  },
+                  {
+                    "name": "FATAL"
+                  }
+                ]
+              },
+              "description": "Log level",
+              "name": [
+                "--log-level"
+              ]
+            },
+            {
+              "description": "Do not colorize output",
+              "name": [
+                "--no-color"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "folders"
+              },
+              "description": "Directory where commands are executed",
+              "name": [
+                "--project"
+              ]
+            },
+            {
+              "description": "Skip automatic update check on command execution",
+              "name": [
+                "--skip-update-check"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Clear Hasura GraphQL engine metadata on the database",
+          "name": "clear",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Admin secret for Hasura GraphQL engine",
+              "name": [
+                "--admin-secret"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": "Path to a cert file for the certificate authority",
+              "name": [
+                "--certificate-authority"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Http(s) endpoint for Hasura GraphQL engine (env `HASURA_GRAPHQL_ENDPOINT`)",
+              "name": [
+                "--endpoint"
+              ]
+            },
+            {
+              "description": "Skip TLS verification and disable cert checking",
+              "name": [
+                "--insecure-skip-tls-verify"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": ".env filename to load ENV vars from",
+              "name": [
+                "--envfile"
+              ]
+            },
+            {
+              "description": "Help for hasura",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "name": "DEBUG"
+                  },
+                  {
+                    "name": "INFO"
+                  },
+                  {
+                    "name": "WARN"
+                  },
+                  {
+                    "name": "ERROR"
+                  },
+                  {
+                    "name": "FATAL"
+                  }
+                ]
+              },
+              "description": "Log level",
+              "name": [
+                "--log-level"
+              ]
+            },
+            {
+              "description": "Do not colorize output",
+              "name": [
+                "--no-color"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "folders"
+              },
+              "description": "Directory where commands are executed",
+              "name": [
+                "--project"
+              ]
+            },
+            {
+              "description": "Skip automatic update check on command execution",
+              "name": [
+                "--skip-update-check"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "isOptional": true,
+              "name": "file1",
+              "template": "filepaths"
+            },
+            {
+              "isOptional": true,
+              "name": "file2",
+              "template": "filepaths"
+            }
+          ],
+          "description": "Show a highlighted diff of Hasura metadata",
+          "name": "diff",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Admin secret for Hasura GraphQL engine",
+              "name": [
+                "--admin-secret"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": "Path to a cert file for the certificate authority",
+              "name": [
+                "--certificate-authority"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Http(s) endpoint for Hasura GraphQL engine (env `HASURA_GRAPHQL_ENDPOINT`)",
+              "name": [
+                "--endpoint"
+              ]
+            },
+            {
+              "description": "Skip TLS verification and disable cert checking",
+              "name": [
+                "--insecure-skip-tls-verify"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": ".env filename to load ENV vars from",
+              "name": [
+                "--envfile"
+              ]
+            },
+            {
+              "description": "Help for hasura",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "name": "DEBUG"
+                  },
+                  {
+                    "name": "INFO"
+                  },
+                  {
+                    "name": "WARN"
+                  },
+                  {
+                    "name": "ERROR"
+                  },
+                  {
+                    "name": "FATAL"
+                  }
+                ]
+              },
+              "description": "Log level",
+              "name": [
+                "--log-level"
+              ]
+            },
+            {
+              "description": "Do not colorize output",
+              "name": [
+                "--no-color"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "folders"
+              },
+              "description": "Directory where commands are executed",
+              "name": [
+                "--project"
+              ]
+            },
+            {
+              "description": "Skip automatic update check on command execution",
+              "name": [
+                "--skip-update-check"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Export Hasura GraphQL engine metadata from the database",
+          "name": "export",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify an output format for exported metadata",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Manage inconsistent objects in Hasura metadata",
+          "name": "ic",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Admin secret for Hasura GraphQL engine",
+              "name": [
+                "--admin-secret"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": "Path to a cert file for the certificate authority",
+              "name": [
+                "--certificate-authority"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Http(s) endpoint for Hasura GraphQL engine (env `HASURA_GRAPHQL_ENDPOINT`)",
+              "name": [
+                "--endpoint"
+              ]
+            },
+            {
+              "description": "Skip TLS verification and disable cert checking",
+              "name": [
+                "--insecure-skip-tls-verify"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": ".env filename to load ENV vars from",
+              "name": [
+                "--envfile"
+              ]
+            },
+            {
+              "description": "Help for hasura",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "name": "DEBUG"
+                  },
+                  {
+                    "name": "INFO"
+                  },
+                  {
+                    "name": "WARN"
+                  },
+                  {
+                    "name": "ERROR"
+                  },
+                  {
+                    "name": "FATAL"
+                  }
+                ]
+              },
+              "description": "Log level",
+              "name": [
+                "--log-level"
+              ]
+            },
+            {
+              "description": "Do not colorize output",
+              "name": [
+                "--no-color"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "folders"
+              },
+              "description": "Directory where commands are executed",
+              "name": [
+                "--project"
+              ]
+            },
+            {
+              "description": "Skip automatic update check on command execution",
+              "name": [
+                "--skip-update-check"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "description": "Drop inconsistent objects from the metadata",
+              "name": "drop",
+              "options": [
+                {
+                  "args": {
+                    "name": "string"
+                  },
+                  "description": "Admin secret for Hasura GraphQL engine",
+                  "name": [
+                    "--admin-secret"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "string",
+                    "template": "filepaths"
+                  },
+                  "description": "Path to a cert file for the certificate authority",
+                  "name": [
+                    "--certificate-authority"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "string"
+                  },
+                  "description": "Http(s) endpoint for Hasura GraphQL engine (env `HASURA_GRAPHQL_ENDPOINT`)",
+                  "name": [
+                    "--endpoint"
+                  ]
+                },
+                {
+                  "description": "Skip TLS verification and disable cert checking",
+                  "name": [
+                    "--insecure-skip-tls-verify"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "string",
+                    "template": "filepaths"
+                  },
+                  "description": ".env filename to load ENV vars from",
+                  "name": [
+                    "--envfile"
+                  ]
+                },
+                {
+                  "description": "Help for hasura",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "string",
+                    "suggestions": [
+                      {
+                        "name": "DEBUG"
+                      },
+                      {
+                        "name": "INFO"
+                      },
+                      {
+                        "name": "WARN"
+                      },
+                      {
+                        "name": "ERROR"
+                      },
+                      {
+                        "name": "FATAL"
+                      }
+                    ]
+                  },
+                  "description": "Log level",
+                  "name": [
+                    "--log-level"
+                  ]
+                },
+                {
+                  "description": "Do not colorize output",
+                  "name": [
+                    "--no-color"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "string",
+                    "template": "folders"
+                  },
+                  "description": "Directory where commands are executed",
+                  "name": [
+                    "--project"
+                  ]
+                },
+                {
+                  "description": "Skip automatic update check on command execution",
+                  "name": [
+                    "--skip-update-check"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "List all inconsistent objects from the metadata",
+              "name": "ls",
+              "options": [
+                {
+                  "args": {
+                    "name": "string"
+                  },
+                  "description": "Admin secret for Hasura GraphQL engine",
+                  "name": [
+                    "--admin-secret"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "string",
+                    "template": "filepaths"
+                  },
+                  "description": "Path to a cert file for the certificate authority",
+                  "name": [
+                    "--certificate-authority"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "string"
+                  },
+                  "description": "Http(s) endpoint for Hasura GraphQL engine (env `HASURA_GRAPHQL_ENDPOINT`)",
+                  "name": [
+                    "--endpoint"
+                  ]
+                },
+                {
+                  "description": "Skip TLS verification and disable cert checking",
+                  "name": [
+                    "--insecure-skip-tls-verify"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "string",
+                    "template": "filepaths"
+                  },
+                  "description": ".env filename to load ENV vars from",
+                  "name": [
+                    "--envfile"
+                  ]
+                },
+                {
+                  "description": "Help for hasura",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "string",
+                    "suggestions": [
+                      {
+                        "name": "DEBUG"
+                      },
+                      {
+                        "name": "INFO"
+                      },
+                      {
+                        "name": "WARN"
+                      },
+                      {
+                        "name": "ERROR"
+                      },
+                      {
+                        "name": "FATAL"
+                      }
+                    ]
+                  },
+                  "description": "Log level",
+                  "name": [
+                    "--log-level"
+                  ]
+                },
+                {
+                  "description": "Do not colorize output",
+                  "name": [
+                    "--no-color"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "string",
+                    "template": "folders"
+                  },
+                  "description": "Directory where commands are executed",
+                  "name": [
+                    "--project"
+                  ]
+                },
+                {
+                  "description": "Skip automatic update check on command execution",
+                  "name": [
+                    "--skip-update-check"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Check if the metadata is inconsistent or not",
+              "name": "status",
+              "options": [
+                {
+                  "args": {
+                    "name": "string"
+                  },
+                  "description": "Admin secret for Hasura GraphQL engine",
+                  "name": [
+                    "--admin-secret"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "string",
+                    "template": "filepaths"
+                  },
+                  "description": "Path to a cert file for the certificate authority",
+                  "name": [
+                    "--certificate-authority"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "string"
+                  },
+                  "description": "Http(s) endpoint for Hasura GraphQL engine (env `HASURA_GRAPHQL_ENDPOINT`)",
+                  "name": [
+                    "--endpoint"
+                  ]
+                },
+                {
+                  "description": "Skip TLS verification and disable cert checking",
+                  "name": [
+                    "--insecure-skip-tls-verify"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "string",
+                    "template": "filepaths"
+                  },
+                  "description": ".env filename to load ENV vars from",
+                  "name": [
+                    "--envfile"
+                  ]
+                },
+                {
+                  "description": "Help for hasura",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "string",
+                    "suggestions": [
+                      {
+                        "name": "DEBUG"
+                      },
+                      {
+                        "name": "INFO"
+                      },
+                      {
+                        "name": "WARN"
+                      },
+                      {
+                        "name": "ERROR"
+                      },
+                      {
+                        "name": "FATAL"
+                      }
+                    ]
+                  },
+                  "description": "Log level",
+                  "name": [
+                    "--log-level"
+                  ]
+                },
+                {
+                  "description": "Do not colorize output",
+                  "name": [
+                    "--no-color"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "string",
+                    "template": "folders"
+                  },
+                  "description": "Directory where commands are executed",
+                  "name": [
+                    "--project"
+                  ]
+                },
+                {
+                  "description": "Skip automatic update check on command execution",
+                  "name": [
+                    "--skip-update-check"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Reload Hasura GraphQL engine metadata on the database",
+          "name": "reload",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Admin secret for Hasura GraphQL engine",
+              "name": [
+                "--admin-secret"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": "Path to a cert file for the certificate authority",
+              "name": [
+                "--certificate-authority"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Http(s) endpoint for Hasura GraphQL engine (env `HASURA_GRAPHQL_ENDPOINT`)",
+              "name": [
+                "--endpoint"
+              ]
+            },
+            {
+              "description": "Skip TLS verification and disable cert checking",
+              "name": [
+                "--insecure-skip-tls-verify"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": ".env filename to load ENV vars from",
+              "name": [
+                "--envfile"
+              ]
+            },
+            {
+              "description": "Help for hasura",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "name": "DEBUG"
+                  },
+                  {
+                    "name": "INFO"
+                  },
+                  {
+                    "name": "WARN"
+                  },
+                  {
+                    "name": "ERROR"
+                  },
+                  {
+                    "name": "FATAL"
+                  }
+                ]
+              },
+              "description": "Log level",
+              "name": [
+                "--log-level"
+              ]
+            },
+            {
+              "description": "Do not colorize output",
+              "name": [
+                "--no-color"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "folders"
+              },
+              "description": "Directory where commands are executed",
+              "name": [
+                "--project"
+              ]
+            },
+            {
+              "description": "Skip automatic update check on command execution",
+              "name": [
+                "--skip-update-check"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage migrations on the database",
+      "name": "migrate",
+      "options": [
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Admin secret for Hasura GraphQL engine",
+          "name": [
+            "--admin-secret"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "template": "filepaths"
+          },
+          "description": "Path to a cert file for the certificate authority",
+          "name": [
+            "--certificate-authority"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Http(s) endpoint for Hasura GraphQL engine (env `HASURA_GRAPHQL_ENDPOINT`)",
+          "name": [
+            "--endpoint"
+          ]
+        },
+        {
+          "description": "Skip TLS verification and disable cert checking",
+          "name": [
+            "--insecure-skip-tls-verify"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "template": "filepaths"
+          },
+          "description": ".env filename to load ENV vars from",
+          "name": [
+            "--envfile"
+          ]
+        },
+        {
+          "description": "Help for hasura",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "suggestions": [
+              {
+                "name": "DEBUG"
+              },
+              {
+                "name": "INFO"
+              },
+              {
+                "name": "WARN"
+              },
+              {
+                "name": "ERROR"
+              },
+              {
+                "name": "FATAL"
+              }
+            ]
+          },
+          "description": "Log level",
+          "name": [
+            "--log-level"
+          ]
+        },
+        {
+          "description": "Do not colorize output",
+          "name": [
+            "--no-color"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "template": "folders"
+          },
+          "description": "Directory where commands are executed",
+          "name": [
+            "--project"
+          ]
+        },
+        {
+          "description": "Skip automatic update check on command execution",
+          "name": [
+            "--skip-update-check"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Apply migrations on the database",
+          "name": "apply",
+          "options": [
+            {
+              "args": {
+                "isOptional": true,
+                "name": "string"
+              },
+              "description": "Apply all or N up migration steps",
+              "name": [
+                "--up"
+              ]
+            },
+            {
+              "args": {
+                "isOptional": true,
+                "name": "string"
+              },
+              "description": "Apply all or N up migration steps",
+              "name": [
+                "--down"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Apply migration chain up to to the version specified",
+              "name": [
+                "goto"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Only apply this particular migration",
+              "name": [
+                "--version"
+              ]
+            },
+            {
+              "description": "Skip executing the migration action, but mark them as applied",
+              "name": [
+                "--skip-execution"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "name": "up"
+                  },
+                  {
+                    "name": "down"
+                  }
+                ]
+              },
+              "description": "Type of migration to be used with version flag",
+              "name": [
+                "--type"
+              ]
+            },
+            {
+              "description": "Print the names of migrations which are going to be applied",
+              "name": [
+                "--dry-run"
+              ]
+            },
+            {
+              "description": "Set this flag to attempt to apply migrations on all databases present on server",
+              "name": [
+                "--all-databases"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Admin secret for Hasura GraphQL engine",
+              "name": [
+                "--admin-secret"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": "Path to a cert file for the certificate authority",
+              "name": [
+                "--certificate-authority"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Http(s) endpoint for Hasura GraphQL engine (env `HASURA_GRAPHQL_ENDPOINT`)",
+              "name": [
+                "--endpoint"
+              ]
+            },
+            {
+              "description": "Skip TLS verification and disable cert checking",
+              "name": [
+                "--insecure-skip-tls-verify"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": ".env filename to load ENV vars from",
+              "name": [
+                "--envfile"
+              ]
+            },
+            {
+              "description": "Help for hasura",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "name": "DEBUG"
+                  },
+                  {
+                    "name": "INFO"
+                  },
+                  {
+                    "name": "WARN"
+                  },
+                  {
+                    "name": "ERROR"
+                  },
+                  {
+                    "name": "FATAL"
+                  }
+                ]
+              },
+              "description": "Log level",
+              "name": [
+                "--log-level"
+              ]
+            },
+            {
+              "description": "Do not colorize output",
+              "name": [
+                "--no-color"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "folders"
+              },
+              "description": "Directory where commands are executed",
+              "name": [
+                "--project"
+              ]
+            },
+            {
+              "description": "Skip automatic update check on command execution",
+              "name": [
+                "--skip-update-check"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "migration name"
+          },
+          "description": "Create files required for a migration",
+          "name": "create",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Sql string/query that is to be used to create a down migration",
+              "name": [
+                "--down-sql"
+              ]
+            },
+            {
+              "description": "Take pg_dump of schema and Hasura metadata from the server",
+              "name": [
+                "--from-server"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": "Path to a hasura metadata file to be used for up actions",
+              "name": [
+                "--metadata-from-file"
+              ]
+            },
+            {
+              "description": "Take metadata from the server and write it as an up migration file",
+              "name": [
+                "--metadata-from-server"
+              ]
+            },
+            {
+              "args": {
+                "isVariadic": true,
+                "name": "strings"
+              },
+              "description": "Name of Postgres schema to export as a migration",
+              "name": [
+                "--schema"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": "Path to an SQL file which contains the SQL statements",
+              "name": [
+                "--sql-from-file"
+              ]
+            },
+            {
+              "description": "Take pg_dump from the server and save it as a migration",
+              "name": [
+                "--sql-from-server"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Sql string/query that is to be used to create an up migration",
+              "name": [
+                "--up-sql"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Admin secret for Hasura GraphQL engine",
+              "name": [
+                "--admin-secret"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": "Path to a cert file for the certificate authority",
+              "name": [
+                "--certificate-authority"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Http(s) endpoint for Hasura GraphQL engine (env `HASURA_GRAPHQL_ENDPOINT`)",
+              "name": [
+                "--endpoint"
+              ]
+            },
+            {
+              "description": "Skip TLS verification and disable cert checking",
+              "name": [
+                "--insecure-skip-tls-verify"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": ".env filename to load ENV vars from",
+              "name": [
+                "--envfile"
+              ]
+            },
+            {
+              "description": "Help for hasura",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "name": "DEBUG"
+                  },
+                  {
+                    "name": "INFO"
+                  },
+                  {
+                    "name": "WARN"
+                  },
+                  {
+                    "name": "ERROR"
+                  },
+                  {
+                    "name": "FATAL"
+                  }
+                ]
+              },
+              "description": "Log level",
+              "name": [
+                "--log-level"
+              ]
+            },
+            {
+              "description": "Do not colorize output",
+              "name": [
+                "--no-color"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "folders"
+              },
+              "description": "Directory where commands are executed",
+              "name": [
+                "--project"
+              ]
+            },
+            {
+              "description": "Skip automatic update check on command execution",
+              "name": [
+                "--skip-update-check"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Clear migrations from local project and server",
+          "name": "delete",
+          "options": [
+            {
+              "description": "Clears all migrations for selected database",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Executes operation without any confirmation",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "args": {
+                "name": "uint"
+              },
+              "description": "Deletes the specified version in migrations",
+              "name": [
+                "--version"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Admin secret for Hasura GraphQL engine",
+              "name": [
+                "--admin-secret"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": "Path to a cert file for the certificate authority",
+              "name": [
+                "--certificate-authority"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Http(s) endpoint for Hasura GraphQL engine (env `HASURA_GRAPHQL_ENDPOINT`)",
+              "name": [
+                "--endpoint"
+              ]
+            },
+            {
+              "description": "Skip TLS verification and disable cert checking",
+              "name": [
+                "--insecure-skip-tls-verify"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": ".env filename to load ENV vars from",
+              "name": [
+                "--envfile"
+              ]
+            },
+            {
+              "description": "Help for hasura",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "name": "DEBUG"
+                  },
+                  {
+                    "name": "INFO"
+                  },
+                  {
+                    "name": "WARN"
+                  },
+                  {
+                    "name": "ERROR"
+                  },
+                  {
+                    "name": "FATAL"
+                  }
+                ]
+              },
+              "description": "Log level",
+              "name": [
+                "--log-level"
+              ]
+            },
+            {
+              "description": "Do not colorize output",
+              "name": [
+                "--no-color"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "folders"
+              },
+              "description": "Directory where commands are executed",
+              "name": [
+                "--project"
+              ]
+            },
+            {
+              "description": "Skip automatic update check on command execution",
+              "name": [
+                "--skip-update-check"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Squash multiple migrations into a single one",
+          "name": "squash",
+          "options": [
+            {
+              "description": "Delete the source files after squashing without any confirmation",
+              "name": [
+                "--delete-source"
+              ]
+            },
+            {
+              "args": {
+                "name": "uint"
+              },
+              "description": "Start squashing from this version",
+              "name": [
+                "--from"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Name for the new squashed migration",
+              "name": [
+                "--name"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Admin secret for Hasura GraphQL engine",
+              "name": [
+                "--admin-secret"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": "Path to a cert file for the certificate authority",
+              "name": [
+                "--certificate-authority"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Http(s) endpoint for Hasura GraphQL engine (env `HASURA_GRAPHQL_ENDPOINT`)",
+              "name": [
+                "--endpoint"
+              ]
+            },
+            {
+              "description": "Skip TLS verification and disable cert checking",
+              "name": [
+                "--insecure-skip-tls-verify"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": ".env filename to load ENV vars from",
+              "name": [
+                "--envfile"
+              ]
+            },
+            {
+              "description": "Help for hasura",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "name": "DEBUG"
+                  },
+                  {
+                    "name": "INFO"
+                  },
+                  {
+                    "name": "WARN"
+                  },
+                  {
+                    "name": "ERROR"
+                  },
+                  {
+                    "name": "FATAL"
+                  }
+                ]
+              },
+              "description": "Log level",
+              "name": [
+                "--log-level"
+              ]
+            },
+            {
+              "description": "Do not colorize output",
+              "name": [
+                "--no-color"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "folders"
+              },
+              "description": "Directory where commands are executed",
+              "name": [
+                "--project"
+              ]
+            },
+            {
+              "description": "Skip automatic update check on command execution",
+              "name": [
+                "--skip-update-check"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Display current status of migrations on a database",
+          "name": "status"
+        }
+      ]
+    },
+    {
+      "description": "Manage plugins for the CLI",
+      "name": "plugin",
+      "options": [
+        {
+          "args": {
+            "name": "string",
+            "template": "filepaths"
+          },
+          "description": ".env filename to load ENV vars from",
+          "name": [
+            "--envfile"
+          ]
+        },
+        {
+          "description": "Help for hasura",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "suggestions": [
+              {
+                "name": "DEBUG"
+              },
+              {
+                "name": "INFO"
+              },
+              {
+                "name": "WARN"
+              },
+              {
+                "name": "ERROR"
+              },
+              {
+                "name": "FATAL"
+              }
+            ]
+          },
+          "description": "Log level",
+          "name": [
+            "--log-level"
+          ]
+        },
+        {
+          "description": "Do not colorize output",
+          "name": [
+            "--no-color"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "template": "folders"
+          },
+          "description": "Directory where commands are executed",
+          "name": [
+            "--project"
+          ]
+        },
+        {
+          "description": "Skip automatic update check on command execution",
+          "name": [
+            "--skip-update-check"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "plugin name"
+          },
+          "description": "Install a plugin from the index",
+          "name": "install",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Version to be installed",
+              "name": [
+                "--version"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": ".env filename to load ENV vars from",
+              "name": [
+                "--envfile"
+              ]
+            },
+            {
+              "description": "Help for hasura",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "name": "DEBUG"
+                  },
+                  {
+                    "name": "INFO"
+                  },
+                  {
+                    "name": "WARN"
+                  },
+                  {
+                    "name": "ERROR"
+                  },
+                  {
+                    "name": "FATAL"
+                  }
+                ]
+              },
+              "description": "Log level",
+              "name": [
+                "--log-level"
+              ]
+            },
+            {
+              "description": "Do not colorize output",
+              "name": [
+                "--no-color"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "folders"
+              },
+              "description": "Directory where commands are executed",
+              "name": [
+                "--project"
+              ]
+            },
+            {
+              "description": "Skip automatic update check on command execution",
+              "name": [
+                "--skip-update-check"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List all available plugins from index, versions and installation status",
+          "name": "list",
+          "options": [
+            {
+              "description": "Do not update the plugin index local cache, only show the list",
+              "name": [
+                "--dont-update-index"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": ".env filename to load ENV vars from",
+              "name": [
+                "--envfile"
+              ]
+            },
+            {
+              "description": "Help for hasura",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "name": "DEBUG"
+                  },
+                  {
+                    "name": "INFO"
+                  },
+                  {
+                    "name": "WARN"
+                  },
+                  {
+                    "name": "ERROR"
+                  },
+                  {
+                    "name": "FATAL"
+                  }
+                ]
+              },
+              "description": "Log level",
+              "name": [
+                "--log-level"
+              ]
+            },
+            {
+              "description": "Do not colorize output",
+              "name": [
+                "--no-color"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "folders"
+              },
+              "description": "Directory where commands are executed",
+              "name": [
+                "--project"
+              ]
+            },
+            {
+              "description": "Skip automatic update check on command execution",
+              "name": [
+                "--skip-update-check"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "plugin name"
+          },
+          "description": "Uninstall a plugin",
+          "name": "uninstall",
+          "options": [
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": ".env filename to load ENV vars from",
+              "name": [
+                "--envfile"
+              ]
+            },
+            {
+              "description": "Help for hasura",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "name": "DEBUG"
+                  },
+                  {
+                    "name": "INFO"
+                  },
+                  {
+                    "name": "WARN"
+                  },
+                  {
+                    "name": "ERROR"
+                  },
+                  {
+                    "name": "FATAL"
+                  }
+                ]
+              },
+              "description": "Log level",
+              "name": [
+                "--log-level"
+              ]
+            },
+            {
+              "description": "Do not colorize output",
+              "name": [
+                "--no-color"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "folders"
+              },
+              "description": "Directory where commands are executed",
+              "name": [
+                "--project"
+              ]
+            },
+            {
+              "description": "Skip automatic update check on command execution",
+              "name": [
+                "--skip-update-check"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "plugin name"
+          },
+          "description": "Upgrade a plugin to a newer version",
+          "name": "upgrade",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Version to be upgraded",
+              "name": [
+                "--version"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": ".env filename to load ENV vars from",
+              "name": [
+                "--envfile"
+              ]
+            },
+            {
+              "description": "Help for hasura",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "name": "DEBUG"
+                  },
+                  {
+                    "name": "INFO"
+                  },
+                  {
+                    "name": "WARN"
+                  },
+                  {
+                    "name": "ERROR"
+                  },
+                  {
+                    "name": "FATAL"
+                  }
+                ]
+              },
+              "description": "Log level",
+              "name": [
+                "--log-level"
+              ]
+            },
+            {
+              "description": "Do not colorize output",
+              "name": [
+                "--no-color"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "folders"
+              },
+              "description": "Directory where commands are executed",
+              "name": [
+                "--project"
+              ]
+            },
+            {
+              "description": "Skip automatic update check on command execution",
+              "name": [
+                "--skip-update-check"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Execute helper scripts to manage Hasura projects",
+      "name": "scripts",
+      "options": [
+        {
+          "args": {
+            "name": "string",
+            "template": "filepaths"
+          },
+          "description": ".env filename to load ENV vars from",
+          "name": [
+            "--envfile"
+          ]
+        },
+        {
+          "description": "Help for hasura",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "suggestions": [
+              {
+                "name": "DEBUG"
+              },
+              {
+                "name": "INFO"
+              },
+              {
+                "name": "WARN"
+              },
+              {
+                "name": "ERROR"
+              },
+              {
+                "name": "FATAL"
+              }
+            ]
+          },
+          "description": "Log level",
+          "name": [
+            "--log-level"
+          ]
+        },
+        {
+          "description": "Do not colorize output",
+          "name": [
+            "--no-color"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "template": "folders"
+          },
+          "description": "Directory where commands are executed",
+          "name": [
+            "--project"
+          ]
+        },
+        {
+          "description": "Skip automatic update check on command execution",
+          "name": [
+            "--skip-update-check"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Update the Hasura project from config v1 to v2",
+          "name": "update-project-v2",
+          "options": [
+            {
+              "args": {
+                "name": "string",
+                "template": "folders"
+              },
+              "description": "Metadata directory",
+              "name": [
+                "--metadata-dir"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Admin secret for Hasura GraphQL engine",
+              "name": [
+                "--admin-secret"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": "Path to a cert file for the certificate authority",
+              "name": [
+                "--certificate-authority"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Http(s) endpoint for Hasura GraphQL engine (env `HASURA_GRAPHQL_ENDPOINT`)",
+              "name": [
+                "--endpoint"
+              ]
+            },
+            {
+              "description": "Skip TLS verification and disable cert checking",
+              "name": [
+                "--insecure-skip-tls-verify"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": ".env filename to load ENV vars from",
+              "name": [
+                "--envfile"
+              ]
+            },
+            {
+              "description": "Help for hasura",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "name": "DEBUG"
+                  },
+                  {
+                    "name": "INFO"
+                  },
+                  {
+                    "name": "WARN"
+                  },
+                  {
+                    "name": "ERROR"
+                  },
+                  {
+                    "name": "FATAL"
+                  }
+                ]
+              },
+              "description": "Log level",
+              "name": [
+                "--log-level"
+              ]
+            },
+            {
+              "description": "Do not colorize output",
+              "name": [
+                "--no-color"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "folders"
+              },
+              "description": "Directory where commands are executed",
+              "name": [
+                "--project"
+              ]
+            },
+            {
+              "description": "Skip automatic update check on command execution",
+              "name": [
+                "--skip-update-check"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Update the Hasura project from config v2 to v3",
+          "name": "update-project-v3",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Database name for which the current migrations / seeds belong to",
+              "name": [
+                "--database-name"
+              ]
+            },
+            {
+              "description": "Do not ask for confirmation",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Do only a state migration from old hdb_catalog",
+              "name": [
+                "--move-state-only"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Admin secret for Hasura GraphQL engine",
+              "name": [
+                "--admin-secret"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": "Path to a cert file for the certificate authority",
+              "name": [
+                "--certificate-authority"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Http(s) endpoint for Hasura GraphQL engine (env `HASURA_GRAPHQL_ENDPOINT`)",
+              "name": [
+                "--endpoint"
+              ]
+            },
+            {
+              "description": "Skip TLS verification and disable cert checking",
+              "name": [
+                "--insecure-skip-tls-verify"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": ".env filename to load ENV vars from",
+              "name": [
+                "--envfile"
+              ]
+            },
+            {
+              "description": "Help for hasura",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "name": "DEBUG"
+                  },
+                  {
+                    "name": "INFO"
+                  },
+                  {
+                    "name": "WARN"
+                  },
+                  {
+                    "name": "ERROR"
+                  },
+                  {
+                    "name": "FATAL"
+                  }
+                ]
+              },
+              "description": "Log level",
+              "name": [
+                "--log-level"
+              ]
+            },
+            {
+              "description": "Do not colorize output",
+              "name": [
+                "--no-color"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "folders"
+              },
+              "description": "Directory where commands are executed",
+              "name": [
+                "--project"
+              ]
+            },
+            {
+              "description": "Skip automatic update check on command execution",
+              "name": [
+                "--skip-update-check"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage seed data",
+      "name": "sd",
+      "options": [
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Database name for which the current migrations / seeds belong to",
+          "name": [
+            "--database-name"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Admin secret for Hasura GraphQL engine",
+          "name": [
+            "--admin-secret"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "template": "filepaths"
+          },
+          "description": "Path to a cert file for the certificate authority",
+          "name": [
+            "--certificate-authority"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Http(s) endpoint for Hasura GraphQL engine (env `HASURA_GRAPHQL_ENDPOINT`)",
+          "name": [
+            "--endpoint"
+          ]
+        },
+        {
+          "description": "Skip TLS verification and disable cert checking",
+          "name": [
+            "--insecure-skip-tls-verify"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "template": "filepaths"
+          },
+          "description": ".env filename to load ENV vars from",
+          "name": [
+            "--envfile"
+          ]
+        },
+        {
+          "description": "Help for hasura",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "suggestions": [
+              {
+                "name": "DEBUG"
+              },
+              {
+                "name": "INFO"
+              },
+              {
+                "name": "WARN"
+              },
+              {
+                "name": "ERROR"
+              },
+              {
+                "name": "FATAL"
+              }
+            ]
+          },
+          "description": "Log level",
+          "name": [
+            "--log-level"
+          ]
+        },
+        {
+          "description": "Do not colorize output",
+          "name": [
+            "--no-color"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "template": "folders"
+          },
+          "description": "Directory where commands are executed",
+          "name": [
+            "--project"
+          ]
+        },
+        {
+          "description": "Skip automatic update check on command execution",
+          "name": [
+            "--skip-update-check"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Apply seed data",
+          "name": "apply",
+          "options": [
+            {
+              "args": {
+                "name": "string array",
+                "template": "filepaths"
+              },
+              "description": "Seed file to apply",
+              "name": [
+                "-f",
+                "--file"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Admin secret for Hasura GraphQL engine",
+              "name": [
+                "--admin-secret"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": "Path to a cert file for the certificate authority",
+              "name": [
+                "--certificate-authority"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Http(s) endpoint for Hasura GraphQL engine (env `HASURA_GRAPHQL_ENDPOINT`)",
+              "name": [
+                "--endpoint"
+              ]
+            },
+            {
+              "description": "Skip TLS verification and disable cert checking",
+              "name": [
+                "--insecure-skip-tls-verify"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": ".env filename to load ENV vars from",
+              "name": [
+                "--envfile"
+              ]
+            },
+            {
+              "description": "Help for hasura",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "name": "DEBUG"
+                  },
+                  {
+                    "name": "INFO"
+                  },
+                  {
+                    "name": "WARN"
+                  },
+                  {
+                    "name": "ERROR"
+                  },
+                  {
+                    "name": "FATAL"
+                  }
+                ]
+              },
+              "description": "Log level",
+              "name": [
+                "--log-level"
+              ]
+            },
+            {
+              "description": "Do not colorize output",
+              "name": [
+                "--no-color"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "folders"
+              },
+              "description": "Directory where commands are executed",
+              "name": [
+                "--project"
+              ]
+            },
+            {
+              "description": "Skip automatic update check on command execution",
+              "name": [
+                "--skip-update-check"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "seed name"
+          },
+          "description": "Create a new seed file",
+          "name": "create",
+          "options": [
+            {
+              "args": {
+                "name": "string array"
+              },
+              "description": "Name of table from which seed file has to be initialized",
+              "name": [
+                "--from-table"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Admin secret for Hasura GraphQL engine",
+              "name": [
+                "--admin-secret"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": "Path to a cert file for the certificate authority",
+              "name": [
+                "--certificate-authority"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Http(s) endpoint for Hasura GraphQL engine (env `HASURA_GRAPHQL_ENDPOINT`)",
+              "name": [
+                "--endpoint"
+              ]
+            },
+            {
+              "description": "Skip TLS verification and disable cert checking",
+              "name": [
+                "--insecure-skip-tls-verify"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": ".env filename to load ENV vars from",
+              "name": [
+                "--envfile"
+              ]
+            },
+            {
+              "description": "Help for hasura",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "name": "DEBUG"
+                  },
+                  {
+                    "name": "INFO"
+                  },
+                  {
+                    "name": "WARN"
+                  },
+                  {
+                    "name": "ERROR"
+                  },
+                  {
+                    "name": "FATAL"
+                  }
+                ]
+              },
+              "description": "Log level",
+              "name": [
+                "--log-level"
+              ]
+            },
+            {
+              "description": "Do not colorize output",
+              "name": [
+                "--no-color"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "folders"
+              },
+              "description": "Directory where commands are executed",
+              "name": [
+                "--project"
+              ]
+            },
+            {
+              "description": "Skip automatic update check on command execution",
+              "name": [
+                "--skip-update-check"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Update the CLI to latest or a specific version",
+      "name": "update-cli",
+      "options": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "string"
+          },
+          "description": "A specific version to install",
+          "name": [
+            "--version"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "template": "filepaths"
+          },
+          "description": ".env filename to load ENV vars from",
+          "name": [
+            "--envfile"
+          ]
+        },
+        {
+          "description": "Help for hasura",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "suggestions": [
+              {
+                "name": "DEBUG"
+              },
+              {
+                "name": "INFO"
+              },
+              {
+                "name": "WARN"
+              },
+              {
+                "name": "ERROR"
+              },
+              {
+                "name": "FATAL"
+              }
+            ]
+          },
+          "description": "Log level",
+          "name": [
+            "--log-level"
+          ]
+        },
+        {
+          "description": "Do not colorize output",
+          "name": [
+            "--no-color"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "template": "folders"
+          },
+          "description": "Directory where commands are executed",
+          "name": [
+            "--project"
+          ]
+        },
+        {
+          "description": "Skip automatic update check on command execution",
+          "name": [
+            "--skip-update-check"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Print the CLI version",
+      "name": "version",
+      "options": [
+        {
+          "args": {
+            "name": "string",
+            "template": "filepaths"
+          },
+          "description": ".env filename to load ENV vars from",
+          "name": [
+            "--envfile"
+          ]
+        },
+        {
+          "description": "Help for hasura",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "suggestions": [
+              {
+                "name": "DEBUG"
+              },
+              {
+                "name": "INFO"
+              },
+              {
+                "name": "WARN"
+              },
+              {
+                "name": "ERROR"
+              },
+              {
+                "name": "FATAL"
+              }
+            ]
+          },
+          "description": "Log level",
+          "name": [
+            "--log-level"
+          ]
+        },
+        {
+          "description": "Do not colorize output",
+          "name": [
+            "--no-color"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "template": "folders"
+          },
+          "description": "Directory where commands are executed",
+          "name": [
+            "--project"
+          ]
+        },
+        {
+          "description": "Skip automatic update check on command execution",
+          "name": [
+            "--skip-update-check"
+          ]
+        }
+      ]
+    }
+  ]
+}

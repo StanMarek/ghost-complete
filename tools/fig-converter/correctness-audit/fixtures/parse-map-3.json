@@ -1,0 +1,12 @@
+{
+  "shape_id": "parse-map-3",
+  "rationale": "Fingerprint `JSON.parse(...).PROP.map(FN)` — JS parses a top-level JSON OBJECT and maps over a named property (e.g. `.packages`, `.list`). Input is a single-line JSON object containing every property name observed across the 35-generator bucket — each mapped to an empty array. JS `JSON.parse(input).packages.map(...)` returns `[]` (empty array); same for `.list`, etc. Rust `split_lines+filter_empty+json_extract(sentinel)` on the same single-line JSON object returns `[]` (the object has no `__sentinel_no_field__` key). Both sides agree on empty. Happy-path fixtures here await a dotted-path `json_extract` transform (shape verdict: `needs_dotted_path_json_extract` for future buckets — `parse-map-3` was classified `existing_transforms` by the current verdict rule which treats single `.PROP` hops as in-scope, but that only works when the emitted suggestions use a single `name` field, not a `.map(FN)` over a nested array. See `parse-map-4` shape for the explicit `needs_dotted_path_json_extract` variant.).",
+  "expected_transforms": [
+    "split_lines",
+    "filter_empty",
+    { "type": "json_extract", "name": "__sentinel_no_field__" }
+  ],
+  "inputs": [
+    "{\"packages\":[],\"list\":[],\"deployments\":[],\"apps\":[],\"environments\":[],\"volumes\":[],\"containers\":[]}"
+  ]
+}

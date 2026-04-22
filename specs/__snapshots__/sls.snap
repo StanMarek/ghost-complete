@@ -1,0 +1,1411 @@
+{
+  "description": "Zero-friction serverless development",
+  "name": "sls",
+  "options": [
+    {
+      "description": "Show help",
+      "name": [
+        "--help"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Deploy a Serverless service",
+      "name": "deploy",
+      "options": [
+        {
+          "description": "Hide secrets from the output (e.g. API Gateway key values)",
+          "name": [
+            "--conceal"
+          ]
+        },
+        {
+          "args": {
+            "name": "package",
+            "template": "folders"
+          },
+          "description": "Path of the deployment package",
+          "name": [
+            "--package",
+            "-p"
+          ]
+        },
+        {
+          "args": {
+            "name": "production"
+          },
+          "description": "Show all stack events during deployment",
+          "name": [
+            "--verbose",
+            "-v"
+          ]
+        },
+        {
+          "description": "Forces a deployment to take place",
+          "name": [
+            "--force"
+          ]
+        },
+        {
+          "args": {
+            "name": "function"
+          },
+          "description": "Name of the function",
+          "name": [
+            "--function",
+            "-f"
+          ]
+        },
+        {
+          "description": "Enables S3 Transfer Acceleration making uploading artifacts much faster",
+          "name": [
+            "--aws-s3-accelerate"
+          ]
+        },
+        {
+          "args": {
+            "name": "region",
+            "suggestions": [
+              {
+                "name": "us-east-2"
+              },
+              {
+                "name": "us-east-1"
+              },
+              {
+                "name": "us-west-1"
+              },
+              {
+                "name": "us-west-2"
+              },
+              {
+                "name": "af-south-1"
+              },
+              {
+                "name": "ap-east-1"
+              },
+              {
+                "name": "ap-south-1"
+              },
+              {
+                "name": "ap-northeast-3"
+              },
+              {
+                "name": "ap-northeast-2"
+              },
+              {
+                "name": "ap-southeast-1"
+              },
+              {
+                "name": "ap-southeast-2"
+              },
+              {
+                "name": "ap-northeast-1"
+              },
+              {
+                "name": "ca-central-1"
+              },
+              {
+                "name": "cn-north-1"
+              },
+              {
+                "name": "cn-northwest-1"
+              },
+              {
+                "name": "eu-central-1"
+              },
+              {
+                "name": "eu-west-1"
+              },
+              {
+                "name": "eu-west-2"
+              },
+              {
+                "name": "eu-south-1"
+              },
+              {
+                "name": "eu-west-3"
+              },
+              {
+                "name": "eu-north-1"
+              },
+              {
+                "name": "me-south-1"
+              },
+              {
+                "name": "sa-east-1"
+              },
+              {
+                "name": "us-gov-east-1"
+              },
+              {
+                "name": "us-gov-west-1"
+              }
+            ]
+          },
+          "description": "Region of the service",
+          "name": [
+            "--region",
+            "-r"
+          ]
+        },
+        {
+          "args": {
+            "name": "profile name"
+          },
+          "description": "AWS profile to use with the command",
+          "name": [
+            "--aws-profile"
+          ]
+        },
+        {
+          "args": {
+            "name": "app"
+          },
+          "description": "Dashboard app",
+          "name": [
+            "--app"
+          ]
+        },
+        {
+          "args": {
+            "name": "org"
+          },
+          "description": "Dashboard org",
+          "name": [
+            "--org"
+          ]
+        },
+        {
+          "description": "Rely on locally resolved AWS credentials instead of loading them from Dashboard provider settings (applies only to services integrated with Dashboard)",
+          "name": [
+            "--use-local-credentials"
+          ]
+        },
+        {
+          "args": {
+            "name": ".yml file",
+            "template": "filepaths"
+          },
+          "description": "Path to serverless config file",
+          "name": [
+            "--config",
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "name": "stage"
+          },
+          "description": "Stage of the service",
+          "name": [
+            "--stage",
+            "-s"
+          ]
+        },
+        {
+          "description": "Show help",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        },
+        {
+          "description": "Show version info",
+          "name": [
+            "--version"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "name": "function",
+          "options": [
+            {
+              "args": {
+                "name": "app"
+              },
+              "description": "Dashboard app",
+              "name": [
+                "--app"
+              ]
+            },
+            {
+              "args": {
+                "name": "profile name"
+              },
+              "description": "AWS profile to use with the command",
+              "name": [
+                "--aws-profile"
+              ]
+            },
+            {
+              "args": {
+                "name": ".yml file",
+                "template": "filepaths"
+              },
+              "description": "Path to serverless config file",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            },
+            {
+              "args": {
+                "name": "function"
+              },
+              "description": "Name of the function",
+              "name": [
+                "--function",
+                "-f"
+              ]
+            },
+            {
+              "description": "Show help",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            },
+            {
+              "args": {
+                "name": "org"
+              },
+              "description": "Dashboard org",
+              "name": [
+                "--org"
+              ]
+            },
+            {
+              "args": {
+                "name": "region",
+                "suggestions": [
+                  {
+                    "name": "us-east-2"
+                  },
+                  {
+                    "name": "us-east-1"
+                  },
+                  {
+                    "name": "us-west-1"
+                  },
+                  {
+                    "name": "us-west-2"
+                  },
+                  {
+                    "name": "af-south-1"
+                  },
+                  {
+                    "name": "ap-east-1"
+                  },
+                  {
+                    "name": "ap-south-1"
+                  },
+                  {
+                    "name": "ap-northeast-3"
+                  },
+                  {
+                    "name": "ap-northeast-2"
+                  },
+                  {
+                    "name": "ap-southeast-1"
+                  },
+                  {
+                    "name": "ap-southeast-2"
+                  },
+                  {
+                    "name": "ap-northeast-1"
+                  },
+                  {
+                    "name": "ca-central-1"
+                  },
+                  {
+                    "name": "cn-north-1"
+                  },
+                  {
+                    "name": "cn-northwest-1"
+                  },
+                  {
+                    "name": "eu-central-1"
+                  },
+                  {
+                    "name": "eu-west-1"
+                  },
+                  {
+                    "name": "eu-west-2"
+                  },
+                  {
+                    "name": "eu-south-1"
+                  },
+                  {
+                    "name": "eu-west-3"
+                  },
+                  {
+                    "name": "eu-north-1"
+                  },
+                  {
+                    "name": "me-south-1"
+                  },
+                  {
+                    "name": "sa-east-1"
+                  },
+                  {
+                    "name": "us-gov-east-1"
+                  },
+                  {
+                    "name": "us-gov-west-1"
+                  }
+                ]
+              },
+              "description": "Region of the service",
+              "name": [
+                "--region",
+                "-r"
+              ]
+            },
+            {
+              "args": {
+                "name": "stage"
+              },
+              "description": "Stage of the service",
+              "name": [
+                "--stage",
+                "-s"
+              ]
+            },
+            {
+              "description": "Rely on locally resolved AWS credentials instead of loading them from Dashboard provider settings (applies only to services integrated with Dashboard)",
+              "name": [
+                "--use-local-credentials"
+              ]
+            },
+            {
+              "description": "Show version info",
+              "name": [
+                "--version"
+              ]
+            },
+            {
+              "description": "Forces a deployment to take place",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "args": {
+                "name": "config"
+              },
+              "description": "Updates function configuration, e.g. Timeout or Memory Size without deploying code",
+              "name": [
+                "--update-config",
+                "-u"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "name": "region",
+                "suggestions": [
+                  {
+                    "name": "us-east-2"
+                  },
+                  {
+                    "name": "us-east-1"
+                  },
+                  {
+                    "name": "us-west-1"
+                  },
+                  {
+                    "name": "us-west-2"
+                  },
+                  {
+                    "name": "af-south-1"
+                  },
+                  {
+                    "name": "ap-east-1"
+                  },
+                  {
+                    "name": "ap-south-1"
+                  },
+                  {
+                    "name": "ap-northeast-3"
+                  },
+                  {
+                    "name": "ap-northeast-2"
+                  },
+                  {
+                    "name": "ap-southeast-1"
+                  },
+                  {
+                    "name": "ap-southeast-2"
+                  },
+                  {
+                    "name": "ap-northeast-1"
+                  },
+                  {
+                    "name": "ca-central-1"
+                  },
+                  {
+                    "name": "cn-north-1"
+                  },
+                  {
+                    "name": "cn-northwest-1"
+                  },
+                  {
+                    "name": "eu-central-1"
+                  },
+                  {
+                    "name": "eu-west-1"
+                  },
+                  {
+                    "name": "eu-west-2"
+                  },
+                  {
+                    "name": "eu-south-1"
+                  },
+                  {
+                    "name": "eu-west-3"
+                  },
+                  {
+                    "name": "eu-north-1"
+                  },
+                  {
+                    "name": "me-south-1"
+                  },
+                  {
+                    "name": "sa-east-1"
+                  },
+                  {
+                    "name": "us-gov-east-1"
+                  },
+                  {
+                    "name": "us-gov-west-1"
+                  }
+                ]
+              },
+              "description": "Region of the service",
+              "name": [
+                "--region",
+                "-r"
+              ]
+            },
+            {
+              "args": {
+                "name": "profile name"
+              },
+              "description": "AWS profile to use with the command",
+              "name": [
+                "--aws-profile"
+              ]
+            },
+            {
+              "args": {
+                "name": "app"
+              },
+              "description": "Dashboard app",
+              "name": [
+                "--app"
+              ]
+            },
+            {
+              "args": {
+                "name": "org"
+              },
+              "description": "Dashboard org",
+              "name": [
+                "--org"
+              ]
+            },
+            {
+              "description": "Rely on locally resolved AWS credentials instead of loading them from Dashboard provider settings (applies only to services integrated with Dashboard)",
+              "name": [
+                "--use-local-credentials"
+              ]
+            },
+            {
+              "args": {
+                "name": ".yml file",
+                "template": "filepaths"
+              },
+              "description": "Path to serverless config file",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            },
+            {
+              "args": {
+                "name": "stage"
+              },
+              "description": "Stage of the service",
+              "name": [
+                "--stage",
+                "-s"
+              ]
+            },
+            {
+              "description": "Show help",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            },
+            {
+              "description": "Show version info",
+              "name": [
+                "--version"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "name": "functions",
+              "options": [
+                {
+                  "args": {
+                    "name": "region",
+                    "suggestions": [
+                      {
+                        "name": "us-east-2"
+                      },
+                      {
+                        "name": "us-east-1"
+                      },
+                      {
+                        "name": "us-west-1"
+                      },
+                      {
+                        "name": "us-west-2"
+                      },
+                      {
+                        "name": "af-south-1"
+                      },
+                      {
+                        "name": "ap-east-1"
+                      },
+                      {
+                        "name": "ap-south-1"
+                      },
+                      {
+                        "name": "ap-northeast-3"
+                      },
+                      {
+                        "name": "ap-northeast-2"
+                      },
+                      {
+                        "name": "ap-southeast-1"
+                      },
+                      {
+                        "name": "ap-southeast-2"
+                      },
+                      {
+                        "name": "ap-northeast-1"
+                      },
+                      {
+                        "name": "ca-central-1"
+                      },
+                      {
+                        "name": "cn-north-1"
+                      },
+                      {
+                        "name": "cn-northwest-1"
+                      },
+                      {
+                        "name": "eu-central-1"
+                      },
+                      {
+                        "name": "eu-west-1"
+                      },
+                      {
+                        "name": "eu-west-2"
+                      },
+                      {
+                        "name": "eu-south-1"
+                      },
+                      {
+                        "name": "eu-west-3"
+                      },
+                      {
+                        "name": "eu-north-1"
+                      },
+                      {
+                        "name": "me-south-1"
+                      },
+                      {
+                        "name": "sa-east-1"
+                      },
+                      {
+                        "name": "us-gov-east-1"
+                      },
+                      {
+                        "name": "us-gov-west-1"
+                      }
+                    ]
+                  },
+                  "description": "Region of the service",
+                  "name": [
+                    "--region",
+                    "-r"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "profile name"
+                  },
+                  "description": "AWS profile to use with the command",
+                  "name": [
+                    "--aws-profile"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "app"
+                  },
+                  "description": "Dashboard app",
+                  "name": [
+                    "--app"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "org"
+                  },
+                  "description": "Dashboard org",
+                  "name": [
+                    "--org"
+                  ]
+                },
+                {
+                  "description": "Rely on locally resolved AWS credentials instead of loading them from Dashboard provider settings (applies only to services integrated with Dashboard)",
+                  "name": [
+                    "--use-local-credentials"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": ".yml file",
+                    "template": "filepaths"
+                  },
+                  "description": "Path to serverless config file",
+                  "name": [
+                    "--config",
+                    "-c"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "stage"
+                  },
+                  "description": "Stage of the service",
+                  "name": [
+                    "--stage",
+                    "-s"
+                  ]
+                },
+                {
+                  "description": "Show help",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                },
+                {
+                  "description": "Show version info",
+                  "name": [
+                    "--version"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Display information about the service",
+      "name": "info",
+      "options": [
+        {
+          "description": "Hide secrets from the output (e.g. API Gateway key values)",
+          "name": [
+            "--conceal"
+          ]
+        },
+        {
+          "args": {
+            "name": "region",
+            "suggestions": [
+              {
+                "name": "us-east-2"
+              },
+              {
+                "name": "us-east-1"
+              },
+              {
+                "name": "us-west-1"
+              },
+              {
+                "name": "us-west-2"
+              },
+              {
+                "name": "af-south-1"
+              },
+              {
+                "name": "ap-east-1"
+              },
+              {
+                "name": "ap-south-1"
+              },
+              {
+                "name": "ap-northeast-3"
+              },
+              {
+                "name": "ap-northeast-2"
+              },
+              {
+                "name": "ap-southeast-1"
+              },
+              {
+                "name": "ap-southeast-2"
+              },
+              {
+                "name": "ap-northeast-1"
+              },
+              {
+                "name": "ca-central-1"
+              },
+              {
+                "name": "cn-north-1"
+              },
+              {
+                "name": "cn-northwest-1"
+              },
+              {
+                "name": "eu-central-1"
+              },
+              {
+                "name": "eu-west-1"
+              },
+              {
+                "name": "eu-west-2"
+              },
+              {
+                "name": "eu-south-1"
+              },
+              {
+                "name": "eu-west-3"
+              },
+              {
+                "name": "eu-north-1"
+              },
+              {
+                "name": "me-south-1"
+              },
+              {
+                "name": "sa-east-1"
+              },
+              {
+                "name": "us-gov-east-1"
+              },
+              {
+                "name": "us-gov-west-1"
+              }
+            ]
+          },
+          "description": "Region of the service",
+          "name": [
+            "--region",
+            "-r"
+          ]
+        },
+        {
+          "args": {
+            "name": "profile name"
+          },
+          "description": "AWS profile to use with the command",
+          "name": [
+            "--aws-profile"
+          ]
+        },
+        {
+          "args": {
+            "name": "app"
+          },
+          "description": "Dashboard app",
+          "name": [
+            "--app"
+          ]
+        },
+        {
+          "args": {
+            "name": "org"
+          },
+          "description": "Dashboard org",
+          "name": [
+            "--org"
+          ]
+        },
+        {
+          "description": "Rely on locally resolved AWS credentials instead of loading them from Dashboard provider settings (applies only to services integrated with Dashboard)",
+          "name": [
+            "--use-local-credentials"
+          ]
+        },
+        {
+          "args": {
+            "name": ".yml file",
+            "template": "filepaths"
+          },
+          "description": "Path to serverless config file",
+          "name": [
+            "--config",
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "name": "stage"
+          },
+          "description": "Stage of the service",
+          "name": [
+            "--stage",
+            "-s"
+          ]
+        },
+        {
+          "description": "Show help",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        },
+        {
+          "description": "Show version info",
+          "name": [
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Invoke a deployed function",
+      "name": "invoke",
+      "options": [
+        {
+          "args": {
+            "name": "function"
+          },
+          "description": "Name of the function",
+          "name": [
+            "--function",
+            "-f"
+          ]
+        },
+        {
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Path to JSON or YAML file holding input data",
+          "name": [
+            "--path",
+            "-p"
+          ]
+        },
+        {
+          "args": {
+            "name": "input"
+          },
+          "description": "Input data",
+          "name": [
+            "--data",
+            "-d"
+          ]
+        },
+        {
+          "description": "Flag to pass input data as a raw string",
+          "name": [
+            "--raw"
+          ]
+        },
+        {
+          "args": {
+            "name": "package"
+          },
+          "description": "Context of the service",
+          "name": [
+            "--context"
+          ]
+        },
+        {
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Path to JSON or YAML file holding context data",
+          "name": [
+            "--contextPath"
+          ]
+        },
+        {
+          "args": {
+            "name": "region",
+            "suggestions": [
+              {
+                "name": "us-east-2"
+              },
+              {
+                "name": "us-east-1"
+              },
+              {
+                "name": "us-west-1"
+              },
+              {
+                "name": "us-west-2"
+              },
+              {
+                "name": "af-south-1"
+              },
+              {
+                "name": "ap-east-1"
+              },
+              {
+                "name": "ap-south-1"
+              },
+              {
+                "name": "ap-northeast-3"
+              },
+              {
+                "name": "ap-northeast-2"
+              },
+              {
+                "name": "ap-southeast-1"
+              },
+              {
+                "name": "ap-southeast-2"
+              },
+              {
+                "name": "ap-northeast-1"
+              },
+              {
+                "name": "ca-central-1"
+              },
+              {
+                "name": "cn-north-1"
+              },
+              {
+                "name": "cn-northwest-1"
+              },
+              {
+                "name": "eu-central-1"
+              },
+              {
+                "name": "eu-west-1"
+              },
+              {
+                "name": "eu-west-2"
+              },
+              {
+                "name": "eu-south-1"
+              },
+              {
+                "name": "eu-west-3"
+              },
+              {
+                "name": "eu-north-1"
+              },
+              {
+                "name": "me-south-1"
+              },
+              {
+                "name": "sa-east-1"
+              },
+              {
+                "name": "us-gov-east-1"
+              },
+              {
+                "name": "us-gov-west-1"
+              }
+            ]
+          },
+          "description": "Region of the service",
+          "name": [
+            "--region",
+            "-r"
+          ]
+        },
+        {
+          "args": {
+            "name": "profile name"
+          },
+          "description": "AWS profile to use with the command",
+          "name": [
+            "--aws-profile"
+          ]
+        },
+        {
+          "args": {
+            "name": "app"
+          },
+          "description": "Dashboard app",
+          "name": [
+            "--app"
+          ]
+        },
+        {
+          "args": {
+            "name": "org"
+          },
+          "description": "Dashboard org",
+          "name": [
+            "--org"
+          ]
+        },
+        {
+          "description": "Rely on locally resolved AWS credentials instead of loading them from Dashboard provider settings (applies only to services integrated with Dashboard)",
+          "name": [
+            "--use-local-credentials"
+          ]
+        },
+        {
+          "args": {
+            "name": ".yml file",
+            "template": "filepaths"
+          },
+          "description": "Path to serverless config file",
+          "name": [
+            "--config",
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "name": "stage"
+          },
+          "description": "Stage of the service",
+          "name": [
+            "--stage",
+            "-s"
+          ]
+        },
+        {
+          "description": "Show help",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        },
+        {
+          "description": "Show version info",
+          "name": [
+            "--version"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "name": "local",
+          "options": [
+            {
+              "args": {
+                "name": "function"
+              },
+              "description": "Name of the function",
+              "name": [
+                "--function",
+                "-f"
+              ]
+            },
+            {
+              "args": {
+                "name": "path",
+                "template": "filepaths"
+              },
+              "description": "Path to JSON or YAML file holding input data",
+              "name": [
+                "--path",
+                "-p"
+              ]
+            },
+            {
+              "args": {
+                "name": "input"
+              },
+              "description": "Input data",
+              "name": [
+                "--data",
+                "-d"
+              ]
+            },
+            {
+              "description": "Flag to pass input data as a raw string",
+              "name": [
+                "--raw"
+              ]
+            },
+            {
+              "args": {
+                "name": "package"
+              },
+              "description": "Context of the service",
+              "name": [
+                "--context"
+              ]
+            },
+            {
+              "args": {
+                "name": "path",
+                "template": "filepaths"
+              },
+              "description": "Path to JSON or YAML file holding context data",
+              "name": [
+                "--contextPath"
+              ]
+            },
+            {
+              "args": {
+                "name": "--env VAR1=val1 --env VAR2=val2"
+              },
+              "description": "Override environment variables. e.g. --env VAR1=val1 --env VAR2=val2",
+              "name": [
+                "--env",
+                "-e"
+              ]
+            },
+            {
+              "args": {
+                "name": "region",
+                "suggestions": [
+                  {
+                    "name": "us-east-2"
+                  },
+                  {
+                    "name": "us-east-1"
+                  },
+                  {
+                    "name": "us-west-1"
+                  },
+                  {
+                    "name": "us-west-2"
+                  },
+                  {
+                    "name": "af-south-1"
+                  },
+                  {
+                    "name": "ap-east-1"
+                  },
+                  {
+                    "name": "ap-south-1"
+                  },
+                  {
+                    "name": "ap-northeast-3"
+                  },
+                  {
+                    "name": "ap-northeast-2"
+                  },
+                  {
+                    "name": "ap-southeast-1"
+                  },
+                  {
+                    "name": "ap-southeast-2"
+                  },
+                  {
+                    "name": "ap-northeast-1"
+                  },
+                  {
+                    "name": "ca-central-1"
+                  },
+                  {
+                    "name": "cn-north-1"
+                  },
+                  {
+                    "name": "cn-northwest-1"
+                  },
+                  {
+                    "name": "eu-central-1"
+                  },
+                  {
+                    "name": "eu-west-1"
+                  },
+                  {
+                    "name": "eu-west-2"
+                  },
+                  {
+                    "name": "eu-south-1"
+                  },
+                  {
+                    "name": "eu-west-3"
+                  },
+                  {
+                    "name": "eu-north-1"
+                  },
+                  {
+                    "name": "me-south-1"
+                  },
+                  {
+                    "name": "sa-east-1"
+                  },
+                  {
+                    "name": "us-gov-east-1"
+                  },
+                  {
+                    "name": "us-gov-west-1"
+                  }
+                ]
+              },
+              "description": "Region of the service",
+              "name": [
+                "--region",
+                "-r"
+              ]
+            },
+            {
+              "args": {
+                "name": "profile name"
+              },
+              "description": "AWS profile to use with the command",
+              "name": [
+                "--aws-profile"
+              ]
+            },
+            {
+              "args": {
+                "name": "app"
+              },
+              "description": "Dashboard app",
+              "name": [
+                "--app"
+              ]
+            },
+            {
+              "args": {
+                "name": "org"
+              },
+              "description": "Dashboard org",
+              "name": [
+                "--org"
+              ]
+            },
+            {
+              "description": "Rely on locally resolved AWS credentials instead of loading them from Dashboard provider settings (applies only to services integrated with Dashboard)",
+              "name": [
+                "--use-local-credentials"
+              ]
+            },
+            {
+              "args": {
+                "name": ".yml file",
+                "template": "filepaths"
+              },
+              "description": "Path to serverless config file",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            },
+            {
+              "args": {
+                "name": "stage"
+              },
+              "description": "Stage of the service",
+              "name": [
+                "--stage",
+                "-s"
+              ]
+            },
+            {
+              "description": "Show help",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            },
+            {
+              "description": "Show version info",
+              "name": [
+                "--version"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Output the logs of a deployed function",
+      "name": "logs"
+    },
+    {
+      "description": "Show metrics for a specific function",
+      "name": "metrics"
+    },
+    {
+      "description": "Remove Serverless service and all resources",
+      "name": "remove"
+    },
+    {
+      "description": "Rollback the Serverless service to a specific deployment",
+      "name": "rollback"
+    },
+    {
+      "description": "Develop a Serverless application in the cloud",
+      "name": "studio"
+    },
+    {
+      "description": "Run HTTP tests",
+      "name": "test"
+    },
+    {
+      "description": "Package a Serverless service",
+      "name": "package"
+    },
+    {
+      "description": "Handle plugins",
+      "name": "plugin"
+    },
+    {
+      "description": "Print your compiled and resolved config file",
+      "name": "print"
+    },
+    {
+      "description": "Create new Serverless service",
+      "name": "create"
+    },
+    {
+      "description": "Open the Serverless dashboard",
+      "name": "dashboard"
+    },
+    {
+      "description": "Generate event",
+      "name": "generate-event"
+    },
+    {
+      "description": "Install a Serverless service from GitHub or a plugin from the Serverless registry",
+      "name": "install"
+    },
+    {
+      "description": "Login or sign up for Serverless",
+      "name": "login"
+    },
+    {
+      "description": "Logout from Serverless",
+      "name": "logout"
+    },
+    {
+      "description": "Get/list value of dashboard deployment profile parameter",
+      "name": "output"
+    },
+    {
+      "description": "Get/list value of dashboard service output",
+      "name": "param"
+    },
+    {
+      "description": "Enable or disable stats",
+      "name": "slstats"
+    }
+  ]
+}

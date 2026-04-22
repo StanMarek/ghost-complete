@@ -1,0 +1,1808 @@
+{
+  "description": "Configuration tool for network settings in System Preferences",
+  "name": "networksetup",
+  "subcommands": [
+    {
+      "description": "Displays a list of network services in the order they are contacted for a connection, along with the corresponding port and device for each",
+      "name": "-listnetworkserviceorder"
+    },
+    {
+      "description": "Displays a list of all the network services on the server's hardware ports",
+      "name": "-listallnetworkservices"
+    },
+    {
+      "description": "Displays list of hardware ports with corresponding device name and ethernet address",
+      "name": "-listallhardwareports"
+    },
+    {
+      "description": "Detects new network hardware and creates a default network service on the hardware",
+      "name": "-detectnewhardware"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listallhardwareports"
+            ]
+          }
+        ],
+        "name": "hardwareport"
+      },
+      "description": "Displays ethernet (or Wi-Fi) address for hardwareport or device specified",
+      "name": "-getmacaddress"
+    },
+    {
+      "description": "Displays the computer name",
+      "name": "-getcomputername"
+    },
+    {
+      "args": {
+        "description": "The new name for your computer on the network",
+        "name": "computername"
+      },
+      "description": "Sets computer name to <computername>. This name is used by AFP",
+      "name": "-setcomputername"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listallnetworkservices"
+            ]
+          }
+        ],
+        "name": "networkservice"
+      },
+      "description": "Displays the IP address, subnet mask, router, and hardware address for the <networkservice> that you specify",
+      "name": "-getinfo"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listallnetworkservices"
+              ]
+            }
+          ],
+          "name": "networkservice"
+        },
+        {
+          "description": "The IP address to set for the network service",
+          "name": "ip"
+        },
+        {
+          "description": "The subnet mask to apply",
+          "name": "subnet"
+        },
+        {
+          "description": "The router address to set",
+          "name": "router"
+        }
+      ],
+      "description": "Set the TCP/IP configuration for <networkservice> to manual with IP address set to <ip>, Subnet Mask set to <subnet>, and Router address set to <router>",
+      "name": "-setmanual"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listallnetworkservices"
+              ]
+            }
+          ],
+          "name": "networkservice"
+        },
+        {
+          "description": "Optional DHCP client ID. Use 'Empty' to clear it",
+          "isOptional": true,
+          "name": "clientid"
+        }
+      ],
+      "description": "Use this command to set the TCP/IP configuration for the specified <networkservice> to use DHCP. The client ID is optional. Specify \"Empty\" for [clientid] to clear the DHCP client id",
+      "name": "-setdhcp"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listallnetworkservices"
+            ]
+          }
+        ],
+        "name": "networkservice"
+      },
+      "description": "Use this command to set the TCP/IP configuration for the specified <networkservice> to use BOOTP",
+      "name": "-setbootp"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listallnetworkservices"
+              ]
+            }
+          ],
+          "name": "networkservice"
+        },
+        {
+          "description": "The IP address to set for the network service",
+          "name": "ip"
+        }
+      ],
+      "description": "Use this command to specify a manual IP address to use for DHCP for the specified <networkservice>",
+      "name": "-setmanualwithdhcprouter"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listallnetworkservices"
+            ]
+          }
+        ],
+        "name": "networkservice"
+      },
+      "description": "Use this command to display the list of additional IPv4 routes configured for the service",
+      "name": "-getadditionalroutes"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listallnetworkservices"
+              ]
+            }
+          ],
+          "name": "networkservice"
+        },
+        {
+          "description": "One or more tuples of (destination address, subnet mask, gateway address). Specify 'Empty' to clear routes",
+          "isOptional": true,
+          "isVariadic": true,
+          "name": "dest mask gate"
+        }
+      ],
+      "description": "Use this command to set the list of IPv4 additional routes configured for the service. Each route is specified as a (destination address, subnet mask, gateway address) tuple. Specifying no tuples clears the list of routes",
+      "name": "-setadditionalroutes"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listallnetworkservices"
+            ]
+          }
+        ],
+        "name": "networkservice"
+      },
+      "description": "Use this command to turn IPv4 off on the specified <networkservice>",
+      "name": "-setv4off"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listallnetworkservices"
+            ]
+          }
+        ],
+        "name": "networkservice"
+      },
+      "description": "Use this command to turn IPv6 off on the specified <networkservice>",
+      "name": "-setv6off"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listallnetworkservices"
+            ]
+          }
+        ],
+        "name": "networkservice"
+      },
+      "description": "Use this command to set IPv6 to get its addresses automatically for <networkservice>",
+      "name": "-setv6automatic"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listallnetworkservices"
+            ]
+          }
+        ],
+        "name": "networkservice"
+      },
+      "description": "Use this command to set IPv6 to only use link local for <networkservice>",
+      "name": "-setv6linklocal"
+    },
+    {
+      "args": [
+        {
+          "description": "The IPv6 address to assign",
+          "name": "ip"
+        },
+        {
+          "description": "The prefix length for the IPv6 address (e.g., 64)",
+          "name": "prefixlength"
+        },
+        {
+          "description": "The IPv6 address of the router",
+          "name": "router"
+        }
+      ],
+      "description": "Use this command to set IPv6 to get its addresses manually for <networkservice>. Specify the ip address, the prefix length and the router",
+      "name": "-setv6manual"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listallnetworkservices"
+            ]
+          }
+        ],
+        "name": "networkservice"
+      },
+      "description": "Use this command to display the list of additional IPv6 routes configured for the service",
+      "name": "-getv6additionalroutes"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listallnetworkservices"
+              ]
+            }
+          ],
+          "name": "networkservice"
+        },
+        {
+          "description": "The list of routes, each specified as a tuple of destination address, prefix length, and gateway address. Provide multiple routes or omit this to clear all routes",
+          "isOptional": true,
+          "isVariadic": true,
+          "name": "dest prefixlength gate"
+        }
+      ],
+      "description": "Use this command to set the list of additional routes configured for the service. Each route is specified as a (destination address, prefix length, gateway address) tuple. Specifying no tuples clears the list of routes",
+      "name": "-setv6additionalroutes"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listallnetworkservices"
+            ]
+          }
+        ],
+        "name": "networkservice"
+      },
+      "description": "Displays DNS info for <networkservice>",
+      "name": "-getdnsservers"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listallnetworkservices"
+              ]
+            }
+          ],
+          "name": "networkservice"
+        },
+        {
+          "description": "IP addresses of DNS servers. Use 'empty' to clear all DNS entries",
+          "isVariadic": true,
+          "name": "dns"
+        }
+      ],
+      "description": "Use this command to specify the IP addresses of servers you want the specified <networkservice> to use to resolve domain names. You can list any number of servers (replace dns1, dns2, and so on with the IP addresses of domain name servers). If you want to clear all DNS entries for the specified network service, type \"empty\" in place of the DNS server names",
+      "name": "-setdnsservers"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listallnetworkservices"
+            ]
+          }
+        ],
+        "name": "networkservice"
+      },
+      "description": "Displays Domain Name info for <networkservice>",
+      "name": "-getsearchdomains"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listallnetworkservices"
+              ]
+            }
+          ],
+          "name": "networkservice"
+        },
+        {
+          "description": "List of search domains. Use 'empty' to clear all existing domains",
+          "isVariadic": true,
+          "name": "domain"
+        }
+      ],
+      "description": "Use this command to designate the search domain for the specified <networkservice>. You can list any number of search domains (replace domain1, domain2, and so on with the name of a local domain). If you want to clear all search domain entries for the specified network service, type “empty” in place of the domain name",
+      "name": "-setsearchdomains"
+    },
+    {
+      "args": {
+        "description": "The name of the new 6 to 4 service to be created",
+        "name": "newnetworkservicename"
+      },
+      "description": "Use this command to create a new 6 to 4 service with name <newnetworkservicename>",
+      "name": "-create6to4service"
+    },
+    {
+      "args": {
+        "description": "The name of the 6 to 4 service to be configured for automatic relay address retrieval",
+        "name": "newnetworkservicename"
+      },
+      "description": "Use this command to set the 6 to 4 service such that it will get the relay address automatically",
+      "name": "-set6to4automatic"
+    },
+    {
+      "args": [
+        {
+          "description": "The name of the 6 to 4 service to be configured",
+          "name": "newnetworkservicename"
+        },
+        {
+          "description": "The manually specified relay address to be used by the 6 to 4 service",
+          "name": "relayaddress"
+        }
+      ],
+      "description": "Use this command to set the 6 to 4 service such that it will get the relay address manually. Specify the <relayaddress> that you would like to set",
+      "name": "-set6to4manual"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listallnetworkservices"
+            ]
+          }
+        ],
+        "name": "networkservice"
+      },
+      "description": "Displays Web proxy (server, port, enabled value) info for <networkservice>",
+      "name": "-getwebproxy"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listallnetworkservices"
+              ]
+            }
+          ],
+          "name": "networkservice"
+        },
+        {
+          "description": "The domain name or IP address of the proxy server",
+          "name": "domain"
+        },
+        {
+          "description": "The port number for the proxy server",
+          "name": "portnumber"
+        },
+        {
+          "description": "Specify whether proxy authentication is required",
+          "isOptional": true,
+          "name": "authenticated",
+          "suggestions": [
+            {
+              "description": "Specify <on> for <authenticated> to enable authenticated proxy support",
+              "name": "on"
+            },
+            {
+              "description": "Specify <off> for <authenticated> to disable authenticated proxy support",
+              "name": "off"
+            }
+          ]
+        },
+        {
+          "description": "The username for proxy authentication",
+          "name": "username"
+        },
+        {
+          "description": "The password for proxy authentication",
+          "name": "password"
+        }
+      ],
+      "description": "Set Web proxy for <networkservice> with <domain> and <port number>. Turns proxy on. Optionally, specify <on> or <off> for <authenticated> to enable and disable authenticated proxy support. Specify <username> and <password> if you turn authenticated proxy support on",
+      "name": "-setwebproxy"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listallnetworkservices"
+              ]
+            }
+          ],
+          "name": "networkservice"
+        },
+        {
+          "name": "on | off",
+          "suggestions": [
+            {
+              "name": "on"
+            },
+            {
+              "name": "off"
+            }
+          ]
+        }
+      ],
+      "description": "Set Web proxy on <networkservice> to either <on> or <off>",
+      "name": "-setwebproxystate"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listallnetworkservices"
+            ]
+          }
+        ],
+        "name": "networkservice"
+      },
+      "description": "Displays Secure Web proxy (server, port, enabled value) info for <networkservice>",
+      "name": "-getsecurewebproxy"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listallnetworkservices"
+              ]
+            }
+          ],
+          "name": "networkservice"
+        },
+        {
+          "description": "The proxy server's domain or IP address",
+          "name": "domain"
+        },
+        {
+          "description": "The port number for the proxy server",
+          "name": "portnumber"
+        },
+        {
+          "description": "Specify whether proxy authentication is required",
+          "isOptional": true,
+          "name": "authenticated",
+          "suggestions": [
+            {
+              "description": "Specify <on> for <authenticated> to enable authenticated proxy support",
+              "name": "on"
+            },
+            {
+              "description": "Specify <off> for <authenticated> to disable authenticated proxy support",
+              "name": "off"
+            }
+          ]
+        },
+        {
+          "description": "The username for proxy authentication",
+          "name": "username"
+        },
+        {
+          "description": "The password for proxy authentication",
+          "name": "password"
+        }
+      ],
+      "description": "Set Secure Web proxy for <networkservice> with <domain> and <port number>. Turns proxy on. Optionally, specify <on> or <off> for <authenticated> to enable and disable authenticated proxy support. Specify <username> and <password> if you turn authenticated proxy support on",
+      "name": "-setsecurewebproxy"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listallnetworkservices"
+              ]
+            }
+          ],
+          "name": "networkservice"
+        },
+        {
+          "name": "on | off",
+          "suggestions": [
+            {
+              "name": "on"
+            },
+            {
+              "name": "off"
+            }
+          ]
+        }
+      ],
+      "description": "Set Secure Web proxy on <networkservice> to either <on> or <off>",
+      "name": "-setsecurewebproxystate"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listallnetworkservices"
+            ]
+          }
+        ],
+        "name": "networkservice"
+      },
+      "description": "Displays SOCKS Firewall proxy (server, port, enabled value) info for <networkservice>",
+      "name": "-getsocksfirewallproxy"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listallnetworkservices"
+              ]
+            }
+          ],
+          "name": "networkservice"
+        },
+        {
+          "description": "The proxy server's domain or IP address",
+          "name": "domain"
+        },
+        {
+          "description": "The port number for the proxy server",
+          "name": "portnumber"
+        },
+        {
+          "description": "Specify whether proxy authentication is required",
+          "isOptional": true,
+          "name": "authenticated",
+          "suggestions": [
+            {
+              "description": "Specify <on> for <authenticated> to enable authenticated proxy support",
+              "name": "on"
+            },
+            {
+              "description": "Specify <off> for <authenticated> to disable authenticated proxy support",
+              "name": "off"
+            }
+          ]
+        },
+        {
+          "description": "The username for proxy authentication",
+          "name": "username"
+        },
+        {
+          "description": "The password for proxy authentication",
+          "name": "password"
+        }
+      ],
+      "description": "Set SOCKS Firewall proxy for <networkservice> with <domain> and <port number>. Turns proxy on.  Optionally, specify <on> or <off> for <authenticated> to enable and disable authenticated proxy support. Specify <username> and <password> if you turn authenticated proxy support on",
+      "name": "-setsocksfirewallproxy"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listallnetworkservices"
+              ]
+            }
+          ],
+          "name": "networkservice"
+        },
+        {
+          "name": "on | off",
+          "suggestions": [
+            {
+              "name": "on"
+            },
+            {
+              "name": "off"
+            }
+          ]
+        }
+      ],
+      "description": "Set SOCKS Firewall proxy to  either <on> or <off>",
+      "name": "-setsocksfirewallproxystate"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listallnetworkservices"
+            ]
+          }
+        ],
+        "name": "networkservice"
+      },
+      "description": "Displays Bypass Domain Names for <networkservice>",
+      "name": "-getproxybypassdomains"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listallnetworkservices"
+              ]
+            }
+          ],
+          "name": "networkservice"
+        },
+        {
+          "description": "Domains to bypass proxy for. Use 'Empty' to clear all bypass domains",
+          "isVariadic": true,
+          "name": "domain"
+        }
+      ],
+      "description": "Set the Bypass Domain Name Servers for <networkservice> to <domain1> [domain2] [...]. Any number of Domain Name servers can be specified. Specify \"Empty\" for <domain1> to clear all Domain Name entries",
+      "name": "-setproxybypassdomains"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listallnetworkservices"
+            ]
+          }
+        ],
+        "name": "networkservice"
+      },
+      "description": "Displays Proxy Auto Discover for <networkservice>",
+      "name": "-getproxyautodiscovery"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listallnetworkservices"
+              ]
+            }
+          ],
+          "name": "networkservice"
+        },
+        {
+          "name": "on | off",
+          "suggestions": [
+            {
+              "name": "on"
+            },
+            {
+              "name": "off"
+            }
+          ]
+        }
+      ],
+      "description": "Set Proxy Auto Discover for <networkservice> to either <on> or <off>",
+      "name": "-setproxyautodiscovery"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listallnetworkservices"
+              ]
+            }
+          ],
+          "name": "networkservice"
+        },
+        {
+          "description": "The URL of the proxy auto-config (PAC) file",
+          "name": "url"
+        }
+      ],
+      "description": "Set proxy auto-config to url for <networkservice> and enable it",
+      "name": "-setautoproxyurl"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listallnetworkservices"
+            ]
+          }
+        ],
+        "name": "networkservice"
+      },
+      "description": "Displays proxy auto-config (url, enabled) info for <networkservice>",
+      "name": "-getautoproxyurl"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listallhardwareports"
+            ]
+          }
+        ],
+        "name": "hardwareport"
+      },
+      "description": "Displays current Wi-Fi Network",
+      "name": "-getairportnetwork"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listallhardwareports"
+              ]
+            }
+          ],
+          "name": "hardwareport"
+        },
+        {
+          "description": "The name of the Wi-Fi network to connect to",
+          "name": "network"
+        },
+        {
+          "description": "Optional password for the Wi-Fi network",
+          "isOptional": true,
+          "name": "password"
+        }
+      ],
+      "description": "Set Wi-Fi Network to <network> using optional [password] if specified",
+      "name": "-setairportnetwork"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listallhardwareports"
+            ]
+          }
+        ],
+        "name": "hardwareport"
+      },
+      "description": "Displays whether Wi-Fi power is on or off",
+      "name": "-getairportpower"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listallhardwareports"
+              ]
+            }
+          ],
+          "name": "hardwareport"
+        },
+        {
+          "name": "on | off",
+          "suggestions": [
+            {
+              "name": "on"
+            },
+            {
+              "name": "off"
+            }
+          ]
+        }
+      ],
+      "description": "Set Wi-Fi power to either <on> or <off>",
+      "name": "-setairportpower"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listallhardwareports"
+            ]
+          }
+        ],
+        "name": "hardwareport"
+      },
+      "description": "List the preferred wireless networks for <hardwareport>",
+      "name": "-listpreferredwirelessnetworks"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listallhardwareports"
+              ]
+            }
+          ],
+          "name": "hardwareport"
+        },
+        {
+          "description": "The name of the Wi-Fi network to add",
+          "name": "network"
+        },
+        {
+          "description": "The position in the preferred list",
+          "name": "index"
+        },
+        {
+          "description": "The security type of the network",
+          "name": "securitytype",
+          "suggestions": [
+            {
+              "description": "No security",
+              "name": "OPEN"
+            },
+            {
+              "description": "WPA Personal",
+              "name": "WPA"
+            },
+            {
+              "description": "WPA2 Personal",
+              "name": "WPA2"
+            },
+            {
+              "description": "WPA/WPA2 Personal",
+              "name": "WPA/WPA2"
+            },
+            {
+              "description": "WPA Enterprise",
+              "name": "WPAE"
+            },
+            {
+              "description": "WPA2 Enterprise",
+              "name": "WPA2E"
+            },
+            {
+              "description": "WPA/WPA2 Enterprise",
+              "name": "WPAE/WPA2E"
+            },
+            {
+              "description": "Plain WEP",
+              "name": "WEP"
+            },
+            {
+              "description": "802.1X WEP",
+              "name": "8021XWEP"
+            }
+          ]
+        },
+        {
+          "description": "Optional password for the network",
+          "isOptional": true,
+          "name": "password"
+        }
+      ],
+      "description": "Add wireless network named <network> to preferred list for <hardwareport> at <index>. Store the optional password in the keychain",
+      "name": "-addpreferredwirelessnetworkatindex"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listallhardwareports"
+              ]
+            }
+          ],
+          "name": "hardwareport"
+        },
+        {
+          "description": "The name of the Wi-Fi network to remove",
+          "name": "network"
+        }
+      ],
+      "description": "Remove <network> from the preferred wireless network list for <hardwareport>",
+      "name": "-removepreferredwirelessnetwork"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listallhardwareports"
+            ]
+          }
+        ],
+        "name": "hardwareport"
+      },
+      "description": "Remove all networks from the preferred wireless network list for <hardwareport>",
+      "name": "-removeallpreferredwirelessnetworks"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listallnetworkservices"
+            ]
+          }
+        ],
+        "name": "networkservice"
+      },
+      "description": "Displays whether a service is on or off (enabled or disabled)",
+      "name": "-getnetworkserviceenabled"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listallnetworkservices"
+              ]
+            }
+          ],
+          "name": "networkservice"
+        },
+        {
+          "name": "on | off",
+          "suggestions": [
+            {
+              "name": "on"
+            },
+            {
+              "name": "off"
+            }
+          ]
+        }
+      ],
+      "description": "Use this command to turn the specified network service on or off (enable or disable)",
+      "name": "-setnetworkserviceenabled"
+    },
+    {
+      "args": [
+        {
+          "description": "The name for the new network service",
+          "name": "networkservicename"
+        },
+        {
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listallhardwareports"
+              ]
+            }
+          ],
+          "name": "hardwareport"
+        }
+      ],
+      "description": "Create a service named <networkservice> on port <hardwareport>. The new service will be enabled by default",
+      "name": "-createnetworkservice"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listallnetworkservices"
+              ]
+            }
+          ],
+          "name": "networkservice"
+        },
+        {
+          "description": "The new name for the network service",
+          "name": "newnetworkservicename"
+        }
+      ],
+      "description": "Use this command to rename the specified network service <networkservice> to <newnetworkservicename>",
+      "name": "-renamenetworkservice"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listallnetworkservices"
+              ]
+            }
+          ],
+          "name": "networkservice"
+        },
+        {
+          "description": "The new name for the duplicated network service",
+          "name": "newnetworkservicename"
+        }
+      ],
+      "description": "Use this command to duplicate an existing network service <networkservice> and rename it to the specified name <newnetworkservicename>",
+      "name": "-duplicatenetworkservice"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listallnetworkservices"
+            ]
+          }
+        ],
+        "name": "networkservice"
+      },
+      "description": "Use this command to delete a network service <networkservice>. You cannot use this command to delete the last remaining service for a hardware port. To do so, you use the -setnetworkserviceenabled command",
+      "name": "-removenetworkservice"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listallnetworkservices"
+            ]
+          }
+        ],
+        "isVariadic": true,
+        "name": "service"
+      },
+      "description": "Use this command to designate the order network services are contacted on the specified hardware port. Name the network you want contacted first, then the second, and so on. Use \"listnetworkserviceorder\" to view current service order. Note: use quotes around service names which contain spaces (ie. \"Built-in Ethernet\")",
+      "name": "-ordernetworkservices"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listallhardwareports"
+            ]
+          }
+        ],
+        "name": "hardwarePort"
+      },
+      "description": "Set hardwareport or device specified back to automatically setting the MTU and Media",
+      "name": "-setMTUAndMediaAutomatically"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listallhardwareports"
+            ]
+          }
+        ],
+        "name": "hardwarePort"
+      },
+      "description": "Get the MTU value for hardwareport or device specified",
+      "name": "-getMTU"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listallhardwareports"
+              ]
+            }
+          ],
+          "name": "hardwarePort"
+        },
+        {
+          "description": "The MTU value to set, typically an integer representing the maximum packet size",
+          "name": "value"
+        }
+      ],
+      "description": "Set MTU for hardwareport or device specified",
+      "name": "-setMTU"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listallhardwareports"
+            ]
+          }
+        ],
+        "name": "hardwareport"
+      },
+      "description": "List the valid MTU range for hardwareport or device specified",
+      "name": "-listValidMTURange"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listallhardwareports"
+            ]
+          }
+        ],
+        "name": "hardwareport"
+      },
+      "description": "Show both the current setting for media and the active media on hardwareport or device specified",
+      "name": "-getMedia"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listallhardwareports"
+              ]
+            }
+          ],
+          "name": "hardwarePort"
+        },
+        {
+          "description": "The media subtype to set for the hardware port or device",
+          "name": "subtype"
+        },
+        {
+          "description": "Additional options relevant to the <subtype>. Can include multiple values depending on the subtype",
+          "isOptional": true,
+          "isVariadic": true,
+          "name": "option"
+        }
+      ],
+      "description": "Set media for hardwareport or device specified to subtype. Specify optional [option1] and additional options depending on subtype. Any number of valid options can be specified",
+      "name": "-setMedia"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listallhardwareports"
+            ]
+          }
+        ],
+        "name": "hardwareport"
+      },
+      "description": "List valid media options for hardwareport or device name. Enumerates available subtypes and options per subtype",
+      "name": "-listValidMedia"
+    },
+    {
+      "args": [
+        {
+          "description": "The name to assign to the new VLAN",
+          "name": "name"
+        },
+        {
+          "description": "The parent device over which the VLAN will be created",
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listallhardwareports"
+              ]
+            }
+          ],
+          "name": "parentdevice"
+        },
+        {
+          "description": "The VLAN tag to assign to the new VLAN",
+          "name": "tag"
+        }
+      ],
+      "description": "Create a VLAN with the name <name> over the parent device <parentdevice> and with the tag <tag>",
+      "name": "-createVLAN"
+    },
+    {
+      "args": [
+        {
+          "description": "The name of the VLAN to be deleted",
+          "name": "name"
+        },
+        {
+          "description": "The parent device on which the VLAN is configured",
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listallhardwareports"
+              ]
+            }
+          ],
+          "name": "parentdevice"
+        },
+        {
+          "description": "The VLAN tag of the VLAN to be deleted",
+          "name": "tag"
+        }
+      ],
+      "description": "Delete the VLAN with the name <name> over the parent device <parentdevice> and with the tag <tag>",
+      "name": "-deleteVLAN"
+    },
+    {
+      "description": "List the VLANs that have been created",
+      "name": "-listVLANs"
+    },
+    {
+      "description": "List the devices that support VLANs",
+      "name": "-listdevicesthatsupportVLAN"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listallhardwareports"
+            ]
+          }
+        ],
+        "name": "device"
+      },
+      "description": "Displays YES if the device can be added to a bond. NO if it cannot",
+      "name": "-isBondSupported"
+    },
+    {
+      "args": [
+        {
+          "description": "The user-defined name for the new bond",
+          "name": "name"
+        },
+        {
+          "description": "The devices to include in the bond. Any number of devices can be specified",
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listallhardwareports"
+              ]
+            }
+          ],
+          "isOptional": true,
+          "isVariadic": true,
+          "name": "device"
+        }
+      ],
+      "description": "Create a bond with the user-defined-name name and optionally add any listed devices if they support bonding",
+      "name": "-createBond"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=/^interface name: (.*?)\\n.*?user-defined-name: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:\"Bonds\"});return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listBonds"
+            ]
+          }
+        ],
+        "name": "bond"
+      },
+      "description": "Delete the bond with the specified device-name",
+      "name": "-deleteBond"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listallhardwareports"
+              ]
+            }
+          ],
+          "name": "device"
+        },
+        {
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=/^interface name: (.*?)\\n.*?user-defined-name: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:\"Bonds\"});return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listBonds"
+              ]
+            }
+          ],
+          "name": "bond"
+        }
+      ],
+      "description": "Add device to bond",
+      "name": "-addDeviceToBond"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listallhardwareports"
+              ]
+            }
+          ],
+          "name": "device"
+        },
+        {
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=/^interface name: (.*?)\\n.*?user-defined-name: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:\"Bonds\"});return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listBonds"
+              ]
+            }
+          ],
+          "name": "bond"
+        }
+      ],
+      "description": "Remove device from bond",
+      "name": "-removeDeviceFromBond"
+    },
+    {
+      "description": "List of all bonds",
+      "name": "-listBonds"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=/^interface name: (.*?)\\n.*?user-defined-name: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:\"Bonds\"});return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listBonds"
+            ]
+          }
+        ],
+        "name": "bond"
+      },
+      "description": "Display the status of the specified bond",
+      "name": "-showBondStatus"
+    },
+    {
+      "description": "List all PPPoE services in the current set",
+      "name": "-listpppoeservices"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"PPPoE Service\"});return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listpppoeservices"
+            ]
+          }
+        ],
+        "name": "name"
+      },
+      "description": "Display the status of the PPPoE service with the specified name",
+      "name": "-showpppoestatus"
+    },
+    {
+      "args": [
+        {
+          "description": "The network device to create the PPPoE service on",
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listallhardwareports"
+              ]
+            }
+          ],
+          "name": "device"
+        },
+        {
+          "description": "The name for the new PPPoE service",
+          "name": "name"
+        },
+        {
+          "description": "The PPPoE account name",
+          "name": "account"
+        },
+        {
+          "description": "The PPPoE account password",
+          "name": "password"
+        },
+        {
+          "description": "Optional name for the PPPoE service",
+          "isOptional": true,
+          "name": "pppoeName"
+        }
+      ],
+      "description": "Create a PPPoE service on the specified device with the service name specified",
+      "name": "-createpppoeservice"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"PPPoE Service\"});return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listpppoeservices"
+            ]
+          }
+        ],
+        "name": "service"
+      },
+      "description": "Delete the service",
+      "name": "-deletepppoeservice"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"PPPoE Service\"});return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listpppoeservices"
+              ]
+            }
+          ],
+          "name": "service"
+        },
+        {
+          "description": "The PPPoE account name",
+          "name": "account"
+        }
+      ],
+      "description": "Set the account name for the service",
+      "name": "-setpppoeaccountname"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"PPPoE Service\"});return r}",
+              "requires_js": true,
+              "script": [
+                "networksetup",
+                "-listpppoeservices"
+              ]
+            }
+          ],
+          "name": "service"
+        },
+        {
+          "description": "The PPPoE account password",
+          "name": "password"
+        }
+      ],
+      "description": "Set the password for the service",
+      "name": "-setpppoepassword"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"PPPoE Service\"});return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listpppoeservices"
+            ]
+          }
+        ],
+        "name": "service"
+      },
+      "description": "Connect the service",
+      "name": "-connectpppoeservice"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"PPPoE Service\"});return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listpppoeservices"
+            ]
+          }
+        ],
+        "name": "service"
+      },
+      "description": "Disconnect the service",
+      "name": "-disconnectpppoeservice"
+    },
+    {
+      "description": "List all network locations",
+      "name": "-listlocations"
+    },
+    {
+      "description": "Display the name of the current set",
+      "name": "-getcurrentlocation"
+    },
+    {
+      "args": [
+        {
+          "description": "The name for the new location",
+          "name": "location"
+        },
+        {
+          "description": "Specify 'true' to populate with default services or 'false' to create an empty location",
+          "isOptional": true,
+          "name": "populate"
+        }
+      ],
+      "description": "Create a set with the user-defined-name name and optionally populate it with the default services",
+      "name": "-createlocation"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"Network Location\"});return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listlocations"
+            ]
+          }
+        ],
+        "name": "location"
+      },
+      "description": "Delete the set",
+      "name": "-deletelocation"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"Network Location\"});return r}",
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listlocations"
+            ]
+          }
+        ],
+        "name": "location"
+      },
+      "description": "Make the specified set the current set",
+      "name": "-switchtolocation"
+    },
+    {
+      "description": "Displays version of networksetup tool",
+      "name": "-version"
+    },
+    {
+      "description": "Displays a list of all the commands available in the Network Setup Tool, with explanatory information",
+      "name": "-help"
+    },
+    {
+      "description": "Displays a list of commands with no detail",
+      "name": "-printcommands"
+    }
+  ]
+}

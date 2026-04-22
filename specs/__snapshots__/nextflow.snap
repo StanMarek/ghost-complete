@@ -1,0 +1,1595 @@
+{
+  "description": "Nextflow enables scalable and reproducible scientific workflows using software containers. It allows the adaptation of pipelines written in the most common scripting languages",
+  "name": "nextflow",
+  "options": [
+    {
+      "args": {
+        "name": "configuration file",
+        "template": [
+          "filepaths"
+        ]
+      },
+      "description": "Use the specified configuration file(s) overriding any defaults",
+      "name": [
+        "-C"
+      ]
+    },
+    {
+      "args": {
+        "name": "custom Java system property"
+      },
+      "description": "Set JVM properties",
+      "name": [
+        "-D"
+      ]
+    },
+    {
+      "description": "Execute nextflow in background",
+      "name": [
+        "-bg"
+      ]
+    },
+    {
+      "args": {
+        "name": "configuration file",
+        "template": [
+          "filepaths"
+        ]
+      },
+      "description": "Add the specified file to configuration set",
+      "name": [
+        "-c",
+        "-config"
+      ]
+    },
+    {
+      "description": "Launch nextflow via Docker (experimental)",
+      "name": [
+        "-d",
+        "-dockerize"
+      ]
+    },
+    {
+      "description": "Print this help",
+      "name": [
+        "-h"
+      ]
+    },
+    {
+      "description": "Set nextflow log file path",
+      "name": [
+        "-log"
+      ]
+    },
+    {
+      "description": "Do not print information messages",
+      "name": [
+        "-q",
+        "-quiet"
+      ]
+    },
+    {
+      "description": "Send logs to syslog server (eg. localhost:514)",
+      "name": [
+        "-syslog"
+      ]
+    },
+    {
+      "description": "Print the program version",
+      "name": [
+        "-v",
+        "-version"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "bash",
+              "-c",
+              "cat .nextflow/history | awk '{ print $4 }'"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "name": "run_name|session_id"
+      },
+      "description": "Clean up project cache and work directories (Default: last run)",
+      "name": "clean",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "bash",
+                  "-c",
+                  "cat .nextflow/history | awk '{ print $4 }'"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty",
+                  "trim"
+                ]
+              }
+            ],
+            "name": "run name"
+          },
+          "description": "Clean up runs executed after the specified one",
+          "name": [
+            "-after"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "bash",
+                  "-c",
+                  "cat .nextflow/history | awk '{ print $4 }'"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty",
+                  "trim"
+                ]
+              }
+            ],
+            "name": "run name"
+          },
+          "description": "Clean up runs executed before the specified one",
+          "name": [
+            "-before"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "bash",
+                  "-c",
+                  "cat .nextflow/history | awk '{ print $4 }'"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty",
+                  "trim"
+                ]
+              }
+            ],
+            "name": "run name"
+          },
+          "description": "Clean up all runs except the specified one",
+          "name": [
+            "-but"
+          ]
+        },
+        {
+          "description": "Print names of file to be removed without deleting them (Default: false)",
+          "name": [
+            "-n",
+            "-dry-run"
+          ]
+        },
+        {
+          "description": "Force clean command (Default: false)",
+          "name": [
+            "-f",
+            "-force"
+          ]
+        },
+        {
+          "description": "Print the command usage (Default: false)",
+          "name": [
+            "-h",
+            "-help"
+          ]
+        },
+        {
+          "description": "Removes only temporary files but retains execution log entries and metadata (Default: false)",
+          "name": [
+            "-k",
+            "-keep-logs"
+          ]
+        },
+        {
+          "description": "Do not print names of files removed (Default: false)",
+          "name": [
+            "-q",
+            "-quiet"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "namespace/repository_name"
+      },
+      "description": "Clone a project into a folder",
+      "name": "clone",
+      "options": [
+        {
+          "description": "Print the command usage (Default: false)",
+          "name": [
+            "-h",
+            "-help"
+          ]
+        },
+        {
+          "args": {
+            "name": "gitlab|github|bitbucket"
+          },
+          "description": "Service hub where the project is hosted (Default: GitHub)",
+          "name": [
+            "-hub"
+          ]
+        },
+        {
+          "args": {
+            "name": "revision"
+          },
+          "description": "Revision to clone - It can be a git branch, tag or revision number",
+          "name": [
+            "-r"
+          ]
+        },
+        {
+          "args": {
+            "name": "username"
+          },
+          "description": "Private repository user name",
+          "name": [
+            "-user"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "bash",
+              "-c",
+              "{ find * -maxdepth 0 -type f -name '*.nf' 2> /dev/null && find $HOME/.nextflow/assets/* -maxdepth 1 -type d | cut -d/ -f6,7 | grep / | grep -v assets; } 2> /dev/null"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "name": "project name"
+      },
+      "description": "Print a project configuration",
+      "name": "config",
+      "options": [
+        {
+          "description": "Print config using flat notation (Default: false)",
+          "name": [
+            "-flat"
+          ]
+        },
+        {
+          "description": "Print the command usage (Default: false)",
+          "name": [
+            "-h",
+            "-help"
+          ]
+        },
+        {
+          "description": "Choose a configuration profile",
+          "name": [
+            "-profile"
+          ]
+        },
+        {
+          "description": "Prints config using Java properties notatio (Default: false)",
+          "name": [
+            "-properties"
+          ]
+        },
+        {
+          "description": "Show all configuration profiles",
+          "name": [
+            "-a",
+            "-show-profiles"
+          ]
+        },
+        {
+          "description": "Sort config attributes (Default: false)",
+          "name": [
+            "-sort"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Launch Nextflow interactive console",
+      "name": "console",
+      "options": [
+        {
+          "description": "Print the command usage (Default: false)",
+          "name": [
+            "-h",
+            "-help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "bash",
+              "-c",
+              "{ find * -maxdepth 0 -type f -name '*.nf' 2> /dev/null && find $HOME/.nextflow/assets/* -maxdepth 1 -type d | cut -d/ -f6,7 | grep / | grep -v assets; } 2> /dev/null"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "name": "name of the project to drop"
+      },
+      "description": "Delete the local copy of a project",
+      "name": "drop",
+      "options": [
+        {
+          "description": "Print the command usage (Default: false)",
+          "name": [
+            "-h",
+            "-help"
+          ]
+        },
+        {
+          "description": "Delete the repository without taking care of local changes (Default: false)",
+          "name": [
+            "-f"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Print the usage help for a command",
+      "name": "help",
+      "options": [
+        {
+          "description": "Print the command usage (Default: false)",
+          "name": [
+            "-h",
+            "-help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "bash",
+              "-c",
+              "{ find * -maxdepth 0 -type f -name '*.nf' 2> /dev/null && find $HOME/.nextflow/assets/* -maxdepth 1 -type d | cut -d/ -f6,7 | grep / | grep -v assets; } 2> /dev/null"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "name": "project name"
+      },
+      "description": "Print project and system runtime information",
+      "name": "info",
+      "options": [
+        {
+          "description": "Check for remote updates (Default: false)",
+          "name": [
+            "-u",
+            "-check-updates"
+          ]
+        },
+        {
+          "description": "Show detailed information (Default: false)",
+          "name": [
+            "-d"
+          ]
+        },
+        {
+          "description": "Print the command usage (Default: false)",
+          "name": [
+            "-h",
+            "-help"
+          ]
+        },
+        {
+          "description": "Output format, either: text (default), json, yaml",
+          "name": [
+            "-o"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "bash",
+              "-c",
+              "{ find * -maxdepth 0 -type f -name '*.nf' 2> /dev/null && find $HOME/.nextflow/assets/* -maxdepth 1 -type d | cut -d/ -f6,7 | grep / | grep -v assets; } 2> /dev/null"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "name": "project name"
+      },
+      "description": "Execute a workflow in a Kubernetes cluster (experimental)",
+      "name": "kuberun",
+      "options": [
+        {
+          "description": "Exports all current system environment (Default: false)",
+          "name": [
+            "-E"
+          ]
+        },
+        {
+          "description": "Enable/disable ANSI console logging",
+          "name": [
+            "-ansi-log"
+          ]
+        },
+        {
+          "args": {
+            "name": "remote bucket"
+          },
+          "description": "Remote bucket where intermediate result files are stored",
+          "name": [
+            "-bucket-dir"
+          ]
+        },
+        {
+          "description": "Enable/disable processes caching",
+          "name": [
+            "-cache"
+          ]
+        },
+        {
+          "description": "Prevent the cancellation of child jobs on execution termination",
+          "name": [
+            "-disable-jobs-cancellation"
+          ]
+        },
+        {
+          "description": "Execute the workflow using DSL1 syntax (Default: false)",
+          "name": [
+            "-dsl1"
+          ]
+        },
+        {
+          "description": "Execute the workflow using DSL2 syntax (Default: false)",
+          "name": [
+            "-dsl2"
+          ]
+        },
+        {
+          "description": "Dump channels for debugging purpose",
+          "name": [
+            "-dump-channels"
+          ]
+        },
+        {
+          "description": "Dump task hash keys for debugging purpose (Default: false)",
+          "name": [
+            "-dump-hashes"
+          ]
+        },
+        {
+          "args": {
+            "name": "key=value"
+          },
+          "description": "Add the specified variable to execution environment. Syntax: -e.key=value (Default: {})",
+          "name": [
+            "-e"
+          ]
+        },
+        {
+          "args": {
+            "name": "entry workflow name"
+          },
+          "description": "Entry workflow name to be executed",
+          "name": [
+            "-entry"
+          ]
+        },
+        {
+          "description": "Specify number of CPUs requested for the Nextflow pod (Default: 0)",
+          "name": [
+            "-head-cpus"
+          ]
+        },
+        {
+          "description": "Specify amount of memory requested for the Nextflow pod",
+          "name": [
+            "-head-memory"
+          ]
+        },
+        {
+          "description": "Print the command usage (Default: false)",
+          "name": [
+            "-h",
+            "-help"
+          ]
+        },
+        {
+          "args": {
+            "name": "service hub"
+          },
+          "description": "Service hub where the project is hosted (Default: github)",
+          "name": [
+            "-hub"
+          ]
+        },
+        {
+          "description": "Pull latest changes before run (Default: false)",
+          "name": [
+            "-latest"
+          ]
+        },
+        {
+          "args": {
+            "name": "library extension path"
+          },
+          "description": "Library extension path",
+          "name": [
+            "-lib"
+          ]
+        },
+        {
+          "args": {
+            "name": "script file"
+          },
+          "description": "The script file to be executed when launching a project directory or repository",
+          "name": [
+            "-main-script"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Assign a mnemonic name to the a pipeline run",
+          "name": [
+            "-name"
+          ]
+        },
+        {
+          "description": "Specify the K8s namespace to use",
+          "name": [
+            "-n",
+            "-namespace"
+          ]
+        },
+        {
+          "description": "Do not check for remote project updates (Default: false)",
+          "name": [
+            "-offline"
+          ]
+        },
+        {
+          "args": {
+            "name": "JSON/YAML file",
+            "template": [
+              "filepaths"
+            ]
+          },
+          "description": "Load script parameters from a JSON/YAML file",
+          "name": [
+            "-params-file"
+          ]
+        },
+        {
+          "args": {
+            "name": "plugins ids separated by comma"
+          },
+          "description": "Specify the plugins to be applied for this run e.g. nf-amazon,nf-tower",
+          "name": [
+            "-plugins"
+          ]
+        },
+        {
+          "description": "Specify the container image for the Nextflow pod",
+          "name": [
+            "-pod-image"
+          ]
+        },
+        {
+          "args": {
+            "name": "key=value"
+          },
+          "description": "Set process options. Syntax: -process.key=value (Default: {}",
+          "name": [
+            "-process"
+          ]
+        },
+        {
+          "args": {
+            "name": "profile"
+          },
+          "description": "Choose a configuration profile",
+          "name": [
+            "-profile"
+          ]
+        },
+        {
+          "args": {
+            "name": "number"
+          },
+          "description": "Max number of processes that can be executed in parallel by each executor",
+          "name": [
+            "-qs",
+            "-queue-size"
+          ]
+        },
+        {
+          "description": "Choose a configuration profile in the remoteConfig",
+          "name": [
+            "-remoteProfile"
+          ]
+        },
+        {
+          "description": "Execute the script using the cached results, useful to continue executions that was stopped by an error",
+          "name": [
+            "-resume"
+          ]
+        },
+        {
+          "args": {
+            "name": "project revision (tag/branch/hash"
+          },
+          "description": "Revision of the project to run (either a git branch, tag or commit SHA number)",
+          "name": [
+            "-r",
+            "-revision"
+          ]
+        },
+        {
+          "description": "Execute the workflow replacing process scripts with command stubs (Default: false)",
+          "name": [
+            "-stub-run",
+            "-stub"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Test a script function with the name specified",
+          "name": [
+            "-test"
+          ]
+        },
+        {
+          "args": {
+            "name": "username"
+          },
+          "description": "Private repository user name",
+          "name": [
+            "-user"
+          ]
+        },
+        {
+          "description": "Volume claim mounts eg. my-pvc:/mnt/path",
+          "name": [
+            "-v",
+            "-volume-mount"
+          ]
+        },
+        {
+          "description": "Enable process execution in a Charliecloud container runtime",
+          "name": [
+            "-with-charliecloud"
+          ]
+        },
+        {
+          "args": {
+            "name": "conda .yml/.yaml file"
+          },
+          "description": "Use the specified Conda environment package or file (must end with .yml|.yaml suffix)",
+          "name": [
+            "-with-conda"
+          ]
+        },
+        {
+          "args": {
+            "name": "filename, e.g. dag.dot"
+          },
+          "description": "Create pipeline DAG file",
+          "name": [
+            "-with-dag"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "bash",
+                  "-c",
+                  "docker images | cut -w -f 1 | grep -v REPOSITORY"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty",
+                  "trim"
+                ]
+              }
+            ],
+            "isOptional": true,
+            "name": "a docker container image"
+          },
+          "description": "Enable process execution in a Docker container",
+          "name": [
+            "-with-docker"
+          ]
+        },
+        {
+          "args": {
+            "name": "email"
+          },
+          "description": "Send a notification email on workflow completion to the specified recipients",
+          "name": [
+            "-N",
+            "-with-notification"
+          ]
+        },
+        {
+          "description": "Enable process execution in a Podman container",
+          "name": [
+            "-with-podman"
+          ]
+        },
+        {
+          "args": {
+            "name": "report filename e.g. report.html"
+          },
+          "description": "Create processes execution html report",
+          "name": [
+            "-with-report"
+          ]
+        },
+        {
+          "description": "Enable process execution in a Singularity container",
+          "name": [
+            "-with-singularity"
+          ]
+        },
+        {
+          "args": {
+            "name": "timeline filename e.g. timeline.html"
+          },
+          "description": "Create processes execution timeline file",
+          "name": [
+            "-with-timeline"
+          ]
+        },
+        {
+          "description": "Monitor workflow execution with Seqera Tower service",
+          "name": [
+            "-with-tower"
+          ]
+        },
+        {
+          "args": {
+            "name": "trace text filename e.g. trace.txt"
+          },
+          "description": "Create processes execution tracing file",
+          "name": [
+            "-with-trace"
+          ]
+        },
+        {
+          "args": {
+            "name": "target web URL"
+          },
+          "description": "Send workflow status messages via HTTP to target URL",
+          "name": [
+            "-with-weblog"
+          ]
+        },
+        {
+          "description": "Disable process execution with Docker (Default: false)",
+          "name": [
+            "-without-docker"
+          ]
+        },
+        {
+          "description": "Disable process execution in a Podman container",
+          "name": [
+            "-without-podman"
+          ]
+        },
+        {
+          "args": {
+            "name": "work dir"
+          },
+          "description": "Directory where intermediate result files are stored",
+          "name": [
+            "-w",
+            "-work-dir"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "List all downloaded projects",
+      "name": "list",
+      "options": [
+        {
+          "description": "Print the command usage (Default: false)",
+          "name": [
+            "-h",
+            "-help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "bash",
+              "-c",
+              "cat .nextflow/history | awk '{ print $4 }'"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "name": "run name"
+      },
+      "description": "Print executions log and runtime info",
+      "name": "log",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "bash",
+                  "-c",
+                  "cat .nextflow/history | awk '{ print $4 }'"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty",
+                  "trim"
+                ]
+              }
+            ],
+            "name": "run name"
+          },
+          "description": "Show log entries for runs executed after the specified one",
+          "name": [
+            "-after"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "bash",
+                  "-c",
+                  "cat .nextflow/history | awk '{ print $4 }'"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty",
+                  "trim"
+                ]
+              }
+            ],
+            "name": "run name"
+          },
+          "description": "Show log entries for runs executed before the specified one",
+          "name": [
+            "-before"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "bash",
+                  "-c",
+                  "cat .nextflow/history | awk '{ print $4 }'"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty",
+                  "trim"
+                ]
+              }
+            ],
+            "name": "run name"
+          },
+          "description": "Show log entries of all runs except the specified one",
+          "name": [
+            "-but"
+          ]
+        },
+        {
+          "args": {
+            "name": "field1,field2,..."
+          },
+          "description": "Comma separated list of fields to include in the printed log -- Use the `-l` option to show the list of available fields",
+          "name": [
+            "-f",
+            "-fields"
+          ]
+        },
+        {
+          "args": {
+            "name": "expression"
+          },
+          "description": "Filter log entries by a custom expression e.g. process =~ /foo.*/ && status == 'COMPLETED'",
+          "name": [
+            "-F",
+            "filter"
+          ]
+        },
+        {
+          "description": "Print the command usage (Default: false)",
+          "name": [
+            "-h",
+            "-help"
+          ]
+        },
+        {
+          "description": "Show all available fields (Default: false)",
+          "name": [
+            "-l",
+            "-list-fields"
+          ]
+        },
+        {
+          "description": "Show only run names (Default: false)",
+          "name": [
+            "-q",
+            "-quiet"
+          ]
+        },
+        {
+          "args": {
+            "name": "character"
+          },
+          "description": "Character used to separate column values (Default: )",
+          "name": [
+            "-s"
+          ]
+        },
+        {
+          "args": {
+            "name": "template"
+          },
+          "description": "Text template used to each record in the log",
+          "name": [
+            "-t",
+            "-template"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "bash",
+              "-c",
+              "{ find * -maxdepth 0 -type f -name '*.nf' 2> /dev/null && find $HOME/.nextflow/assets/* -maxdepth 1 -type d | cut -d/ -f6,7 | grep / | grep -v assets; } 2> /dev/null"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "name": "project name or repository url to pull"
+      },
+      "description": "Download or update a project",
+      "name": "pull",
+      "options": [
+        {
+          "description": "Update all downloaded projects (Default: false)",
+          "name": [
+            "-all"
+          ]
+        },
+        {
+          "description": "Print the command usage (Default: false)",
+          "name": [
+            "-h",
+            "-help"
+          ]
+        },
+        {
+          "description": "Service hub where the project is hosted",
+          "name": [
+            "-hub"
+          ]
+        },
+        {
+          "description": "Revision of the project to run (either a git branch, tag or commit SHA number)",
+          "name": [
+            "-r",
+            "-revision"
+          ]
+        },
+        {
+          "description": "Private repository user name",
+          "name": [
+            "-user"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "bash",
+              "-c",
+              "{ find * -maxdepth 0 -type f -name '*.nf' 2> /dev/null && find $HOME/.nextflow/assets/* -maxdepth 1 -type d | cut -d/ -f6,7 | grep / | grep -v assets; } 2> /dev/null"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "name": "project name, repository url, or local path"
+      },
+      "description": "Execute a pipeline project",
+      "name": "run",
+      "options": [
+        {
+          "description": "Exports all current system environment (Default: false)",
+          "name": [
+            "-E"
+          ]
+        },
+        {
+          "description": "Enable/disable ANSI console logging",
+          "name": [
+            "-ansi-log"
+          ]
+        },
+        {
+          "args": {
+            "name": "remote bucket"
+          },
+          "description": "Remote bucket where intermediate result files are stored",
+          "name": [
+            "-bucket-dir"
+          ]
+        },
+        {
+          "description": "Enable/disable processes caching",
+          "name": [
+            "-cache"
+          ]
+        },
+        {
+          "description": "Prevent the cancellation of child jobs on execution termination",
+          "name": [
+            "-disable-jobs-cancellation"
+          ]
+        },
+        {
+          "description": "Execute the workflow using DSL1 syntax (Default: false)",
+          "name": [
+            "-dsl1"
+          ]
+        },
+        {
+          "description": "Execute the workflow using DSL2 syntax (Default: false)",
+          "name": [
+            "-dsl2"
+          ]
+        },
+        {
+          "description": "Dump channels for debugging purpose",
+          "name": [
+            "-dump-channels"
+          ]
+        },
+        {
+          "description": "Dump task hash keys for debugging purpose (Default: false)",
+          "name": [
+            "-dump-hashes"
+          ]
+        },
+        {
+          "args": {
+            "name": "key=value"
+          },
+          "description": "Add the specified variable to execution environment. Syntax: -e.key=value (Default: {})",
+          "name": [
+            "-e."
+          ]
+        },
+        {
+          "args": {
+            "name": "entry workflow name"
+          },
+          "description": "Entry workflow name to be executed",
+          "name": [
+            "-entry"
+          ]
+        },
+        {
+          "description": "Print the command usage (Default: false)",
+          "name": [
+            "-h",
+            "-help"
+          ]
+        },
+        {
+          "args": {
+            "name": "service hub"
+          },
+          "description": "Service hub where the project is hosted (Default: github)",
+          "name": [
+            "-hub"
+          ]
+        },
+        {
+          "description": "Pull latest changes before run (Default: false)",
+          "name": [
+            "-latest"
+          ]
+        },
+        {
+          "args": {
+            "name": "library extension path"
+          },
+          "description": "Library extension path",
+          "name": [
+            "-lib"
+          ]
+        },
+        {
+          "args": {
+            "name": "script file"
+          },
+          "description": "The script file to be executed when launching a project directory or repository",
+          "name": [
+            "-main-script"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Assign a mnemonic name to the a pipeline run",
+          "name": [
+            "-name"
+          ]
+        },
+        {
+          "description": "Do not check for remote project updates (Default: false)",
+          "name": [
+            "-offline"
+          ]
+        },
+        {
+          "args": {
+            "name": "JSON/YAML file",
+            "template": [
+              "filepaths"
+            ]
+          },
+          "description": "Load script parameters from a JSON/YAML file",
+          "name": [
+            "-params-file"
+          ]
+        },
+        {
+          "args": {
+            "name": "plugins ids separated by comma"
+          },
+          "description": "Specify the plugins to be applied for this run e.g. nf-amazon,nf-tower",
+          "name": [
+            "-plugins"
+          ]
+        },
+        {
+          "args": {
+            "name": "key=value"
+          },
+          "description": "Set process options. Syntax: -process.key=value (Default: {}",
+          "name": [
+            "-process."
+          ]
+        },
+        {
+          "args": {
+            "name": "profile"
+          },
+          "description": "Choose a configuration profile",
+          "name": [
+            "-profile"
+          ]
+        },
+        {
+          "args": {
+            "name": "number"
+          },
+          "description": "Max number of processes that can be executed in parallel by each executor",
+          "name": [
+            "-qs",
+            "-queue-size"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "bash",
+                  "-c",
+                  "cat .nextflow/history | awk '{ print $7 }'"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty",
+                  "trim"
+                ]
+              }
+            ],
+            "isOptional": true,
+            "name": "session ID"
+          },
+          "description": "Execute the script using the cached results, useful to continue executions that was stopped by an error",
+          "name": [
+            "-resume"
+          ]
+        },
+        {
+          "args": {
+            "name": "project revision (tag/branch/hash"
+          },
+          "description": "Revision of the project to run (either a git branch, tag or commit SHA number)",
+          "name": [
+            "-r",
+            "-revision"
+          ]
+        },
+        {
+          "description": "Execute the workflow replacing process scripts with command stubs (Default: false)",
+          "name": [
+            "-stub-ru",
+            "-stub"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Test a script function with the name specified",
+          "name": [
+            "-test"
+          ]
+        },
+        {
+          "args": {
+            "name": "username"
+          },
+          "description": "Private repository user name",
+          "name": [
+            "-user"
+          ]
+        },
+        {
+          "description": "Enable process execution in a Charliecloud container runtime",
+          "name": [
+            "-with-charliecloud"
+          ]
+        },
+        {
+          "args": {
+            "name": "conda .yml/.yaml file"
+          },
+          "description": "Use the specified Conda environment package or file (must end with .yml|.yaml suffix)",
+          "name": [
+            "-with-conda"
+          ]
+        },
+        {
+          "args": {
+            "name": "filename, e.g. dag.dot"
+          },
+          "description": "Create pipeline DAG file",
+          "name": [
+            "-with-dag"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "bash",
+                  "-c",
+                  "docker images | cut -w -f 1 | grep -v REPOSITORY"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty",
+                  "trim"
+                ]
+              }
+            ],
+            "isOptional": true,
+            "name": "a docker container image"
+          },
+          "description": "Enable process execution in a Docker container",
+          "name": [
+            "-with-docker"
+          ]
+        },
+        {
+          "args": {
+            "name": "email"
+          },
+          "description": "Send a notification email on workflow completion to the specified recipients",
+          "name": [
+            "-N",
+            "-with-notification"
+          ]
+        },
+        {
+          "description": "Enable process execution in a Podman container",
+          "name": [
+            "-with-podman"
+          ]
+        },
+        {
+          "args": {
+            "name": "report filename e.g. report.html"
+          },
+          "description": "Create processes execution html report",
+          "name": [
+            "-with-report"
+          ]
+        },
+        {
+          "description": "Enable process execution in a Singularity container",
+          "name": [
+            "-with-singularity"
+          ]
+        },
+        {
+          "args": {
+            "name": "timeline filename e.g. timeline.html"
+          },
+          "description": "Create processes execution timeline file",
+          "name": [
+            "-with-timeline"
+          ]
+        },
+        {
+          "description": "Monitor workflow execution with Seqera Tower service",
+          "name": [
+            "-with-tower"
+          ]
+        },
+        {
+          "args": {
+            "name": "trace text filename e.g. trace.txt"
+          },
+          "description": "Create processes execution tracing file",
+          "name": [
+            "-with-trace"
+          ]
+        },
+        {
+          "args": {
+            "name": "target web URL"
+          },
+          "description": "Send workflow status messages via HTTP to target URL",
+          "name": [
+            "-with-weblog"
+          ]
+        },
+        {
+          "description": "Disable process execution with Docker (Default: false)",
+          "name": [
+            "-without-docker"
+          ]
+        },
+        {
+          "description": "Disable process execution in a Podman container",
+          "name": [
+            "-without-podman"
+          ]
+        },
+        {
+          "args": {
+            "name": "work dir"
+          },
+          "description": "Directory where intermediate result files are stored",
+          "name": [
+            "-w",
+            "-work-dir"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Handle and manage sensitive information for pipeline execution in a safe manner",
+      "name": "secrets",
+      "options": [
+        {
+          "description": "List secrets available in the current store e.g. nextflow secrets list",
+          "name": [
+            "list"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "bash",
+                  "-c",
+                  "grep -o '\"name\": *\"[^\"]*\"' $HOME/.nextflow/secrets/store.json | grep -o '\"[^\"]*\"$' | tr -d \\\""
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty",
+                  "trim"
+                ]
+              }
+            ],
+            "name": "secret name"
+          },
+          "description": "Allows retrieving a secret value e.g. nextflow secrets get FOO",
+          "name": [
+            "get"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "bash",
+                  "-c",
+                  "grep -o '\"name\": *\"[^\"]*\"' $HOME/.nextflow/secrets/store.json | grep -o '\"[^\"]*\"$' | tr -d \\\""
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty",
+                  "trim"
+                ]
+              }
+            ],
+            "name": "secret name and value"
+          },
+          "description": "Allows creating creating a new secret or overriding an existing one e.g. nextflow secrets set FOO \"Hello world\"",
+          "name": [
+            "set"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "bash",
+                  "-c",
+                  "grep -o '\"name\": *\"[^\"]*\"' $HOME/.nextflow/secrets/store.json | grep -o '\"[^\"]*\"$' | tr -d \\\""
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty",
+                  "trim"
+                ]
+              }
+            ],
+            "name": "secret name"
+          },
+          "description": "Allows deleting an existing secret e.g. nextflow secrets delete FOO",
+          "name": [
+            "delete"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Update nextflow runtime to the latest available version",
+      "name": "self-update",
+      "options": [
+        {
+          "description": "Print the command usage (Default: false)",
+          "name": [
+            "-h",
+            "-help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "bash",
+              "-c",
+              "{ find * -maxdepth 0 -type f -name '*.nf' 2> /dev/null && find $HOME/.nextflow/assets/* -maxdepth 1 -type d | cut -d/ -f6,7 | grep / | grep -v assets; } 2> /dev/null"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "name": "project name"
+      },
+      "description": "View project script file(s)",
+      "name": "view",
+      "options": [
+        {
+          "description": "Print the command usage (Default: false)",
+          "name": [
+            "-h",
+            "-help"
+          ]
+        },
+        {
+          "description": "List repository content (Default: false)",
+          "name": [
+            "-l"
+          ]
+        },
+        {
+          "description": "Hide header line (Default: false)",
+          "name": [
+            "-q"
+          ]
+        }
+      ]
+    }
+  ]
+}

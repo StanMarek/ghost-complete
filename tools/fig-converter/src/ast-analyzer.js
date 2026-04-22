@@ -325,20 +325,28 @@ export function analyzeGenerator(jsSource) {
           prop.type === 'Identifier' &&
           FIG_API_NAMES.has(prop.name)
         ) {
-          // Only tag as `direct` if the object side isn't itself an alias
-          // we've already classified — otherwise we'd double-count.
+          // Gap-A guard: if the object root resolves to a NESTED
+          // callback-param binding (e.g. `x` in `.map(x => x.foo(y))`),
+          // `.foo` is a method call on input data, NOT a Fig API ref.
+          // Distinguish from the canonical `(ctx) => ctx.executeShellCommand(...)`
+          // shape: a top-level arrow param has its owning function nested
+          // directly under the Program scope, while a callback param's
+          // owning function is nested inside another function.
           const root = memberRoot(callee);
           const rootName = root && root.type === 'Identifier' ? root.name : null;
           const rootBinding =
             rootName ? path.scope.getBinding(rootName) : null;
-          // If the root resolves to a known local binding we classified,
-          // that alias is reported separately; still record the call's
-          // *property* as `direct` because the member name itself is the
-          // Fig API surface being used.
-          rawRefs.push({ name: prop.name, kind: 'direct' });
-          // Intentional fall-through — see below for the ref-site pass
-          // over Identifier, which catches the alias-at-callsite case.
-          void rootBinding; // silence unused-var lint
+          if (rootBinding && isNestedCallbackParamBinding(rootBinding)) {
+            // Skip — property-access on a callback param is not Fig API.
+          } else {
+            // If the root resolves to a known local binding we classified,
+            // that alias is reported separately; still record the call's
+            // *property* as `direct` because the member name itself is the
+            // Fig API surface being used.
+            rawRefs.push({ name: prop.name, kind: 'direct' });
+            // Intentional fall-through — see below for the ref-site pass
+            // over Identifier, which catches the alias-at-callsite case.
+          }
         }
       } else if (callee.type === 'Identifier' && FIG_API_NAMES.has(callee.name)) {
         // Bare call: executeShellCommand(...) with no receiver. Whether
@@ -437,6 +445,49 @@ function memberRoot(node) {
     cursor = cursor.object;
   }
   return cursor;
+}
+
+/**
+ * Return true iff the binding is a parameter of a function that is itself
+ * nested inside another function — i.e. a lexical binding from a callback
+ * like `.map(x => …)` or `.filter((a, b) => …)`.
+ *
+ * The canonical Fig-generator shape `(ctx) => ctx.executeShellCommand(...)`
+ * has the arrow at program top level, so its parameters are NOT classified
+ * as callback-param bindings here (and their `.FIG_API_NAME(...)` calls
+ * continue to flag as direct Fig refs — see case 1 of the test matrix).
+ */
+function isNestedCallbackParamBinding(binding) {
+  if (!binding || binding.kind !== 'param') return false;
+  const ownerScope = binding.scope;
+  if (!ownerScope) return false;
+  const ownerBlock = ownerScope.block;
+  if (
+    !ownerBlock ||
+    (ownerBlock.type !== 'ArrowFunctionExpression' &&
+      ownerBlock.type !== 'FunctionExpression' &&
+      ownerBlock.type !== 'FunctionDeclaration')
+  ) {
+    return false;
+  }
+  // If the function owning this param has another function in its scope
+  // chain above it (before hitting Program), it's a nested callback.
+  let cursor = ownerScope.parent;
+  while (cursor) {
+    const block = cursor.block;
+    if (!block) break;
+    if (
+      block.type === 'ArrowFunctionExpression' ||
+      block.type === 'FunctionExpression' ||
+      block.type === 'FunctionDeclaration' ||
+      block.type === 'ObjectMethod' ||
+      block.type === 'ClassMethod'
+    ) {
+      return true;
+    }
+    cursor = cursor.parent;
+  }
+  return false;
 }
 
 /** Dedupe refs while preserving first occurrence + kind precedence. */

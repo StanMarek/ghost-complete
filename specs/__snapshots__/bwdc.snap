@@ -1,0 +1,218 @@
+{
+  "description": "Bitwarden Directory Connector",
+  "name": "bwdc",
+  "options": [
+    {
+      "description": "Show help for bwdc",
+      "name": [
+        "--help"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": [
+        {
+          "description": "Organisation API client_id",
+          "isOptional": true,
+          "name": "client_id"
+        },
+        {
+          "description": "Organisation API client_secret",
+          "isOptional": true,
+          "name": "client_secret"
+        }
+      ],
+      "description": "Log in to Directory Connector",
+      "name": "login",
+      "options": [
+        {
+          "name": [
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Log out of Directory Connector",
+      "name": "logout",
+      "options": [
+        {
+          "name": [
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Prints a JSON formatted array of groups and users that would be synced to your Bitwarden organization",
+      "name": "test",
+      "options": [
+        {
+          "description": "Test only the changes since the last successful sync",
+          "name": [
+            "--last"
+          ]
+        },
+        {
+          "name": [
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Run a live sync operation and push data to your Bitwarden organization",
+      "name": "sync",
+      "options": [
+        {
+          "name": [
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "You must specify either users or groups as an <object> to run the command against",
+        "name": "Object"
+      },
+      "description": "The last-sync command returns an ISO 8601 timestamp for the last sync operation that was performed for users or groups. You must specify either users or groups as an <object> to run the command against- Returns an empty response if no sync has been performed for the given object",
+      "name": "last-sync",
+      "options": [
+        {
+          "name": [
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Specify the setting to configure",
+          "name": "setting"
+        },
+        {
+          "description": "Specify the value assigned to the setting",
+          "name": "value"
+        }
+      ],
+      "description": "The config command allows you to specify your directory settings",
+      "name": "config",
+      "options": [
+        {
+          "name": [
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": {
+            "description": "Specify the server URL",
+            "name": "server-url"
+          },
+          "description": "URL of your self-hosted installation (e.g. https://my.url.com) or https://vault.bitwarden.eu",
+          "name": "server"
+        },
+        {
+          "args": {
+            "description": "Active Directory/LDAP : 0\nAzure Active Directory : 1\nGoogle Workspace/GSuite : 2\nOkta : 3\nOneLogin : 4",
+            "name": "directory-type",
+            "suggestions": [
+              {
+                "description": "Active Directory/LDAP",
+                "name": "0"
+              },
+              {
+                "description": "Azure Active Directory",
+                "name": "1"
+              },
+              {
+                "description": "Google Workspace/GSuite",
+                "name": "2"
+              },
+              {
+                "description": "Okta",
+                "name": "3"
+              },
+              {
+                "description": "OneLogin",
+                "name": "4"
+              }
+            ]
+          },
+          "description": "Type of directory to use",
+          "name": "directory"
+        },
+        {
+          "args": {
+            "description": "Specify the password",
+            "name": "password"
+          },
+          "description": "Password for connection to the LDAP server",
+          "name": "ldap.password"
+        },
+        {
+          "args": {
+            "description": "Specify the AD secret key",
+            "name": "key"
+          },
+          "description": "Azure AD secret key",
+          "name": "azure.key"
+        },
+        {
+          "args": {
+            "description": "Specify the Google Workspace/GSuite private key",
+            "name": "key"
+          },
+          "description": "Google Workspace/GSuite private key",
+          "name": "gsuite.key"
+        },
+        {
+          "args": {
+            "description": "Specify the Okta token",
+            "name": "token"
+          },
+          "description": "Okta token",
+          "name": "okta.token"
+        },
+        {
+          "args": {
+            "description": "Specify the OneLogin client secret",
+            "name": "secret"
+          },
+          "description": "OneLogin client secret",
+          "name": "onelogin.secret"
+        }
+      ]
+    },
+    {
+      "description": "Path to data.json database file",
+      "name": "data-file",
+      "options": [
+        {
+          "name": [
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "The clear-cache command allows you to clear cached data that the application stores while performing sync operations",
+      "name": "clear-cache",
+      "options": [
+        {
+          "name": [
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "The update command allows you to check if your Directory Connector CLI is up-to-date",
+      "name": "update"
+    }
+  ]
+}

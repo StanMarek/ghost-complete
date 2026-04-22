@@ -1,0 +1,336 @@
+{
+  "args": {
+    "description": "File(s)",
+    "isVariadic": true,
+    "template": "filepaths"
+  },
+  "description": "A cat(1) clone with syntax highlighting and Git integration",
+  "name": "bat",
+  "options": [
+    {
+      "description": "Show non-printable characters",
+      "name": [
+        "-A",
+        "--show-all"
+      ]
+    },
+    {
+      "description": "Show plain style, no decorations",
+      "name": [
+        "-p",
+        "--plain"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "bat",
+              "--list-languages"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "name": "<language>"
+      },
+      "description": "Explicitly set the language for syntax highlighting",
+      "name": [
+        "-l",
+        "--language"
+      ]
+    },
+    {
+      "args": {
+        "description": "Range of line",
+        "name": "<N:M> "
+      },
+      "description": "Highlight the specified line ranges",
+      "name": [
+        "-H",
+        "--highlight-line"
+      ]
+    },
+    {
+      "args": {
+        "description": "File(s)",
+        "isVariadic": true,
+        "template": "filepaths"
+      },
+      "description": "Specify the name to display for a file. Useful when piping data to bat from STDIN when bat does not otherwise know the filename",
+      "name": [
+        "--file-name"
+      ]
+    },
+    {
+      "description": "Show lines that have been added/removed/modified with respect to the Git index",
+      "name": [
+        "-d",
+        "--diff"
+      ]
+    },
+    {
+      "args": {
+        "description": "Lines of context",
+        "name": "<N> "
+      },
+      "description": "Include N lines of context around added/removed/modified lines when using '--diff'",
+      "name": [
+        "--diff-context"
+      ]
+    },
+    {
+      "args": {
+        "description": "Spaces of tab width",
+        "name": "<T> "
+      },
+      "description": "Set the tab width to T spaces. Use a width of 0 to pass tabs through directly",
+      "name": [
+        "--tabs"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "function(t){return t.trim().split(\"]\")[0].split(\"[\")[1].split(\":\")[1].split(\",\").map(e=>({name:e.trim(),description:\"Specify when to use colored output\"}))}",
+            "requires_js": true,
+            "script": [
+              "bash",
+              "-c",
+              "bat --wrap unknow 2>&1 >/dev/null | grep possible"
+            ]
+          }
+        ],
+        "name": "<mode>"
+      },
+      "description": "Specify when to use colored output",
+      "name": [
+        "--wrap"
+      ]
+    },
+    {
+      "args": {
+        "description": "Width to wrap",
+        "name": "<width> "
+      },
+      "description": "Explicitly set the width of the terminal instead of determining it automatically",
+      "name": [
+        "--terminal-width"
+      ]
+    },
+    {
+      "description": "Show line numbers, no other decorations",
+      "name": [
+        "-n",
+        "--number"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "function(t){return t.trim().split(\"]\")[0].split(\"[\")[1].split(\":\")[1].split(\",\").map(e=>({name:e.trim(),description:\"Specify when to use colored output\"}))}",
+            "requires_js": true,
+            "script": [
+              "bash",
+              "-c",
+              "bat --color unknow  2>&1 >/dev/null | grep possible"
+            ]
+          }
+        ],
+        "name": "<when>"
+      },
+      "description": "Specify when to use colored output",
+      "name": [
+        "--color"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "function(t){return t.trim().split(\"]\")[0].split(\"[\")[1].split(\":\")[1].split(\",\").map(e=>({name:e.trim(),description:\"Specify when to use ANSI sequences for italic text in the output\"}))}",
+            "requires_js": true,
+            "script": [
+              "bash",
+              "-c",
+              "bat --italic-text unknow 2>&1 >/dev/null | grep possible"
+            ]
+          }
+        ],
+        "name": "<when>"
+      },
+      "description": "Specify when to use ANSI sequences for italic text in the output",
+      "name": [
+        "--italic-text"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "function(t){return t.trim().split(\"]\")[0].split(\"[\")[1].split(\":\")[1].split(\",\").map(e=>({name:e.trim(),description:\"Specify when to use the decorations that have been specified via '--style'\"}))}",
+            "requires_js": true,
+            "script": [
+              "bash",
+              "-c",
+              "bat --decorations unknow 2>&1 >/dev/null | grep possible"
+            ]
+          }
+        ],
+        "name": "<when>"
+      },
+      "description": "Specify when to use the decorations that have been specified via '--style'",
+      "name": [
+        "--decorations"
+      ]
+    },
+    {
+      "description": "Alias for '--decorations=always --color=always'",
+      "name": [
+        "-f",
+        "--force-colorization"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "function(t){return t.trim().split(\"]\")[0].split(\"[\")[1].split(\":\")[1].split(\",\").map(e=>({name:e.trim(),description:\"Specify when to use the pager\"}))}",
+            "requires_js": true,
+            "script": [
+              "bash",
+              "-c",
+              "bat --paging unknow  2>&1 >/dev/null | grep possible"
+            ]
+          }
+        ],
+        "name": "<when>"
+      },
+      "description": "Specify when to use the pager",
+      "name": [
+        "--paging"
+      ]
+    },
+    {
+      "args": {
+        "description": "Command to pager",
+        "name": "<command>"
+      },
+      "description": "Determine which pager is used",
+      "name": [
+        "--pager"
+      ]
+    },
+    {
+      "args": {
+        "description": "Full path or the filename:language that highlighted",
+        "name": "<glob:syntax>"
+      },
+      "description": "Map a glob pattern to an existing syntax name",
+      "name": [
+        "-m",
+        "--map-syntax"
+      ]
+    },
+    {
+      "args": {
+        "description": "Extension",
+        "name": "<ignored-suffix>"
+      },
+      "description": "Ignore extension",
+      "name": [
+        "--ignored-suffix"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "bat",
+              "--list-themes"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "<theme>"
+      },
+      "description": "Set the theme for syntax highlighting",
+      "name": [
+        "--theme"
+      ]
+    },
+    {
+      "description": "Display a list of supported themes for syntax highlighting",
+      "name": [
+        "--list-themes"
+      ]
+    },
+    {
+      "description": "Display a list of supported themes for syntax highlighting",
+      "name": [
+        "--style"
+      ]
+    },
+    {
+      "args": {
+        "description": "Range of line",
+        "name": "<N:M> "
+      },
+      "description": "Only print the specified range of lines for each file",
+      "name": [
+        "-r",
+        "--line-range"
+      ]
+    },
+    {
+      "description": "Display a list of supported languages for syntax highlighting",
+      "name": [
+        "-L",
+        "--list-languages"
+      ]
+    },
+    {
+      "description": "Make output unbuffered (exists for POSIX-compliance reasons and is simply ignored)",
+      "name": [
+        "-u",
+        "--unbuffered"
+      ]
+    },
+    {
+      "description": "Show diagnostic information for bug reports",
+      "name": [
+        "--diagnostic"
+      ]
+    },
+    {
+      "description": "Show acknowledgements",
+      "name": [
+        "--acknowledgements"
+      ]
+    },
+    {
+      "description": "Print help message",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Show version information",
+      "name": [
+        "-V",
+        "--version"
+      ]
+    }
+  ]
+}

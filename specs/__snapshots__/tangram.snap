@@ -1,0 +1,170 @@
+{
+  "name": "tangram",
+  "options": [
+    {
+      "description": "Print help information",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "description": "Print version information",
+      "name": [
+        "--version",
+        "-v"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Run the app",
+      "name": "app",
+      "options": [
+        {
+          "args": {
+            "name": "CONFIG",
+            "template": "filepaths"
+          },
+          "description": "The path to a config file",
+          "name": [
+            "-c",
+            "--config"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Migrate your app database",
+      "name": "migrate",
+      "options": [
+        {
+          "args": {
+            "name": "DATABASE_URL"
+          },
+          "name": [
+            "--database-url"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Make predictions with a model",
+      "name": "predict",
+      "options": [
+        {
+          "args": {
+            "name": "FILE",
+            "template": "filepaths"
+          },
+          "description": "The path to read examples from, defaults to stdin",
+          "name": [
+            "-f",
+            "--file"
+          ]
+        },
+        {
+          "args": {
+            "name": "MODEL",
+            "template": "filepaths"
+          },
+          "description": "The path to the model to make predictions with",
+          "name": [
+            "-m",
+            "--model"
+          ]
+        },
+        {
+          "args": {
+            "name": "OUTPUT",
+            "template": "filepaths"
+          },
+          "description": "The path to write the predictions to, defaults to stdout",
+          "name": [
+            "-o",
+            "--output"
+          ]
+        },
+        {
+          "args": {
+            "name": "PROBABILITIES"
+          },
+          "description": "Output probabilities instead of class labels, only relevant for classifier models",
+          "name": [
+            "-p",
+            "--probabilities"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Train a model",
+      "name": "train",
+      "options": [
+        {
+          "args": {
+            "name": "CONFIG",
+            "template": "filepaths"
+          },
+          "description": "The path to a config file",
+          "name": [
+            "-c",
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "FILE",
+            "template": "filepaths"
+          },
+          "description": "The path to your .csv file",
+          "name": [
+            "-f",
+            "--file"
+          ]
+        },
+        {
+          "args": {
+            "name": "FILE_TEST",
+            "template": "filepaths"
+          },
+          "description": "The path to your .csv file used for testing",
+          "name": [
+            "--file-test"
+          ]
+        },
+        {
+          "args": {
+            "name": "FILE_TRAIN",
+            "template": "filepaths"
+          },
+          "description": "The path to your .csv file used for training",
+          "name": [
+            "--file-train"
+          ]
+        },
+        {
+          "args": {
+            "name": "OUTPUT",
+            "template": "filepaths"
+          },
+          "description": "The path to write the .tangram file to",
+          "name": [
+            "-o",
+            "--output"
+          ]
+        },
+        {
+          "args": {
+            "name": "TARGET"
+          },
+          "description": "The name of the column to predict",
+          "name": [
+            "-t",
+            "--target"
+          ]
+        }
+      ]
+    }
+  ]
+}

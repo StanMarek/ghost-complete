@@ -1,0 +1,167 @@
+{
+  "args": [
+    {
+      "name": "command",
+      "suggestions": [
+        {
+          "description": "Reset permissions",
+          "name": "reset"
+        }
+      ]
+    },
+    {
+      "name": "service",
+      "suggestions": [
+        {
+          "name": "AppleEvents"
+        },
+        {
+          "description": "Use Bluetooth",
+          "name": "BluetoothAlways"
+        },
+        {
+          "description": "Access your calendar",
+          "name": "Calendar"
+        },
+        {
+          "description": "Access the camera",
+          "name": "Camera"
+        },
+        {
+          "description": "Access all of your contacts information",
+          "name": "ContactsFull"
+        },
+        {
+          "description": "Access your contacts basic information",
+          "name": "ContactsLimited"
+        },
+        {
+          "description": "Access files managed by indirect_object",
+          "name": "FileProviderDomain"
+        },
+        {
+          "description": "Allow the app to see when you are using files managed by it?",
+          "name": "FileProviderPresence"
+        },
+        {
+          "description": "Use your current location",
+          "name": "Location"
+        },
+        {
+          "description": "Access Apple Music, your music and video activity, and your media library",
+          "name": "MediaLibrary"
+        },
+        {
+          "description": "Access the microphone",
+          "name": "Microphone"
+        },
+        {
+          "description": "Access Your Motion & Fitness Activity",
+          "name": "Motion"
+        },
+        {
+          "description": "Access Your Photo",
+          "name": "Photos"
+        },
+        {
+          "description": "Add to your Photo",
+          "name": "PhotosAdd"
+        },
+        {
+          "description": "Authorization to Test Service Proto3Right",
+          "name": "Prototype3Rights"
+        },
+        {
+          "description": "Authorization to Test Service Proto4Right",
+          "name": "Prototype4Rights"
+        },
+        {
+          "description": "Access your reminders",
+          "name": "Reminders"
+        },
+        {
+          "description": "Capture the contents of the system display",
+          "name": "ScreenCapture"
+        },
+        {
+          "description": "Use app with Siri",
+          "name": "Siri"
+        },
+        {
+          "description": "Access Speech Recognition",
+          "name": "SpeechRecognition"
+        },
+        {
+          "description": "Access files in your Desktop folder",
+          "name": "SystemPolicyDesktopFolder"
+        },
+        {
+          "description": "Access a file used in Software Development",
+          "name": "SystemPolicyDeveloperFiles"
+        },
+        {
+          "description": "Access files in your Documents folder",
+          "name": "SystemPolicyDocumentsFolder"
+        },
+        {
+          "description": "Access files in your Downloads folder",
+          "name": "SystemPolicyDownloadsFolder"
+        },
+        {
+          "description": "Access files on a network volume",
+          "name": "SystemPolicyNetworkVolumes"
+        },
+        {
+          "description": "Access files on a removable volume",
+          "name": "SystemPolicyRemovableVolumes"
+        },
+        {
+          "description": "Administer your computer",
+          "name": "SystemPolicySysAdminFiles"
+        },
+        {
+          "description": "Access your Home data",
+          "name": "Willow"
+        },
+        {
+          "description": "Full Disk Acces",
+          "name": "SystemPolicyAllFiles"
+        },
+        {
+          "description": "Allows app to control your compute",
+          "name": "Accessibility"
+        },
+        {
+          "description": "Allows to send keystroke",
+          "name": "PostEvent"
+        },
+        {
+          "description": "Allow monitoring input from your keyboard",
+          "name": "ListenEvent"
+        },
+        {
+          "description": "Allow app to run software that doesn't meet the system's security policy",
+          "name": "DeveloperTool"
+        }
+      ]
+    },
+    {
+      "generators": [
+        {
+          "cache": {},
+          "js_source": "s=>{let e=new Map(s.split(`\n`).map(n=>{let o=n.indexOf(\" \");return[n.slice(0,o),n.slice(o+1)]}));e.delete(\"(null)\");let i=[];for(let[n,o]of e.entries())i.push({name:n,description:o,icon:`fig://${o}`});return i}",
+          "requires_js": true,
+          "script": [
+            "bash",
+            "-c",
+            "mdfind kMDItemContentTypeTree=com.apple.application-bundle -onlyin /Applications | while read line; do echo $(mdls -name kMDItemCFBundleIdentifier -r \"$line\") $line; done"
+          ]
+        }
+      ],
+      "isOptional": true,
+      "name": "bundle id"
+    }
+  ],
+  "description": "Manage the privacy database",
+  "name": "tccutil"
+}

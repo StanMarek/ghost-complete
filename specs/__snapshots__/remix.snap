@@ -1,0 +1,77 @@
+{
+  "description": "Remix CLI to start, build and export your application",
+  "name": "remix",
+  "options": [
+    {
+      "description": "Output usage information",
+      "name": [
+        "--help"
+      ]
+    },
+    {
+      "description": "Output the version number",
+      "name": [
+        "-v",
+        "--version"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "description": "Represent the directory of the Remix application",
+        "isOptional": true,
+        "name": "dir",
+        "template": "folders"
+      },
+      "description": "Create an optimized production build of your application",
+      "name": "build",
+      "options": [
+        {
+          "description": "Enables production sourcemap",
+          "name": [
+            "--sourcemap"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Represent the directory of the Remix application",
+        "isOptional": true,
+        "name": "dir",
+        "template": "folders"
+      },
+      "description": "Start the application in development mode",
+      "name": "dev"
+    },
+    {
+      "args": {
+        "description": "Represent the directory of the Remix application",
+        "isOptional": true,
+        "name": "dir",
+        "template": "folders"
+      },
+      "description": "Prepare node_modules/remix folder (after installation of packages)",
+      "name": "setup"
+    },
+    {
+      "args": {
+        "description": "Represent the directory of the Remix application",
+        "isOptional": true,
+        "name": "dir",
+        "template": "folders"
+      },
+      "description": "Generate the route config of the application",
+      "name": "routes",
+      "options": [
+        {
+          "description": "Print the route config as JSON",
+          "name": [
+            "--json"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,752 @@
+{
+  "description": "Molecule aids in the development and testing of Ansible roles",
+  "name": "molecule",
+  "options": [
+    {
+      "description": "Show help",
+      "name": [
+        "--help"
+      ]
+    },
+    {
+      "description": "Show molecule version",
+      "name": [
+        "--version"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Use the provisioner to perform a Dry-Run (destroy, dependency, create, prepare, converge)",
+      "name": "check",
+      "options": [
+        {
+          "args": {
+            "name": "TEXT"
+          },
+          "description": "Name of the scenario to target. (default)",
+          "name": [
+            "--scenario-name",
+            "-s"
+          ]
+        },
+        {
+          "description": "Enable parallel mode",
+          "name": [
+            "--parallel"
+          ]
+        },
+        {
+          "description": "Disable parallel mode",
+          "name": [
+            "--no-parallel"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Use the provisioner to cleanup any changes made to external systems during the stages of testing",
+      "name": "cleanup",
+      "options": [
+        {
+          "args": {
+            "name": "TEXT"
+          },
+          "description": "Name of the scenario to target. (default)",
+          "name": [
+            "--scenario-name",
+            "-s"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Use the provisioner to configure instances (dependency, create, prepare converge)",
+      "name": "converge",
+      "options": [
+        {
+          "args": {
+            "name": "TEXT"
+          },
+          "description": "Name of the scenario to target. (default)",
+          "name": [
+            "--scenario-name",
+            "-s"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Use the provisioner to start the instances",
+      "name": "create",
+      "options": [
+        {
+          "args": {
+            "name": "TEXT"
+          },
+          "description": "Name of the scenario to target. (default)",
+          "name": [
+            "--scenario-name",
+            "-s"
+          ]
+        },
+        {
+          "args": {
+            "name": "TEXT",
+            "suggestions": [
+              {
+                "name": "delegated"
+              },
+              {
+                "name": "docker"
+              },
+              {
+                "name": "podman"
+              },
+              {
+                "name": "vagrant"
+              },
+              {
+                "name": "azure"
+              },
+              {
+                "name": "hetzner"
+              }
+            ]
+          },
+          "description": "Name of driver to use. (delegated)",
+          "name": [
+            "--driver-name",
+            "-d"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage the role's dependencies",
+      "name": "dependency",
+      "options": [
+        {
+          "args": {
+            "name": "TEXT"
+          },
+          "description": "Name of the scenario to target. (default)",
+          "name": [
+            "--scenario-name",
+            "-s"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Use the provisioner to destroy the instances",
+      "name": "destroy",
+      "options": [
+        {
+          "args": {
+            "name": "TEXT"
+          },
+          "description": "Name of the scenario to target. (default)",
+          "name": [
+            "--scenario-name",
+            "-s"
+          ]
+        },
+        {
+          "args": {
+            "name": "TEXT",
+            "suggestions": [
+              {
+                "name": "delegated"
+              },
+              {
+                "name": "docker"
+              },
+              {
+                "name": "podman"
+              },
+              {
+                "name": "vagrant"
+              },
+              {
+                "name": "azure"
+              },
+              {
+                "name": "hetzner"
+              }
+            ]
+          },
+          "description": "Name of driver to use. (delegated)",
+          "name": [
+            "--driver-name",
+            "-d"
+          ]
+        },
+        {
+          "description": "Destroy all scenarios. Default is False",
+          "name": [
+            "--all"
+          ]
+        },
+        {
+          "description": "Do not destroy all scenarios",
+          "name": [
+            "--no-all"
+          ]
+        },
+        {
+          "description": "Enable parallel mode",
+          "name": [
+            "--parallel"
+          ]
+        },
+        {
+          "description": "Disable parallel mode",
+          "name": [
+            "--no-parallel"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "List drivers",
+      "name": "drivers",
+      "options": [
+        {
+          "args": {
+            "name": "TEXT",
+            "suggestions": [
+              {
+                "name": "simple"
+              },
+              {
+                "name": "plain"
+              }
+            ]
+          },
+          "description": "Change output format. (simple)",
+          "name": [
+            "--format",
+            "-f"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Use the provisioner to configure the instances and parse the output to determine idempotence",
+      "name": "idempotence",
+      "options": [
+        {
+          "args": {
+            "name": "TEXT"
+          },
+          "description": "Name of the scenario to target. (default)",
+          "name": [
+            "--scenario-name",
+            "-s"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Initialize a new role or scenario",
+      "name": "init",
+      "subcommands": [
+        {
+          "args": {
+            "name": "ROLE_NAME"
+          },
+          "description": "Initialize a new role for use with Molecule, namespace is required outside collections, like acme.myrole",
+          "name": "role",
+          "options": [
+            {
+              "args": {
+                "name": "TEXT",
+                "suggestions": [
+                  {
+                    "name": "galaxy"
+                  }
+                ]
+              },
+              "description": "Name of dependency to initialize. (galaxy)",
+              "name": [
+                "--dependency-name"
+              ]
+            },
+            {
+              "args": {
+                "name": "TEXT",
+                "suggestions": [
+                  {
+                    "name": "delegated"
+                  },
+                  {
+                    "name": "docker"
+                  },
+                  {
+                    "name": "podman"
+                  },
+                  {
+                    "name": "vagrant"
+                  },
+                  {
+                    "name": "azure"
+                  },
+                  {
+                    "name": "hetzner"
+                  }
+                ]
+              },
+              "description": "Name of driver to use. (delegated)",
+              "name": [
+                "--driver-name",
+                "-d"
+              ]
+            },
+            {
+              "args": {
+                "name": "TEXT",
+                "suggestions": [
+                  {
+                    "name": "yamllint"
+                  }
+                ]
+              },
+              "description": "Name of lint to initialize. (yamllint)",
+              "name": [
+                "--lint-name"
+              ]
+            },
+            {
+              "args": {
+                "name": "TEXT",
+                "suggestions": [
+                  {
+                    "name": "ansible"
+                  }
+                ]
+              },
+              "description": "Name of provisioner to initialize. (ansible)",
+              "name": [
+                "--provisioner-name"
+              ]
+            },
+            {
+              "args": {
+                "name": "TEXT",
+                "suggestions": [
+                  {
+                    "name": "ansible"
+                  },
+                  {
+                    "name": "testinfra"
+                  }
+                ]
+              },
+              "description": "Name of verifier to initialize. (ansible)",
+              "name": [
+                "--verifier-name"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "SCENARIO_NAME"
+          },
+          "description": "Initialize a new scenario for use with Molecule",
+          "name": "scenario",
+          "options": [
+            {
+              "args": {
+                "name": "TEXT",
+                "suggestions": [
+                  {
+                    "name": "galaxy"
+                  }
+                ]
+              },
+              "description": "Name of dependency to initialize. (galaxy)",
+              "name": [
+                "--dependency-name"
+              ]
+            },
+            {
+              "args": {
+                "name": "TEXT",
+                "suggestions": [
+                  {
+                    "name": "delegated"
+                  },
+                  {
+                    "name": "docker"
+                  },
+                  {
+                    "name": "podman"
+                  },
+                  {
+                    "name": "vagrant"
+                  },
+                  {
+                    "name": "azure"
+                  },
+                  {
+                    "name": "hetzner"
+                  }
+                ]
+              },
+              "description": "Name of driver to use. (delegated)",
+              "name": [
+                "--driver-name",
+                "-d"
+              ]
+            },
+            {
+              "args": {
+                "name": "TEXT",
+                "suggestions": [
+                  {
+                    "name": "yamllint"
+                  }
+                ]
+              },
+              "description": "Name of lint to initialize. (yamllint)",
+              "name": [
+                "--lint-name"
+              ]
+            },
+            {
+              "args": {
+                "name": "TEXT",
+                "suggestions": [
+                  {
+                    "name": "ansible"
+                  }
+                ]
+              },
+              "description": "Name of provisioner to initialize. (ansible)",
+              "name": [
+                "--provisioner-name"
+              ]
+            },
+            {
+              "args": {
+                "name": "TEXT"
+              },
+              "description": "Name of the role to create",
+              "name": [
+                "--role-name",
+                "-r"
+              ]
+            },
+            {
+              "args": {
+                "name": "TEXT",
+                "suggestions": [
+                  {
+                    "name": "ansible"
+                  },
+                  {
+                    "name": "testinfra"
+                  }
+                ]
+              },
+              "description": "Name of verifier to initialize. (ansible)",
+              "name": [
+                "--verifier-name"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Lint the role (dependency, lint)",
+      "name": "lint",
+      "options": [
+        {
+          "args": {
+            "name": "TEXT"
+          },
+          "description": "Name of the scenario to target. (default)",
+          "name": [
+            "--scenario-name",
+            "-s"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "List status of instances",
+      "name": "list",
+      "options": [
+        {
+          "args": {
+            "name": "TEXT"
+          },
+          "description": "Name of the scenario to target. (default)",
+          "name": [
+            "--scenario-name",
+            "-s"
+          ]
+        },
+        {
+          "args": {
+            "name": "TEXT",
+            "suggestions": [
+              {
+                "name": "simple"
+              },
+              {
+                "name": "plain"
+              },
+              {
+                "name": "yaml"
+              }
+            ]
+          },
+          "description": "Change output format. (simple)",
+          "name": [
+            "--format",
+            "-f"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Log in to one instance",
+      "name": "login",
+      "options": [
+        {
+          "args": {
+            "name": "TEXT"
+          },
+          "description": "Host to access",
+          "name": [
+            "--host",
+            "-h"
+          ]
+        },
+        {
+          "args": {
+            "name": "TEXT"
+          },
+          "description": "Name of the scenario to target. (default)",
+          "name": [
+            "--scenario-name",
+            "-s"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "List matrix of steps used to test instances",
+      "name": "matrix",
+      "options": [
+        {
+          "args": {
+            "name": "TEXT"
+          },
+          "description": "Name of the scenario to target. (default)",
+          "name": [
+            "--scenario-name",
+            "-s"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Use the provisioner to prepare the instances into a particular starting state",
+      "name": "prepare",
+      "options": [
+        {
+          "args": {
+            "name": "TEXT"
+          },
+          "description": "Name of the scenario to target. (default)",
+          "name": [
+            "--scenario-name",
+            "-s"
+          ]
+        },
+        {
+          "args": {
+            "name": "TEXT",
+            "suggestions": [
+              {
+                "name": "delegated"
+              },
+              {
+                "name": "docker"
+              },
+              {
+                "name": "podman"
+              },
+              {
+                "name": "vagrant"
+              },
+              {
+                "name": "azure"
+              },
+              {
+                "name": "hetzner"
+              }
+            ]
+          },
+          "description": "Name of driver to use. (delegated)",
+          "name": [
+            "--driver-name",
+            "-d"
+          ]
+        },
+        {
+          "description": "Enable force mode. Default is disabled",
+          "name": [
+            "--force"
+          ]
+        },
+        {
+          "description": "Disable force mode",
+          "name": [
+            "--no-force"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Reset molecule temporary folders",
+      "name": "reset",
+      "options": [
+        {
+          "args": {
+            "name": "TEXT"
+          },
+          "description": "Name of the scenario to target. (default)",
+          "name": [
+            "--scenario-name",
+            "-s"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Use the provisioner to perform side-effects to the instances",
+      "name": "side-effect",
+      "options": [
+        {
+          "args": {
+            "name": "TEXT"
+          },
+          "description": "Name of the scenario to target. (default)",
+          "name": [
+            "--scenario-name",
+            "-s"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Use the provisioner to syntax check the role",
+      "name": "syntax",
+      "options": [
+        {
+          "args": {
+            "name": "TEXT"
+          },
+          "description": "Name of the scenario to target. (default)",
+          "name": [
+            "--scenario-name",
+            "-s"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Test (dependency, lint, cleanup, destroy, syntax, create, prepare, converge, idempotence, side_effect, verify, cleanup, destroy)",
+      "name": "test",
+      "options": [
+        {
+          "args": {
+            "name": "TEXT"
+          },
+          "description": "Name of the scenario to target. (default)",
+          "name": [
+            "--scenario-name",
+            "-s"
+          ]
+        },
+        {
+          "args": {
+            "name": "TEXT",
+            "suggestions": [
+              {
+                "name": "delegated"
+              },
+              {
+                "name": "docker"
+              },
+              {
+                "name": "podman"
+              },
+              {
+                "name": "vagrant"
+              },
+              {
+                "name": "azure"
+              },
+              {
+                "name": "hetzner"
+              }
+            ]
+          },
+          "description": "Name of driver to use. (delegated)",
+          "name": [
+            "--driver-name",
+            "-d"
+          ]
+        },
+        {
+          "description": "Test all scenarios. Default is False",
+          "name": [
+            "--all"
+          ]
+        },
+        {
+          "description": "Do not test all scenarios",
+          "name": [
+            "--no-all"
+          ]
+        },
+        {
+          "args": {
+            "name": "TEXT",
+            "suggestions": [
+              {
+                "name": "always"
+              },
+              {
+                "name": "never"
+              }
+            ]
+          },
+          "description": "The destroy strategy used at the conclusion of a Molecule run (always)",
+          "name": [
+            "--destroy"
+          ]
+        },
+        {
+          "description": "Enable parallel mode",
+          "name": [
+            "--parallel"
+          ]
+        },
+        {
+          "description": "Disable parallel mode",
+          "name": [
+            "--no-parallel"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,119 @@
+{
+  "description": "Ignite is a CLI that helps you spin up a new React Native app using a battle-tested tech stack",
+  "name": "ignite-cli",
+  "options": [
+    {
+      "description": "Output usage information",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Output the version number",
+      "name": [
+        "-v",
+        "--version"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "name": "name"
+      },
+      "description": "Create a new React Native app",
+      "name": "new",
+      "options": [
+        {
+          "description": "Use Expo",
+          "name": [
+            "--expo"
+          ]
+        },
+        {
+          "args": {
+            "name": "bundle"
+          },
+          "description": "Set the bundle ID of the app",
+          "name": [
+            "--bundle"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "script": [
+                "ls",
+                "ignite/templates"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty",
+                "trim"
+              ]
+            }
+          ],
+          "isOptional": true,
+          "name": "generator"
+        },
+        {
+          "isOptional": true,
+          "name": "name"
+        }
+      ],
+      "description": "Generate components and other app features",
+      "name": "g",
+      "options": [
+        {
+          "description": "List installed generators",
+          "name": [
+            "--list"
+          ]
+        },
+        {
+          "description": "Update installed generators",
+          "name": [
+            "--update"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "ls",
+              "ignite/templates"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "name": "generator"
+      },
+      "description": "Update installed generators",
+      "name": "update",
+      "options": [
+        {
+          "description": "Update all installed generators",
+          "name": [
+            "--all"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Check your environment & display versions of installed dependencies",
+      "name": "doctor"
+    }
+  ]
+}

@@ -1,0 +1,754 @@
+{
+  "description": "A set of tools and services to help front-end web and mobile developers build scalable full stack applications",
+  "name": "amplify",
+  "subcommands": [
+    {
+      "description": "Initializes a new project, sets up deployment resources in the cloud, and makes your project ready for Amplify",
+      "name": "init"
+    },
+    {
+      "description": "Configures the attributes of your project for amplify-cli, such as switching front-end framework and adding/removing cloud-provider plugins",
+      "name": "configure"
+    },
+    {
+      "description": "Provisions cloud resources with the latest local developments",
+      "name": "push",
+      "options": [
+        {
+          "description": "Answer all question as 'Yes'",
+          "name": [
+            "-y"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "name": "notifications"
+        },
+        {
+          "name": "analytics"
+        },
+        {
+          "name": "api"
+        },
+        {
+          "name": "auth"
+        },
+        {
+          "name": "function"
+        },
+        {
+          "name": "hosting"
+        },
+        {
+          "name": "interactions"
+        },
+        {
+          "name": "predictions"
+        },
+        {
+          "name": "storage"
+        },
+        {
+          "name": "xr"
+        }
+      ]
+    },
+    {
+      "description": "Fetch upstream backend environment definition changes from the cloud and updates the local environment to match that definition",
+      "name": "pull"
+    },
+    {
+      "description": "Executes amplify push, and then builds and publishes client-side application for hosting",
+      "name": "publish"
+    },
+    {
+      "description": "Executes amplify push, and then executes the project's start command to test run the client-side application locally",
+      "name": "serve"
+    },
+    {
+      "description": "Shows the state of local resources not yet pushed to the cloud (Create/Update/Delete)",
+      "name": "status",
+      "subcommands": [
+        {
+          "name": "notifications"
+        },
+        {
+          "name": "analytics"
+        },
+        {
+          "name": "api"
+        },
+        {
+          "name": "auth"
+        },
+        {
+          "name": "function"
+        },
+        {
+          "name": "hosting"
+        },
+        {
+          "name": "interactions"
+        },
+        {
+          "name": "predictions"
+        },
+        {
+          "name": "storage"
+        },
+        {
+          "name": "xr"
+        },
+        {
+          "description": "Shows the detailed verbose diff between local and deployed resources, including cloudformation-diff",
+          "name": "-v"
+        }
+      ]
+    },
+    {
+      "description": "Deletes all of the resources tied to the project from the cloud",
+      "name": "delete"
+    },
+    {
+      "description": "Adds a resource for an Amplify category in your local backend",
+      "name": "add",
+      "subcommands": [
+        {
+          "name": "notifications"
+        },
+        {
+          "name": "analytics"
+        },
+        {
+          "name": "api"
+        },
+        {
+          "name": "auth"
+        },
+        {
+          "name": "function"
+        },
+        {
+          "name": "hosting"
+        },
+        {
+          "name": "interactions"
+        },
+        {
+          "name": "predictions"
+        },
+        {
+          "name": "storage"
+        },
+        {
+          "name": "xr"
+        }
+      ]
+    },
+    {
+      "description": "Update resource for an Amplify category in your local backend",
+      "name": "update",
+      "subcommands": [
+        {
+          "name": "notifications"
+        },
+        {
+          "name": "analytics"
+        },
+        {
+          "name": "api"
+        },
+        {
+          "name": "auth"
+        },
+        {
+          "name": "function"
+        },
+        {
+          "name": "hosting"
+        },
+        {
+          "name": "interactions"
+        },
+        {
+          "name": "predictions"
+        },
+        {
+          "name": "storage"
+        },
+        {
+          "name": "xr"
+        }
+      ]
+    },
+    {
+      "description": "Removes a resource for an Amplify category in your local backend",
+      "name": "remove",
+      "subcommands": [
+        {
+          "name": "notifications"
+        },
+        {
+          "name": "analytics"
+        },
+        {
+          "name": "api"
+        },
+        {
+          "name": "auth"
+        },
+        {
+          "name": "function"
+        },
+        {
+          "name": "hosting"
+        },
+        {
+          "name": "interactions"
+        },
+        {
+          "name": "predictions"
+        },
+        {
+          "name": "storage"
+        },
+        {
+          "name": "xr"
+        }
+      ]
+    },
+    {
+      "description": "Download and install the latest version of the Amplify CLI",
+      "name": "upgrade"
+    },
+    {
+      "description": "Remove all global Amplify configuration files and uninstall the Amplify CLI. This will not delete any Amplify projects",
+      "name": "uninstall"
+    },
+    {
+      "name": "notifications",
+      "subcommands": [
+        {
+          "description": "Adds a resource for an Amplify category in your local backend",
+          "name": "add"
+        },
+        {
+          "description": "Update resource for an Amplify category in your local backend",
+          "name": "update"
+        },
+        {
+          "description": "Removes a resource for an Amplify category in your local backend",
+          "name": "remove"
+        },
+        {
+          "description": "Opens the web console for the category",
+          "name": "console"
+        },
+        {
+          "description": "Provisions cloud resources with the latest local developments",
+          "name": "push",
+          "options": [
+            {
+              "description": "Answer all question as 'Yes'",
+              "name": [
+                "-y"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "analytics",
+      "subcommands": [
+        {
+          "description": "Adds a resource for an Amplify category in your local backend",
+          "name": "add"
+        },
+        {
+          "description": "Update resource for an Amplify category in your local backend",
+          "name": "update"
+        },
+        {
+          "description": "Removes a resource for an Amplify category in your local backend",
+          "name": "remove"
+        },
+        {
+          "description": "Opens the web console for the category",
+          "name": "console"
+        },
+        {
+          "description": "Provisions cloud resources with the latest local developments",
+          "name": "push",
+          "options": [
+            {
+              "description": "Answer all question as 'Yes'",
+              "name": [
+                "-y"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "api",
+      "subcommands": [
+        {
+          "description": "Compiles your GraphQL schema and generates a corresponding cloudformation template",
+          "name": "gql-compile"
+        },
+        {
+          "description": "Migrates GraphQL schemas to the latest GraphQL transformer version",
+          "name": "migrate"
+        },
+        {
+          "description": "Generates overrides file to apply custom modifications to CloudFormation",
+          "name": "override"
+        },
+        {
+          "description": "Removes and recreates all DynamoDB tables backing a GraphQL API. Useful for resetting test data during the development phase of an app",
+          "name": "rebuild"
+        },
+        {
+          "description": "Adds a resource for an Amplify category in your local backend",
+          "name": "add"
+        },
+        {
+          "description": "Update resource for an Amplify category in your local backend",
+          "name": "update"
+        },
+        {
+          "description": "Removes a resource for an Amplify category in your local backend",
+          "name": "remove"
+        },
+        {
+          "description": "Opens the web console for the category",
+          "name": "console"
+        },
+        {
+          "description": "Provisions cloud resources with the latest local developments",
+          "name": "push",
+          "options": [
+            {
+              "description": "Answer all question as 'Yes'",
+              "name": [
+                "-y"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "auth",
+      "subcommands": [
+        {
+          "description": "Adds a resource for an Amplify category in your local backend",
+          "name": "add"
+        },
+        {
+          "description": "Update resource for an Amplify category in your local backend",
+          "name": "update"
+        },
+        {
+          "description": "Removes a resource for an Amplify category in your local backend",
+          "name": "remove"
+        },
+        {
+          "description": "Opens the web console for the category",
+          "name": "console"
+        },
+        {
+          "description": "Provisions cloud resources with the latest local developments",
+          "name": "push",
+          "options": [
+            {
+              "description": "Answer all question as 'Yes'",
+              "name": [
+                "-y"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "function",
+      "subcommands": [
+        {
+          "description": "Builds all the functions in the project (does an npm install on the functions src directory)",
+          "name": "build"
+        },
+        {
+          "description": "Adds a resource for an Amplify category in your local backend",
+          "name": "add"
+        },
+        {
+          "description": "Update resource for an Amplify category in your local backend",
+          "name": "update"
+        },
+        {
+          "description": "Removes a resource for an Amplify category in your local backend",
+          "name": "remove"
+        },
+        {
+          "description": "Opens the web console for the category",
+          "name": "console"
+        },
+        {
+          "description": "Provisions cloud resources with the latest local developments",
+          "name": "push",
+          "options": [
+            {
+              "description": "Answer all question as 'Yes'",
+              "name": [
+                "-y"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "hosting",
+      "subcommands": [
+        {
+          "description": "Adds a resource for an Amplify category in your local backend",
+          "name": "add"
+        },
+        {
+          "description": "Update resource for an Amplify category in your local backend",
+          "name": "update"
+        },
+        {
+          "description": "Removes a resource for an Amplify category in your local backend",
+          "name": "remove"
+        },
+        {
+          "description": "Opens the web console for the category",
+          "name": "console"
+        },
+        {
+          "description": "Provisions cloud resources with the latest local developments",
+          "name": "push",
+          "options": [
+            {
+              "description": "Answer all question as 'Yes'",
+              "name": [
+                "-y"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "interactions",
+      "subcommands": [
+        {
+          "description": "Adds a resource for an Amplify category in your local backend",
+          "name": "add"
+        },
+        {
+          "description": "Update resource for an Amplify category in your local backend",
+          "name": "update"
+        },
+        {
+          "description": "Removes a resource for an Amplify category in your local backend",
+          "name": "remove"
+        },
+        {
+          "description": "Opens the web console for the category",
+          "name": "console"
+        },
+        {
+          "description": "Provisions cloud resources with the latest local developments",
+          "name": "push",
+          "options": [
+            {
+              "description": "Answer all question as 'Yes'",
+              "name": [
+                "-y"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "predictions",
+      "subcommands": [
+        {
+          "description": "Adds a resource for an Amplify category in your local backend",
+          "name": "add"
+        },
+        {
+          "description": "Update resource for an Amplify category in your local backend",
+          "name": "update"
+        },
+        {
+          "description": "Removes a resource for an Amplify category in your local backend",
+          "name": "remove"
+        },
+        {
+          "description": "Opens the web console for the category",
+          "name": "console"
+        },
+        {
+          "description": "Provisions cloud resources with the latest local developments",
+          "name": "push",
+          "options": [
+            {
+              "description": "Answer all question as 'Yes'",
+              "name": [
+                "-y"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "storage",
+      "subcommands": [
+        {
+          "description": "Adds a resource for an Amplify category in your local backend",
+          "name": "add"
+        },
+        {
+          "description": "Update resource for an Amplify category in your local backend",
+          "name": "update"
+        },
+        {
+          "description": "Removes a resource for an Amplify category in your local backend",
+          "name": "remove"
+        },
+        {
+          "description": "Opens the web console for the category",
+          "name": "console"
+        },
+        {
+          "description": "Provisions cloud resources with the latest local developments",
+          "name": "push",
+          "options": [
+            {
+              "description": "Answer all question as 'Yes'",
+              "name": [
+                "-y"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "xr",
+      "subcommands": [
+        {
+          "description": "Adds a resource for an Amplify category in your local backend",
+          "name": "add"
+        },
+        {
+          "description": "Update resource for an Amplify category in your local backend",
+          "name": "update"
+        },
+        {
+          "description": "Removes a resource for an Amplify category in your local backend",
+          "name": "remove"
+        },
+        {
+          "description": "Opens the web console for the category",
+          "name": "console"
+        },
+        {
+          "description": "Provisions cloud resources with the latest local developments",
+          "name": "push",
+          "options": [
+            {
+              "description": "Answer all question as 'Yes'",
+              "name": [
+                "-y"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Run mock server for testing categories locally",
+      "name": "mock"
+    },
+    {
+      "description": "Generates GraphQL statements(queries, mutations and eventHandlers) and type annotations",
+      "name": "codegen"
+    },
+    {
+      "description": "Opens the web console for the selected cloud resource",
+      "name": "console"
+    },
+    {
+      "description": "If using temporary cloud provider credentials, this logs out of the account",
+      "name": "logout"
+    },
+    {
+      "description": "Display all commands available for new Amplify project",
+      "name": "env",
+      "subcommands": [
+        {
+          "description": "Adds a new environment",
+          "name": "add"
+        },
+        {
+          "description": "Pulls the current env from the cloud",
+          "name": "pull",
+          "options": [
+            {
+              "description": "Overwrite your local changes",
+              "name": [
+                "--restore"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Env name",
+            "generators": [
+              {
+                "js_source": "function(a){return JSON.parse(a).envs.map(t=>({name:t,description:\"Environment\"}))}",
+                "requires_js": true,
+                "script": [
+                  "amplify",
+                  "env",
+                  "list",
+                  "--json"
+                ]
+              }
+            ],
+            "name": "env-name"
+          },
+          "description": "Switches to selected environment",
+          "name": "checkout",
+          "options": [
+            {
+              "description": "Overwrite your local changes",
+              "name": [
+                "--restore"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Displays a list of all the environments",
+          "name": "list",
+          "options": [
+            {
+              "description": "See more details",
+              "name": [
+                "--details"
+              ]
+            },
+            {
+              "description": "Format the output",
+              "name": [
+                "--json"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Displays the environment details",
+          "name": "get",
+          "options": [
+            {
+              "args": {
+                "description": "Env name",
+                "generators": [
+                  {
+                    "js_source": "function(a){return JSON.parse(a).envs.map(t=>({name:t,description:\"Environment\"}))}",
+                    "requires_js": true,
+                    "script": [
+                      "amplify",
+                      "env",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "env-name"
+              },
+              "description": "Mandatory flag",
+              "name": [
+                "--name"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Imports an environment",
+          "name": "import",
+          "options": [
+            {
+              "args": {
+                "description": "Env name",
+                "generators": [
+                  {
+                    "js_source": "function(a){return JSON.parse(a).envs.map(t=>({name:t,description:\"Environment\"}))}",
+                    "requires_js": true,
+                    "script": [
+                      "amplify",
+                      "env",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "env-name"
+              },
+              "description": "Mandatory flag",
+              "name": [
+                "--name"
+              ]
+            },
+            {
+              "args": {},
+              "description": "Specify provider configs",
+              "name": [
+                "--config"
+              ]
+            },
+            {
+              "args": {},
+              "description": "Specify AWS configs",
+              "name": [
+                "--awsInfo"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Env name",
+            "generators": [
+              {
+                "js_source": "function(a){return JSON.parse(a).envs.map(t=>({name:t,description:\"Environment\"}))}",
+                "requires_js": true,
+                "script": [
+                  "amplify",
+                  "env",
+                  "list",
+                  "--json"
+                ]
+              }
+            ],
+            "name": "env-name"
+          },
+          "description": "Removes an environment",
+          "name": "remove"
+        }
+      ]
+    }
+  ]
+}

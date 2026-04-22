@@ -1,0 +1,115 @@
+{
+  "description": "GraphCDN CLI",
+  "name": "graphcdn",
+  "options": [
+    {
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Authenticate the CLI",
+      "name": "login",
+      "options": [
+        {
+          "args": {
+            "name": "token"
+          },
+          "name": [
+            "--token"
+          ]
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Create a new GraphCDN service",
+      "name": "init",
+      "options": [
+        {
+          "description": "Skip all the questions and just init",
+          "name": [
+            "-y",
+            "--yes"
+          ]
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Pull the latest service configuration",
+      "name": "pull",
+      "options": [
+        {
+          "args": {
+            "description": "Name of the environment to pull from",
+            "name": "service"
+          },
+          "description": "Name of the service to pull from (only required without graphcdn.yml)",
+          "name": [
+            "--service"
+          ]
+        },
+        {
+          "args": {
+            "name": "env"
+          },
+          "name": [
+            "--env"
+          ]
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "field",
+        "suggestions": [
+          {
+            "name": "schema"
+          },
+          {
+            "name": "rules"
+          }
+        ]
+      },
+      "description": "Push and deploy the latest app configuration",
+      "name": "push",
+      "options": [
+        {
+          "args": {
+            "name": "env"
+          },
+          "name": [
+            "--env"
+          ]
+        },
+        {
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    }
+  ]
+}

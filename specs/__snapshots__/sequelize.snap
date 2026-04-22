@@ -1,0 +1,2030 @@
+{
+  "description": "The Sequelize Command Line Interface",
+  "name": "sequelize",
+  "options": [
+    {
+      "description": "Show help",
+      "name": [
+        "--help"
+      ]
+    },
+    {
+      "description": "Show version number",
+      "name": [
+        "--version"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Run pending migrations",
+      "name": "db:migrate",
+      "options": [
+        {
+          "args": {
+            "name": "migration name"
+          },
+          "description": "Migration name to run migrations until",
+          "name": [
+            "--to"
+          ]
+        },
+        {
+          "args": {
+            "name": "migration name"
+          },
+          "description": "Migration name to start migrations from (excluding)",
+          "name": [
+            "--from"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "The environment to run the command in",
+          "name": [
+            "--env"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to the config file",
+          "name": [
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to a JSON file with additional options",
+          "name": [
+            "--options-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the migrations folder",
+          "name": [
+            "--migrations-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the seeders folder",
+          "name": [
+            "--seeders-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the models folder",
+          "name": [
+            "--models-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "connection string"
+          },
+          "description": "The database connection string to use",
+          "name": [
+            "--url"
+          ]
+        },
+        {
+          "description": "When available show various debug information",
+          "name": [
+            "--debug"
+          ]
+        },
+        {
+          "description": "Show help",
+          "name": [
+            "--help"
+          ]
+        },
+        {
+          "description": "Show version number",
+          "name": [
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Update migration table to have timestamps",
+      "name": "db:migrate:schema:timestamps:add",
+      "options": [
+        {
+          "args": {
+            "name": "migration name"
+          },
+          "description": "Migration name to run migrations until",
+          "name": [
+            "--to"
+          ]
+        },
+        {
+          "args": {
+            "name": "migration name"
+          },
+          "description": "Migration name to start migrations from (excluding)",
+          "name": [
+            "--from"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "The environment to run the command in",
+          "name": [
+            "--env"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to the config file",
+          "name": [
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to a JSON file with additional options",
+          "name": [
+            "--options-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the migrations folder",
+          "name": [
+            "--migrations-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the seeders folder",
+          "name": [
+            "--seeders-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the models folder",
+          "name": [
+            "--models-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "connection string"
+          },
+          "description": "The database connection string to use",
+          "name": [
+            "--url"
+          ]
+        },
+        {
+          "description": "When available show various debug information",
+          "name": [
+            "--debug"
+          ]
+        },
+        {
+          "description": "Show help",
+          "name": [
+            "--help"
+          ]
+        },
+        {
+          "description": "Show version number",
+          "name": [
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "List the status of all migrations",
+      "name": "db:migrate:status",
+      "options": [
+        {
+          "args": {
+            "name": "migration name"
+          },
+          "description": "Migration name to run migrations until",
+          "name": [
+            "--to"
+          ]
+        },
+        {
+          "args": {
+            "name": "migration name"
+          },
+          "description": "Migration name to start migrations from (excluding)",
+          "name": [
+            "--from"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "The environment to run the command in",
+          "name": [
+            "--env"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to the config file",
+          "name": [
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to a JSON file with additional options",
+          "name": [
+            "--options-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the migrations folder",
+          "name": [
+            "--migrations-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the seeders folder",
+          "name": [
+            "--seeders-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the models folder",
+          "name": [
+            "--models-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "connection string"
+          },
+          "description": "The database connection string to use",
+          "name": [
+            "--url"
+          ]
+        },
+        {
+          "description": "When available show various debug information",
+          "name": [
+            "--debug"
+          ]
+        },
+        {
+          "description": "Show help",
+          "name": [
+            "--help"
+          ]
+        },
+        {
+          "description": "Show version number",
+          "name": [
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Reverts a migration",
+      "name": "db:migrate:undo",
+      "options": [
+        {
+          "args": {
+            "name": "migration name"
+          },
+          "description": "Name of the migration to undo",
+          "name": [
+            "--name"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "The environment to run the command in",
+          "name": [
+            "--env"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to the config file",
+          "name": [
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to a JSON file with additional options",
+          "name": [
+            "--options-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the migrations folder",
+          "name": [
+            "--migrations-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the seeders folder",
+          "name": [
+            "--seeders-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the models folder",
+          "name": [
+            "--models-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "connection string"
+          },
+          "description": "The database connection string to use",
+          "name": [
+            "--url"
+          ]
+        },
+        {
+          "description": "When available show various debug information",
+          "name": [
+            "--debug"
+          ]
+        },
+        {
+          "description": "Show help",
+          "name": [
+            "--help"
+          ]
+        },
+        {
+          "description": "Show version number",
+          "name": [
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Revert all migrations ran",
+      "name": "db:migrate:undo:all",
+      "options": [
+        {
+          "args": {
+            "name": "migration name"
+          },
+          "description": "Revert to the provided migration",
+          "name": [
+            "--to"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "The environment to run the command in",
+          "name": [
+            "--env"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to the config file",
+          "name": [
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to a JSON file with additional options",
+          "name": [
+            "--options-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the migrations folder",
+          "name": [
+            "--migrations-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the seeders folder",
+          "name": [
+            "--seeders-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the models folder",
+          "name": [
+            "--models-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "connection string"
+          },
+          "description": "The database connection string to use",
+          "name": [
+            "--url"
+          ]
+        },
+        {
+          "description": "When available show various debug information",
+          "name": [
+            "--debug"
+          ]
+        },
+        {
+          "description": "Show help",
+          "name": [
+            "--help"
+          ]
+        },
+        {
+          "description": "Show version number",
+          "name": [
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Run specified seeder",
+      "name": "db:seed",
+      "options": [
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "List of seed files",
+          "name": [
+            "--seed"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "The environment to run the command in",
+          "name": [
+            "--env"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to the config file",
+          "name": [
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to a JSON file with additional options",
+          "name": [
+            "--options-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the migrations folder",
+          "name": [
+            "--migrations-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the seeders folder",
+          "name": [
+            "--seeders-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the models folder",
+          "name": [
+            "--models-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "connection string"
+          },
+          "description": "The database connection string to use",
+          "name": [
+            "--url"
+          ]
+        },
+        {
+          "description": "When available show various debug information",
+          "name": [
+            "--debug"
+          ]
+        },
+        {
+          "description": "Show help",
+          "name": [
+            "--help"
+          ]
+        },
+        {
+          "description": "Show version number",
+          "name": [
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Deletes data from the database",
+      "name": "db:seed:undo",
+      "options": [
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "List of seed files",
+          "name": [
+            "--seed"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "The environment to run the command in",
+          "name": [
+            "--env"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to the config file",
+          "name": [
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to a JSON file with additional options",
+          "name": [
+            "--options-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the migrations folder",
+          "name": [
+            "--migrations-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the seeders folder",
+          "name": [
+            "--seeders-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the models folder",
+          "name": [
+            "--models-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "connection string"
+          },
+          "description": "The database connection string to use",
+          "name": [
+            "--url"
+          ]
+        },
+        {
+          "description": "When available show various debug information",
+          "name": [
+            "--debug"
+          ]
+        },
+        {
+          "description": "Show help",
+          "name": [
+            "--help"
+          ]
+        },
+        {
+          "description": "Show version number",
+          "name": [
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Run every seeder",
+      "name": "db:seed:all",
+      "options": [
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "The environment to run the command in",
+          "name": [
+            "--env"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to the config file",
+          "name": [
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to a JSON file with additional options",
+          "name": [
+            "--options-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the migrations folder",
+          "name": [
+            "--migrations-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the seeders folder",
+          "name": [
+            "--seeders-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the models folder",
+          "name": [
+            "--models-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "connection string"
+          },
+          "description": "The database connection string to use",
+          "name": [
+            "--url"
+          ]
+        },
+        {
+          "description": "When available show various debug information",
+          "name": [
+            "--debug"
+          ]
+        },
+        {
+          "description": "Show help",
+          "name": [
+            "--help"
+          ]
+        },
+        {
+          "description": "Show version number",
+          "name": [
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Deletes data from the database",
+      "name": "db:seed:undo:all",
+      "options": [
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "The environment to run the command in",
+          "name": [
+            "--env"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to the config file",
+          "name": [
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to a JSON file with additional options",
+          "name": [
+            "--options-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the migrations folder",
+          "name": [
+            "--migrations-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the seeders folder",
+          "name": [
+            "--seeders-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the models folder",
+          "name": [
+            "--models-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "connection string"
+          },
+          "description": "The database connection string to use",
+          "name": [
+            "--url"
+          ]
+        },
+        {
+          "description": "When available show various debug information",
+          "name": [
+            "--debug"
+          ]
+        },
+        {
+          "description": "Show help",
+          "name": [
+            "--help"
+          ]
+        },
+        {
+          "description": "Show version number",
+          "name": [
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Create database specified by configuration",
+      "name": "db:create",
+      "options": [
+        {
+          "args": {
+            "name": "charset options"
+          },
+          "description": "Pass charset option to dialect, MYSQL only",
+          "name": [
+            "--charset"
+          ]
+        },
+        {
+          "args": {
+            "name": "collate options"
+          },
+          "description": "Pass collate option to dialect",
+          "name": [
+            "--collate"
+          ]
+        },
+        {
+          "args": {
+            "name": "encoding options"
+          },
+          "description": "Pass encoding option to dialect, PostgreSQL only",
+          "name": [
+            "--encoding"
+          ]
+        },
+        {
+          "args": {
+            "name": "ctype option"
+          },
+          "description": "Pass ctype option to dialect, PostgreSQL only",
+          "name": [
+            "--ctype"
+          ]
+        },
+        {
+          "args": {
+            "name": "template option"
+          },
+          "description": "Pass template option to dialect, PostgreSQL only",
+          "name": [
+            "--template"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "The environment to run the command in",
+          "name": [
+            "--env"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to the config file",
+          "name": [
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to a JSON file with additional options",
+          "name": [
+            "--options-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the migrations folder",
+          "name": [
+            "--migrations-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the seeders folder",
+          "name": [
+            "--seeders-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the models folder",
+          "name": [
+            "--models-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "connection string"
+          },
+          "description": "The database connection string to use",
+          "name": [
+            "--url"
+          ]
+        },
+        {
+          "description": "When available show various debug information",
+          "name": [
+            "--debug"
+          ]
+        },
+        {
+          "description": "Show help",
+          "name": [
+            "--help"
+          ]
+        },
+        {
+          "description": "Show version number",
+          "name": [
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Drop database specified by configuration",
+      "name": "db:drop",
+      "options": [
+        {
+          "args": {
+            "name": "charset options"
+          },
+          "description": "Pass charset option to dialect, MYSQL only",
+          "name": [
+            "--charset"
+          ]
+        },
+        {
+          "args": {
+            "name": "collate options"
+          },
+          "description": "Pass collate option to dialect",
+          "name": [
+            "--collate"
+          ]
+        },
+        {
+          "args": {
+            "name": "encoding options"
+          },
+          "description": "Pass encoding option to dialect, PostgreSQL only",
+          "name": [
+            "--encoding"
+          ]
+        },
+        {
+          "args": {
+            "name": "ctype option"
+          },
+          "description": "Pass ctype option to dialect, PostgreSQL only",
+          "name": [
+            "--ctype"
+          ]
+        },
+        {
+          "args": {
+            "name": "template option"
+          },
+          "description": "Pass template option to dialect, PostgreSQL only",
+          "name": [
+            "--template"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "The environment to run the command in",
+          "name": [
+            "--env"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to the config file",
+          "name": [
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to a JSON file with additional options",
+          "name": [
+            "--options-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the migrations folder",
+          "name": [
+            "--migrations-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the seeders folder",
+          "name": [
+            "--seeders-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the models folder",
+          "name": [
+            "--models-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "connection string"
+          },
+          "description": "The database connection string to use",
+          "name": [
+            "--url"
+          ]
+        },
+        {
+          "description": "When available show various debug information",
+          "name": [
+            "--debug"
+          ]
+        },
+        {
+          "description": "Show help",
+          "name": [
+            "--help"
+          ]
+        },
+        {
+          "description": "Show version number",
+          "name": [
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Initializes project",
+      "name": "init",
+      "options": [
+        {
+          "description": "Will drop the existing config folder and re-create it",
+          "name": [
+            "--force"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "The environment to run the command in",
+          "name": [
+            "--env"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to the config file",
+          "name": [
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to a JSON file with additional options",
+          "name": [
+            "--options-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the migrations folder",
+          "name": [
+            "--migrations-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the seeders folder",
+          "name": [
+            "--seeders-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the models folder",
+          "name": [
+            "--models-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "connection string"
+          },
+          "description": "The database connection string to use",
+          "name": [
+            "--url"
+          ]
+        },
+        {
+          "description": "When available show various debug information",
+          "name": [
+            "--debug"
+          ]
+        },
+        {
+          "description": "Show help",
+          "name": [
+            "--help"
+          ]
+        },
+        {
+          "description": "Show version number",
+          "name": [
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Initializes configuration",
+      "name": "init:config",
+      "options": [
+        {
+          "description": "Will drop the existing config folder and re-create it",
+          "name": [
+            "--force"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "The environment to run the command in",
+          "name": [
+            "--env"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to the config file",
+          "name": [
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to a JSON file with additional options",
+          "name": [
+            "--options-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the migrations folder",
+          "name": [
+            "--migrations-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the seeders folder",
+          "name": [
+            "--seeders-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the models folder",
+          "name": [
+            "--models-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "connection string"
+          },
+          "description": "The database connection string to use",
+          "name": [
+            "--url"
+          ]
+        },
+        {
+          "description": "When available show various debug information",
+          "name": [
+            "--debug"
+          ]
+        },
+        {
+          "description": "Show help",
+          "name": [
+            "--help"
+          ]
+        },
+        {
+          "description": "Show version number",
+          "name": [
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Initializes migrations",
+      "name": "init:migrations",
+      "options": [
+        {
+          "description": "Will drop the existing config folder and re-create it",
+          "name": [
+            "--force"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "The environment to run the command in",
+          "name": [
+            "--env"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to the config file",
+          "name": [
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to a JSON file with additional options",
+          "name": [
+            "--options-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the migrations folder",
+          "name": [
+            "--migrations-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the seeders folder",
+          "name": [
+            "--seeders-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the models folder",
+          "name": [
+            "--models-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "connection string"
+          },
+          "description": "The database connection string to use",
+          "name": [
+            "--url"
+          ]
+        },
+        {
+          "description": "When available show various debug information",
+          "name": [
+            "--debug"
+          ]
+        },
+        {
+          "description": "Show help",
+          "name": [
+            "--help"
+          ]
+        },
+        {
+          "description": "Show version number",
+          "name": [
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Initializes models",
+      "name": "init:models",
+      "options": [
+        {
+          "description": "Will drop the existing config folder and re-create it",
+          "name": [
+            "--force"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "The environment to run the command in",
+          "name": [
+            "--env"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to the config file",
+          "name": [
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to a JSON file with additional options",
+          "name": [
+            "--options-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the migrations folder",
+          "name": [
+            "--migrations-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the seeders folder",
+          "name": [
+            "--seeders-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the models folder",
+          "name": [
+            "--models-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "connection string"
+          },
+          "description": "The database connection string to use",
+          "name": [
+            "--url"
+          ]
+        },
+        {
+          "description": "When available show various debug information",
+          "name": [
+            "--debug"
+          ]
+        },
+        {
+          "description": "Show help",
+          "name": [
+            "--help"
+          ]
+        },
+        {
+          "description": "Show version number",
+          "name": [
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Initializes seeders",
+      "name": "init:seeders",
+      "options": [
+        {
+          "description": "Will drop the existing config folder and re-create it",
+          "name": [
+            "--force"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "The environment to run the command in",
+          "name": [
+            "--env"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to the config file",
+          "name": [
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to a JSON file with additional options",
+          "name": [
+            "--options-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the migrations folder",
+          "name": [
+            "--migrations-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the seeders folder",
+          "name": [
+            "--seeders-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the models folder",
+          "name": [
+            "--models-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "connection string"
+          },
+          "description": "The database connection string to use",
+          "name": [
+            "--url"
+          ]
+        },
+        {
+          "description": "When available show various debug information",
+          "name": [
+            "--debug"
+          ]
+        },
+        {
+          "description": "Show help",
+          "name": [
+            "--help"
+          ]
+        },
+        {
+          "description": "Show version number",
+          "name": [
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generates a new migration file",
+      "name": "migration:generate",
+      "options": [
+        {
+          "args": {
+            "name": "migration name"
+          },
+          "description": "Defines the name of the migration",
+          "name": [
+            "--name"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "The environment to run the command in",
+          "name": [
+            "--env"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to the config file",
+          "name": [
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to a JSON file with additional options",
+          "name": [
+            "--options-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the migrations folder",
+          "name": [
+            "--migrations-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the seeders folder",
+          "name": [
+            "--seeders-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the models folder",
+          "name": [
+            "--models-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "connection string"
+          },
+          "description": "The database connection string to use",
+          "name": [
+            "--url"
+          ]
+        },
+        {
+          "description": "When available show various debug information",
+          "name": [
+            "--debug"
+          ]
+        },
+        {
+          "description": "Show help",
+          "name": [
+            "--help"
+          ]
+        },
+        {
+          "description": "Show version number",
+          "name": [
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generates a model and its migration",
+      "name": "model:generate",
+      "options": [
+        {
+          "args": {
+            "name": "model name"
+          },
+          "description": "Defines the name of the new model",
+          "name": [
+            "--name"
+          ]
+        },
+        {
+          "args": {
+            "name": "attributes string"
+          },
+          "description": "A list of attributes",
+          "name": [
+            "--attributes"
+          ]
+        },
+        {
+          "description": "Forcefully re-creates model with the same name",
+          "name": [
+            "--force"
+          ]
+        },
+        {
+          "description": "Use snake case for the timestamp's attribute names",
+          "name": [
+            "--underscored"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "The environment to run the command in",
+          "name": [
+            "--env"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to the config file",
+          "name": [
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to a JSON file with additional options",
+          "name": [
+            "--options-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the migrations folder",
+          "name": [
+            "--migrations-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the seeders folder",
+          "name": [
+            "--seeders-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the models folder",
+          "name": [
+            "--models-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "connection string"
+          },
+          "description": "The database connection string to use",
+          "name": [
+            "--url"
+          ]
+        },
+        {
+          "description": "When available show various debug information",
+          "name": [
+            "--debug"
+          ]
+        },
+        {
+          "description": "Show help",
+          "name": [
+            "--help"
+          ]
+        },
+        {
+          "description": "Show version number",
+          "name": [
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generates a new seed file",
+      "name": "seed:generate",
+      "options": [
+        {
+          "args": {
+            "name": "seed name"
+          },
+          "description": "Defines the name of the seed",
+          "name": [
+            "--name"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "The environment to run the command in",
+          "name": [
+            "--env"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to the config file",
+          "name": [
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "The path to a JSON file with additional options",
+          "name": [
+            "--options-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the migrations folder",
+          "name": [
+            "--migrations-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the seeders folder",
+          "name": [
+            "--seeders-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "folder path",
+            "template": "folders"
+          },
+          "description": "The path to the models folder",
+          "name": [
+            "--models-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "connection string"
+          },
+          "description": "The database connection string to use",
+          "name": [
+            "--url"
+          ]
+        },
+        {
+          "description": "When available show various debug information",
+          "name": [
+            "--debug"
+          ]
+        },
+        {
+          "description": "Show help",
+          "name": [
+            "--help"
+          ]
+        },
+        {
+          "description": "Show version number",
+          "name": [
+            "--version"
+          ]
+        }
+      ]
+    }
+  ]
+}

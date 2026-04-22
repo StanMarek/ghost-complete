@@ -1,0 +1,216 @@
+{
+  "args": {
+    "generators": [
+      {
+        "type": "ansible_doc_modules"
+      }
+    ],
+    "isVariadic": true,
+    "name": "plugin"
+  },
+  "description": "Displays information on modules installed in Ansible libraries",
+  "name": "ansible-doc",
+  "options": [
+    {
+      "args": {
+        "isOptional": true
+      },
+      "description": "For internal testing only Dump json metadata for all plugins",
+      "name": [
+        "--metadata-dump"
+      ]
+    },
+    {
+      "args": {
+        "description": "Base directory",
+        "name": "BASEDIR",
+        "template": [
+          "filepaths"
+        ]
+      },
+      "description": "Sets the relative path for many features including roles/ group_vars/ etc",
+      "name": [
+        "--playbook-dir"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true
+      },
+      "description": "Shows version number, config file location, module search path, module location, executable location and exit",
+      "name": [
+        "--version"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true
+      },
+      "description": "Show plugin names and their source files without summaries (implies --list)",
+      "name": [
+        "--list_files",
+        "-F"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true
+      },
+      "description": "Prepend colon-separated path(s) to module library",
+      "name": [
+        "--module-path",
+        "-M"
+      ]
+    },
+    {
+      "args": {
+        "name": "ENTRY_POINT"
+      },
+      "description": "Select the entry point for role(s)",
+      "name": [
+        "--entry-point",
+        "-E"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true
+      },
+      "description": "Show help and exit",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true
+      },
+      "description": "Change output into json format",
+      "name": [
+        "--json",
+        "-j"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "NAMESPACE|COLLECTION"
+      },
+      "description": "List available plugins; a supplied argument will be used for filtering (can be a namespace or full collection name)",
+      "name": [
+        "--list",
+        "-l"
+      ]
+    },
+    {
+      "args": {
+        "name": "PATH",
+        "template": [
+          "filepaths"
+        ]
+      },
+      "description": "The path to the directory containing your roles",
+      "name": [
+        "--roles-path",
+        "-r"
+      ]
+    },
+    {
+      "args": {
+        "name": "PLUGIN_TYPE",
+        "suggestions": [
+          {
+            "name": "inventory"
+          },
+          {
+            "name": "lookup"
+          },
+          {
+            "name": "module"
+          }
+        ]
+      },
+      "description": "Show playbook snippet for these plugin types: inventory, lookup, module",
+      "name": [
+        "--snippet",
+        "-s"
+      ]
+    },
+    {
+      "args": {
+        "name": "PLUGIN_TYPE",
+        "suggestions": [
+          {
+            "name": "become"
+          },
+          {
+            "name": "cache"
+          },
+          {
+            "name": "callback"
+          },
+          {
+            "name": "cliconf"
+          },
+          {
+            "name": "connection"
+          },
+          {
+            "name": "httpapi"
+          },
+          {
+            "name": "inventory"
+          },
+          {
+            "name": "lookup"
+          },
+          {
+            "name": "netconf"
+          },
+          {
+            "name": "shell"
+          },
+          {
+            "name": "vars"
+          },
+          {
+            "name": "module"
+          },
+          {
+            "name": "strategy"
+          },
+          {
+            "name": "role"
+          },
+          {
+            "name": "keyword"
+          }
+        ]
+      },
+      "description": "Choose which plugin type (defaults to \"module\")",
+      "name": [
+        "--type",
+        "-t"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true
+      },
+      "description": "Verbose mode (-vvv for more, -vvvv to enable connection debugging)",
+      "name": [
+        "--verbose"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true
+      },
+      "description": "Verbose mode (-vvv for more, -vvvv to enable connection debugging)",
+      "name": [
+        "-v"
+      ]
+    }
+  ]
+}

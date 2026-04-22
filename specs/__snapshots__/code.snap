@@ -1,0 +1,446 @@
+{
+  "args": {
+    "isVariadic": true,
+    "template": [
+      "filepaths",
+      "folders"
+    ]
+  },
+  "description": "Visual Studio Code",
+  "name": "code",
+  "options": [
+    {
+      "description": "Read from stdin (e.g. 'ps aux | grep code | code -')",
+      "name": [
+        "-"
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "file",
+          "template": "filepaths"
+        },
+        {
+          "name": "file",
+          "template": "filepaths"
+        }
+      ],
+      "description": "Compare two files with each other",
+      "name": [
+        "-d",
+        "--diff"
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "path1",
+          "template": "filepaths"
+        },
+        {
+          "name": "path2",
+          "template": "filepaths"
+        },
+        {
+          "name": "base",
+          "template": "filepaths"
+        },
+        {
+          "name": "result",
+          "template": "filepaths"
+        }
+      ],
+      "description": "Perform a three-way merge by providing paths for two modified versions of a file, the common origin of both modified versions and the output file to save merge results",
+      "name": [
+        "-m",
+        "--merge"
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "folder",
+        "template": "folders"
+      },
+      "description": "Add folder(s) to the last active window",
+      "name": [
+        "-a",
+        "--add"
+      ]
+    },
+    {
+      "args": {
+        "name": "file:line[:character]",
+        "template": "filepaths"
+      },
+      "description": "Open a file at the path on the specified line and character position",
+      "name": [
+        "-g",
+        "--goto"
+      ]
+    },
+    {
+      "description": "Force to open a new window",
+      "name": [
+        "-n",
+        "--new-window"
+      ]
+    },
+    {
+      "description": "Force to open a file or folder in an already opened window",
+      "name": [
+        "-r",
+        "--reuse-window"
+      ]
+    },
+    {
+      "description": "Wait for the files to be closed before returning",
+      "name": [
+        "-w",
+        "--wait"
+      ]
+    },
+    {
+      "args": {
+        "name": "locale",
+        "suggestions": [
+          {
+            "description": "English (US)",
+            "name": "en"
+          },
+          {
+            "description": "Simplified Chinese",
+            "name": "zh-CN"
+          },
+          {
+            "description": "Traditional Chinese",
+            "name": "zh-TW"
+          },
+          {
+            "description": "French",
+            "name": "fr"
+          },
+          {
+            "description": "German",
+            "name": "de"
+          },
+          {
+            "description": "Italian",
+            "name": "it"
+          },
+          {
+            "description": "Spanish",
+            "name": "es"
+          },
+          {
+            "description": "Japanese",
+            "name": "ja"
+          },
+          {
+            "description": "Korean",
+            "name": "ko"
+          },
+          {
+            "description": "Russian",
+            "name": "ru"
+          },
+          {
+            "description": "Bulgarian",
+            "name": "bg"
+          },
+          {
+            "description": "Hungarian",
+            "name": "hu"
+          },
+          {
+            "description": "Portuguese (Brazil)",
+            "name": "pt-br"
+          },
+          {
+            "description": "Turkish",
+            "name": "tr"
+          }
+        ]
+      },
+      "description": "The locale to use (e.g. en-US or zh-TW)",
+      "name": [
+        "--locale"
+      ]
+    },
+    {
+      "args": {
+        "name": "dir",
+        "template": "folders"
+      },
+      "description": "Specifies the directory that user data is kept in. Can be used to open multiple distinct instances of Code",
+      "name": [
+        "--user-data-dir"
+      ]
+    },
+    {
+      "args": {
+        "name": "settingsProfileName"
+      },
+      "description": "Opens the provided folder or workspace with the given profile and associates the profile with the workspace. If the profile does not exist, a new empty one is created. A folder or workspace must be provided for the profile to take effect",
+      "name": [
+        "--profile"
+      ]
+    },
+    {
+      "description": "Print usage",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "args": {
+        "name": "dir",
+        "template": "folders"
+      },
+      "description": "Set the root path for extensions",
+      "name": [
+        "--extensions-dir"
+      ]
+    },
+    {
+      "description": "List the installed extensions",
+      "name": [
+        "--list-extensions"
+      ]
+    },
+    {
+      "description": "Show versions of installed extensions, when using --list-extensions",
+      "name": [
+        "--show-versions"
+      ]
+    },
+    {
+      "args": {
+        "name": "category",
+        "suggestions": [
+          {
+            "name": "azure"
+          },
+          {
+            "name": "data science"
+          },
+          {
+            "name": "debuggers"
+          },
+          {
+            "name": "extension packs"
+          },
+          {
+            "name": "education"
+          },
+          {
+            "name": "formatters"
+          },
+          {
+            "name": "keymaps"
+          },
+          {
+            "name": "language packs"
+          },
+          {
+            "name": "linters"
+          },
+          {
+            "name": "machine learning"
+          },
+          {
+            "name": "notebooks"
+          },
+          {
+            "name": "programming languages"
+          },
+          {
+            "name": "scm providers"
+          },
+          {
+            "name": "snippets"
+          },
+          {
+            "name": "testing"
+          },
+          {
+            "name": "themes"
+          },
+          {
+            "name": "visualization"
+          },
+          {
+            "name": "other"
+          }
+        ]
+      },
+      "description": "Filters installed extensions by provided category, when using --list-extensions",
+      "name": [
+        "--category"
+      ]
+    },
+    {
+      "args": {
+        "name": "extension-id[@version] | path-to-vsix"
+      },
+      "description": "Installs or updates an extension. The argument is either an extension id or a path to a VSIX. The identifier of an extension is '${publisher}.${name}'. Use '--force' argument to update to latest version. To install a specific version provide '@${version}'. For example: 'vscode.csharp@1.2.3'",
+      "name": [
+        "--install-extension"
+      ]
+    },
+    {
+      "description": "Installs the pre-release version of the extension, when using --install-extension",
+      "name": [
+        "--pre-release"
+      ]
+    },
+    {
+      "args": {
+        "name": "extension-id"
+      },
+      "description": "Uninstalls an extension",
+      "name": [
+        "--uninstall-extension"
+      ]
+    },
+    {
+      "description": "Enables proposed API features for extensions. Can receive one or more extension IDs to enable individually",
+      "name": [
+        "--enable-proposed-api"
+      ]
+    },
+    {
+      "description": "Print version",
+      "name": [
+        "-v",
+        "--version"
+      ]
+    },
+    {
+      "description": "Print verbose output (implies --wait)",
+      "name": [
+        "--verbose"
+      ]
+    },
+    {
+      "args": {
+        "name": "level",
+        "suggestions": [
+          {
+            "name": "critical"
+          },
+          {
+            "name": "error"
+          },
+          {
+            "name": "warn"
+          },
+          {
+            "name": "info"
+          },
+          {
+            "name": "debug"
+          },
+          {
+            "name": "trace"
+          },
+          {
+            "name": "off"
+          }
+        ]
+      },
+      "description": "Log level to use. Default is 'info' when unspecified",
+      "name": [
+        "--log"
+      ]
+    },
+    {
+      "description": "Print process usage and diagnostics information",
+      "name": [
+        "-s",
+        "--status"
+      ]
+    },
+    {
+      "description": "Run CPU profiler during startup",
+      "name": [
+        "--prof-startup"
+      ]
+    },
+    {
+      "description": "Disable all installed extensions",
+      "name": [
+        "--disable-extensions"
+      ]
+    },
+    {
+      "args": {
+        "name": "extension-id"
+      },
+      "description": "Disable an extension",
+      "name": [
+        "--disable-extension"
+      ]
+    },
+    {
+      "args": {
+        "description": "Whether to enable sync",
+        "name": "sync",
+        "suggestions": [
+          {
+            "name": "on"
+          },
+          {
+            "name": "off"
+          }
+        ]
+      },
+      "description": "Turn sync on or off",
+      "name": [
+        "--sync"
+      ]
+    },
+    {
+      "args": {
+        "name": "port"
+      },
+      "description": "Allow debugging and profiling of extensions. Check the developer tools for the connection URI",
+      "name": [
+        "--inspect-extensions"
+      ]
+    },
+    {
+      "args": {
+        "name": "port"
+      },
+      "description": "Allow debugging and profiling of extensions with the extension host being paused after start. Check the developer tools for the connection URI",
+      "name": [
+        "--inspect-brk-extensions"
+      ]
+    },
+    {
+      "description": "Disable GPU hardware acceleration",
+      "name": [
+        "--disable-gpu"
+      ]
+    },
+    {
+      "args": {
+        "description": "Memory in megabytes",
+        "name": "memory"
+      },
+      "description": "Max memory size for a window (in Mbytes)",
+      "name": [
+        "--max-memory"
+      ]
+    },
+    {
+      "description": "Shows all telemetry events which VS code collects",
+      "name": [
+        "--telemetry"
+      ]
+    }
+  ]
+}

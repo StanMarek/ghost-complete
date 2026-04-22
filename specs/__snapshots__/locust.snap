@@ -1,0 +1,316 @@
+{
+  "description": "Locust is an easy to use, scriptable and scalable Python-based performance testing tool",
+  "name": "locust",
+  "options": [
+    {
+      "description": "Show program's version number and exit",
+      "name": [
+        "-v",
+        "--version"
+      ]
+    },
+    {
+      "description": "Show this help message and exit",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "args": {
+        "description": "Python module to import, e.g. '../other_test.py'. Either a .py file, multiple comma-separated .py files or a package directory. Defaults to 'locustfile'",
+        "isVariadic": true,
+        "name": "files...",
+        "template": "filepaths"
+      },
+      "description": "Show program's version number and exit",
+      "name": [
+        "-f",
+        "--locustfile"
+      ]
+    },
+    {
+      "args": {
+        "description": "Config file path",
+        "isVariadic": true,
+        "name": "files...",
+        "template": "filepaths"
+      },
+      "description": "Config file path",
+      "name": [
+        "--config"
+      ]
+    },
+    {
+      "description": "Host to load test in the following format: http://10.21.32.33",
+      "name": [
+        "-H",
+        "--host"
+      ]
+    },
+    {
+      "description": "Peak number of concurrent Locust users. Primarily used together with --headless or --autostart",
+      "name": [
+        "-u",
+        "--users"
+      ]
+    },
+    {
+      "description": "Rate to spawn users at (users per second). Primarily used together with --headless or --autostart",
+      "name": [
+        "-r",
+        "--spawn-rate"
+      ]
+    },
+    {
+      "description": "Stop after the specified amount of time, e.g. (300s, 20m, 3h, 1h30m, etc.)",
+      "name": [
+        "-t",
+        "--run-time"
+      ]
+    },
+    {
+      "description": "Show list of possible User classes and exit",
+      "name": [
+        "-l",
+        "--list"
+      ]
+    },
+    {
+      "description": "Host to bind the web interface to. Defaults to '*' (all interfaces)",
+      "name": [
+        "--web-host"
+      ]
+    },
+    {
+      "description": "Port on which to run web host",
+      "name": [
+        "-P",
+        "--web-port"
+      ]
+    },
+    {
+      "description": "Disable the web interface, and start the test immediately",
+      "name": [
+        "--headless"
+      ]
+    },
+    {
+      "description": "Starts the test immediately (without disabling the web UI)",
+      "name": [
+        "--autostart"
+      ]
+    },
+    {
+      "description": "Quits Locust entirely, X seconds after the run is finished",
+      "name": [
+        "--autoquit"
+      ]
+    },
+    {
+      "description": "Turn on Basic Auth for the web interface. e.g. username:password",
+      "name": [
+        "--web-auth"
+      ]
+    },
+    {
+      "args": {
+        "description": "Optional path to TLS certificate",
+        "name": "tls-cert",
+        "template": "filepaths"
+      },
+      "description": "Optional path to TLS certificate to use to serve over HTTPS",
+      "name": [
+        "--tls-cert"
+      ]
+    },
+    {
+      "args": {
+        "description": "Optional path to TLS private key",
+        "name": "tls-key",
+        "template": "filepaths"
+      },
+      "description": "Optional path to TLS private key to use to serve over HTTPS",
+      "name": [
+        "--tls-key"
+      ]
+    },
+    {
+      "description": "Enable select boxes in the web interface to choose from all available User classes and Shape classes",
+      "name": [
+        "--class-picker"
+      ]
+    },
+    {
+      "description": "Set locust to run in distributed mode with this process as master",
+      "name": [
+        "--master"
+      ]
+    },
+    {
+      "description": "Interfaces (hostname, ip) that locust master should bind to",
+      "name": [
+        "--master-bind-host"
+      ]
+    },
+    {
+      "description": "Port that locust master should bind to",
+      "name": [
+        "--master-bind-port"
+      ]
+    },
+    {
+      "description": "How many workers master should expect to connect before starting the test (only when --headless/autostart is used)",
+      "name": [
+        "--expect-workers"
+      ]
+    },
+    {
+      "description": "How long should the master wait for workers to connect before giving up. Defaults to wait forever",
+      "name": [
+        "--expect-workers-max-wait"
+      ]
+    },
+    {
+      "description": "Set locust to run in distributed mode with this process as worker",
+      "name": [
+        "--worker"
+      ]
+    },
+    {
+      "description": "Host or IP address of locust master for distributed load testing. Only used when running with --worker. Defaults to 127.0.0.1",
+      "name": [
+        "--master-host"
+      ]
+    },
+    {
+      "description": "Show list of possible User classes and exit",
+      "name": [
+        "--master-port"
+      ]
+    },
+    {
+      "description": "Store current request stats to files in CSV format",
+      "name": [
+        "--csv"
+      ]
+    },
+    {
+      "description": "Store each stats entry in CSV format to _stats_history.csv file. You must also specify the '--csv' argument to enable this",
+      "name": [
+        "--csv-full-history"
+      ]
+    },
+    {
+      "description": "Print stats in the console",
+      "name": [
+        "--print-stats"
+      ]
+    },
+    {
+      "description": "Only print the summary stats",
+      "name": [
+        "--only-summary"
+      ]
+    },
+    {
+      "description": "Reset statistics once spawning has been completed. Should be set on both master and workers when running in distributed mode",
+      "name": [
+        "--reset-stats"
+      ]
+    },
+    {
+      "description": "Store HTML report to file path specified",
+      "name": [
+        "--html"
+      ]
+    },
+    {
+      "description": "Disable Locust's logging setup. Instead, the configuration is provided by the Locust test or Python defaults. --loglevel LOGLEVEL, -L LOGLEVEL",
+      "name": [
+        "--skip-log-setup"
+      ]
+    },
+    {
+      "args": {
+        "name": "loglevel",
+        "suggestions": [
+          {
+            "name": "INFO"
+          },
+          {
+            "name": "WARNING"
+          },
+          {
+            "name": "DEBUG"
+          },
+          {
+            "name": "ERROR"
+          },
+          {
+            "name": "CRITICAL"
+          }
+        ]
+      },
+      "description": "Choose between DEBUG/INFO/WARNING/ERROR/CRITICAL. Default is INFO",
+      "name": [
+        "--loglevel"
+      ]
+    },
+    {
+      "args": {
+        "description": "Path to log file",
+        "name": "logfile",
+        "template": "filepaths"
+      },
+      "description": "Path to log file. If not set, log will go to stderr",
+      "name": [
+        "--logfile"
+      ]
+    },
+    {
+      "description": "Print table of the User classes' task execution ratio. Use this with non-zero --user option if some classes define non-zero fixed_count attribute",
+      "name": [
+        "--show-task-ratio"
+      ]
+    },
+    {
+      "description": "Print json data of the User classes' task execution ratio. Use this with non-zero --user option if some classes define non-zero fixed_count attribute",
+      "name": [
+        "--show-task-ratio-json"
+      ]
+    },
+    {
+      "description": "Sets the process exit code to use when a test result contain any failure or error",
+      "name": [
+        "--exit-code-on-error"
+      ]
+    },
+    {
+      "description": "Use equally distributed task weights, overriding the weights specified in the locustfile",
+      "name": [
+        "--equal-weights"
+      ]
+    },
+    {
+      "description": "Allow to automatically rebalance users if new workers are added or removed during a test run",
+      "name": [
+        "--enable-rebalancing"
+      ]
+    },
+    {
+      "description": "List of tags to include in the test, so only tasks with any matching tags will be executed",
+      "name": [
+        "-T",
+        "--tags"
+      ]
+    },
+    {
+      "description": "List of tags to exclude from the test, so only tasks with no matching tags will be executed",
+      "name": [
+        "--E",
+        "--exclude-tags"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "args": {
+    "generators": [
+      {
+        "script": [
+          "bash",
+          "-c",
+          "kubens | grep -v $(kubens -c)"
+        ],
+        "transforms": [
+          "split_lines",
+          "filter_empty"
+        ]
+      },
+      {
+        "js_source": "e=>e?[{name:e,priority:100,icon:\"\\u2B50\\uFE0F\"}]:[]",
+        "requires_js": true,
+        "script": [
+          "kubens",
+          "-c"
+        ]
+      }
+    ],
+    "isOptional": true,
+    "name": "namespace"
+  },
+  "description": "Switch between Kubernetes-namespaces",
+  "name": "kubens",
+  "options": [
+    {
+      "description": "Show help for kubens",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "description": "Show current namespace",
+      "name": [
+        "--current",
+        "-c"
+      ]
+    }
+  ]
+}

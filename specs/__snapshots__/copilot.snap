@@ -1,0 +1,5494 @@
+{
+  "description": "👩‍✈️ Launch and manage containerized applications on AWS",
+  "name": "copilot",
+  "options": [
+    {
+      "description": "Help for command",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Create a new ECS or App Runner application",
+      "name": "init",
+      "options": [
+        {
+          "args": {
+            "name": "app"
+          },
+          "description": "Name of the application",
+          "name": [
+            "--app",
+            "-a"
+          ]
+        },
+        {
+          "description": "Deploy your service or job to a \"test\" environment",
+          "name": [
+            "--deploy"
+          ]
+        },
+        {
+          "args": {
+            "name": "dockerfile"
+          },
+          "description": "Path to the Dockerfile",
+          "name": [
+            "--dockerfile",
+            "-d"
+          ]
+        },
+        {
+          "args": {
+            "name": "image"
+          },
+          "description": "The location of an existing Docker image",
+          "name": [
+            "--image",
+            "-i"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Name of the service or job",
+          "name": [
+            "--name",
+            "-n"
+          ]
+        },
+        {
+          "args": {
+            "name": "port"
+          },
+          "description": "The port on which your service listens",
+          "name": [
+            "--port"
+          ]
+        },
+        {
+          "args": {
+            "name": "retries"
+          },
+          "description": "Optional. The number of times to try restarting the job on a failure",
+          "name": [
+            "--retries"
+          ]
+        },
+        {
+          "args": {
+            "name": "schedule"
+          },
+          "description": "The schedule on which to run this job.  Accepts cron expressions of the format (M H DoM M DoW) and schedule definition strings.  For example: \"0 * * * *\", \"@daily\", \"@weekly\", \"@every 1h30m\". AWS Schedule Expressions of the form \"rate(10 minutes)\" or \"cron(0 12 L * ? 2021)\" are also accepted",
+          "name": [
+            "--schedule"
+          ]
+        },
+        {
+          "args": {
+            "name": "tag"
+          },
+          "description": "Optional. The container image tag",
+          "name": [
+            "--tag"
+          ]
+        },
+        {
+          "args": {
+            "name": "timeout"
+          },
+          "description": "Optional. The total execution time for the task, including retries. Accepts valid Go duration strings. For example: \"2h\", \"1h30m\", \"900s\"",
+          "name": [
+            "--timeout"
+          ]
+        },
+        {
+          "args": {
+            "name": "type",
+            "suggestions": [
+              {
+                "name": "Request-Driven Web Service"
+              },
+              {
+                "name": "Load Balanced Web Service"
+              },
+              {
+                "name": "Backend Service"
+              },
+              {
+                "name": "Worker Service"
+              },
+              {
+                "name": "Scheduled Job"
+              }
+            ]
+          },
+          "description": "Type of job or svc to create",
+          "name": [
+            "--type",
+            "-t"
+          ]
+        },
+        {
+          "description": "Help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Open the copilot docs",
+      "name": "docs",
+      "options": [
+        {
+          "description": "Help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Commands for applications. Applications are a collection of services and environments",
+      "name": "app",
+      "options": [
+        {
+          "description": "Help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Creates a new empty application",
+          "name": "init",
+          "options": [
+            {
+              "args": {
+                "name": "domain"
+              },
+              "description": "Optional. Your existing custom domain name",
+              "name": [
+                "--domain"
+              ]
+            },
+            {
+              "args": {
+                "name": "resource-tags"
+              },
+              "description": "Optional. Labels with a key and value separated by commas. Allows you to categorize resources",
+              "name": [
+                "--resource-tags"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Lists all the applications in your account",
+          "name": "ls",
+          "options": [
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Shows info about an application",
+          "name": "show",
+          "options": [
+            {
+              "description": "Outputs in JSON format",
+              "name": [
+                "--json"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the application",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Delete all resources associated with the application",
+          "name": "delete",
+          "options": [
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the application",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "description": "Skips confirmation prompt",
+              "name": [
+                "--yes"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Upgrades the template of an application to the latest version",
+          "name": "upgrade",
+          "options": [
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the application",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Commands for environments. Environments are deployment stages shared between services",
+      "name": "env",
+      "options": [
+        {
+          "description": "Help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Creates a new environment in your application",
+          "name": "init",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                    "requires_js": true,
+                    "script": [
+                      "cat",
+                      "copilot/.workspace"
+                    ]
+                  }
+                ],
+                "name": "name"
+              },
+              "description": "Name of the application",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "aws-access-key-id"
+              },
+              "description": "Optional. An AWS access key",
+              "name": [
+                "--aws-access-key-id"
+              ]
+            },
+            {
+              "args": {
+                "name": "aws-secret-access-key"
+              },
+              "description": "Optional. An AWS secret access key",
+              "name": [
+                "--aws-secret-access-key"
+              ]
+            },
+            {
+              "args": {
+                "name": "aws-session-token"
+              },
+              "description": "Optional. An AWS session token for temporary credentials",
+              "name": [
+                "--aws-session-token"
+              ]
+            },
+            {
+              "description": "Optional. Skip prompting and use default environment configuration",
+              "name": [
+                "--default-config"
+              ]
+            },
+            {
+              "args": {
+                "name": "import-private-subnets"
+              },
+              "description": "Optional. Use existing private subnet IDs",
+              "name": [
+                "--import-private-subnets"
+              ]
+            },
+            {
+              "args": {
+                "name": "import-public-subnets"
+              },
+              "description": "Optional. Use existing public subnet IDs",
+              "name": [
+                "--import-public-subnets"
+              ]
+            },
+            {
+              "args": {
+                "name": "import-vpc-id"
+              },
+              "description": "Optional. Use an existing VPC ID",
+              "name": [
+                "--import-vpc-id"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the environment",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "override-az-names"
+              },
+              "description": "Optional. Availability Zone names. (default 2 random AZs)",
+              "name": [
+                "--override-az-names"
+              ]
+            },
+            {
+              "args": {
+                "name": "override-private-cidrs"
+              },
+              "description": "Optional. CIDR to use for private subnets. (default 10.0.2.0/24,10.0.3.0/24)",
+              "name": [
+                "--override-private-cidrs"
+              ]
+            },
+            {
+              "args": {
+                "name": "override-public-cidrs"
+              },
+              "description": "Optional. CIDR to use for public subnets.  (default 10.0.0.0/24,10.0.1.0/24)",
+              "name": [
+                "--override-public-cidrs"
+              ]
+            },
+            {
+              "args": {
+                "name": "override-vpc-cidr"
+              },
+              "description": "Optional. Global CIDR to use for VPC. (default 10.0.0.0/16)",
+              "name": [
+                "--override-vpc-cidr"
+              ]
+            },
+            {
+              "description": "If the environment contains production services",
+              "name": [
+                "--prod"
+              ]
+            },
+            {
+              "args": {
+                "name": "profile"
+              },
+              "description": "Name of the profile",
+              "name": [
+                "--profile"
+              ]
+            },
+            {
+              "args": {
+                "name": "region"
+              },
+              "description": "Optional. An AWS region where the environment will be created",
+              "name": [
+                "--region"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Lists all the environments in an application",
+          "name": "ls",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                    "requires_js": true,
+                    "script": [
+                      "cat",
+                      "copilot/.workspace"
+                    ]
+                  }
+                ],
+                "name": "name"
+              },
+              "description": "Name of the application",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "description": "Outputs in JSON format",
+              "name": [
+                "--json"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Deletes an environment from your application",
+          "name": "delete",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                    "requires_js": true,
+                    "script": [
+                      "cat",
+                      "copilot/.workspace"
+                    ]
+                  }
+                ],
+                "name": "name"
+              },
+              "description": "Name of the application",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the environment",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "description": "Skips confirmation prompt",
+              "name": [
+                "--yes"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Shows info about a deployed environment",
+          "name": "show",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                    "requires_js": true,
+                    "script": [
+                      "cat",
+                      "copilot/.workspace"
+                    ]
+                  }
+                ],
+                "name": "name"
+              },
+              "description": "Name of the application",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "description": "Outputs in JSON format",
+              "name": [
+                "--json"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the environment",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "description": "Optional. Show the resources in your environment",
+              "name": [
+                "--resources"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Commands for services. Services are long-running ECS or App Runner services",
+      "name": "svc",
+      "options": [
+        {
+          "description": "Help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Creates a new service in an application",
+          "name": "init",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                    "requires_js": true,
+                    "script": [
+                      "cat",
+                      "copilot/.workspace"
+                    ]
+                  }
+                ],
+                "name": "name"
+              },
+              "description": "Name of the application",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "dockerfile"
+              },
+              "description": "Path to the Dockerfile",
+              "name": [
+                "--dockerfile",
+                "-d"
+              ]
+            },
+            {
+              "args": {
+                "name": "image"
+              },
+              "description": "The location of an existing Docker image",
+              "name": [
+                "--image",
+                "-i"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the service",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "description": "Optional. Turn off selection for adding subscriptions for worker services",
+              "name": [
+                "--no-subscribe"
+              ]
+            },
+            {
+              "args": {
+                "name": "port"
+              },
+              "description": "The port on which your service listens",
+              "name": [
+                "--port"
+              ]
+            },
+            {
+              "args": {
+                "name": "subscribe-topics"
+              },
+              "description": "Optional. SNS Topics to subscribe to from other services in your application. Must be of format '<svcName>:<topicName>'",
+              "name": [
+                "--subscribe-topics"
+              ]
+            },
+            {
+              "args": {
+                "name": "svc-type",
+                "suggestions": [
+                  {
+                    "name": "Request-Driven Web Service"
+                  },
+                  {
+                    "name": "Load Balanced Web Service"
+                  },
+                  {
+                    "name": "Backend Service"
+                  },
+                  {
+                    "name": "Worker Service"
+                  }
+                ]
+              },
+              "description": "Type of service to create",
+              "name": [
+                "--svc-type",
+                "-t"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Lists all the services in an application",
+          "name": "ls",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                    "requires_js": true,
+                    "script": [
+                      "cat",
+                      "copilot/.workspace"
+                    ]
+                  }
+                ],
+                "name": "name"
+              },
+              "description": "Name of the application",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "description": "Outputs in JSON format",
+              "name": [
+                "--json"
+              ]
+            },
+            {
+              "description": "Only show services in the workspace",
+              "name": [
+                "--local"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Prints the AWS CloudFormation template of a service",
+          "name": "package",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                    "requires_js": true,
+                    "script": [
+                      "cat",
+                      "copilot/.workspace"
+                    ]
+                  }
+                ],
+                "name": "name"
+              },
+              "description": "Name of the application",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the environment",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the service",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "output-dir"
+              },
+              "description": "Optional. Writes the stack template and template configuration to a directory",
+              "name": [
+                "--output-dir"
+              ]
+            },
+            {
+              "args": {
+                "name": "tag"
+              },
+              "description": "Optional. The container image tag",
+              "name": [
+                "--tag"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Deploys a service to an environment",
+          "name": "deploy",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                    "requires_js": true,
+                    "script": [
+                      "cat",
+                      "copilot/.workspace"
+                    ]
+                  }
+                ],
+                "name": "name"
+              },
+              "description": "Name of the application",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the environment",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "description": "Optional. Force a new service deployment using the existing image",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the service",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "resource-tags"
+              },
+              "description": "Optional. Labels with a key and value separated by commas. Allows you to categorize resources",
+              "name": [
+                "--resource-tags"
+              ]
+            },
+            {
+              "args": {
+                "name": "tag"
+              },
+              "description": "Optional. The container image tag",
+              "name": [
+                "--tag"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Deletes a service from an application",
+          "name": "delete",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                    "requires_js": true,
+                    "script": [
+                      "cat",
+                      "copilot/.workspace"
+                    ]
+                  }
+                ],
+                "name": "name"
+              },
+              "description": "Name of the application",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the environment",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the service",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "description": "Skips confirmation prompt",
+              "name": [
+                "--yes"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Shows info about a deployed service per environment",
+          "name": "show",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                    "requires_js": true,
+                    "script": [
+                      "cat",
+                      "copilot/.workspace"
+                    ]
+                  }
+                ],
+                "name": "name"
+              },
+              "description": "Name of the application",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "description": "Outputs in JSON format",
+              "name": [
+                "--json"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the service",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "description": "Optional. Show the resources in your service",
+              "name": [
+                "--resources"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Shows status of a deployed service",
+          "name": "status",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                    "requires_js": true,
+                    "script": [
+                      "cat",
+                      "copilot/.workspace"
+                    ]
+                  }
+                ],
+                "name": "name"
+              },
+              "description": "Name of the application",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the environment",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "description": "Outputs in JSON format",
+              "name": [
+                "--json"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the service",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Displays logs of a deployed service",
+          "name": "logs",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                    "requires_js": true,
+                    "script": [
+                      "cat",
+                      "copilot/.workspace"
+                    ]
+                  }
+                ],
+                "name": "name"
+              },
+              "description": "Name of the application",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "end-time"
+              },
+              "description": "Optional. Only return logs before a specific date (RFC3339). Defaults to all logs",
+              "name": [
+                "--end-time"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the environment",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "description": "Optional. Specifies if the logs should be streamed",
+              "name": [
+                "--follow"
+              ]
+            },
+            {
+              "description": "Outputs in JSON format",
+              "name": [
+                "--json"
+              ]
+            },
+            {
+              "args": {
+                "name": "limit"
+              },
+              "description": "Optional. The maximum number of log events returned. Default is 10 unless any time filtering flags are set",
+              "name": [
+                "--limit"
+              ]
+            },
+            {
+              "args": {
+                "name": "log-group"
+              },
+              "description": "Optional. Only return logs from specific log group",
+              "name": [
+                "--log-group"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the service",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "since"
+              },
+              "description": "Optional. Only return logs newer than a relative duration like 5s, 2m, or 3h. Defaults to all logs",
+              "name": [
+                "--since"
+              ]
+            },
+            {
+              "args": {
+                "name": "start-time"
+              },
+              "description": "Optional. Only return logs after a specific date (RFC3339). Defaults to all logs",
+              "name": [
+                "--start-time"
+              ]
+            },
+            {
+              "args": {
+                "name": "tasks"
+              },
+              "description": "Optional. Only return logs from specific task IDs",
+              "name": [
+                "--tasks"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Execute a command in a running container part of a service",
+          "name": "exec",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                    "requires_js": true,
+                    "script": [
+                      "cat",
+                      "copilot/.workspace"
+                    ]
+                  }
+                ],
+                "name": "name"
+              },
+              "description": "Name of the application",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "command"
+              },
+              "description": "Optional. The command that is passed to a running container",
+              "name": [
+                "--command",
+                "-c"
+              ]
+            },
+            {
+              "args": {
+                "name": "container"
+              },
+              "description": "Optional. The specific container you want to exec in. By default the first essential container will be used",
+              "name": [
+                "--container"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the environment",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the service, job, or task group",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "task-id"
+              },
+              "description": "Optional. ID of the task you want to exec in",
+              "name": [
+                "--task-id"
+              ]
+            },
+            {
+              "description": "Optional. Whether to update the Session Manager Plugin",
+              "name": [
+                "--yes"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Pause running App Runner service",
+          "name": "pause",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                    "requires_js": true,
+                    "script": [
+                      "cat",
+                      "copilot/.workspace"
+                    ]
+                  }
+                ],
+                "name": "name"
+              },
+              "description": "Name of the application",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the environment",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the service",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "description": "Skips confirmation prompt",
+              "name": [
+                "--yes"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Resumes a paused service",
+          "name": "resume",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                    "requires_js": true,
+                    "script": [
+                      "cat",
+                      "copilot/.workspace"
+                    ]
+                  }
+                ],
+                "name": "name"
+              },
+              "description": "Name of the application",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the environment",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the service",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Commands for jobs. Jobs are tasks that are triggered by events",
+      "name": "job",
+      "options": [
+        {
+          "description": "Help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Creates a new scheduled job in an application",
+          "name": "init",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                    "requires_js": true,
+                    "script": [
+                      "cat",
+                      "copilot/.workspace"
+                    ]
+                  }
+                ],
+                "name": "name"
+              },
+              "description": "Name of the application",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "dockerfile"
+              },
+              "description": "Path to the Dockerfile",
+              "name": [
+                "--dockerfile",
+                "-d"
+              ]
+            },
+            {
+              "args": {
+                "name": "image"
+              },
+              "description": "The location of an existing Docker image",
+              "name": [
+                "--image",
+                "-i"
+              ]
+            },
+            {
+              "args": {
+                "name": "job-type",
+                "suggestions": [
+                  {
+                    "name": "Scheduled Job"
+                  }
+                ]
+              },
+              "description": "Type of job to create",
+              "name": [
+                "--job-type",
+                "-t"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the job",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "retries"
+              },
+              "description": "Optional. The number of times to try restarting the job on a failure",
+              "name": [
+                "--retries"
+              ]
+            },
+            {
+              "args": {
+                "name": "schedule"
+              },
+              "description": "The schedule on which to run this job.  Accepts cron expressions of the format (M H DoM M DoW) and schedule definition strings.  For example: \"0 * * * *\", \"@daily\", \"@weekly\", \"@every 1h30m\". AWS Schedule Expressions of the form \"rate(10 minutes)\" or \"cron(0 12 L * ? 2021)\" are also accepted",
+              "name": [
+                "--schedule",
+                "-s"
+              ]
+            },
+            {
+              "args": {
+                "name": "timeout"
+              },
+              "description": "Optional. The total execution time for the task, including retries. Accepts valid Go duration strings. For example: \"2h\", \"1h30m\", \"900s\"",
+              "name": [
+                "--timeout"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Lists all the jobs in an application",
+          "name": "ls",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                    "requires_js": true,
+                    "script": [
+                      "cat",
+                      "copilot/.workspace"
+                    ]
+                  }
+                ],
+                "name": "name"
+              },
+              "description": "Name of the application",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "description": "Outputs in JSON format",
+              "name": [
+                "--json"
+              ]
+            },
+            {
+              "description": "Only show jobs in the workspace",
+              "name": [
+                "--local"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Prints the AWS CloudFormation template of a job",
+          "name": "package",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                    "requires_js": true,
+                    "script": [
+                      "cat",
+                      "copilot/.workspace"
+                    ]
+                  }
+                ],
+                "name": "name"
+              },
+              "description": "Name of the application",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the environment",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the job",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "output-dir"
+              },
+              "description": "Optional. Writes the stack template and template configuration to a directory",
+              "name": [
+                "--output-dir"
+              ]
+            },
+            {
+              "args": {
+                "name": "tag"
+              },
+              "description": "Optional. The container image tag",
+              "name": [
+                "--tag"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Deploys a job to an environment",
+          "name": "deploy",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                    "requires_js": true,
+                    "script": [
+                      "cat",
+                      "copilot/.workspace"
+                    ]
+                  }
+                ],
+                "name": "name"
+              },
+              "description": "Name of the application",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the environment",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the job",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "resource-tags"
+              },
+              "description": "Optional. Labels with a key and value separated by commas. Allows you to categorize resources",
+              "name": [
+                "--resource-tags"
+              ]
+            },
+            {
+              "args": {
+                "name": "tag"
+              },
+              "description": "Optional. The container image tag",
+              "name": [
+                "--tag"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Deletes a job from an application",
+          "name": "delete",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                    "requires_js": true,
+                    "script": [
+                      "cat",
+                      "copilot/.workspace"
+                    ]
+                  }
+                ],
+                "name": "name"
+              },
+              "description": "Name of the application",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the environment",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the job",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "description": "Skips confirmation prompt",
+              "name": [
+                "--yes"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Commands for tasks. One-off Amazon ECS tasks that terminate once their work is done",
+      "name": "task",
+      "options": [
+        {
+          "description": "Help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Run a one-off task on Amazon ECS",
+          "name": "run",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                    "requires_js": true,
+                    "script": [
+                      "cat",
+                      "copilot/.workspace"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "Optional. Name of the application",
+              "name": [
+                "--app"
+              ]
+            },
+            {
+              "args": {
+                "name": "build-context"
+              },
+              "description": "Path to the Docker build context",
+              "name": [
+                "--build-context"
+              ]
+            },
+            {
+              "args": {
+                "name": "cluster"
+              },
+              "description": "Optional. The short name or full ARN of the cluster to run the task in",
+              "name": [
+                "--cluster"
+              ]
+            },
+            {
+              "args": {
+                "name": "command"
+              },
+              "description": "Optional. The command that is passed to \"docker run\" to override the default command",
+              "name": [
+                "--command"
+              ]
+            },
+            {
+              "args": {
+                "name": "count"
+              },
+              "description": "Optional. The number of tasks to set up",
+              "name": [
+                "--count"
+              ]
+            },
+            {
+              "args": {
+                "name": "cpu"
+              },
+              "description": "Optional. The number of CPU units to reserve for each task",
+              "name": [
+                "--cpu"
+              ]
+            },
+            {
+              "description": "Optional. Run tasks in default cluster and default subnets",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "args": {
+                "name": "dockerfile"
+              },
+              "description": "Path to the Dockerfile",
+              "name": [
+                "--dockerfile"
+              ]
+            },
+            {
+              "args": {
+                "name": "entrypoint"
+              },
+              "description": "Optional. The entrypoint that is passed to \"docker run\" to override the default entrypoint",
+              "name": [
+                "--entrypoint"
+              ]
+            },
+            {
+              "args": {
+                "name": "env"
+              },
+              "description": "Optional. Name of the environment",
+              "name": [
+                "--env"
+              ]
+            },
+            {
+              "args": {
+                "name": "env-vars"
+              },
+              "description": "Optional. Environment variables specified by key=value separated by commas",
+              "name": [
+                "--env-vars"
+              ]
+            },
+            {
+              "args": {
+                "name": "execution-role"
+              },
+              "description": "Optional. The ARN of the role that grants the container agent permission to make AWS API calls",
+              "name": [
+                "--execution-role"
+              ]
+            },
+            {
+              "description": "Optional. Specifies if the logs should be streamed",
+              "name": [
+                "--follow"
+              ]
+            },
+            {
+              "args": {
+                "name": "generate-cmd"
+              },
+              "description": "Optional. Generate a command with a pre-filled value for each flag. To use it for an ECS service, specify --generate-cmd <cluster name>/<service name>. Alternatively, if the service or job is created with Copilot, specify --generate-cmd <application>/<environment>/<service or job name>. Cannot be specified with any other flags",
+              "name": [
+                "--generate-cmd"
+              ]
+            },
+            {
+              "args": {
+                "name": "image"
+              },
+              "description": "The location of an existing Docker image",
+              "name": [
+                "--image",
+                "-i"
+              ]
+            },
+            {
+              "args": {
+                "name": "memory"
+              },
+              "description": "Optional. The amount of memory to reserve in MiB for each task",
+              "name": [
+                "--memory"
+              ]
+            },
+            {
+              "args": {
+                "name": "platform-arch"
+              },
+              "description": "Optional. Architecture of the task. Must be specified along with 'platform-os'",
+              "name": [
+                "--platform-arch"
+              ]
+            },
+            {
+              "args": {
+                "name": "platform-os"
+              },
+              "description": "Optional. Operating system of the task. Must be specified along with 'platform-arch'",
+              "name": [
+                "--platform-os"
+              ]
+            },
+            {
+              "args": {
+                "name": "resource-tags"
+              },
+              "description": "Optional. Labels with a key and value separated by commas. Allows you to categorize resources",
+              "name": [
+                "--resource-tags"
+              ]
+            },
+            {
+              "args": {
+                "name": "secrets"
+              },
+              "description": "Optional. Secrets to inject into the container. Specified by key=value separated by commas",
+              "name": [
+                "--secrets"
+              ]
+            },
+            {
+              "args": {
+                "name": "security-groups"
+              },
+              "description": "Optional. The security group IDs for the task to use. Can be specified multiple times",
+              "name": [
+                "--security-groups"
+              ]
+            },
+            {
+              "args": {
+                "name": "subnets"
+              },
+              "description": "Optional. The subnet IDs for the task to use. Can be specified multiple times",
+              "name": [
+                "--subnets"
+              ]
+            },
+            {
+              "args": {
+                "name": "tag"
+              },
+              "description": "Optional. The container image tag in addition to \"latest\"",
+              "name": [
+                "--tag"
+              ]
+            },
+            {
+              "args": {
+                "name": "task-group-name"
+              },
+              "description": "Optional. The group name of the task.  Tasks with the same group name share the same set of resources.  (default directory name)",
+              "name": [
+                "--task-group-name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "task-role"
+              },
+              "description": "Optional. The ARN of the role for the task to use",
+              "name": [
+                "--task-role"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Execute a command in a running container part of a task",
+          "name": "exec",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                    "requires_js": true,
+                    "script": [
+                      "cat",
+                      "copilot/.workspace"
+                    ]
+                  }
+                ],
+                "name": "name"
+              },
+              "description": "Name of the application",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "command"
+              },
+              "description": "Optional. The command that is passed to a running container",
+              "name": [
+                "--command",
+                "-c"
+              ]
+            },
+            {
+              "description": "Optional. Execute commands in running tasks in default cluster and default subnets",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the environment",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the service, job, or task group",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "task-id"
+              },
+              "description": "Optional. ID of the task you want to exec in",
+              "name": [
+                "--task-id"
+              ]
+            },
+            {
+              "description": "Optional. Whether to update the Session Manager Plugin",
+              "name": [
+                "--yes"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Deletes a one-off task from an application or default cluster",
+          "name": "delete",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                    "requires_js": true,
+                    "script": [
+                      "cat",
+                      "copilot/.workspace"
+                    ]
+                  }
+                ],
+                "name": "name"
+              },
+              "description": "Name of the application",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "description": "Optional. Delete a task which was launched in the default cluster and subnets",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the environment",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the service",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "description": "Skips confirmation prompt",
+              "name": [
+                "--yes"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Commands for working with storage and databases",
+      "name": "storage",
+      "options": [
+        {
+          "description": "Help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Creates a new AWS CloudFormation template for a storage resource",
+          "name": "init",
+          "options": [
+            {
+              "args": {
+                "name": "engine"
+              },
+              "description": "The database engine used in the cluster. Must be either \"MySQL\" or \"PostgreSQL\"",
+              "name": [
+                "--engine"
+              ]
+            },
+            {
+              "args": {
+                "name": "initial-db"
+              },
+              "description": "The initial database to create in the cluster",
+              "name": [
+                "--initial-db"
+              ]
+            },
+            {
+              "args": {
+                "name": "lsi"
+              },
+              "description": "Optional. Attribute to use as an alternate sort key. May be specified up to 5 times. Must be of the format '<keyName>:<dataType>'",
+              "name": [
+                "--lsi"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the storage resource to create",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "description": "Optional. Don't ask about configuring alternate sort keys",
+              "name": [
+                "--no-lsi"
+              ]
+            },
+            {
+              "description": "Optional. Skip configuring sort keys",
+              "name": [
+                "--no-sort"
+              ]
+            },
+            {
+              "args": {
+                "name": "parameter-group"
+              },
+              "description": "Optional. The name of the parameter group to associate with the cluster",
+              "name": [
+                "--parameter-group"
+              ]
+            },
+            {
+              "args": {
+                "name": "partition-key"
+              },
+              "description": "Partition key for the DDB table. Must be of the format '<keyName>:<dataType>'",
+              "name": [
+                "--partition-key"
+              ]
+            },
+            {
+              "args": {
+                "name": "sort-key"
+              },
+              "description": "Optional. Sort key for the DDB table. Must be of the format '<keyName>:<dataType>'",
+              "name": [
+                "--sort-key"
+              ]
+            },
+            {
+              "args": {
+                "name": "storage-type"
+              },
+              "description": "Type of storage to add. Must be one of: \"DynamoDB\", \"S3\", \"Aurora\"",
+              "name": [
+                "--storage-type",
+                "-t"
+              ]
+            },
+            {
+              "args": {
+                "name": "workload"
+              },
+              "description": "Name of the service or job to associate with storage",
+              "name": [
+                "--workload",
+                "-w"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Commands for secrets. Secrets are sensitive information that you need in your application",
+      "name": "secret",
+      "options": [
+        {
+          "description": "Help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Create or update secrets in SSM Parameter Store",
+          "name": "init",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                    "requires_js": true,
+                    "script": [
+                      "cat",
+                      "copilot/.workspace"
+                    ]
+                  }
+                ],
+                "name": "name"
+              },
+              "description": "Name of the application",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "cli-input-yaml"
+              },
+              "description": "Optional. A YAML file in which the secret values are specified",
+              "name": [
+                "--cli-input-yaml"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "The name of the secret",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "description": "Optional. Whether to overwrite an existing secret",
+              "name": [
+                "--overwrite"
+              ]
+            },
+            {
+              "args": {
+                "name": "values"
+              },
+              "description": "Values of the secret in each environment. Specified as <environment>=<value> separated by commas",
+              "name": [
+                "--values"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Print the version number",
+      "name": "version",
+      "options": [
+        {
+          "description": "Help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Output shell completion code",
+      "name": "completion",
+      "options": [
+        {
+          "description": "Help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Commands for pipelines. Continuous delivery pipelines to release services",
+      "name": "pipeline",
+      "options": [
+        {
+          "description": "Help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Creates a pipeline for the services in your workspace",
+          "name": "init",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                    "requires_js": true,
+                    "script": [
+                      "cat",
+                      "copilot/.workspace"
+                    ]
+                  }
+                ],
+                "name": "name"
+              },
+              "description": "Name of the application",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "environments"
+              },
+              "description": "Environments to add to the pipeline",
+              "name": [
+                "--environments",
+                "-e"
+              ]
+            },
+            {
+              "args": {
+                "name": "git-branch"
+              },
+              "description": "Branch used to trigger your pipeline",
+              "name": [
+                "--git-branch",
+                "-b"
+              ]
+            },
+            {
+              "args": {
+                "name": "github-access-token"
+              },
+              "description": "GitHub personal access token for your repository",
+              "name": [
+                "--github-access-token",
+                "-t"
+              ]
+            },
+            {
+              "args": {
+                "name": "github-url"
+              },
+              "description": "(Deprecated.) Use --url instead. Repository URL to trigger your pipeline",
+              "name": [
+                "--github-url"
+              ]
+            },
+            {
+              "args": {
+                "name": "url"
+              },
+              "description": "The repository URL to trigger your pipeline. Supported providers are: GitHub, CodeCommit, Bitbucket",
+              "name": [
+                "--url",
+                "-u"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Deploys a pipeline for the services in your workspace",
+          "name": "update",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                    "requires_js": true,
+                    "script": [
+                      "cat",
+                      "copilot/.workspace"
+                    ]
+                  }
+                ],
+                "name": "name"
+              },
+              "description": "Name of the application",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "description": "Skips confirmation prompt",
+              "name": [
+                "--yes"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Deletes the pipeline associated with your workspace",
+          "name": "delete",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                    "requires_js": true,
+                    "script": [
+                      "cat",
+                      "copilot/.workspace"
+                    ]
+                  }
+                ],
+                "name": "name"
+              },
+              "description": "Name of the application",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "description": "Deletes AWS Secrets Manager secret associated with a pipeline source repository",
+              "name": [
+                "--delete-secret"
+              ]
+            },
+            {
+              "description": "Skips confirmation prompt",
+              "name": [
+                "--yes"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Shows info about a deployed pipeline for an application",
+          "name": "show",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                    "requires_js": true,
+                    "script": [
+                      "cat",
+                      "copilot/.workspace"
+                    ]
+                  }
+                ],
+                "name": "name"
+              },
+              "description": "Name of the application",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "description": "Outputs in JSON format",
+              "name": [
+                "--json"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the pipeline",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "description": "Optional. Show the resources in your pipeline",
+              "name": [
+                "--resources"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Shows the status of a pipeline",
+          "name": "status",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                    "requires_js": true,
+                    "script": [
+                      "cat",
+                      "copilot/.workspace"
+                    ]
+                  }
+                ],
+                "name": "name"
+              },
+              "description": "Name of the application",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "description": "Outputs in JSON format",
+              "name": [
+                "--json"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the pipeline",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Lists all the deployed pipelines in an application",
+          "name": "ls",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                    "requires_js": true,
+                    "script": [
+                      "cat",
+                      "copilot/.workspace"
+                    ]
+                  }
+                ],
+                "name": "name"
+              },
+              "description": "Name of the application",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "description": "Outputs in JSON format",
+              "name": [
+                "--json"
+              ]
+            },
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Deploy a Copilot job or service",
+      "name": "deploy",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                "requires_js": true,
+                "script": [
+                  "cat",
+                  "copilot/.workspace"
+                ]
+              }
+            ],
+            "name": "name"
+          },
+          "description": "Name of the application",
+          "name": [
+            "--app",
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Name of the environment",
+          "name": [
+            "--name",
+            "-n"
+          ]
+        },
+        {
+          "description": "Optional. Force a new service deployment using the existing image",
+          "name": [
+            "--force"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Name of the service or job",
+          "name": [
+            "--name",
+            "-n"
+          ]
+        },
+        {
+          "args": {
+            "name": "resource-tags"
+          },
+          "description": "Optional. Labels with a key and value separated by commas. Allows you to categorize resources",
+          "name": [
+            "--resource-tags"
+          ]
+        },
+        {
+          "args": {
+            "name": "tag"
+          },
+          "description": "Optional. The container image tag",
+          "name": [
+            "--tag"
+          ]
+        },
+        {
+          "description": "Help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Help about any command",
+      "name": "help",
+      "options": [
+        {
+          "description": "Help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Create a new ECS or App Runner application",
+          "name": "init",
+          "options": [
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Open the copilot docs",
+          "name": "docs",
+          "options": [
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Commands for applications. Applications are a collection of services and environments",
+          "name": "app",
+          "options": [
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "description": "Creates a new empty application",
+              "name": "init",
+              "options": [
+                {
+                  "args": {
+                    "name": "domain"
+                  },
+                  "description": "Optional. Your existing custom domain name",
+                  "name": [
+                    "--domain"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "resource-tags"
+                  },
+                  "description": "Optional. Labels with a key and value separated by commas. Allows you to categorize resources",
+                  "name": [
+                    "--resource-tags"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Lists all the applications in your account",
+              "name": "ls",
+              "options": [
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Shows info about an application",
+              "name": "show",
+              "options": [
+                {
+                  "description": "Outputs in JSON format",
+                  "name": [
+                    "--json"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the application",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Delete all resources associated with the application",
+              "name": "delete",
+              "options": [
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the application",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "description": "Skips confirmation prompt",
+                  "name": [
+                    "--yes"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Upgrades the template of an application to the latest version",
+              "name": "upgrade",
+              "options": [
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the application",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Commands for environments. Environments are deployment stages shared between services",
+          "name": "env",
+          "options": [
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "description": "Creates a new environment in your application",
+              "name": "init",
+              "options": [
+                {
+                  "args": {
+                    "generators": [
+                      {
+                        "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                        "requires_js": true,
+                        "script": [
+                          "cat",
+                          "copilot/.workspace"
+                        ]
+                      }
+                    ],
+                    "name": "name"
+                  },
+                  "description": "Name of the application",
+                  "name": [
+                    "--app",
+                    "-a"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "aws-access-key-id"
+                  },
+                  "description": "Optional. An AWS access key",
+                  "name": [
+                    "--aws-access-key-id"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "aws-secret-access-key"
+                  },
+                  "description": "Optional. An AWS secret access key",
+                  "name": [
+                    "--aws-secret-access-key"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "aws-session-token"
+                  },
+                  "description": "Optional. An AWS session token for temporary credentials",
+                  "name": [
+                    "--aws-session-token"
+                  ]
+                },
+                {
+                  "description": "Optional. Skip prompting and use default environment configuration",
+                  "name": [
+                    "--default-config"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "import-private-subnets"
+                  },
+                  "description": "Optional. Use existing private subnet IDs",
+                  "name": [
+                    "--import-private-subnets"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "import-public-subnets"
+                  },
+                  "description": "Optional. Use existing public subnet IDs",
+                  "name": [
+                    "--import-public-subnets"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "import-vpc-id"
+                  },
+                  "description": "Optional. Use an existing VPC ID",
+                  "name": [
+                    "--import-vpc-id"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the environment",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "override-az-names"
+                  },
+                  "description": "Optional. Availability Zone names. (default 2 random AZs)",
+                  "name": [
+                    "--override-az-names"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "override-private-cidrs"
+                  },
+                  "description": "Optional. CIDR to use for private subnets. (default 10.0.2.0/24,10.0.3.0/24)",
+                  "name": [
+                    "--override-private-cidrs"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "override-public-cidrs"
+                  },
+                  "description": "Optional. CIDR to use for public subnets.  (default 10.0.0.0/24,10.0.1.0/24)",
+                  "name": [
+                    "--override-public-cidrs"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "override-vpc-cidr"
+                  },
+                  "description": "Optional. Global CIDR to use for VPC. (default 10.0.0.0/16)",
+                  "name": [
+                    "--override-vpc-cidr"
+                  ]
+                },
+                {
+                  "description": "If the environment contains production services",
+                  "name": [
+                    "--prod"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "profile"
+                  },
+                  "description": "Name of the profile",
+                  "name": [
+                    "--profile"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "region"
+                  },
+                  "description": "Optional. An AWS region where the environment will be created",
+                  "name": [
+                    "--region"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Lists all the environments in an application",
+              "name": "ls",
+              "options": [
+                {
+                  "args": {
+                    "generators": [
+                      {
+                        "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                        "requires_js": true,
+                        "script": [
+                          "cat",
+                          "copilot/.workspace"
+                        ]
+                      }
+                    ],
+                    "name": "name"
+                  },
+                  "description": "Name of the application",
+                  "name": [
+                    "--app",
+                    "-a"
+                  ]
+                },
+                {
+                  "description": "Outputs in JSON format",
+                  "name": [
+                    "--json"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Deletes an environment from your application",
+              "name": "delete",
+              "options": [
+                {
+                  "args": {
+                    "generators": [
+                      {
+                        "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                        "requires_js": true,
+                        "script": [
+                          "cat",
+                          "copilot/.workspace"
+                        ]
+                      }
+                    ],
+                    "name": "name"
+                  },
+                  "description": "Name of the application",
+                  "name": [
+                    "--app",
+                    "-a"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the environment",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "description": "Skips confirmation prompt",
+                  "name": [
+                    "--yes"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Shows info about a deployed environment",
+              "name": "show",
+              "options": [
+                {
+                  "args": {
+                    "generators": [
+                      {
+                        "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                        "requires_js": true,
+                        "script": [
+                          "cat",
+                          "copilot/.workspace"
+                        ]
+                      }
+                    ],
+                    "name": "name"
+                  },
+                  "description": "Name of the application",
+                  "name": [
+                    "--app",
+                    "-a"
+                  ]
+                },
+                {
+                  "description": "Outputs in JSON format",
+                  "name": [
+                    "--json"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the environment",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "description": "Optional. Show the resources in your environment",
+                  "name": [
+                    "--resources"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Commands for services. Services are long-running ECS or App Runner services",
+          "name": "svc",
+          "options": [
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "description": "Creates a new service in an application",
+              "name": "init",
+              "options": [
+                {
+                  "args": {
+                    "generators": [
+                      {
+                        "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                        "requires_js": true,
+                        "script": [
+                          "cat",
+                          "copilot/.workspace"
+                        ]
+                      }
+                    ],
+                    "name": "name"
+                  },
+                  "description": "Name of the application",
+                  "name": [
+                    "--app",
+                    "-a"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "dockerfile"
+                  },
+                  "description": "Path to the Dockerfile",
+                  "name": [
+                    "--dockerfile",
+                    "-d"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "image"
+                  },
+                  "description": "The location of an existing Docker image",
+                  "name": [
+                    "--image",
+                    "-i"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the service",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "description": "Optional. Turn off selection for adding subscriptions for worker services",
+                  "name": [
+                    "--no-subscribe"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "port"
+                  },
+                  "description": "The port on which your service listens",
+                  "name": [
+                    "--port"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "subscribe-topics"
+                  },
+                  "description": "Optional. SNS Topics to subscribe to from other services in your application. Must be of format '<svcName>:<topicName>'",
+                  "name": [
+                    "--subscribe-topics"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "svc-type",
+                    "suggestions": [
+                      {
+                        "name": "Request-Driven Web Service"
+                      },
+                      {
+                        "name": "Load Balanced Web Service"
+                      },
+                      {
+                        "name": "Backend Service"
+                      },
+                      {
+                        "name": "Worker Service"
+                      }
+                    ]
+                  },
+                  "description": "Type of service to create",
+                  "name": [
+                    "--svc-type",
+                    "-t"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Lists all the services in an application",
+              "name": "ls",
+              "options": [
+                {
+                  "args": {
+                    "generators": [
+                      {
+                        "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                        "requires_js": true,
+                        "script": [
+                          "cat",
+                          "copilot/.workspace"
+                        ]
+                      }
+                    ],
+                    "name": "name"
+                  },
+                  "description": "Name of the application",
+                  "name": [
+                    "--app",
+                    "-a"
+                  ]
+                },
+                {
+                  "description": "Outputs in JSON format",
+                  "name": [
+                    "--json"
+                  ]
+                },
+                {
+                  "description": "Only show services in the workspace",
+                  "name": [
+                    "--local"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Prints the AWS CloudFormation template of a service",
+              "name": "package",
+              "options": [
+                {
+                  "args": {
+                    "generators": [
+                      {
+                        "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                        "requires_js": true,
+                        "script": [
+                          "cat",
+                          "copilot/.workspace"
+                        ]
+                      }
+                    ],
+                    "name": "name"
+                  },
+                  "description": "Name of the application",
+                  "name": [
+                    "--app",
+                    "-a"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the environment",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the service",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "output-dir"
+                  },
+                  "description": "Optional. Writes the stack template and template configuration to a directory",
+                  "name": [
+                    "--output-dir"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "tag"
+                  },
+                  "description": "Optional. The container image tag",
+                  "name": [
+                    "--tag"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Deploys a service to an environment",
+              "name": "deploy",
+              "options": [
+                {
+                  "args": {
+                    "generators": [
+                      {
+                        "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                        "requires_js": true,
+                        "script": [
+                          "cat",
+                          "copilot/.workspace"
+                        ]
+                      }
+                    ],
+                    "name": "name"
+                  },
+                  "description": "Name of the application",
+                  "name": [
+                    "--app",
+                    "-a"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the environment",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "description": "Optional. Force a new service deployment using the existing image",
+                  "name": [
+                    "--force"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the service",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "resource-tags"
+                  },
+                  "description": "Optional. Labels with a key and value separated by commas. Allows you to categorize resources",
+                  "name": [
+                    "--resource-tags"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "tag"
+                  },
+                  "description": "Optional. The container image tag",
+                  "name": [
+                    "--tag"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Deletes a service from an application",
+              "name": "delete",
+              "options": [
+                {
+                  "args": {
+                    "generators": [
+                      {
+                        "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                        "requires_js": true,
+                        "script": [
+                          "cat",
+                          "copilot/.workspace"
+                        ]
+                      }
+                    ],
+                    "name": "name"
+                  },
+                  "description": "Name of the application",
+                  "name": [
+                    "--app",
+                    "-a"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the environment",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the service",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "description": "Skips confirmation prompt",
+                  "name": [
+                    "--yes"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Shows info about a deployed service per environment",
+              "name": "show",
+              "options": [
+                {
+                  "args": {
+                    "generators": [
+                      {
+                        "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                        "requires_js": true,
+                        "script": [
+                          "cat",
+                          "copilot/.workspace"
+                        ]
+                      }
+                    ],
+                    "name": "name"
+                  },
+                  "description": "Name of the application",
+                  "name": [
+                    "--app",
+                    "-a"
+                  ]
+                },
+                {
+                  "description": "Outputs in JSON format",
+                  "name": [
+                    "--json"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the service",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "description": "Optional. Show the resources in your service",
+                  "name": [
+                    "--resources"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Shows status of a deployed service",
+              "name": "status",
+              "options": [
+                {
+                  "args": {
+                    "generators": [
+                      {
+                        "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                        "requires_js": true,
+                        "script": [
+                          "cat",
+                          "copilot/.workspace"
+                        ]
+                      }
+                    ],
+                    "name": "name"
+                  },
+                  "description": "Name of the application",
+                  "name": [
+                    "--app",
+                    "-a"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the environment",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "description": "Outputs in JSON format",
+                  "name": [
+                    "--json"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the service",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Displays logs of a deployed service",
+              "name": "logs",
+              "options": [
+                {
+                  "args": {
+                    "generators": [
+                      {
+                        "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                        "requires_js": true,
+                        "script": [
+                          "cat",
+                          "copilot/.workspace"
+                        ]
+                      }
+                    ],
+                    "name": "name"
+                  },
+                  "description": "Name of the application",
+                  "name": [
+                    "--app",
+                    "-a"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "end-time"
+                  },
+                  "description": "Optional. Only return logs before a specific date (RFC3339). Defaults to all logs",
+                  "name": [
+                    "--end-time"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the environment",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "description": "Optional. Specifies if the logs should be streamed",
+                  "name": [
+                    "--follow"
+                  ]
+                },
+                {
+                  "description": "Outputs in JSON format",
+                  "name": [
+                    "--json"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "limit"
+                  },
+                  "description": "Optional. The maximum number of log events returned. Default is 10 unless any time filtering flags are set",
+                  "name": [
+                    "--limit"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "log-group"
+                  },
+                  "description": "Optional. Only return logs from specific log group",
+                  "name": [
+                    "--log-group"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the service",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "since"
+                  },
+                  "description": "Optional. Only return logs newer than a relative duration like 5s, 2m, or 3h. Defaults to all logs",
+                  "name": [
+                    "--since"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "start-time"
+                  },
+                  "description": "Optional. Only return logs after a specific date (RFC3339). Defaults to all logs",
+                  "name": [
+                    "--start-time"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "tasks"
+                  },
+                  "description": "Optional. Only return logs from specific task IDs",
+                  "name": [
+                    "--tasks"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Execute a command in a running container part of a service",
+              "name": "exec",
+              "options": [
+                {
+                  "args": {
+                    "generators": [
+                      {
+                        "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                        "requires_js": true,
+                        "script": [
+                          "cat",
+                          "copilot/.workspace"
+                        ]
+                      }
+                    ],
+                    "name": "name"
+                  },
+                  "description": "Name of the application",
+                  "name": [
+                    "--app",
+                    "-a"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "command"
+                  },
+                  "description": "Optional. The command that is passed to a running container",
+                  "name": [
+                    "--command",
+                    "-c"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "container"
+                  },
+                  "description": "Optional. The specific container you want to exec in. By default the first essential container will be used",
+                  "name": [
+                    "--container"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the environment",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the service, job, or task group",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "task-id"
+                  },
+                  "description": "Optional. ID of the task you want to exec in",
+                  "name": [
+                    "--task-id"
+                  ]
+                },
+                {
+                  "description": "Optional. Whether to update the Session Manager Plugin",
+                  "name": [
+                    "--yes"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Pause running App Runner service",
+              "name": "pause",
+              "options": [
+                {
+                  "args": {
+                    "generators": [
+                      {
+                        "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                        "requires_js": true,
+                        "script": [
+                          "cat",
+                          "copilot/.workspace"
+                        ]
+                      }
+                    ],
+                    "name": "name"
+                  },
+                  "description": "Name of the application",
+                  "name": [
+                    "--app",
+                    "-a"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the environment",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the service",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "description": "Skips confirmation prompt",
+                  "name": [
+                    "--yes"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Resumes a paused service",
+              "name": "resume",
+              "options": [
+                {
+                  "args": {
+                    "generators": [
+                      {
+                        "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                        "requires_js": true,
+                        "script": [
+                          "cat",
+                          "copilot/.workspace"
+                        ]
+                      }
+                    ],
+                    "name": "name"
+                  },
+                  "description": "Name of the application",
+                  "name": [
+                    "--app",
+                    "-a"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the environment",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the service",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Commands for jobs. Jobs are tasks that are triggered by events",
+          "name": "job",
+          "options": [
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "description": "Creates a new scheduled job in an application",
+              "name": "init",
+              "options": [
+                {
+                  "args": {
+                    "generators": [
+                      {
+                        "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                        "requires_js": true,
+                        "script": [
+                          "cat",
+                          "copilot/.workspace"
+                        ]
+                      }
+                    ],
+                    "name": "name"
+                  },
+                  "description": "Name of the application",
+                  "name": [
+                    "--app",
+                    "-a"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "dockerfile"
+                  },
+                  "description": "Path to the Dockerfile",
+                  "name": [
+                    "--dockerfile",
+                    "-d"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "image"
+                  },
+                  "description": "The location of an existing Docker image",
+                  "name": [
+                    "--image",
+                    "-i"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "job-type",
+                    "suggestions": [
+                      {
+                        "name": "Scheduled Job"
+                      }
+                    ]
+                  },
+                  "description": "Type of job to create",
+                  "name": [
+                    "--job-type",
+                    "-t"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the job",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "retries"
+                  },
+                  "description": "Optional. The number of times to try restarting the job on a failure",
+                  "name": [
+                    "--retries"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "schedule"
+                  },
+                  "description": "The schedule on which to run this job.  Accepts cron expressions of the format (M H DoM M DoW) and schedule definition strings.  For example: \"0 * * * *\", \"@daily\", \"@weekly\", \"@every 1h30m\". AWS Schedule Expressions of the form \"rate(10 minutes)\" or \"cron(0 12 L * ? 2021)\" are also accepted",
+                  "name": [
+                    "--schedule",
+                    "-s"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "timeout"
+                  },
+                  "description": "Optional. The total execution time for the task, including retries. Accepts valid Go duration strings. For example: \"2h\", \"1h30m\", \"900s\"",
+                  "name": [
+                    "--timeout"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Lists all the jobs in an application",
+              "name": "ls",
+              "options": [
+                {
+                  "args": {
+                    "generators": [
+                      {
+                        "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                        "requires_js": true,
+                        "script": [
+                          "cat",
+                          "copilot/.workspace"
+                        ]
+                      }
+                    ],
+                    "name": "name"
+                  },
+                  "description": "Name of the application",
+                  "name": [
+                    "--app",
+                    "-a"
+                  ]
+                },
+                {
+                  "description": "Outputs in JSON format",
+                  "name": [
+                    "--json"
+                  ]
+                },
+                {
+                  "description": "Only show jobs in the workspace",
+                  "name": [
+                    "--local"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Prints the AWS CloudFormation template of a job",
+              "name": "package",
+              "options": [
+                {
+                  "args": {
+                    "generators": [
+                      {
+                        "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                        "requires_js": true,
+                        "script": [
+                          "cat",
+                          "copilot/.workspace"
+                        ]
+                      }
+                    ],
+                    "name": "name"
+                  },
+                  "description": "Name of the application",
+                  "name": [
+                    "--app",
+                    "-a"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the environment",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the job",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "output-dir"
+                  },
+                  "description": "Optional. Writes the stack template and template configuration to a directory",
+                  "name": [
+                    "--output-dir"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "tag"
+                  },
+                  "description": "Optional. The container image tag",
+                  "name": [
+                    "--tag"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Deploys a job to an environment",
+              "name": "deploy",
+              "options": [
+                {
+                  "args": {
+                    "generators": [
+                      {
+                        "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                        "requires_js": true,
+                        "script": [
+                          "cat",
+                          "copilot/.workspace"
+                        ]
+                      }
+                    ],
+                    "name": "name"
+                  },
+                  "description": "Name of the application",
+                  "name": [
+                    "--app",
+                    "-a"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the environment",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the job",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "resource-tags"
+                  },
+                  "description": "Optional. Labels with a key and value separated by commas. Allows you to categorize resources",
+                  "name": [
+                    "--resource-tags"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "tag"
+                  },
+                  "description": "Optional. The container image tag",
+                  "name": [
+                    "--tag"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Deletes a job from an application",
+              "name": "delete",
+              "options": [
+                {
+                  "args": {
+                    "generators": [
+                      {
+                        "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                        "requires_js": true,
+                        "script": [
+                          "cat",
+                          "copilot/.workspace"
+                        ]
+                      }
+                    ],
+                    "name": "name"
+                  },
+                  "description": "Name of the application",
+                  "name": [
+                    "--app",
+                    "-a"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the environment",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the job",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "description": "Skips confirmation prompt",
+                  "name": [
+                    "--yes"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Commands for tasks. One-off Amazon ECS tasks that terminate once their work is done",
+          "name": "task",
+          "options": [
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "description": "Run a one-off task on Amazon ECS",
+              "name": "run",
+              "options": [
+                {
+                  "args": {
+                    "generators": [
+                      {
+                        "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                        "requires_js": true,
+                        "script": [
+                          "cat",
+                          "copilot/.workspace"
+                        ]
+                      }
+                    ],
+                    "name": "app"
+                  },
+                  "description": "Optional. Name of the application",
+                  "name": [
+                    "--app"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "build-context"
+                  },
+                  "description": "Path to the Docker build context",
+                  "name": [
+                    "--build-context"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "cluster"
+                  },
+                  "description": "Optional. The short name or full ARN of the cluster to run the task in",
+                  "name": [
+                    "--cluster"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "command"
+                  },
+                  "description": "Optional. The command that is passed to \"docker run\" to override the default command",
+                  "name": [
+                    "--command"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "count"
+                  },
+                  "description": "Optional. The number of tasks to set up",
+                  "name": [
+                    "--count"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "cpu"
+                  },
+                  "description": "Optional. The number of CPU units to reserve for each task",
+                  "name": [
+                    "--cpu"
+                  ]
+                },
+                {
+                  "description": "Optional. Run tasks in default cluster and default subnets",
+                  "name": [
+                    "--default"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "dockerfile"
+                  },
+                  "description": "Path to the Dockerfile",
+                  "name": [
+                    "--dockerfile"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "entrypoint"
+                  },
+                  "description": "Optional. The entrypoint that is passed to \"docker run\" to override the default entrypoint",
+                  "name": [
+                    "--entrypoint"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "env"
+                  },
+                  "description": "Optional. Name of the environment",
+                  "name": [
+                    "--env"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "env-vars"
+                  },
+                  "description": "Optional. Environment variables specified by key=value separated by commas",
+                  "name": [
+                    "--env-vars"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "execution-role"
+                  },
+                  "description": "Optional. The ARN of the role that grants the container agent permission to make AWS API calls",
+                  "name": [
+                    "--execution-role"
+                  ]
+                },
+                {
+                  "description": "Optional. Specifies if the logs should be streamed",
+                  "name": [
+                    "--follow"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "generate-cmd"
+                  },
+                  "description": "Optional. Generate a command with a pre-filled value for each flag. To use it for an ECS service, specify --generate-cmd <cluster name>/<service name>. Alternatively, if the service or job is created with Copilot, specify --generate-cmd <application>/<environment>/<service or job name>. Cannot be specified with any other flags",
+                  "name": [
+                    "--generate-cmd"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "image"
+                  },
+                  "description": "The location of an existing Docker image",
+                  "name": [
+                    "--image",
+                    "-i"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "memory"
+                  },
+                  "description": "Optional. The amount of memory to reserve in MiB for each task",
+                  "name": [
+                    "--memory"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "platform-arch"
+                  },
+                  "description": "Optional. Architecture of the task. Must be specified along with 'platform-os'",
+                  "name": [
+                    "--platform-arch"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "platform-os"
+                  },
+                  "description": "Optional. Operating system of the task. Must be specified along with 'platform-arch'",
+                  "name": [
+                    "--platform-os"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "resource-tags"
+                  },
+                  "description": "Optional. Labels with a key and value separated by commas. Allows you to categorize resources",
+                  "name": [
+                    "--resource-tags"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "secrets"
+                  },
+                  "description": "Optional. Secrets to inject into the container. Specified by key=value separated by commas",
+                  "name": [
+                    "--secrets"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "security-groups"
+                  },
+                  "description": "Optional. The security group IDs for the task to use. Can be specified multiple times",
+                  "name": [
+                    "--security-groups"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "subnets"
+                  },
+                  "description": "Optional. The subnet IDs for the task to use. Can be specified multiple times",
+                  "name": [
+                    "--subnets"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "tag"
+                  },
+                  "description": "Optional. The container image tag in addition to \"latest\"",
+                  "name": [
+                    "--tag"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "task-group-name"
+                  },
+                  "description": "Optional. The group name of the task.  Tasks with the same group name share the same set of resources.  (default directory name)",
+                  "name": [
+                    "--task-group-name",
+                    "-n"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "task-role"
+                  },
+                  "description": "Optional. The ARN of the role for the task to use",
+                  "name": [
+                    "--task-role"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Execute a command in a running container part of a task",
+              "name": "exec",
+              "options": [
+                {
+                  "args": {
+                    "generators": [
+                      {
+                        "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                        "requires_js": true,
+                        "script": [
+                          "cat",
+                          "copilot/.workspace"
+                        ]
+                      }
+                    ],
+                    "name": "name"
+                  },
+                  "description": "Name of the application",
+                  "name": [
+                    "--app",
+                    "-a"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "command"
+                  },
+                  "description": "Optional. The command that is passed to a running container",
+                  "name": [
+                    "--command",
+                    "-c"
+                  ]
+                },
+                {
+                  "description": "Optional. Execute commands in running tasks in default cluster and default subnets",
+                  "name": [
+                    "--default"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the environment",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the service, job, or task group",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "task-id"
+                  },
+                  "description": "Optional. ID of the task you want to exec in",
+                  "name": [
+                    "--task-id"
+                  ]
+                },
+                {
+                  "description": "Optional. Whether to update the Session Manager Plugin",
+                  "name": [
+                    "--yes"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Deletes a one-off task from an application or default cluster",
+              "name": "delete",
+              "options": [
+                {
+                  "args": {
+                    "generators": [
+                      {
+                        "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                        "requires_js": true,
+                        "script": [
+                          "cat",
+                          "copilot/.workspace"
+                        ]
+                      }
+                    ],
+                    "name": "name"
+                  },
+                  "description": "Name of the application",
+                  "name": [
+                    "--app",
+                    "-a"
+                  ]
+                },
+                {
+                  "description": "Optional. Delete a task which was launched in the default cluster and subnets",
+                  "name": [
+                    "--default"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the environment",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the service",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "description": "Skips confirmation prompt",
+                  "name": [
+                    "--yes"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Commands for working with storage and databases",
+          "name": "storage",
+          "options": [
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "description": "Creates a new AWS CloudFormation template for a storage resource",
+              "name": "init",
+              "options": [
+                {
+                  "args": {
+                    "name": "engine"
+                  },
+                  "description": "The database engine used in the cluster. Must be either \"MySQL\" or \"PostgreSQL\"",
+                  "name": [
+                    "--engine"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "initial-db"
+                  },
+                  "description": "The initial database to create in the cluster",
+                  "name": [
+                    "--initial-db"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "lsi"
+                  },
+                  "description": "Optional. Attribute to use as an alternate sort key. May be specified up to 5 times. Must be of the format '<keyName>:<dataType>'",
+                  "name": [
+                    "--lsi"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the storage resource to create",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "description": "Optional. Don't ask about configuring alternate sort keys",
+                  "name": [
+                    "--no-lsi"
+                  ]
+                },
+                {
+                  "description": "Optional. Skip configuring sort keys",
+                  "name": [
+                    "--no-sort"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "parameter-group"
+                  },
+                  "description": "Optional. The name of the parameter group to associate with the cluster",
+                  "name": [
+                    "--parameter-group"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "partition-key"
+                  },
+                  "description": "Partition key for the DDB table. Must be of the format '<keyName>:<dataType>'",
+                  "name": [
+                    "--partition-key"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "sort-key"
+                  },
+                  "description": "Optional. Sort key for the DDB table. Must be of the format '<keyName>:<dataType>'",
+                  "name": [
+                    "--sort-key"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "storage-type"
+                  },
+                  "description": "Type of storage to add. Must be one of: \"DynamoDB\", \"S3\", \"Aurora\"",
+                  "name": [
+                    "--storage-type",
+                    "-t"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "workload"
+                  },
+                  "description": "Name of the service or job to associate with storage",
+                  "name": [
+                    "--workload",
+                    "-w"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Commands for secrets. Secrets are sensitive information that you need in your application",
+          "name": "secret",
+          "options": [
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "description": "Create or update secrets in SSM Parameter Store",
+              "name": "init",
+              "options": [
+                {
+                  "args": {
+                    "generators": [
+                      {
+                        "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                        "requires_js": true,
+                        "script": [
+                          "cat",
+                          "copilot/.workspace"
+                        ]
+                      }
+                    ],
+                    "name": "name"
+                  },
+                  "description": "Name of the application",
+                  "name": [
+                    "--app",
+                    "-a"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "cli-input-yaml"
+                  },
+                  "description": "Optional. A YAML file in which the secret values are specified",
+                  "name": [
+                    "--cli-input-yaml"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "The name of the secret",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "description": "Optional. Whether to overwrite an existing secret",
+                  "name": [
+                    "--overwrite"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "values"
+                  },
+                  "description": "Values of the secret in each environment. Specified as <environment>=<value> separated by commas",
+                  "name": [
+                    "--values"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Print the version number",
+          "name": "version",
+          "options": [
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Output shell completion code",
+          "name": "completion",
+          "options": [
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Commands for pipelines. Continuous delivery pipelines to release services",
+          "name": "pipeline",
+          "options": [
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "description": "Creates a pipeline for the services in your workspace",
+              "name": "init",
+              "options": [
+                {
+                  "args": {
+                    "generators": [
+                      {
+                        "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                        "requires_js": true,
+                        "script": [
+                          "cat",
+                          "copilot/.workspace"
+                        ]
+                      }
+                    ],
+                    "name": "name"
+                  },
+                  "description": "Name of the application",
+                  "name": [
+                    "--app",
+                    "-a"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "environments"
+                  },
+                  "description": "Environments to add to the pipeline",
+                  "name": [
+                    "--environments",
+                    "-e"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "git-branch"
+                  },
+                  "description": "Branch used to trigger your pipeline",
+                  "name": [
+                    "--git-branch",
+                    "-b"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "github-access-token"
+                  },
+                  "description": "GitHub personal access token for your repository",
+                  "name": [
+                    "--github-access-token",
+                    "-t"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "github-url"
+                  },
+                  "description": "(Deprecated.) Use --url instead. Repository URL to trigger your pipeline",
+                  "name": [
+                    "--github-url"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "url"
+                  },
+                  "description": "The repository URL to trigger your pipeline. Supported providers are: GitHub, CodeCommit, Bitbucket",
+                  "name": [
+                    "--url",
+                    "-u"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Deploys a pipeline for the services in your workspace",
+              "name": "update",
+              "options": [
+                {
+                  "args": {
+                    "generators": [
+                      {
+                        "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                        "requires_js": true,
+                        "script": [
+                          "cat",
+                          "copilot/.workspace"
+                        ]
+                      }
+                    ],
+                    "name": "name"
+                  },
+                  "description": "Name of the application",
+                  "name": [
+                    "--app",
+                    "-a"
+                  ]
+                },
+                {
+                  "description": "Skips confirmation prompt",
+                  "name": [
+                    "--yes"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Deletes the pipeline associated with your workspace",
+              "name": "delete",
+              "options": [
+                {
+                  "args": {
+                    "generators": [
+                      {
+                        "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                        "requires_js": true,
+                        "script": [
+                          "cat",
+                          "copilot/.workspace"
+                        ]
+                      }
+                    ],
+                    "name": "name"
+                  },
+                  "description": "Name of the application",
+                  "name": [
+                    "--app",
+                    "-a"
+                  ]
+                },
+                {
+                  "description": "Deletes AWS Secrets Manager secret associated with a pipeline source repository",
+                  "name": [
+                    "--delete-secret"
+                  ]
+                },
+                {
+                  "description": "Skips confirmation prompt",
+                  "name": [
+                    "--yes"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Shows info about a deployed pipeline for an application",
+              "name": "show",
+              "options": [
+                {
+                  "args": {
+                    "generators": [
+                      {
+                        "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                        "requires_js": true,
+                        "script": [
+                          "cat",
+                          "copilot/.workspace"
+                        ]
+                      }
+                    ],
+                    "name": "name"
+                  },
+                  "description": "Name of the application",
+                  "name": [
+                    "--app",
+                    "-a"
+                  ]
+                },
+                {
+                  "description": "Outputs in JSON format",
+                  "name": [
+                    "--json"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the pipeline",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "description": "Optional. Show the resources in your pipeline",
+                  "name": [
+                    "--resources"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Shows the status of a pipeline",
+              "name": "status",
+              "options": [
+                {
+                  "args": {
+                    "generators": [
+                      {
+                        "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                        "requires_js": true,
+                        "script": [
+                          "cat",
+                          "copilot/.workspace"
+                        ]
+                      }
+                    ],
+                    "name": "name"
+                  },
+                  "description": "Name of the application",
+                  "name": [
+                    "--app",
+                    "-a"
+                  ]
+                },
+                {
+                  "description": "Outputs in JSON format",
+                  "name": [
+                    "--json"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the pipeline",
+                  "name": [
+                    "--name",
+                    "-n"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Lists all the deployed pipelines in an application",
+              "name": "ls",
+              "options": [
+                {
+                  "args": {
+                    "generators": [
+                      {
+                        "js_source": "n=>{if(n.trim()==\"\")return[];let e=[];try{let t=bs.parse(n).application;e.push({name:`${t}`,icon:\"fig://icon?type=aws\"})}catch(t){return console.log(t),[]}return e}",
+                        "requires_js": true,
+                        "script": [
+                          "cat",
+                          "copilot/.workspace"
+                        ]
+                      }
+                    ],
+                    "name": "name"
+                  },
+                  "description": "Name of the application",
+                  "name": [
+                    "--app",
+                    "-a"
+                  ]
+                },
+                {
+                  "description": "Outputs in JSON format",
+                  "name": [
+                    "--json"
+                  ]
+                },
+                {
+                  "description": "Help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Deploy a Copilot job or service",
+          "name": "deploy",
+          "options": [
+            {
+              "description": "Help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,184 @@
+{
+  "args": {
+    "name": "path",
+    "template": "filepaths"
+  },
+  "description": "InteliJ IDEA cli",
+  "name": "idea",
+  "options": [
+    {
+      "description": "Do not show the splash screen when loading InteliJ IDEA",
+      "name": [
+        "nosplash"
+      ]
+    },
+    {
+      "description": "Do not reopen projects and show the welcome screen",
+      "name": [
+        "dontReopenProjects"
+      ]
+    },
+    {
+      "description": "Do not load manually installed plugins",
+      "name": [
+        "disableNonBundledPlugins"
+      ]
+    },
+    {
+      "description": "Wait for the files to be closed before returning to the command prompt",
+      "name": [
+        "--wait"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": [
+        {
+          "name": "path",
+          "template": "filepaths"
+        },
+        {
+          "name": "path2",
+          "template": "filepaths"
+        },
+        {
+          "name": "path3-optional",
+          "template": "filepaths"
+        }
+      ],
+      "description": "Open the diff viewer to see the differences between two specified files",
+      "name": "diff"
+    },
+    {
+      "args": [
+        {
+          "name": "path",
+          "template": "filepaths"
+        },
+        {
+          "name": "path2",
+          "template": "filepaths"
+        },
+        {
+          "name": "base-optional",
+          "template": "filepaths"
+        }
+      ],
+      "description": "Open the Merge dialog to merge the specified files",
+      "name": "merge"
+    },
+    {
+      "args": {
+        "name": "path...",
+        "template": "filepaths"
+      },
+      "description": "Apply code style formatting to the specified files",
+      "name": "format",
+      "options": [
+        {
+          "description": "Show help for format command",
+          "name": [
+            "-h"
+          ]
+        },
+        {
+          "description": "Specify a comma-separated list of file masks that define the files to be processed",
+          "name": [
+            "-m",
+            "-mask"
+          ]
+        },
+        {
+          "description": "Process specified directories recursively",
+          "name": [
+            "-r",
+            "-R"
+          ]
+        },
+        {
+          "description": "Specify the code style settings file to use for formatting",
+          "name": [
+            "-s",
+            "-settings"
+          ]
+        },
+        {
+          "description": "Use the default code style settings when the code style is not defined for a file or a group of files",
+          "name": [
+            "-allowDefaults"
+          ]
+        },
+        {
+          "description": "Preserve encoding and enforce the charset for reading and writing source files",
+          "name": [
+            "-charset"
+          ]
+        },
+        {
+          "description": "Run the formatter in the validation mode",
+          "name": [
+            "-d",
+            "-dry"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "project",
+          "template": "folders"
+        },
+        {
+          "name": "inspection-profile",
+          "template": "filepaths"
+        },
+        {
+          "name": "output",
+          "template": "filepaths"
+        }
+      ],
+      "description": "Perform code inspection on the specified project",
+      "name": "inspect",
+      "options": [
+        {
+          "description": "Run inspections only on local uncommitted changes",
+          "name": [
+            "-changes"
+          ]
+        },
+        {
+          "description": "Specify the full path to the subdirectory if you don't want to inspect the whole project",
+          "name": [
+            "-d"
+          ]
+        },
+        {
+          "description": "Specify the format of the output file with inspection results",
+          "name": [
+            "-format"
+          ]
+        },
+        {
+          "description": "Set the verbosity level of the output",
+          "name": [
+            "-v"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "plugin-id"
+        },
+        {
+          "name": "repository-url "
+        }
+      ],
+      "description": "Install plugins by plugin ID from JetBrains Marketplace or a custom plugin repository",
+      "name": "installPlugins"
+    }
+  ]
+}

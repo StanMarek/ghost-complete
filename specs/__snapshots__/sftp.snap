@@ -1,0 +1,471 @@
+{
+  "args": [
+    {
+      "description": "File or directory, local or remote ([user@]host:[path])",
+      "generators": [
+        {
+          "js_source": "async(n,e,s)=>{let{stdout:a}=await e({command:\"cat\",args:[`${s.environmentVariables.HOME}/.ssh/known_hosts`]});return a.split(`\n`).map(t=>{let i=h.exec(t);if(i)return String(i)}).filter((t,i,r)=>t&&r.indexOf(t)===i).map(t=>({name:(n[1].endsWith(\"@\")?n[1]:\"\")+t,description:\"SSH host\"}))}",
+          "requires_js": true
+        },
+        {
+          "js_source": "async(n,e,s)=>(await d(\"config\",e,s.environmentVariables.HOME,\"~/.ssh\")).filter(t=>t.trim().toLowerCase().startsWith(\"host \")&&!t.includes(\"*\")).map(t=>({name:t.split(\" \")[1],description:\"SSH host\",priority:90}))",
+          "requires_js": true
+        },
+        {
+          "template": [
+            "history",
+            "filepaths",
+            "folders"
+          ]
+        }
+      ],
+      "isVariadic": true,
+      "name": "sources"
+    },
+    {
+      "description": "File or directory, local or remote ([user@]host:[path])",
+      "generators": [
+        {
+          "js_source": "async(n,e,s)=>{let{stdout:a}=await e({command:\"cat\",args:[`${s.environmentVariables.HOME}/.ssh/known_hosts`]});return a.split(`\n`).map(t=>{let i=h.exec(t);if(i)return String(i)}).filter((t,i,r)=>t&&r.indexOf(t)===i).map(t=>({name:(n[1].endsWith(\"@\")?n[1]:\"\")+t,description:\"SSH host\"}))}",
+          "requires_js": true
+        },
+        {
+          "js_source": "async(n,e,s)=>(await d(\"config\",e,s.environmentVariables.HOME,\"~/.ssh\")).filter(t=>t.trim().toLowerCase().startsWith(\"host \")&&!t.includes(\"*\")).map(t=>({name:t.split(\" \")[1],description:\"SSH host\",priority:90}))",
+          "requires_js": true
+        },
+        {
+          "template": [
+            "history",
+            "filepaths",
+            "folders"
+          ]
+        }
+      ],
+      "name": "target"
+    }
+  ],
+  "description": "OpenSSH secure file transfer",
+  "name": "sftp",
+  "options": [
+    {
+      "description": "Show help for sftp",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "description": "Forces scp to use IPv4 addresses only",
+      "name": [
+        "-4"
+      ]
+    },
+    {
+      "description": "Forces scp to use IPv6 addresses only",
+      "name": [
+        "-6"
+      ]
+    },
+    {
+      "description": "Allows forwarding of ssh-agent(1) to the remote system. The default is not to forward an authentication agent",
+      "name": [
+        "-A"
+      ]
+    },
+    {
+      "description": "Attempt to continue interrupted transfers rather than overwriting\nexisting partial or complete copies of files.  If the partial\ncontents differ from those being transferred, then the resultant\nfile is likely to be corrupt",
+      "name": [
+        "-a"
+      ]
+    },
+    {
+      "args": {
+        "description": "The buffer size",
+        "name": "buffer_size",
+        "suggestions": [
+          {
+            "name": "32768"
+          }
+        ]
+      },
+      "description": "Specify the size of the buffer that sftp uses when transferring\nfiles.  Larger buffers require fewer round trips at the cost of\nhigher memory consumption.  The default is 32768 bytes",
+      "name": [
+        "-B"
+      ]
+    },
+    {
+      "args": {
+        "description": "The batch file",
+        "name": "batchfile",
+        "template": "filepaths"
+      },
+      "description": "Batch mode reads a series of commands from an input batchfile\ninstead of stdin.  Since it lacks user interaction it should be\nused in conjunction with non-interactive authentication to obviate\nthe need to enter a password at connection time (see sshd(8) and\nssh-keygen(1) for details)",
+      "name": [
+        "-b"
+      ]
+    },
+    {
+      "description": "Compression enable. Passes the -C flag to ssh(1) to enable compression",
+      "name": [
+        "-C"
+      ]
+    },
+    {
+      "args": {
+        "description": "The selected cipher specification",
+        "name": "cipher"
+      },
+      "description": "Selects the cipher to use for encrypting the data transfer. This option is directly passed to ssh(1)",
+      "name": [
+        "-c"
+      ]
+    },
+    {
+      "args": {
+        "description": "Path to the SFTP server",
+        "name": "sftp_server_path"
+      },
+      "description": "Connect directly to a local sftp server (rather than via ssh(1)).\nThis option may be useful in debugging the client and server",
+      "name": [
+        "-D"
+      ]
+    },
+    {
+      "args": {
+        "description": "The selected ssh config",
+        "name": "ssh_config"
+      },
+      "description": "Specifies an alternative per-user configuration file for ssh. This option is directly passed to ssh(1)",
+      "name": [
+        "-F"
+      ]
+    },
+    {
+      "description": "Requests that files be flushed to disk immediately after transfer",
+      "name": [
+        "-f"
+      ]
+    },
+    {
+      "args": {
+        "description": "Specified identity file",
+        "name": "identity_file"
+      },
+      "description": "Selects the file from which the identity (private key) for public key authentication is read. This option is directly passed to ssh(1)",
+      "name": [
+        "-i"
+      ]
+    },
+    {
+      "args": {
+        "description": "Scp destination",
+        "name": "destination"
+      },
+      "description": "Connect to the target host by first making an scp connection to the\njump host described by destination and then establishing a TCP\nforwarding to the ultimate destination from there.  Multiple jump\nhops may be specified separated by comma characters.  This is a\nshortcut to specify a ProxyJump configuration directive.  This\noption is directly passed to ssh(1)",
+      "name": [
+        "-J"
+      ]
+    },
+    {
+      "args": {
+        "description": "Limit bandwidth in Kbit/s",
+        "name": "limit"
+      },
+      "description": "Limits the used bandwidth, specified in Kbit/s",
+      "name": [
+        "-l"
+      ]
+    },
+    {
+      "description": "Disables quiet mode, e.g. to override the implicit quiet mode set by the -b flag",
+      "name": [
+        "-N"
+      ]
+    },
+    {
+      "args": {
+        "name": "option",
+        "suggestions": [
+          {
+            "name": "AddressFamily"
+          },
+          {
+            "name": "BatchMode"
+          },
+          {
+            "name": "BindAddress"
+          },
+          {
+            "name": "ChallengeResponseAuthentication"
+          },
+          {
+            "name": "CheckHostIP"
+          },
+          {
+            "name": "Cipher"
+          },
+          {
+            "name": "Ciphers"
+          },
+          {
+            "name": "ClearAllForwardings"
+          },
+          {
+            "name": "Compression"
+          },
+          {
+            "name": "CompressionLevel"
+          },
+          {
+            "name": "ConnectionAttempts"
+          },
+          {
+            "name": "ConnectTimeout"
+          },
+          {
+            "name": "ControlMaster"
+          },
+          {
+            "name": "ControlPath"
+          },
+          {
+            "name": "ControlPersist"
+          },
+          {
+            "name": "DynamicForward"
+          },
+          {
+            "name": "EscapeChar"
+          },
+          {
+            "name": "ExitOnForwardFailure"
+          },
+          {
+            "name": "ForwardAgent"
+          },
+          {
+            "name": "ForwardX11"
+          },
+          {
+            "name": "ForwardX11Timeout"
+          },
+          {
+            "name": "ForwardX11Trusted"
+          },
+          {
+            "name": "GatewayPorts"
+          },
+          {
+            "name": "GlobalKnownHostsFile"
+          },
+          {
+            "name": "GSSAPIAuthentication"
+          },
+          {
+            "name": "GSSAPIDelegateCredentials"
+          },
+          {
+            "name": "HashKnownHosts"
+          },
+          {
+            "name": "Host"
+          },
+          {
+            "name": "HostbasedAuthentication"
+          },
+          {
+            "name": "HostKeyAlgorithms"
+          },
+          {
+            "name": "HostKeyAlias"
+          },
+          {
+            "name": "HostName"
+          },
+          {
+            "name": "IdentityFile"
+          },
+          {
+            "name": "IdentitiesOnly"
+          },
+          {
+            "name": "IPQoS"
+          },
+          {
+            "name": "KbdInteractiveAuthentication"
+          },
+          {
+            "name": "KbdInteractiveDevices"
+          },
+          {
+            "name": "KexAlgorithms"
+          },
+          {
+            "name": "LocalCommand"
+          },
+          {
+            "name": "LocalForward"
+          },
+          {
+            "name": "LogLevel"
+          },
+          {
+            "name": "MACs"
+          },
+          {
+            "name": "NoHostAuthenticationForLocalhost"
+          },
+          {
+            "name": "NumberOfPasswordPrompts"
+          },
+          {
+            "name": "PasswordAuthentication"
+          },
+          {
+            "name": "PermitLocalCommand"
+          },
+          {
+            "name": "PKCS11Provider"
+          },
+          {
+            "name": "Port"
+          },
+          {
+            "name": "PreferredAuthentications"
+          },
+          {
+            "name": "Protocol"
+          },
+          {
+            "name": "ProxyCommand"
+          },
+          {
+            "name": "PubkeyAuthentication"
+          },
+          {
+            "name": "RekeyLimit"
+          },
+          {
+            "name": "RequestTTY"
+          },
+          {
+            "name": "RhostsRSAAuthentication"
+          },
+          {
+            "name": "RSAAuthentication"
+          },
+          {
+            "name": "SendEnv"
+          },
+          {
+            "name": "ServerAliveInterval"
+          },
+          {
+            "name": "ServerAliveCountMax"
+          },
+          {
+            "name": "StrictHostKeyChecking"
+          },
+          {
+            "name": "TCPKeepAlive"
+          },
+          {
+            "name": "Tunnel"
+          },
+          {
+            "name": "TunnelDevice"
+          },
+          {
+            "name": "UsePrivilegedPort"
+          },
+          {
+            "name": "User"
+          },
+          {
+            "name": "UserKnownHostsFile"
+          },
+          {
+            "name": "VerifyHostKeyDNS"
+          },
+          {
+            "name": "VisualHostKey"
+          },
+          {
+            "name": "XAuthLocation"
+          }
+        ]
+      },
+      "description": "Can be used to pass options to ssh in the format used in\nssh_config(5).  This is useful for specifying options for which\nthere is no separate scp command-line flag.  For full details of\nthe options listed below, and their possible values, see\nssh_config(5)",
+      "name": [
+        "-o"
+      ]
+    },
+    {
+      "args": {
+        "name": "port"
+      },
+      "description": "Specifies the port to connect to on the remote host.  Note that\nthis option is written with a capital ‘P’, because -p is already\nreserved for preserving the times and modes of the file",
+      "name": [
+        "-P"
+      ]
+    },
+    {
+      "description": "Preserves modification times, access times, and modes from the original file",
+      "name": [
+        "-p"
+      ]
+    },
+    {
+      "description": "Quiet mode: disables the progress meter as well as warning and diagnostic messages from ssh(1)",
+      "name": [
+        "-q"
+      ]
+    },
+    {
+      "args": {
+        "description": "The number of requests",
+        "name": "num_requests",
+        "suggestions": [
+          {
+            "name": "64"
+          }
+        ]
+      },
+      "description": "Specify how many requests may be outstanding at any one time.\nIncreasing this may slightly improve file transfer speed but will\nincrease memory usage.  The default is 64 outstanding requests",
+      "name": [
+        "-R"
+      ]
+    },
+    {
+      "description": "Recursively copy entire directories.  Note that scp follows symbolic links encountered in the tree traversal",
+      "name": [
+        "-r"
+      ]
+    },
+    {
+      "args": {
+        "name": "program"
+      },
+      "description": "Name of program to use for the encrypted connection.  The program must understand ssh(1) options",
+      "name": [
+        "-S"
+      ]
+    },
+    {
+      "args": {
+        "description": "Path to the SFTP server",
+        "name": "subsystem | sftp_server"
+      },
+      "description": "Specifies the SSH2 subsystem or the path for an sftp server on the\nremote host.  A path is useful when the remote sshd(8) does not\nhave an sftp subsystem configured",
+      "name": [
+        "-s"
+      ]
+    },
+    {
+      "description": "Verbose mode.  Causes scp and ssh(1) to print debugging messages about their progress. This is helpful in debugging connection, authentication, and configuration problems",
+      "name": [
+        "-v"
+      ]
+    }
+  ]
+}

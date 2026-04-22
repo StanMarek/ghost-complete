@@ -1,0 +1,316 @@
+{
+  "args": [
+    {
+      "generators": [
+        {
+          "script": [
+            "cat",
+            "/proc/partitions"
+          ],
+          "transforms": [
+            "split_lines",
+            "filter_empty",
+            "trim"
+          ]
+        },
+        {
+          "script": [
+            "ls",
+            "-1",
+            "/dev/mapper"
+          ],
+          "transforms": [
+            "split_lines",
+            "filter_empty",
+            "trim"
+          ]
+        }
+      ],
+      "name": "Disk/loopfile",
+      "template": "filepaths"
+    },
+    {
+      "name": "mountpoint",
+      "suggestions": [
+        {
+          "name": "/mnt"
+        },
+        {
+          "name": "/run/media/"
+        }
+      ],
+      "template": "folders"
+    }
+  ],
+  "description": "Mount disks and manage subtrees",
+  "name": "mount",
+  "options": [
+    {
+      "description": "Help for abc",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Mount all filesystems in fstab",
+      "name": [
+        "-a",
+        "--all"
+      ]
+    },
+    {
+      "description": "Don't canonicalize paths",
+      "name": [
+        "-c",
+        "--no-canonicalize"
+      ]
+    },
+    {
+      "description": "Dry run; skip the mount(2) syscall",
+      "name": [
+        "-f",
+        "--fake"
+      ]
+    },
+    {
+      "description": "Fork off for each device (use with -a)",
+      "name": [
+        "-F",
+        "--fork"
+      ]
+    },
+    {
+      "args": {
+        "name": "fstab",
+        "template": "filepaths"
+      },
+      "description": "Alternative file to /etc/fstab",
+      "name": [
+        "-T",
+        "--fstab"
+      ]
+    },
+    {
+      "description": "Don't call the mount.<type> helpers",
+      "name": [
+        "-i",
+        "--internal-only"
+      ]
+    },
+    {
+      "description": "Show also filesystem labels",
+      "name": [
+        "-l",
+        "--show-labels"
+      ]
+    },
+    {
+      "description": "Alias to '-o X-mount.mkdir",
+      "name": [
+        "-m",
+        "--mkdir"
+      ]
+    },
+    {
+      "description": "Don't write to /etc/mtab",
+      "name": [
+        "-n",
+        "--no-mtab"
+      ]
+    },
+    {
+      "args": {
+        "name": "mode"
+      },
+      "description": "What to do with options loaded from fstab",
+      "name": [
+        "--options-mode"
+      ]
+    },
+    {
+      "args": {
+        "name": "source",
+        "template": "filepaths"
+      },
+      "description": "Mount options source",
+      "name": [
+        "--options-source"
+      ]
+    },
+    {
+      "description": "Force use of options from fstab/mtab",
+      "name": [
+        "--options-source-force"
+      ]
+    },
+    {
+      "args": {
+        "name": "list"
+      },
+      "description": "Comma-separated list of mount options",
+      "name": [
+        "-o",
+        "--options"
+      ]
+    },
+    {
+      "args": {
+        "name": "list"
+      },
+      "description": "Limit the set of filesystems (use with -a)",
+      "name": [
+        "-O",
+        "--test-opts"
+      ]
+    },
+    {
+      "description": "Mount the filesystem read-only (same as -o ro)",
+      "name": [
+        "-r",
+        "--read-only"
+      ]
+    },
+    {
+      "args": {
+        "name": "list"
+      },
+      "description": "Limit the set of filesystem types",
+      "name": [
+        "-t",
+        "--types"
+      ]
+    },
+    {
+      "args": {
+        "name": "source",
+        "suggestions": [
+          {
+            "name": "path"
+          },
+          {
+            "name": "label"
+          },
+          {
+            "name": "uuid"
+          }
+        ]
+      },
+      "description": "Explicitly specifies source",
+      "name": [
+        "--source"
+      ]
+    },
+    {
+      "args": {
+        "name": "mountpoint",
+        "template": "folders"
+      },
+      "description": "Explicitly specifies mountpoint",
+      "name": [
+        "--target"
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "folders"
+      },
+      "description": "Specifies path used for all mountpoints",
+      "name": [
+        "--target-prefix"
+      ]
+    },
+    {
+      "description": "Say what is being done",
+      "name": [
+        "-v",
+        "--verbose"
+      ]
+    },
+    {
+      "description": "Mount the filesystem read-write (default)",
+      "name": [
+        "-w",
+        "--rw",
+        "--read-write"
+      ]
+    },
+    {
+      "description": "Display version",
+      "name": [
+        "-V",
+        "--version"
+      ]
+    },
+    {
+      "description": "Mount a subtree somewhere else (same as -o bind)",
+      "name": [
+        "-B",
+        "--bind"
+      ]
+    },
+    {
+      "description": "Move a subtree to some other place",
+      "name": [
+        "-M",
+        "--move"
+      ]
+    },
+    {
+      "description": "Mount a subtree and all submounts somewhere else",
+      "name": [
+        "-R",
+        "-rbind"
+      ]
+    },
+    {
+      "description": "Mark a subtree as shared",
+      "name": [
+        "--make-shared"
+      ]
+    },
+    {
+      "description": "Mark a subtree as slave",
+      "name": [
+        "--make-slave"
+      ]
+    },
+    {
+      "description": "Mark a subtree as private",
+      "name": [
+        "--make-private"
+      ]
+    },
+    {
+      "description": "Mark a subtree as unbindable",
+      "name": [
+        "--make-unbindable"
+      ]
+    },
+    {
+      "description": "Recursively mark a whole subtree as shared",
+      "name": [
+        "--make-rshared"
+      ]
+    },
+    {
+      "description": "Recursively mark a whole subtree as slave",
+      "name": [
+        "--make-rslave"
+      ]
+    },
+    {
+      "description": "Recursively mark a whole subtree as private",
+      "name": [
+        "--make-rprivate"
+      ]
+    },
+    {
+      "description": "Recursively mark a whole subtree as unbindable",
+      "name": [
+        "--make-runbindable"
+      ]
+    }
+  ]
+}

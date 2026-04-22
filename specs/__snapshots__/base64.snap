@@ -1,0 +1,74 @@
+{
+  "description": "Encode and decode using Base64 representation",
+  "name": "base64",
+  "options": [
+    {
+      "description": "Display this help and exit",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "args": {
+        "name": "count",
+        "suggestions": [
+          {
+            "name": "0"
+          }
+        ]
+      },
+      "description": "Insert line breaks every count characters.  Default is 0, which generates an unbroken stream",
+      "name": [
+        "--break",
+        "-b"
+      ]
+    },
+    {
+      "description": "Decode incoming Base64 stream into binary data",
+      "name": [
+        "--decode",
+        "-d",
+        "-D"
+      ]
+    },
+    {
+      "args": {
+        "name": "input_file",
+        "suggestions": [
+          {
+            "name": "stdin"
+          },
+          {
+            "name": "-"
+          }
+        ],
+        "template": "filepaths"
+      },
+      "description": "Read input from input_file.  Default is stdin; passing - also represents stdin",
+      "name": [
+        "--input",
+        "-i"
+      ]
+    },
+    {
+      "args": {
+        "name": "output_file",
+        "suggestions": [
+          {
+            "name": "stdout"
+          },
+          {
+            "name": "-"
+          }
+        ],
+        "template": "filepaths"
+      },
+      "description": "Write output to output_file.  Default is stdout; passing - also represents stdout",
+      "name": [
+        "--output",
+        "-o"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "args": {
+    "generators": [
+      {
+        "js_source": "(m,h,w)=>le(this,void 0,void 0,function*(){var p;let{isDangerous:b,currentWorkingDirectory:S,searchTerm:f}=w,_=(p=(0,v.getCurrentInsertedDirectory)(l??S,f,w))!==null&&p!==void 0?p:\"/\";try{let F=yield h({command:\"ls\",args:[\"-1ApL\"],cwd:_}),X=J(F.stdout.split(`\n`),[\".DS_Store\"]),N=[];for(let M of X)if(M){let I=M.endsWith(\"/\")?\"folders\":\"filepaths\";(I===\"filepaths\"&&d!==\"only\"||I===\"folders\"&&d!==\"never\")&&N.push({type:I===\"filepaths\"?\"file\":\"folder\",name:M,insertValue:M,isDangerous:b,context:{templateType:I}})}return k(g(N))}catch{return[]}})",
+        "requires_js": true
+      }
+    ],
+    "name": "node script"
+  },
+  "description": "Run the node interpreter",
+  "name": "node",
+  "options": [
+    {
+      "args": {},
+      "description": "Evaluate script",
+      "name": [
+        "-e",
+        "--eval=..."
+      ]
+    },
+    {
+      "description": "Watch input files",
+      "name": [
+        "--watch"
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "filepaths"
+      },
+      "description": "Specify a watch directory or file",
+      "name": [
+        "--watch-path"
+      ]
+    },
+    {
+      "description": "Disable the clearing of the console when watch mode restarts the process",
+      "name": [
+        "--watch-preserve-output"
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "filepaths"
+      },
+      "description": "Specify a file containing environment variables",
+      "name": [
+        "--env-file"
+      ]
+    },
+    {
+      "description": "Evaluate script and print result",
+      "name": [
+        "-p",
+        "--print"
+      ]
+    },
+    {
+      "description": "Syntax check script without executing",
+      "name": [
+        "-c",
+        "--check"
+      ]
+    },
+    {
+      "description": "Print Node.js version",
+      "name": [
+        "-v",
+        "--version"
+      ]
+    },
+    {
+      "description": "Always enter the REPL even if stdin does not appear to be a terminal",
+      "name": [
+        "-i",
+        "--interactive"
+      ]
+    },
+    {
+      "description": "Print node command line options (currently set)",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "[host:]port"
+      },
+      "description": "Activate inspector on host:port (default: 127.0.0.1:9229)",
+      "name": [
+        "--inspect"
+      ]
+    },
+    {
+      "description": "Follows symlinks to directories when examining source code and templates for translation strings",
+      "name": [
+        "--preserve-symlinks"
+      ]
+    }
+  ]
+}

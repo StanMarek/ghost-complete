@@ -1,0 +1,462 @@
+{
+  "description": "Kubernetes IN Docker - local clusters for testing Kubernetes",
+  "name": "kind",
+  "options": [
+    {
+      "description": "Help for kind",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Silence all stderr output",
+      "name": [
+        "-q",
+        "--quiet"
+      ]
+    },
+    {
+      "args": {
+        "name": "int"
+      },
+      "description": "Info log verbosity, higher value produces more output",
+      "name": [
+        "-v",
+        "--verbosity"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Build one of [node-image]",
+      "name": "Build",
+      "subcommands": [
+        {
+          "description": "Builds a node image",
+          "name": "node-image",
+          "options": [
+            {
+              "args": {
+                "description": "Architecture to build for, defaults to the host architecture",
+                "name": "architecture"
+              },
+              "description": "Architecture to build for, defaults to the host architecture",
+              "name": [
+                "--arch"
+              ]
+            },
+            {
+              "args": {
+                "description": "Name:tag of the base image to use for the build",
+                "name": "base image"
+              },
+              "description": "Base image to use for the node image",
+              "name": [
+                "--base-image"
+              ]
+            },
+            {
+              "args": {
+                "description": "Name:tag of the resulting image to be built",
+                "name": "name:tag"
+              },
+              "description": "Name:tag of the resulting image to be built",
+              "name": [
+                "--image"
+              ]
+            },
+            {
+              "args": {
+                "description": "Path to the Kubernetes source directory",
+                "name": "path"
+              },
+              "description": "Path to the Kubernetes source directory",
+              "name": [
+                "--kube-root"
+              ]
+            },
+            {
+              "args": {
+                "description": "Build type, default is docker",
+                "name": "type"
+              },
+              "description": "Type of node image to build",
+              "name": [
+                "--type"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Creates a cluster",
+      "name": "create",
+      "subcommands": [
+        {
+          "description": "Creates a cluster",
+          "name": "cluster",
+          "options": [
+            {
+              "description": "Path to a kind config file",
+              "name": [
+                "--config"
+              ]
+            },
+            {
+              "description": "Node docker image to use for booting the cluster",
+              "name": [
+                "--image"
+              ]
+            },
+            {
+              "description": "Sets kubeconfig path instead of $KUBECONFIG or $HOME/.kube/config",
+              "name": [
+                "--kubeconfig"
+              ]
+            },
+            {
+              "description": "Cluster name",
+              "name": [
+                "--name"
+              ]
+            },
+            {
+              "description": "Retain nodes for debugging when cluster creation fails",
+              "name": [
+                "--retain"
+              ]
+            },
+            {
+              "description": "Wait for control-plane node to be ready",
+              "name": [
+                "--wait"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generates shell completion scripts",
+      "name": "completion",
+      "subcommands": [
+        {
+          "description": "Output shell completions for bash",
+          "name": "bash"
+        },
+        {
+          "description": "Output shell completions for fish",
+          "name": "fish"
+        },
+        {
+          "description": "Output shell completions for zsh",
+          "name": "zsh"
+        }
+      ]
+    },
+    {
+      "description": "Deletes one or more clusters",
+      "name": "delete",
+      "subcommands": [
+        {
+          "description": "Delete Cluster",
+          "name": "cluster",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "script": [
+                      "kind",
+                      "get",
+                      "clusters"
+                    ],
+                    "transforms": [
+                      "split_lines",
+                      "filter_empty"
+                    ]
+                  }
+                ],
+                "name": "cluster name"
+              },
+              "description": "Cluster name",
+              "name": [
+                "--name"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Delete Clusters",
+          "name": "clusters",
+          "options": [
+            {
+              "description": "Delete all clusters",
+              "name": [
+                "-A",
+                "--all"
+              ]
+            },
+            {
+              "description": "Sets kubeconfig path instead of $KUBECONFIG or $HOME/.kube/config",
+              "name": [
+                "--kubeconfig"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Exports a cluster's kubeconfig",
+      "name": "export",
+      "subcommands": [
+        {
+          "description": "Exports a cluster's kubeconfig",
+          "name": "kubeconfig",
+          "options": [
+            {
+              "description": "Cluster name",
+              "name": [
+                "--name"
+              ]
+            },
+            {
+              "description": "Use internal address instead of externalt",
+              "name": [
+                "--internal"
+              ]
+            },
+            {
+              "description": "Sets kubeconfig path instead of $KUBECONFIG or $HOME/.kube/config",
+              "name": [
+                "--kubeconfig"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Exports logs to a tempdir or [output-dir] if specified",
+          "name": "logs",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "script": [
+                      "kind",
+                      "get",
+                      "clusters"
+                    ],
+                    "transforms": [
+                      "split_lines",
+                      "filter_empty"
+                    ]
+                  }
+                ],
+                "name": "cluster name"
+              },
+              "description": "Cluster name",
+              "name": [
+                "--name"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Gets one of [clusters, nodes, kubeconfig]",
+      "name": "get",
+      "subcommands": [
+        {
+          "description": "Lists existing kind clusters by their name",
+          "name": "clusters"
+        },
+        {
+          "description": "Prints cluster kubeconfig",
+          "name": "kubeconfig",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "script": [
+                      "kind",
+                      "get",
+                      "clusters"
+                    ],
+                    "transforms": [
+                      "split_lines",
+                      "filter_empty"
+                    ]
+                  }
+                ],
+                "name": "cluster name"
+              },
+              "description": "Cluster name",
+              "name": [
+                "--name"
+              ]
+            },
+            {
+              "description": "Use internal address instead of external",
+              "name": [
+                "--internal"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Lists existing kind nodes by their name",
+          "name": "nodes",
+          "options": [
+            {
+              "description": "List all nodes",
+              "name": [
+                "-A",
+                "--all"
+              ]
+            },
+            {
+              "args": {
+                "generators": [
+                  {
+                    "script": [
+                      "kind",
+                      "get",
+                      "clusters"
+                    ],
+                    "transforms": [
+                      "split_lines",
+                      "filter_empty"
+                    ]
+                  }
+                ],
+                "name": "cluster name"
+              },
+              "description": "Cluster name",
+              "name": [
+                "--name"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Loads images into node from an archive or image on host",
+      "name": "load",
+      "subcommands": [
+        {
+          "description": "Loads docker images from host into all or specified nodes by name",
+          "name": "docker-image",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "script": [
+                      "kind",
+                      "get",
+                      "clusters"
+                    ],
+                    "transforms": [
+                      "split_lines",
+                      "filter_empty"
+                    ]
+                  }
+                ],
+                "name": "cluster name"
+              },
+              "description": "Cluster name",
+              "name": [
+                "--name"
+              ]
+            },
+            {
+              "args": {
+                "generators": [
+                  {
+                    "script": [
+                      "kind",
+                      "get",
+                      "nodes",
+                      "-A"
+                    ],
+                    "transforms": [
+                      "split_lines",
+                      "filter_empty"
+                    ]
+                  }
+                ],
+                "name": "nodes"
+              },
+              "description": "Comma separated list of nodes to load images into",
+              "name": [
+                "--nodes"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Loads docker images from archive into all or specified nodes by name",
+          "name": "image-archive",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "script": [
+                      "kind",
+                      "get",
+                      "clusters"
+                    ],
+                    "transforms": [
+                      "split_lines",
+                      "filter_empty"
+                    ]
+                  }
+                ],
+                "name": "cluster name"
+              },
+              "description": "Cluster name",
+              "name": [
+                "--name"
+              ]
+            },
+            {
+              "args": {
+                "generators": [
+                  {
+                    "script": [
+                      "kind",
+                      "get",
+                      "nodes",
+                      "-A"
+                    ],
+                    "transforms": [
+                      "split_lines",
+                      "filter_empty"
+                    ]
+                  }
+                ],
+                "name": "nodes"
+              },
+              "description": "Comma separated list of nodes to load images into",
+              "name": [
+                "--nodes"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Prints the kind CLI version",
+      "name": "version"
+    }
+  ]
+}

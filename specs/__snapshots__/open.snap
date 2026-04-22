@@ -1,0 +1,201 @@
+{
+  "args": {
+    "isVariadic": true,
+    "template": [
+      "filepaths",
+      "folders"
+    ]
+  },
+  "description": "Open files, apps, or URLs using default application",
+  "name": "open",
+  "options": [
+    {
+      "args": {
+        "generators": [
+          {
+            "cache": {},
+            "script": [
+              "mdfind",
+              "kMDItemContentTypeTree=com.apple.application-bundle",
+              "-onlyin",
+              "/"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "Application"
+      },
+      "description": "Specify the application to use for opening the file",
+      "name": [
+        "-a"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "cache": {},
+            "js_source": "s=>{let e=new Map(s.split(`\n`).map(n=>{let i=n.indexOf(\" \");return[n.slice(0,i),n.slice(i+1)]}));e.delete(\"(null)\");let t=[];for(let[n,i]of e.entries())t.push({name:n,description:i,icon:`fig://${i}`});return t}",
+            "requires_js": true,
+            "script": [
+              "bash",
+              "-c",
+              "mdfind kMDItemContentTypeTree=com.apple.application-bundle -onlyin / | while read line; do echo $(mdls -name kMDItemCFBundleIdentifier -r \"$line\") $line; done"
+            ]
+          }
+        ],
+        "name": "Bundle Identifier"
+      },
+      "description": "Specify the bundle identifier of the app to use to open the file",
+      "name": [
+        "-b"
+      ]
+    },
+    {
+      "description": "Reveals the enclosing folder in finder",
+      "name": [
+        "-D"
+      ]
+    },
+    {
+      "description": "Opens the file with /Applications/TextEdit",
+      "name": [
+        "-e"
+      ]
+    },
+    {
+      "description": "Open the file with the default text editor",
+      "name": [
+        "-t"
+      ]
+    },
+    {
+      "description": "Read input from standard input and open the results in the default text editor",
+      "name": [
+        "-f"
+      ]
+    },
+    {
+      "description": "Opens the application without restoring windows",
+      "name": [
+        "-F",
+        "--fresh"
+      ]
+    },
+    {
+      "description": "Waits until the applications exit",
+      "name": [
+        "-W",
+        "--wait-apps"
+      ]
+    },
+    {
+      "description": "Reveals the file(s) in the Finder instead of opening them",
+      "name": [
+        "-R",
+        "--reveal"
+      ]
+    },
+    {
+      "description": "Open a new instance of the application(s) even if one is already running",
+      "name": [
+        "-n",
+        "--new"
+      ]
+    },
+    {
+      "description": "Launches the app hidden",
+      "name": [
+        "-j",
+        "--hide"
+      ]
+    },
+    {
+      "description": "Do not bring the application to the foreground",
+      "name": [
+        "-g",
+        "--background"
+      ]
+    },
+    {
+      "description": "Searches header locations for a header whose name matches the given string and then opens it",
+      "name": [
+        "-h",
+        "--header"
+      ]
+    },
+    {
+      "args": {
+        "name": "partial SDK name"
+      },
+      "description": "For -h, the SDK to use; if supplied, only SDKs whose names contain the argument value are searched",
+      "name": [
+        "-s"
+      ]
+    },
+    {
+      "args": {
+        "name": "URL"
+      },
+      "description": "Open this URL, even if it matches exactly a filepath",
+      "name": [
+        "-u",
+        "--url"
+      ]
+    },
+    {
+      "args": {
+        "name": "PATH",
+        "template": "filepaths"
+      },
+      "description": "Launches the application with stdin connected to PATH; defaults to /dev/null",
+      "name": [
+        "-i",
+        "--stdin"
+      ]
+    },
+    {
+      "args": {
+        "name": "PATH",
+        "template": "filepaths"
+      },
+      "description": "Launches the application with /dev/stdout connected to PATH",
+      "name": [
+        "-o",
+        "--stdout"
+      ]
+    },
+    {
+      "args": {
+        "name": "PATH",
+        "template": "filepaths"
+      },
+      "description": "Launches the application with /dev/stderr connected to PATH",
+      "name": [
+        "--stderr"
+      ]
+    },
+    {
+      "args": {
+        "name": "VAR"
+      },
+      "description": "Add an enviroment variable to the launched process, where VAR is formatted AAA=foo",
+      "name": [
+        "--env"
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "Arguments"
+      },
+      "description": "All remaining arguments are passed to the opened application in the argv parameter to main().  These arguments are not opened or interpreted by the open tool",
+      "name": [
+        "--args"
+      ]
+    }
+  ]
+}

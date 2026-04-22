@@ -1,0 +1,283 @@
+{
+  "description": "Fast Ethereum RPC client",
+  "name": "ganache-cli",
+  "options": [
+    {
+      "args": {
+        "name": "number"
+      },
+      "description": "Specify the number of accounts to generate at startup",
+      "name": [
+        "-a",
+        "--accounts"
+      ]
+    },
+    {
+      "args": {
+        "name": "number"
+      },
+      "description": "Amount of ether to assign each test account. Default is 100",
+      "name": [
+        "-e",
+        "--defaultBalanceEther"
+      ]
+    },
+    {
+      "args": {
+        "name": "seconds"
+      },
+      "description": "Specify blockTime in seconds for automatic mining. If you don't specify this flag, ganache will instantly mine a new block for every transaction",
+      "name": [
+        "-b",
+        "--blockTime"
+      ]
+    },
+    {
+      "description": "Generate deterministic addresses based on a pre-defined mnemonic",
+      "name": [
+        "-d",
+        "--deterministic"
+      ]
+    },
+    {
+      "description": "Lock available accounts by default (good for third party transaction signing)",
+      "name": [
+        "-n",
+        "--secure"
+      ]
+    },
+    {
+      "description": "Use a bip39 mnemonic phrase for generating a PRNG seed, which is in turn used for hierarchical deterministic (HD) account generation",
+      "name": [
+        "-m",
+        "--mnemonic"
+      ]
+    },
+    {
+      "args": {
+        "name": "port number"
+      },
+      "description": "Port number to listen on. Defaults to 8545",
+      "name": [
+        "-p",
+        "--port"
+      ]
+    },
+    {
+      "args": {
+        "name": "Hostname"
+      },
+      "description": "Hostname to listen on. Defaults to 127.0.0.1 (defaults to 0.0.0.0 for Docker instances of ganache-cli)",
+      "name": [
+        "-h",
+        "--host"
+      ]
+    },
+    {
+      "description": "Use arbitrary data to generate the HD wallet mnemonic to be used",
+      "name": [
+        "-s",
+        "--seed"
+      ]
+    },
+    {
+      "args": {
+        "name": "price"
+      },
+      "description": "The price of gas in wei (defaults to 20000000000)",
+      "name": [
+        "-g",
+        "--gasPrice"
+      ]
+    },
+    {
+      "args": {
+        "name": "limit"
+      },
+      "description": "The block gas limit (defaults to 0x6691b7)",
+      "name": [
+        "-l",
+        "--gasLimit"
+      ]
+    },
+    {
+      "args": {
+        "name": "limit"
+      },
+      "description": "Sets the transaction gas limit for eth_call and eth_estimateGas calls",
+      "name": [
+        "--callGasLimit"
+      ]
+    },
+    {
+      "args": {
+        "name": "hardfork",
+        "suggestions": [
+          {
+            "name": "byzantium"
+          },
+          {
+            "name": "constantinople"
+          },
+          {
+            "name": "petersburg"
+          },
+          {
+            "name": "istanbul"
+          },
+          {
+            "name": "muirGlacier"
+          }
+        ]
+      },
+      "description": "Allows users to specify which hardfork should be used",
+      "name": [
+        "-k",
+        "--hardfork"
+      ]
+    },
+    {
+      "args": {
+        "name": "HTTP location & port"
+      },
+      "description": "Fork from another currently running Ethereum client at a given block. Input should be the HTTP location and port of the other client",
+      "name": [
+        "-f",
+        "--fork"
+      ]
+    },
+    {
+      "args": {
+        "name": "Network ID"
+      },
+      "description": "Specify the network id ganache-cli will use to identify itself (defaults to the current time or the network id of the forked blockchain if configured)",
+      "name": [
+        "-i",
+        "--networkId"
+      ]
+    },
+    {
+      "args": {
+        "name": "Chain ID"
+      },
+      "description": "Specify the Chain ID ganache-cli will use for eth_chainId RPC and the CHAINID opcode",
+      "name": [
+        "--chainId"
+      ]
+    },
+    {
+      "args": {
+        "name": "folder",
+        "template": "folders"
+      },
+      "description": "Specify a path to a directory to save the chain database. If a database already exists, ganache-cli will initialize that chain instead of creating a new one",
+      "name": [
+        "--db"
+      ]
+    },
+    {
+      "description": "Output VM opcodes for debugging",
+      "name": [
+        "--debug"
+      ]
+    },
+    {
+      "description": "Output ganache-cli memory usage statistics. This replaces normal output",
+      "name": [
+        "--mem"
+      ]
+    },
+    {
+      "description": "Run ganache-cli without any logs",
+      "name": [
+        "-q",
+        "--quiet"
+      ]
+    },
+    {
+      "description": "Display help information",
+      "name": [
+        "-?",
+        "--help"
+      ]
+    },
+    {
+      "description": "Display the version of ganache-cli",
+      "name": [
+        "--version"
+      ]
+    },
+    {
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      },
+      "description": "Specifies a file to save accounts and private keys to, for testing",
+      "name": [
+        "--account_keys_path",
+        "--acctKeys"
+      ]
+    },
+    {
+      "description": "Do not transmit transaction failures as RPC errors",
+      "name": [
+        "--noVMErrorsOnRPCResponse"
+      ]
+    },
+    {
+      "description": "Allows unlimited contract sizes while debugging",
+      "name": [
+        "--allowUnlimitedContractSize"
+      ]
+    },
+    {
+      "args": {
+        "name": "timeout"
+      },
+      "description": "Sets the HTTP server's keepAliveTimeout in milliseconds",
+      "name": [
+        "--keepAliveTimeout"
+      ]
+    },
+    {
+      "args": {
+        "name": "date"
+      },
+      "description": "Date (ISO 8601) that the first block should start",
+      "name": [
+        "-t",
+        "--time"
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "<privatekey>, balance"
+      },
+      "description": "Specify any number of times passing arbitrary private keys and their associated balances to generate initial addresses",
+      "name": [
+        "--account"
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "address or account index"
+      },
+      "description": "Specify any number of times passing either an address or an account index to unlock specific accounts",
+      "name": [
+        "-u",
+        "--unlock"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "name": "number"
+      },
+      "description": "The maximum size, in bytes, of the in-memory cache for queries on a chain fork. Defaults to 1_073_741_824 bytes (1 gigabyte)",
+      "name": "forkCacheSize"
+    }
+  ]
+}

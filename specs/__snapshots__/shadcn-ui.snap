@@ -1,0 +1,113 @@
+{
+  "description": "Shadcn UI CLI",
+  "name": "shadcn-ui",
+  "subcommands": [
+    {
+      "args": {
+        "description": "The components to add",
+        "generators": [
+          {
+            "js_source": "async(r,t)=>{let{stdout:i}=await t({command:\"curl\",args:[\"-sL\",\"https://raw.githubusercontent.com/shadcn/ui/main/apps/www/public/registry/index.json\"]});return JSON.parse(i).map(e=>({name:e.name,description:e.type,priority:50,icon:\"fig://icon?type=box\"}))}",
+            "requires_js": true
+          }
+        ],
+        "isVariadic": true,
+        "name": "components"
+      },
+      "description": "Add a component to your project",
+      "name": "add",
+      "options": [
+        {
+          "description": "Skip confirmation prompt",
+          "name": [
+            "-y",
+            "--yes"
+          ]
+        },
+        {
+          "description": "Overwrite existing files",
+          "name": [
+            "-o",
+            "--overwrite"
+          ]
+        },
+        {
+          "args": {
+            "name": "cwd"
+          },
+          "description": "The working directory. defaults to the current directory",
+          "name": [
+            "-c",
+            "--cwd"
+          ]
+        },
+        {
+          "args": {
+            "name": "path"
+          },
+          "description": "The path to add the component to",
+          "name": [
+            "-p",
+            "--path"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The component name",
+        "generators": [
+          {
+            "js_source": "async(r,t)=>{let{stdout:i}=await t({command:\"curl\",args:[\"-sL\",\"https://raw.githubusercontent.com/shadcn/ui/main/apps/www/public/registry/index.json\"]});return JSON.parse(i).map(e=>({name:e.name,description:e.type,priority:50,icon:\"fig://icon?type=box\"}))}",
+            "requires_js": true
+          }
+        ],
+        "name": "component"
+      },
+      "description": "Check for updates against the registry",
+      "name": "diff",
+      "options": [
+        {
+          "description": "Skip confirmation prompt",
+          "name": [
+            "-y",
+            "--yes"
+          ]
+        },
+        {
+          "args": {
+            "name": "cwd"
+          },
+          "description": "The working directory. defaults to the current directory",
+          "name": [
+            "-c",
+            "--cwd"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Initialize your project and install dependencies",
+      "name": "init",
+      "options": [
+        {
+          "description": "Skip confirmation prompt",
+          "name": [
+            "-y",
+            "--yes"
+          ]
+        },
+        {
+          "args": {
+            "name": "cwd"
+          },
+          "description": "The working directory. defaults to the current directory",
+          "name": [
+            "-c",
+            "--cwd"
+          ]
+        }
+      ]
+    }
+  ]
+}

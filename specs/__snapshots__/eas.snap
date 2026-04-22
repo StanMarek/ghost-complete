@@ -1,0 +1,2396 @@
+{
+  "description": "EAS CLI is the command-line app that you will use to interact with EAS services from your terminal",
+  "name": "eas",
+  "subcommands": [
+    {
+      "description": "Log in with your Expo account",
+      "name": "account:login"
+    },
+    {
+      "description": "Log out",
+      "name": "account:logout"
+    },
+    {
+      "description": "Show the username you are logged in as",
+      "name": "account:view"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "Status",
+        "suggestions": [
+          {
+            "name": "on"
+          },
+          {
+            "name": "off"
+          }
+        ]
+      },
+      "description": "Display or change analytics settings",
+      "name": "analytics"
+    },
+    {
+      "args": {
+        "description": "Select the shell you'd like to display autocomplete information for",
+        "name": "Shell",
+        "suggestions": [
+          {
+            "name": "zsh"
+          },
+          {
+            "name": "bash"
+          }
+        ]
+      },
+      "description": "Display autocomplete installation instructions",
+      "name": "autocomplete",
+      "options": [
+        {
+          "description": "Refresh cache (ignores displaying instructions)",
+          "name": [
+            "-r",
+            "--refresh-cache"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Name of the branch to create",
+        "name": "Name"
+      },
+      "description": "Create a branch",
+      "name": "branch:create",
+      "options": [
+        {
+          "description": "Enable JSON output, non-JSON messages will be printed to stderr",
+          "name": [
+            "--json"
+          ]
+        },
+        {
+          "description": "Run the command in non-interactive mode",
+          "name": [
+            "--non-interactive"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Name of the branch to delete",
+        "name": "Name"
+      },
+      "description": "Delete a branch",
+      "name": "branch:delete",
+      "options": [
+        {
+          "description": "Enable JSON output, non-JSON messages will be printed to stderr",
+          "name": [
+            "--json"
+          ]
+        },
+        {
+          "description": "Run the command in non-interactive mode",
+          "name": [
+            "--non-interactive"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "List all branches",
+      "name": "branch:list",
+      "options": [
+        {
+          "description": "Enable JSON output, non-JSON messages will be printed to stderr",
+          "name": [
+            "--json"
+          ]
+        },
+        {
+          "args": {
+            "name": "Limit",
+            "suggestions": [
+              {
+                "name": "50"
+              },
+              {
+                "name": "51"
+              },
+              {
+                "name": "52"
+              },
+              {
+                "name": "53"
+              },
+              {
+                "name": "54"
+              },
+              {
+                "name": "55"
+              },
+              {
+                "name": "56"
+              },
+              {
+                "name": "57"
+              },
+              {
+                "name": "58"
+              },
+              {
+                "name": "59"
+              },
+              {
+                "name": "60"
+              },
+              {
+                "name": "61"
+              },
+              {
+                "name": "62"
+              },
+              {
+                "name": "63"
+              },
+              {
+                "name": "64"
+              },
+              {
+                "name": "65"
+              },
+              {
+                "name": "66"
+              },
+              {
+                "name": "67"
+              },
+              {
+                "name": "68"
+              },
+              {
+                "name": "69"
+              },
+              {
+                "name": "70"
+              },
+              {
+                "name": "71"
+              },
+              {
+                "name": "72"
+              },
+              {
+                "name": "73"
+              },
+              {
+                "name": "74"
+              },
+              {
+                "name": "75"
+              },
+              {
+                "name": "76"
+              },
+              {
+                "name": "77"
+              },
+              {
+                "name": "78"
+              },
+              {
+                "name": "79"
+              },
+              {
+                "name": "80"
+              },
+              {
+                "name": "81"
+              },
+              {
+                "name": "82"
+              },
+              {
+                "name": "83"
+              },
+              {
+                "name": "84"
+              },
+              {
+                "name": "85"
+              },
+              {
+                "name": "86"
+              },
+              {
+                "name": "87"
+              },
+              {
+                "name": "88"
+              },
+              {
+                "name": "89"
+              },
+              {
+                "name": "90"
+              },
+              {
+                "name": "91"
+              },
+              {
+                "name": "92"
+              },
+              {
+                "name": "93"
+              },
+              {
+                "name": "94"
+              },
+              {
+                "name": "95"
+              },
+              {
+                "name": "96"
+              },
+              {
+                "name": "97"
+              },
+              {
+                "name": "98"
+              },
+              {
+                "name": "99"
+              },
+              {
+                "name": "100"
+              }
+            ]
+          },
+          "description": "The number of items to fetch each query. Defaults to 50 and is capped at 100",
+          "name": [
+            "--limit"
+          ]
+        },
+        {
+          "description": "Run the command in non-interactive mode",
+          "name": [
+            "--non-interactive"
+          ]
+        },
+        {
+          "args": {
+            "name": "Offset"
+          },
+          "description": "Start queries from specified index. Use for paginating results. Defaults to 0",
+          "name": [
+            "--offset"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Rename a branch",
+      "name": "branch:rename",
+      "options": [
+        {
+          "args": {
+            "name": "Value"
+          },
+          "description": "Current name of the branch",
+          "name": [
+            "--from"
+          ]
+        },
+        {
+          "description": "Enable JSON output, non-JSON messages will be printed to stderr",
+          "name": [
+            "--json"
+          ]
+        },
+        {
+          "description": "Run the command in non-interactive mode",
+          "name": [
+            "--non-interactive"
+          ]
+        },
+        {
+          "args": {
+            "name": "Value"
+          },
+          "description": "New name of the branch",
+          "name": [
+            "--to"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Name of the branch to view",
+        "name": "Name"
+      },
+      "description": "View a branch",
+      "name": "branch:view",
+      "options": [
+        {
+          "description": "Enable JSON output, non-JSON messages will be printed to stderr",
+          "name": [
+            "--json"
+          ]
+        },
+        {
+          "args": {
+            "name": "Limit",
+            "suggestions": [
+              {
+                "name": "25"
+              },
+              {
+                "name": "26"
+              },
+              {
+                "name": "27"
+              },
+              {
+                "name": "28"
+              },
+              {
+                "name": "29"
+              },
+              {
+                "name": "30"
+              },
+              {
+                "name": "31"
+              },
+              {
+                "name": "32"
+              },
+              {
+                "name": "33"
+              },
+              {
+                "name": "34"
+              },
+              {
+                "name": "35"
+              },
+              {
+                "name": "36"
+              },
+              {
+                "name": "37"
+              },
+              {
+                "name": "38"
+              },
+              {
+                "name": "39"
+              },
+              {
+                "name": "40"
+              },
+              {
+                "name": "41"
+              },
+              {
+                "name": "42"
+              },
+              {
+                "name": "43"
+              },
+              {
+                "name": "44"
+              },
+              {
+                "name": "45"
+              },
+              {
+                "name": "46"
+              },
+              {
+                "name": "47"
+              },
+              {
+                "name": "48"
+              },
+              {
+                "name": "49"
+              },
+              {
+                "name": "50"
+              }
+            ]
+          },
+          "description": "The number of items to fetch each query. Defaults to 25 and is capped at 50",
+          "name": [
+            "--limit"
+          ]
+        },
+        {
+          "description": "Run the command in non-interactive mode",
+          "name": [
+            "--non-interactive"
+          ]
+        },
+        {
+          "args": {
+            "name": "Offset"
+          },
+          "description": "Start queries from specified index. Use for paginating results. Defaults to 0",
+          "name": [
+            "--offset"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Start a build",
+      "name": "build",
+      "options": [
+        {
+          "args": {
+            "name": "Profile Name"
+          },
+          "description": "Name of the build profile from eas.json. Defaults to \"production\" if defined in eas.json",
+          "name": [
+            "-e",
+            "--profile"
+          ]
+        },
+        {
+          "args": {
+            "name": "Value"
+          },
+          "description": "A short message describing the build",
+          "name": [
+            "-m",
+            "--message"
+          ]
+        },
+        {
+          "args": {
+            "name": "Platform",
+            "suggestions": [
+              {
+                "name": "android"
+              },
+              {
+                "name": "ios"
+              },
+              {
+                "name": "all"
+              }
+            ]
+          },
+          "name": [
+            "-p",
+            "--platform"
+          ]
+        },
+        {
+          "description": "Submit on build complete using the submit profile with the same name as the build profile",
+          "name": [
+            "--auto-submit"
+          ]
+        },
+        {
+          "args": {
+            "name": "Profile Name"
+          },
+          "description": "Submit on build complete using the submit profile with provided name",
+          "name": [
+            "--auto-submit-with-profile"
+          ]
+        },
+        {
+          "description": "Clear cache before the build",
+          "name": [
+            "--clear-cache"
+          ]
+        },
+        {
+          "description": "Enable JSON output, non-JSON messages will be printed to stderr",
+          "name": [
+            "--json"
+          ]
+        },
+        {
+          "description": "Run build locally [experimental]",
+          "name": [
+            "--local"
+          ]
+        },
+        {
+          "description": "Run the command in non-interactive mode",
+          "name": [
+            "--non-interactive"
+          ]
+        },
+        {
+          "args": {
+            "name": "Value"
+          },
+          "description": "Output path for local build",
+          "name": [
+            "--output"
+          ]
+        },
+        {
+          "description": "Don't wait for build(s) to complete",
+          "name": [
+            "--no-wait"
+          ]
+        },
+        {
+          "description": "Wait for build(s) to complete",
+          "name": [
+            "--wait"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "Build ID"
+      },
+      "description": "Cancel a build",
+      "name": "build:cancel",
+      "options": [
+        {
+          "description": "Run the command in non-interactive mode",
+          "name": [
+            "--non-interactive"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Configure the project to support EAS build",
+      "name": "build:configure",
+      "options": [
+        {
+          "args": {
+            "name": "Platform",
+            "suggestions": [
+              {
+                "name": "android"
+              },
+              {
+                "name": "ios"
+              },
+              {
+                "name": "all"
+              }
+            ]
+          },
+          "description": "Platform to configure",
+          "name": [
+            "-p",
+            "--platform"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Inspect the state of the project at specific build stages, useful for troubleshooting",
+      "name": "build:inspect",
+      "options": [
+        {
+          "args": {
+            "name": "Profile Name"
+          },
+          "description": "Name of the build profile from eas.json. Defaults to \"production\" if defined in eas.json",
+          "name": [
+            "-e",
+            "--profile"
+          ]
+        },
+        {
+          "args": {
+            "name": "Output directory"
+          },
+          "description": "(required) Output directory",
+          "name": [
+            "-o",
+            "--output"
+          ]
+        },
+        {
+          "args": {
+            "name": "Platform",
+            "suggestions": [
+              {
+                "name": "android"
+              },
+              {
+                "name": "ios"
+              }
+            ]
+          },
+          "description": "(required)",
+          "name": [
+            "-p",
+            "--platform"
+          ]
+        },
+        {
+          "args": {
+            "name": "Build Stage",
+            "suggestions": [
+              {
+                "name": "archive"
+              },
+              {
+                "name": "pre-build"
+              },
+              {
+                "name": "post-build"
+              }
+            ]
+          },
+          "description": "(required) Stage of the build you want to inspect.\narchive - builds the project archive that would be uploaded to EAS when building\npre-build - prepares the project to be built with Gradle/Xcode. Does not run the native build.\npost-build - builds the native project and leaves the output directory for inspection",
+          "name": [
+            "-s",
+            "--stage"
+          ]
+        },
+        {
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Delete OUTPUT_DIRECTORY if it already exists",
+          "name": [
+            "--force"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "List all builds for your project",
+      "name": "build:list",
+      "options": [
+        {
+          "args": {
+            "name": "Value"
+          },
+          "name": [
+            "--appBuildVersion"
+          ]
+        },
+        {
+          "args": {
+            "name": "Value"
+          },
+          "name": [
+            "--appIdentifier"
+          ]
+        },
+        {
+          "args": {
+            "name": "Value"
+          },
+          "name": [
+            "--appVersion"
+          ]
+        },
+        {
+          "args": {
+            "name": "Value"
+          },
+          "name": [
+            "--buildProfile"
+          ]
+        },
+        {
+          "args": {
+            "name": "Value"
+          },
+          "name": [
+            "--channel"
+          ]
+        },
+        {
+          "args": {
+            "name": "Distribution",
+            "suggestions": [
+              {
+                "name": "store"
+              },
+              {
+                "name": "internal"
+              },
+              {
+                "name": "simulator"
+              }
+            ]
+          },
+          "name": [
+            "--distribution"
+          ]
+        },
+        {
+          "description": "Enable JSON output, non-JSON messages will be printed to stderr",
+          "name": [
+            "--json"
+          ]
+        },
+        {
+          "args": {
+            "name": "Limit",
+            "suggestions": [
+              {
+                "name": "10"
+              },
+              {
+                "name": "11"
+              },
+              {
+                "name": "12"
+              },
+              {
+                "name": "13"
+              },
+              {
+                "name": "14"
+              },
+              {
+                "name": "15"
+              },
+              {
+                "name": "16"
+              },
+              {
+                "name": "17"
+              },
+              {
+                "name": "18"
+              },
+              {
+                "name": "19"
+              },
+              {
+                "name": "20"
+              },
+              {
+                "name": "21"
+              },
+              {
+                "name": "22"
+              },
+              {
+                "name": "23"
+              },
+              {
+                "name": "24"
+              },
+              {
+                "name": "25"
+              },
+              {
+                "name": "26"
+              },
+              {
+                "name": "27"
+              },
+              {
+                "name": "28"
+              },
+              {
+                "name": "29"
+              },
+              {
+                "name": "30"
+              },
+              {
+                "name": "31"
+              },
+              {
+                "name": "32"
+              },
+              {
+                "name": "33"
+              },
+              {
+                "name": "34"
+              },
+              {
+                "name": "35"
+              },
+              {
+                "name": "36"
+              },
+              {
+                "name": "37"
+              },
+              {
+                "name": "38"
+              },
+              {
+                "name": "39"
+              },
+              {
+                "name": "40"
+              },
+              {
+                "name": "41"
+              },
+              {
+                "name": "42"
+              },
+              {
+                "name": "43"
+              },
+              {
+                "name": "44"
+              },
+              {
+                "name": "45"
+              },
+              {
+                "name": "46"
+              },
+              {
+                "name": "47"
+              },
+              {
+                "name": "48"
+              },
+              {
+                "name": "49"
+              },
+              {
+                "name": "50"
+              }
+            ]
+          },
+          "description": "The number of items to fetch each query. Defaults to 10 and is capped at 50",
+          "name": [
+            "--limit"
+          ]
+        },
+        {
+          "description": "Run the command in non-interactive mode",
+          "name": [
+            "--non-interactive"
+          ]
+        },
+        {
+          "args": {
+            "name": "Offset"
+          },
+          "description": "Start queries from specified index. Use for paginating results. Defaults to 0",
+          "name": [
+            "--offset"
+          ]
+        },
+        {
+          "args": {
+            "name": "Platform",
+            "suggestions": [
+              {
+                "name": "all"
+              },
+              {
+                "name": "android"
+              },
+              {
+                "name": "ios"
+              }
+            ]
+          },
+          "name": [
+            "--platform"
+          ]
+        },
+        {
+          "args": {
+            "name": "Value"
+          },
+          "name": [
+            "--runtimeVersion"
+          ]
+        },
+        {
+          "args": {
+            "name": "Value"
+          },
+          "name": [
+            "--sdkVersion"
+          ]
+        },
+        {
+          "args": {
+            "name": "Status",
+            "suggestions": [
+              {
+                "name": "new"
+              },
+              {
+                "name": "in-queue"
+              },
+              {
+                "name": "in-progress"
+              },
+              {
+                "name": "errored"
+              },
+              {
+                "name": "finished"
+              },
+              {
+                "name": "canceled"
+              }
+            ]
+          },
+          "name": [
+            "--status"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Submit app binary to App Store and/or Play Store",
+      "name": "build:submit",
+      "options": [
+        {
+          "args": {
+            "name": "Value"
+          },
+          "description": "Name of the submit profile from eas.json. Defaults to \"production\" if defined in eas.json",
+          "name": [
+            "-e",
+            "--profile"
+          ]
+        },
+        {
+          "args": {
+            "name": "Platform",
+            "suggestions": [
+              {
+                "name": "android"
+              },
+              {
+                "name": "ios"
+              },
+              {
+                "name": "all"
+              }
+            ]
+          },
+          "name": [
+            "-p",
+            "--platform"
+          ]
+        },
+        {
+          "args": {
+            "name": "Value"
+          },
+          "description": "ID of the build to submit",
+          "name": [
+            "--id"
+          ]
+        },
+        {
+          "description": "Submit the latest build for specified platform",
+          "name": [
+            "--latest"
+          ]
+        },
+        {
+          "description": "Run command in non-interactive mode",
+          "name": [
+            "--non-interactive"
+          ]
+        },
+        {
+          "args": {
+            "name": "Value"
+          },
+          "description": "Path to the .apk/.aab/.ipa file",
+          "name": [
+            "--path"
+          ]
+        },
+        {
+          "args": {
+            "name": "Value"
+          },
+          "description": "App archive url",
+          "name": [
+            "--url"
+          ]
+        },
+        {
+          "description": "Always print logs from Submission Service",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Don't wait for submission to complete",
+          "name": [
+            "--no-wait"
+          ]
+        },
+        {
+          "description": "Wait for submission to complete",
+          "name": [
+            "--wait"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Update version of an app",
+      "name": "build:version:set",
+      "options": [
+        {
+          "args": {
+            "name": "Profile Name"
+          },
+          "description": "Name of the build profile from eas.json. Defaults to \"production\" if defined in eas.json",
+          "name": [
+            "-e",
+            "--profile"
+          ]
+        },
+        {
+          "args": {
+            "name": "Platform",
+            "suggestions": [
+              {
+                "name": "android"
+              },
+              {
+                "name": "ios"
+              }
+            ]
+          },
+          "name": [
+            "-p",
+            "--platform"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Update a version in native code with a value stored on EAS servers",
+      "name": "build:version:sync",
+      "options": [
+        {
+          "args": {
+            "name": "Profile Name"
+          },
+          "description": "Name of the build profile from eas.json. Defaults to \"production\" if defined in eas.json",
+          "name": [
+            "-e",
+            "--profile"
+          ]
+        },
+        {
+          "args": {
+            "name": "Platform",
+            "suggestions": [
+              {
+                "name": "android"
+              },
+              {
+                "name": "ios"
+              },
+              {
+                "name": "all"
+              }
+            ]
+          },
+          "name": [
+            "-p",
+            "--platform"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "Build ID"
+      },
+      "description": "View a build for your project",
+      "name": "build:view",
+      "options": [
+        {
+          "description": "Enable JSON output, non-JSON messages will be printed to stderr",
+          "name": [
+            "--json"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Name of the channel to create",
+        "name": "Name"
+      },
+      "description": "Create a channel",
+      "name": "channel:create",
+      "options": [
+        {
+          "description": "Enable JSON output, non-JSON messages will be printed to stderr",
+          "name": [
+            "--json"
+          ]
+        },
+        {
+          "description": "Run the command in non-interactive mode",
+          "name": [
+            "--non-interactive"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Name of the channel to edit",
+        "name": "Name"
+      },
+      "description": "Point a channel at a new branch",
+      "name": "channel:edit",
+      "options": [
+        {
+          "args": {
+            "name": "Value"
+          },
+          "description": "Name of the branch to point to",
+          "name": [
+            "--branch"
+          ]
+        },
+        {
+          "description": "Enable JSON output, non-JSON messages will be printed to stderr",
+          "name": [
+            "--json"
+          ]
+        },
+        {
+          "description": "Run the command in non-interactive mode",
+          "name": [
+            "--non-interactive"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "List all channels",
+      "name": "channel:list",
+      "options": [
+        {
+          "description": "Enable JSON output, non-JSON messages will be printed to stderr",
+          "name": [
+            "--json"
+          ]
+        },
+        {
+          "args": {
+            "name": "Limit",
+            "suggestions": [
+              {
+                "name": "10"
+              },
+              {
+                "name": "11"
+              },
+              {
+                "name": "12"
+              },
+              {
+                "name": "13"
+              },
+              {
+                "name": "14"
+              },
+              {
+                "name": "15"
+              },
+              {
+                "name": "16"
+              },
+              {
+                "name": "17"
+              },
+              {
+                "name": "18"
+              },
+              {
+                "name": "19"
+              },
+              {
+                "name": "20"
+              },
+              {
+                "name": "21"
+              },
+              {
+                "name": "22"
+              },
+              {
+                "name": "23"
+              },
+              {
+                "name": "24"
+              },
+              {
+                "name": "25"
+              }
+            ]
+          },
+          "description": "The number of items to fetch each query. Defaults to 10 and is capped at 25",
+          "name": [
+            "--limit"
+          ]
+        },
+        {
+          "description": "Run the command in non-interactive mode",
+          "name": [
+            "--non-interactive"
+          ]
+        },
+        {
+          "args": {
+            "name": "Value"
+          },
+          "description": "Start queries from specified index. Use for paginating results. Defaults to 0",
+          "name": [
+            "--offset"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Name of the channel to view",
+        "name": "Name"
+      },
+      "description": "View a channel",
+      "name": "channel:view",
+      "options": [
+        {
+          "description": "Enable JSON output, non-JSON messages will be printed to stderr",
+          "name": [
+            "--json"
+          ]
+        },
+        {
+          "args": {
+            "name": "Limit",
+            "suggestions": [
+              {
+                "name": "50"
+              },
+              {
+                "name": "51"
+              },
+              {
+                "name": "52"
+              },
+              {
+                "name": "53"
+              },
+              {
+                "name": "54"
+              },
+              {
+                "name": "55"
+              },
+              {
+                "name": "56"
+              },
+              {
+                "name": "57"
+              },
+              {
+                "name": "58"
+              },
+              {
+                "name": "59"
+              },
+              {
+                "name": "60"
+              },
+              {
+                "name": "61"
+              },
+              {
+                "name": "62"
+              },
+              {
+                "name": "63"
+              },
+              {
+                "name": "64"
+              },
+              {
+                "name": "65"
+              },
+              {
+                "name": "66"
+              },
+              {
+                "name": "67"
+              },
+              {
+                "name": "68"
+              },
+              {
+                "name": "69"
+              },
+              {
+                "name": "70"
+              },
+              {
+                "name": "71"
+              },
+              {
+                "name": "72"
+              },
+              {
+                "name": "73"
+              },
+              {
+                "name": "74"
+              },
+              {
+                "name": "75"
+              },
+              {
+                "name": "76"
+              },
+              {
+                "name": "77"
+              },
+              {
+                "name": "78"
+              },
+              {
+                "name": "79"
+              },
+              {
+                "name": "80"
+              },
+              {
+                "name": "81"
+              },
+              {
+                "name": "82"
+              },
+              {
+                "name": "83"
+              },
+              {
+                "name": "84"
+              },
+              {
+                "name": "85"
+              },
+              {
+                "name": "86"
+              },
+              {
+                "name": "87"
+              },
+              {
+                "name": "88"
+              },
+              {
+                "name": "89"
+              },
+              {
+                "name": "90"
+              },
+              {
+                "name": "91"
+              },
+              {
+                "name": "92"
+              },
+              {
+                "name": "93"
+              },
+              {
+                "name": "94"
+              },
+              {
+                "name": "95"
+              },
+              {
+                "name": "96"
+              },
+              {
+                "name": "97"
+              },
+              {
+                "name": "98"
+              },
+              {
+                "name": "99"
+              },
+              {
+                "name": "100"
+              }
+            ]
+          },
+          "description": "The number of items to fetch each query. Defaults to 50 and is capped at 100",
+          "name": [
+            "--limit"
+          ]
+        },
+        {
+          "description": "Run the command in non-interactive mode",
+          "name": [
+            "--non-interactive"
+          ]
+        },
+        {
+          "args": {
+            "name": "Value"
+          },
+          "description": "Start queries from specified index. Use for paginating results. Defaults to 0",
+          "name": [
+            "--offset"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Display project configuration (app.json + eas.json)",
+      "name": "config",
+      "options": [
+        {
+          "args": {
+            "name": "Profile Name"
+          },
+          "description": "Name of the build profile from eas.json. Defaults to \"production\" if defined in eas.json",
+          "name": [
+            "-e",
+            "--profile"
+          ]
+        },
+        {
+          "args": {
+            "name": "Platform",
+            "suggestions": [
+              {
+                "name": "android"
+              },
+              {
+                "name": "ios"
+              }
+            ]
+          },
+          "name": [
+            "-p",
+            "--platform"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage credentials",
+      "name": "credentials",
+      "options": [
+        {
+          "args": {
+            "name": "Platform",
+            "suggestions": [
+              {
+                "name": "android"
+              },
+              {
+                "name": "ios"
+              }
+            ]
+          },
+          "name": [
+            "-p",
+            "--platform"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Register new Apple devices to use for internal distribution",
+      "name": "device:create"
+    },
+    {
+      "description": "Remove a registered device from your account",
+      "name": "device:delete",
+      "options": [
+        {
+          "args": {
+            "name": "Value"
+          },
+          "description": "The Apple team ID on which to find the device",
+          "name": [
+            "--apple-team-id"
+          ]
+        },
+        {
+          "description": "Enable JSON output, non-JSON messages will be printed to stderr",
+          "name": [
+            "--json"
+          ]
+        },
+        {
+          "description": "Run the command in non-interactive mode",
+          "name": [
+            "--non-interactive"
+          ]
+        },
+        {
+          "args": {
+            "name": "Value"
+          },
+          "description": "The Apple device ID to disable",
+          "name": [
+            "--udid"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "List all registered devices for your account",
+      "name": "device:list",
+      "options": [
+        {
+          "args": {
+            "name": "Value"
+          },
+          "name": [
+            "--apple-team-id"
+          ]
+        },
+        {
+          "description": "Enable JSON output, non-JSON messages will be printed to stderr",
+          "name": [
+            "--json"
+          ]
+        },
+        {
+          "args": {
+            "name": "Limit",
+            "suggestions": [
+              {
+                "name": "50"
+              },
+              {
+                "name": "51"
+              },
+              {
+                "name": "52"
+              },
+              {
+                "name": "53"
+              },
+              {
+                "name": "54"
+              },
+              {
+                "name": "55"
+              },
+              {
+                "name": "56"
+              },
+              {
+                "name": "57"
+              },
+              {
+                "name": "58"
+              },
+              {
+                "name": "59"
+              },
+              {
+                "name": "60"
+              },
+              {
+                "name": "61"
+              },
+              {
+                "name": "62"
+              },
+              {
+                "name": "63"
+              },
+              {
+                "name": "64"
+              },
+              {
+                "name": "65"
+              },
+              {
+                "name": "66"
+              },
+              {
+                "name": "67"
+              },
+              {
+                "name": "68"
+              },
+              {
+                "name": "69"
+              },
+              {
+                "name": "70"
+              },
+              {
+                "name": "71"
+              },
+              {
+                "name": "72"
+              },
+              {
+                "name": "73"
+              },
+              {
+                "name": "74"
+              },
+              {
+                "name": "75"
+              },
+              {
+                "name": "76"
+              },
+              {
+                "name": "77"
+              },
+              {
+                "name": "78"
+              },
+              {
+                "name": "79"
+              },
+              {
+                "name": "80"
+              },
+              {
+                "name": "81"
+              },
+              {
+                "name": "82"
+              },
+              {
+                "name": "83"
+              },
+              {
+                "name": "84"
+              },
+              {
+                "name": "85"
+              },
+              {
+                "name": "86"
+              },
+              {
+                "name": "87"
+              },
+              {
+                "name": "88"
+              },
+              {
+                "name": "89"
+              },
+              {
+                "name": "90"
+              },
+              {
+                "name": "91"
+              },
+              {
+                "name": "92"
+              },
+              {
+                "name": "93"
+              },
+              {
+                "name": "94"
+              },
+              {
+                "name": "95"
+              },
+              {
+                "name": "96"
+              },
+              {
+                "name": "97"
+              },
+              {
+                "name": "98"
+              },
+              {
+                "name": "99"
+              },
+              {
+                "name": "100"
+              }
+            ]
+          },
+          "description": "The number of items to fetch each query. Defaults to 50 and is capped at 100",
+          "name": [
+            "--limit"
+          ]
+        },
+        {
+          "description": "Run the command in non-interactive mode",
+          "name": [
+            "--non-interactive"
+          ]
+        },
+        {
+          "args": {
+            "name": "Offset"
+          },
+          "description": "Start queries from specified index. Use for paginating results. Defaults to 0",
+          "name": [
+            "--offset"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "UDID"
+      },
+      "description": "View a device for your project",
+      "name": "device:view"
+    },
+    {
+      "description": "Display environment info",
+      "name": "diagnostics"
+    },
+    {
+      "args": {
+        "description": "Command to show help for",
+        "name": "Command"
+      },
+      "description": "Display help for eas-cli",
+      "name": "help",
+      "options": [
+        {
+          "description": "Include all nested commands in the output",
+          "name": [
+            "-n",
+            "--nested-commands"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generate the local store configuration from the app stores",
+      "name": "metadata:pull",
+      "options": [
+        {
+          "args": {
+            "name": "Value"
+          },
+          "description": "Name of the submit profile from eas.json. Defaults to \"production\" if defined in eas.json",
+          "name": [
+            "-e",
+            "--profile"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Sync the local store configuration to the app stores",
+      "name": "metadata:push",
+      "options": [
+        {
+          "description": "Name of the submit profile from eas.json. Defaults to \"production\" if defined in eas.json",
+          "name": [
+            "-e",
+            "--profile"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Open the project page in a web browser",
+      "name": "open"
+    },
+    {
+      "description": "Information about the current project",
+      "name": "project:info"
+    },
+    {
+      "description": "Create or link an EAS project",
+      "name": "project:init",
+      "options": [
+        {
+          "description": "Whether to overwrite any existing project ID",
+          "name": [
+            "--force"
+          ]
+        },
+        {
+          "args": {
+            "name": "Value"
+          },
+          "description": "ID of the EAS project to link",
+          "name": [
+            "--id"
+          ]
+        },
+        {
+          "description": "Run the command in non-interactive mode",
+          "name": [
+            "--non-interactive"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Create an environment secret on the current project or owner account",
+      "name": "secret:create",
+      "options": [
+        {
+          "description": "Delete and recreate existing secrets",
+          "name": [
+            "--force"
+          ]
+        },
+        {
+          "args": {
+            "name": "Value"
+          },
+          "description": "Name of the secret",
+          "name": [
+            "--name"
+          ]
+        },
+        {
+          "description": "Run the command in non-interactive mode",
+          "name": [
+            "--non-interactive"
+          ]
+        },
+        {
+          "args": {
+            "name": "Scope",
+            "suggestions": [
+              {
+                "name": "account"
+              },
+              {
+                "name": "project"
+              }
+            ]
+          },
+          "description": "[default: project] Scope for the secret",
+          "name": [
+            "--scope"
+          ]
+        },
+        {
+          "args": {
+            "name": "Type",
+            "suggestions": [
+              {
+                "name": "string"
+              },
+              {
+                "name": "file"
+              }
+            ]
+          },
+          "description": "The type of secret",
+          "name": [
+            "--type"
+          ]
+        },
+        {
+          "args": {
+            "name": "Value"
+          },
+          "description": "Text value or path to a file to store in the secret",
+          "name": [
+            "--value"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Delete an environment secret by ID",
+      "name": "secret:delete",
+      "options": [
+        {
+          "args": {
+            "name": "Value"
+          },
+          "description": "ID of the secret to delete",
+          "name": [
+            "--id"
+          ]
+        },
+        {
+          "description": "Run the command in non-interactive mode",
+          "name": [
+            "--non-interactive"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "List environment secrets available for your current app",
+      "name": "secret:list"
+    },
+    {
+      "description": "Publish an update group",
+      "name": "update",
+      "options": [
+        {
+          "args": {
+            "name": "Platform",
+            "suggestions": [
+              {
+                "name": "android"
+              },
+              {
+                "name": "ios"
+              },
+              {
+                "name": "all"
+              }
+            ]
+          },
+          "description": "[default: all]",
+          "name": [
+            "-p",
+            "--platform"
+          ]
+        },
+        {
+          "description": "Use the current git branch and commit message for the EAS branch and update message",
+          "name": [
+            "--auto"
+          ]
+        },
+        {
+          "args": {
+            "name": "Value"
+          },
+          "description": "Branch to publish the update group on",
+          "name": [
+            "--branch"
+          ]
+        },
+        {
+          "args": {
+            "name": "Value"
+          },
+          "description": "Update group to republish",
+          "name": [
+            "--group"
+          ]
+        },
+        {
+          "args": {
+            "name": "Value"
+          },
+          "description": "[default: dist] Location of the bundle",
+          "name": [
+            "--input-dir"
+          ]
+        },
+        {
+          "description": "Enable JSON output, non-JSON messages will be printed to stderr",
+          "name": [
+            "--json"
+          ]
+        },
+        {
+          "args": {
+            "name": "Value"
+          },
+          "description": "A short message describing the update",
+          "name": [
+            "--message"
+          ]
+        },
+        {
+          "description": "Run the command in non-interactive mode",
+          "name": [
+            "--non-interactive"
+          ]
+        },
+        {
+          "args": {
+            "name": "Value"
+          },
+          "description": "File containing the PEM-encoded private key corresponding to the certificate in\nexpo-updates' configuration. Defaults to a file named \"private-key.pem\" in the\ncertificate's directory",
+          "name": [
+            "--private-key-path"
+          ]
+        },
+        {
+          "description": "Republish an update group",
+          "name": [
+            "--republish"
+          ]
+        },
+        {
+          "description": "Skip running Expo CLI to bundle the app before publishing",
+          "name": [
+            "--skip-bundler"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Configure the project to support EAS update",
+      "name": "update:configure",
+      "options": [
+        {
+          "args": {
+            "name": "Platform",
+            "suggestions": [
+              {
+                "name": "android"
+              },
+              {
+                "name": "ios"
+              },
+              {
+                "name": "all"
+              }
+            ]
+          },
+          "description": "[default: all] Platform to configure",
+          "name": [
+            "-p",
+            "--platform"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The ID of an update group to delete",
+        "name": "Group ID"
+      },
+      "description": "Delete all the updates in an update group",
+      "name": "update:delete",
+      "options": [
+        {
+          "description": "Enable JSON output, non-JSON messages will be printed to stderr",
+          "name": [
+            "--json"
+          ]
+        },
+        {
+          "description": "Run the command in non-interactive mode",
+          "name": [
+            "--non-interactive"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "View the recent updates",
+      "name": "update:list",
+      "options": [
+        {
+          "description": "List updates on all branches",
+          "name": [
+            "--all"
+          ]
+        },
+        {
+          "args": {
+            "name": "Value"
+          },
+          "description": "List updates only on this branch",
+          "name": [
+            "--branch"
+          ]
+        },
+        {
+          "description": "Enable JSON output, non-JSON messages will be printed to stderr",
+          "name": [
+            "--json"
+          ]
+        },
+        {
+          "args": {
+            "name": "Limit",
+            "suggestions": [
+              {
+                "name": "25"
+              },
+              {
+                "name": "26"
+              },
+              {
+                "name": "27"
+              },
+              {
+                "name": "28"
+              },
+              {
+                "name": "29"
+              },
+              {
+                "name": "30"
+              },
+              {
+                "name": "31"
+              },
+              {
+                "name": "32"
+              },
+              {
+                "name": "33"
+              },
+              {
+                "name": "34"
+              },
+              {
+                "name": "35"
+              },
+              {
+                "name": "36"
+              },
+              {
+                "name": "37"
+              },
+              {
+                "name": "38"
+              },
+              {
+                "name": "39"
+              },
+              {
+                "name": "40"
+              },
+              {
+                "name": "41"
+              },
+              {
+                "name": "42"
+              },
+              {
+                "name": "43"
+              },
+              {
+                "name": "44"
+              },
+              {
+                "name": "45"
+              },
+              {
+                "name": "46"
+              },
+              {
+                "name": "47"
+              },
+              {
+                "name": "48"
+              },
+              {
+                "name": "49"
+              },
+              {
+                "name": "50"
+              }
+            ]
+          },
+          "description": "The number of items to fetch each query. Defaults to 25 and is capped at 50",
+          "name": [
+            "--limit"
+          ]
+        },
+        {
+          "description": "Run the command in non-interactive mode",
+          "name": [
+            "--non-interactive"
+          ]
+        },
+        {
+          "description": "Start queries from specified index. Use for paginating results. Defaults to 0",
+          "name": [
+            "--offset"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The ID of an update group",
+        "name": "Group ID"
+      },
+      "description": "Update group details",
+      "name": "update:view",
+      "options": [
+        {
+          "description": "Enable JSON output, non-JSON messages will be printed to stderr",
+          "name": [
+            "--json"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Create a webhook",
+      "name": "webhook:create",
+      "options": [
+        {
+          "args": {
+            "name": "Value",
+            "suggestions": [
+              {
+                "name": "BUILD"
+              },
+              {
+                "name": "SUBMIT"
+              }
+            ]
+          },
+          "description": "Event type that triggers the webhook",
+          "name": [
+            "--event"
+          ]
+        },
+        {
+          "description": "Run the command in non-interactive mode",
+          "name": [
+            "--non-interactive"
+          ]
+        },
+        {
+          "args": {
+            "name": "Value"
+          },
+          "description": "Secret used to create a hash signature of the request payload, provided in the 'Expo-Signature' header",
+          "name": [
+            "--secret"
+          ]
+        },
+        {
+          "args": {
+            "name": "Value"
+          },
+          "description": "Webhook URL",
+          "name": [
+            "--url"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "ID of the webhook to delete",
+        "name": "ID"
+      },
+      "description": "Delete a webhook",
+      "name": "webhook:delete",
+      "options": [
+        {
+          "description": "Run the command in non-interactive mode",
+          "name": [
+            "--non-interactive"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "List webhooks",
+      "name": "webhook:list",
+      "options": [
+        {
+          "args": {
+            "name": "Value",
+            "suggestions": [
+              {
+                "name": "BUILD"
+              },
+              {
+                "name": "SUBMIT"
+              }
+            ]
+          },
+          "description": "Event type that triggers the webhook",
+          "name": [
+            "--event"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Update a webhook",
+      "name": "webhook:update",
+      "options": [
+        {
+          "args": {
+            "name": "Value",
+            "suggestions": [
+              {
+                "name": "BUILD"
+              },
+              {
+                "name": "SUBMIT"
+              }
+            ]
+          },
+          "description": "Event type that triggers the webhook",
+          "name": [
+            "--event"
+          ]
+        },
+        {
+          "args": {
+            "name": "Value"
+          },
+          "description": "(required) Webhook ID",
+          "name": [
+            "--id"
+          ]
+        },
+        {
+          "description": "Run the command in non-interactive mode",
+          "name": [
+            "--non-interactive"
+          ]
+        },
+        {
+          "args": {
+            "name": "Value"
+          },
+          "description": "Secret used to create a hash signature of the request payload, provided in the 'Expo-Signature' header",
+          "name": [
+            "--secret"
+          ]
+        },
+        {
+          "args": {
+            "name": "Value"
+          },
+          "description": "Webhook URL",
+          "name": [
+            "--url"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "ID of the webhook to view",
+        "name": "ID"
+      },
+      "description": "View a webhook",
+      "name": "webhook:view"
+    }
+  ]
+}

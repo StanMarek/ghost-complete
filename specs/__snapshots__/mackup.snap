@@ -1,0 +1,77 @@
+{
+  "description": "Mackup",
+  "name": "mackup",
+  "options": [
+    {
+      "description": "Show help",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "description": "Force every question asked to be answered with 'Yes'",
+      "name": [
+        "--force",
+        "-f"
+      ]
+    },
+    {
+      "description": "Allow mackup to be run as superuser",
+      "name": [
+        "--root",
+        "-r"
+      ]
+    },
+    {
+      "description": "Show steps without executing",
+      "name": [
+        "--dry-run",
+        "-n"
+      ]
+    },
+    {
+      "description": "Show version",
+      "name": [
+        "--version"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "List all the supported mackup applications",
+      "name": "list"
+    },
+    {
+      "description": "Sync your conf files to your synced storage",
+      "name": "backup"
+    },
+    {
+      "description": "Link the conf files already in your synced storage on your system",
+      "name": "restore"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "mackup",
+              "list"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "application"
+      },
+      "description": "Show the current configuration",
+      "name": "show"
+    },
+    {
+      "description": "Reset everything as it was before using Mackup",
+      "name": "uninstall"
+    }
+  ]
+}

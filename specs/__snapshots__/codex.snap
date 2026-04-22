@@ -1,0 +1,1286 @@
+{
+  "args": {
+    "description": "User prompt to start the session",
+    "isOptional": true,
+    "name": "prompt"
+  },
+  "description": "OpenAI Codex CLI - AI coding agent",
+  "name": "codex",
+  "options": [
+    {
+      "args": {
+        "name": "key=value"
+      },
+      "description": "Override config value from config.toml (key=value)",
+      "name": [
+        "-c",
+        "--config"
+      ]
+    },
+    {
+      "args": {
+        "name": "feature"
+      },
+      "description": "Enable a feature flag",
+      "name": [
+        "--enable"
+      ]
+    },
+    {
+      "args": {
+        "name": "feature"
+      },
+      "description": "Disable a feature flag",
+      "name": [
+        "--disable"
+      ]
+    },
+    {
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      },
+      "description": "Image(s) to attach to initial prompt",
+      "name": [
+        "-i",
+        "--image"
+      ]
+    },
+    {
+      "args": {
+        "name": "model"
+      },
+      "description": "Model the agent should use",
+      "name": [
+        "-m",
+        "--model"
+      ]
+    },
+    {
+      "description": "Use local open source model provider",
+      "name": [
+        "--oss"
+      ]
+    },
+    {
+      "args": {
+        "name": "provider",
+        "suggestions": [
+          {
+            "name": "lmstudio"
+          },
+          {
+            "name": "ollama"
+          }
+        ]
+      },
+      "description": "Specify local provider",
+      "name": [
+        "--local-provider"
+      ]
+    },
+    {
+      "args": {
+        "name": "profile"
+      },
+      "description": "Configuration profile from config.toml",
+      "name": [
+        "-p",
+        "--profile"
+      ]
+    },
+    {
+      "args": {
+        "name": "mode",
+        "suggestions": [
+          {
+            "name": "read-only"
+          },
+          {
+            "name": "workspace-write"
+          },
+          {
+            "name": "danger-full-access"
+          }
+        ]
+      },
+      "description": "Sandbox policy",
+      "name": [
+        "-s",
+        "--sandbox"
+      ]
+    },
+    {
+      "args": {
+        "name": "policy",
+        "suggestions": [
+          {
+            "name": "untrusted"
+          },
+          {
+            "name": "on-request"
+          },
+          {
+            "name": "never"
+          }
+        ]
+      },
+      "description": "Approval policy",
+      "name": [
+        "-a",
+        "--ask-for-approval"
+      ]
+    },
+    {
+      "description": "Alias for -a on-request --sandbox workspace-write",
+      "name": [
+        "--full-auto"
+      ]
+    },
+    {
+      "description": "Skip all prompts and sandbox",
+      "name": [
+        "--dangerously-bypass-approvals-and-sandbox"
+      ]
+    },
+    {
+      "args": {
+        "name": "dir",
+        "template": "folders"
+      },
+      "description": "Working directory root",
+      "name": [
+        "-C",
+        "--cd"
+      ]
+    },
+    {
+      "description": "Enable live web search",
+      "name": [
+        "--search"
+      ]
+    },
+    {
+      "args": {
+        "name": "dir",
+        "template": "folders"
+      },
+      "description": "Additional writable directories",
+      "name": [
+        "--add-dir"
+      ]
+    },
+    {
+      "description": "Disable alternate screen mode (for tmux/Zellij)",
+      "name": [
+        "--no-alt-screen"
+      ]
+    },
+    {
+      "description": "Print help",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Print version",
+      "name": [
+        "-V",
+        "--version"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "description": "Instructions for agent",
+        "isOptional": true,
+        "name": "prompt"
+      },
+      "description": "Run Codex non-interactively",
+      "name": "exec",
+      "options": [
+        {
+          "description": "Allow running outside a Git repository",
+          "name": [
+            "--skip-git-repo-check"
+          ]
+        },
+        {
+          "description": "Run without persisting session files",
+          "name": [
+            "--ephemeral"
+          ]
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Path to JSON Schema for response shape",
+          "name": [
+            "--output-schema"
+          ]
+        },
+        {
+          "args": {
+            "name": "color",
+            "suggestions": [
+              {
+                "name": "always"
+              },
+              {
+                "name": "never"
+              },
+              {
+                "name": "auto"
+              }
+            ]
+          },
+          "description": "Color settings",
+          "name": [
+            "--color"
+          ]
+        },
+        {
+          "description": "Force cursor-based progress updates",
+          "name": [
+            "--progress-cursor"
+          ]
+        },
+        {
+          "description": "Print events to stdout as JSONL",
+          "name": [
+            "--json"
+          ]
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "File to write last agent message",
+          "name": [
+            "-o",
+            "--output-last-message"
+          ]
+        },
+        {
+          "args": {
+            "name": "key=value"
+          },
+          "description": "Override config value (key=value)",
+          "name": [
+            "-c",
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Image(s) to attach to initial prompt",
+          "name": [
+            "-i",
+            "--image"
+          ]
+        },
+        {
+          "args": {
+            "name": "model"
+          },
+          "description": "Model the agent should use",
+          "name": [
+            "-m",
+            "--model"
+          ]
+        },
+        {
+          "args": {
+            "name": "mode",
+            "suggestions": [
+              {
+                "name": "read-only"
+              },
+              {
+                "name": "workspace-write"
+              },
+              {
+                "name": "danger-full-access"
+              }
+            ]
+          },
+          "description": "Sandbox policy",
+          "name": [
+            "-s",
+            "--sandbox"
+          ]
+        },
+        {
+          "description": "Alias for -a on-request --sandbox workspace-write",
+          "name": [
+            "--full-auto"
+          ]
+        },
+        {
+          "description": "Skip all prompts and sandbox",
+          "name": [
+            "--dangerously-bypass-approvals-and-sandbox"
+          ]
+        },
+        {
+          "args": {
+            "name": "dir",
+            "template": "folders"
+          },
+          "description": "Working directory root",
+          "name": [
+            "-C",
+            "--cd"
+          ]
+        },
+        {
+          "args": {
+            "name": "dir",
+            "template": "folders"
+          },
+          "description": "Additional writable directories",
+          "name": [
+            "--add-dir"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": [
+            {
+              "description": "UUID or thread name",
+              "isOptional": true,
+              "name": "session_id"
+            },
+            {
+              "description": "Prompt after resuming",
+              "isOptional": true,
+              "name": "prompt"
+            }
+          ],
+          "description": "Resume a previous session by ID",
+          "name": "resume",
+          "options": [
+            {
+              "description": "Resume most recent session",
+              "name": [
+                "--last"
+              ]
+            },
+            {
+              "description": "Show all sessions (disables cwd filtering)",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "args": {
+                "name": "file",
+                "template": "filepaths"
+              },
+              "description": "Image(s) to attach",
+              "name": [
+                "-i",
+                "--image"
+              ]
+            },
+            {
+              "args": {
+                "name": "model"
+              },
+              "description": "Model the agent should use",
+              "name": [
+                "-m",
+                "--model"
+              ]
+            },
+            {
+              "description": "Alias for -a on-request --sandbox workspace-write",
+              "name": [
+                "--full-auto"
+              ]
+            },
+            {
+              "description": "Skip all prompts and sandbox",
+              "name": [
+                "--dangerously-bypass-approvals-and-sandbox"
+              ]
+            },
+            {
+              "description": "Allow running outside a Git repository",
+              "name": [
+                "--skip-git-repo-check"
+              ]
+            },
+            {
+              "description": "Run without persisting session files",
+              "name": [
+                "--ephemeral"
+              ]
+            },
+            {
+              "description": "Print events to stdout as JSONL",
+              "name": [
+                "--json"
+              ]
+            },
+            {
+              "args": {
+                "name": "file",
+                "template": "filepaths"
+              },
+              "description": "File to write last agent message",
+              "name": [
+                "-o",
+                "--output-last-message"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Custom review instructions",
+            "isOptional": true,
+            "name": "prompt"
+          },
+          "description": "Run code review in non-interactive mode",
+          "name": "review",
+          "options": [
+            {
+              "description": "Review staged, unstaged, and untracked changes",
+              "name": [
+                "--uncommitted"
+              ]
+            },
+            {
+              "args": {
+                "generators": [
+                  {
+                    "type": "git_branches"
+                  }
+                ],
+                "name": "branch"
+              },
+              "description": "Review against a base branch",
+              "name": [
+                "--base"
+              ]
+            },
+            {
+              "args": {
+                "name": "sha"
+              },
+              "description": "Review changes from a specific commit",
+              "name": [
+                "--commit"
+              ]
+            },
+            {
+              "args": {
+                "name": "title"
+              },
+              "description": "Optional commit title for review summary",
+              "name": [
+                "--title"
+              ]
+            },
+            {
+              "args": {
+                "name": "model"
+              },
+              "description": "Model the agent should use",
+              "name": [
+                "-m",
+                "--model"
+              ]
+            },
+            {
+              "description": "Alias for -a on-request --sandbox workspace-write",
+              "name": [
+                "--full-auto"
+              ]
+            },
+            {
+              "description": "Allow running outside a Git repository",
+              "name": [
+                "--skip-git-repo-check"
+              ]
+            },
+            {
+              "description": "Run without persisting session files",
+              "name": [
+                "--ephemeral"
+              ]
+            },
+            {
+              "description": "Print events to stdout as JSONL",
+              "name": [
+                "--json"
+              ]
+            },
+            {
+              "args": {
+                "name": "file",
+                "template": "filepaths"
+              },
+              "description": "File to write last agent message",
+              "name": [
+                "-o",
+                "--output-last-message"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Custom review instructions",
+        "isOptional": true,
+        "name": "prompt"
+      },
+      "description": "Run a code review non-interactively",
+      "name": "review",
+      "options": [
+        {
+          "description": "Review staged, unstaged, and untracked changes",
+          "name": [
+            "--uncommitted"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "type": "git_branches"
+              }
+            ],
+            "name": "branch"
+          },
+          "description": "Review changes against a base branch",
+          "name": [
+            "--base"
+          ]
+        },
+        {
+          "args": {
+            "name": "sha"
+          },
+          "description": "Review changes from a specific commit",
+          "name": [
+            "--commit"
+          ]
+        },
+        {
+          "args": {
+            "name": "title"
+          },
+          "description": "Optional commit title for review summary",
+          "name": [
+            "--title"
+          ]
+        },
+        {
+          "args": {
+            "name": "key=value"
+          },
+          "description": "Override config value (key=value)",
+          "name": [
+            "-c",
+            "--config"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage login",
+      "name": "login",
+      "options": [
+        {
+          "description": "Read API key from stdin",
+          "name": [
+            "--with-api-key"
+          ]
+        },
+        {
+          "description": "Use device auth flow",
+          "name": [
+            "--device-auth"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Show login status",
+          "name": "status"
+        }
+      ]
+    },
+    {
+      "description": "Remove stored authentication credentials",
+      "name": "logout"
+    },
+    {
+      "description": "Manage external MCP servers",
+      "name": "mcp",
+      "subcommands": [
+        {
+          "description": "List configured MCP servers",
+          "name": "list",
+          "options": [
+            {
+              "description": "Output as JSON",
+              "name": [
+                "--json"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Server name",
+            "name": "name"
+          },
+          "description": "Get details about an MCP server",
+          "name": "get",
+          "options": [
+            {
+              "description": "Output as JSON",
+              "name": [
+                "--json"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Name for the MCP server config",
+            "name": "name"
+          },
+          "description": "Add an MCP server",
+          "name": "add",
+          "options": [
+            {
+              "args": {
+                "name": "KEY=VALUE"
+              },
+              "description": "Environment variables for stdio servers (KEY=VALUE)",
+              "name": [
+                "--env"
+              ]
+            },
+            {
+              "args": {
+                "name": "url"
+              },
+              "description": "URL for streamable HTTP MCP server",
+              "name": [
+                "--url"
+              ]
+            },
+            {
+              "args": {
+                "name": "env_var"
+              },
+              "description": "Env var name for bearer token (HTTP only)",
+              "name": [
+                "--bearer-token-env-var"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Server name to remove",
+            "name": "name"
+          },
+          "description": "Remove an MCP server config",
+          "name": "remove"
+        },
+        {
+          "args": {
+            "description": "Server name to authenticate",
+            "name": "name"
+          },
+          "description": "Authenticate with an MCP server via OAuth",
+          "name": "login",
+          "options": [
+            {
+              "args": {
+                "name": "scopes"
+              },
+              "description": "Comma-separated OAuth scopes",
+              "name": [
+                "--scopes"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Server name to deauthenticate",
+            "name": "name"
+          },
+          "description": "Deauthenticate from an MCP server",
+          "name": "logout"
+        }
+      ]
+    },
+    {
+      "description": "Start Codex as an MCP server (stdio)",
+      "name": "mcp-server"
+    },
+    {
+      "description": "Run the app server or related tooling (experimental)",
+      "name": "app-server",
+      "options": [
+        {
+          "args": {
+            "name": "url"
+          },
+          "description": "Transport endpoint (stdio:// or ws://IP:PORT)",
+          "name": [
+            "--listen"
+          ]
+        },
+        {
+          "description": "Enable analytics by default",
+          "name": [
+            "--analytics-default-enabled"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Generate TypeScript bindings",
+          "name": "generate-ts",
+          "options": [
+            {
+              "args": {
+                "name": "dir",
+                "template": "folders"
+              },
+              "description": "Output directory",
+              "name": [
+                "-o",
+                "--out"
+              ]
+            },
+            {
+              "args": {
+                "name": "prettier_bin",
+                "template": "filepaths"
+              },
+              "description": "Path to Prettier executable",
+              "name": [
+                "-p",
+                "--prettier"
+              ]
+            },
+            {
+              "description": "Include experimental methods/fields",
+              "name": [
+                "--experimental"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Generate JSON Schema",
+          "name": "generate-json-schema",
+          "options": [
+            {
+              "args": {
+                "name": "dir",
+                "template": "folders"
+              },
+              "description": "Output directory",
+              "name": [
+                "-o",
+                "--out"
+              ]
+            },
+            {
+              "description": "Include experimental methods/fields",
+              "name": [
+                "--experimental"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Workspace path",
+        "isOptional": true,
+        "name": "path",
+        "template": "folders"
+      },
+      "description": "Launch Codex desktop app",
+      "name": "app",
+      "options": [
+        {
+          "args": {
+            "name": "url"
+          },
+          "description": "Override DMG download URL",
+          "name": [
+            "--download-url"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Shell to generate for",
+        "isOptional": true,
+        "name": "shell",
+        "suggestions": [
+          {
+            "name": "bash"
+          },
+          {
+            "name": "elvish"
+          },
+          {
+            "name": "fish"
+          },
+          {
+            "name": "powershell"
+          },
+          {
+            "name": "zsh"
+          }
+        ]
+      },
+      "description": "Generate shell completion scripts",
+      "name": "completion"
+    },
+    {
+      "args": [
+        {
+          "description": "UUID or thread name",
+          "isOptional": true,
+          "name": "session_id"
+        },
+        {
+          "description": "Optional prompt",
+          "isOptional": true,
+          "name": "prompt"
+        }
+      ],
+      "description": "Resume a previous interactive session",
+      "name": "resume",
+      "options": [
+        {
+          "description": "Continue most recent session",
+          "name": [
+            "--last"
+          ]
+        },
+        {
+          "description": "Show all sessions",
+          "name": [
+            "--all"
+          ]
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Image(s) to attach",
+          "name": [
+            "-i",
+            "--image"
+          ]
+        },
+        {
+          "args": {
+            "name": "model"
+          },
+          "description": "Model the agent should use",
+          "name": [
+            "-m",
+            "--model"
+          ]
+        },
+        {
+          "args": {
+            "name": "mode",
+            "suggestions": [
+              {
+                "name": "read-only"
+              },
+              {
+                "name": "workspace-write"
+              },
+              {
+                "name": "danger-full-access"
+              }
+            ]
+          },
+          "description": "Sandbox policy",
+          "name": [
+            "-s",
+            "--sandbox"
+          ]
+        },
+        {
+          "args": {
+            "name": "policy",
+            "suggestions": [
+              {
+                "name": "untrusted"
+              },
+              {
+                "name": "on-request"
+              },
+              {
+                "name": "never"
+              }
+            ]
+          },
+          "description": "Approval policy",
+          "name": [
+            "-a",
+            "--ask-for-approval"
+          ]
+        },
+        {
+          "description": "Alias for -a on-request --sandbox workspace-write",
+          "name": [
+            "--full-auto"
+          ]
+        },
+        {
+          "description": "Skip all prompts and sandbox",
+          "name": [
+            "--dangerously-bypass-approvals-and-sandbox"
+          ]
+        },
+        {
+          "description": "Enable live web search",
+          "name": [
+            "--search"
+          ]
+        },
+        {
+          "description": "Disable alternate screen mode",
+          "name": [
+            "--no-alt-screen"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "UUID",
+          "isOptional": true,
+          "name": "session_id"
+        },
+        {
+          "description": "Optional prompt",
+          "isOptional": true,
+          "name": "prompt"
+        }
+      ],
+      "description": "Fork a previous interactive session",
+      "name": "fork",
+      "options": [
+        {
+          "description": "Fork most recent session",
+          "name": [
+            "--last"
+          ]
+        },
+        {
+          "description": "Show all sessions",
+          "name": [
+            "--all"
+          ]
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Image(s) to attach",
+          "name": [
+            "-i",
+            "--image"
+          ]
+        },
+        {
+          "args": {
+            "name": "model"
+          },
+          "description": "Model the agent should use",
+          "name": [
+            "-m",
+            "--model"
+          ]
+        },
+        {
+          "args": {
+            "name": "mode",
+            "suggestions": [
+              {
+                "name": "read-only"
+              },
+              {
+                "name": "workspace-write"
+              },
+              {
+                "name": "danger-full-access"
+              }
+            ]
+          },
+          "description": "Sandbox policy",
+          "name": [
+            "-s",
+            "--sandbox"
+          ]
+        },
+        {
+          "description": "Alias for -a on-request --sandbox workspace-write",
+          "name": [
+            "--full-auto"
+          ]
+        },
+        {
+          "description": "Skip all prompts and sandbox",
+          "name": [
+            "--dangerously-bypass-approvals-and-sandbox"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Run commands within a Codex-provided sandbox",
+      "name": "sandbox",
+      "subcommands": [
+        {
+          "description": "Seatbelt sandbox (macOS)",
+          "name": "macos",
+          "options": [
+            {
+              "description": "Network-disabled sandbox, writable to cwd and TMPDIR",
+              "name": [
+                "--full-auto"
+              ]
+            },
+            {
+              "description": "Capture macOS sandbox denials and print after exit",
+              "name": [
+                "--log-denials"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Landlock+seccomp sandbox (Linux)",
+          "name": "linux",
+          "options": [
+            {
+              "description": "Network-disabled sandbox, writable to cwd and TMPDIR",
+              "name": [
+                "--full-auto"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Windows restricted token sandbox",
+          "name": "windows",
+          "options": [
+            {
+              "description": "Network-disabled sandbox, writable to cwd and TMPDIR",
+              "name": [
+                "--full-auto"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Task identifier",
+        "name": "task_id"
+      },
+      "description": "Apply latest diff as git apply",
+      "name": "apply"
+    },
+    {
+      "description": "Browse Codex Cloud tasks (experimental)",
+      "name": "cloud",
+      "subcommands": [
+        {
+          "args": {
+            "description": "Task prompt",
+            "isOptional": true,
+            "name": "query"
+          },
+          "description": "Submit a new Codex Cloud task",
+          "name": "exec",
+          "options": [
+            {
+              "args": {
+                "name": "env_id"
+              },
+              "description": "Target environment identifier",
+              "name": [
+                "--env"
+              ]
+            },
+            {
+              "args": {
+                "name": "attempts"
+              },
+              "description": "Number of assistant attempts (best-of-N)",
+              "name": [
+                "--attempts"
+              ]
+            },
+            {
+              "args": {
+                "generators": [
+                  {
+                    "type": "git_branches"
+                  }
+                ],
+                "name": "branch"
+              },
+              "description": "Git branch to run in",
+              "name": [
+                "--branch"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Task identifier",
+            "name": "task_id"
+          },
+          "description": "Show task status",
+          "name": "status"
+        },
+        {
+          "description": "List Codex Cloud tasks",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "name": "env_id"
+              },
+              "description": "Filter by environment",
+              "name": [
+                "--env"
+              ]
+            },
+            {
+              "args": {
+                "name": "n"
+              },
+              "description": "Max tasks to return (1-20)",
+              "name": [
+                "--limit"
+              ]
+            },
+            {
+              "args": {
+                "name": "cursor"
+              },
+              "description": "Pagination cursor",
+              "name": [
+                "--cursor"
+              ]
+            },
+            {
+              "description": "Emit JSON instead of plain text",
+              "name": [
+                "--json"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Task identifier",
+            "name": "task_id"
+          },
+          "description": "Apply diff locally",
+          "name": "apply",
+          "options": [
+            {
+              "args": {
+                "name": "n"
+              },
+              "description": "Attempt number (1-based)",
+              "name": [
+                "--attempt"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Task identifier",
+            "name": "task_id"
+          },
+          "description": "Show unified diff",
+          "name": "diff",
+          "options": [
+            {
+              "args": {
+                "name": "n"
+              },
+              "description": "Attempt number (1-based)",
+              "name": [
+                "--attempt"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Inspect feature flags",
+      "name": "features",
+      "subcommands": [
+        {
+          "description": "List known features with stage and effective state",
+          "name": "list"
+        },
+        {
+          "args": {
+            "description": "Feature key (e.g. unified_exec)",
+            "name": "feature"
+          },
+          "description": "Enable a feature in config.toml",
+          "name": "enable"
+        },
+        {
+          "args": {
+            "description": "Feature key",
+            "name": "feature"
+          },
+          "description": "Disable a feature in config.toml",
+          "name": "disable"
+        }
+      ]
+    }
+  ]
+}

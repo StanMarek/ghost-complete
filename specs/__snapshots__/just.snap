@@ -1,0 +1,353 @@
+{
+  "args": {
+    "generators": [
+      {
+        "js_source": "n=>{let e=g(n);return d(e)}",
+        "requires_js": true
+      }
+    ],
+    "isOptional": true,
+    "isVariadic": true,
+    "name": "args"
+  },
+  "description": "Just a command runner",
+  "name": "just",
+  "options": [
+    {
+      "description": "Print help information",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "description": "Print the changelog",
+      "name": [
+        "--changelog"
+      ]
+    },
+    {
+      "description": "Run --fmt in 'check' mode",
+      "name": [
+        "--check"
+      ]
+    },
+    {
+      "description": "Select one or more recipes to run using another program",
+      "name": [
+        "--choose"
+      ]
+    },
+    {
+      "args": {
+        "name": "program"
+      },
+      "description": "Override the binary invoked by --choose",
+      "name": [
+        "--chooser"
+      ]
+    },
+    {
+      "args": {
+        "suggestions": [
+          {
+            "name": "auto"
+          },
+          {
+            "name": "always"
+          },
+          {
+            "name": "never"
+          }
+        ]
+      },
+      "description": "Print colorful output",
+      "name": [
+        "--color"
+      ]
+    },
+    {
+      "args": {
+        "name": "command"
+      },
+      "description": "Run an arbitrary command with the working directory, .env, overrides, and exports",
+      "name": [
+        "-c",
+        "--command"
+      ]
+    },
+    {
+      "args": {
+        "name": "shell",
+        "suggestions": [
+          {
+            "name": "zsh"
+          },
+          {
+            "name": "bash"
+          },
+          {
+            "name": "fish"
+          },
+          {
+            "name": "powershell"
+          },
+          {
+            "name": "elvish"
+          }
+        ]
+      },
+      "description": "Print shell completions",
+      "name": [
+        "--completions"
+      ]
+    },
+    {
+      "description": "Clear shell arguments",
+      "name": [
+        "--clear-shell-args"
+      ]
+    },
+    {
+      "description": "Print what just would do, without doing it",
+      "name": [
+        "--dry-run"
+      ]
+    },
+    {
+      "description": "Print justfile",
+      "name": [
+        "--dump"
+      ]
+    },
+    {
+      "args": {
+        "name": "name"
+      },
+      "description": "Use a file with this name instead of .env",
+      "name": [
+        "--dotenv-filename"
+      ]
+    },
+    {
+      "description": "Load the environment file from a path instead of searching for one",
+      "name": [
+        "--dotenv-path"
+      ]
+    },
+    {
+      "args": {
+        "name": "format",
+        "suggestions": [
+          {
+            "name": "just"
+          },
+          {
+            "description": "This value requires --unstable",
+            "name": "json"
+          }
+        ]
+      },
+      "description": "Specify the format for dumping the justfile",
+      "name": [
+        "--dump-format"
+      ]
+    },
+    {
+      "description": "Edit the justfile with $VISUAL or $EDITOR, falling back to vim",
+      "name": [
+        "-e",
+        "--edit"
+      ]
+    },
+    {
+      "description": "Evaluate and print all variables",
+      "name": [
+        "--evaluate"
+      ]
+    },
+    {
+      "description": "Format and overwrite the justfile",
+      "name": [
+        "--fmt"
+      ]
+    },
+    {
+      "description": "Highlight echoed recipe lines in bold",
+      "name": [
+        "--highlight"
+      ]
+    },
+    {
+      "description": "Initialize a new justfile",
+      "name": [
+        "--init"
+      ]
+    },
+    {
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      },
+      "description": "Use a specific justfile",
+      "name": [
+        "-f",
+        "--justfile"
+      ]
+    },
+    {
+      "description": "List available recipes and their arguments",
+      "name": [
+        "-l",
+        "--list"
+      ]
+    },
+    {
+      "args": {
+        "name": "text"
+      },
+      "description": "Print this text before the list",
+      "name": [
+        "--list-heading"
+      ]
+    },
+    {
+      "args": {
+        "name": "text"
+      },
+      "description": "Print this text before each list item",
+      "name": [
+        "--list-prefix"
+      ]
+    },
+    {
+      "description": "Don't load the environment file",
+      "name": [
+        "--no-dotenv"
+      ]
+    },
+    {
+      "description": "Don't highlight echoed recipe lines",
+      "name": [
+        "--no-highlight"
+      ]
+    },
+    {
+      "description": "Suppress all output",
+      "name": [
+        "-q",
+        "--quiet"
+      ]
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "n=>{let e=g(n);return d(e)}",
+              "requires_js": true
+            }
+          ],
+          "name": "variable"
+        },
+        {
+          "description": "The string value the variable will be set to",
+          "name": "value"
+        }
+      ],
+      "description": "Override a variable with a value",
+      "name": [
+        "--set"
+      ]
+    },
+    {
+      "args": {
+        "name": "shell"
+      },
+      "description": "Invoke this shell to run recipes",
+      "name": [
+        "--shell"
+      ]
+    },
+    {
+      "args": {
+        "name": "argument"
+      },
+      "description": "Invoke the shell with this as an argument",
+      "name": [
+        "--shell-arg"
+      ]
+    },
+    {
+      "description": "Invoke --command with the shell used to run recipe lines and backticks",
+      "name": [
+        "--shell-command"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "n=>{let e=g(n);return d(e)}",
+            "requires_js": true
+          }
+        ],
+        "name": "recipe"
+      },
+      "description": "Show information about a recipe",
+      "name": [
+        "-s",
+        "--show"
+      ]
+    },
+    {
+      "description": "List names of available recipes",
+      "name": [
+        "--summary"
+      ]
+    },
+    {
+      "description": "Return list and summary entries in source order",
+      "name": [
+        "-u",
+        "--unsorted"
+      ]
+    },
+    {
+      "description": "Enable unstable features",
+      "name": [
+        "--unstable"
+      ]
+    },
+    {
+      "description": "List names of variables",
+      "name": [
+        "--variables"
+      ]
+    },
+    {
+      "description": "Use verbose output",
+      "name": [
+        "-v",
+        "--verbose"
+      ]
+    },
+    {
+      "description": "Print version information",
+      "name": [
+        "-V",
+        "--version"
+      ]
+    },
+    {
+      "args": {
+        "template": "folders"
+      },
+      "description": "Use this as the working directory",
+      "name": [
+        "-d",
+        "--working-directory"
+      ]
+    }
+  ]
+}

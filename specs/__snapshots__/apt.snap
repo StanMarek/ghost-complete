@@ -1,0 +1,766 @@
+{
+  "description": "Package manager for Debian-based Linux distributions",
+  "name": "apt",
+  "options": [
+    {
+      "description": "Print help message and exit",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Print version information and exit",
+      "name": [
+        "-v",
+        "--version"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Update the package database",
+      "name": "update",
+      "options": [
+        {
+          "description": "Assume yes to all prompts",
+          "name": [
+            "-y"
+          ]
+        },
+        {
+          "description": "Assume no to all prompts",
+          "name": [
+            "--assume-no"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Package(s) to upgrade",
+        "generators": [
+          {
+            "script": [
+              "apt",
+              "list",
+              "--upgradable"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "package"
+      },
+      "description": "Install all available upgrades",
+      "name": "upgrade",
+      "options": [
+        {
+          "description": "For any operation that would download packages, download them, but do nothing else",
+          "name": [
+            "-d",
+            "--download-only"
+          ]
+        },
+        {
+          "description": "Do not download packages, attempt to use already downloaded packages",
+          "name": [
+            "--no-download"
+          ]
+        },
+        {
+          "description": "Assume yes to all prompts",
+          "name": [
+            "-y"
+          ]
+        },
+        {
+          "description": "Assume no to all prompts",
+          "name": [
+            "--assume-no"
+          ]
+        },
+        {
+          "description": "Simulate running this command and show it's output, without actually changing anything",
+          "name": [
+            "-s",
+            "--simulate"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Install available upgrades, removing currently installed packages if needed to upgrade the system as a whole",
+      "name": "full-upgrade",
+      "options": [
+        {
+          "description": "For any operation that would download packages, download them, but do nothing else",
+          "name": [
+            "-d",
+            "--download-only"
+          ]
+        },
+        {
+          "description": "Do not download packages, attempt to use already downloaded packages",
+          "name": [
+            "--no-download"
+          ]
+        },
+        {
+          "description": "Assume yes to all prompts",
+          "name": [
+            "-y"
+          ]
+        },
+        {
+          "description": "Assume no to all prompts",
+          "name": [
+            "--assume-no"
+          ]
+        },
+        {
+          "description": "Simulate running this command and show it's output, without actually changing anything",
+          "name": [
+            "-s",
+            "--simulate"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The package you want to install",
+        "generators": [
+          {
+            "js_source": "async(e,t)=>{let n=e[e.length-1];if(n.length===0)return[];let{stdout:a}=await t({command:\"apt\",args:[\"list\"]});return a.trim().split(`\n`).filter(i=>i.startsWith(n)).map(i=>i.replace(/\\/.*/,\"\")).map(i=>({name:i,description:\"Package\",icon:\"\\u{1F4E6}\",priority:50}))}",
+            "requires_js": true
+          },
+          {
+            "js_source": "(g,m,O)=>ge(this,void 0,void 0,function*(){var p;let{isDangerous:k,currentWorkingDirectory:_,searchTerm:h}=O,x=(p=(0,v.getCurrentInsertedDirectory)(l??_,h,O))!==null&&p!==void 0?p:\"/\";try{let $=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:x}),ne=J($.stdout.split(`\n`),[\".DS_Store\"]),G=[];for(let L of ne)if(L){let D=L.endsWith(\"/\")?\"folders\":\"filepaths\";(D===\"filepaths\"&&u!==\"only\"||D===\"folders\"&&u!==\"never\")&&G.push({type:D===\"filepaths\"?\"file\":\"folder\",name:L,insertValue:L,isDangerous:k,context:{templateType:D}})}return S(y(G))}catch{return[]}})",
+            "requires_js": true
+          }
+        ],
+        "isVariadic": true,
+        "name": "package"
+      },
+      "description": "Install package(s)",
+      "name": "install",
+      "options": [
+        {
+          "description": "For any operation that would download packages, download them, but do nothing else",
+          "name": [
+            "-d",
+            "--download-only"
+          ]
+        },
+        {
+          "description": "Do not download packages, attempt to use already downloaded packages",
+          "name": [
+            "--no-download"
+          ]
+        },
+        {
+          "description": "Assume yes to all prompts",
+          "name": [
+            "-y"
+          ]
+        },
+        {
+          "description": "Assume no to all prompts",
+          "name": [
+            "--assume-no"
+          ]
+        },
+        {
+          "description": "Simulate running this command and show it's output, without actually changing anything",
+          "name": [
+            "-s",
+            "--simulate"
+          ]
+        },
+        {
+          "description": "Reinstall the package if it is already installed",
+          "name": [
+            "--reinstall"
+          ]
+        },
+        {
+          "description": "Attempt to fix broken packages",
+          "name": [
+            "-f",
+            "--fix-broken"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The package you want to reinstall",
+        "generators": [
+          {
+            "script": [
+              "apt",
+              "list",
+              "--installed"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "isVariadic": true,
+        "name": "package"
+      },
+      "description": "Reinstall package(s)",
+      "name": "reinstall",
+      "options": [
+        {
+          "description": "Assume yes to all prompts",
+          "name": [
+            "-y"
+          ]
+        },
+        {
+          "description": "Assume no to all prompts",
+          "name": [
+            "--assume-no"
+          ]
+        },
+        {
+          "description": "Simulate running this command and show it's output, without actually changing anything",
+          "name": [
+            "-s",
+            "--simulate"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The package you want to remove",
+        "generators": [
+          {
+            "script": [
+              "apt",
+              "list",
+              "--installed"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "isVariadic": true,
+        "name": "package"
+      },
+      "description": "Remove package(s)",
+      "name": "remove",
+      "options": [
+        {
+          "description": "Assume yes to all prompts",
+          "name": [
+            "-y"
+          ]
+        },
+        {
+          "description": "Assume no to all prompts",
+          "name": [
+            "--assume-no"
+          ]
+        },
+        {
+          "description": "Simulate running this command and show it's output, without actually changing anything",
+          "name": [
+            "-s",
+            "--simulate"
+          ]
+        },
+        {
+          "description": "Attempt to fix broken packages",
+          "name": [
+            "-f",
+            "--fix-broken"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The package you want to purge",
+        "generators": [
+          {
+            "script": [
+              "apt",
+              "list",
+              "--installed"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "isVariadic": true,
+        "name": "package"
+      },
+      "description": "Remove package(s) and their configuration files",
+      "name": "purge",
+      "options": [
+        {
+          "description": "Assume yes to all prompts",
+          "name": [
+            "-y"
+          ]
+        },
+        {
+          "description": "Assume no to all prompts",
+          "name": [
+            "--assume-no"
+          ]
+        },
+        {
+          "description": "Simulate running this command and show it's output, without actually changing anything",
+          "name": [
+            "-s",
+            "--simulate"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Remove unused packages",
+      "name": "autoremove",
+      "options": [
+        {
+          "description": "Assume yes to all prompts",
+          "name": [
+            "-y"
+          ]
+        },
+        {
+          "description": "Assume no to all prompts",
+          "name": [
+            "--assume-no"
+          ]
+        },
+        {
+          "description": "Simulate running this command and show it's output, without actually changing anything",
+          "name": [
+            "-s",
+            "--simulate"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "List packages",
+      "name": "list",
+      "options": [
+        {
+          "description": "List installed packages",
+          "name": [
+            "--installed"
+          ]
+        },
+        {
+          "description": "List upgradable packages",
+          "name": [
+            "--upgradable"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The query to search for",
+        "name": "query"
+      },
+      "description": "Search for packages",
+      "name": "search",
+      "options": [
+        {
+          "description": "Assume yes to all prompts",
+          "name": [
+            "-y"
+          ]
+        },
+        {
+          "description": "Assume no to all prompts",
+          "name": [
+            "--assume-no"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The package you want to show",
+        "generators": [
+          {
+            "js_source": "async(e,t)=>{let n=e[e.length-1];if(n.length===0)return[];let{stdout:a}=await t({command:\"apt\",args:[\"list\"]});return a.trim().split(`\n`).filter(i=>i.startsWith(n)).map(i=>i.replace(/\\/.*/,\"\")).map(i=>({name:i,description:\"Package\",icon:\"\\u{1F4E6}\",priority:50}))}",
+            "requires_js": true
+          }
+        ],
+        "name": "package"
+      },
+      "description": "Show package details",
+      "name": "show"
+    },
+    {
+      "args": {
+        "description": "The package you want to satisfy",
+        "generators": [
+          {
+            "js_source": "async(e,t)=>{let n=e[e.length-1];if(n.length===0)return[];let{stdout:a}=await t({command:\"apt\",args:[\"list\"]});return a.trim().split(`\n`).filter(i=>i.startsWith(n)).map(i=>i.replace(/\\/.*/,\"\")).map(i=>({name:i,description:\"Package\",icon:\"\\u{1F4E6}\",priority:50}))}",
+            "requires_js": true
+          }
+        ],
+        "isVariadic": true,
+        "name": "package"
+      },
+      "description": "Satisfy package dependencies",
+      "name": "satisfy",
+      "options": [
+        {
+          "description": "For any operation that would download packages, download them, but do nothing else",
+          "name": [
+            "-d",
+            "--download-only"
+          ]
+        },
+        {
+          "description": "Do not download packages, attempt to use already downloaded packages",
+          "name": [
+            "--no-download"
+          ]
+        },
+        {
+          "description": "Assume yes to all prompts",
+          "name": [
+            "-y"
+          ]
+        },
+        {
+          "description": "Assume no to all prompts",
+          "name": [
+            "--assume-no"
+          ]
+        },
+        {
+          "description": "Simulate running this command and show it's output, without actually changing anything",
+          "name": [
+            "-s",
+            "--simulate"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Remove downloaded package files",
+      "name": "clean",
+      "options": [
+        {
+          "description": "Assume yes to all prompts",
+          "name": [
+            "-y"
+          ]
+        },
+        {
+          "description": "Assume no to all prompts",
+          "name": [
+            "--assume-no"
+          ]
+        },
+        {
+          "description": "Simulate running this command and show it's output, without actually changing anything",
+          "name": [
+            "-s",
+            "--simulate"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Edit the list of package sources",
+      "name": "edit-sources",
+      "options": [
+        {
+          "description": "Assume yes to all prompts",
+          "name": [
+            "-y"
+          ]
+        },
+        {
+          "description": "Assume no to all prompts",
+          "name": [
+            "--assume-no"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The package you want to get source files for",
+        "generators": [
+          {
+            "js_source": "async(e,t)=>{let n=e[e.length-1];if(n.length===0)return[];let{stdout:a}=await t({command:\"apt\",args:[\"list\"]});return a.trim().split(`\n`).filter(i=>i.startsWith(n)).map(i=>i.replace(/\\/.*/,\"\")).map(i=>({name:i,description:\"Package\",icon:\"\\u{1F4E6}\",priority:50}))}",
+            "requires_js": true
+          }
+        ],
+        "isVariadic": true,
+        "name": "package"
+      },
+      "description": "Fetch package source files",
+      "name": "source",
+      "options": [
+        {
+          "description": "For any operation that would download packages, download them, but do nothing else",
+          "name": [
+            "-d",
+            "--download-only"
+          ]
+        },
+        {
+          "description": "Do not download packages, attempt to use already downloaded packages",
+          "name": [
+            "--no-download"
+          ]
+        },
+        {
+          "description": "Assume yes to all prompts",
+          "name": [
+            "-y"
+          ]
+        },
+        {
+          "description": "Assume no to all prompts",
+          "name": [
+            "--assume-no"
+          ]
+        },
+        {
+          "description": "Simulate running this command and show it's output, without actually changing anything",
+          "name": [
+            "-s",
+            "--simulate"
+          ]
+        },
+        {
+          "description": "Compile the package to a binary using dpkg-buildpackage",
+          "name": [
+            "--compile"
+          ]
+        },
+        {
+          "name": [
+            "--only-source"
+          ]
+        },
+        {
+          "args": {
+            "description": "The architecture to build for",
+            "name": "architecture"
+          },
+          "description": "The architecture to build for",
+          "name": [
+            "--host-architecture"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The package you want to build dependencies for",
+        "generators": [
+          {
+            "js_source": "async(e,t)=>{let n=e[e.length-1];if(n.length===0)return[];let{stdout:a}=await t({command:\"apt\",args:[\"list\"]});return a.trim().split(`\n`).filter(i=>i.startsWith(n)).map(i=>i.replace(/\\/.*/,\"\")).map(i=>({name:i,description:\"Package\",icon:\"\\u{1F4E6}\",priority:50}))}",
+            "requires_js": true
+          }
+        ],
+        "name": "package"
+      },
+      "description": "Install/remove packages in an attempt to satisfy the build dependencies for a source package",
+      "name": "build-dep",
+      "options": [
+        {
+          "description": "For any operation that would download packages, download them, but do nothing else",
+          "name": [
+            "-d",
+            "--download-only"
+          ]
+        },
+        {
+          "description": "Do not download packages, attempt to use already downloaded packages",
+          "name": [
+            "--no-download"
+          ]
+        },
+        {
+          "description": "Assume yes to all prompts",
+          "name": [
+            "-y"
+          ]
+        },
+        {
+          "description": "Assume no to all prompts",
+          "name": [
+            "--assume-no"
+          ]
+        },
+        {
+          "description": "Simulate running this command and show it's output, without actually changing anything",
+          "name": [
+            "-s",
+            "--simulate"
+          ]
+        },
+        {
+          "args": {
+            "description": "The architecture to build for",
+            "name": "architecture"
+          },
+          "description": "The architecture to build for",
+          "name": [
+            "--host-architecture"
+          ]
+        },
+        {
+          "name": [
+            "--only-source"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The package you want to download",
+        "generators": [
+          {
+            "js_source": "async(e,t)=>{let n=e[e.length-1];if(n.length===0)return[];let{stdout:a}=await t({command:\"apt\",args:[\"list\"]});return a.trim().split(`\n`).filter(i=>i.startsWith(n)).map(i=>i.replace(/\\/.*/,\"\")).map(i=>({name:i,description:\"Package\",icon:\"\\u{1F4E6}\",priority:50}))}",
+            "requires_js": true
+          }
+        ],
+        "name": "package"
+      },
+      "description": "Download package binary into the current directory",
+      "name": "download",
+      "options": [
+        {
+          "description": "For any operation that would download packages, download them, but do nothing else",
+          "name": [
+            "-d",
+            "--download-only"
+          ]
+        },
+        {
+          "description": "Do not download packages, attempt to use already downloaded packages",
+          "name": [
+            "--no-download"
+          ]
+        },
+        {
+          "description": "Assume yes to all prompts",
+          "name": [
+            "-y"
+          ]
+        },
+        {
+          "description": "Assume no to all prompts",
+          "name": [
+            "--assume-no"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Like clean, but only removes package files that can no longer be downloaded",
+      "name": "autoclean",
+      "options": [
+        {
+          "description": "For any operation that would download packages, download them, but do nothing else",
+          "name": [
+            "-d",
+            "--download-only"
+          ]
+        },
+        {
+          "description": "Do not download packages, attempt to use already downloaded packages",
+          "name": [
+            "--no-download"
+          ]
+        },
+        {
+          "description": "Assume yes to all prompts",
+          "name": [
+            "-y"
+          ]
+        },
+        {
+          "description": "Assume no to all prompts",
+          "name": [
+            "--assume-no"
+          ]
+        },
+        {
+          "description": "Simulate running this command and show it's output, without actually changing anything",
+          "name": [
+            "-s",
+            "--simulate"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The package you want to show the changelog for",
+        "generators": [
+          {
+            "js_source": "async(e,t)=>{let n=e[e.length-1];if(n.length===0)return[];let{stdout:a}=await t({command:\"apt\",args:[\"list\"]});return a.trim().split(`\n`).filter(i=>i.startsWith(n)).map(i=>i.replace(/\\/.*/,\"\")).map(i=>({name:i,description:\"Package\",icon:\"\\u{1F4E6}\",priority:50}))}",
+            "requires_js": true
+          }
+        ],
+        "isVariadic": true,
+        "name": "package"
+      },
+      "description": "Show the changelog for a package",
+      "name": "changelog",
+      "options": [
+        {
+          "description": "For any operation that would download packages, download them, but do nothing else",
+          "name": [
+            "-d",
+            "--download-only"
+          ]
+        },
+        {
+          "description": "Do not download packages, attempt to use already downloaded packages",
+          "name": [
+            "--no-download"
+          ]
+        },
+        {
+          "description": "Assume yes to all prompts",
+          "name": [
+            "-y"
+          ]
+        },
+        {
+          "description": "Assume no to all prompts",
+          "name": [
+            "--assume-no"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "args": {
+    "name": "play the song in the path",
+    "template": "filepaths"
+  },
+  "description": "Audio File Play",
+  "name": "afplay",
+  "options": [
+    {
+      "args": {
+        "name": "0 (silent) - 1 (normal) - 255 (very loud)"
+      },
+      "description": "Set the volume for playback of the file\nApple does not define a value range for this, but it appears to accept\n0=silent, 1=normal (default) and then up to 255=Very loud.\nThe scale is logarithmic and in addition to (not a replacement for) other volume control(s)",
+      "name": [
+        "-v",
+        "--volume"
+      ]
+    },
+    {
+      "description": "Print help",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Run leaks analysis",
+      "name": [
+        "--leaks"
+      ]
+    },
+    {
+      "args": {
+        "description": "A value greater than 0 but lower than the audio file length",
+        "name": "TIME"
+      },
+      "description": "Play for `TIME` seconds\n>0 and < duration of `audio_file`",
+      "name": [
+        "-t",
+        "--time"
+      ]
+    },
+    {
+      "args": {
+        "description": "0.4 (slower) - 3.0 (faster)",
+        "name": "RATE"
+      },
+      "description": "Play at playback `RATE`.\npractical limits are about 0.4 (slower) to 3.0 (faster)",
+      "name": [
+        "-r",
+        "--rate"
+      ]
+    },
+    {
+      "args": {
+        "description": "0 (low) -1 (high)",
+        "name": "QUALITY"
+      },
+      "description": "Set the quality used for rate-scaled playback (default is 0 - low quality, 1 - high quality)",
+      "name": [
+        "-q",
+        "--rQuality"
+      ]
+    },
+    {
+      "description": "Debug print output",
+      "name": [
+        "-d",
+        "--debug"
+      ]
+    }
+  ]
+}

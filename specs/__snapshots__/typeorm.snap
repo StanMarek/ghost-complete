@@ -1,0 +1,774 @@
+{
+  "description": "TypeORM CLI",
+  "name": "typeorm",
+  "options": [
+    {
+      "description": "Show help for command",
+      "name": [
+        "--help"
+      ]
+    },
+    {
+      "description": "Show the version",
+      "name": [
+        "-v",
+        "--version"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Synchronizes your entities with database schema",
+      "name": "schema:sync",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "connection"
+          },
+          "description": "Name of the connection on which schema synchronization needs to to run",
+          "name": [
+            "-c",
+            "--connection"
+          ]
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Name of the file with connection configuration",
+          "name": [
+            "-f",
+            "--config"
+          ]
+        },
+        {
+          "description": "Show the version",
+          "name": [
+            "-v",
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Shows sql to be executed by schema:sync command",
+      "name": "schema:log",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "connection"
+          },
+          "description": "Name of the connection of which schema sync log should be shown",
+          "name": [
+            "-c",
+            "--connection"
+          ]
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Name of the file with connection configuration",
+          "name": [
+            "-f",
+            "--config"
+          ]
+        },
+        {
+          "description": "Show the version",
+          "name": [
+            "-v",
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Drops all tables in the database on your default connection",
+      "name": "schema:drop",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "connection"
+          },
+          "description": "Name of the connection on which to drop all tables",
+          "name": [
+            "-c",
+            "--connection"
+          ]
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Name of the file with connection configuration",
+          "name": [
+            "-f",
+            "--config"
+          ]
+        },
+        {
+          "description": "Show the version",
+          "name": [
+            "-v",
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The SQL Query to run",
+        "name": "query"
+      },
+      "description": "Executes given SQL query on a default connection",
+      "name": "query",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "connection"
+          },
+          "description": "Name of the connection on which to run a query",
+          "name": [
+            "-c",
+            "--connection"
+          ]
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Name of the file with connection configuration",
+          "name": [
+            "-f",
+            "--config"
+          ]
+        },
+        {
+          "description": "Show the version",
+          "name": [
+            "-v",
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generates a new entity",
+      "name": "entity:create",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "connection"
+          },
+          "description": "Name of the connection on which to run a query",
+          "name": [
+            "-c",
+            "--connection"
+          ]
+        },
+        {
+          "args": {
+            "name": "entity"
+          },
+          "description": "Name of the entity class",
+          "name": [
+            "-n",
+            "--name"
+          ]
+        },
+        {
+          "args": {
+            "name": "directory",
+            "template": "folders"
+          },
+          "description": "Directory where entity should be created",
+          "name": [
+            "-d",
+            "--dir"
+          ]
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Name of the file with connection configuration",
+          "name": [
+            "-f",
+            "--config"
+          ]
+        },
+        {
+          "description": "Show the version",
+          "name": [
+            "-v",
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generates a new subscriber",
+      "name": "subscriber:create",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "connection"
+          },
+          "description": "Name of the connection on which to run a query",
+          "name": [
+            "-c",
+            "--connection"
+          ]
+        },
+        {
+          "args": {
+            "name": "subscriber"
+          },
+          "description": "Name of the subscriber class",
+          "name": [
+            "-n",
+            "--name"
+          ]
+        },
+        {
+          "args": {
+            "name": "directory",
+            "template": "folders"
+          },
+          "description": "Directory where subscriber should be created",
+          "name": [
+            "-d",
+            "--dir"
+          ]
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Name of the file with connection configuration",
+          "name": [
+            "-f",
+            "--config"
+          ]
+        },
+        {
+          "description": "Show the version",
+          "name": [
+            "-v",
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Creates a new migration file",
+      "name": "migration:create",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "connection"
+          },
+          "description": "Name of the connection on which to run a query",
+          "name": [
+            "-c",
+            "--connection"
+          ]
+        },
+        {
+          "args": {
+            "name": "migration"
+          },
+          "description": "Name of the migration class",
+          "name": [
+            "-n",
+            "--name"
+          ]
+        },
+        {
+          "args": {
+            "name": "directory",
+            "template": "folders"
+          },
+          "description": "Directory where migration should be created",
+          "name": [
+            "-d",
+            "--dir"
+          ]
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Name of the file with connection configuration",
+          "name": [
+            "-f",
+            "--config"
+          ]
+        },
+        {
+          "description": "Generate a migration file on Javascript instead of Typescript",
+          "name": [
+            "-o",
+            "--outputJs"
+          ]
+        },
+        {
+          "description": "Show the version",
+          "name": [
+            "-v",
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generates a new migration file with sql needs to be executed to update schema",
+      "name": "migration:generate",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "connection"
+          },
+          "description": "Name of the connection on which to run a query",
+          "name": [
+            "-c",
+            "--connection"
+          ]
+        },
+        {
+          "args": {
+            "name": "migration"
+          },
+          "description": "Name of the migration class",
+          "name": [
+            "-n",
+            "--name"
+          ]
+        },
+        {
+          "args": {
+            "name": "directory",
+            "template": "folders"
+          },
+          "description": "Directory where migration should be created",
+          "name": [
+            "-d",
+            "--dir"
+          ]
+        },
+        {
+          "description": "Pretty-print generated SQL",
+          "name": [
+            "-p",
+            "--pretty"
+          ]
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Name of the file with connection configuration",
+          "name": [
+            "-f",
+            "--config"
+          ]
+        },
+        {
+          "description": "Generate a migration file on Javascript instead of Typescript",
+          "name": [
+            "-o",
+            "--outputJs"
+          ]
+        },
+        {
+          "description": "Prints out the contents of the migration instead of writing it to a file",
+          "name": [
+            "--dr",
+            "--dryrun"
+          ]
+        },
+        {
+          "description": "Verifies that the current database is up to date and that no migrations are needed",
+          "name": [
+            "--ch",
+            "--check"
+          ]
+        },
+        {
+          "description": "Show the version",
+          "name": [
+            "-v",
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Runs all pending migrations",
+      "name": "migration:run",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "connection"
+          },
+          "description": "Name of the connection on which to run a query",
+          "name": [
+            "-c",
+            "--connection"
+          ]
+        },
+        {
+          "description": "Indicates if transaction should be used or not for migration run",
+          "name": [
+            "-t",
+            "--transaction"
+          ]
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Name of the file with connection configuration",
+          "name": [
+            "-f",
+            "--config"
+          ]
+        },
+        {
+          "description": "Show the version",
+          "name": [
+            "-v",
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Show all migrations and whether they have been run or not",
+      "name": "migration:show",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "connection"
+          },
+          "description": "Name of the connection on which to run a query",
+          "name": [
+            "-c",
+            "--connection"
+          ]
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Name of the file with connection configuration",
+          "name": [
+            "-f",
+            "--config"
+          ]
+        },
+        {
+          "description": "Show the version",
+          "name": [
+            "-v",
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Reverts last executed migration",
+      "name": "migration:revert",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "connection"
+          },
+          "description": "Name of the connection on which to run a query",
+          "name": [
+            "-c",
+            "--connection"
+          ]
+        },
+        {
+          "description": "Indicates if transaction should be used or not for migration revert",
+          "name": [
+            "-t",
+            "--transaction"
+          ]
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Name of the file with connection configuration",
+          "name": [
+            "-f",
+            "--config"
+          ]
+        },
+        {
+          "description": "Show the version",
+          "name": [
+            "-v",
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Prints TypeORM version this project uses",
+      "name": "version",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help"
+          ]
+        },
+        {
+          "description": "Show the version",
+          "name": [
+            "-v",
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Clears all data stored in query runner cache",
+      "name": "cache:clear",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "connection"
+          },
+          "description": "Name of the connection on which to run a query",
+          "name": [
+            "-c",
+            "--connection"
+          ]
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Name of the file with connection configuration",
+          "name": [
+            "-f",
+            "--config"
+          ]
+        },
+        {
+          "description": "Show the version",
+          "name": [
+            "-v",
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generates initial TypeORM project structure",
+      "name": "init",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "connection"
+          },
+          "description": "Name of the connection on which to run a query",
+          "name": [
+            "-c",
+            "--connection"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Name of the project directory",
+          "name": [
+            "-n",
+            "--name"
+          ]
+        },
+        {
+          "args": {
+            "name": "database",
+            "suggestions": [
+              {
+                "name": "mysql"
+              },
+              {
+                "name": "mariadb"
+              },
+              {
+                "name": "postgres"
+              },
+              {
+                "name": "cockroachdb"
+              },
+              {
+                "name": "sqlite"
+              },
+              {
+                "name": "mssql"
+              },
+              {
+                "name": "oracle"
+              },
+              {
+                "name": "cordova"
+              },
+              {
+                "name": "nativescript"
+              },
+              {
+                "name": "react-native"
+              },
+              {
+                "name": "expo"
+              },
+              {
+                "name": "mongodb"
+              }
+            ]
+          },
+          "description": "Database type you'll use in your project",
+          "name": [
+            "--db",
+            "--database"
+          ]
+        },
+        {
+          "description": "Indicates if express should be included in the project",
+          "name": [
+            "--express"
+          ]
+        },
+        {
+          "description": "Set to true if docker-compose must be generated as well",
+          "name": [
+            "--docker"
+          ]
+        },
+        {
+          "args": {
+            "name": "manager",
+            "suggestions": [
+              {
+                "name": "npm"
+              },
+              {
+                "name": "yarn"
+              }
+            ]
+          },
+          "description": "Install packages",
+          "name": [
+            "--pm",
+            "--manager"
+          ]
+        },
+        {
+          "description": "Show the version",
+          "name": [
+            "-v",
+            "--version"
+          ]
+        }
+      ]
+    }
+  ]
+}

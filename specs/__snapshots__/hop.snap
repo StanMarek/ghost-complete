@@ -1,0 +1,285 @@
+{
+  "description": "Interact with Hop in your terminal",
+  "name": "hop",
+  "options": [
+    {
+      "description": "Prints help information",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "description": "Prints version information",
+      "name": [
+        "--version",
+        "-v"
+      ]
+    },
+    {
+      "description": "Namespace or ID of the project to use",
+      "name": [
+        "--project",
+        "-p"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Authenticate with Hop",
+      "name": "auth",
+      "subcommands": [
+        {
+          "description": "Prints this message or the help of the given subcommand(s)",
+          "name": "help"
+        },
+        {
+          "description": "Login to Hop",
+          "name": "login"
+        },
+        {
+          "description": "Logout the current user",
+          "name": "logout"
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Directory to deploy, defaults to current directory",
+        "isOptional": true,
+        "name": "dir"
+      },
+      "description": "Deploy a new container",
+      "name": "deploy",
+      "options": [
+        {
+          "args": {
+            "name": "container type",
+            "suggestions": [
+              {
+                "name": "ephemeral"
+              },
+              {
+                "name": "persistent"
+              }
+            ]
+          },
+          "description": "Type of the container, defaults to `ephemeral`",
+          "name": [
+            "--type",
+            "-t"
+          ]
+        },
+        {
+          "args": {
+            "name": "container amount",
+            "suggestions": [
+              {
+                "name": "1"
+              },
+              {
+                "name": "2"
+              },
+              {
+                "name": "4"
+              },
+              {
+                "name": "8"
+              },
+              {
+                "name": "10"
+              }
+            ]
+          },
+          "description": "Number of containers to use, defaults to 1 if `scaling` is manual",
+          "name": [
+            "--containers",
+            "-i"
+          ]
+        },
+        {
+          "args": {
+            "name": "cpu amount",
+            "suggestions": [
+              {
+                "name": "1"
+              },
+              {
+                "name": "2"
+              },
+              {
+                "name": "4"
+              },
+              {
+                "name": "8"
+              }
+            ]
+          },
+          "description": "The number of CPUs to use, defaults to 1",
+          "name": [
+            "--cpu",
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment variable",
+            "suggestions": [
+              {
+                "name": "port="
+              }
+            ]
+          },
+          "description": "Environment variables to set, in the form of KEY=VALUE",
+          "name": [
+            "--env",
+            "-e"
+          ]
+        },
+        {
+          "args": {
+            "name": "deployment name"
+          },
+          "description": "Name of the deployment, defaults to the directory name",
+          "name": [
+            "--name",
+            "-n"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "project"
+          },
+          "description": "Namespace or ID of the project to use",
+          "name": [
+            "--project",
+            "-p"
+          ]
+        },
+        {
+          "args": {
+            "name": "ram amount",
+            "suggestions": [
+              {
+                "name": "128MB"
+              },
+              {
+                "name": "256MB"
+              },
+              {
+                "name": "512MB"
+              },
+              {
+                "name": "1G"
+              },
+              {
+                "name": "2G"
+              },
+              {
+                "name": "4G"
+              }
+            ]
+          },
+          "description": "Amount of RAM to use, defaults to 512MB",
+          "name": [
+            "--ram",
+            "-m"
+          ]
+        },
+        {
+          "args": {
+            "name": "scaling strategy",
+            "suggestions": [
+              {
+                "name": "manual"
+              },
+              {
+                "name": "autoscale"
+              }
+            ]
+          },
+          "description": "Scaling strategy, defaults to `manual`",
+          "name": [
+            "--scaling",
+            "-s"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "command",
+        "template": "help"
+      },
+      "description": "Prints this message or the help of the given subcommand(s)",
+      "name": "help"
+    },
+    {
+      "description": "Interact with Ignite containers",
+      "name": "ignite",
+      "subcommands": [
+        {
+          "description": "List all deployments",
+          "name": "ls",
+          "options": [
+            {
+              "description": "Namespace or ID of the project to use",
+              "name": [
+                "--project",
+                "-p"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Delete a deployment",
+          "name": "rm",
+          "options": [
+            {
+              "description": "Namespace or ID of the project to use",
+              "name": [
+                "--project",
+                "-p"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Link an existing deployment to a hopfile",
+      "name": "link"
+    },
+    {
+      "description": "Interact with projects",
+      "name": "projects",
+      "subcommands": [
+        {
+          "description": "Get information about a project",
+          "name": "info"
+        },
+        {
+          "description": "List all projects that you're authorized to",
+          "name": "ls"
+        },
+        {
+          "description": "Create a new project",
+          "name": "new"
+        },
+        {
+          "description": "Delete a project",
+          "name": "rm"
+        },
+        {
+          "description": "Switch to a different project",
+          "name": "switch"
+        }
+      ]
+    },
+    {
+      "description": "Get information about the current user",
+      "name": "whoami"
+    }
+  ]
+}

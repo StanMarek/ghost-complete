@@ -1,0 +1,137 @@
+{
+  "args": {
+    "isVariadic": true,
+    "template": [
+      "filepaths",
+      "folders"
+    ]
+  },
+  "description": "A syntax-aware linter for prose built with speed and extensibility in mind",
+  "name": "vale",
+  "options": [
+    {
+      "description": "Show help for vale",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "description": "Print the current version",
+      "name": [
+        "--version",
+        "-v"
+      ]
+    },
+    {
+      "description": "Lint all files line-by-line",
+      "name": [
+        "--ignore-syntax"
+      ]
+    },
+    {
+      "description": "Don't return a nonzero exit code on errors",
+      "name": [
+        "--no-exit"
+      ]
+    },
+    {
+      "description": "Don't wrap CLI output",
+      "name": [
+        "--no-wrap"
+      ]
+    },
+    {
+      "args": {
+        "name": "ext",
+        "suggestions": [
+          {
+            "name": ".md"
+          },
+          {
+            "name": ".rst"
+          },
+          {
+            "name": ".adoc"
+          },
+          {
+            "name": ".html"
+          }
+        ]
+      },
+      "description": "An extension to associate with stdin",
+      "name": [
+        "--ext"
+      ]
+    },
+    {
+      "args": {
+        "name": "glob"
+      },
+      "description": "A glob pattern",
+      "name": [
+        "--glob"
+      ]
+    },
+    {
+      "args": {
+        "name": "level",
+        "suggestions": [
+          {
+            "name": "suggestion"
+          },
+          {
+            "name": "warning"
+          },
+          {
+            "name": "error"
+          }
+        ]
+      },
+      "description": "The minimum level to display",
+      "name": [
+        "--minAlertLevel"
+      ]
+    },
+    {
+      "args": {
+        "name": "style",
+        "suggestions": [
+          {
+            "name": "line"
+          },
+          {
+            "name": "JSON"
+          }
+        ]
+      },
+      "description": "The alert output style to use",
+      "name": [
+        "--output"
+      ]
+    },
+    {
+      "args": {
+        "name": "path"
+      },
+      "description": "A path to a .vale.ini file",
+      "name": [
+        "--config"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Print the current configuration to stdout",
+      "name": "ls-config"
+    },
+    {
+      "args": {
+        "description": "The path to a file you want to analyze",
+        "name": "file"
+      },
+      "description": "Print the given file's internal metrics to stdout",
+      "name": "ls-metrics"
+    }
+  ]
+}

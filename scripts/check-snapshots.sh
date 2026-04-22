@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-# scripts/check-snapshots.sh — CI gate: spec snapshot diff check (STUB)
+# scripts/check-snapshots.sh — CI gate: spec snapshot diff check
 #
-# Compares specs/*.json against specs/__snapshots__/<name>.snap.
-# Real snapshot-format decision deferred to session D.
+# Re-runs the snapshotter (tools/fig-converter/scripts/snapshot-specs.mjs)
+# into a temp directory and diffs the result against
+# specs/__snapshots__/.  This catches any spec drift that hasn't been
+# re-baselined.
 #
 # EXIT CODES
 #   0 — pass (or snapshots dir absent, or dry-run)
@@ -12,9 +14,6 @@
 # DRY-RUN
 #   Pass --dry-run or set CI_DRY_RUN=1.  Argument validation still runs;
 #   the actual diff is skipped and the script exits 0.
-#
-# TODO (session D): replace the `diff -r` placeholder below with real
-# snapshot-aware comparison once the snapshot format is decided.
 
 set -euo pipefail
 
@@ -25,14 +24,17 @@ source "$SCRIPT_DIR/lib/common.sh"
 
 SPECS_DIR="$REPO_ROOT/specs"
 SNAPSHOTS_DIR="$SPECS_DIR/__snapshots__"
+SNAPSHOTTER="$REPO_ROOT/tools/fig-converter/scripts/snapshot-specs.mjs"
 
 usage() {
     cat <<'EOF'
 Usage:
   check-snapshots.sh [--dry-run] [--help]
 
-Compares specs/*.json against corresponding specs/__snapshots__/<name>.snap.
-If the snapshots directory does not exist, exits 0 with a warning.
+Re-runs the spec snapshotter into a temp directory and diffs the output
+against specs/__snapshots__/.  Reports any spec that has drifted from its
+recorded snapshot.  If the snapshots directory does not exist, exits 0
+with a warning.
 
 Options:
   --dry-run   Skip diff; print what would be checked; exit 0.
@@ -59,7 +61,7 @@ done
 # ---- dry-run early exit -------------------------------------------------------
 
 if [[ "$dry_run" -eq 1 ]]; then
-    log "[dry-run] would diff specs/*.json against $SNAPSHOTS_DIR"
+    log "[dry-run] would re-snapshot specs/ and diff against $SNAPSHOTS_DIR"
     exit 0
 fi
 
@@ -70,32 +72,52 @@ if [[ ! -d "$SNAPSHOTS_DIR" ]]; then
     exit 0
 fi
 
-# ---- diff specs against snapshots --------------------------------------------
-# TODO (session D): replace this with format-aware snapshot comparison.
-# The real implementation should:
-#   1. Parse the decided snapshot format (JSON? plain-text normalised?)
-#   2. For each specs/<name>.json, load the corresponding snapshot
-#   3. Apply any normalisation (e.g. sort keys, strip volatile fields)
-#   4. Report per-file diffs with a clear summary
-#
-# For now, use a recursive diff as a placeholder so the gate runs end-to-end.
+# ---- guard: snapshotter script must exist -------------------------------------
+
+if [[ ! -f "$SNAPSHOTTER" ]]; then
+    die "snapshotter not found: $SNAPSHOTTER"
+fi
+
+# ---- re-snapshot into temp dir ------------------------------------------------
+
+tmp_dir="$(mktemp -d)"
+trap 'rm -rf "$tmp_dir"' EXIT
+
+if ! node "$SNAPSHOTTER" --out "$tmp_dir" >/dev/null; then
+    die "snapshotter failed"
+fi
+
+# ---- diff ---------------------------------------------------------------------
 
 fail_count=0
 checked=0
 
-for spec_file in "$SPECS_DIR"/*.json; do
-    [[ -f "$spec_file" ]] || continue
-    name="$(basename "$spec_file" .json)"
-    snap_file="$SNAPSHOTS_DIR/${name}.snap"
+# Compare every recorded snapshot against its freshly-generated counterpart.
+for snap_file in "$SNAPSHOTS_DIR"/*.snap; do
+    [[ -f "$snap_file" ]] || continue
+    name="$(basename "$snap_file" .snap)"
+    fresh="$tmp_dir/${name}.snap"
 
-    if [[ ! -f "$snap_file" ]]; then
-        # Snapshot missing — treat as no-diff (snapshot hasn't been recorded yet)
+    checked=$(( checked + 1 ))
+
+    if [[ ! -f "$fresh" ]]; then
+        printf 'DIFF: %s — snapshot exists but source spec is gone\n' "$name" >&2
+        fail_count=$(( fail_count + 1 ))
         continue
     fi
 
-    checked=$(( checked + 1 ))
-    if ! diff -q "$spec_file" "$snap_file" >/dev/null 2>&1; then
+    if ! diff -q "$snap_file" "$fresh" >/dev/null 2>&1; then
         printf 'DIFF: %s differs from snapshot\n' "$name" >&2
+        fail_count=$(( fail_count + 1 ))
+    fi
+done
+
+# Also report specs that have no recorded snapshot yet.
+for fresh in "$tmp_dir"/*.snap; do
+    [[ -f "$fresh" ]] || continue
+    name="$(basename "$fresh" .snap)"
+    if [[ ! -f "$SNAPSHOTS_DIR/${name}.snap" ]]; then
+        printf 'DIFF: %s — new spec has no recorded snapshot\n' "$name" >&2
         fail_count=$(( fail_count + 1 ))
     fi
 done

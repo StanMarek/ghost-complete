@@ -1,0 +1,108 @@
+{
+  "description": "Command line tool for Deno Deploy",
+  "name": "deployctl",
+  "options": [
+    {
+      "description": "Show help",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "description": "Show the version",
+      "name": [
+        "-V",
+        "--version"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "(p,y,O)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:_,currentWorkingDirectory:b,searchTerm:h}=O,x=(f=(0,g.getCurrentInsertedDirectory)(u??b,h,O))!==null&&f!==void 0?f:\"/\";try{let P=yield y({command:\"ls\",args:[\"-1ApL\"],cwd:x}),X=R(P.stdout.split(`\n`),[\".DS_Store\"]),q=[];for(let A of X)if(A){let D=A.endsWith(\"/\")?\"folders\":\"filepaths\";(D===\"filepaths\"&&c!==\"only\"||D===\"folders\"&&c!==\"never\")&&q.push({type:D===\"filepaths\"?\"file\":\"folder\",name:A,insertValue:A,isDangerous:_,context:{templateType:D}})}return S(v(q))}catch{return[]}})",
+            "requires_js": true
+          }
+        ],
+        "name": "entrypoint"
+      },
+      "description": "Deploy a script with static files to Deno Deploy",
+      "name": "deploy",
+      "options": [
+        {
+          "args": {
+            "name": "pattern"
+          },
+          "description": "Exclude files that match this pattern",
+          "name": [
+            "--exclude"
+          ]
+        },
+        {
+          "args": {
+            "name": "pattern"
+          },
+          "description": "Only upload files that match this pattern",
+          "name": [
+            "--include"
+          ]
+        },
+        {
+          "description": "Don't include the files in the CWD as static files",
+          "name": [
+            "--no-static"
+          ]
+        },
+        {
+          "description": "Create a production deployment (default is preview deployment)",
+          "name": [
+            "--prod"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "The project to deploy to",
+          "name": [
+            "-p",
+            "--project"
+          ]
+        },
+        {
+          "args": {
+            "name": "token"
+          },
+          "description": "The API token to use",
+          "name": [
+            "--token"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "cache": {
+              "ttl_seconds": 86400
+            },
+            "js_source": "e=>{let t=JSON.parse(e);return t.versions.map(n=>({name:n,icon:n===t.latest?\"\\u2B50\\uFE0F\":\"\\u{1F995}\"}))}",
+            "requires_js": true,
+            "script": [
+              "curl",
+              "-sL",
+              "https://cdn.deno.land/deploy/meta/versions.json"
+            ]
+          }
+        ],
+        "isOptional": true,
+        "name": "version"
+      },
+      "description": "Upgrade deployctl",
+      "name": "upgrade"
+    }
+  ]
+}

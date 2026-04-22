@@ -1,0 +1,578 @@
+{
+  "args": {
+    "description": "Override settings and sleep now",
+    "isOptional": true,
+    "suggestions": [
+      {
+        "name": "sleepnow"
+      },
+      {
+        "name": "noidle"
+      },
+      {
+        "name": "lock"
+      },
+      {
+        "name": "touch"
+      }
+    ]
+  },
+  "description": "Power management settings",
+  "name": "pmset",
+  "options": [
+    {
+      "args": [
+        {
+          "name": "setting",
+          "suggestions": [
+            {
+              "description": "Display sleep timer (value in minutes, or 0 to disable)",
+              "name": "displaysleep"
+            },
+            {
+              "description": "Disk spindown timer (value in minutes, or 0 to disable)",
+              "name": "disksleep"
+            },
+            {
+              "description": "System sleep timer (value in minutes, or 0 to disable)",
+              "name": "sleep"
+            },
+            {
+              "description": "Wake on ethernet magic packet (value = 0/1)",
+              "name": "womp"
+            },
+            {
+              "description": "Wake on modem ring (value = 0/1)",
+              "name": "ring"
+            },
+            {
+              "description": "Automatic restart on power loss (value = 0/1)",
+              "name": "autorestart"
+            },
+            {
+              "description": "Dynamically change processor speed based on load (value = 0/1)",
+              "name": "dps"
+            },
+            {
+              "description": "Reduce processor speed (value = 0/1)",
+              "name": "reduce"
+            },
+            {
+              "description": "Sleep the machine when power button is pressed (value=0/1)",
+              "name": "powerbutton"
+            },
+            {
+              "description": "Wake the machine when the laptop lid (or clamshell) is opened (value = 0/1)",
+              "name": "lidwake"
+            },
+            {
+              "description": "Wake the machine when power source (AC/battery) is changed (value = 0/1)",
+              "name": "acwake"
+            },
+            {
+              "description": "Slightly turn down display brightness when switching to this power source (value = 0/1)",
+              "name": "lessbright"
+            },
+            {
+              "description": "Display sleep will use an intermediate half-brightness state between full brightness and fully off  (value = 0/1)",
+              "name": "halfdim"
+            },
+            {
+              "description": "Use Sudden Motion Sensor to park disk heads on sudden changes in G force (value = 0/1)",
+              "name": "sms"
+            },
+            {
+              "description": "Change hibernation mode. 0 = normal sleep, 1 = hibernate mode, 3 = safe sleep, 25 = hibernate mode for post-2005 portable Macs",
+              "name": "hibernatemode"
+            },
+            {
+              "description": "Change hibernation image file location. (value = path)",
+              "name": "hibernatefile"
+            },
+            {
+              "description": "Prevent idle system sleep when any tty (e.g. remote login session) is 'active'. (value = 0/1)",
+              "name": "ttyskeepawake"
+            },
+            {
+              "description": "This setting affects how macOS networking presents shared network services during system sleep",
+              "name": "networkoversleep"
+            },
+            {
+              "description": "Destroy File Vault Key when going to standby mode. (value: 1 - Destroy, 0 - Retain)",
+              "name": "destroyfvkeyonstandby"
+            }
+          ]
+        },
+        {
+          "name": "value"
+        }
+      ],
+      "description": "Settings for all",
+      "name": [
+        "-a"
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "setting",
+          "suggestions": [
+            {
+              "description": "Display sleep timer (value in minutes, or 0 to disable)",
+              "name": "displaysleep"
+            },
+            {
+              "description": "Disk spindown timer (value in minutes, or 0 to disable)",
+              "name": "disksleep"
+            },
+            {
+              "description": "System sleep timer (value in minutes, or 0 to disable)",
+              "name": "sleep"
+            },
+            {
+              "description": "Wake on ethernet magic packet (value = 0/1)",
+              "name": "womp"
+            },
+            {
+              "description": "Wake on modem ring (value = 0/1)",
+              "name": "ring"
+            },
+            {
+              "description": "Automatic restart on power loss (value = 0/1)",
+              "name": "autorestart"
+            },
+            {
+              "description": "Dynamically change processor speed based on load (value = 0/1)",
+              "name": "dps"
+            },
+            {
+              "description": "Reduce processor speed (value = 0/1)",
+              "name": "reduce"
+            },
+            {
+              "description": "Sleep the machine when power button is pressed (value=0/1)",
+              "name": "powerbutton"
+            },
+            {
+              "description": "Wake the machine when the laptop lid (or clamshell) is opened (value = 0/1)",
+              "name": "lidwake"
+            },
+            {
+              "description": "Wake the machine when power source (AC/battery) is changed (value = 0/1)",
+              "name": "acwake"
+            },
+            {
+              "description": "Slightly turn down display brightness when switching to this power source (value = 0/1)",
+              "name": "lessbright"
+            },
+            {
+              "description": "Display sleep will use an intermediate half-brightness state between full brightness and fully off  (value = 0/1)",
+              "name": "halfdim"
+            },
+            {
+              "description": "Use Sudden Motion Sensor to park disk heads on sudden changes in G force (value = 0/1)",
+              "name": "sms"
+            },
+            {
+              "description": "Change hibernation mode. 0 = normal sleep, 1 = hibernate mode, 3 = safe sleep, 25 = hibernate mode for post-2005 portable Macs",
+              "name": "hibernatemode"
+            },
+            {
+              "description": "Change hibernation image file location. (value = path)",
+              "name": "hibernatefile"
+            },
+            {
+              "description": "Prevent idle system sleep when any tty (e.g. remote login session) is 'active'. (value = 0/1)",
+              "name": "ttyskeepawake"
+            },
+            {
+              "description": "This setting affects how macOS networking presents shared network services during system sleep",
+              "name": "networkoversleep"
+            },
+            {
+              "description": "Destroy File Vault Key when going to standby mode. (value: 1 - Destroy, 0 - Retain)",
+              "name": "destroyfvkeyonstandby"
+            }
+          ]
+        },
+        {
+          "name": "value"
+        }
+      ],
+      "description": "Settings for battery",
+      "name": [
+        "-b"
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "setting",
+          "suggestions": [
+            {
+              "description": "Display sleep timer (value in minutes, or 0 to disable)",
+              "name": "displaysleep"
+            },
+            {
+              "description": "Disk spindown timer (value in minutes, or 0 to disable)",
+              "name": "disksleep"
+            },
+            {
+              "description": "System sleep timer (value in minutes, or 0 to disable)",
+              "name": "sleep"
+            },
+            {
+              "description": "Wake on ethernet magic packet (value = 0/1)",
+              "name": "womp"
+            },
+            {
+              "description": "Wake on modem ring (value = 0/1)",
+              "name": "ring"
+            },
+            {
+              "description": "Automatic restart on power loss (value = 0/1)",
+              "name": "autorestart"
+            },
+            {
+              "description": "Dynamically change processor speed based on load (value = 0/1)",
+              "name": "dps"
+            },
+            {
+              "description": "Reduce processor speed (value = 0/1)",
+              "name": "reduce"
+            },
+            {
+              "description": "Sleep the machine when power button is pressed (value=0/1)",
+              "name": "powerbutton"
+            },
+            {
+              "description": "Wake the machine when the laptop lid (or clamshell) is opened (value = 0/1)",
+              "name": "lidwake"
+            },
+            {
+              "description": "Wake the machine when power source (AC/battery) is changed (value = 0/1)",
+              "name": "acwake"
+            },
+            {
+              "description": "Slightly turn down display brightness when switching to this power source (value = 0/1)",
+              "name": "lessbright"
+            },
+            {
+              "description": "Display sleep will use an intermediate half-brightness state between full brightness and fully off  (value = 0/1)",
+              "name": "halfdim"
+            },
+            {
+              "description": "Use Sudden Motion Sensor to park disk heads on sudden changes in G force (value = 0/1)",
+              "name": "sms"
+            },
+            {
+              "description": "Change hibernation mode. 0 = normal sleep, 1 = hibernate mode, 3 = safe sleep, 25 = hibernate mode for post-2005 portable Macs",
+              "name": "hibernatemode"
+            },
+            {
+              "description": "Change hibernation image file location. (value = path)",
+              "name": "hibernatefile"
+            },
+            {
+              "description": "Prevent idle system sleep when any tty (e.g. remote login session) is 'active'. (value = 0/1)",
+              "name": "ttyskeepawake"
+            },
+            {
+              "description": "This setting affects how macOS networking presents shared network services during system sleep",
+              "name": "networkoversleep"
+            },
+            {
+              "description": "Destroy File Vault Key when going to standby mode. (value: 1 - Destroy, 0 - Retain)",
+              "name": "destroyfvkeyonstandby"
+            }
+          ]
+        },
+        {
+          "name": "value"
+        }
+      ],
+      "description": "Settings for charger",
+      "name": [
+        "-c"
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "setting",
+          "suggestions": [
+            {
+              "description": "Display sleep timer (value in minutes, or 0 to disable)",
+              "name": "displaysleep"
+            },
+            {
+              "description": "Disk spindown timer (value in minutes, or 0 to disable)",
+              "name": "disksleep"
+            },
+            {
+              "description": "System sleep timer (value in minutes, or 0 to disable)",
+              "name": "sleep"
+            },
+            {
+              "description": "Wake on ethernet magic packet (value = 0/1)",
+              "name": "womp"
+            },
+            {
+              "description": "Wake on modem ring (value = 0/1)",
+              "name": "ring"
+            },
+            {
+              "description": "Automatic restart on power loss (value = 0/1)",
+              "name": "autorestart"
+            },
+            {
+              "description": "Dynamically change processor speed based on load (value = 0/1)",
+              "name": "dps"
+            },
+            {
+              "description": "Reduce processor speed (value = 0/1)",
+              "name": "reduce"
+            },
+            {
+              "description": "Sleep the machine when power button is pressed (value=0/1)",
+              "name": "powerbutton"
+            },
+            {
+              "description": "Wake the machine when the laptop lid (or clamshell) is opened (value = 0/1)",
+              "name": "lidwake"
+            },
+            {
+              "description": "Wake the machine when power source (AC/battery) is changed (value = 0/1)",
+              "name": "acwake"
+            },
+            {
+              "description": "Slightly turn down display brightness when switching to this power source (value = 0/1)",
+              "name": "lessbright"
+            },
+            {
+              "description": "Display sleep will use an intermediate half-brightness state between full brightness and fully off  (value = 0/1)",
+              "name": "halfdim"
+            },
+            {
+              "description": "Use Sudden Motion Sensor to park disk heads on sudden changes in G force (value = 0/1)",
+              "name": "sms"
+            },
+            {
+              "description": "Change hibernation mode. 0 = normal sleep, 1 = hibernate mode, 3 = safe sleep, 25 = hibernate mode for post-2005 portable Macs",
+              "name": "hibernatemode"
+            },
+            {
+              "description": "Change hibernation image file location. (value = path)",
+              "name": "hibernatefile"
+            },
+            {
+              "description": "Prevent idle system sleep when any tty (e.g. remote login session) is 'active'. (value = 0/1)",
+              "name": "ttyskeepawake"
+            },
+            {
+              "description": "This setting affects how macOS networking presents shared network services during system sleep",
+              "name": "networkoversleep"
+            },
+            {
+              "description": "Destroy File Vault Key when going to standby mode. (value: 1 - Destroy, 0 - Retain)",
+              "name": "destroyfvkeyonstandby"
+            }
+          ]
+        },
+        {
+          "name": "value"
+        }
+      ],
+      "description": "Settings for UPS",
+      "name": [
+        "-u"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": [
+        {
+          "isOptional": true,
+          "suggestions": [
+            {
+              "description": "Display the settings currently in use. (default if no argument given)",
+              "name": "live"
+            },
+            {
+              "description": "Display custom settings for all power sources",
+              "name": "custom"
+            },
+            {
+              "description": "Display which power management features the machine supports",
+              "name": "cap"
+            },
+            {
+              "description": "Display scheduled startup/wake and shutdown/sleep events",
+              "name": "sched"
+            },
+            {
+              "description": "Display UPS emergency thresholds",
+              "name": "ups"
+            },
+            {
+              "description": "Display status of batteries and UPSs",
+              "name": "ps"
+            },
+            {
+              "description": "Display an ongoing log of power source (battery and UPS)state",
+              "name": "pslog"
+            },
+            {
+              "description": "Display an ongoing log of battery state as read directly from battery",
+              "name": "rawlog"
+            },
+            {
+              "description": "Display the settings associated with each Energy Saver profile. 10.5+",
+              "name": "profiles"
+            },
+            {
+              "description": "Show a log of thermal notifications that affect CPU speed. Not available on all platforms",
+              "name": "thermlog"
+            },
+            {
+              "description": "Display a summary of power assertions. 10.6+",
+              "name": "assertions"
+            },
+            {
+              "description": "Show a log of assertion creations and releases. 10.6+",
+              "name": "assertionslog"
+            },
+            {
+              "description": "Display a summary of power state of Display wrangler and Disk Queue Manager.10.6+",
+              "name": "activity"
+            },
+            {
+              "description": "Show a log of power state changes to Display Wrangler and Disk Queue Manager. 10.6+",
+              "name": "activitylog"
+            },
+            {
+              "description": "Display the \"system load advisory\" 10.6+",
+              "name": "sysload"
+            },
+            {
+              "description": "Display an ongoing log of lives changes to the system load advisory. 10.6+",
+              "name": "sysloadlog"
+            },
+            {
+              "description": "Display details about an attached AC power adapter",
+              "name": "ac"
+            },
+            {
+              "description": "Display a history of sleeps, wakes, and other power management events",
+              "name": "log"
+            },
+            {
+              "description": "Display the currently active sleep/wake UUID",
+              "name": "uuid"
+            },
+            {
+              "description": "Display the currently active sleep/wake UUID, and prints a new UUID as they're set by the system",
+              "name": "uuidlog"
+            },
+            {
+              "description": "A debugging tool. Prints a timeline of system sleeplwake UUIDs",
+              "name": "history"
+            },
+            {
+              "description": "Prints driver-level timings for a sleep/wake. Pass a UUID as an argument",
+              "name": "historydetailed"
+            },
+            {
+              "description": "Print output from every argument under the GETTING header 10.8+",
+              "name": "everything"
+            }
+          ]
+        },
+        {
+          "description": "Used for historydetailed",
+          "isOptional": true,
+          "name": "UUID"
+        }
+      ],
+      "description": "GETTING",
+      "name": "-g"
+    },
+    {
+      "args": [
+        {
+          "name": "type",
+          "suggestions": [
+            {
+              "name": "sleep"
+            },
+            {
+              "name": "wake"
+            },
+            {
+              "name": "poweron"
+            },
+            {
+              "name": "shutdown"
+            },
+            {
+              "name": "wakeorpoweron"
+            }
+          ]
+        },
+        {
+          "description": "\"MM/dd/yy HH:mm:ss\" (in 24 hour format; must be in quotes)",
+          "name": "date/time"
+        }
+      ],
+      "description": "For setting up one-time power events",
+      "name": "schedule",
+      "options": [
+        {
+          "name": [
+            "cancel"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "type",
+          "suggestions": [
+            {
+              "name": "sleep"
+            },
+            {
+              "name": "wake"
+            },
+            {
+              "name": "poweron"
+            },
+            {
+              "name": "shutdown"
+            },
+            {
+              "name": "wakeorpoweron"
+            }
+          ]
+        },
+        {
+          "description": "A subset of MTWRFSU (\"M\" and \"MTWRF\" are valid strings)",
+          "name": "weekdays"
+        },
+        {
+          "description": "\"MM/dd/yy HH:mm:ss\" (in 24 hour format; must be in quotes)",
+          "name": "date/time"
+        }
+      ],
+      "description": "For setting up daily/weekly power on and power off events",
+      "name": "repeat",
+      "subcommands": [
+        {
+          "name": "cancel"
+        }
+      ]
+    }
+  ]
+}

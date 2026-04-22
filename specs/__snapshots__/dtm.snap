@@ -1,0 +1,585 @@
+{
+  "description": "DevStream is an open-source DevOps toolchain manager",
+  "name": "dtm",
+  "options": [
+    {
+      "description": "Debug level log",
+      "name": [
+        "--debug"
+      ]
+    },
+    {
+      "description": "Display help",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Create or update DevOps tools according to DevStream configuration file",
+      "name": "apply",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "(p,g,w)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:S,searchTerm:m}=w,_=(f=(0,y.getCurrentInsertedDirectory)(c??S,m,w))!==null&&f!==void 0?f:\"/\";try{let E=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:_}),Z=R(E.stdout.split(`\n`),[\".DS_Store\"]),z=[];for(let j of Z)if(j){let V=j.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&u!==\"only\"||V===\"folders\"&&u!==\"never\")&&z.push({type:V===\"filepaths\"?\"file\":\"folder\",name:j,insertValue:j,isDangerous:b,context:{templateType:V}})}return O(h(z))}catch{return[]}})",
+                "requires_js": true
+              }
+            ],
+            "name": "config-file",
+            "template": [
+              "filepaths"
+            ]
+          },
+          "description": "Config file",
+          "name": [
+            "--config-file",
+            "-f"
+          ]
+        },
+        {
+          "args": {
+            "name": "plugin-dir",
+            "template": [
+              "folders"
+            ]
+          },
+          "description": "Plugins directory",
+          "name": [
+            "--plugin-dir",
+            "-d"
+          ]
+        },
+        {
+          "description": "Apply directly without confirmation",
+          "name": [
+            "--yes",
+            "-y"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generate the autocompletion script for dtm for the specified shell",
+      "name": "completion",
+      "subcommands": [
+        {
+          "description": "Generate autocompletion script for bash",
+          "name": "bash"
+        },
+        {
+          "description": "Generate autocompletion script for fish",
+          "name": "fish"
+        },
+        {
+          "description": "Generate autocompletion script for powershell",
+          "name": "powershell"
+        },
+        {
+          "description": "Generate autocompletion script for zsh",
+          "name": "zsh"
+        }
+      ]
+    },
+    {
+      "description": "Delete DevOps tools according to DevStream configuration file",
+      "name": "delete",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "(p,g,w)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:S,searchTerm:m}=w,_=(f=(0,y.getCurrentInsertedDirectory)(c??S,m,w))!==null&&f!==void 0?f:\"/\";try{let E=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:_}),Z=R(E.stdout.split(`\n`),[\".DS_Store\"]),z=[];for(let j of Z)if(j){let V=j.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&u!==\"only\"||V===\"folders\"&&u!==\"never\")&&z.push({type:V===\"filepaths\"?\"file\":\"folder\",name:j,insertValue:j,isDangerous:b,context:{templateType:V}})}return O(h(z))}catch{return[]}})",
+                "requires_js": true
+              }
+            ],
+            "name": "config-file",
+            "template": [
+              "filepaths"
+            ]
+          },
+          "description": "Config file",
+          "name": [
+            "--config-file",
+            "-f"
+          ]
+        },
+        {
+          "description": "Force delete by config",
+          "name": [
+            "--force"
+          ]
+        },
+        {
+          "args": {
+            "name": "plugin-dir",
+            "template": [
+              "folders"
+            ]
+          },
+          "description": "Plugins directory",
+          "name": [
+            "--plugin-dir",
+            "-d"
+          ]
+        },
+        {
+          "description": "Delete directly without confirmation",
+          "name": [
+            "--yes",
+            "-y"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Destroy DevOps tools deployment according to DevStream configuration file & state file",
+      "name": "destroy",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "(p,g,w)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:S,searchTerm:m}=w,_=(f=(0,y.getCurrentInsertedDirectory)(c??S,m,w))!==null&&f!==void 0?f:\"/\";try{let E=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:_}),Z=R(E.stdout.split(`\n`),[\".DS_Store\"]),z=[];for(let j of Z)if(j){let V=j.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&u!==\"only\"||V===\"folders\"&&u!==\"never\")&&z.push({type:V===\"filepaths\"?\"file\":\"folder\",name:j,insertValue:j,isDangerous:b,context:{templateType:V}})}return O(h(z))}catch{return[]}})",
+                "requires_js": true
+              }
+            ],
+            "name": "config-file",
+            "template": [
+              "filepaths"
+            ]
+          },
+          "description": "Config file",
+          "name": [
+            "--config-file",
+            "-f"
+          ]
+        },
+        {
+          "description": "Force destroy by config",
+          "name": [
+            "--force"
+          ]
+        },
+        {
+          "args": {
+            "name": "plugin-dir"
+          },
+          "description": "Plugins directory",
+          "name": [
+            "--plugin-dir",
+            "-d"
+          ]
+        },
+        {
+          "description": "Destroy directly without confirmation",
+          "name": [
+            "--yes",
+            "-y"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Develop is used for develop a new plugin",
+      "name": "develop",
+      "subcommands": [
+        {
+          "description": "Create a new plugin",
+          "name": "create-plugin",
+          "options": [
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Specify name of the plugin to be created",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Validate a plugin",
+          "name": "validate-plugin",
+          "options": [
+            {
+              "description": "Validate all plugins",
+              "name": [
+                "--all",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Specify name of the plugin to be validated",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Download needed plugins according to the config file",
+      "name": "init",
+      "options": [
+        {
+          "description": "Download all plugins",
+          "name": [
+            "--all",
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "name": "arch"
+          },
+          "description": "Download plugins for specific arch",
+          "name": [
+            "--arch"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "(p,g,w)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:S,searchTerm:m}=w,_=(f=(0,y.getCurrentInsertedDirectory)(c??S,m,w))!==null&&f!==void 0?f:\"/\";try{let E=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:_}),Z=R(E.stdout.split(`\n`),[\".DS_Store\"]),z=[];for(let j of Z)if(j){let V=j.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&u!==\"only\"||V===\"folders\"&&u!==\"never\")&&z.push({type:V===\"filepaths\"?\"file\":\"folder\",name:j,insertValue:j,isDangerous:b,context:{templateType:V}})}return O(h(z))}catch{return[]}})",
+                "requires_js": true
+              }
+            ],
+            "name": "config-file",
+            "template": [
+              "filepaths"
+            ]
+          },
+          "description": "Config file",
+          "name": [
+            "--config-file",
+            "-f"
+          ]
+        },
+        {
+          "description": "Download plugins only",
+          "name": [
+            "--download-only"
+          ]
+        },
+        {
+          "args": {
+            "name": "os"
+          },
+          "description": "Download plugins for specific os",
+          "name": [
+            "--os"
+          ]
+        },
+        {
+          "args": {
+            "name": "plugin-dir",
+            "template": [
+              "folders"
+            ]
+          },
+          "description": "Plugins directory",
+          "name": [
+            "--plugin-dir",
+            "-d"
+          ]
+        },
+        {
+          "args": {
+            "name": "plugins"
+          },
+          "description": "The plugins to be downloaded",
+          "name": [
+            "--plugins",
+            "-p"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "This command only supports listing plugins now",
+      "name": "list",
+      "subcommands": [
+        {
+          "description": "List all plugins",
+          "name": "plugins",
+          "options": [
+            {
+              "args": {
+                "name": "filter"
+              },
+              "description": "Filter plugin by regex",
+              "name": [
+                "--filter",
+                "-r"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Show is used to print plugins' configuration templates or status",
+      "name": "show",
+      "subcommands": [
+        {
+          "description": "Show configuration information",
+          "name": "config",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "script": [
+                      "dtm",
+                      "list",
+                      "plugins"
+                    ],
+                    "transforms": [
+                      {
+                        "starts_with": "fatal:",
+                        "type": "error_guard"
+                      },
+                      "split_lines",
+                      "filter_empty",
+                      "trim"
+                    ]
+                  }
+                ],
+                "name": "plugin"
+              },
+              "description": "Specify name with the plugin",
+              "name": [
+                "--plugin",
+                "-p"
+              ]
+            },
+            {
+              "args": {
+                "name": "template"
+              },
+              "description": "Print a template config, e.g. quickstart/gitops/",
+              "name": [
+                "--template",
+                "-t"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Show status information",
+          "name": "status",
+          "options": [
+            {
+              "description": "Show all instances of all plugins status",
+              "name": [
+                "--all",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config-file"
+              },
+              "description": "Config file",
+              "name": [
+                "--config-file",
+                "-f"
+              ]
+            },
+            {
+              "args": {
+                "name": "id"
+              },
+              "description": "Specify id with the plugin instance",
+              "name": [
+                "--id",
+                "-i"
+              ]
+            },
+            {
+              "args": {
+                "name": "plugin"
+              },
+              "description": "Specify name with the plugin",
+              "name": [
+                "--plugin",
+                "-p"
+              ]
+            },
+            {
+              "args": {
+                "name": "plugin-dir"
+              },
+              "description": "Plugins directory",
+              "name": [
+                "--plugin-dir",
+                "-d"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Upgrade dtm to the latest release version",
+      "name": "upgrade",
+      "options": [
+        {
+          "description": "Upgrade directly without confirmation",
+          "name": [
+            "--yes",
+            "-y"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Verify DevOps tools according to DevStream config file and state",
+      "name": "verify",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "(p,g,w)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:S,searchTerm:m}=w,_=(f=(0,y.getCurrentInsertedDirectory)(c??S,m,w))!==null&&f!==void 0?f:\"/\";try{let E=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:_}),Z=R(E.stdout.split(`\n`),[\".DS_Store\"]),z=[];for(let j of Z)if(j){let V=j.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&u!==\"only\"||V===\"folders\"&&u!==\"never\")&&z.push({type:V===\"filepaths\"?\"file\":\"folder\",name:j,insertValue:j,isDangerous:b,context:{templateType:V}})}return O(h(z))}catch{return[]}})",
+                "requires_js": true
+              }
+            ],
+            "name": "config-file",
+            "template": [
+              "filepaths"
+            ]
+          },
+          "description": "Config file",
+          "name": [
+            "--config-file",
+            "-f"
+          ]
+        },
+        {
+          "args": {
+            "name": "plugin-dir",
+            "template": [
+              "folders"
+            ]
+          },
+          "description": "Plugins directory",
+          "name": [
+            "--plugin-dir",
+            "-d"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Print the version number of DevStream",
+      "name": "version"
+    },
+    {
+      "description": "Help about any command",
+      "name": "help",
+      "subcommands": [
+        {
+          "description": "Create or update DevOps tools according to DevStream configuration file",
+          "name": "apply"
+        },
+        {
+          "description": "Generate the autocompletion script for dtm for the specified shell",
+          "name": "completion",
+          "subcommands": [
+            {
+              "description": "Generate autocompletion script for bash",
+              "name": "bash"
+            },
+            {
+              "description": "Generate autocompletion script for fish",
+              "name": "fish"
+            },
+            {
+              "description": "Generate autocompletion script for powershell",
+              "name": "powershell"
+            },
+            {
+              "description": "Generate autocompletion script for zsh",
+              "name": "zsh"
+            }
+          ]
+        },
+        {
+          "description": "Delete DevOps tools according to DevStream configuration file",
+          "name": "delete"
+        },
+        {
+          "description": "Destroy DevOps tools deployment according to DevStream configuration file & state file",
+          "name": "destroy"
+        },
+        {
+          "description": "Develop is used for develop a new plugin",
+          "name": "develop",
+          "subcommands": [
+            {
+              "description": "Create a new plugin",
+              "name": "create-plugin"
+            },
+            {
+              "description": "Validate a plugin",
+              "name": "validate-plugin"
+            }
+          ]
+        },
+        {
+          "description": "Download needed plugins according to the config file",
+          "name": "init"
+        },
+        {
+          "description": "This command only supports listing plugins now",
+          "name": "list",
+          "subcommands": [
+            {
+              "description": "List all plugins",
+              "name": "plugins"
+            }
+          ]
+        },
+        {
+          "description": "Show is used to print plugins' configuration templates or status",
+          "name": "show",
+          "subcommands": [
+            {
+              "description": "Show configuration information",
+              "name": "config"
+            },
+            {
+              "description": "Show status information",
+              "name": "status"
+            }
+          ]
+        },
+        {
+          "description": "Upgrade dtm to the latest release version",
+          "name": "upgrade"
+        },
+        {
+          "description": "Verify DevOps tools according to DevStream config file and state",
+          "name": "verify"
+        },
+        {
+          "description": "Print the version number of DevStream",
+          "name": "version"
+        }
+      ]
+    }
+  ]
+}

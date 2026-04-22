@@ -1,0 +1,34 @@
+{
+  "args": {
+    "generators": [
+      {
+        "js_source": "async(e,i,n)=>e.length<3||e[e.length-1].startsWith(\"$\")?Object.keys(n.environmentVariables).map(t=>({name:`$${t}`,type:\"arg\",description:\"Environment Variable\"})):[]",
+        "requires_js": true
+      }
+    ],
+    "isVariadic": true,
+    "name": "string"
+  },
+  "description": "Write arguments to the standard output",
+  "name": "echo",
+  "options": [
+    {
+      "description": "Do not print the trailing newline character",
+      "name": [
+        "-n"
+      ]
+    },
+    {
+      "description": "Interpret escape sequences",
+      "name": [
+        "-e"
+      ]
+    },
+    {
+      "description": "Disable escape sequences",
+      "name": [
+        "-E"
+      ]
+    }
+  ]
+}

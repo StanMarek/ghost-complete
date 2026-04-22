@@ -1,0 +1,466 @@
+{
+  "args": {
+    "isOptional": true,
+    "isVariadic": true,
+    "name": "site or directory",
+    "template": "folders"
+  },
+  "description": "Keep multiple browsers & devices in sync when building websites",
+  "name": "browser-sync",
+  "options": [
+    {
+      "description": "Show version number",
+      "name": [
+        "--version"
+      ]
+    },
+    {
+      "description": "Show help",
+      "name": [
+        "--help"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Start Browsersync",
+      "name": "start",
+      "options": [
+        {
+          "description": "Run a Local server (uses your cwd as the web root)",
+          "name": [
+            "-s",
+            "--server"
+          ]
+        },
+        {
+          "args": {
+            "name": "directory",
+            "template": "folders"
+          },
+          "description": "Working directory",
+          "name": [
+            "--cwd"
+          ]
+        },
+        {
+          "description": "If true, certain logs will output as json only",
+          "name": [
+            "--json"
+          ]
+        },
+        {
+          "args": {
+            "name": "directories",
+            "template": "folders"
+          },
+          "description": "Directories to serve static files from",
+          "name": [
+            "--serveStatic",
+            "--ss"
+          ]
+        },
+        {
+          "args": {
+            "name": "port"
+          },
+          "description": "Specify a port to use",
+          "name": [
+            "--port"
+          ]
+        },
+        {
+          "description": "Proxy an existing server",
+          "name": [
+            "-p",
+            "--proxy"
+          ]
+        },
+        {
+          "description": "Proxy mode only - enable websocket proxying",
+          "name": [
+            "--ws"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Choose which browser should be auto-opened",
+          "name": [
+            "-b",
+            "--browser"
+          ]
+        },
+        {
+          "description": "Watch files",
+          "name": [
+            "-w",
+            "--watch"
+          ]
+        },
+        {
+          "args": {
+            "name": "patterns"
+          },
+          "description": "Ignore patterns for file watchers",
+          "name": [
+            "--ignore"
+          ]
+        },
+        {
+          "args": {
+            "name": "paths",
+            "template": "filepaths"
+          },
+          "description": "File paths to watch",
+          "name": [
+            "-f",
+            "--files"
+          ]
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Specify which file should be used as the index page",
+          "name": [
+            "--index"
+          ]
+        },
+        {
+          "args": {
+            "name": "plugins"
+          },
+          "description": "Load Browsersync plugins",
+          "name": [
+            "--plugins"
+          ]
+        },
+        {
+          "args": {
+            "name": "extensions"
+          },
+          "description": "Specify file extension fallbacks",
+          "name": [
+            "--extensions"
+          ]
+        },
+        {
+          "args": {
+            "name": "start-path"
+          },
+          "description": "Specify the start path for the opened browser",
+          "name": [
+            "--startPath"
+          ]
+        },
+        {
+          "description": "If true, the connect-history-api-fallback middleware will be added",
+          "name": [
+            "--single"
+          ]
+        },
+        {
+          "description": "Enable SSL for local development",
+          "name": [
+            "--https"
+          ]
+        },
+        {
+          "description": "Show a directory listing for the server",
+          "name": [
+            "--directory"
+          ]
+        },
+        {
+          "description": "Use xip.io domain routing",
+          "name": [
+            "--xip"
+          ]
+        },
+        {
+          "description": "Use a public URL",
+          "name": [
+            "--tunnel"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "suggestions": [
+              {
+                "name": "local"
+              },
+              {
+                "name": "external"
+              },
+              {
+                "name": "tunnel"
+              }
+            ]
+          },
+          "description": "Choose which URL is auto-opened (local, external or tunnel), or provide a url",
+          "name": [
+            "--open"
+          ]
+        },
+        {
+          "description": "Add Access Control headers to every request",
+          "name": [
+            "--cors"
+          ]
+        },
+        {
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Specify a path to a configuration file",
+          "name": [
+            "-c",
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "hostname"
+          },
+          "description": "Specify a hostname to use",
+          "name": [
+            "--host"
+          ]
+        },
+        {
+          "args": {
+            "name": "hostname"
+          },
+          "description": "Specify a hostname bind to (this will prevent binding to all interfaces)",
+          "name": [
+            "--listen"
+          ]
+        },
+        {
+          "args": {
+            "name": "level",
+            "suggestions": [
+              {
+                "name": "silent"
+              },
+              {
+                "name": "info"
+              },
+              {
+                "name": "debug"
+              }
+            ]
+          },
+          "description": "Set the logger output level (silent, info or debug)",
+          "name": [
+            "--logLevel"
+          ]
+        },
+        {
+          "args": {
+            "name": "milliseconds"
+          },
+          "description": "Time in milliseconds to delay the reload event following file changes",
+          "name": [
+            "--reload-delay"
+          ]
+        },
+        {
+          "args": {
+            "name": "milliseconds"
+          },
+          "description": "Restrict the frequency in which browser:reload events can be emitted to connected clients",
+          "name": [
+            "--reload-debounce"
+          ]
+        },
+        {
+          "args": {
+            "name": "port"
+          },
+          "description": "Specify a port for the UI to use",
+          "name": [
+            "--ui-port"
+          ]
+        },
+        {
+          "args": {
+            "name": "events"
+          },
+          "description": "Specify which file events to respond to",
+          "name": [
+            "--watchEvents"
+          ]
+        },
+        {
+          "description": "Disable the notify element in browsers",
+          "name": [
+            "--no-notify"
+          ]
+        },
+        {
+          "description": "Don't open a new browser window",
+          "name": [
+            "--no-open"
+          ]
+        },
+        {
+          "description": "Disable the snippet injection",
+          "name": [
+            "--no-snippet"
+          ]
+        },
+        {
+          "description": "Force offline usage",
+          "name": [
+            "--no-online"
+          ]
+        },
+        {
+          "description": "Don't start the user interface",
+          "name": [
+            "--no-ui"
+          ]
+        },
+        {
+          "description": "Disable Ghost Mode",
+          "name": [
+            "--no-ghost-mode"
+          ]
+        },
+        {
+          "description": "Reload on every file change",
+          "name": [
+            "--no-inject-changes"
+          ]
+        },
+        {
+          "description": "Don't auto-reload all browsers following a restart",
+          "name": [
+            "--no-reload-on-restart"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Create a configuration file",
+      "name": "init",
+      "options": [
+        {
+          "args": {
+            "name": "string",
+            "template": "folders"
+          },
+          "description": "Working directory",
+          "name": [
+            "--cwd"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Send a reload event over HTTP protocol",
+      "name": "reload",
+      "options": [
+        {
+          "args": {
+            "name": "paths",
+            "template": "filepaths"
+          },
+          "description": "File paths to reload",
+          "name": [
+            "-f",
+            "--files"
+          ]
+        },
+        {
+          "args": {
+            "name": "port"
+          },
+          "description": "Target a running instance by port number",
+          "name": [
+            "-p",
+            "--port"
+          ]
+        },
+        {
+          "args": {
+            "name": "url"
+          },
+          "description": "Provide the full URL to the running browsersync isntance",
+          "name": [
+            "-u",
+            "--url"
+          ]
+        },
+        {
+          "args": {
+            "name": "directory",
+            "template": "folders"
+          },
+          "description": "Working directory",
+          "name": [
+            "--cwd"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "cache": {
+              "ttl_seconds": 604800
+            },
+            "script": [
+              "bash",
+              "-c",
+              "browser-sync recipe ls | tail -n +3 | sed -e 's/^[[:space:]]*//'"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "recipe-name"
+      },
+      "description": "Generate the files for a recipe",
+      "name": "recipe",
+      "options": [
+        {
+          "args": {
+            "name": "directory",
+            "template": "folders"
+          },
+          "description": "Working directory",
+          "name": [
+            "--cwd"
+          ]
+        },
+        {
+          "args": {
+            "name": "directory",
+            "template": "folders"
+          },
+          "description": "Specify an output directory",
+          "name": [
+            "-o",
+            "--output"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "List recipes",
+          "name": "ls"
+        }
+      ]
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
 pub enum SuggestionKind {
     Command,
     Subcommand,
@@ -60,7 +60,7 @@ impl SuggestionKind {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
 pub enum SuggestionSource {
     Filesystem,
     Git,
@@ -76,7 +76,7 @@ pub enum SuggestionSource {
     Provider,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct Suggestion {
     pub text: String,
     pub description: Option<String>,

@@ -1,0 +1,471 @@
+{
+  "args": {
+    "name": "filepath",
+    "template": [
+      "filepaths"
+    ]
+  },
+  "description": "CLI for rustc",
+  "name": "rustc",
+  "options": [
+    {
+      "description": "Prints out help info",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "args": {
+        "description": "Ex: verbose' or 'feature=\"serde\"'",
+        "name": "Spec"
+      },
+      "description": "Configures compilation settings",
+      "name": [
+        "--cfg"
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "The kind of search path",
+          "isOptional": true,
+          "name": "kind",
+          "suggestions": [
+            {
+              "description": "Only search for transitive dependencies in this directory",
+              "name": "dependency"
+            },
+            {
+              "description": "Only search for this crate's direct dependencies in this directory",
+              "name": "crate"
+            },
+            {
+              "description": "Only search for native libraries in this directory",
+              "name": "native"
+            },
+            {
+              "description": "Only search for macOS frameworks in this directory",
+              "name": "framework"
+            },
+            {
+              "description": "Search for all library kinds in this directory",
+              "name": "all"
+            }
+          ]
+        },
+        {
+          "description": "Path to search for external crates and libraries",
+          "name": "path",
+          "template": "folders"
+        }
+      ],
+      "description": "Adds a directory to the library search path",
+      "name": [
+        "-L"
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Kind of library",
+          "isOptional": true,
+          "name": "kind",
+          "suggestions": [
+            {
+              "description": "A native dynamic library",
+              "name": "dylib"
+            },
+            {
+              "description": "A native static library",
+              "name": "static"
+            },
+            {
+              "description": "A macOS framework",
+              "name": "framework"
+            }
+          ]
+        },
+        {
+          "description": "Native library name",
+          "name": "Name"
+        }
+      ],
+      "description": "Links the generated crate to a native library",
+      "name": [
+        "--l"
+      ]
+    },
+    {
+      "args": {
+        "description": "Type of crates",
+        "name": "type",
+        "suggestions": [
+          {
+            "description": "A runnable executable program",
+            "name": "bin"
+          },
+          {
+            "description": "Generates a library kind preferred by the compiler",
+            "name": "lib"
+          },
+          {
+            "description": "A Rust static library",
+            "name": "rlib"
+          },
+          {
+            "description": "A native dynamic library",
+            "name": "dylib"
+          },
+          {
+            "description": "A native static library",
+            "name": "cdylib"
+          },
+          {
+            "description": "A macOS framework",
+            "name": "staticlib"
+          },
+          {
+            "description": "Generates a format suitable for a procedural macro library that may be loaded by the compiler",
+            "name": "proc-macro"
+          }
+        ]
+      },
+      "description": "Specify types of crates for the compiler to emit",
+      "name": [
+        "--crate-type"
+      ]
+    },
+    {
+      "args": {
+        "name": "Name"
+      },
+      "description": "Specify the name of the crate being built",
+      "name": [
+        "--crate-name"
+      ]
+    },
+    {
+      "args": {
+        "name": "edition",
+        "suggestions": [
+          {
+            "name": "2015"
+          },
+          {
+            "name": "2018"
+          },
+          {
+            "name": "2021"
+          }
+        ]
+      },
+      "description": "Specify the edition to use",
+      "name": [
+        "--edition"
+      ]
+    },
+    {
+      "args": {
+        "name": "type",
+        "suggestions": [
+          {
+            "description": "Generates a file with the crate's assembly code",
+            "name": "asm"
+          },
+          {
+            "description": "Generates a binary file containing the LLVM bitcode",
+            "name": "llvm-bc"
+          },
+          {
+            "description": "Generates a file containing LLVM IR",
+            "name": "llvm-ir"
+          },
+          {
+            "description": "Generates a native object file",
+            "name": "obj"
+          },
+          {
+            "description": "Generates a file containing metadata about the crate",
+            "name": "metadata"
+          },
+          {
+            "description": "Generates the crates specified by --crate-type",
+            "name": "link"
+          },
+          {
+            "description": "Generates a file with Makefile syntax that indicates all the source files that were loaded to generate the crate",
+            "name": "dep-info"
+          },
+          {
+            "description": "Generates a file containing rustc's mid-level intermediate representation",
+            "name": "mir"
+          }
+        ]
+      },
+      "description": "Specify the types of output files to generate",
+      "name": [
+        "--emit"
+      ]
+    },
+    {
+      "args": {
+        "name": "type",
+        "suggestions": [
+          {
+            "description": "The name of the crate",
+            "name": "crate-name"
+          },
+          {
+            "description": "The names of the files created by the link emit kind",
+            "name": "file-names"
+          },
+          {
+            "description": "Path to the sysroot",
+            "name": "sysroot"
+          },
+          {
+            "description": "Path to the target libdir",
+            "name": "target-libdir"
+          },
+          {
+            "description": "List of cfg values",
+            "name": "cfg"
+          },
+          {
+            "description": "List of known targets. The target may be selected with the --target flag",
+            "name": "target-list"
+          },
+          {
+            "description": "List of available CPU values for the current target",
+            "name": "target-cpus"
+          },
+          {
+            "description": "List of available target features for the current target",
+            "name": "target-features"
+          },
+          {
+            "description": "List of relocation models. Relocation models may be selected with the -C relocation-model=val flag",
+            "name": "relocation-models"
+          },
+          {
+            "description": "List of code models",
+            "name": "code-models"
+          },
+          {
+            "description": "List of Thread Local Storage models supported",
+            "name": "tls-models"
+          },
+          {
+            "name": "target-spec-json"
+          },
+          {
+            "description": "This may be used when creating a staticlib crate type",
+            "name": "native-static-libs"
+          }
+        ]
+      },
+      "description": "Prints compiler info",
+      "name": [
+        "--print"
+      ]
+    },
+    {
+      "description": "Synonym for -C debuginfo=2",
+      "name": [
+        "-g"
+      ]
+    },
+    {
+      "description": "Synonym for -C opt-level=2",
+      "name": [
+        "-O"
+      ]
+    },
+    {
+      "args": {
+        "name": "filename"
+      },
+      "description": "Specify the filename to write output",
+      "name": [
+        "-o"
+      ]
+    },
+    {
+      "args": {
+        "name": "dir"
+      },
+      "description": "Specify directory to write output",
+      "name": [
+        "--out-dir"
+      ]
+    },
+    {
+      "args": {
+        "name": "Error Code"
+      },
+      "description": "Provides a detailed explanation of an error message",
+      "name": [
+        "--explain"
+      ]
+    },
+    {
+      "description": "Builds a test harness",
+      "name": [
+        "--test"
+      ]
+    },
+    {
+      "args": {
+        "name": "Target"
+      },
+      "description": "Selects a target triple to build",
+      "name": [
+        "--target"
+      ]
+    },
+    {
+      "args": {
+        "name": "OPT"
+      },
+      "description": "Sets lint warnings",
+      "name": [
+        "-W",
+        "--warn"
+      ]
+    },
+    {
+      "args": {
+        "name": "OPT"
+      },
+      "description": "Set lint allowed",
+      "name": [
+        "-A",
+        "--allow"
+      ]
+    },
+    {
+      "args": {
+        "name": "OPT"
+      },
+      "description": "Set lint denied",
+      "name": [
+        "-D",
+        "--deny"
+      ]
+    },
+    {
+      "args": {
+        "name": "Opt"
+      },
+      "description": "Set lint forbid",
+      "name": [
+        "-F",
+        "--forbid"
+      ]
+    },
+    {
+      "args": {
+        "name": "Level"
+      },
+      "description": "Set the most restrictive lint level",
+      "name": [
+        "--cap-lints"
+      ]
+    },
+    {
+      "args": {
+        "name": "option"
+      },
+      "description": "Set a codegen option",
+      "name": [
+        "-C",
+        "--codegen"
+      ]
+    },
+    {
+      "args": {
+        "description": "Unstable options to pass to rustc",
+        "name": "option"
+      },
+      "description": "Set unstable options",
+      "name": [
+        "-Z"
+      ]
+    },
+    {
+      "description": "Prints version",
+      "name": [
+        "-V",
+        "--version"
+      ]
+    },
+    {
+      "description": "Use verbose output",
+      "name": [
+        "-v",
+        "--verbose"
+      ]
+    },
+    {
+      "args": {
+        "description": "Path where crate(s) can be found",
+        "name": "Path",
+        "template": "folders"
+      },
+      "description": "Specify where an external library is located",
+      "name": [
+        "--extern"
+      ]
+    },
+    {
+      "args": {
+        "name": "directory"
+      },
+      "description": "Overrides the system root",
+      "name": [
+        "--sysroot"
+      ]
+    },
+    {
+      "args": {
+        "name": "format",
+        "suggestions": [
+          {
+            "name": "human"
+          },
+          {
+            "name": "json"
+          },
+          {
+            "name": "short"
+          }
+        ]
+      },
+      "description": "Controls how errors are produced",
+      "name": [
+        "--error-format"
+      ]
+    },
+    {
+      "args": {
+        "name": "color",
+        "suggestions": [
+          {
+            "name": "auto"
+          },
+          {
+            "name": "always"
+          },
+          {
+            "name": "never"
+          }
+        ]
+      },
+      "description": "Configures coloring of output",
+      "name": [
+        "--color"
+      ]
+    }
+  ]
+}

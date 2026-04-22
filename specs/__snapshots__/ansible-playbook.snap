@@ -1,0 +1,360 @@
+{
+  "args": {
+    "description": "Playbook(s)",
+    "generators": [
+      {
+        "js_source": "(p,m,_)=>ce(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:O,searchTerm:h}=_,x=(f=(0,v.getCurrentInsertedDirectory)(c??O,h,_))!==null&&f!==void 0?f:\"/\";try{let D=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:x}),X=W(D.stdout.split(`\n`),[\".DS_Store\"]),R=[];for(let A of X)if(A){let V=A.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&u!==\"only\"||V===\"folders\"&&u!==\"never\")&&R.push({type:V===\"filepaths\"?\"file\":\"folder\",name:A,insertValue:A,isDangerous:b,context:{templateType:V}})}return S(g(R))}catch{return[]}})",
+        "requires_js": true
+      }
+    ],
+    "isVariadic": true,
+    "name": "playbook"
+  },
+  "description": "Runs Ansible playbooks, executing the defined tasks on the targeted hosts",
+  "name": "ansible-playbook",
+  "options": [
+    {
+      "description": "Ask for vault password",
+      "name": [
+        "--ask-vault-pass"
+      ]
+    },
+    {
+      "description": "Clears the fact cache for every host in inventory",
+      "name": [
+        "--flush-cache"
+      ]
+    },
+    {
+      "description": "Run handlers even if a task fails",
+      "name": [
+        "--force-handlers"
+      ]
+    },
+    {
+      "description": "Outputs a list of matching hosts; does not execute",
+      "name": [
+        "--list-hosts"
+      ]
+    },
+    {
+      "description": "List all available tags",
+      "name": [
+        "--list-tags"
+      ]
+    },
+    {
+      "description": "List all tasks that would be executed",
+      "name": [
+        "--list-tasks"
+      ]
+    },
+    {
+      "args": {
+        "name": "tags"
+      },
+      "description": "Only run plays and tasks whose tags do not match these values",
+      "name": [
+        "--skip-tags"
+      ]
+    },
+    {
+      "args": {
+        "name": "task name"
+      },
+      "description": "Start the playbook at the task matching this name one-step-at-a-time",
+      "name": [
+        "--start-at-task"
+      ]
+    },
+    {
+      "description": "Execute one-step-at-a-time",
+      "name": [
+        "--step"
+      ]
+    },
+    {
+      "description": "Perform a syntax check on the playbook, but do not execute it",
+      "name": [
+        "--syntax-check"
+      ]
+    },
+    {
+      "args": {
+        "name": "vault ID"
+      },
+      "description": "Specify the vault identity to use",
+      "name": [
+        "--vault-id"
+      ]
+    },
+    {
+      "args": {
+        "name": "vault password file",
+        "template": [
+          "filepaths"
+        ]
+      },
+      "description": "Specify a vault password file",
+      "name": [
+        "--vault-password-file"
+      ]
+    },
+    {
+      "description": "Show program's version number, config file location, configured module search path, module location and executable location",
+      "name": [
+        "--version"
+      ]
+    },
+    {
+      "description": "Don't make any changes; instead, try to predict some of the changes that may occur",
+      "name": [
+        "--check",
+        "-C"
+      ]
+    },
+    {
+      "description": "When changing (small) files and templates, show the differences in those files",
+      "name": [
+        "--diff",
+        "-D"
+      ]
+    },
+    {
+      "args": {
+        "name": "module path",
+        "template": [
+          "folders"
+        ]
+      },
+      "description": "Prepend colon-separated path(s) to module library",
+      "name": [
+        "--module-path",
+        "-M"
+      ]
+    },
+    {
+      "args": {
+        "name": "extra vars"
+      },
+      "description": "Set additional variables as key=value or YAML/JSON, if filename prepend with @",
+      "name": [
+        "--extra-vars",
+        "-e"
+      ]
+    },
+    {
+      "args": {
+        "name": "forks"
+      },
+      "description": "Specify number of parallel processes to use",
+      "name": [
+        "--forks",
+        "-f"
+      ]
+    },
+    {
+      "description": "Show help for ansible",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "args": {
+        "name": "inventory"
+      },
+      "description": "Specify inventory host path or comma separated host list",
+      "name": [
+        "--inventory",
+        "-i"
+      ]
+    },
+    {
+      "args": {
+        "name": "subset"
+      },
+      "description": "Limit selected hosts to an additional pattern",
+      "name": [
+        "--limit",
+        "-l"
+      ]
+    },
+    {
+      "args": {
+        "name": "tags"
+      },
+      "description": "Only run plays and tasks tagged with these values",
+      "name": [
+        "--tags",
+        "-t"
+      ]
+    },
+    {
+      "description": "Enable verbose mode",
+      "name": [
+        "--verbose",
+        "-v"
+      ]
+    },
+    {
+      "description": "Enable very verbose mode",
+      "name": [
+        "-vvv"
+      ]
+    },
+    {
+      "description": "Enable connection debug mode",
+      "name": [
+        "-vvvv"
+      ]
+    },
+    {
+      "args": {
+        "name": "become method",
+        "suggestions": [
+          {
+            "name": "sudo"
+          },
+          {
+            "name": "su"
+          },
+          {
+            "name": "pbrun"
+          },
+          {
+            "name": "pfexec"
+          },
+          {
+            "name": "doas"
+          },
+          {
+            "name": "dzdo"
+          },
+          {
+            "name": "ksu"
+          },
+          {
+            "name": "runas"
+          },
+          {
+            "name": "machinectl"
+          }
+        ]
+      },
+      "description": "Privilege escalation method to use",
+      "name": [
+        "--become-method"
+      ]
+    },
+    {
+      "args": {
+        "name": "become user"
+      },
+      "description": "Privilege escalation user to use",
+      "name": [
+        "--become-user"
+      ]
+    },
+    {
+      "description": "Prompt for privilege escalation password",
+      "name": [
+        "--ask-become-pass",
+        "-K"
+      ]
+    },
+    {
+      "description": "Run operations with become",
+      "name": [
+        "--become",
+        "-b"
+      ]
+    },
+    {
+      "args": {
+        "name": "private key",
+        "template": [
+          "filepaths"
+        ]
+      },
+      "description": "Use this fole to authenticate the connection",
+      "name": [
+        "--private-key",
+        "--key-file"
+      ]
+    },
+    {
+      "args": {
+        "name": "SCP extra args"
+      },
+      "description": "Extra arguments to pass to (only) scp",
+      "name": [
+        "--scp-extra-args"
+      ]
+    },
+    {
+      "args": {
+        "name": "SFTP extra args"
+      },
+      "description": "Extra arguments to pass to (only) sftp",
+      "name": [
+        "--sftp-extra-args"
+      ]
+    },
+    {
+      "args": {
+        "name": "SSH extra args"
+      },
+      "description": "Extra arguments to pass to (only) ssh",
+      "name": [
+        "-ssh-extra-args"
+      ]
+    },
+    {
+      "args": {
+        "name": "SSH common args"
+      },
+      "description": "Extra arguments to pass to sftp/scp/ssh",
+      "name": [
+        "--ssh-common-args"
+      ]
+    },
+    {
+      "args": {
+        "name": "timeout"
+      },
+      "description": "Override the connection timeout in seconds",
+      "name": [
+        "--timeout",
+        "-T"
+      ]
+    },
+    {
+      "args": {
+        "name": "connection type"
+      },
+      "description": "Connection type to use",
+      "name": [
+        "--connection",
+        "-c"
+      ]
+    },
+    {
+      "description": "Ask for connection password",
+      "name": [
+        "--ask-pass",
+        "-k"
+      ]
+    },
+    {
+      "args": {
+        "name": "user"
+      },
+      "description": "Connect as this user",
+      "name": [
+        "--user",
+        "-u"
+      ]
+    }
+  ]
+}

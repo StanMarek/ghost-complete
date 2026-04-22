@@ -1,0 +1,5536 @@
+{
+  "description": "Power Platform CLI",
+  "name": "pac",
+  "subcommands": [
+    {
+      "description": "Work with your Power Platform Admin Account",
+      "name": "admin",
+      "subcommands": [
+        {
+          "description": "List all environments from your tenant",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "List all environments that contain given string in their name or ID",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            },
+            {
+              "args": {
+                "name": "environmentTypes",
+                "suggestions": [
+                  {
+                    "description": "Trial",
+                    "name": "Trial"
+                  },
+                  {
+                    "description": "Sandbox",
+                    "name": "Sandbox"
+                  },
+                  {
+                    "description": "Production",
+                    "name": "Production"
+                  },
+                  {
+                    "description": "Developer",
+                    "name": "Developer"
+                  },
+                  {
+                    "description": "Teams",
+                    "name": "Teams"
+                  },
+                  {
+                    "description": "SubscriptionBasedTrial",
+                    "name": "SubscriptionBasedTrial"
+                  }
+                ]
+              },
+              "description": "List all environments with the given type",
+              "name": [
+                "--type",
+                "-t"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "List all environments that contain given string in their name",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "List all environments that contain given string in their organization ID",
+              "name": [
+                "--organization-id",
+                "-oi"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "List all environments that have specified application installed. To specify application, use unique name or ID",
+              "name": [
+                "--application",
+                "-a"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Creates a Dataverse instance in your tenant",
+          "name": "create",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Sets the name of the environment",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "description": "Unitedstates",
+                    "name": "unitedstates"
+                  },
+                  {
+                    "description": "Unitedstatesfirstrelease",
+                    "name": "unitedstatesfirstrelease"
+                  },
+                  {
+                    "description": "Europe",
+                    "name": "europe"
+                  },
+                  {
+                    "description": "Asia",
+                    "name": "asia"
+                  },
+                  {
+                    "description": "Australia",
+                    "name": "australia"
+                  },
+                  {
+                    "description": "India",
+                    "name": "india"
+                  },
+                  {
+                    "description": "Japan",
+                    "name": "japan"
+                  },
+                  {
+                    "description": "Canada",
+                    "name": "canada"
+                  },
+                  {
+                    "description": "Unitedkingdom",
+                    "name": "unitedkingdom"
+                  },
+                  {
+                    "description": "Southamerica",
+                    "name": "southamerica"
+                  },
+                  {
+                    "description": "France",
+                    "name": "france"
+                  },
+                  {
+                    "description": "Unitedarabemirates",
+                    "name": "unitedarabemirates"
+                  },
+                  {
+                    "description": "Germany",
+                    "name": "germany"
+                  },
+                  {
+                    "description": "Switzerland",
+                    "name": "switzerland"
+                  },
+                  {
+                    "description": "Norway",
+                    "name": "norway"
+                  },
+                  {
+                    "description": "Korea",
+                    "name": "korea"
+                  }
+                ]
+              },
+              "description": "Sets the environment's region name. [defaults to unitedstates]",
+              "name": [
+                "--region",
+                "-r"
+              ]
+            },
+            {
+              "args": {
+                "name": "environmentTypes",
+                "suggestions": [
+                  {
+                    "description": "Trial",
+                    "name": "Trial"
+                  },
+                  {
+                    "description": "Sandbox",
+                    "name": "Sandbox"
+                  },
+                  {
+                    "description": "Production",
+                    "name": "Production"
+                  },
+                  {
+                    "description": "Developer",
+                    "name": "Developer"
+                  },
+                  {
+                    "description": "Teams",
+                    "name": "Teams"
+                  },
+                  {
+                    "description": "SubscriptionBasedTrial",
+                    "name": "SubscriptionBasedTrial"
+                  }
+                ]
+              },
+              "description": "Sets the environment Type",
+              "name": [
+                "--type",
+                "-t"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Sets the currency used for your environment. [defaults to USD]",
+              "name": [
+                "--currency",
+                "-c"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Sets the language used for your environment. [defaults to English]",
+              "name": [
+                "--language",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Sets the Dynamics 365 app that needs to be deployed, passed as comma separated values. For example: -tm 'D365_Sample, D365_Sales'",
+              "name": [
+                "--templates",
+                "-tm"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The domain name is part of the environment URL. If domain name is already in use, a numeric value is appended to the domain name. For example: If 'contoso' is already in use, then the environment URL is updated to https://{contoso}0.crm.dynamics.com",
+              "name": [
+                "--domain",
+                "-d"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The verb arguments to be passed in a .json input file. For example: {'name' : 'contoso'}. The arguments passed through command-line will take precedence over arguments from the .json input file",
+              "name": [
+                "--input-file",
+                "-if"
+              ]
+            },
+            {
+              "description": "Optional boolean argument to run pac verbs asynchronously, defaults to false",
+              "name": [
+                "--async",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Team ID as Guid",
+              "name": [
+                "--team-id",
+                "-tid"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Max asynchronous wait time in minutes. The default value is 60 minutes",
+              "name": [
+                "--max-async-wait-time",
+                "-wt"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Object ID or user principal name (UPN) of Microsoft Entra ID user to be assigned to the environment",
+              "name": [
+                "--user",
+                "-u"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Takes a manual backup of your environment",
+          "name": "backup",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Environment URL or ID of the Environment that requires backup",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Sets the backup label as provided",
+              "name": [
+                "--label",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "**ignored**: Additional notes for this backup",
+              "name": [
+                "--notes",
+                "-n"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Takes a manual backup of your environment",
+          "name": "set-backup-retention-period",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Environment URL or ID of the Environment that requires backup",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "description": "7",
+                    "name": "7"
+                  },
+                  {
+                    "description": "14",
+                    "name": "14"
+                  },
+                  {
+                    "description": "21",
+                    "name": "21"
+                  },
+                  {
+                    "description": "28",
+                    "name": "28"
+                  }
+                ]
+              },
+              "description": "Sets the backup retention period in days as provided. Valid values are: 7, 14, 21, 28",
+              "name": [
+                "--backup-retention-period",
+                "-br"
+              ]
+            },
+            {
+              "description": "Optional boolean argument to run pac verbs asynchronously, defaults to false",
+              "name": [
+                "--async",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Max asynchronous wait time in minutes. The default value is 60 minutes",
+              "name": [
+                "--max-async-wait-time",
+                "-wt"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Deletes the environment from your tenant",
+          "name": "delete",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Environment URL or ID of the Environment that needs to be deleted from your tenant",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            },
+            {
+              "description": "Optional boolean argument to run pac verbs asynchronously, defaults to false",
+              "name": [
+                "--async",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Max asynchronous wait time in minutes. The default value is 60 minutes",
+              "name": [
+                "--max-async-wait-time",
+                "-wt"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Reset the environment from your tenant",
+          "name": "reset",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "URL or ID of the Environment that needs to be reset",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Sets the currency used for your environment. [defaults to USD]",
+              "name": [
+                "--currency",
+                "-c"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The domain name is part of the environment URL. If domain name is already in use, a numeric value is appended to the domain name. For example: If 'contoso' is already in use, then the environment URL is updated to https://{contoso}0.crm.dynamics.com",
+              "name": [
+                "--domain",
+                "-d"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Sets the name of the environment",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Sets the language used for your environment. [defaults to English]",
+              "name": [
+                "--language",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Sets the description used to associate the environment with a specific intent",
+              "name": [
+                "--purpose",
+                "-p"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Sets the Dynamics 365 app that needs to be deployed, passed as comma separated values. For example: -tm 'D365_Sample, D365_Sales'",
+              "name": [
+                "--templates",
+                "-tm"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The verb arguments to be passed in a .json input file. For example: {'name' : 'contoso'}. The arguments passed through command-line will take precedence over arguments from the .json input file",
+              "name": [
+                "--input-file",
+                "-if"
+              ]
+            },
+            {
+              "description": "Optional boolean argument to run pac verbs asynchronously, defaults to false",
+              "name": [
+                "--async",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Max asynchronous wait time in minutes. The default value is 60 minutes",
+              "name": [
+                "--max-async-wait-time",
+                "-wt"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Lists all backups of your environment",
+          "name": "list-backups",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "List all environments that contain a given string in their Environment ID or URL",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Restores an environment to a given backup",
+          "name": "restore",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Environment URL or ID of the source environment required for restore",
+              "name": [
+                "--source-env",
+                "-se"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Environment URL or ID of the target environment required for restore. This would default to source URL/ID if not provided",
+              "name": [
+                "--target-env",
+                "-te"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "DateTime of the backup in 'mm/dd/yyyy hh:mm' format OR string 'latest'",
+              "name": [
+                "--selected-backup",
+                "-sb"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Optional name of the restored environment",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "description": "Switch indicating whether audit data should be skipped",
+              "name": [
+                "--skip-audit-data",
+                "-sa"
+              ]
+            },
+            {
+              "description": "Optional boolean argument to run pac verbs asynchronously, defaults to false",
+              "name": [
+                "--async",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Max asynchronous wait time in minutes. The default value is 60 minutes",
+              "name": [
+                "--max-async-wait-time",
+                "-wt"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Copy Source Environment to Destination Environment",
+          "name": "copy",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Environment URL or ID of the source environment that is being copied",
+              "name": [
+                "--source-env",
+                "-se"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Environment URL or ID of the target environment",
+              "name": [
+                "--target-env",
+                "-te"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Name of the target environment",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "description": "MinimalCopy",
+                    "name": "MinimalCopy"
+                  },
+                  {
+                    "description": "FullCopy",
+                    "name": "FullCopy"
+                  }
+                ]
+              },
+              "name": [
+                "--type",
+                "-t"
+              ]
+            },
+            {
+              "description": "Switch indicating whether audit data should be skipped",
+              "name": [
+                "--skip-audit-data",
+                "-sa"
+              ]
+            },
+            {
+              "description": "Optional boolean argument to run pac verbs asynchronously, defaults to false",
+              "name": [
+                "--async",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Max asynchronous wait time in minutes. The default value is 60 minutes",
+              "name": [
+                "--max-async-wait-time",
+                "-wt"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "This command lists the status of all the operations in progress",
+          "name": "status"
+        },
+        {
+          "description": "Assign a user to a target Dataverse environment with specified security role",
+          "name": "assign-user",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "ID or URL of the environment to assign a user to",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Object ID or user principal name (UPN) of Microsoft Entra ID user to be assigned to the environment or Application ID if assigning an Application User",
+              "name": [
+                "--user",
+                "-u"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Name or ID of security role to be applied to user",
+              "name": [
+                "--role",
+                "-r"
+              ]
+            },
+            {
+              "description": "Specifies whether the input user is an application user. If a business unit isn't specified, the application user is added to the authenticated users business unit",
+              "name": [
+                "--application-user",
+                "-au"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "ID of business unit to associate application user with",
+              "name": [
+                "--business-unit",
+                "-bu"
+              ]
+            },
+            {
+              "description": "Optional boolean argument to run pac verbs asynchronously, defaults to false",
+              "name": [
+                "--async",
+                "-a"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Assign group to target Dataverse environment with specified security role",
+          "name": "assign-group",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "ID or URL of the environment to assign a user to",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Microsoft Entra ID object ID of group to assign to target Dataverse environment",
+              "name": [
+                "--group",
+                "-g"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Name of the group or team to create in Dataverse",
+              "name": [
+                "--group-name",
+                "-gn"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Name or ID of security role to be applied to user",
+              "name": [
+                "--role",
+                "-r"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "description": "Owner",
+                    "name": "Owner"
+                  },
+                  {
+                    "description": "Access",
+                    "name": "Access"
+                  },
+                  {
+                    "description": "AadSecurityGroup",
+                    "name": "AadSecurityGroup"
+                  },
+                  {
+                    "description": "AadOfficeGroup",
+                    "name": "AadOfficeGroup"
+                  }
+                ]
+              },
+              "description": "Type of team",
+              "name": [
+                "--team-type",
+                "-tt"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "description": "MembersAndGuests",
+                    "name": "MembersAndGuests"
+                  },
+                  {
+                    "description": "Members",
+                    "name": "Members"
+                  },
+                  {
+                    "description": "Owners",
+                    "name": "Owners"
+                  },
+                  {
+                    "description": "Guests",
+                    "name": "Guests"
+                  }
+                ]
+              },
+              "description": "Team membership type",
+              "name": [
+                "--membership-type",
+                "-mt"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "ID of business unit to associate application user with",
+              "name": [
+                "--business-unit",
+                "-bu"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Lists all supported Dataverse templates of model-driven apps in Dynamics 365",
+          "name": "list-app-templates",
+          "options": [
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "description": "Unitedstates",
+                    "name": "unitedstates"
+                  },
+                  {
+                    "description": "Unitedstatesfirstrelease",
+                    "name": "unitedstatesfirstrelease"
+                  },
+                  {
+                    "description": "Europe",
+                    "name": "europe"
+                  },
+                  {
+                    "description": "Asia",
+                    "name": "asia"
+                  },
+                  {
+                    "description": "Australia",
+                    "name": "australia"
+                  },
+                  {
+                    "description": "India",
+                    "name": "india"
+                  },
+                  {
+                    "description": "Japan",
+                    "name": "japan"
+                  },
+                  {
+                    "description": "Canada",
+                    "name": "canada"
+                  },
+                  {
+                    "description": "Unitedkingdom",
+                    "name": "unitedkingdom"
+                  },
+                  {
+                    "description": "Southamerica",
+                    "name": "southamerica"
+                  },
+                  {
+                    "description": "France",
+                    "name": "france"
+                  },
+                  {
+                    "description": "Unitedarabemirates",
+                    "name": "unitedarabemirates"
+                  },
+                  {
+                    "description": "Germany",
+                    "name": "germany"
+                  },
+                  {
+                    "description": "Switzerland",
+                    "name": "switzerland"
+                  },
+                  {
+                    "description": "Norway",
+                    "name": "norway"
+                  },
+                  {
+                    "description": "Korea",
+                    "name": "korea"
+                  }
+                ]
+              },
+              "description": "Sets the environment's region name. [defaults to unitedstates]",
+              "name": [
+                "--region",
+                "-r"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Add Microsoft Entra ID application and associated application user to the Dataverse environment",
+          "name": "create-service-principal",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Environment (ID, org ID, url, unique name, or partial name)",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Application name to create in Entra ID",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Name or ID of security role to be applied to application user. The default value is: 'System Administrator'",
+              "name": [
+                "--role",
+                "-r"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List Microsoft Entra ID applications which have access to Dataverse",
+          "name": "list-service-principal",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Application name 'starts with' filter",
+              "name": [
+                "--filter",
+                "-f"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Max number of applications to show. Default: 20",
+              "name": [
+                "--max",
+                "-m"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Enable, disable, and edit managed environments",
+          "name": "set-governance-config",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "URL or ID of the environment for which managed environments need to be enabled, disabled or edited",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Set protection level : 'Standard' to enable managed environments, 'Basic' to disable managed environments",
+              "name": [
+                "--protection-level",
+                "-pl"
+              ]
+            },
+            {
+              "description": "Disable group sharing",
+              "name": [
+                "--disable-group-sharing",
+                "-dgs"
+              ]
+            },
+            {
+              "description": "Exclude usage insights for the environment from the weekly digest email",
+              "name": [
+                "--exclude-analysis",
+                "-ea"
+              ]
+            },
+            {
+              "description": "Include insights in the Power Platform Admin Center homepage cards",
+              "name": [
+                "--include-insights",
+                "-ii"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Limit sharing mode",
+              "name": [
+                "--limit-sharing-mode",
+                "-lsm"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "If group sharing is disabled, specify the number of people that makers can share canvas apps with",
+              "name": [
+                "--max-limit-user-sharing",
+                "-ml"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "description": "None",
+                    "name": "none"
+                  },
+                  {
+                    "description": "Warn",
+                    "name": "warn"
+                  },
+                  {
+                    "description": "Block",
+                    "name": "block"
+                  }
+                ]
+              },
+              "description": "Solution checker validation mode",
+              "name": [
+                "--solution-checker-mode",
+                "-scm"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List tenant settings",
+          "name": "list-tenant-settings",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The .json file to output tenant settings",
+              "name": [
+                "--settings-file",
+                "-s"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Update tenant settings",
+          "name": "update-tenant-settings",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The .json file with tenant settings",
+              "name": [
+                "--settings-file",
+                "-s"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Work with Microsoft Entra ID applications",
+          "name": "application",
+          "subcommands": [
+            {
+              "description": "List Microsoft Entra ID applications registered under your tenant",
+              "name": "list"
+            },
+            {
+              "description": "Register Microsoft Entra ID application with your tenant",
+              "name": "register",
+              "options": [
+                {
+                  "args": {
+                    "name": "string"
+                  },
+                  "description": "Application Id",
+                  "name": [
+                    "--application-id",
+                    "-a"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Unregister Microsoft Entra ID application from your tenant",
+              "name": "unregister",
+              "options": [
+                {
+                  "args": {
+                    "name": "string"
+                  },
+                  "description": "Application Id",
+                  "name": [
+                    "--application-id",
+                    "-a"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Commands for listing and installing available Dataverse applications from AppSource",
+      "name": "application",
+      "subcommands": [
+        {
+          "description": "List available Dataverse applications from AppSource",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "List available Dataverse applications for given environment (by ID or url); if not specified, list all applications in the tenant",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Location of the JSON file to be created with list of the Dataverse applications from AppSource",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "description": "NotInstalled",
+                    "name": "NotInstalled"
+                  },
+                  {
+                    "description": "Installed",
+                    "name": "Installed"
+                  },
+                  {
+                    "description": "All",
+                    "name": "All"
+                  }
+                ]
+              },
+              "description": "Filter by application install state",
+              "name": [
+                "--installState",
+                "-s"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Installs Dataverse application to given environment",
+          "name": "install",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "List available Dataverse applications for given environment (by ID or url); if not specified, list all applications in the tenant",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Unique name of the application to install to the target environment",
+              "name": [
+                "--application-name",
+                "-an"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Location of the JSON file with list of the Dataverse applications from AppSource to be installed",
+              "name": [
+                "--application-list",
+                "-al"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage how you authenticate to various services",
+      "name": "auth",
+      "subcommands": [
+        {
+          "description": "Create and store authentication profiles on this computer",
+          "name": "create",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The name you want to give to this authentication profile (maximum 30 characters)",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The kind of authentication profile you're creating",
+              "name": [
+                "--kind",
+                "-k"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The resource URL to connect to",
+              "name": [
+                "--url",
+                "-u"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Optional: The username to authenticate with; shows Microsoft Entra ID dialog if not specified",
+              "name": [
+                "--username",
+                "-un"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Optional: The password to authenticate with",
+              "name": [
+                "--password",
+                "-p"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Optional: The application ID to authenticate with",
+              "name": [
+                "--applicationId",
+                "-id"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Optional: The client secret to authenticate with",
+              "name": [
+                "--clientSecret",
+                "-cs"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Optional: The certificate disk path to authenticate with",
+              "name": [
+                "--certificateDiskPath",
+                "-cdp"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Optional: The certificate password to authenticate with",
+              "name": [
+                "--certificatePassword",
+                "-cp"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Tenant ID if using application ID/client secret or application ID/client certificate",
+              "name": [
+                "--tenant",
+                "-t"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "description": "Public",
+                    "name": "Public"
+                  },
+                  {
+                    "description": "Preprod",
+                    "name": "Preprod"
+                  },
+                  {
+                    "description": "Test",
+                    "name": "Test"
+                  },
+                  {
+                    "description": "UsGov",
+                    "name": "UsGov"
+                  },
+                  {
+                    "description": "UsGovHigh",
+                    "name": "UsGovHigh"
+                  },
+                  {
+                    "description": "UsGovDod",
+                    "name": "UsGovDod"
+                  },
+                  {
+                    "description": "China",
+                    "name": "China"
+                  }
+                ]
+              },
+              "description": "Optional: The cloud instance to authenticate with",
+              "name": [
+                "--cloud",
+                "-ci"
+              ]
+            },
+            {
+              "description": "Use the Microsoft Entra ID Device Code flow for interactive sign-in",
+              "name": [
+                "--deviceCode",
+                "-dc"
+              ]
+            },
+            {
+              "description": "Use Azure Managed Identity",
+              "name": [
+                "--managedIdentity",
+                "-mi"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Default environment (ID, url, unique name, or partial name)",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List the authentication profiles stored on this computer",
+          "name": "list"
+        },
+        {
+          "description": "Select which authentication profile should be active",
+          "name": "select",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The index of the profile to be active",
+              "name": [
+                "--index",
+                "-i"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The name of the profile to be active",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Delete a particular authentication profile",
+          "name": "delete",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The index of the profile to be deleted",
+              "name": [
+                "--index",
+                "-i"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The name of the profile to be active",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Update name or target environment of an existing authentication profile",
+          "name": "update",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The index of the profile to be named/renamed",
+              "name": [
+                "--index",
+                "-i"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The name you want to give to this authentication profile (maximum 30 characters)",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Default environment (ID, url, unique name, or partial name)",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Name or rename an existing authentication profile",
+          "name": "name",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The index of the profile to be named/renamed",
+              "name": [
+                "--index",
+                "-i"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The name you want to give to this authentication profile (maximum 30 characters)",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Clear all authentication profiles stored on this computer",
+          "name": "clear"
+        }
+      ]
+    },
+    {
+      "description": "Operating with Power Apps .msapp files",
+      "name": "canvas",
+      "subcommands": [
+        {
+          "description": "Download canvas app as .msapp file",
+          "name": "download",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Canvas app exact, partial name, or App ID",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "File name (usually with .msapp extension). If not provided file is saved in current directory with 'appname'.msapp",
+              "name": [
+                "--file-name",
+                "-f"
+              ]
+            },
+            {
+              "description": "Allow file overwrite",
+              "name": [
+                "--overwrite",
+                "-o"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Environment (ID, org ID, url, unique name, or partial name)",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List canvas apps",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Environment (ID, org ID, url, unique name, or partial name)",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "(Preview) Pack sources into an msapp file",
+          "name": "pack",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Directory to sources to be packed",
+              "name": [
+                "--sources"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Path to .msapp file",
+              "name": [
+                "--msapp"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "(Preview) Extract an msapp file into sources",
+          "name": "unpack",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Directory to sources to be unpacked",
+              "name": [
+                "--sources"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Path to .msapp file",
+              "name": [
+                "--msapp"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Generate a canvas app from a custom connector",
+          "name": "create",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Path to .msapp file to be generated",
+              "name": [
+                "--msapp"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The ID of the Connector to generate the Power App from",
+              "name": [
+                "--connector-id"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The display name of the Connector to generate the Power App from",
+              "name": [
+                "--connector-display-name"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The target Environment ID or URL. The default value is the environment of your currently active Dataverse Auth Profile",
+              "name": [
+                "--environment"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Commands for working with Catalog in Power Platform",
+      "name": "catalog",
+      "subcommands": [
+        {
+          "description": "List all published catalog items from the current Dataverse organization",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Catalog item name to search for",
+              "name": [
+                "--catalog-item-name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Catalog item ID to search for. When catalog item ID is used, catalog item name is ignored",
+              "name": [
+                "--catalog-item-id",
+                "-cid"
+              ]
+            },
+            {
+              "description": "Include active items",
+              "name": [
+                "--include-active",
+                "-ia"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Submit catalog approval request",
+          "name": "submit",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Path to catalog submission document",
+              "name": [
+                "--path",
+                "-p"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Path to package zip file",
+              "name": [
+                "--package-zip",
+                "-pz"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Path to solution zip file",
+              "name": [
+                "--solution-zip",
+                "-sz"
+              ]
+            },
+            {
+              "description": "Poll to check status of your request",
+              "name": [
+                "--poll-status",
+                "-ps"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Install a catalog item to the target environment",
+          "name": "install",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Catalog item to be installed on the target environment",
+              "name": [
+                "--catalog-item-id",
+                "-cid"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Url of the target environment for catalog item installation",
+              "name": [
+                "--target-url",
+                "-tu"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Runtime Package Settings for the installation framework to execute. The format of the string must be 'key=value|key=value'",
+              "name": [
+                "--settings",
+                "-s"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Target version to install. If left empty, the published version is selected",
+              "name": [
+                "--target-version",
+                "-tv"
+              ]
+            },
+            {
+              "description": "Poll to check status of your request",
+              "name": [
+                "--poll-status",
+                "-ps"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Get status of the catalog install/submit request",
+          "name": "status",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Request tracking ID",
+              "name": [
+                "--tracking-id",
+                "-id"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Request type",
+              "name": [
+                "--type",
+                "-t"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Update settings for the catalog",
+          "name": "update",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Path to catalog settings document",
+              "name": [
+                "--path",
+                "-p"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Create catalog submission document. Note: This command will be removed in a future release",
+          "name": "create-submission",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Path to catalog submission document",
+              "name": [
+                "--path",
+                "-p"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Commands for working with Dataverse connection",
+      "name": "connection",
+      "subcommands": [
+        {
+          "description": "Create new Dataverse connection",
+          "name": "create",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Tenant Id",
+              "name": [
+                "--tenant-id",
+                "-t"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Connection name",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Application Id",
+              "name": [
+                "--application-id",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Client Secret",
+              "name": [
+                "--client-secret",
+                "-cs"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Environment (ID, org ID, url, unique name, or partial name)",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Delete Dataverse connection",
+          "name": "delete",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Connection Id",
+              "name": [
+                "--connection-id",
+                "-id"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Environment (ID, org ID, url, unique name, or partial name)",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List all Connections",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Environment (ID, org ID, url, unique name, or partial name)",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Update Dataverse connection",
+          "name": "update",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Tenant Id",
+              "name": [
+                "--tenant-id",
+                "-t"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Connection Id",
+              "name": [
+                "--connection-id",
+                "-id"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Application Id",
+              "name": [
+                "--application-id",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Client Secret",
+              "name": [
+                "--client-secret",
+                "-cs"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Environment (ID, org ID, url, unique name, or partial name)",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Commands for working with Power Platform Connectors",
+      "name": "connector",
+      "subcommands": [
+        {
+          "description": "List the Connectors registered in Dataverse",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The target Environment ID or URL. The default value is the environment of your currently active Dataverse Auth Profile",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Initializes a new API Properties file for a Connector",
+          "name": "init",
+          "options": [
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "description": "NoAuth",
+                    "name": "NoAuth"
+                  },
+                  {
+                    "description": "BasicAuth",
+                    "name": "BasicAuth"
+                  },
+                  {
+                    "description": "ApiKey",
+                    "name": "ApiKey"
+                  },
+                  {
+                    "description": "OAuthGeneric",
+                    "name": "OAuthGeneric"
+                  },
+                  {
+                    "description": "OAuthAAD",
+                    "name": "OAuthAAD"
+                  }
+                ]
+              },
+              "description": "Generate an initial Connection Parameters set with the specified template",
+              "name": [
+                "--connection-template",
+                "-ct"
+              ]
+            },
+            {
+              "description": "Generate an initial Connector Script file",
+              "name": [
+                "--generate-script-file"
+              ]
+            },
+            {
+              "description": "Generate an initial Connector Settings file",
+              "name": [
+                "--generate-settings-file"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Output directory",
+              "name": [
+                "--outputDirectory",
+                "-o"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Creates a new row in the Connector table in Dataverse",
+          "name": "create",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The filename and path to read the Connector's OpenApiDefinition",
+              "name": [
+                "--api-definition-file",
+                "-df"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The filename and path to read the Connector's API Properties file",
+              "name": [
+                "--api-properties-file",
+                "-pf"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The filename and path to and Icon .png file",
+              "name": [
+                "--icon-file",
+                "-if"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The filename and path to a Script .csx file",
+              "name": [
+                "--script-file",
+                "-sf"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The unique name of the solution to add the connector to",
+              "name": [
+                "--solution-unique-name",
+                "-sol"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The target Environment ID or URL. The default value is the environment of your currently active Dataverse Auth Profile",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The filename and path Connector Settings file",
+              "name": [
+                "--settings-file"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Download a Connector's OpenApiDefinition and API Properties file",
+          "name": "download",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The ID of the Connector",
+              "name": [
+                "--connector-id",
+                "-id"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Output directory",
+              "name": [
+                "--outputDirectory",
+                "-o"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The target Environment ID or URL. The default value is the environment of your currently active Dataverse Auth Profile",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Updates a Connector Entity in Dataverse",
+          "name": "update",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The ID of the Connector",
+              "name": [
+                "--connector-id",
+                "-id"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The filename and path to read the Connector's OpenApiDefinition",
+              "name": [
+                "--api-definition-file",
+                "-df"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The filename and path to read the Connector's API Properties file",
+              "name": [
+                "--api-properties-file",
+                "-pf"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The filename and path to and Icon .png file",
+              "name": [
+                "--icon-file",
+                "-if"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The filename and path to a Script .csx file",
+              "name": [
+                "--script-file",
+                "-sf"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The unique name of the solution to add the connector to",
+              "name": [
+                "--solution-unique-name",
+                "-sol"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The target Environment ID or URL. The default value is the environment of your currently active Dataverse Auth Profile",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The filename and path Connector Settings file",
+              "name": [
+                "--settings-file"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Tools and utilities for copilot scenarios",
+      "name": "copilot",
+      "subcommands": [
+        {
+          "description": "AI Builder models in the current environment",
+          "name": "list"
+        },
+        {
+          "description": "Sends text or prompt to AI Model",
+          "name": "predict",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "AI Builder model Id",
+              "name": [
+                "--model-id",
+                "-id"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Full or partial AI Model name",
+              "name": [
+                "--model-name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Prompt to send to AI Model",
+              "name": [
+                "--prompt",
+                "-p"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Text to send to AI Model",
+              "name": [
+                "--text",
+                "-t"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Takes the FetchXML file from the AI Large Language Model (LLM) and prepares it for execution against the current environment",
+          "name": "prepare-fetch",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Input FetchXML file that usually comes from AI LLM",
+              "name": [
+                "--inputFile",
+                "-i"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Output FetchXML file that is ready to execute against the current environment",
+              "name": [
+                "--outputFile",
+                "-o"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Import and export data from Dataverse",
+      "name": "data",
+      "subcommands": [
+        {
+          "description": "Export data",
+          "name": "export",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Schema file name. It can be created using the Configuration Migration Tool",
+              "name": [
+                "--schemaFile",
+                "-sf"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "File name for data zip file. Default data.zip",
+              "name": [
+                "--dataFile",
+                "-df"
+              ]
+            },
+            {
+              "description": "Allow overwrite of the output data file if it already exists",
+              "name": [
+                "--overwrite",
+                "-o"
+              ]
+            },
+            {
+              "description": "Output more diagnostic information during data import/export",
+              "name": [
+                "--verbose",
+                "-v"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Environment (ID, org ID, url, unique name, or partial name)",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Import data",
+          "name": "import",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Directory name with data for import",
+              "name": [
+                "--dataDirectory",
+                "-dd"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Zip file or directory name with data for import",
+              "name": [
+                "--data",
+                "-d"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Number of parallel connections to use during import. Default: 5",
+              "name": [
+                "--connection-count",
+                "-c"
+              ]
+            },
+            {
+              "description": "Output more diagnostic information during data import/export",
+              "name": [
+                "--verbose",
+                "-v"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Environment (ID, org ID, url, unique name, or partial name)",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Show help for the Microsoft Power Platform CLI",
+      "name": "help"
+    },
+    {
+      "description": "Code Generator for Dataverse APIs and Tables",
+      "name": "modelbuilder",
+      "subcommands": [
+        {
+          "description": "Builds a code model for Dataverse APIs and Tables",
+          "name": "build",
+          "options": [
+            {
+              "description": "When set, this suppress all generated objects being tagged with the code generation engine and version",
+              "name": [
+                "--suppressGeneratedCodeAttribute",
+                "-sgca"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The language to use for the generated proxy code. This value can be either 'CS' or 'VB'. The default language is 'CS'",
+              "name": [
+                "--language",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The namespace for the generated code. The default namespace is the global namespace",
+              "name": [
+                "--namespace",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The name for the generated service context. If a value is passed in, it's used for the Service Context. If not, no Service Context is generated",
+              "name": [
+                "--serviceContextName",
+                "-sctx"
+              ]
+            },
+            {
+              "description": "When set, emits Sdk message classes as part of code generation",
+              "name": [
+                "--generatesdkmessages",
+                "-a"
+              ]
+            },
+            {
+              "description": "When set, includes the entity ETC ( entity type code ) in the generated code",
+              "name": [
+                "--emitentityetc",
+                "-etc"
+              ]
+            },
+            {
+              "description": "When set, includes the Virtual Attributes of entities in the generated code",
+              "name": [
+                "--emitvirtualattributes",
+                "-eva"
+              ]
+            },
+            {
+              "description": "Generate a constants structure that contains all of the field names by entity at the time of code generation",
+              "name": [
+                "--emitfieldsclasses",
+                "-efc"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Filters the list of entities are retrieved when reading data from Dataverse. Passed in as a semicolon separated list. Using the form <entitylogicalname>;<entitylogicalname>",
+              "name": [
+                "--entitynamesfilter",
+                "-enf"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Filters the list of messages that are retrieved when reading data from Dataverse. Passed in as a semicolon separated list, required messages (Create, Update, Delete, Retrieve, RetrieveMultiple, Associate and Disassociate) are always included. Use a trailing or leading asterisk (*) with the names of the messages to allow for all messages starting with or ending with a string. Using the form <messagename>;<messagename>",
+              "name": [
+                "--messagenamesfilter",
+                "-mnf"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Write directory for entity, message, and optionset files",
+              "name": [
+                "--outdirectory",
+                "-o"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Folder name that contains entities. The default name is 'Entities'",
+              "name": [
+                "--entitytypesfolder",
+                "-etf"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Folder name that contains messages. The default name is 'Messages'",
+              "name": [
+                "--messagestypesfolder",
+                "-mtf"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Folder name that contains option sets. The default name is 'OptionSets'",
+              "name": [
+                "--optionsetstypesfolder",
+                "-otf"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Emit all Global OptionSets. Note: If an entity contains a reference to a global optionset, it is emitted even if this switch is not present",
+              "name": [
+                "--generateGlobalOptionSets",
+                "-go"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "When set, writes a settings file out to the output directory with the current passed settings or default settings",
+              "name": [
+                "--writesettingsTemplateFile",
+                "-wstf"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Contains Settings to be used for this run of the Dataverse Model Builder, overrides any duplicate parameters on command line. Can't be set when --writesettingstemplate is used",
+              "name": [
+                "--settingsTemplateFile",
+                "-stf"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "When enabled, doesn't write the INotify wrappers for properties and classes",
+              "name": [
+                "--suppressINotifyPattern"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "description": "Off",
+                    "name": "Off"
+                  },
+                  {
+                    "description": "Critical",
+                    "name": "Critical"
+                  },
+                  {
+                    "description": "Error",
+                    "name": "Error"
+                  },
+                  {
+                    "description": "Warning",
+                    "name": "Warning"
+                  },
+                  {
+                    "description": "Information",
+                    "name": "Information"
+                  },
+                  {
+                    "description": "Verbose",
+                    "name": "Verbose"
+                  },
+                  {
+                    "description": "ActivityTracing",
+                    "name": "ActivityTracing"
+                  },
+                  {
+                    "description": "All",
+                    "name": "All"
+                  }
+                ]
+              },
+              "description": "Log level. The default value is 'Off'",
+              "name": [
+                "--logLevel",
+                "-ll"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Work with your Dataverse organization",
+      "name": "org",
+      "subcommands": [
+        {
+          "description": "Displays information about the current Dataverse organization",
+          "name": "who"
+        },
+        {
+          "description": "Lists all of the Dataverse organizations the user has access to",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Show only environments containing filter criteria",
+              "name": [
+                "--filter",
+                "-f"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Performs FetchXML query against Dataverse",
+          "name": "fetch",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "FetchXML query to run",
+              "name": [
+                "--xml",
+                "-x"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "File with FetchXML query to run",
+              "name": [
+                "--xmlFile",
+                "-xf"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List environment settings",
+          "name": "list-settings",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Show only settings containing filter criteria",
+              "name": [
+                "--filter",
+                "-f"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Update environment settings",
+          "name": "update-settings",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Name of the setting to update",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Value to which setting should be updated to",
+              "name": [
+                "--value",
+                "-v"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Select default organization for current authentication profile",
+          "name": "select",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Default environment (ID, url, unique name, or partial name)",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Commands for working with Dataverse package projects",
+      "name": "package",
+      "subcommands": [
+        {
+          "description": "Initializes a directory with a new Dataverse package project",
+          "name": "init",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Output directory",
+              "name": [
+                "--outputDirectory",
+                "-o"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Sets the default name of the package. Applies to the generation of ImportExtension.GetNameOfImport",
+              "name": [
+                "--package-name"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Adds a package that is external to the Dataverse solution system to a Package Deployer Package project",
+          "name": "add-external-package",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Path to the external package",
+              "name": [
+                "--path",
+                "-p"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The type of the package being added. For example: 'xpp' for FnO packages",
+              "name": [
+                "--package-type",
+                "-t"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "A whole number that indicates the order to insert this item into the final ImportConfig.xml file at build time. Negative numbers are inserted before existing elements. Positive numbers are added after existing elements",
+              "name": [
+                "--import-order"
+              ]
+            },
+            {
+              "description": "Adds the item to the project file even if the file doesn't exist or appears to be invalid. Note: Using this doesn't affect any validation performed by MSBuild",
+              "name": [
+                "--skip-validation",
+                "-sv"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Adds a prebuilt Dataverse solution file to a Package Deployer Package project",
+          "name": "add-solution",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Path to the Dataverse solution file. The file must be a compressed ZIP file",
+              "name": [
+                "--path",
+                "-p"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "A whole number that indicates the order to insert this item into the final ImportConfig.xml file at build time. Negative numbers are inserted before existing elements. Positive numbers are added after existing elements",
+              "name": [
+                "--import-order"
+              ]
+            },
+            {
+              "description": "Adds the item to the project file even if the file doesn't exist or appears to be invalid. Note: Using this doesn't affect any validation performed by MSBuild",
+              "name": [
+                "--skip-validation",
+                "-sv"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "description": "True",
+                    "name": "true"
+                  },
+                  {
+                    "description": "False",
+                    "name": "false"
+                  }
+                ]
+              },
+              "description": "Explicitly indicates whether to publish the workflows and activate plug-ins when this solution is imported",
+              "name": [
+                "--publish-workflows-activate-plugins"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "description": "True",
+                    "name": "true"
+                  },
+                  {
+                    "description": "False",
+                    "name": "false"
+                  }
+                ]
+              },
+              "description": "Explicitly indicates whether to overwrite unmanaged customizations when this solution is imported",
+              "name": [
+                "--overwrite-unmanaged-customizations"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "description": "True",
+                    "name": "true"
+                  },
+                  {
+                    "description": "False",
+                    "name": "false"
+                  }
+                ]
+              },
+              "description": "Explicitly specifies the required mode when importing this solution",
+              "name": [
+                "--import-mode"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "description": "Skip",
+                    "name": "skip"
+                  },
+                  {
+                    "description": "Fault",
+                    "name": "fault"
+                  }
+                ]
+              },
+              "description": "Specifies the behavior on import when a dependency of this solution is missing from the target environment",
+              "name": [
+                "--missing-dependency-behavior"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "A semicolon delimited list of overrides. This value overrides any dependency information encoded in the solution's metadata. Each override should be in the format: '<uniquename>:<minVersion>:<maxVersion>'. Where minVersion and maxVersion are optional but should be in .NET version format syntax",
+              "name": [
+                "--dependency-overrides"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Adds reference to Dataverse solution project",
+          "name": "add-reference",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The path to the referenced Dataverse solution project",
+              "name": [
+                "--path",
+                "-p"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "A whole number that indicates the order to insert this item into the final ImportConfig.xml file at build time. Negative numbers are inserted before existing elements. Positive numbers are added after existing elements",
+              "name": [
+                "--import-order"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "description": "True",
+                    "name": "true"
+                  },
+                  {
+                    "description": "False",
+                    "name": "false"
+                  }
+                ]
+              },
+              "description": "Explicitly indicates whether to publish the workflows and activate plug-ins when this solution is imported",
+              "name": [
+                "--publish-workflows-activate-plugins"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "description": "True",
+                    "name": "true"
+                  },
+                  {
+                    "description": "False",
+                    "name": "false"
+                  }
+                ]
+              },
+              "description": "Explicitly indicates whether to overwrite unmanaged customizations when this solution is imported",
+              "name": [
+                "--overwrite-unmanaged-customizations"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "description": "Sync",
+                    "name": "sync"
+                  },
+                  {
+                    "description": "Async",
+                    "name": "async"
+                  }
+                ]
+              },
+              "description": "Explicitly specifies the required mode when importing this solution",
+              "name": [
+                "--import-mode"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "description": "Skip",
+                    "name": "skip"
+                  },
+                  {
+                    "description": "Fault",
+                    "name": "fault"
+                  }
+                ]
+              },
+              "description": "Specifies the behavior on import when a dependency of this solution is missing from the target environment",
+              "name": [
+                "--missing-dependency-behavior"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "A semicolon delimited list of overrides. This value overrides any dependency information encoded in the solution's metadata. Each override should be in the format: '<uniquename>:<minVersion>:<maxVersion>'. Where minVersion and maxVersion are optional but should be in .NET version format syntax",
+              "name": [
+                "--dependency-overrides"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Deploys package to Dataverse",
+          "name": "deploy",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Log file path",
+              "name": [
+                "--logFile",
+                "-lf"
+              ]
+            },
+            {
+              "description": "Output log to console",
+              "name": [
+                "--logConsole",
+                "-c"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Path to a package dll or zip file with a package",
+              "name": [
+                "--package",
+                "-p"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Runtime Package Settings that are passed to the package that is being deployed. The format of the string must be 'key=value|key=value'",
+              "name": [
+                "--settings",
+                "-s"
+              ]
+            },
+            {
+              "description": "Emit verbose logs to the log outputs",
+              "name": [
+                "--verbose",
+                "-vdbg"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Shows details of Dataverse package",
+          "name": "show",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Path to a package dll or zip file with a package",
+              "name": [
+                "--package",
+                "-p"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Log file path",
+              "name": [
+                "--logFile",
+                "-lf"
+              ]
+            },
+            {
+              "description": "Emit verbose logs to the log outputs",
+              "name": [
+                "--verbose",
+                "-vdbg"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Commands for working with Power Apps component framework projects",
+      "name": "pcf",
+      "subcommands": [
+        {
+          "description": "Initializes a directory with a new Power Apps component framework project",
+          "name": "init",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The namespace for the component",
+              "name": [
+                "--namespace",
+                "-ns"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The name for the component",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "description": "Field",
+                    "name": "field"
+                  },
+                  {
+                    "description": "Dataset",
+                    "name": "dataset"
+                  }
+                ]
+              },
+              "description": "Choose a template for the component",
+              "name": [
+                "--template",
+                "-t"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "description": "None",
+                    "name": "none"
+                  },
+                  {
+                    "description": "React",
+                    "name": "react"
+                  }
+                ]
+              },
+              "description": "The rendering framework for control. The default value is 'none', which means HTML",
+              "name": [
+                "--framework",
+                "-fw"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Output directory",
+              "name": [
+                "--outputDirectory",
+                "-o"
+              ]
+            },
+            {
+              "description": "Auto run 'npm install' after the control is created. The default value is 'false'",
+              "name": [
+                "--run-npm-install",
+                "-npm"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Import the Power Apps component framework project into the current Dataverse organization",
+          "name": "push",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Customization prefix value for the Dataverse solution publisher",
+              "name": [
+                "--publisher-prefix",
+                "-pp"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "description": "Minimal",
+                    "name": "minimal"
+                  },
+                  {
+                    "description": "Normal",
+                    "name": "normal"
+                  },
+                  {
+                    "description": "Detailed",
+                    "name": "detailed"
+                  },
+                  {
+                    "description": "Diagnostic",
+                    "name": "diagnostic"
+                  }
+                ]
+              },
+              "description": "Verbosity level for MSBuild when building the temporary solution wrapper",
+              "name": [
+                "--verbosity",
+                "-v"
+              ]
+            },
+            {
+              "description": "Force a full update of the control as part of a temporary solution",
+              "name": [
+                "--force-import",
+                "-f"
+              ]
+            },
+            {
+              "description": "Indicates that actions in the build are allowed to interact with the user. Don't use this argument in an automated scenario where interactivity is not expected",
+              "name": [
+                "--interactive",
+                "-i"
+              ]
+            },
+            {
+              "description": "Pushes only files which are diifferent using entity updates",
+              "name": [
+                "--incremental",
+                "-inc"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Patch version for controls",
+          "name": "version",
+          "options": [
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "description": "None",
+                    "name": "None"
+                  },
+                  {
+                    "description": "GitTags",
+                    "name": "GitTags"
+                  },
+                  {
+                    "description": "FileTracking",
+                    "name": "FileTracking"
+                  },
+                  {
+                    "description": "Manifest",
+                    "name": "Manifest"
+                  }
+                ]
+              },
+              "description": "Updates patch version for 'ControlManifest.xml' files using specified strategy. If using gittags, set a personal access token in the following environment variable 'PacCli.PAT'",
+              "name": [
+                "--strategy",
+                "-s"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Patch version for controls",
+              "name": [
+                "--patchversion",
+                "-pv"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Absolute/Relative path of the 'ControlManifest.xml' for updating",
+              "name": [
+                "--path",
+                "-p"
+              ]
+            },
+            {
+              "description": "Updates patch version for all 'ControlManifest.xml' files",
+              "name": [
+                "--allmanifests",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "description": "Build",
+                    "name": "build"
+                  },
+                  {
+                    "description": "Project",
+                    "name": "project"
+                  }
+                ]
+              },
+              "description": "Specify which target manifest needs to be updated",
+              "name": [
+                "--updatetarget",
+                "-ut"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Tracker CSV file name to be used when using filetracking as a strategy. The default value is 'ControlsStateVersionInfo.csv'",
+              "name": [
+                "--filename",
+                "-fn"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Work with Pipelines",
+      "name": "pipeline",
+      "subcommands": [
+        {
+          "description": "List Pipelines",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Pipeline name or ID for which show list of details such as deployment stages",
+              "name": [
+                "--pipeline",
+                "-p"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Start pipeline deployment",
+          "name": "deploy",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Solution Name",
+              "name": [
+                "--solutionName",
+                "-sn"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Deployment Stage ID",
+              "name": [
+                "--stageId",
+                "-sid"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Deployment Environment",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Current solution version",
+              "name": [
+                "--currentVersion",
+                "-cv"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "New solution version",
+              "name": [
+                "--newVersion",
+                "-nv"
+              ]
+            },
+            {
+              "description": "Wait until the deployment finishes",
+              "name": [
+                "--wait",
+                "-w"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Commands for working with Dataverse plug-in class library",
+      "name": "plugin",
+      "subcommands": [
+        {
+          "description": "Initializes a directory with a new Dataverse plug-in class library",
+          "name": "init",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Relative path to the Dataverse plug-in assembly originator key file for signing",
+              "name": [
+                "--signing-key-file-path",
+                "-sk"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Output directory",
+              "name": [
+                "--outputDirectory",
+                "-o"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "One or more authors of the Dataverse Plug-in Package",
+              "name": [
+                "--author",
+                "-a"
+              ]
+            },
+            {
+              "description": "Skip plug-in assembly signing that gives the plug-in assembly a strong name. The default value is 'false'",
+              "name": [
+                "--skip-signing",
+                "-ss"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Import plug-in into Dataverse",
+          "name": "push",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "ID of plug-in assembly or plug-in package",
+              "name": [
+                "--pluginId",
+                "-id"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "File name of plug-in assembly or plug-in package",
+              "name": [
+                "--pluginFile",
+                "-pf"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "description": "Nuget",
+                    "name": "Nuget"
+                  },
+                  {
+                    "description": "Assembly",
+                    "name": "Assembly"
+                  }
+                ]
+              },
+              "description": "Type of item if not specified explicitly through --pluginFile. The default value is: 'Nuget'",
+              "name": [
+                "--type",
+                "-t"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Build configuration. The default value is: 'Debug'",
+              "name": [
+                "--configuration",
+                "-c"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "(Preview) Commands for working with Power Fx",
+      "name": "power-fx",
+      "subcommands": [
+        {
+          "description": "(Preview) Launch interactive Power Fx Read-Eval-Print Loop",
+          "name": "repl"
+        },
+        {
+          "description": "(Preview) Run a file of Power Fx instructions",
+          "name": "run",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Path of file to execute",
+              "name": [
+                "--file",
+                "-f"
+              ]
+            },
+            {
+              "description": "True if input commands should echo back to output",
+              "name": [
+                "--echo",
+                "-e"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Commands for working with Power Pages website",
+      "name": "powerpages",
+      "subcommands": [
+        {
+          "description": "List all Power Pages websites from the current Dataverse environment",
+          "name": "list",
+          "options": [
+            {
+              "description": "Enables verbose mode to provide more details",
+              "name": [
+                "--verbose",
+                "-v"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Download Power Pages website content from the current Dataverse environment",
+          "name": "download",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Path where the Power Pages website content is downloaded",
+              "name": [
+                "--path",
+                "-p"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Power Pages website ID to download",
+              "name": [
+                "--webSiteId",
+                "-id"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Download only the entities specified for this argument using comma separated entity logical names",
+              "name": [
+                "--includeEntities",
+                "-ie"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Comma separated list of entity logical names to exclude downloading",
+              "name": [
+                "--excludeEntities",
+                "-xe"
+              ]
+            },
+            {
+              "description": "Power Pages website content to overwrite",
+              "name": [
+                "--overwrite",
+                "-o"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Power Pages website data model version to download",
+              "name": [
+                "--modelVersion",
+                "-mv"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Upload Power Pages website content to current Dataverse environment",
+          "name": "upload",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Path from where the Power Pages website content is uploaded",
+              "name": [
+                "--path",
+                "-p"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Deployment profile name to be used. Defaults to 'default'",
+              "name": [
+                "--deploymentProfile",
+                "-dp"
+              ]
+            },
+            {
+              "description": "Upload all Power Pages website content to the current Dataverse environment",
+              "name": [
+                "--forceUploadAll",
+                "-f"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Power Pages website data model version to upload",
+              "name": [
+                "--modelVersion",
+                "-mv"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Migrates HTML code from bootstrap V3 to V5",
+          "name": "bootstrap-migrate",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Path of website content",
+              "name": [
+                "--path",
+                "-p"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Commands for working with Dataverse solution projects",
+      "name": "solution",
+      "subcommands": [
+        {
+          "description": "Initializes a directory with a new Dataverse solution project",
+          "name": "init",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Name of the Dataverse solution publisher",
+              "name": [
+                "--publisher-name",
+                "-pn"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Customization prefix value for the Dataverse solution publisher",
+              "name": [
+                "--publisher-prefix",
+                "-pp"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Output directory",
+              "name": [
+                "--outputDirectory",
+                "-o"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Adds a reference from the project in the current directory to the project at 'path'",
+          "name": "add-reference",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The path to the referenced project",
+              "name": [
+                "--path",
+                "-p"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List all Solutions from the current Dataverse organization",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The target Environment ID or URL. The default value is the environment of your currently active Dataverse Auth Profile",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Delete a solution from Dataverse in the current environment",
+          "name": "delete",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Name of the solution",
+              "name": [
+                "--solution-name",
+                "-sn"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Sets version for solution loaded in Dataverse",
+          "name": "online-version",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Name of the solution",
+              "name": [
+                "--solution-name",
+                "-sn"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify the solution version number",
+              "name": [
+                "--solution-version",
+                "-sv"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Update build or revision version for the solution",
+          "name": "version",
+          "options": [
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "description": "None",
+                    "name": "None"
+                  },
+                  {
+                    "description": "GitTags",
+                    "name": "GitTags"
+                  },
+                  {
+                    "description": "FileTracking",
+                    "name": "FileTracking"
+                  },
+                  {
+                    "description": "Solution",
+                    "name": "Solution"
+                  }
+                ]
+              },
+              "description": "Updates build version for 'Solution.xml' file using specified strategy. If using gittags, set personal access token in the following environment variable 'PacCli.PAT'",
+              "name": [
+                "--strategy",
+                "-s"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Patch version for the solution",
+              "name": [
+                "--patchversion",
+                "-pv"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Build version for the solution",
+              "name": [
+                "--buildversion",
+                "-bv"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Revision version for the solution",
+              "name": [
+                "--revisionversion",
+                "-rv"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Tracker CSV file name to be used when using filetracking as a strategy. The default value is 'ControlsStateVersionInfo.csv'",
+              "name": [
+                "--filename",
+                "-fn"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Path to Dataverse solution directory or Solution.xml file",
+              "name": [
+                "--solutionPath",
+                "-sp"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Import the solution into Dataverse",
+          "name": "import",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Path to solution zip file. If not specified, assumes the current folder is a cdsproj project",
+              "name": [
+                "--path",
+                "-p"
+              ]
+            },
+            {
+              "description": "Activate plug-ins and workflows on the solution",
+              "name": [
+                "--activate-plugins",
+                "-ap"
+              ]
+            },
+            {
+              "description": "Force an overwrite of unmanaged customizations",
+              "name": [
+                "--force-overwrite",
+                "-f"
+              ]
+            },
+            {
+              "description": "Skip dependency check against dependencies flagged as product update",
+              "name": [
+                "--skip-dependency-check",
+                "-s"
+              ]
+            },
+            {
+              "description": "Import the solution as a holding solution",
+              "name": [
+                "--import-as-holding",
+                "-h"
+              ]
+            },
+            {
+              "description": "Import and upgrade the solution",
+              "name": [
+                "--stage-and-upgrade",
+                "-up"
+              ]
+            },
+            {
+              "description": "Publish your changes upon a successful import",
+              "name": [
+                "--publish-changes",
+                "-pc"
+              ]
+            },
+            {
+              "description": "Convert to a managed solution",
+              "name": [
+                "--convert-to-managed",
+                "-cm"
+              ]
+            },
+            {
+              "description": "Imports the solution asynchronously",
+              "name": [
+                "--async",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Max asynchronous wait time in minutes. The default value is 60 minutes",
+              "name": [
+                "--max-async-wait-time",
+                "-wt"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "template": "filepaths"
+              },
+              "description": "The .json file with the deployment settings for connection references and environment variables",
+              "name": [
+                "--settings-file"
+              ]
+            },
+            {
+              "description": "Skip solution import if same or higher version is present in current environment",
+              "name": [
+                "--skip-lower-version",
+                "-slv"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Export a solution from Dataverse",
+          "name": "export",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The name of the solution to be exported",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Path where the exported solution zip file is written",
+              "name": [
+                "--path",
+                "-p"
+              ]
+            },
+            {
+              "description": "Whether the solution should be exported as a managed solution",
+              "name": [
+                "--managed",
+                "-m"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The version that the exported solution will support",
+              "name": [
+                "--targetversion",
+                "-v"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Which settings should be included in the solution being exported",
+              "name": [
+                "--include",
+                "-i"
+              ]
+            },
+            {
+              "description": "Exports the solution asynchronously",
+              "name": [
+                "--async",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Max asynchronous wait time in minutes. The default value is 60 minutes",
+              "name": [
+                "--max-async-wait-time",
+                "-wt"
+              ]
+            },
+            {
+              "description": "The exported solution file can overwrite the solution zip file on the local file system",
+              "name": [
+                "--overwrite",
+                "-ow"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Create a solution project based on an existing solution in your organization",
+          "name": "clone",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The name of the solution to be exported",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The version that the exported solution will support",
+              "name": [
+                "--targetversion",
+                "-v"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Which settings should be included in the solution being exported",
+              "name": [
+                "--include",
+                "-i"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Output directory",
+              "name": [
+                "--outputDirectory",
+                "-o"
+              ]
+            },
+            {
+              "description": "Exports the solution asynchronously",
+              "name": [
+                "--async",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Max asynchronous wait time in minutes. The default value is 60 minutes",
+              "name": [
+                "--max-async-wait-time",
+                "-wt"
+              ]
+            },
+            {
+              "description": "(Preview) Pack/unpack any Canvas apps (.msapp) while processing the solution. The default value is 'false'",
+              "name": [
+                "--processCanvasApps",
+                "-pca"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "description": "Unmanaged",
+                    "name": "Unmanaged"
+                  },
+                  {
+                    "description": "Managed",
+                    "name": "Managed"
+                  },
+                  {
+                    "description": "Both",
+                    "name": "Both"
+                  }
+                ]
+              },
+              "description": "Specifies the extraction type for the solution. Can be: 'Unmanaged', 'Managed' or 'Both'. The default value is: 'Both'",
+              "name": [
+                "--packagetype",
+                "-p"
+              ]
+            },
+            {
+              "description": "Extract or merge all string resources into .resx files",
+              "name": [
+                "--localize",
+                "-loc"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Publishes all customizations",
+          "name": "publish",
+          "options": [
+            {
+              "description": "Publishes all customizations asynchronously",
+              "name": [
+                "--async",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Max asynchronous wait time in minutes. The default value is 60 minutes",
+              "name": [
+                "--max-async-wait-time",
+                "-wt"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Apply solution upgrade",
+          "name": "upgrade",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Name of the solution",
+              "name": [
+                "--solution-name",
+                "-sn"
+              ]
+            },
+            {
+              "description": "Upgrades solution asynchronously",
+              "name": [
+                "--async",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Max asynchronous wait time in minutes. The default value is 60 minutes",
+              "name": [
+                "--max-async-wait-time",
+                "-wt"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Add license and plan info to the solution",
+          "name": "add-license",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "License plan definition file in CSV format; expected columns: Service ID, Display name, More info URL",
+              "name": [
+                "--planDefinitionFile",
+                "-pd"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "License plan mapping file in CSV format; expected columns: Service ID, Component name",
+              "name": [
+                "--planMappingFile",
+                "-pm"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Upload a Dataverse solution project to run against the Power Apps Checker service",
+          "name": "check",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Path where one or more solution files to be checked exist. The path can contain glob/wildcard characters",
+              "name": [
+                "--path",
+                "-p"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "SAS Uri pointing to solution.zip to be analyzed",
+              "name": [
+                "--solutionUrl",
+                "-u"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Output directory",
+              "name": [
+                "--outputDirectory",
+                "-o"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "description": "PreviewUnitedStates",
+                    "name": "PreviewUnitedStates"
+                  },
+                  {
+                    "description": "UnitedStates",
+                    "name": "UnitedStates"
+                  },
+                  {
+                    "description": "Europe",
+                    "name": "Europe"
+                  },
+                  {
+                    "description": "Asia",
+                    "name": "Asia"
+                  },
+                  {
+                    "description": "Australia",
+                    "name": "Australia"
+                  },
+                  {
+                    "description": "Japan",
+                    "name": "Japan"
+                  },
+                  {
+                    "description": "India",
+                    "name": "India"
+                  },
+                  {
+                    "description": "Canada",
+                    "name": "Canada"
+                  },
+                  {
+                    "description": "SouthAmerica",
+                    "name": "SouthAmerica"
+                  },
+                  {
+                    "description": "UnitedKingdom",
+                    "name": "UnitedKingdom"
+                  },
+                  {
+                    "description": "France",
+                    "name": "France"
+                  },
+                  {
+                    "description": "SouthAfrica",
+                    "name": "SouthAfrica"
+                  },
+                  {
+                    "description": "Germany",
+                    "name": "Germany"
+                  },
+                  {
+                    "description": "UnitedArabEmirates",
+                    "name": "UnitedArabEmirates"
+                  },
+                  {
+                    "description": "Switzerland",
+                    "name": "Switzerland"
+                  },
+                  {
+                    "description": "Norway",
+                    "name": "Norway"
+                  },
+                  {
+                    "description": "Singapore",
+                    "name": "Singapore"
+                  },
+                  {
+                    "description": "Korea",
+                    "name": "Korea"
+                  },
+                  {
+                    "description": "USGovernment",
+                    "name": "USGovernment"
+                  },
+                  {
+                    "description": "USGovernmentL4",
+                    "name": "USGovernmentL4"
+                  },
+                  {
+                    "description": "USGovernmentL5DoD",
+                    "name": "USGovernmentL5DoD"
+                  },
+                  {
+                    "description": "China",
+                    "name": "China"
+                  }
+                ]
+              },
+              "description": "Which geographical instance of the Power Apps Checker service to use",
+              "name": [
+                "--geo",
+                "-g"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify a custom URL as the Power Apps Checker endpoint",
+              "name": [
+                "--customEndpoint",
+                "-ce"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Path to a file containing a JSON array rules and levels to override. Accepted values for OverrideLevel are: Critical, High, Medium, Low, Informational. Example: [{'Id':'meta-remove-dup-reg','OverrideLevel':'Medium'},{'Id':'il-avoid-specialized-update-ops','OverrideLevel':'Medium'}]",
+              "name": [
+                "--ruleLevelOverride",
+                "-rl"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Select a rule set that is executed as part of this build. Values: A valid Guid, 'AppSource Certification', 'Solution Checker' (default)",
+              "name": [
+                "--ruleSet",
+                "-rs"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Exclude Files from the Analysis. Pass as comma-separated values",
+              "name": [
+                "--excludedFiles",
+                "-ef"
+              ]
+            },
+            {
+              "description": "Uses current environment to store solution analysis results that can be seen in Solution Health Hub App. By default, this argument is set to false",
+              "name": [
+                "--saveResults",
+                "-sav"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Create a settings file from solution zip or solution folder",
+          "name": "create-settings",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Path to solution zip file",
+              "name": [
+                "--solution-zip",
+                "-z"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Path to the local, unpacked solution folder: either the root of the 'Other/Solution.xml' file or a folder with a .cdsproj file",
+              "name": [
+                "--solution-folder",
+                "-f"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The .json file with the deployment settings for connection references and environment variables",
+              "name": [
+                "--settings-file",
+                "-s"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Package solution components on local filesystem into solution.zip (SolutionPackager)",
+          "name": "pack",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The full path to the solution ZIP file",
+              "name": [
+                "--zipfile",
+                "-z"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The path to the root folder on the local filesystem. When unpacking or extracting, this is written to. When packing this is read from",
+              "name": [
+                "--folder",
+                "-f"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "description": "Unmanaged",
+                    "name": "Unmanaged"
+                  },
+                  {
+                    "description": "Managed",
+                    "name": "Managed"
+                  },
+                  {
+                    "description": "Both",
+                    "name": "Both"
+                  }
+                ]
+              },
+              "description": "When unpacking or extracting, use to specify dual Managed and Unmanaged operation. When packing, use to specify Managed or Unmanaged from a previous unpack 'Both'. Can be: 'Unmanaged', 'Managed' or 'Both'. The default value is 'Unmanaged'",
+              "name": [
+                "--packagetype",
+                "-p"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The path to the log file",
+              "name": [
+                "--log",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Minimum logging level for log output [Verbose|Info|Warning|Error|Off]. The default value is 'Info'",
+              "name": [
+                "--errorlevel",
+                "-e"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Only perform action on a single component type [WebResource|Plugin|Workflow|None]. The default value is 'None'",
+              "name": [
+                "--singleComponent",
+                "-sc"
+              ]
+            },
+            {
+              "description": "Dictates if delete operations may occur. The default value is 'false'",
+              "name": [
+                "--allowDelete",
+                "-ad"
+              ]
+            },
+            {
+              "description": "Dictates if write operations may occur. The default value is 'false'",
+              "name": [
+                "--allowWrite",
+                "-aw"
+              ]
+            },
+            {
+              "description": "Enables that files marked read-only can be deleted or overwritten. The default value is 'false'",
+              "name": [
+                "--clobber",
+                "-c"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The full path to a mapping xml file from which to read component folders to pack",
+              "name": [
+                "--map",
+                "-m"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Generates a template resource file. Valid only on extract. Possible values are 'auto', or language code of the language you wish to export. You can use Language Code Identifier (LCID), or International Organization for Standardization (ISO) language code formats. When present, this extracts the string resources from the given locale as a neutral .resx. If 'auto' or just the long or short form of the switch is specified, the base locale for the solution is used",
+              "name": [
+                "--sourceLoc",
+                "-src"
+              ]
+            },
+            {
+              "description": "Extract or merge all string resources into .resx files",
+              "name": [
+                "--localize",
+                "-loc"
+              ]
+            },
+            {
+              "description": "Use Language Code Identifier (LCID) values (1033) rather than International Organization for Standardization (ISO) codes (en-US) for language files",
+              "name": [
+                "--useLcid",
+                "-lcid"
+              ]
+            },
+            {
+              "description": "Use the same XML source file when packaging for Managed and only Unmanaged XML file is found; applies to AppModuleSiteMap, AppModuleMap, FormXml files",
+              "name": [
+                "--useUnmanagedFileForMissingManaged",
+                "-same"
+              ]
+            },
+            {
+              "description": "Disabled plug-in fully qualified type name remapping. The default value is 'false'",
+              "name": [
+                "--disablePluginRemap",
+                "-dpm"
+              ]
+            },
+            {
+              "description": "(Preview) Pack/unpack any Canvas apps (.msapp) while processing the solution. The default value is 'false'",
+              "name": [
+                "--processCanvasApps",
+                "-pca"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Extract solution components from solution.zip onto local filesystem (SolutionPackager)",
+          "name": "unpack",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The full path to the solution ZIP file",
+              "name": [
+                "--zipfile",
+                "-z"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The path to the root folder on the local filesystem. When unpacking or extracting, this is written to. When packing this is read from",
+              "name": [
+                "--folder",
+                "-f"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "description": "Unmanaged",
+                    "name": "Unmanaged"
+                  },
+                  {
+                    "description": "Managed",
+                    "name": "Managed"
+                  },
+                  {
+                    "description": "Both",
+                    "name": "Both"
+                  }
+                ]
+              },
+              "description": "When unpacking or extracting, use to specify dual Managed and Unmanaged operation. When packing, use to specify Managed or Unmanaged from a previous unpack 'Both'. Can be: 'Unmanaged', 'Managed' or 'Both'. The default value is 'Unmanaged'",
+              "name": [
+                "--packagetype",
+                "-p"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The path to the log file",
+              "name": [
+                "--log",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Minimum logging level for log output [Verbose|Info|Warning|Error|Off]. The default value is 'Info'",
+              "name": [
+                "--errorlevel",
+                "-e"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Only perform action on a single component type [WebResource|Plugin|Workflow|None]. The default value is 'None'",
+              "name": [
+                "--singleComponent",
+                "-sc"
+              ]
+            },
+            {
+              "description": "Dictates if delete operations may occur. The default value is 'false'",
+              "name": [
+                "--allowDelete",
+                "-ad"
+              ]
+            },
+            {
+              "description": "Dictates if write operations may occur. The default value is 'false'",
+              "name": [
+                "--allowWrite",
+                "-aw"
+              ]
+            },
+            {
+              "description": "Enables that files marked read-only can be deleted or overwritten. The default value is 'false'",
+              "name": [
+                "--clobber",
+                "-c"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The full path to a mapping xml file from which to read component folders to pack",
+              "name": [
+                "--map",
+                "-m"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Generates a template resource file. Valid only on extract. Possible values are 'auto', or language code of the language you wish to export. You can use Language Code Identifier (LCID), or International Organization for Standardization (ISO) language code formats. When present, this extracts the string resources from the given locale as a neutral .resx. If 'auto' or just the long or short form of the switch is specified, the base locale for the solution is used",
+              "name": [
+                "--sourceLoc",
+                "-src"
+              ]
+            },
+            {
+              "description": "Extract or merge all string resources into .resx files",
+              "name": [
+                "--localize",
+                "-loc"
+              ]
+            },
+            {
+              "description": "Use Language Code Identifier (LCID) values (1033) rather than International Organization for Standardization (ISO) codes (en-US) for language files",
+              "name": [
+                "--useLcid",
+                "-lcid"
+              ]
+            },
+            {
+              "description": "Use the same XML source file when packaging for Managed and only Unmanaged XML file is found; applies to AppModuleSiteMap, AppModuleMap, FormXml files",
+              "name": [
+                "--useUnmanagedFileForMissingManaged",
+                "-same"
+              ]
+            },
+            {
+              "description": "Disabled plug-in fully qualified type name remapping. The default value is 'false'",
+              "name": [
+                "--disablePluginRemap",
+                "-dpm"
+              ]
+            },
+            {
+              "description": "(Preview) Pack/unpack any Canvas apps (.msapp) while processing the solution. The default value is 'false'",
+              "name": [
+                "--processCanvasApps",
+                "-pca"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Add one or more solution components to the target unmanaged solution in Dataverse",
+          "name": "add-solution-component",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Name of the solution",
+              "name": [
+                "--solutionUniqueName",
+                "-sn"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The schema name or ID of the component to add to the target solution",
+              "name": [
+                "--component",
+                "-c"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The value that represents the solution component that you're adding",
+              "name": [
+                "--componentType",
+                "-ct"
+              ]
+            },
+            {
+              "description": "Indicates whether other solution components required by the solution component that you're adding should also be added to the unmanaged solution",
+              "name": [
+                "--AddRequiredComponents",
+                "-arc"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Environment URL or ID of the target environment",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Sync the current Dataverse solution project to the current state of the solution in your organization",
+          "name": "sync",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Path to the local, unpacked solution folder: either the root of the 'Other/Solution.xml' file or a folder with a .cdsproj file",
+              "name": [
+                "--solution-folder",
+                "-f"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Which settings should be included in the solution being exported",
+              "name": [
+                "--include",
+                "-i"
+              ]
+            },
+            {
+              "description": "Exports the solution asynchronously",
+              "name": [
+                "--async",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Max asynchronous wait time in minutes. The default value is 60 minutes",
+              "name": [
+                "--max-async-wait-time",
+                "-wt"
+              ]
+            },
+            {
+              "description": "(Preview) Pack/unpack any Canvas apps (.msapp) while processing the solution. The default value is 'false'",
+              "name": [
+                "--processCanvasApps",
+                "-pca"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "description": "Unmanaged",
+                    "name": "Unmanaged"
+                  },
+                  {
+                    "description": "Managed",
+                    "name": "Managed"
+                  },
+                  {
+                    "description": "Both",
+                    "name": "Both"
+                  }
+                ]
+              },
+              "description": "When unpacking or extracting, use to specify dual Managed and Unmanaged operation. When packing, use to specify Managed or Unmanaged from a previous unpack 'Both'. Can be: 'Unmanaged', 'Managed' or 'Both'. The default value is: 'Both'",
+              "name": [
+                "--packagetype",
+                "-p"
+              ]
+            },
+            {
+              "description": "Extract or merge all string resources into .resx files",
+              "name": [
+                "--localize",
+                "-loc"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage telemetry settings",
+      "name": "telemetry",
+      "subcommands": [
+        {
+          "description": "Choose to send usage information to help Microsoft improve this product",
+          "name": "enable"
+        },
+        {
+          "description": "Choose to not send usage information to help Microsoft improve this product",
+          "name": "disable"
+        },
+        {
+          "description": "Show the current status of telemetry",
+          "name": "status"
+        }
+      ]
+    },
+    {
+      "description": "(Preview) Execution of automated tests for a Power App",
+      "name": "test",
+      "subcommands": [
+        {
+          "description": "(Preview) Execute tests defined in a Test Plan file",
+          "name": "run",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Path to the Test Plan file",
+              "name": [
+                "--test-plan-file",
+                "-test"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Environment ID for the app to be tested",
+              "name": [
+                "--environment-id",
+                "-env"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Tenant ID for the app being tested",
+              "name": [
+                "--tenant",
+                "-t"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Path to save test output and logs",
+              "name": [
+                "--output-directory",
+                "-o"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The player domain for the app being tested",
+              "name": [
+                "--domain",
+                "-d"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Power Platform tools that can be installed and launched",
+      "name": "tool",
+      "subcommands": [
+        {
+          "description": "List the launchable tools and their local install state and version",
+          "name": "list"
+        },
+        {
+          "description": "Launch Power Platform Admin Center for the current environment",
+          "name": "admin"
+        },
+        {
+          "description": "Launch Power Apps Maker Portal for the current environment",
+          "name": "maker"
+        },
+        {
+          "description": "Launch Plug-in Registration Tool (PRT)",
+          "name": "prt",
+          "options": [
+            {
+              "description": "Update tool to latest available version from nuget.org",
+              "name": [
+                "--update",
+                "-u"
+              ]
+            },
+            {
+              "description": "Clear tool from local file cache",
+              "name": [
+                "--clear",
+                "-c"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Launch Configuration Migration Tool (CMT)",
+          "name": "cmt",
+          "options": [
+            {
+              "description": "Update tool to latest available version from nuget.org",
+              "name": [
+                "--update",
+                "-u"
+              ]
+            },
+            {
+              "description": "Clear tool from local file cache",
+              "name": [
+                "--clear",
+                "-c"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Launch Package Deployer (PD)",
+          "name": "pd",
+          "options": [
+            {
+              "description": "Update tool to latest available version from nuget.org",
+              "name": [
+                "--update",
+                "-u"
+              ]
+            },
+            {
+              "description": "Clear tool from local file cache",
+              "name": [
+                "--clear",
+                "-c"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Commands for working with Power Virtual Agent bots",
+      "name": "virtual-agent",
+      "subcommands": [
+        {
+          "description": "List of Virtual Agents in the current or target Dataverse environment",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The target Environment ID or URL. The default value is the environment of your currently active Dataverse Auth Profile",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Poll the deployment status of a specified Virtual Agent in the current or target Dataverse environment",
+          "name": "status",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The target Environment ID or URL. The default value is the environment of your currently active Dataverse Auth Profile",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The ID of a Virtual Agent (Chatbot)",
+              "name": [
+                "--bot-id",
+                "-id"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Extracts file containing localized content for one or more bots",
+          "name": "extract-translation",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The target Environment ID or URL. The default value is the environment of your currently active Dataverse Auth Profile",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Source solution directory. When specified, will ignore the connected environment when looking for bots and instead look for content in the solution folder",
+              "name": [
+                "--sourcedir",
+                "-src"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The Chatbot ID or schema name (unique name found in Bot Details or file name in solution explorer)",
+              "name": [
+                "--bot",
+                "-id"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The output directory to write to",
+              "name": [
+                "--outdir"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The file format in which to write localized files, either 'resx' or 'json'. The default is 'resx'",
+              "name": [
+                "--format"
+              ]
+            },
+            {
+              "description": "Write localization files for all supported languages. By default, only the primary language is written",
+              "name": [
+                "--all",
+                "-a"
+              ]
+            },
+            {
+              "description": "Allow overwrite of the output data file if it already exists",
+              "name": [
+                "--overwrite",
+                "-o"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Merge files containing localized content for one or more bots",
+          "name": "merge-translation",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The target Environment ID or URL. The default value is the environment of your currently active Dataverse Auth Profile",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Source solution directory. When specified, will ignore the connected environment when looking for bots and instead look for content in the solution folder",
+              "name": [
+                "--sourcedir",
+                "-src"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The list of files that contain translations. Glob patterns are supported",
+              "name": [
+                "--file",
+                "-f"
+              ]
+            },
+            {
+              "description": "Does not execute the command, but outputs the details of what would happen",
+              "name": [
+                "--whatif"
+              ]
+            },
+            {
+              "description": "Output more diagnostic information during data import/export",
+              "name": [
+                "--verbose"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Name of the solution",
+              "name": [
+                "--solution",
+                "-s"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Extracts a template file from an existing bot in an environment",
+          "name": "extract-template",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The target Environment ID or URL. The default value is the environment of your currently active Dataverse Auth Profile",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The Chatbot ID or schema name (unique name found in Bot Details or file name in solution explorer)",
+              "name": [
+                "--bot",
+                "-id"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Location of the yaml file to write the bot template to",
+              "name": [
+                "--templateFileName"
+              ]
+            },
+            {
+              "description": "Allow overwrite of the output data file if it already exists",
+              "name": [
+                "--overwrite",
+                "-o"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Creates a new bot using an existing template file as the reference",
+          "name": "create",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The target Environment ID or URL. The default value is the environment of your currently active Dataverse Auth Profile",
+              "name": [
+                "--environment",
+                "-env"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The schema name (unique name) of the new bot",
+              "name": [
+                "--schemaName"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Source yaml file containing the bot template that was extracted using the extract-template command",
+              "name": [
+                "--templateFileName"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The display name of the new bot",
+              "name": [
+                "--displayName"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Name of the solution",
+              "name": [
+                "--solution",
+                "-s"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

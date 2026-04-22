@@ -1,0 +1,715 @@
+{
+  "description": "Create, control and connect to Ubuntu instances",
+  "name": "multipass",
+  "options": [
+    {
+      "description": "Displays help on commandline options",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Displays help including Qt specific options",
+      "name": [
+        "--help-all"
+      ]
+    },
+    {
+      "description": "Increase logging verbosity. Repeat the 'v' in the short option for more detail. Maximum verbosity is obtained with 4 (or more) v's, i.e. -vvvv",
+      "name": [
+        "-v",
+        "--verbose"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": [
+        {
+          "isOptional": true,
+          "name": "options"
+        },
+        {
+          "description": "Alias definition in the form <instance>:<command>",
+          "name": "definition"
+        },
+        {
+          "description": "Name given to the alias being defined, defaults to <command>",
+          "isOptional": true,
+          "name": "name"
+        }
+      ],
+      "description": "Create an alias",
+      "name": "alias"
+    },
+    {
+      "description": "List available aliases",
+      "name": "aliases",
+      "options": [
+        {
+          "args": {
+            "name": "format",
+            "suggestions": [
+              {
+                "name": "table"
+              },
+              {
+                "name": "json"
+              },
+              {
+                "name": "csv"
+              },
+              {
+                "name": "yaml"
+              }
+            ]
+          },
+          "description": "Output list in the requested format. Valid formats are: table (default), json, csv and yaml",
+          "name": [
+            "--format"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Name of instances to delete",
+        "generators": [
+          {
+            "type": "multipass_list"
+          }
+        ],
+        "isVariadic": true,
+        "name": "name"
+      },
+      "description": "Delete instances",
+      "name": "delete",
+      "options": [
+        {
+          "description": "Delete all instances",
+          "name": [
+            "--all"
+          ]
+        },
+        {
+          "description": "Purge instances immediately",
+          "name": [
+            "-p",
+            "--purge"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Name of the instance to run the command on",
+          "generators": [
+            {
+              "type": "multipass_list"
+            }
+          ],
+          "name": "name"
+        },
+        {
+          "description": "Command to execute on the instance",
+          "name": "command"
+        }
+      ],
+      "description": "Run a command on an instance",
+      "name": "exec"
+    },
+    {
+      "args": {
+        "description": "An optional value to search for in [<remote:>]<string> format, where <remote> can be either 'release' or 'daily'. If <remote> is omitted, it will search 'release' first, and if no matches are found, it will then search 'daily'. <string> can be a partial image hash or an Ubuntu release version, codename or alias.",
+        "isOptional": true,
+        "name": "string"
+      },
+      "description": "Display available images to create instances from",
+      "name": "find",
+      "options": [
+        {
+          "args": {
+            "name": "format",
+            "suggestions": [
+              {
+                "name": "table"
+              },
+              {
+                "name": "json"
+              },
+              {
+                "name": "csv"
+              },
+              {
+                "name": "yaml"
+              }
+            ]
+          },
+          "description": "Output list in the requested format. Valid formats are: table (default), json, csv and yaml",
+          "name": [
+            "--format"
+          ]
+        },
+        {
+          "description": "Show unsupported cloud images as well",
+          "name": [
+            "--show-unsupported"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Path to the setting whose configured value should be obtained",
+        "name": "key",
+        "suggestions": [
+          {
+            "name": "client.gui.autostart"
+          },
+          {
+            "name": "client.gui.hotkey"
+          },
+          {
+            "name": "client.primary-name"
+          },
+          {
+            "name": "local.bridged-network"
+          },
+          {
+            "name": "local.driver"
+          },
+          {
+            "name": "local.privileged-mounts"
+          }
+        ]
+      },
+      "description": "Get a configuration setting",
+      "name": "get",
+      "options": [
+        {
+          "description": "Output in raw format. For now, this affects only the representation of empty values (i.e. \"\" instead of \"<empty>\")",
+          "name": [
+            "--raw"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Name of command to display help for",
+        "isOptional": true,
+        "name": "command"
+      },
+      "description": "Display help about a command",
+      "name": "help"
+    },
+    {
+      "args": {
+        "description": "Names of instances to display information about",
+        "generators": [
+          {
+            "type": "multipass_list"
+          }
+        ],
+        "isVariadic": true,
+        "name": "name"
+      },
+      "description": "Display information about instances",
+      "name": "info",
+      "options": [
+        {
+          "args": {
+            "name": "format",
+            "suggestions": [
+              {
+                "name": "table"
+              },
+              {
+                "name": "json"
+              },
+              {
+                "name": "csv"
+              },
+              {
+                "name": "yaml"
+              }
+            ]
+          },
+          "description": "Output list in the requested format. Valid formats are: table (default), json, csv and yaml",
+          "name": [
+            "--format"
+          ]
+        },
+        {
+          "description": "Display info for all instances",
+          "name": [
+            "--all"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Optional image to launch. If omitted, then the default Ubuntu LTS will be used",
+        "generators": [
+          {
+            "js_source": "a=>{let e=JSON.parse(a).images;return Object.keys(e).map(i=>({name:i,description:e[i].os+\" \"+e[i].release}))}",
+            "requires_js": true,
+            "script": [
+              "multipass",
+              "find",
+              "--format=json"
+            ]
+          }
+        ],
+        "isOptional": true,
+        "name": "image"
+      },
+      "description": "Create and start an Ubuntu instance",
+      "name": "launch",
+      "options": [
+        {
+          "args": {
+            "name": "timeout"
+          },
+          "description": "Maximum time, in seconds, to wait for the command to complete. Note that some background operations may continue beyond that. By default, instance startup and initialization is limited to 5 minutes each",
+          "name": [
+            "--timeout"
+          ]
+        },
+        {
+          "args": {
+            "name": "cpus"
+          },
+          "description": "Number of CPUs to allocate. Minimum: 1, default: 1",
+          "name": [
+            "-c",
+            "--cpus"
+          ]
+        },
+        {
+          "args": {
+            "name": "disk"
+          },
+          "description": "Disk space to allocate. Positive integers, in bytes, or with K, M, G suffix Minimum: 512M, default: 5G.",
+          "name": [
+            "-d",
+            "--disk"
+          ]
+        },
+        {
+          "args": {
+            "name": "mem"
+          },
+          "description": "Amount of memory to allocate. Positive integers, in bytes, or with K, M, G suffix Minimum: 128M, default: 1G.",
+          "name": [
+            "-m",
+            "--mem"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Name for the instance. If it is 'primary' (the configured primary instance name), the user's home directory is mounted inside the newly launched instance, in 'Home'",
+          "name": [
+            "-n",
+            "--name"
+          ]
+        },
+        {
+          "args": {
+            "name": "file"
+          },
+          "description": "Path to a user-data cloud-init configuration, or '-' forstdin",
+          "name": [
+            "--cloud-init"
+          ]
+        },
+        {
+          "args": {
+            "name": "spec"
+          },
+          "description": "Add a network interface to the instance, where <spec> is in the \"key=value,key=value\" format",
+          "name": [
+            "--network"
+          ]
+        },
+        {
+          "description": "Adds one `--network bridged` network",
+          "name": [
+            "--bridged"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "List all available instances",
+      "name": "list",
+      "options": [
+        {
+          "args": {
+            "name": "format",
+            "suggestions": [
+              {
+                "name": "table"
+              },
+              {
+                "name": "json"
+              },
+              {
+                "name": "csv"
+              },
+              {
+                "name": "yaml"
+              }
+            ]
+          },
+          "description": "Output list in the requested format. Valid formats are: table (default), json, csv and yaml",
+          "name": [
+            "--format"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Path to the local directory to mount",
+          "name": "source",
+          "template": "folders"
+        },
+        {
+          "description": "Target mount points, in <name>[:<path>] format, where <name> is an instance name, and optional <path> is the mount point. If omitted, the mount point will be the same as the source's absolute path",
+          "isVariadic": true,
+          "name": "target"
+        }
+      ],
+      "description": "Mount a local directory in the instance",
+      "name": "mount",
+      "options": [
+        {
+          "args": {
+            "name": "host:instance"
+          },
+          "description": "A mapping of group IDs for use in the mount. File and folder ownership will be mapped from <host> to <instance> inside the instance. Can be used multiple times",
+          "name": [
+            "-g",
+            "--gid-map"
+          ]
+        },
+        {
+          "args": {
+            "name": "host:instance"
+          },
+          "description": "A mapping of user IDs for use in the mount. File and folder ownership will be mapped from <host> to <instance> inside the instance. Can be used multiple times",
+          "name": [
+            "-u",
+            "--uid-map"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "List all available networks interfaces",
+      "name": "networks",
+      "options": [
+        {
+          "args": {
+            "name": "format",
+            "suggestions": [
+              {
+                "name": "table"
+              },
+              {
+                "name": "json"
+              },
+              {
+                "name": "csv"
+              },
+              {
+                "name": "yaml"
+              }
+            ]
+          },
+          "description": "Output list in the requested format. Valid formats are: table (default), json, csv and yaml",
+          "name": [
+            "--format"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Purge all deleted instances permanently",
+      "name": "purge"
+    },
+    {
+      "args": {
+        "description": "Names of instances to recover",
+        "generators": [
+          {
+            "type": "multipass_list"
+          }
+        ],
+        "isVariadic": true,
+        "name": "name"
+      },
+      "description": "Recover deleted instances",
+      "name": "recover",
+      "options": [
+        {
+          "description": "Recover all deleted instances",
+          "name": [
+            "--all"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Names of instances to restart. If omitted, and without the --all option, 'primary' will be assumed",
+        "generators": [
+          {
+            "type": "multipass_list"
+          }
+        ],
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "name"
+      },
+      "description": "Restart instances",
+      "name": "restart",
+      "options": [
+        {
+          "args": {
+            "name": "timeout"
+          },
+          "description": "Maximum time, in seconds, to wait for the command to complete. Note that some background operations may continue beyond that. By default, instance startup and initialization is limited to 5 minutes each",
+          "name": [
+            "--timeout"
+          ]
+        },
+        {
+          "description": "Restart all instances",
+          "name": [
+            "--all"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "A key-value pair. The key specifies a path to the setting to configure. The value is its intended value",
+        "name": "key=value",
+        "suggestions": [
+          {
+            "name": "client.gui.autostart="
+          },
+          {
+            "name": "client.gui.hotkey="
+          },
+          {
+            "name": "client.primary-name="
+          },
+          {
+            "name": "local.bridged-network="
+          },
+          {
+            "name": "local.driver="
+          },
+          {
+            "name": "local.privileged-mounts="
+          }
+        ]
+      },
+      "description": "Set a configuration setting",
+      "name": "set"
+    },
+    {
+      "args": {
+        "description": "Name of the instance to open a shell on. If omitted, 'primary' (the configured primary instance name) will be assumed. If the instance is not running, an attempt is made to start it (see `start` for more info)",
+        "generators": [
+          {
+            "type": "multipass_list"
+          }
+        ],
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "name"
+      },
+      "description": "Open a shell on a running instance",
+      "name": "shell",
+      "options": [
+        {
+          "args": {
+            "name": "timeout"
+          },
+          "description": "Maximum time, in seconds, to wait for the command to complete. Note that some background operations may continue beyond that. By default, instance startup and initialization is limited to 5 minutes each",
+          "name": [
+            "--timeout"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Names of instances to start. If omitted, and without the --all option, 'primary' (the configured primary instance name) will be assumed. If 'primary' does not exist but is included in a successful start command either implicitly or explicitly), it is launched automatically (see`launch` for more info).",
+        "generators": [
+          {
+            "type": "multipass_list"
+          }
+        ],
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "name"
+      },
+      "description": "Start instances",
+      "name": "start",
+      "options": [
+        {
+          "args": {
+            "name": "timeout"
+          },
+          "description": "Maximum time, in seconds, to wait for the command to complete. Note that some background operations may continue beyond that. By default, instance startup and initialization is limited to 5 minutes each",
+          "name": [
+            "--timeout"
+          ]
+        },
+        {
+          "description": "Start all instances",
+          "name": [
+            "--all"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Names of instances to stop. If omitted, and without the --all option, 'primary' will be assumed.",
+        "generators": [
+          {
+            "type": "multipass_list"
+          }
+        ],
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "name"
+      },
+      "description": "Stop running instances",
+      "name": "stop",
+      "options": [
+        {
+          "description": "Stop all instances",
+          "name": [
+            "--all"
+          ]
+        },
+        {
+          "args": {
+            "name": "time"
+          },
+          "description": "Time from now, in minutes, to delay shutdown of the instance",
+          "name": [
+            "-t",
+            "--time"
+          ]
+        },
+        {
+          "description": "Cancel a pending delayed shutdown",
+          "name": [
+            "-c",
+            "--cancel"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Names of instances to suspend. If omitted, and without the --all option, 'primary' will be assumed.",
+        "generators": [
+          {
+            "type": "multipass_list"
+          }
+        ],
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "name"
+      },
+      "description": "Suspend running instances",
+      "name": "suspend",
+      "options": [
+        {
+          "description": "Suspend all instances",
+          "name": [
+            "--all"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "One or more paths to transfer, prefixed with <name:> for paths inside the instance, or '-' for stdin",
+          "isVariadic": true,
+          "name": "source",
+          "template": "filepaths"
+        },
+        {
+          "description": "The destination path, prefixed with <name:> for paths inside the instance, or '-' for stdout",
+          "name": "destination",
+          "template": "filepaths"
+        }
+      ],
+      "description": "Transfer files between the host and instances",
+      "name": "transfer"
+    },
+    {
+      "args": {
+        "description": "Mount points, in <name>[:<path>] format, where <name> are instance names, and optional <path> are mount points. If omitted, all mounts will be removed from the named instances.",
+        "isVariadic": true,
+        "name": "mount"
+      },
+      "description": "Unmount a directory from an instance",
+      "name": "umount"
+    },
+    {
+      "args": {
+        "description": "The name of the alias to remove",
+        "name": "name"
+      },
+      "description": "Remove an alias",
+      "name": "unalias"
+    },
+    {
+      "description": "Show version details",
+      "name": "version",
+      "options": [
+        {
+          "args": {
+            "name": "format",
+            "suggestions": [
+              {
+                "name": "table"
+              },
+              {
+                "name": "json"
+              },
+              {
+                "name": "csv"
+              },
+              {
+                "name": "yaml"
+              }
+            ]
+          },
+          "description": "Output list in the requested format. Valid formats are: table (default), json, csv and yaml",
+          "name": [
+            "--format"
+          ]
+        }
+      ]
+    }
+  ]
+}

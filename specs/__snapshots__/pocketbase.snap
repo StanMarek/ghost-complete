@@ -1,0 +1,139 @@
+{
+  "description": "PocketBase CLI",
+  "name": "pocketbase",
+  "options": [
+    {
+      "description": "Enable debug mode, aka showing more detailed logs",
+      "name": [
+        "--debug"
+      ]
+    },
+    {
+      "args": {
+        "description": "PocketBase data directory",
+        "name": "dir",
+        "template": "folders"
+      },
+      "description": "PocketBase data directory (default \"pb_data\")",
+      "name": [
+        "--dir"
+      ]
+    },
+    {
+      "args": {
+        "description": "Encryption environment variable name",
+        "name": "env"
+      },
+      "description": "Environment variable whose value of 32 chars will be used as encryption key for the app settings (default none)",
+      "name": [
+        "--encryptionEnv"
+      ]
+    },
+    {
+      "description": "Show help for pocketbase",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Show version for pocketbase",
+      "name": [
+        "-v",
+        "--version"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "isOptional": true,
+        "name": "subcommand",
+        "template": "help"
+      },
+      "description": "Help about any command",
+      "name": "help"
+    },
+    {
+      "description": "Executes DB migration scripts",
+      "name": "migrate",
+      "subcommands": [
+        {
+          "args": {
+            "description": "Migrations folder",
+            "isOptional": true,
+            "name": "folder",
+            "template": "folders"
+          },
+          "description": "(Experimental) Creates new migration file with the most recent local collections configuration",
+          "name": "collections"
+        },
+        {
+          "args": [
+            {
+              "description": "Migration file name",
+              "name": "name"
+            },
+            {
+              "description": "Migrations folder",
+              "isOptional": true,
+              "name": "folder",
+              "template": "folders"
+            }
+          ],
+          "description": "Creates new migration template file",
+          "name": "create"
+        },
+        {
+          "args": {
+            "description": "Number of applied migrations to revert",
+            "isOptional": true,
+            "name": "number"
+          },
+          "description": "Reverts the last [number] applied migrations",
+          "name": "down"
+        },
+        {
+          "description": "Runs all available migrations",
+          "name": "up"
+        }
+      ]
+    },
+    {
+      "description": "Starts the web server (default to 127.0.0.1:8090)",
+      "name": "serve",
+      "options": [
+        {
+          "args": {
+            "description": "API HTTP server address",
+            "name": "string"
+          },
+          "description": "API HTTP server address (default \"127.0.0.1:8090\")",
+          "name": [
+            "--http"
+          ]
+        },
+        {
+          "args": {
+            "description": "API HTTPS server address (auto TLS via Let's Encrypt)",
+            "name": "string"
+          },
+          "description": "API HTTPS server address (auto TLS via Let's Encrypt). The incoming --http address traffic also will be redirected to this address",
+          "name": [
+            "--https"
+          ]
+        },
+        {
+          "args": {
+            "description": "CORS allowed domain origins list",
+            "name": "strings"
+          },
+          "description": "CORS allowed domain origins list (default [*])",
+          "name": [
+            "--origins"
+          ]
+        }
+      ]
+    }
+  ]
+}

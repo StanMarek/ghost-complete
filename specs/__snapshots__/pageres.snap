@@ -1,0 +1,174 @@
+{
+  "args": [
+    {
+      "isVariadic": true,
+      "name": "url | filepath",
+      "template": "filepaths"
+    },
+    {
+      "isVariadic": true,
+      "name": "resolution"
+    }
+  ],
+  "description": "Capture website screenshots",
+  "name": "pageres",
+  "options": [
+    {
+      "description": "Verbose output to see errors if you need to troubleshoot",
+      "name": [
+        "--verbose",
+        "-v"
+      ]
+    },
+    {
+      "description": "Crop to the set height",
+      "name": [
+        "--crop",
+        "-c"
+      ]
+    },
+    {
+      "args": {
+        "name": "time"
+      },
+      "description": "Delay screenshot capture",
+      "name": [
+        "--delay",
+        "-d"
+      ]
+    },
+    {
+      "args": {
+        "description": "--filename='<%= date %> - <%= url %>'",
+        "name": "template"
+      },
+      "description": "Custom filename",
+      "name": [
+        "--filename"
+      ]
+    },
+    {
+      "description": "Overwrite destination file if it exists. Defaults to appending (n) to the file name if --overwrite is not set",
+      "name": [
+        "--overwrite"
+      ]
+    },
+    {
+      "args": {
+        "name": "element"
+      },
+      "description": "Capture DOM element",
+      "name": [
+        "--selector"
+      ]
+    },
+    {
+      "args": {
+        "name": "element"
+      },
+      "description": "Hide DOM element. Can be set multiple times",
+      "name": [
+        "--hide"
+      ]
+    },
+    {
+      "description": "Override a global crop option within a group",
+      "name": [
+        "--no-crop"
+      ]
+    },
+    {
+      "args": {
+        "name": "string",
+        "template": "filepaths"
+      },
+      "description": "Apply custom CSS to the webpage. Specify some CSS or the path to a CSS file",
+      "name": [
+        "--css"
+      ]
+    },
+    {
+      "args": {
+        "name": "cookie"
+      },
+      "description": "Browser cookie. Can be set multiple times",
+      "name": [
+        "--cookie"
+      ]
+    },
+    {
+      "args": {
+        "name": "header"
+      },
+      "description": "Custom HTTP request header. Can be set multiple times",
+      "name": [
+        "--header"
+      ]
+    },
+    {
+      "args": {
+        "name": "username"
+      },
+      "description": "Username for HTTP auth",
+      "name": [
+        "--username"
+      ]
+    },
+    {
+      "args": {
+        "name": "password"
+      },
+      "description": "Password for HTTP auth",
+      "name": [
+        "--password"
+      ]
+    },
+    {
+      "args": {
+        "name": "number"
+      },
+      "description": "Scale webpage n of times",
+      "name": [
+        "--scale"
+      ]
+    },
+    {
+      "args": {
+        "name": "format",
+        "suggestions": [
+          {
+            "name": "png"
+          },
+          {
+            "name": "jpg"
+          }
+        ]
+      },
+      "description": "Image format. Either png (default) or jpg",
+      "name": [
+        "--format"
+      ]
+    },
+    {
+      "args": {
+        "name": "string"
+      },
+      "description": "Custom user agent",
+      "name": [
+        "--user-agent"
+      ]
+    },
+    {
+      "description": "Set background color to transparent instead of white if no background is set",
+      "name": [
+        "--transparent"
+      ]
+    },
+    {
+      "description": "Emulate preference of dark color scheme",
+      "name": [
+        "--darkMode"
+      ]
+    }
+  ]
+}

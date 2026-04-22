@@ -1,0 +1,4595 @@
+{
+  "description": "CLI for tekton pipelines",
+  "name": "tkn",
+  "options": [
+    {
+      "description": "Display help",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Manage Tekton Bundles",
+      "name": "tkb",
+      "options": [
+        {
+          "args": {
+            "name": "context"
+          },
+          "description": "Name of the kubeconfig context to use (default: kubectl config current-context)",
+          "name": [
+            "--context",
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "name": "kubeconfig"
+          },
+          "description": "Kubectl config file (default: $HOME/.kube/config)",
+          "name": [
+            "--kubeconfig",
+            "-k"
+          ]
+        },
+        {
+          "args": {
+            "name": "namespace"
+          },
+          "description": "Namespace to use (default: from $KUBECONFIG)",
+          "name": [
+            "--namespace",
+            "-n"
+          ]
+        },
+        {
+          "description": "Disable coloring (default: false)",
+          "name": [
+            "--no-color",
+            "-C"
+          ]
+        },
+        {
+          "description": "Disable colouring (default: false)",
+          "name": [
+            "--nocolour"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "List and print a Tekton bundle's contents",
+          "name": "list",
+          "options": [
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "args": {
+                "name": "cache-dir"
+              },
+              "description": "A directory to cache Tekton bundles in",
+              "name": [
+                "--cache-dir"
+              ]
+            },
+            {
+              "description": "If set to true, pulls a Tekton bundle from the remote even its exact digest is available in the cache",
+              "name": [
+                "--no-cache"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "args": {
+                "name": "remote-bearer"
+              },
+              "description": "A Bearer token to authenticate against the repository",
+              "name": [
+                "--remote-bearer"
+              ]
+            },
+            {
+              "args": {
+                "name": "remote-password"
+              },
+              "description": "A password to pass to the registry for basic auth. Must be used with --remote-username",
+              "name": [
+                "--remote-password"
+              ]
+            },
+            {
+              "description": "If set to true, skips TLS check when connecting to the registry",
+              "name": [
+                "--remote-skip-tls"
+              ]
+            },
+            {
+              "args": {
+                "name": "remote-username"
+              },
+              "description": "A username to pass to the registry for basic auth. Must be used with --remote-password",
+              "name": [
+                "--remote-username"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Create or replace a Tekton bundle",
+          "name": "push",
+          "options": [
+            {
+              "args": {
+                "name": "filenames"
+              },
+              "description": "List of fully-qualified file paths containing YAML or JSON defined Tekton objects to include in this bundle",
+              "name": [
+                "--filenames",
+                "-f"
+              ]
+            },
+            {
+              "args": {
+                "name": "remote-bearer"
+              },
+              "description": "A Bearer token to authenticate against the repository",
+              "name": [
+                "--remote-bearer"
+              ]
+            },
+            {
+              "args": {
+                "name": "remote-password"
+              },
+              "description": "A password to pass to the registry for basic auth. Must be used with --remote-username",
+              "name": [
+                "--remote-password"
+              ]
+            },
+            {
+              "description": "If set to true, skips TLS check when connecting to the registry",
+              "name": [
+                "--remote-skip-tls"
+              ]
+            },
+            {
+              "args": {
+                "name": "remote-username"
+              },
+              "description": "A username to pass to the registry for basic auth. Must be used with --remote-password",
+              "name": [
+                "--remote-username"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage Chains",
+      "name": "chains",
+      "options": [
+        {
+          "args": {
+            "name": "chains-namespace"
+          },
+          "description": "Namespace in which chains is installed",
+          "name": [
+            "--chains-namespace"
+          ]
+        },
+        {
+          "args": {
+            "name": "context"
+          },
+          "description": "Name of the kubeconfig context to use (default: kubectl config current-context)",
+          "name": [
+            "--context",
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "name": "kubeconfig"
+          },
+          "description": "Kubectl config file (default: $HOME/.kube/config)",
+          "name": [
+            "--kubeconfig",
+            "-k"
+          ]
+        },
+        {
+          "args": {
+            "name": "namespace"
+          },
+          "description": "Namespace to use (default: from $KUBECONFIG)",
+          "name": [
+            "--namespace",
+            "-n"
+          ]
+        },
+        {
+          "description": "Disable coloring (default: false)",
+          "name": [
+            "--no-color",
+            "-C"
+          ]
+        },
+        {
+          "description": "Disable colouring (default: false)",
+          "name": [
+            "--nocolour"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Print Tekton Chains' payload for a specific taskrun",
+          "name": "payload",
+          "options": [
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "description": "Skip verifying the payload'signature",
+              "name": [
+                "--skip-verify",
+                "-S"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Print Tekton Chains' signature for a specific taskrun",
+          "name": "signature"
+        }
+      ]
+    },
+    {
+      "description": "Manage ClusterTasks",
+      "name": "ct",
+      "options": [
+        {
+          "args": {
+            "name": "context"
+          },
+          "description": "Name of the kubeconfig context to use (default: kubectl config current-context)",
+          "name": [
+            "--context",
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "name": "kubeconfig"
+          },
+          "description": "Kubectl config file (default: $HOME/.kube/config)",
+          "name": [
+            "--kubeconfig",
+            "-k"
+          ]
+        },
+        {
+          "args": {
+            "name": "namespace"
+          },
+          "description": "Namespace to use (default: from $KUBECONFIG)",
+          "name": [
+            "--namespace",
+            "-n"
+          ]
+        },
+        {
+          "description": "Disable coloring (default: false)",
+          "name": [
+            "--no-color",
+            "-C"
+          ]
+        },
+        {
+          "description": "Disable colouring (default: false)",
+          "name": [
+            "--nocolour"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Create a ClusterTask from Task",
+          "name": "create",
+          "options": [
+            {
+              "args": {
+                "name": "from"
+              },
+              "description": "Create a ClusterTask from Task in a particular namespace",
+              "name": [
+                "--from"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Delete ClusterTasks in a cluster",
+          "name": "rm",
+          "options": [
+            {
+              "description": "Delete all ClusterTasks (default: false)",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "description": "Whether to force deletion (default: false)",
+              "name": [
+                "--force",
+                "-f"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            },
+            {
+              "description": "Whether to delete ClusterTask(s) and related resources (TaskRuns) (default: false)",
+              "name": [
+                "--trs"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Describe a ClusterTask",
+          "name": "desc",
+          "options": [
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Lists ClusterTasks",
+          "name": "ls",
+          "options": [
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "description": "Do not print column headers with output (default print column headers with output)",
+              "name": [
+                "--no-headers"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Show ClusterTask logs",
+          "name": "logs",
+          "options": [
+            {
+              "description": "Show all logs including init steps injected by tekton",
+              "name": [
+                "--all",
+                "-a"
+              ]
+            },
+            {
+              "description": "Stream live logs",
+              "name": [
+                "--follow",
+                "-f"
+              ]
+            },
+            {
+              "description": "Show logs for last TaskRun",
+              "name": [
+                "--last",
+                "-L"
+              ]
+            },
+            {
+              "args": {
+                "name": "limit"
+              },
+              "description": "Lists number of TaskRuns",
+              "name": [
+                "--limit"
+              ]
+            },
+            {
+              "description": "Show logs with timestamp",
+              "name": [
+                "--timestamps",
+                "-t"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Start ClusterTasks",
+          "name": "start",
+          "options": [
+            {
+              "description": "Preview TaskRun without running it",
+              "name": [
+                "--dry-run"
+              ]
+            },
+            {
+              "args": {
+                "name": "inputresource"
+              },
+              "description": "Pass the input resource name and ref as name=ref",
+              "name": [
+                "--inputresource",
+                "-i"
+              ]
+            },
+            {
+              "args": {
+                "name": "labels"
+              },
+              "description": "Pass labels as label=value",
+              "name": [
+                "--labels",
+                "-l"
+              ]
+            },
+            {
+              "description": "Re-run the ClusterTask using last TaskRun values",
+              "name": [
+                "--last",
+                "-L"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Format of TaskRun (yaml or json)",
+              "name": [
+                "--output"
+              ]
+            },
+            {
+              "args": {
+                "name": "outputresource"
+              },
+              "description": "Pass the output resource name and ref as name=ref",
+              "name": [
+                "--outputresource",
+                "-o"
+              ]
+            },
+            {
+              "args": {
+                "name": "param"
+              },
+              "description": "Pass the param as key=value for string type, or key=value1,value2,... for array type",
+              "name": [
+                "--param",
+                "-p"
+              ]
+            },
+            {
+              "args": {
+                "name": "pod-template"
+              },
+              "description": "Local or remote file containing a PodTemplate definition",
+              "name": [
+                "--pod-template"
+              ]
+            },
+            {
+              "args": {
+                "name": "prefix-name"
+              },
+              "description": "Specify a prefix for the TaskRun name (must be lowercase alphanumeric characters)",
+              "name": [
+                "--prefix-name"
+              ]
+            },
+            {
+              "args": {
+                "name": "serviceaccount"
+              },
+              "description": "Pass the serviceaccount name",
+              "name": [
+                "--serviceaccount",
+                "-s"
+              ]
+            },
+            {
+              "description": "Show logs right after starting the ClusterTask",
+              "name": [
+                "--showlog"
+              ]
+            },
+            {
+              "description": "Skips the prompt for optional workspaces",
+              "name": [
+                "--skip-optional-workspace"
+              ]
+            },
+            {
+              "args": {
+                "name": "timeout"
+              },
+              "description": "Timeout for TaskRun",
+              "name": [
+                "--timeout"
+              ]
+            },
+            {
+              "description": "Use default parameter values without prompting for input",
+              "name": [
+                "--use-param-defaults"
+              ]
+            },
+            {
+              "args": {
+                "name": "use-taskrun"
+              },
+              "description": "Specify a TaskRun name to use its values to re-run the TaskRun",
+              "name": [
+                "--use-taskrun"
+              ]
+            },
+            {
+              "args": {
+                "name": "workspace"
+              },
+              "description": "Pass one or more workspaces to map to the corresponding physical volumes",
+              "name": [
+                "--workspace",
+                "-w"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage ClusterTriggerBindings",
+      "name": "ctb",
+      "options": [
+        {
+          "args": {
+            "name": "context"
+          },
+          "description": "Name of the kubeconfig context to use (default: kubectl config current-context)",
+          "name": [
+            "--context",
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "name": "kubeconfig"
+          },
+          "description": "Kubectl config file (default: $HOME/.kube/config)",
+          "name": [
+            "--kubeconfig",
+            "-k"
+          ]
+        },
+        {
+          "args": {
+            "name": "namespace"
+          },
+          "description": "Namespace to use (default: from $KUBECONFIG)",
+          "name": [
+            "--namespace",
+            "-n"
+          ]
+        },
+        {
+          "description": "Disable coloring (default: false)",
+          "name": [
+            "--no-color",
+            "-C"
+          ]
+        },
+        {
+          "description": "Disable colouring (default: false)",
+          "name": [
+            "--nocolour"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Delete ClusterTriggerBindings",
+          "name": "rm",
+          "options": [
+            {
+              "description": "Delete all ClusterTriggerBindings (default: false)",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "description": "Whether to force deletion (default: false)",
+              "name": [
+                "--force",
+                "-f"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Describes a ClusterTriggerBinding",
+          "name": "desc",
+          "options": [
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Lists ClusterTriggerBindings in a namespace",
+          "name": "ls",
+          "options": [
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "description": "Do not print column headers with output (default print column headers with output)",
+              "name": [
+                "--no-headers"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Prints shell completion scripts",
+      "name": "completion"
+    },
+    {
+      "description": "Manage EventListeners",
+      "name": "el",
+      "options": [
+        {
+          "args": {
+            "name": "context"
+          },
+          "description": "Name of the kubeconfig context to use (default: kubectl config current-context)",
+          "name": [
+            "--context",
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "name": "kubeconfig"
+          },
+          "description": "Kubectl config file (default: $HOME/.kube/config)",
+          "name": [
+            "--kubeconfig",
+            "-k"
+          ]
+        },
+        {
+          "args": {
+            "name": "namespace"
+          },
+          "description": "Namespace to use (default: from $KUBECONFIG)",
+          "name": [
+            "--namespace",
+            "-n"
+          ]
+        },
+        {
+          "description": "Disable coloring (default: false)",
+          "name": [
+            "--no-color",
+            "-C"
+          ]
+        },
+        {
+          "description": "Disable colouring (default: false)",
+          "name": [
+            "--nocolour"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Delete EventListeners in a namespace",
+          "name": "rm",
+          "options": [
+            {
+              "description": "Delete all EventListeners in a namespace (default: false)",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "description": "Whether to force deletion (default: false)",
+              "name": [
+                "--force",
+                "-f"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Describe EventListener in a namespace",
+          "name": "desc",
+          "options": [
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Lists EventListeners in a namespace",
+          "name": "ls",
+          "options": [
+            {
+              "description": "List EventListeners from all namespaces",
+              "name": [
+                "--all-namespaces",
+                "-A"
+              ]
+            },
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "description": "Do not print column headers with output (default print column headers with output)",
+              "name": [
+                "--no-headers"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Show EventListener logs",
+          "name": "logs",
+          "options": [
+            {
+              "args": {
+                "name": "tail"
+              },
+              "description": "Number of most recent log lines to show. Specify -1 for all logs from each pod",
+              "name": [
+                "--tail",
+                "-t"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Interact with tekton hub",
+      "name": "hub",
+      "options": [
+        {
+          "args": {
+            "name": "api-server"
+          },
+          "description": "Hub API Server URL (default 'https://api.hub.tekton.dev' for 'tekton' type; default 'https://artifacthub.io' for 'artifact' type). URL can also be defined in a file '$HOME/.tekton/hub-config' with a variable 'TEKTON_HUB_API_SERVER'/'ARTIFACT_HUB_API_SERVER'",
+          "name": [
+            "--api-server"
+          ]
+        },
+        {
+          "args": {
+            "name": "type"
+          },
+          "description": "The type of Hub from where to pull the resource. Either 'artifact' or 'tekton' (default 'tekton')",
+          "name": [
+            "--type"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Check for upgrades of resources if present",
+          "name": "check-upgrade",
+          "options": [
+            {
+              "args": {
+                "name": "context"
+              },
+              "description": "Name of the kubeconfig context to use (default: kubectl config current-context)",
+              "name": [
+                "--context",
+                "-c"
+              ]
+            },
+            {
+              "args": {
+                "name": "kubeconfig"
+              },
+              "description": "Kubectl config file (default: $HOME/.kube/config)",
+              "name": [
+                "--kubeconfig",
+                "-k"
+              ]
+            },
+            {
+              "args": {
+                "name": "namespace"
+              },
+              "description": "Namespace to use (default: from $KUBECONFIG)",
+              "name": [
+                "--namespace",
+                "-n"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "description": "Check updates for Task installed via Hub CLI",
+              "name": "task"
+            }
+          ]
+        },
+        {
+          "description": "Downgrade an installed resource",
+          "name": "downgrade",
+          "options": [
+            {
+              "args": {
+                "name": "context"
+              },
+              "description": "Name of the kubeconfig context to use (default: kubectl config current-context)",
+              "name": [
+                "--context",
+                "-c"
+              ]
+            },
+            {
+              "args": {
+                "name": "kubeconfig"
+              },
+              "description": "Kubectl config file (default: $HOME/.kube/config)",
+              "name": [
+                "--kubeconfig",
+                "-k"
+              ]
+            },
+            {
+              "args": {
+                "name": "namespace"
+              },
+              "description": "Namespace to use (default: from $KUBECONFIG)",
+              "name": [
+                "--namespace",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "to"
+              },
+              "description": "Version of Resource",
+              "name": [
+                "--to"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "description": "Downgrade an installed Task by its name to a lower version",
+              "name": "task"
+            }
+          ]
+        },
+        {
+          "description": "Get resource manifest by its name, kind, catalog, and version",
+          "name": "get",
+          "options": [
+            {
+              "args": {
+                "name": "from"
+              },
+              "description": "Name of Catalog to which resource belongs to",
+              "name": [
+                "--from"
+              ]
+            },
+            {
+              "args": {
+                "name": "version"
+              },
+              "description": "Version of Resource",
+              "name": [
+                "--version"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "description": "Get Pipeline by name, catalog and version",
+              "name": "pipeline"
+            },
+            {
+              "description": "Get Task by name, catalog and version",
+              "name": "task",
+              "options": [
+                {
+                  "description": "Get the Task as ClusterTask",
+                  "name": [
+                    "--as-clustertask"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Display info of resource by its name, kind, catalog, and version",
+          "name": "info",
+          "options": [
+            {
+              "args": {
+                "name": "from"
+              },
+              "description": "Name of Catalog to which resource belongs",
+              "name": [
+                "--from"
+              ]
+            },
+            {
+              "args": {
+                "name": "version"
+              },
+              "description": "Version of Resource",
+              "name": [
+                "--version"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "description": "Display info of Task by its name, catalog and version",
+              "name": "task"
+            }
+          ]
+        },
+        {
+          "description": "Install a resource from a catalog by its kind, name and version",
+          "name": "install",
+          "options": [
+            {
+              "args": {
+                "name": "context"
+              },
+              "description": "Name of the kubeconfig context to use (default: kubectl config current-context)",
+              "name": [
+                "--context",
+                "-c"
+              ]
+            },
+            {
+              "args": {
+                "name": "from"
+              },
+              "description": "Name of Catalog to which resource belongs",
+              "name": [
+                "--from"
+              ]
+            },
+            {
+              "args": {
+                "name": "kubeconfig"
+              },
+              "description": "Kubectl config file (default: $HOME/.kube/config)",
+              "name": [
+                "--kubeconfig",
+                "-k"
+              ]
+            },
+            {
+              "args": {
+                "name": "namespace"
+              },
+              "description": "Namespace to use (default: from $KUBECONFIG)",
+              "name": [
+                "--namespace",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "version"
+              },
+              "description": "Version of Resource",
+              "name": [
+                "--version"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "description": "Install Task from a catalog by its name and version",
+              "name": "task"
+            }
+          ]
+        },
+        {
+          "description": "Reinstall a resource by its kind and name",
+          "name": "reinstall",
+          "options": [
+            {
+              "args": {
+                "name": "context"
+              },
+              "description": "Name of the kubeconfig context to use (default: kubectl config current-context)",
+              "name": [
+                "--context",
+                "-c"
+              ]
+            },
+            {
+              "args": {
+                "name": "from"
+              },
+              "description": "Name of Catalog to which resource belongs",
+              "name": [
+                "--from"
+              ]
+            },
+            {
+              "args": {
+                "name": "kubeconfig"
+              },
+              "description": "Kubectl config file (default: $HOME/.kube/config)",
+              "name": [
+                "--kubeconfig",
+                "-k"
+              ]
+            },
+            {
+              "args": {
+                "name": "namespace"
+              },
+              "description": "Namespace to use (default: from $KUBECONFIG)",
+              "name": [
+                "--namespace",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "version"
+              },
+              "description": "Version of Resource",
+              "name": [
+                "--version"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "description": "Reinstall a Task by its name",
+              "name": "task"
+            }
+          ]
+        },
+        {
+          "description": "Search resource by a combination of name, kind, categories, platforms, and tags",
+          "name": "search",
+          "options": [
+            {
+              "args": {
+                "name": "categories"
+              },
+              "description": "Accepts a comma separated list of categories",
+              "name": [
+                "--categories"
+              ]
+            },
+            {
+              "args": {
+                "name": "kinds"
+              },
+              "description": "Accepts a comma separated list of kinds",
+              "name": [
+                "--kinds"
+              ]
+            },
+            {
+              "args": {
+                "name": "limit"
+              },
+              "description": "Max number of resources to fetch",
+              "name": [
+                "--limit",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "match"
+              },
+              "description": "Accept type of search. 'exact' or 'contains'",
+              "name": [
+                "--match"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Accepts output format: [table, json, wide]",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "args": {
+                "name": "platforms"
+              },
+              "description": "Accepts a comma separated list of platforms",
+              "name": [
+                "--platforms"
+              ]
+            },
+            {
+              "args": {
+                "name": "tags"
+              },
+              "description": "Accepts a comma separated list of tags",
+              "name": [
+                "--tags"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Upgrade an installed resource",
+          "name": "upgrade",
+          "options": [
+            {
+              "args": {
+                "name": "context"
+              },
+              "description": "Name of the kubeconfig context to use (default: kubectl config current-context)",
+              "name": [
+                "--context",
+                "-c"
+              ]
+            },
+            {
+              "args": {
+                "name": "kubeconfig"
+              },
+              "description": "Kubectl config file (default: $HOME/.kube/config)",
+              "name": [
+                "--kubeconfig",
+                "-k"
+              ]
+            },
+            {
+              "args": {
+                "name": "namespace"
+              },
+              "description": "Namespace to use (default: from $KUBECONFIG)",
+              "name": [
+                "--namespace",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "to"
+              },
+              "description": "Version of Resource",
+              "name": [
+                "--to"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "description": "Upgrade a Task by its name",
+              "name": "task"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage pipelines",
+      "name": "p",
+      "options": [
+        {
+          "args": {
+            "name": "context"
+          },
+          "description": "Name of the kubeconfig context to use (default: kubectl config current-context)",
+          "name": [
+            "--context",
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "name": "kubeconfig"
+          },
+          "description": "Kubectl config file (default: $HOME/.kube/config)",
+          "name": [
+            "--kubeconfig",
+            "-k"
+          ]
+        },
+        {
+          "args": {
+            "name": "namespace"
+          },
+          "description": "Namespace to use (default: from $KUBECONFIG)",
+          "name": [
+            "--namespace",
+            "-n"
+          ]
+        },
+        {
+          "description": "Disable coloring (default: false)",
+          "name": [
+            "--no-color",
+            "-C"
+          ]
+        },
+        {
+          "description": "Disable colouring (default: false)",
+          "name": [
+            "--nocolour"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Delete Pipelines in a namespace",
+          "name": "rm",
+          "options": [
+            {
+              "description": "Delete all Pipelines in a namespace (default: false)",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "description": "Whether to force deletion (default: false)",
+              "name": [
+                "--force",
+                "-f"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Whether to delete Pipeline(s) and related resources (PipelineRuns) (default: false)",
+              "name": [
+                "--prs"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Describes a Pipeline in a namespace",
+          "name": "desc",
+          "options": [
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Export Pipeline",
+          "name": "export",
+          "options": [
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Lists Pipelines in a namespace",
+          "name": "ls",
+          "options": [
+            {
+              "description": "List Pipelines from all namespaces",
+              "name": [
+                "--all-namespaces",
+                "-A"
+              ]
+            },
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "description": "Do not print column headers with output (default print column headers with output)",
+              "name": [
+                "--no-headers"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Show Pipeline logs",
+          "name": "logs",
+          "options": [
+            {
+              "description": "Show all logs including init steps injected by tekton",
+              "name": [
+                "--all",
+                "-a"
+              ]
+            },
+            {
+              "description": "Stream live logs",
+              "name": [
+                "--follow",
+                "-f"
+              ]
+            },
+            {
+              "description": "Show logs for last PipelineRun",
+              "name": [
+                "--last",
+                "-L"
+              ]
+            },
+            {
+              "args": {
+                "name": "limit"
+              },
+              "description": "Lists number of PipelineRuns",
+              "name": [
+                "--limit"
+              ]
+            },
+            {
+              "description": "Show logs with timestamp",
+              "name": [
+                "--timestamps",
+                "-t"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Sign Tekton Pipeline",
+          "name": "sign",
+          "options": [
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "args": {
+                "name": "file-name"
+              },
+              "description": "Fle name of the signed pipeline, using the original file name will overwrite the file",
+              "name": [
+                "--file-name",
+                "-f"
+              ]
+            },
+            {
+              "args": {
+                "name": "key-file"
+              },
+              "description": "Key file",
+              "name": [
+                "--key-file",
+                "-K"
+              ]
+            },
+            {
+              "args": {
+                "name": "kms-key"
+              },
+              "description": "KMS key url",
+              "name": [
+                "--kms-key",
+                "-m"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Start Pipelines",
+          "name": "start",
+          "options": [
+            {
+              "description": "Preview PipelineRun without running it",
+              "name": [
+                "--dry-run"
+              ]
+            },
+            {
+              "args": {
+                "name": "filename"
+              },
+              "description": "Local or remote file name containing a Pipeline definition to start a PipelineRun",
+              "name": [
+                "--filename",
+                "-f"
+              ]
+            },
+            {
+              "args": {
+                "name": "finally-timeout"
+              },
+              "description": "Timeout for Finally TaskRuns",
+              "name": [
+                "--finally-timeout"
+              ]
+            },
+            {
+              "args": {
+                "name": "labels"
+              },
+              "description": "Pass labels as label=value",
+              "name": [
+                "--labels",
+                "-l"
+              ]
+            },
+            {
+              "description": "Re-run the Pipeline using last PipelineRun values",
+              "name": [
+                "--last",
+                "-L"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Format of PipelineRun (yaml, json or name)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "args": {
+                "name": "param"
+              },
+              "description": "Pass the param as key=value for string type, or key=value1,value2,... for array type",
+              "name": [
+                "--param",
+                "-p"
+              ]
+            },
+            {
+              "args": {
+                "name": "pipeline-timeout"
+              },
+              "description": "Timeout for PipelineRun",
+              "name": [
+                "--pipeline-timeout"
+              ]
+            },
+            {
+              "args": {
+                "name": "pod-template"
+              },
+              "description": "Local or remote file containing a PodTemplate definition",
+              "name": [
+                "--pod-template"
+              ]
+            },
+            {
+              "args": {
+                "name": "prefix-name"
+              },
+              "description": "Specify a prefix for the PipelineRun name (must be lowercase alphanumeric characters)",
+              "name": [
+                "--prefix-name"
+              ]
+            },
+            {
+              "args": {
+                "name": "resource"
+              },
+              "description": "Pass the resource name and ref as name=ref",
+              "name": [
+                "--resource",
+                "-r"
+              ]
+            },
+            {
+              "args": {
+                "name": "serviceaccount"
+              },
+              "description": "Pass the serviceaccount name",
+              "name": [
+                "--serviceaccount",
+                "-s"
+              ]
+            },
+            {
+              "description": "Show logs right after starting the Pipeline",
+              "name": [
+                "--showlog"
+              ]
+            },
+            {
+              "description": "Skips the prompt for optional workspaces",
+              "name": [
+                "--skip-optional-workspace"
+              ]
+            },
+            {
+              "args": {
+                "name": "task-serviceaccount"
+              },
+              "description": "Pass the service account corresponding to the task",
+              "name": [
+                "--task-serviceaccount"
+              ]
+            },
+            {
+              "args": {
+                "name": "tasks-timeout"
+              },
+              "description": "Timeout for Pipeline TaskRuns",
+              "name": [
+                "--tasks-timeout"
+              ]
+            },
+            {
+              "args": {
+                "name": "timeout"
+              },
+              "description": "Timeout for PipelineRun",
+              "name": [
+                "--timeout"
+              ]
+            },
+            {
+              "description": "Use default parameter values without prompting for input",
+              "name": [
+                "--use-param-defaults"
+              ]
+            },
+            {
+              "args": {
+                "name": "use-pipelinerun"
+              },
+              "description": "Use this pipelinerun values to re-run the pipeline",
+              "name": [
+                "--use-pipelinerun"
+              ]
+            },
+            {
+              "args": {
+                "name": "workspace"
+              },
+              "description": "Pass one or more workspaces to map to the corresponding physical volumes",
+              "name": [
+                "--workspace",
+                "-w"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Verify Tekton Pipeline",
+          "name": "verify",
+          "options": [
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "args": {
+                "name": "key-file"
+              },
+              "description": "Key file",
+              "name": [
+                "--key-file",
+                "-K"
+              ]
+            },
+            {
+              "args": {
+                "name": "kms-key"
+              },
+              "description": "KMS key url",
+              "name": [
+                "--kms-key",
+                "-m"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage PipelineRuns",
+      "name": "pr",
+      "options": [
+        {
+          "args": {
+            "name": "context"
+          },
+          "description": "Name of the kubeconfig context to use (default: kubectl config current-context)",
+          "name": [
+            "--context",
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "name": "kubeconfig"
+          },
+          "description": "Kubectl config file (default: $HOME/.kube/config)",
+          "name": [
+            "--kubeconfig",
+            "-k"
+          ]
+        },
+        {
+          "args": {
+            "name": "namespace"
+          },
+          "description": "Namespace to use (default: from $KUBECONFIG)",
+          "name": [
+            "--namespace",
+            "-n"
+          ]
+        },
+        {
+          "description": "Disable coloring (default: false)",
+          "name": [
+            "--no-color",
+            "-C"
+          ]
+        },
+        {
+          "description": "Disable colouring (default: false)",
+          "name": [
+            "--nocolour"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Cancel a PipelineRun in a namespace",
+          "name": "cancel",
+          "options": [
+            {
+              "args": {
+                "name": "grace"
+              },
+              "description": "Gracefully cancel a PipelineRun To use this, you need to change the feature-flags configmap enable-api-fields to alpha instead of stable. Set to 'CancelledRunFinally' if you want to cancel the current running task and directly run the finally tasks. Set to 'StoppedRunFinally' if you want to cancel the remaining non-final task and directly run the finally tasks",
+              "name": [
+                "--grace"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Delete PipelineRuns in a namespace",
+          "name": "rm",
+          "options": [
+            {
+              "description": "Delete all PipelineRuns in a namespace (default: false)",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "description": "Whether to force deletion (default: false)",
+              "name": [
+                "--force",
+                "-f"
+              ]
+            },
+            {
+              "description": "Ignore running PipelineRun (default: true)",
+              "name": [
+                "--ignore-running",
+                "-i"
+              ]
+            },
+            {
+              "args": {
+                "name": "keep"
+              },
+              "description": "Keep n most recent number of PipelineRuns",
+              "name": [
+                "--keep"
+              ]
+            },
+            {
+              "args": {
+                "name": "keep-since"
+              },
+              "description": "When deleting all PipelineRuns keep the ones that has been completed since n minutes",
+              "name": [
+                "--keep-since"
+              ]
+            },
+            {
+              "args": {
+                "name": "label"
+              },
+              "description": "A selector (label query) to filter on when running with --all, supports '=', '==', and '!='",
+              "name": [
+                "--label"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "args": {
+                "name": "pipeline"
+              },
+              "description": "The name of a Pipeline whose PipelineRuns should be deleted (does not delete the Pipeline)",
+              "name": [
+                "--pipeline",
+                "-p"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Describe a PipelineRun in a namespace",
+          "name": "desc",
+          "options": [
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "description": "Use fzf to select a PipelineRun to describe",
+              "name": [
+                "--fzf",
+                "-F"
+              ]
+            },
+            {
+              "description": "Show description for last PipelineRun",
+              "name": [
+                "--last",
+                "-L"
+              ]
+            },
+            {
+              "args": {
+                "name": "limit"
+              },
+              "description": "Lists number of PipelineRuns when selecting a PipelineRun to describe",
+              "name": [
+                "--limit"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Export PipelineRun",
+          "name": "export",
+          "options": [
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Lists PipelineRuns in a namespace",
+          "name": "ls",
+          "options": [
+            {
+              "description": "List PipelineRuns from all namespaces",
+              "name": [
+                "--all-namespaces",
+                "-A"
+              ]
+            },
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "args": {
+                "name": "label"
+              },
+              "description": "A selector (label query) to filter on, supports '=', '==', and '!='",
+              "name": [
+                "--label"
+              ]
+            },
+            {
+              "args": {
+                "name": "limit"
+              },
+              "description": "Limit PipelineRuns listed (default: return all PipelineRuns)",
+              "name": [
+                "--limit"
+              ]
+            },
+            {
+              "description": "Do not print column headers with output (default print column headers with output)",
+              "name": [
+                "--no-headers"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "List PipelineRuns in reverse order",
+              "name": [
+                "--reverse"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Show the logs of a PipelineRun",
+          "name": "logs",
+          "options": [
+            {
+              "description": "Show all logs including init steps injected by tekton",
+              "name": [
+                "--all",
+                "-a"
+              ]
+            },
+            {
+              "description": "Stream live logs",
+              "name": [
+                "--follow",
+                "-f"
+              ]
+            },
+            {
+              "description": "Use fzf to select a PipelineRun",
+              "name": [
+                "--fzf",
+                "-F"
+              ]
+            },
+            {
+              "description": "Show logs for last PipelineRun",
+              "name": [
+                "--last",
+                "-L"
+              ]
+            },
+            {
+              "args": {
+                "name": "limit"
+              },
+              "description": "Lists number of PipelineRuns",
+              "name": [
+                "--limit"
+              ]
+            },
+            {
+              "description": "Prefix each log line with the log source (task name and step name)",
+              "name": [
+                "--prefix"
+              ]
+            },
+            {
+              "args": {
+                "name": "task"
+              },
+              "description": "Show logs for mentioned Tasks only",
+              "name": [
+                "--task",
+                "-t"
+              ]
+            },
+            {
+              "description": "Show logs with timestamp",
+              "name": [
+                "--timestamps"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage pipeline resources",
+      "name": "res",
+      "options": [
+        {
+          "args": {
+            "name": "context"
+          },
+          "description": "Name of the kubeconfig context to use (default: kubectl config current-context)",
+          "name": [
+            "--context",
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "name": "kubeconfig"
+          },
+          "description": "Kubectl config file (default: $HOME/.kube/config)",
+          "name": [
+            "--kubeconfig",
+            "-k"
+          ]
+        },
+        {
+          "args": {
+            "name": "namespace"
+          },
+          "description": "Namespace to use (default: from $KUBECONFIG)",
+          "name": [
+            "--namespace",
+            "-n"
+          ]
+        },
+        {
+          "description": "Disable coloring (default: false)",
+          "name": [
+            "--no-color",
+            "-C"
+          ]
+        },
+        {
+          "description": "Disable colouring (default: false)",
+          "name": [
+            "--nocolour"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Create a pipeline resource in a namespace",
+          "name": "create",
+          "options": [
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Delete pipeline resources in a namespace",
+          "name": "rm",
+          "options": [
+            {
+              "description": "Delete all PipelineResources in a namespace (default: false)",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "description": "Whether to force deletion (default: false)",
+              "name": [
+                "--force",
+                "-f"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Describes a pipeline resource in a namespace",
+          "name": "desc",
+          "options": [
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Lists pipeline resources in a namespace",
+          "name": "ls",
+          "options": [
+            {
+              "description": "List pipeline resources from all namespaces",
+              "name": [
+                "--all-namespaces",
+                "-A"
+              ]
+            },
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "description": "Do not print column headers with output (default print column headers with output)",
+              "name": [
+                "--no-headers"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            },
+            {
+              "args": {
+                "name": "type"
+              },
+              "description": "Pipeline resource type",
+              "name": [
+                "--type",
+                "-t"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage Tasks",
+      "name": "t",
+      "options": [
+        {
+          "args": {
+            "name": "context"
+          },
+          "description": "Name of the kubeconfig context to use (default: kubectl config current-context)",
+          "name": [
+            "--context",
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "name": "kubeconfig"
+          },
+          "description": "Kubectl config file (default: $HOME/.kube/config)",
+          "name": [
+            "--kubeconfig",
+            "-k"
+          ]
+        },
+        {
+          "args": {
+            "name": "namespace"
+          },
+          "description": "Namespace to use (default: from $KUBECONFIG)",
+          "name": [
+            "--namespace",
+            "-n"
+          ]
+        },
+        {
+          "description": "Disable coloring (default: false)",
+          "name": [
+            "--no-color",
+            "-C"
+          ]
+        },
+        {
+          "description": "Disable colouring (default: false)",
+          "name": [
+            "--nocolour"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Create a Task from ClusterTask",
+          "name": "create",
+          "options": [
+            {
+              "args": {
+                "name": "from"
+              },
+              "description": "Create a ClusterTask from Task in a particular namespace",
+              "name": [
+                "--from"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Delete Tasks in a namespace",
+          "name": "rm",
+          "options": [
+            {
+              "description": "Delete all Tasks in a namespace (default: false)",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "description": "Whether to force deletion (default: false)",
+              "name": [
+                "--force",
+                "-f"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            },
+            {
+              "description": "Whether to delete Task(s) and related resources (TaskRuns) (default: false)",
+              "name": [
+                "--trs"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Describe a Task in a namespace",
+          "name": "desc",
+          "options": [
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Lists Tasks in a namespace",
+          "name": "ls",
+          "options": [
+            {
+              "description": "List Tasks from all namespaces",
+              "name": [
+                "--all-namespaces",
+                "-A"
+              ]
+            },
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "description": "Do not print column headers with output (default print column headers with output)",
+              "name": [
+                "--no-headers"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Show Task logs",
+          "name": "logs",
+          "options": [
+            {
+              "description": "Show all logs including init steps injected by tekton",
+              "name": [
+                "--all",
+                "-a"
+              ]
+            },
+            {
+              "description": "Stream live logs",
+              "name": [
+                "--follow",
+                "-f"
+              ]
+            },
+            {
+              "description": "Show logs for last TaskRun",
+              "name": [
+                "--last",
+                "-L"
+              ]
+            },
+            {
+              "args": {
+                "name": "limit"
+              },
+              "description": "Lists number of TaskRuns",
+              "name": [
+                "--limit"
+              ]
+            },
+            {
+              "description": "Show logs with timestamp",
+              "name": [
+                "--timestamps",
+                "-t"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Sign Tekton Task",
+          "name": "sign",
+          "options": [
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "args": {
+                "name": "file-name"
+              },
+              "description": "File name of the signed task, using the original file name will overwrite the file",
+              "name": [
+                "--file-name",
+                "-f"
+              ]
+            },
+            {
+              "args": {
+                "name": "key-file"
+              },
+              "description": "Key file",
+              "name": [
+                "--key-file",
+                "-K"
+              ]
+            },
+            {
+              "args": {
+                "name": "kms-key"
+              },
+              "description": "KMS key url",
+              "name": [
+                "--kms-key",
+                "-m"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Start Tasks",
+          "name": "start",
+          "options": [
+            {
+              "description": "Preview TaskRun without running it",
+              "name": [
+                "--dry-run"
+              ]
+            },
+            {
+              "args": {
+                "name": "filename"
+              },
+              "description": "Local or remote file name containing a Task definition to start a TaskRun",
+              "name": [
+                "--filename",
+                "-f"
+              ]
+            },
+            {
+              "args": {
+                "name": "inputresource"
+              },
+              "description": "Pass the input resource name and ref as name=ref",
+              "name": [
+                "--inputresource",
+                "-i"
+              ]
+            },
+            {
+              "args": {
+                "name": "labels"
+              },
+              "description": "Pass labels as label=value",
+              "name": [
+                "--labels",
+                "-l"
+              ]
+            },
+            {
+              "description": "Re-run the Task using last TaskRun values",
+              "name": [
+                "--last",
+                "-L"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Format of TaskRun (yaml or json)",
+              "name": [
+                "--output"
+              ]
+            },
+            {
+              "args": {
+                "name": "outputresource"
+              },
+              "description": "Pass the output resource name and ref as name=ref",
+              "name": [
+                "--outputresource",
+                "-o"
+              ]
+            },
+            {
+              "args": {
+                "name": "param"
+              },
+              "description": "Pass the param as key=value for string type, or key=value1,value2,... for array type",
+              "name": [
+                "--param",
+                "-p"
+              ]
+            },
+            {
+              "args": {
+                "name": "pod-template"
+              },
+              "description": "Local or remote file containing a PodTemplate definition",
+              "name": [
+                "--pod-template"
+              ]
+            },
+            {
+              "args": {
+                "name": "prefix-name"
+              },
+              "description": "Specify a prefix for the TaskRun name (must be lowercase alphanumeric characters)",
+              "name": [
+                "--prefix-name"
+              ]
+            },
+            {
+              "args": {
+                "name": "serviceaccount"
+              },
+              "description": "Pass the serviceaccount name",
+              "name": [
+                "--serviceaccount",
+                "-s"
+              ]
+            },
+            {
+              "description": "Show logs right after starting the Task",
+              "name": [
+                "--showlog"
+              ]
+            },
+            {
+              "description": "Skips the prompt for optional workspaces",
+              "name": [
+                "--skip-optional-workspace"
+              ]
+            },
+            {
+              "args": {
+                "name": "timeout"
+              },
+              "description": "Timeout for TaskRun",
+              "name": [
+                "--timeout"
+              ]
+            },
+            {
+              "description": "Use default parameter values without prompting for input",
+              "name": [
+                "--use-param-defaults"
+              ]
+            },
+            {
+              "args": {
+                "name": "use-taskrun"
+              },
+              "description": "Specify a TaskRun name to use its values to re-run the TaskRun",
+              "name": [
+                "--use-taskrun"
+              ]
+            },
+            {
+              "args": {
+                "name": "workspace"
+              },
+              "description": "Pass one or more workspaces to map to the corresponding physical volumes",
+              "name": [
+                "--workspace",
+                "-w"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Verify Tekton Task",
+          "name": "verify",
+          "options": [
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "args": {
+                "name": "key-file"
+              },
+              "description": "Key file",
+              "name": [
+                "--key-file",
+                "-K"
+              ]
+            },
+            {
+              "args": {
+                "name": "kms-key"
+              },
+              "description": "KMS key url",
+              "name": [
+                "--kms-key",
+                "-m"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage TaskRuns",
+      "name": "tr",
+      "options": [
+        {
+          "args": {
+            "name": "context"
+          },
+          "description": "Name of the kubeconfig context to use (default: kubectl config current-context)",
+          "name": [
+            "--context",
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "name": "kubeconfig"
+          },
+          "description": "Kubectl config file (default: $HOME/.kube/config)",
+          "name": [
+            "--kubeconfig",
+            "-k"
+          ]
+        },
+        {
+          "args": {
+            "name": "namespace"
+          },
+          "description": "Namespace to use (default: from $KUBECONFIG)",
+          "name": [
+            "--namespace",
+            "-n"
+          ]
+        },
+        {
+          "description": "Disable coloring (default: false)",
+          "name": [
+            "--no-color",
+            "-C"
+          ]
+        },
+        {
+          "description": "Disable colouring (default: false)",
+          "name": [
+            "--nocolour"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Cancel a TaskRun in a namespace",
+          "name": "cancel"
+        },
+        {
+          "description": "Delete TaskRuns in a namespace",
+          "name": "rm",
+          "options": [
+            {
+              "description": "Delete all TaskRuns in a namespace (default: false)",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "args": {
+                "name": "clustertask"
+              },
+              "description": "The name of a ClusterTask whose TaskRuns should be deleted (does not delete the ClusterTask)",
+              "name": [
+                "--clustertask"
+              ]
+            },
+            {
+              "description": "Whether to force deletion (default: false)",
+              "name": [
+                "--force",
+                "-f"
+              ]
+            },
+            {
+              "description": "Ignore running TaskRun (default: true)",
+              "name": [
+                "--ignore-running",
+                "-i"
+              ]
+            },
+            {
+              "description": "Ignore deleting taskruns of a running PipelineRun (default: true)",
+              "name": [
+                "--ignore-running-pipelinerun"
+              ]
+            },
+            {
+              "args": {
+                "name": "keep"
+              },
+              "description": "Keep n most recent number of TaskRuns",
+              "name": [
+                "--keep"
+              ]
+            },
+            {
+              "args": {
+                "name": "keep-since"
+              },
+              "description": "When deleting all TaskRuns keep the ones that has been completed since n minutes",
+              "name": [
+                "--keep-since"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "task"
+              },
+              "description": "The name of a Task whose TaskRuns should be deleted (does not delete the task)",
+              "name": [
+                "--task",
+                "-t"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Describe a TaskRun in a namespace",
+          "name": "desc",
+          "options": [
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "description": "Use fzf to select a taskrun to describe",
+              "name": [
+                "--fzf",
+                "-F"
+              ]
+            },
+            {
+              "description": "Show description for last TaskRun",
+              "name": [
+                "--last",
+                "-L"
+              ]
+            },
+            {
+              "args": {
+                "name": "limit"
+              },
+              "description": "Lists number of TaskRuns when selecting a TaskRun to describe",
+              "name": [
+                "--limit"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Export TaskRun",
+          "name": "export",
+          "options": [
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Lists TaskRuns in a namespace",
+          "name": "ls",
+          "options": [
+            {
+              "description": "List TaskRuns from all namespaces",
+              "name": [
+                "--all-namespaces",
+                "-A"
+              ]
+            },
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "args": {
+                "name": "label"
+              },
+              "description": "A selector (label query) to filter on, supports '=', '==', and '!='",
+              "name": [
+                "--label"
+              ]
+            },
+            {
+              "args": {
+                "name": "limit"
+              },
+              "description": "Limit TaskRuns listed (default: return all TaskRuns)",
+              "name": [
+                "--limit"
+              ]
+            },
+            {
+              "description": "Do not print column headers with output (default print column headers with output)",
+              "name": [
+                "--no-headers"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "List TaskRuns in reverse order",
+              "name": [
+                "--reverse"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Show TaskRuns logs",
+          "name": "logs",
+          "options": [
+            {
+              "description": "Show all logs including init steps injected by tekton",
+              "name": [
+                "--all",
+                "-a"
+              ]
+            },
+            {
+              "description": "Stream live logs",
+              "name": [
+                "--follow",
+                "-f"
+              ]
+            },
+            {
+              "description": "Use fzf to select a TaskRun",
+              "name": [
+                "--fzf",
+                "-F"
+              ]
+            },
+            {
+              "description": "Show logs for last TaskRun",
+              "name": [
+                "--last",
+                "-L"
+              ]
+            },
+            {
+              "args": {
+                "name": "limit"
+              },
+              "description": "Lists number of TaskRuns",
+              "name": [
+                "--limit"
+              ]
+            },
+            {
+              "description": "Prefix each log line with the log source (step name)",
+              "name": [
+                "--prefix"
+              ]
+            },
+            {
+              "args": {
+                "name": "step"
+              },
+              "description": "Show logs for mentioned steps only",
+              "name": [
+                "--step",
+                "-s"
+              ]
+            },
+            {
+              "description": "Show logs with timestamp",
+              "name": [
+                "--timestamps",
+                "-t"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage TriggerBindings",
+      "name": "tb",
+      "options": [
+        {
+          "args": {
+            "name": "context"
+          },
+          "description": "Name of the kubeconfig context to use (default: kubectl config current-context)",
+          "name": [
+            "--context",
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "name": "kubeconfig"
+          },
+          "description": "Kubectl config file (default: $HOME/.kube/config)",
+          "name": [
+            "--kubeconfig",
+            "-k"
+          ]
+        },
+        {
+          "args": {
+            "name": "namespace"
+          },
+          "description": "Namespace to use (default: from $KUBECONFIG)",
+          "name": [
+            "--namespace",
+            "-n"
+          ]
+        },
+        {
+          "description": "Disable coloring (default: false)",
+          "name": [
+            "--no-color",
+            "-C"
+          ]
+        },
+        {
+          "description": "Disable colouring (default: false)",
+          "name": [
+            "--nocolour"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Delete TriggerBindings in a namespace",
+          "name": "rm",
+          "options": [
+            {
+              "description": "Delete all TriggerBindings in a namespace (default: false)",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "description": "Whether to force deletion (default: false)",
+              "name": [
+                "--force",
+                "-f"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Describes a TriggerBinding in a namespace",
+          "name": "desc",
+          "options": [
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Lists TriggerBindings in a namespace",
+          "name": "ls",
+          "options": [
+            {
+              "description": "List TriggerBindings from all namespaces",
+              "name": [
+                "--all-namespaces",
+                "-A"
+              ]
+            },
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "description": "Do not print column headers with output (default print column headers with output)",
+              "name": [
+                "--no-headers"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage TriggerTemplates",
+      "name": "tt",
+      "options": [
+        {
+          "args": {
+            "name": "context"
+          },
+          "description": "Name of the kubeconfig context to use (default: kubectl config current-context)",
+          "name": [
+            "--context",
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "name": "kubeconfig"
+          },
+          "description": "Kubectl config file (default: $HOME/.kube/config)",
+          "name": [
+            "--kubeconfig",
+            "-k"
+          ]
+        },
+        {
+          "args": {
+            "name": "namespace"
+          },
+          "description": "Namespace to use (default: from $KUBECONFIG)",
+          "name": [
+            "--namespace",
+            "-n"
+          ]
+        },
+        {
+          "description": "Disable coloring (default: false)",
+          "name": [
+            "--no-color",
+            "-C"
+          ]
+        },
+        {
+          "description": "Disable colouring (default: false)",
+          "name": [
+            "--nocolour"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Delete TriggerTemplates in a namespace",
+          "name": "rm",
+          "options": [
+            {
+              "description": "Delete all TriggerTemplates in a namespace (default: false)",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "description": "Whether to force deletion (default: false)",
+              "name": [
+                "--force",
+                "-f"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Describes a TriggerTemplate in a namespace",
+          "name": "desc",
+          "options": [
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Lists TriggerTemplates in a namespace",
+          "name": "ls",
+          "options": [
+            {
+              "description": "List TriggerTemplates from all namespaces",
+              "name": [
+                "--all-namespaces",
+                "-A"
+              ]
+            },
+            {
+              "description": "If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats",
+              "name": [
+                "--allow-missing-template-keys"
+              ]
+            },
+            {
+              "description": "Do not print column headers with output (default print column headers with output)",
+              "name": [
+                "--no-headers"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "If true, keep the managedFields when printing objects in JSON or YAML format",
+              "name": [
+                "--show-managed-fields"
+              ]
+            },
+            {
+              "args": {
+                "name": "template",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview]",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Prints version information",
+      "name": "version",
+      "options": [
+        {
+          "description": "Check if a newer version is available",
+          "name": [
+            "--check"
+          ]
+        },
+        {
+          "args": {
+            "name": "component"
+          },
+          "description": "Provide a particular component name for its version (client|chains|pipeline|triggers|dashboard)",
+          "name": [
+            "--component"
+          ]
+        },
+        {
+          "args": {
+            "name": "context"
+          },
+          "description": "Name of the kubeconfig context to use (default: kubectl config current-context)",
+          "name": [
+            "--context",
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "name": "kubeconfig"
+          },
+          "description": "Kubectl config file (default: $HOME/.kube/config)",
+          "name": [
+            "--kubeconfig",
+            "-k"
+          ]
+        },
+        {
+          "args": {
+            "name": "namespace"
+          },
+          "description": "Namespace to use (default: from $KUBECONFIG)",
+          "name": [
+            "--namespace",
+            "-n"
+          ]
+        },
+        {
+          "description": "Disable coloring (default: false)",
+          "name": [
+            "--no-color",
+            "-C"
+          ]
+        },
+        {
+          "description": "Disable colouring (default: false)",
+          "name": [
+            "--nocolour"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Help about any command",
+      "name": "help",
+      "subcommands": [
+        {
+          "description": "Manage Tekton Bundles",
+          "name": "tkb",
+          "subcommands": [
+            {
+              "description": "List and print a Tekton bundle's contents",
+              "name": "list"
+            },
+            {
+              "description": "Create or replace a Tekton bundle",
+              "name": "push"
+            }
+          ]
+        },
+        {
+          "description": "Manage Chains",
+          "name": "chains",
+          "subcommands": [
+            {
+              "description": "Print Tekton Chains' payload for a specific taskrun",
+              "name": "payload"
+            },
+            {
+              "description": "Print Tekton Chains' signature for a specific taskrun",
+              "name": "signature"
+            }
+          ]
+        },
+        {
+          "description": "Manage ClusterTasks",
+          "name": "ct",
+          "subcommands": [
+            {
+              "description": "Create a ClusterTask from Task",
+              "name": "create"
+            },
+            {
+              "description": "Delete ClusterTasks in a cluster",
+              "name": "rm"
+            },
+            {
+              "description": "Describe a ClusterTask",
+              "name": "desc"
+            },
+            {
+              "description": "Lists ClusterTasks",
+              "name": "ls"
+            },
+            {
+              "description": "Show ClusterTask logs",
+              "name": "logs"
+            },
+            {
+              "description": "Start ClusterTasks",
+              "name": "start"
+            }
+          ]
+        },
+        {
+          "description": "Manage ClusterTriggerBindings",
+          "name": "ctb",
+          "subcommands": [
+            {
+              "description": "Delete ClusterTriggerBindings",
+              "name": "rm"
+            },
+            {
+              "description": "Describes a ClusterTriggerBinding",
+              "name": "desc"
+            },
+            {
+              "description": "Lists ClusterTriggerBindings in a namespace",
+              "name": "ls"
+            }
+          ]
+        },
+        {
+          "description": "Prints shell completion scripts",
+          "name": "completion"
+        },
+        {
+          "description": "Manage EventListeners",
+          "name": "el",
+          "subcommands": [
+            {
+              "description": "Delete EventListeners in a namespace",
+              "name": "rm"
+            },
+            {
+              "description": "Describe EventListener in a namespace",
+              "name": "desc"
+            },
+            {
+              "description": "Lists EventListeners in a namespace",
+              "name": "ls"
+            },
+            {
+              "description": "Show EventListener logs",
+              "name": "logs"
+            }
+          ]
+        },
+        {
+          "description": "Interact with tekton hub",
+          "name": "hub",
+          "subcommands": [
+            {
+              "description": "Check for upgrades of resources if present",
+              "name": "check-upgrade",
+              "subcommands": [
+                {
+                  "description": "Check updates for Task installed via Hub CLI",
+                  "name": "task"
+                }
+              ]
+            },
+            {
+              "description": "Downgrade an installed resource",
+              "name": "downgrade",
+              "subcommands": [
+                {
+                  "description": "Downgrade an installed Task by its name to a lower version",
+                  "name": "task"
+                }
+              ]
+            },
+            {
+              "description": "Get resource manifest by its name, kind, catalog, and version",
+              "name": "get",
+              "subcommands": [
+                {
+                  "description": "Get Pipeline by name, catalog and version",
+                  "name": "pipeline"
+                },
+                {
+                  "description": "Get Task by name, catalog and version",
+                  "name": "task"
+                }
+              ]
+            },
+            {
+              "description": "Display info of resource by its name, kind, catalog, and version",
+              "name": "info",
+              "subcommands": [
+                {
+                  "description": "Display info of Task by its name, catalog and version",
+                  "name": "task"
+                }
+              ]
+            },
+            {
+              "description": "Install a resource from a catalog by its kind, name and version",
+              "name": "install",
+              "subcommands": [
+                {
+                  "description": "Install Task from a catalog by its name and version",
+                  "name": "task"
+                }
+              ]
+            },
+            {
+              "description": "Reinstall a resource by its kind and name",
+              "name": "reinstall",
+              "subcommands": [
+                {
+                  "description": "Reinstall a Task by its name",
+                  "name": "task"
+                }
+              ]
+            },
+            {
+              "description": "Search resource by a combination of name, kind, categories, platforms, and tags",
+              "name": "search"
+            },
+            {
+              "description": "Upgrade an installed resource",
+              "name": "upgrade",
+              "subcommands": [
+                {
+                  "description": "Upgrade a Task by its name",
+                  "name": "task"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Manage pipelines",
+          "name": "p",
+          "subcommands": [
+            {
+              "description": "Delete Pipelines in a namespace",
+              "name": "rm"
+            },
+            {
+              "description": "Describes a Pipeline in a namespace",
+              "name": "desc"
+            },
+            {
+              "description": "Export Pipeline",
+              "name": "export"
+            },
+            {
+              "description": "Lists Pipelines in a namespace",
+              "name": "ls"
+            },
+            {
+              "description": "Show Pipeline logs",
+              "name": "logs"
+            },
+            {
+              "description": "Sign Tekton Pipeline",
+              "name": "sign"
+            },
+            {
+              "description": "Start Pipelines",
+              "name": "start"
+            },
+            {
+              "description": "Verify Tekton Pipeline",
+              "name": "verify"
+            }
+          ]
+        },
+        {
+          "description": "Manage PipelineRuns",
+          "name": "pr",
+          "subcommands": [
+            {
+              "description": "Cancel a PipelineRun in a namespace",
+              "name": "cancel"
+            },
+            {
+              "description": "Delete PipelineRuns in a namespace",
+              "name": "rm"
+            },
+            {
+              "description": "Describe a PipelineRun in a namespace",
+              "name": "desc"
+            },
+            {
+              "description": "Export PipelineRun",
+              "name": "export"
+            },
+            {
+              "description": "Lists PipelineRuns in a namespace",
+              "name": "ls"
+            },
+            {
+              "description": "Show the logs of a PipelineRun",
+              "name": "logs"
+            }
+          ]
+        },
+        {
+          "description": "Manage pipeline resources",
+          "name": "res",
+          "subcommands": [
+            {
+              "description": "Create a pipeline resource in a namespace",
+              "name": "create"
+            },
+            {
+              "description": "Delete pipeline resources in a namespace",
+              "name": "rm"
+            },
+            {
+              "description": "Describes a pipeline resource in a namespace",
+              "name": "desc"
+            },
+            {
+              "description": "Lists pipeline resources in a namespace",
+              "name": "ls"
+            }
+          ]
+        },
+        {
+          "description": "Manage Tasks",
+          "name": "t",
+          "subcommands": [
+            {
+              "description": "Create a Task from ClusterTask",
+              "name": "create"
+            },
+            {
+              "description": "Delete Tasks in a namespace",
+              "name": "rm"
+            },
+            {
+              "description": "Describe a Task in a namespace",
+              "name": "desc"
+            },
+            {
+              "description": "Lists Tasks in a namespace",
+              "name": "ls"
+            },
+            {
+              "description": "Show Task logs",
+              "name": "logs"
+            },
+            {
+              "description": "Sign Tekton Task",
+              "name": "sign"
+            },
+            {
+              "description": "Start Tasks",
+              "name": "start"
+            },
+            {
+              "description": "Verify Tekton Task",
+              "name": "verify"
+            }
+          ]
+        },
+        {
+          "description": "Manage TaskRuns",
+          "name": "tr",
+          "subcommands": [
+            {
+              "description": "Cancel a TaskRun in a namespace",
+              "name": "cancel"
+            },
+            {
+              "description": "Delete TaskRuns in a namespace",
+              "name": "rm"
+            },
+            {
+              "description": "Describe a TaskRun in a namespace",
+              "name": "desc"
+            },
+            {
+              "description": "Export TaskRun",
+              "name": "export"
+            },
+            {
+              "description": "Lists TaskRuns in a namespace",
+              "name": "ls"
+            },
+            {
+              "description": "Show TaskRuns logs",
+              "name": "logs"
+            }
+          ]
+        },
+        {
+          "description": "Manage TriggerBindings",
+          "name": "tb",
+          "subcommands": [
+            {
+              "description": "Delete TriggerBindings in a namespace",
+              "name": "rm"
+            },
+            {
+              "description": "Describes a TriggerBinding in a namespace",
+              "name": "desc"
+            },
+            {
+              "description": "Lists TriggerBindings in a namespace",
+              "name": "ls"
+            }
+          ]
+        },
+        {
+          "description": "Manage TriggerTemplates",
+          "name": "tt",
+          "subcommands": [
+            {
+              "description": "Delete TriggerTemplates in a namespace",
+              "name": "rm"
+            },
+            {
+              "description": "Describes a TriggerTemplate in a namespace",
+              "name": "desc"
+            },
+            {
+              "description": "Lists TriggerTemplates in a namespace",
+              "name": "ls"
+            }
+          ]
+        },
+        {
+          "description": "Prints version information",
+          "name": "version"
+        }
+      ]
+    }
+  ]
+}

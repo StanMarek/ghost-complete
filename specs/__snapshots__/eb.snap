@@ -1,0 +1,436 @@
+{
+  "description": "AWS Elastic Beanstalk",
+  "name": "eb",
+  "subcommands": [
+    {
+      "args": {
+        "description": "The name of the application",
+        "name": "name"
+      },
+      "description": "Initialize a new AWS Elastic Beanstalk application",
+      "name": "init",
+      "options": [
+        {
+          "description": "Forces EB CLI to prompt you to provide a value for every eb init command option",
+          "name": [
+            "-i",
+            "--interactive"
+          ]
+        },
+        {
+          "args": {
+            "name": "keyname"
+          },
+          "description": "The name of the AWS EC2 key pair",
+          "name": [
+            "-k",
+            "--keyname"
+          ]
+        },
+        {
+          "description": "List of child directories to initialize",
+          "name": [
+            "--modules"
+          ]
+        },
+        {
+          "args": {
+            "name": "plataform-version"
+          },
+          "description": "The platform version to use",
+          "name": [
+            "-p",
+            "--platform"
+          ]
+        },
+        {
+          "args": {
+            "name": "key=value"
+          },
+          "description": "List of tags to apply to the application",
+          "name": [
+            "--tags"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "eb",
+              "list"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "name": "environment-name"
+      },
+      "description": "Deploys the application source bundle from the initialized project directory to the running application",
+      "name": "deploy",
+      "options": [
+        {
+          "args": {
+            "description": "The label to use for the version",
+            "name": "version-label"
+          },
+          "description": "Specify a label to use for the version that the EB CLI creates",
+          "name": [
+            "-l",
+            "--label"
+          ]
+        },
+        {
+          "args": {
+            "description": "The group name to append to the environment name",
+            "name": "groupname"
+          },
+          "description": "Group name to append to the environment name",
+          "name": [
+            "--env-group-suffix"
+          ]
+        },
+        {
+          "args": {
+            "description": "Description for the application version",
+            "name": "version-description"
+          },
+          "description": "The description for the application version, enclosed in double quotation marks",
+          "name": [
+            "-m",
+            "--message"
+          ]
+        },
+        {
+          "args": {
+            "description": "Component to update",
+            "name": "component"
+          },
+          "description": "List of components to update. Only for Compose Environments",
+          "name": [
+            "--modules"
+          ]
+        },
+        {
+          "description": "Preprocess and validate the environment manifest and configuration files in the source bundle",
+          "name": [
+            "-p",
+            "--platform"
+          ]
+        },
+        {
+          "args": {
+            "description": "The name of the CodeCommit repository and branch",
+            "name": "repository-name/repository-branch"
+          },
+          "description": "CodeCommit repository and branch",
+          "name": [
+            "--source"
+          ]
+        },
+        {
+          "description": "Deploy files staged in the git index instead of the HEAD commit",
+          "name": [
+            "--staged"
+          ]
+        },
+        {
+          "args": {
+            "description": "Minutes before timeout",
+            "name": "minutes"
+          },
+          "description": "The number of minutes before the command times out",
+          "name": [
+            "--timeout"
+          ]
+        },
+        {
+          "args": {
+            "description": "Label of the existing version to deploy",
+            "name": "version-label"
+          },
+          "description": "An existing application version to deploy",
+          "name": [
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Abort the current running process",
+      "name": "abort"
+    },
+    {
+      "args": {
+        "description": "The name of the environment to clone",
+        "generators": [
+          {
+            "script": [
+              "eb",
+              "list"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "name": "environment-name"
+      },
+      "description": "Clones an environment to a new environment so that both have identical environment settings",
+      "name": "clone",
+      "options": [
+        {
+          "args": {
+            "description": "The name for the cloned environment",
+            "name": "string"
+          },
+          "description": "Desired name for the cloned environment",
+          "name": [
+            "-n",
+            "--clone_name"
+          ]
+        },
+        {
+          "args": {
+            "description": "CNAME prefix",
+            "name": "cname"
+          },
+          "description": "Desired CNAME prefix for the cloned environment",
+          "name": [
+            "-c",
+            "--cname"
+          ]
+        },
+        {
+          "description": "Environment properties in a comma-separated list with the format name=value",
+          "name": [
+            "--envvars"
+          ]
+        },
+        {
+          "description": "Prevents Elastic Beanstalk from updating the solution stack version for the new clone environment to the most recent version available",
+          "name": [
+            "--exact"
+          ]
+        },
+        {
+          "args": {
+            "description": "Number of instances",
+            "name": "number"
+          },
+          "description": "The number of instances to run in the clone environment when it is launched",
+          "name": [
+            "--scale"
+          ]
+        },
+        {
+          "args": {
+            "description": "Tags for the resources in your environment",
+            "name": "name=value"
+          },
+          "description": "Tags for the resources in your environment in a comma-separated list with the format name=value",
+          "name": [
+            "--tags"
+          ]
+        },
+        {
+          "description": "The number of minutes before the command times out",
+          "name": [
+            "--timeout"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The name of the environment to open",
+        "generators": [
+          {
+            "script": [
+              "eb",
+              "list"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "name": "environment-name"
+      },
+      "description": "Opens the public URL of your website in the default browser",
+      "name": "open"
+    },
+    {
+      "description": "List environments",
+      "name": "list",
+      "options": [
+        {
+          "description": "List all environments from all applications",
+          "name": [
+            "-a",
+            "--all"
+          ]
+        },
+        {
+          "description": "Provides more detailed information about all environments, including instances",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The name of the environment to print",
+        "generators": [
+          {
+            "script": [
+              "eb",
+              "list"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "name": "environment-name"
+      },
+      "description": "Prints all the environment properties in the command window",
+      "name": "printenv"
+    },
+    {
+      "args": {
+        "description": "The name of the environment to connect to",
+        "generators": [
+          {
+            "script": [
+              "eb",
+              "list"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "name": "environment-name"
+      },
+      "description": "Connect to a Linux Amazon EC2 instance in your environment using Secure Shell",
+      "name": "ssh",
+      "options": [
+        {
+          "description": "The ID of the instance to connect to",
+          "name": [
+            "-i",
+            "--instance"
+          ]
+        },
+        {
+          "description": "The number of the instance to connect to by number",
+          "name": [
+            "-n",
+            "--number"
+          ]
+        },
+        {
+          "description": "Leave port 22 open on the security group after the SSH session ends",
+          "name": [
+            "-o",
+            "--keep_open"
+          ]
+        },
+        {
+          "description": "Execute a shell command on the specified instance instead of starting an SSH session",
+          "name": [
+            "--command"
+          ]
+        },
+        {
+          "description": "Specify an SSH command to use instead of 'ssh -i keyfile'. Do not include the remote user and hostname",
+          "name": [
+            "--custom"
+          ]
+        },
+        {
+          "description": "Change the key pair assigned to the environment's instances",
+          "name": [
+            "--setup"
+          ]
+        },
+        {
+          "description": "Open port 22 to incoming traffic from 0.0.0.0/0 in the environment's security group, even if the security group is already configured for SSH",
+          "name": [
+            "--force"
+          ]
+        },
+        {
+          "args": {
+            "description": "Number of minutes before timeout",
+            "name": "minutes"
+          },
+          "description": "Set number of minutes before the command times out",
+          "name": [
+            "--timeout"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The name of the environment to use",
+        "generators": [
+          {
+            "script": [
+              "eb",
+              "list"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "name": "environment-name"
+      },
+      "description": "Sets the specified environment as the default environment",
+      "name": "use",
+      "options": [
+        {
+          "args": {
+            "description": "The region to use",
+            "name": "region"
+          },
+          "description": "Change the region in which you create environments",
+          "name": [
+            "-r",
+            "--region"
+          ]
+        },
+        {
+          "args": {
+            "description": "The name of the CodeCommit repository and branch",
+            "name": "codecommit/repository-name/repository-branch"
+          },
+          "description": "CodeCommit repository and branch",
+          "name": [
+            "--source"
+          ]
+        }
+      ]
+    }
+  ]
+}

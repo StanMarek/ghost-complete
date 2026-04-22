@@ -1,0 +1,665 @@
+{
+  "description": "Symfony Binary",
+  "name": "symfony",
+  "options": [
+    {
+      "description": "Show help",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Do not output any message",
+      "name": [
+        "-q",
+        "--quiet"
+      ]
+    },
+    {
+      "description": "Disable ANSI output",
+      "name": [
+        "--no-ansi"
+      ]
+    },
+    {
+      "description": "Force ANSI output",
+      "name": [
+        "--ansi"
+      ]
+    },
+    {
+      "description": "Do not ask any interactive question",
+      "name": [
+        "--no-interaction"
+      ]
+    },
+    {
+      "description": "Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug",
+      "name": [
+        "-v",
+        "--verbose"
+      ]
+    },
+    {
+      "description": "Print the version",
+      "name": [
+        "-V"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Check that you have all the pre-requisites locally to code while reading the \"Symfony: The Fast Track\" book",
+      "name": "book:check-requirements"
+    },
+    {
+      "description": "Check out a step of the \"Symfony: The Fast Track\" book repository",
+      "name": "book:checkout"
+    },
+    {
+      "description": "Clear the CLI cache",
+      "name": "cloud:clear-cache"
+    },
+    {
+      "description": "Open the online documentation",
+      "name": "cloud:docs"
+    },
+    {
+      "description": "Execute a command on multiple projects",
+      "name": "cloud:multi"
+    },
+    {
+      "description": "Open the Web UI",
+      "name": "cloud:web"
+    },
+    {
+      "description": "Cancel an activity",
+      "name": "cloud:activity:cancel"
+    },
+    {
+      "description": "View detailed information on a single activity",
+      "name": "cloud:activity:get"
+    },
+    {
+      "description": "Get a list of activities for an environment or project",
+      "name": "cloud:activity:list"
+    },
+    {
+      "description": "Display the log for an activity",
+      "name": "cloud:activity:log"
+    },
+    {
+      "description": "View the configuration of an app",
+      "name": "cloud:app:config-get"
+    },
+    {
+      "description": "List apps in the project",
+      "name": "cloud:app:list"
+    },
+    {
+      "description": "Log in to Platform.sh using an API token",
+      "name": "cloud:auth:api-token-login"
+    },
+    {
+      "description": "Log in to Platform.sh via a browse",
+      "name": "cloud:auth:browser-login"
+    },
+    {
+      "description": "Display your account information",
+      "name": "cloud:auth:info"
+    },
+    {
+      "description": "Log out of Platform.sh",
+      "name": "cloud:auth:logout"
+    },
+    {
+      "description": "Make a backup of an environment",
+      "name": "cloud:backup:create"
+    },
+    {
+      "description": "List available backups of an environment",
+      "name": "cloud:backup:list"
+    },
+    {
+      "description": "Restore an environment backup",
+      "name": "cloud:backup:restore"
+    },
+    {
+      "description": "Add an SSL certificate to the project",
+      "name": "cloud:certificate:add"
+    },
+    {
+      "description": "Delete a certificate from the project",
+      "name": "cloud:certificate:delete"
+    },
+    {
+      "description": "View a certificate",
+      "name": "cloud:certificate:get"
+    },
+    {
+      "description": "List project certificates",
+      "name": "cloud:certificate:list"
+    },
+    {
+      "description": "Show commit details",
+      "name": "cloud:commit:get"
+    },
+    {
+      "description": "List commits",
+      "name": "cloud:commit:list"
+    },
+    {
+      "description": "Create a local dump of the remote database",
+      "name": "cloud:db:dump"
+    },
+    {
+      "description": "Estimate the disk usage of a database",
+      "name": "cloud:db:size"
+    },
+    {
+      "description": "Run SQL on the remote database",
+      "name": "cloud:db:sql"
+    },
+    {
+      "description": "Add a new domain to the project",
+      "name": "cloud:domain:add"
+    },
+    {
+      "description": "Delete a domain from the project",
+      "name": "cloud:domain:delete"
+    },
+    {
+      "description": "Show detailed information for a domain",
+      "name": "cloud:domain:get"
+    },
+    {
+      "description": "Get a list of all domains",
+      "name": "cloud:domain:list"
+    },
+    {
+      "description": "Update a domain",
+      "name": "cloud:domain:update"
+    },
+    {
+      "description": "Activate an environment",
+      "name": "coud:environment:activate"
+    },
+    {
+      "description": "Branch an environment",
+      "name": "cloud:environment:branch"
+    },
+    {
+      "description": "Check out an environment",
+      "name": "cloud:environment:checkout"
+    },
+    {
+      "description": "Debug an environment by switching Symfony to the debug mode temporarily",
+      "name": "cloud:environment:debug"
+    },
+    {
+      "description": "Delete one or more environments",
+      "name": "cloud:environment:delete"
+    },
+    {
+      "description": "Update HTTP access settings for an environment",
+      "name": "cloud:environment:http-access"
+    },
+    {
+      "description": "Read or set properties for an environment",
+      "name": "cloud:environment:info"
+    },
+    {
+      "description": "Initialize an environment from a public Git repository",
+      "name": "cloud:environment:init"
+    },
+    {
+      "description": "Get a list of environments",
+      "name": "cloud:environment:list"
+    },
+    {
+      "description": "Read an environment's logs",
+      "name": "cloud:environment:logs"
+    },
+    {
+      "description": "Merge an environment",
+      "name": "cloud:environment:merge"
+    },
+    {
+      "description": "Push code to an environment",
+      "name": "cloud:environment:push"
+    },
+    {
+      "description": "Redeploy an environment",
+      "name": "cloud:environment:redeploy"
+    },
+    {
+      "description": "Show an environment's relationships",
+      "name": "cloud:environment:relationships"
+    },
+    {
+      "description": "Copy files to and from current environment using scp",
+      "name": "cloud:environment:scp"
+    },
+    {
+      "description": "SSH to the current environment",
+      "name": "cloud:environment:ssh"
+    },
+    {
+      "description": "Synchronize an environment's code and/or data from its parent",
+      "name": "cloud:environment:synchronize"
+    },
+    {
+      "description": "Get the public URLs of an environment",
+      "name": "cloud:environment:url"
+    },
+    {
+      "description": "Open a tunnel to Xdebug on the environment",
+      "name": "cloud:environment:xdebug"
+    },
+    {
+      "description": "View detailed information on a single integration activity",
+      "name": "cloud:integration:activity:get"
+    },
+    {
+      "description": "Get a list of activities for an integration",
+      "name": "cloud:integration:activity:list"
+    },
+    {
+      "description": "Display the log for an integration activity",
+      "name": "cloud:integration:activity:log"
+    },
+    {
+      "description": "Add an integration to the project",
+      "name": "cloud:integration:add"
+    },
+    {
+      "description": "Delete an integration from a project",
+      "name": "cloud:integration:delete"
+    },
+    {
+      "description": "View details of an integration",
+      "name": "cloud:integration:get"
+    },
+    {
+      "description": "View a list of project integration(s)",
+      "name": "cloud:integration:list"
+    },
+    {
+      "description": "Update an integration",
+      "name": "cloud:integration:update"
+    },
+    {
+      "description": "Validate an existing integration",
+      "name": "cloud:integration:validate"
+    },
+    {
+      "description": "Download files from a mount, using rsync",
+      "name": "cloud:mount:download"
+    },
+    {
+      "description": "Get a list of mounts",
+      "name": "cloud:mount:list"
+    },
+    {
+      "description": "Check the disk usage of mounts",
+      "name": "cloud:mount:size"
+    },
+    {
+      "description": "Upload files to a mount, using rsync",
+      "name": "cloud:mount:upload"
+    },
+    {
+      "description": "View or change an organization's billing address",
+      "name": "cloud:organization:billing:address"
+    },
+    {
+      "description": "View or change an organization's billing profile",
+      "name": "cloud:organization:billing:profile"
+    },
+    {
+      "description": "Create a new organization",
+      "name": "cloud:organization:create"
+    },
+    {
+      "description": "Delete an organization",
+      "name": "cloud:organization:delete"
+    },
+    {
+      "description": "View or change organization details",
+      "name": "cloud:organization:info"
+    },
+    {
+      "description": "List organizations",
+      "name": "cloud:organization:list"
+    },
+    {
+      "description": "List subscriptions within an organization",
+      "name": "cloud:organization:subscription:list"
+    },
+    {
+      "description": "Invite a user to an organization",
+      "name": "cloud:organization:user:add"
+    },
+    {
+      "description": "Remove a user from an organization",
+      "name": "cloud:organization:user:delete"
+    },
+    {
+      "description": "View an organization user",
+      "name": "cloud:organization:user:get"
+    },
+    {
+      "description": "List organization users",
+      "name": "cloud:organization:user:list"
+    },
+    {
+      "description": "Update an organization user",
+      "name": "cloud:organization:user:update"
+    },
+    {
+      "description": "Clear a project's build cache",
+      "name": "cloud:project:clear-build-cache"
+    },
+    {
+      "description": "Create a new project",
+      "name": "cloud:project:create"
+    },
+    {
+      "description": "Delete a project",
+      "name": "cloud:project:delete"
+    },
+    {
+      "description": "Clone a project locally",
+      "name": "cloud:project:get"
+    },
+    {
+      "description": "Read or set properties for a project",
+      "name": "cloud:project:info"
+    },
+    {
+      "description": "Get a list of all active projects",
+      "name": "cloud:project:list"
+    },
+    {
+      "description": "Set the remote project for the current Git repository",
+      "name": "cloud:project:set-remote"
+    },
+    {
+      "description": "Read a file in the project repository",
+      "name": "cloud:repo:cat"
+    },
+    {
+      "description": "List files in the project repository",
+      "name": "cloud:repo:ls"
+    },
+    {
+      "description": "Read a directory or file in the project repository",
+      "name": "cloud:repo:read"
+    },
+    {
+      "description": "View detailed information about a route",
+      "name": "cloud:route:get"
+    },
+    {
+      "description": "List all routes for an environment",
+      "name": "cloud:route:list"
+    },
+    {
+      "description": "List services in the project",
+      "name": "cloud:service:list"
+    },
+    {
+      "description": "Create a binary archive dump of data from MongoDB",
+      "name": "cloud:service:mongo:dump"
+    },
+    {
+      "description": "Export data from MongoDB",
+      "name": "cloud:service:mongo:export"
+    },
+    {
+      "description": "Restore a binary archive dump of data into MongoDB",
+      "name": "cloud:service:mongo:restore"
+    },
+    {
+      "description": "Use the MongoDB shell",
+      "name": "cloud:service:mongo:shell"
+    },
+    {
+      "description": "Access the Redis CLI",
+      "name": "cloud:service:redis-cli"
+    },
+    {
+      "description": "Generate an SSH certificate",
+      "name": "cloud:ssh-cert:load"
+    },
+    {
+      "description": "Add a new SSH key",
+      "name": "cloud:ssh-key:add"
+    },
+    {
+      "description": "Delete an SSH key",
+      "name": "cloud:ssh-key:delete"
+    },
+    {
+      "description": "Get a list of SSH keys in your accountt",
+      "name": "cloud:ssh-key:list"
+    },
+    {
+      "description": "Read or modify subscription properties",
+      "name": "cloud:subscription:info"
+    },
+    {
+      "description": "Close SSH tunnels",
+      "name": "cloud:tunnel:close"
+    },
+    {
+      "description": "View relationship info for SSH tunnels",
+      "name": "cloud:tunnel:info"
+    },
+    {
+      "description": "List SSH tunnels",
+      "name": "cloud:tunnel:list"
+    },
+    {
+      "description": "Open SSH tunnels to an app's relationships",
+      "name": "cloud:tunnel:open"
+    },
+    {
+      "description": "Open a single SSH tunnel to an app relationship",
+      "name": "cloud:tunnel:single"
+    },
+    {
+      "description": "Add a user to the project",
+      "name": "cloud:user:add"
+    },
+    {
+      "description": "Delete a user from the project",
+      "name": "cloud:user:delete"
+    },
+    {
+      "description": "View a user's role(s)",
+      "name": "cloud:user:get"
+    },
+    {
+      "description": "List project users",
+      "name": "cloud:user:list"
+    },
+    {
+      "description": "Update user role(s) on a project",
+      "name": "cloud:user:update"
+    },
+    {
+      "description": "Create a variable",
+      "name": "cloud:variable:create"
+    },
+    {
+      "description": "Delete a variable",
+      "name": "cloud:variable:delete"
+    },
+    {
+      "description": "View a variable",
+      "name": "cloud:variable:get"
+    },
+    {
+      "description": "List variables",
+      "name": "cloud:variable:list"
+    },
+    {
+      "description": "Update a variable",
+      "name": "cloud:variable:update"
+    },
+    {
+      "description": "Get a list of all deployed workers",
+      "name": "cloud:worker:list"
+    },
+    {
+      "description": "Checks requirements for running Symfony and gives useful recommendations to optimize PHP for Symfony",
+      "name": "local:check:requirements"
+    },
+    {
+      "description": "Check security issues in project dependencies",
+      "name": "local:check:security"
+    },
+    {
+      "description": "Create a new Symfony project",
+      "name": "local:new"
+    },
+    {
+      "description": "List locally available PHP versions",
+      "name": "local:php:list"
+    },
+    {
+      "description": "Auto-discover the list of available PHP version",
+      "name": "local:php:refresh"
+    },
+    {
+      "description": "Attach a local domain for the proxy",
+      "name": "local:proxy:domain:attach"
+    },
+    {
+      "description": "Detach domains from the proxy",
+      "name": "local:proxy:domain:detach"
+    },
+    {
+      "description": "Start the local proxy server (local domains support)",
+      "name": "local:proxy:start"
+    },
+    {
+      "description": "Get the local proxy server status",
+      "name": "local:proxy:status"
+    },
+    {
+      "description": "Stop the local proxy server",
+      "name": "local:proxy:stop"
+    },
+    {
+      "description": "Run a program with environment variables set depending on the current context",
+      "name": "local:run"
+    },
+    {
+      "description": "Create a local Certificate Authority for serving HTTPS",
+      "name": "local:server:ca:install"
+    },
+    {
+      "description": "Uninstall the local Certificate Authority",
+      "name": "local:server:ca:uninstall"
+    },
+    {
+      "description": "List all configured local web servers",
+      "name": "local:server:list"
+    },
+    {
+      "description": "Display local web server logs",
+      "name": "local:server:log"
+    },
+    {
+      "description": "Switch a project to use Symfony's production environment",
+      "name": "local:server:prod"
+    },
+    {
+      "description": "Run a local web server",
+      "name": "local:server:start"
+    },
+    {
+      "description": "Get the local web server status",
+      "name": "local:server:status"
+    },
+    {
+      "description": "Stop the local web server",
+      "name": "local:server:stop"
+    },
+    {
+      "description": "Expose tunnel service environment variables locally",
+      "name": "local:var:expose-from-tunnel"
+    },
+    {
+      "description": "Open the local project in a browser",
+      "name": "open:local"
+    },
+    {
+      "description": "Open the local project RabbitMQ web management interface in a browser",
+      "name": "open:local:rabbitmq"
+    },
+    {
+      "description": "Open the local project mail catcher web interface in a browser",
+      "name": "open:local:webmail"
+    },
+    {
+      "description": "Initialize a new project using templates",
+      "name": "project:init"
+    },
+    {
+      "description": "Display help for a command or a category of commands",
+      "name": "self:help"
+    },
+    {
+      "description": "Display the application version",
+      "name": "self:version"
+    },
+    {
+      "description": "Export environment variables depending on the current context",
+      "name": "var:export"
+    },
+    {
+      "description": "Runs Composer without memory limit",
+      "name": "composer"
+    },
+    {
+      "description": "Runs the binary using the configured PHP version",
+      "name": "php"
+    },
+    {
+      "description": "Runs the binary using the configured PHP version",
+      "name": "pecl"
+    },
+    {
+      "description": "Runs the binary using the configured PHP version",
+      "name": "pear"
+    },
+    {
+      "description": "Runs the binary using the configured PHP version",
+      "name": "php-fdp"
+    },
+    {
+      "description": "Runs the binary using the configured PHP version",
+      "name": "php-cgi"
+    },
+    {
+      "description": "Runs the binary using the configured PHP version",
+      "name": "php-config"
+    },
+    {
+      "description": "Runs the binary using the configured PHP version",
+      "name": "phpdbg"
+    },
+    {
+      "description": "Runs the binary using the configured PHP version",
+      "name": "phpize"
+    },
+    {
+      "description": "Runs the Symfony Console (bin/console) for current project",
+      "name": "console"
+    }
+  ]
+}

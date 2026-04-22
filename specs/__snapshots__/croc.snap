@@ -1,0 +1,273 @@
+{
+  "args": {
+    "description": "Receive a file using code",
+    "name": "secret-code"
+  },
+  "description": "Croc is a tool that allows any two computers to simply and securely transfer files and folders",
+  "name": "croc",
+  "options": [
+    {
+      "description": "Show help for croc",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "description": "Use a built-in DNS stub resolver rather than the host operating system",
+      "name": [
+        "--internal-dns"
+      ]
+    },
+    {
+      "description": "Save these settings to reuse next time",
+      "name": [
+        "--remember"
+      ]
+    },
+    {
+      "description": "Toggle debug mode",
+      "name": [
+        "--debug"
+      ]
+    },
+    {
+      "description": "Automatically agree to all prompts",
+      "name": [
+        "--yes"
+      ]
+    },
+    {
+      "description": "Redirect file to stdout",
+      "name": [
+        "--stdout"
+      ]
+    },
+    {
+      "description": "Disable compression",
+      "name": [
+        "--no-compress"
+      ]
+    },
+    {
+      "description": "Make sure sender and recipient are prompted",
+      "name": [
+        "--ask"
+      ]
+    },
+    {
+      "description": "Force to use only local connections",
+      "name": [
+        "--local"
+      ]
+    },
+    {
+      "description": "Ignore piped stdin",
+      "name": [
+        "--ignore-stdin"
+      ]
+    },
+    {
+      "description": "Do not prompt to overwrite",
+      "name": [
+        "--overwrite"
+      ]
+    },
+    {
+      "args": {
+        "name": "value",
+        "suggestions": [
+          {
+            "name": "p521"
+          },
+          {
+            "name": "p256"
+          },
+          {
+            "name": "p384"
+          },
+          {
+            "name": "siec"
+          }
+        ]
+      },
+      "description": "Choose an encryption curve",
+      "name": [
+        "--curve"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Set sender ip if known",
+      "name": [
+        "--ip"
+      ]
+    },
+    {
+      "args": {
+        "name": "ipv4 address"
+      },
+      "description": "Address of the relay",
+      "name": [
+        "--relay"
+      ]
+    },
+    {
+      "args": {
+        "name": "ipv6 address"
+      },
+      "description": "Ipv6 address of the relay",
+      "name": [
+        "--relay6"
+      ]
+    },
+    {
+      "args": {
+        "name": "output folder"
+      },
+      "description": "Specify an output folder to receive the file",
+      "name": [
+        "--out"
+      ]
+    },
+    {
+      "args": {
+        "name": "password"
+      },
+      "description": "Password for the relay (default: \"pass123\")",
+      "name": [
+        "--pass"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Add a socks5 proxy",
+      "name": [
+        "--socks5"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Throttle the upload speed e.g. 500k",
+      "name": [
+        "--throttleUpload"
+      ]
+    },
+    {
+      "description": "Print the version",
+      "name": [
+        "--version",
+        "-v"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "template": [
+          "filepaths",
+          "folders"
+        ]
+      },
+      "description": "Send file(s), or folder",
+      "name": "send",
+      "options": [
+        {
+          "args": {
+            "name": "codephrase"
+          },
+          "description": "Codephrase used to connect to relay",
+          "name": [
+            "--code",
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "suggestions": [
+              {
+                "name": "xxhash"
+              },
+              {
+                "name": "imohash"
+              },
+              {
+                "name": "md5"
+              }
+            ]
+          },
+          "description": "Hash algorithm",
+          "name": [
+            "--hash"
+          ]
+        },
+        {
+          "args": {
+            "name": "text"
+          },
+          "description": "Send some text",
+          "name": [
+            "--text",
+            "-t"
+          ]
+        },
+        {
+          "description": "Disable local relay when sending",
+          "name": [
+            "--no-local"
+          ]
+        },
+        {
+          "description": "Disable multiplexing",
+          "name": [
+            "--no-multi"
+          ]
+        },
+        {
+          "description": "Ports of the local relay",
+          "name": [
+            "--ports"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Start your own relay",
+      "name": "relay",
+      "options": [
+        {
+          "args": {
+            "name": "value"
+          },
+          "description": "Host of the relay",
+          "name": [
+            "--host"
+          ]
+        },
+        {
+          "args": {
+            "name": "ports"
+          },
+          "description": "Ports of the local relay",
+          "name": [
+            "--ports"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "command",
+        "template": "help"
+      },
+      "description": "Shows a list of commands or help for one command",
+      "name": "help"
+    }
+  ]
+}

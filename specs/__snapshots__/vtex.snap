@@ -1,0 +1,1535 @@
+{
+  "description": "Fig autocomplete for VTEX IO's CLI - VTEX IO's CLI allows you to perform any action necessary to your development process, such as linking local files to the VTEX platform, managing workspaces, and releasing new app versions",
+  "name": "vtex",
+  "options": [
+    {
+      "description": "Show help for command",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": [
+        {
+          "description": "Name and version ({vendor}.{appname}@{x.x.x}) of the dependency to include in the manifest.json file",
+          "name": "APPID"
+        },
+        {
+          "description": "Names and versions ({vendor}.{appname}@{x.x.x}) of the multiple dependencies to include in the manifest.json file",
+          "isOptional": true,
+          "name": "ITHAPPID"
+        }
+      ],
+      "description": "Adds the specified app(s) to the manifest's dependencies",
+      "name": "add",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Channel to automatically updates",
+        "isOptional": true,
+        "name": "CHANNEL"
+      },
+      "description": "Automatically updates VTEX IO's CLI",
+      "name": "autoupdate",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Relative path from https://{workspace}--{account}.myvtex.com/",
+        "isOptional": true,
+        "name": "PATH"
+      },
+      "description": "Opens the URL relative to your current workspace and account in a new browser window",
+      "name": "browse",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        },
+        {
+          "description": "Prints a QR Code on the terminal",
+          "name": [
+            "--qr",
+            "-q"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Env Configuration",
+      "name": "config",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": {
+            "description": "Configuration to retrieve the value from",
+            "name": "CONFIGNAME"
+          },
+          "description": "Prints the value of the requested configuration key",
+          "name": "get",
+          "options": [
+            {
+              "description": "Show help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Name of the configuration to reset",
+            "name": "CONFIGNAME"
+          },
+          "description": "Resets the specified configuration to its default value",
+          "name": "reset",
+          "options": [
+            {
+              "description": "Show help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "description": "Name of the configuration to reset",
+              "name": "CONFIGNAME"
+            },
+            {
+              "description": "New value of the specified configuration",
+              "name": "VALUE"
+            }
+          ],
+          "description": "Sets the value of a configuration key",
+          "name": "set",
+          "options": [
+            {
+              "description": "Show help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Name of the .NET application to debug",
+        "name": "DEBUGINST"
+      },
+      "description": "Debug .NET applications (IDEs only)",
+      "name": "debug dotnet",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Name and version of the app you want to deploy",
+        "isOptional": true,
+        "name": "APPID"
+      },
+      "description": "Publishes an app as a stable version. Only works for apps previously published as a release candidate version [see vtex publish --help]",
+      "name": "deploy",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        },
+        {
+          "description": "Answers yes to all prompts",
+          "name": [
+            "--yes",
+            "-y"
+          ]
+        },
+        {
+          "description": "(Use with caution.) Ignores the testing period of 7 minutes after publishing an app",
+          "name": [
+            "--force",
+            "-f"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Name and version of the app ({vendor}.{appname}@{x.x.x}) to deprecate",
+          "isOptional": true,
+          "name": "APPID"
+        },
+        {
+          "description": "Names and versions of the multiple apps ({vendor}.{appname}@{x.x.x}) to deprecate",
+          "isOptional": true,
+          "name": "ITHAPPID"
+        }
+      ],
+      "description": "Deprecates the specified app, uninstalling and downgrading it to the latest stable version in every VTEX account",
+      "name": "deprecate",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        },
+        {
+          "description": "Answers yes to all prompts",
+          "name": [
+            "--yes",
+            "-y"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Displays the differences between the dependencies of two distinct workspaces. If a single parameter is passed, the specified workspace's dependencies are compared with the master's. If no parameter is passed, the diff is made between the current workspace and master",
+      "name": "deps",
+      "subcommands": [
+        {
+          "args": [
+            {
+              "description": "First workspace for comparison",
+              "isOptional": true,
+              "name": "WORKSPACE1"
+            },
+            {
+              "description": "[default: master] Second workspace for comparison",
+              "isOptional": true,
+              "name": "WORKSPACE2"
+            }
+          ],
+          "description": "Displays the differences between the dependencies of two distinct workspaces. If a single parameter is passed, the specified workspace's dependencies are compared with the master's. If no parameter is passed, the diff is made between the current workspace and master",
+          "name": "diff",
+          "options": [
+            {
+              "description": "Show help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Displays the complete dependency tree of the current workspace",
+          "name": "list",
+          "options": [
+            {
+              "description": "Show help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            },
+            {
+              "description": "Shows only key dependencies",
+              "name": [
+                "--keys",
+                "-k"
+              ]
+            },
+            {
+              "description": "Includes dependencies from the npm registry",
+              "name": [
+                "--npm",
+                "-n"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "description": "Name and version of the app ({vendor}.{appname}@{x.x.x}) to update",
+              "isOptional": true,
+              "name": "APPID"
+            },
+            {
+              "description": "Names and versions of the multiple apps ({vendor}.{appname}@{x.x.x}) to update",
+              "isOptional": true,
+              "name": "ITHAPPID"
+            }
+          ],
+          "description": "Updates a dependency of the current workspace. If not specified which dependency, it updates all of them",
+          "name": "update",
+          "options": [
+            {
+              "description": "Show help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Displays the Edition App version installed on the current account",
+      "name": "edition",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Displays the Edition App version installed on the current account",
+          "name": "get",
+          "options": [
+            {
+              "description": "Show help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Name of the Edition App to install",
+            "name": "EDITION"
+          },
+          "description": "Sets the Edition App version for the current account",
+          "name": "set",
+          "options": [
+            {
+              "description": "Show help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Command to show help about",
+        "isOptional": true,
+        "name": "COMMAND"
+      },
+      "description": "Displays help for VTEX CLI commands",
+      "name": "help",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        },
+        {
+          "description": "Displays all commands available in the CLI",
+          "name": [
+            "--all"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Infra service",
+      "name": "infra",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": {
+            "description": "Name and version of the service ({vendor}.{servicename}@{x.x.x}) to install",
+            "name": "SERVICEID"
+          },
+          "description": "Installs an infra service",
+          "name": "install",
+          "options": [
+            {
+              "description": "Show help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Service name",
+            "isOptional": true,
+            "name": "NAME"
+          },
+          "description": "Lists installed infra services",
+          "name": "list",
+          "options": [
+            {
+              "description": "Show help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            },
+            {
+              "description": "Lists services that are available to install",
+              "name": [
+                "--available",
+                "-a"
+              ]
+            },
+            {
+              "description": "Lists services that contain the specified word",
+              "name": [
+                "--filter=filter",
+                "-f"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Updates all installed infra services",
+          "name": "update",
+          "options": [
+            {
+              "description": "Show help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Copies starting files and folders from VTEX boilerplates into your local directories",
+      "name": "init",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Name and version of the app ({vendor}.{appname}@{x.x.x}) to install",
+          "isOptional": true,
+          "name": "APPID"
+        },
+        {
+          "description": "Names and versions of the multiple apps ({vendor}.{appname}@{x.x.x}) to install",
+          "isOptional": true,
+          "name": "ITHAPPID"
+        }
+      ],
+      "description": "Installs an app on the current workspace. If not specified which one, it defaults to the app in the current directory",
+      "name": "install",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        },
+        {
+          "description": "Installs the specified app without checking for route conflicts",
+          "name": [
+            "--force",
+            "-f"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Runs a Lighthouse audit over the specified URL",
+      "name": "lighthouse",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": {
+            "description": "URL to audit",
+            "name": "URL"
+          },
+          "description": "Runs a Lighthouse audit over the specified URL",
+          "name": "audit",
+          "options": [
+            {
+              "description": "Show help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            },
+            {
+              "description": "Returns the report as a json on stdout",
+              "name": [
+                "--json",
+                "-j"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Shows a previous audit report, filtering by app and/or URL",
+          "name": "show",
+          "options": [
+            {
+              "description": "Show help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            },
+            {
+              "description": "Filters by app name",
+              "name": [
+                "--app=app",
+                "-a"
+              ]
+            },
+            {
+              "description": "Filters by URL",
+              "name": [
+                "--url=url",
+                "-u"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Runs a Lighthouse audit over the specified URL",
+      "name": "lh",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": {
+            "description": "URL to audit",
+            "name": "URL"
+          },
+          "description": "Runs a Lighthouse audit over the specified URL",
+          "name": "audit",
+          "options": [
+            {
+              "description": "Show help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            },
+            {
+              "description": "Returns the report as a json on stdout",
+              "name": [
+                "--json",
+                "-j"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Shows a previous audit report, filtering by app and/or URL",
+          "name": "show",
+          "options": [
+            {
+              "description": "Show help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            },
+            {
+              "description": "Filters by app name",
+              "name": [
+                "--app=app",
+                "-a"
+              ]
+            },
+            {
+              "description": "Filters by URL",
+              "name": [
+                "--url=url",
+                "-u"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Syncs the app in the current directory with the development workspace in use",
+      "name": "link",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        },
+        {
+          "description": "Starts a development session in the specified account. Must be paired with the '--workspace' flag",
+          "name": [
+            "--account=account",
+            "-a"
+          ]
+        },
+        {
+          "description": "Cleans builder cache",
+          "name": [
+            "--clean",
+            "-c"
+          ]
+        },
+        {
+          "description": "Sets up typing definitions before linking the app [see vtex setup --help]",
+          "name": [
+            "--setup",
+            "-s"
+          ]
+        },
+        {
+          "description": "Allows linking the app despite Typescript errors",
+          "name": [
+            "--unsafe",
+            "-u"
+          ]
+        },
+        {
+          "description": "Starts a development session in the specified workspace. Can be paired with the '--account' flag to switch from the current account and workspace",
+          "name": [
+            "--workspace=workspace",
+            "-w"
+          ]
+        },
+        {
+          "description": "Doesn't watch for file changes after the initial link",
+          "name": [
+            "--no-watch"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Lists the apps installed on the current workspace and account",
+      "name": "list",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Prints the user's auth token and copies it to the clipboard",
+      "name": "local token",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Account name to log in",
+        "isOptional": true,
+        "name": "ACCOUNT"
+      },
+      "description": "Login to a VTEX account",
+      "name": "login",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        },
+        {
+          "description": "Logs in the specified workspace",
+          "name": [
+            "--workspace=workspace",
+            "-w"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Logs out of the current VTEX account",
+      "name": "logout",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Name of the app to show logs",
+        "isOptional": true,
+        "name": "APP"
+      },
+      "description": "Shows logs of an app. (Only apps in production.)",
+      "name": "logs",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        },
+        {
+          "description": "Shows logs of every app installed on the current account",
+          "name": [
+            "--all",
+            "-a"
+          ]
+        },
+        {
+          "description": "Shows previous logs of the specified app",
+          "name": [
+            "--past",
+            "-p"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Publishes the app in the current directory as a release candidate version",
+      "name": "publish",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        },
+        {
+          "description": "Publishes the app independently of SemVer rules",
+          "name": [
+            "--force",
+            "-f"
+          ]
+        },
+        {
+          "description": "Adds the specified tag to the release",
+          "name": [
+            "--tag=tag",
+            "-t"
+          ]
+        },
+        {
+          "description": "Uses the specified workspace in the app registry",
+          "name": [
+            "--workspace=workspace",
+            "-w"
+          ]
+        },
+        {
+          "description": "Answers yes to all prompts",
+          "name": [
+            "--yes",
+            "-y"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Redirects from the current account and workspace",
+      "name": "redirects",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": {
+            "description": "CSV file containing the URL paths to be deleted",
+            "name": "CSVPATH"
+          },
+          "description": "Deletes redirects from the current account and workspace",
+          "name": "delete",
+          "options": [
+            {
+              "description": "Show help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Name of the CSV file",
+            "name": "CSVPATH"
+          },
+          "description": "Exports all redirects defined in the current account and workspace to a CSV file",
+          "name": "export",
+          "options": [
+            {
+              "description": "Show help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Imports redirects from a CSV file to the current account and workspace",
+          "name": "import",
+          "options": [
+            {
+              "description": "Show help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            },
+            {
+              "description": "Removes all redirects previously defined",
+              "name": [
+                "--reset",
+                "-r"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Release type (major, minor, or patch)",
+          "isOptional": true,
+          "name": "RELEASETYPE"
+        },
+        {
+          "description": "Tag name (e.g., stable, beta)",
+          "isOptional": true,
+          "name": "TAGNAME"
+        }
+      ],
+      "description": "(Only for git users.) Bumps the app version, commits, and pushes to remote the app in the current directory",
+      "name": "release",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "VTEX CLI Settings",
+      "name": "settings",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": [
+            {
+              "description": "Name of the app to check the available settings",
+              "name": "APNAME"
+            },
+            {
+              "description": "Name of the setting",
+              "isOptional": true,
+              "name": "FIELD"
+            }
+          ],
+          "name": "get",
+          "options": [
+            {
+              "description": "Show help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "description": "Name of the app",
+              "name": "APPNAME"
+            },
+            {
+              "description": "Name of the setting",
+              "name": "FIELD"
+            },
+            {
+              "description": "Value of the setting",
+              "name": "VALUE"
+            }
+          ],
+          "description": "Sets value to the specified setting of an app",
+          "name": "set",
+          "options": [
+            {
+              "description": "Show help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "description": "Name of the app",
+              "name": "APPNAME"
+            },
+            {
+              "description": "Name of the setting",
+              "name": "FIELD"
+            }
+          ],
+          "description": "Disables the specified setting of an app",
+          "name": "unset",
+          "options": [
+            {
+              "description": "Show help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Sets up typings and tools for the current development environment",
+      "name": "setup",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        },
+        {
+          "description": "Sets up types from published apps, and ignores types from linked apps",
+          "name": [
+            "--ignore-linked",
+            "-i"
+          ]
+        },
+        {
+          "description": "Sets up all available typings, configs, and tools",
+          "name": [
+            "--all"
+          ]
+        },
+        {
+          "description": "Sets up Prettier, Husky, and ESLint",
+          "name": [
+            "--tooling"
+          ]
+        },
+        {
+          "description": "Sets up React and Node TSconfig, if applicable",
+          "name": [
+            "--tsconfig"
+          ]
+        },
+        {
+          "description": "Sets up GraphQL and React typings",
+          "name": [
+            "--typings"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Name of the app to be validated",
+        "isOptional": true,
+        "name": "APPID"
+      },
+      "description": "Submits the current app, or an specified one, to validation from VTEX App Store team",
+      "name": "submit",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Name of the account to give support",
+        "name": "ACCOUNT"
+      },
+      "description": "Logs in as support to another VTEX account",
+      "name": "support",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Account name to log in",
+        "name": "ACCOUNT"
+      },
+      "description": "Switches to another VTEX account",
+      "name": "switch",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        },
+        {
+          "description": "Moves to the specified workspace",
+          "name": [
+            "--workspace=workspace",
+            "-w"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Runs unit tests for the app in the current directory",
+      "name": "test",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Runs E2E integration tests for the app in the current directory",
+          "name": "e2e",
+          "options": [
+            {
+              "description": "Show help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            },
+            {
+              "description": "Displays the results and state of the specified test ID",
+              "name": [
+                "--report=report",
+                "-r"
+              ]
+            },
+            {
+              "description": "(Not recommended.) Sends your personal authorization token to your testing session, making it available during the tests. It can be dangerous since it exposes your token via the 'authToken' environment variable",
+              "name": [
+                "--token",
+                "-t"
+              ]
+            },
+            {
+              "description": "Runs tests for the apps installed on the specified workspace",
+              "name": [
+                "--workspace",
+                "-w"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Runs unit tests for the app in the current directory",
+          "name": "unit",
+          "options": [
+            {
+              "description": "Show help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            },
+            {
+              "description": "Ignores Typescript errors",
+              "name": [
+                "--unsafe",
+                "-u"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Name and version of the app ({vendor}.{appname}@{x.x.x}) to undeprecate",
+          "isOptional": true,
+          "name": "APPID"
+        },
+        {
+          "description": "Names and versions of the multiple apps ({vendor}.{appname}@{x.x.x}) to undeprecate",
+          "isOptional": true,
+          "name": "ITHAPPID"
+        }
+      ],
+      "description": "Reestablishes a deprecated version of an app as a stable version",
+      "name": "undeprecate",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        },
+        {
+          "description": "Answers yes to all prompts",
+          "name": [
+            "--yes",
+            "-y"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Name and version of the app ({vendor}.{appname}@{x.x.x}) to uninstall",
+          "isOptional": true,
+          "name": "APPNAME"
+        },
+        {
+          "description": "Names and versions of the multiple apps ({vendor}.{appname}@{x.x.x}) to uninstall",
+          "isOptional": true,
+          "name": "ITHAPPNAME"
+        }
+      ],
+      "description": "Uninstalls an app from the current workspace. If not specified which app to uninstall, it defaults to the app in the current directory",
+      "name": "uninstall",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        },
+        {
+          "description": "Answers yes to all prompts",
+          "name": [
+            "--yes",
+            "-y"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Name and version of the app ({vendor}.{appname}@{x.x.x}) to unlink",
+          "isOptional": true,
+          "name": "APPID"
+        },
+        {
+          "description": "Names and versions of the multiple apps ({vendor}.{appname}@{x.x.x}) to unlink",
+          "isOptional": true,
+          "name": "ITHAPPID"
+        }
+      ],
+      "description": "Unlinks an app from the current workspace. If not specified which app to unlink, it defaults to the app in the current directory",
+      "name": "unlink",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        },
+        {
+          "description": "Unlinks all apps",
+          "name": [
+            "--all",
+            "-a"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Updates all installed apps to the latest (minor or patch) version. Does not upgrade to another major version",
+      "name": "update",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Prints base URL for the current account and workspace",
+      "name": "url",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Prints the current account, workspace, environment, and login details",
+      "name": "whoami",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Workspace from the current account",
+      "name": "workspace",
+      "options": [
+        {
+          "description": "Show help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "A/B tests from running on the current account",
+          "name": "abtest",
+          "options": [
+            {
+              "description": "Show help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "description": "Stops all A/B tests from running on the current account",
+              "name": "finish",
+              "options": [
+                {
+                  "description": "Show help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Starts a new A/B test on the current workspace",
+              "name": "start",
+              "options": [
+                {
+                  "description": "Show help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Displays the results of the active A/B tests",
+              "name": "status",
+              "options": [
+                {
+                  "description": "Show help for command",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "description": "Name of the workspace to delete",
+              "name": "WORKSPACE1"
+            },
+            {
+              "description": "Name of the multiple workspaces to delete",
+              "isOptional": true,
+              "name": "ITHWORKSPACE"
+            }
+          ],
+          "description": "Deletes one or many workspaces from the current account",
+          "name": "delete",
+          "options": [
+            {
+              "description": "Show help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            },
+            {
+              "description": "Deletes the specified workspace even if it is currently in use",
+              "name": [
+                "--force",
+                "-f"
+              ]
+            },
+            {
+              "description": "Answers yes to all prompts",
+              "name": [
+                "--yes",
+                "-y"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Lists all workspaces of the current account",
+          "name": "list",
+          "options": [
+            {
+              "description": "Show help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Promotes the current workspace to master. Only works for production workspaces",
+          "name": "promote",
+          "options": [
+            {
+              "description": "Show help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Name of the workspace to reset",
+            "isOptional": true,
+            "name": "WORKSPACENAME"
+          },
+          "description": "Cleans all configurations of the specified workspace and recreates it with the configurations from master",
+          "name": "reset",
+          "options": [
+            {
+              "description": "Show help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            },
+            {
+              "description": "Recreates the workspace as a production one",
+              "name": [
+                "--production",
+                "-p"
+              ]
+            },
+            {
+              "description": "Answers yes to all prompts",
+              "name": [
+                "--yes",
+                "-y"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Name of the workspace",
+            "isOptional": true,
+            "name": "WORKSPACENAME"
+          },
+          "description": "Displays information about the specified workspace",
+          "name": "status",
+          "options": [
+            {
+              "description": "Show help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Name of the workspace to use",
+            "name": "WORKSPACE"
+          },
+          "description": "Creates and switches to a new workspace or simply switches to an existing one",
+          "name": "use",
+          "options": [
+            {
+              "description": "Show help for command",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            },
+            {
+              "description": "Creates and/or switches to a production workspace",
+              "name": [
+                "--production",
+                "-p"
+              ]
+            },
+            {
+              "description": "Resets the workspace before switching to it",
+              "name": [
+                "--reset",
+                "-r"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

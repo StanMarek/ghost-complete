@@ -1,0 +1,321 @@
+{
+  "description": "Datree can be used on the command line to run policies against Kubernetes manifests YAML files or Helm charts",
+  "name": "datree",
+  "options": [
+    {
+      "description": "Show help for datree",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Generate completion script for bash,zsh,fish,powershell",
+      "name": "completion"
+    },
+    {
+      "description": "Internal configuration management for datree config file",
+      "name": "config",
+      "options": [
+        {
+          "description": "Help for config",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Get configuration value",
+          "name": "get",
+          "options": [
+            {
+              "description": "Get value for specific key from datree config.yaml file. Defaults to $HOME/.datree/config.yaml",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Set configuration value",
+          "name": "set",
+          "options": [
+            {
+              "description": "Apply value for specific key in datree config.yaml file. Defaults to $HOME/.datree/config.yaml",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "template": "help"
+      },
+      "description": "Help about any command",
+      "name": "help"
+    },
+    {
+      "description": "Generate kustomization files from manifests",
+      "name": "kustomize",
+      "options": [
+        {
+          "description": "Help for kustomize",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Test kustomization files",
+          "name": "test",
+          "options": [
+            {
+              "description": "Help for 'test'",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            },
+            {
+              "description": "Ignore missing schemas when executing schema validation step",
+              "name": [
+                "--ignore-missing-schemas"
+              ]
+            },
+            {
+              "description": "Do not send policy checks metadata to the backend",
+              "name": [
+                "--no-record"
+              ]
+            },
+            {
+              "description": "Evaluate only valid yaml files with the properties 'apiVersion' and 'kind'. Ignore everything else",
+              "name": [
+                "--only-k8s-files"
+              ]
+            },
+            {
+              "args": {
+                "description": "Output format",
+                "name": "output",
+                "suggestions": [
+                  {
+                    "description": "Simple output without colors",
+                    "name": "simple"
+                  },
+                  {
+                    "description": "YAML output",
+                    "name": "yaml"
+                  },
+                  {
+                    "description": "JSON output",
+                    "name": "json"
+                  },
+                  {
+                    "description": "XML output",
+                    "name": "xml"
+                  },
+                  {
+                    "description": "JUnit output",
+                    "name": "junit"
+                  }
+                ]
+              },
+              "description": "Define output format (simple, yaml, json, xml, JUnit)",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            },
+            {
+              "args": {
+                "description": "String",
+                "name": "policy"
+              },
+              "description": "Policy name to run against",
+              "name": [
+                "-p",
+                "--policy"
+              ]
+            },
+            {
+              "args": {
+                "template": "filepaths"
+              },
+              "description": "Path for local policies configuration file",
+              "name": [
+                "--policy-config"
+              ]
+            },
+            {
+              "args": {
+                "description": "String array",
+                "name": "stringArray"
+              },
+              "description": "Override schemas location search path (can be specified multiple times)",
+              "name": [
+                "--schema-location"
+              ]
+            },
+            {
+              "description": "Set kubernetes version to validate against. Defaults to 1.19.0",
+              "name": [
+                "-s",
+                "--schema-version"
+              ]
+            },
+            {
+              "description": "Display 'How to Fix' link",
+              "name": [
+                "--verbose"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "file path",
+        "template": "filepaths"
+      },
+      "description": "Publish policies configuration for given <fileName>. Input should be the path to the Policy-as-Code yaml configuration file. ## Note You need to first enable Policy-as-Code (PaC) on the settings page in the dashboard",
+      "name": "publish",
+      "options": [
+        {
+          "description": "Help for publish",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "file path",
+        "template": "filepaths"
+      },
+      "description": "Trigger a policy check, provide a Kubernetes configuration file path or a glob pattern",
+      "name": "test",
+      "options": [
+        {
+          "description": "Help for 'test'",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        },
+        {
+          "description": "Ignore missing schemas when executing schema validation step",
+          "name": [
+            "--ignore-missing-schemas"
+          ]
+        },
+        {
+          "description": "Do not send policy checks metadata to the backend",
+          "name": [
+            "--no-record"
+          ]
+        },
+        {
+          "description": "Evaluate only valid yaml files with the properties 'apiVersion' and 'kind'. Ignore everything else",
+          "name": [
+            "--only-k8s-files"
+          ]
+        },
+        {
+          "args": {
+            "description": "Output format",
+            "name": "output",
+            "suggestions": [
+              {
+                "description": "Simple output without colors",
+                "name": "simple"
+              },
+              {
+                "description": "YAML output",
+                "name": "yaml"
+              },
+              {
+                "description": "JSON output",
+                "name": "json"
+              },
+              {
+                "description": "XML output",
+                "name": "xml"
+              },
+              {
+                "description": "JUnit output",
+                "name": "junit"
+              }
+            ]
+          },
+          "description": "Define output format (simple, yaml, json, xml, JUnit)",
+          "name": [
+            "-o",
+            "--output"
+          ]
+        },
+        {
+          "args": {
+            "description": "String",
+            "name": "policy"
+          },
+          "description": "Policy name to run against",
+          "name": [
+            "-p",
+            "--policy"
+          ]
+        },
+        {
+          "args": {
+            "template": "filepaths"
+          },
+          "description": "Path for local policies configuration file",
+          "name": [
+            "--policy-config"
+          ]
+        },
+        {
+          "args": {
+            "description": "String array",
+            "name": "stringArray"
+          },
+          "description": "Override schemas location search path (can be specified multiple times)",
+          "name": [
+            "--schema-location"
+          ]
+        },
+        {
+          "description": "Set kubernetes version to validate against. Defaults to 1.19.0",
+          "name": [
+            "-s",
+            "--schema-version"
+          ]
+        },
+        {
+          "description": "Display 'How to Fix' link",
+          "name": [
+            "--verbose"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Print the version number",
+      "name": "version"
+    }
+  ]
+}

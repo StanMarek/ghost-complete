@@ -1,0 +1,1296 @@
+{
+  "description": "A terminal workspace with batteries included",
+  "name": "zellij",
+  "options": [
+    {
+      "args": {
+        "generators": [
+          {
+            "template": "filepaths"
+          }
+        ],
+        "name": "CONFIG"
+      },
+      "description": "Change where zellij looks for the configuration file",
+      "name": [
+        "-c",
+        "--config"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "template": "folders"
+          }
+        ],
+        "name": "CONFIG_DIR"
+      },
+      "description": "Change where zellij looks for the configuration directory",
+      "name": [
+        "--config-dir"
+      ]
+    },
+    {
+      "description": "Specify emitting additional debug information",
+      "name": [
+        "-d",
+        "--debug"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "template": "folders"
+          }
+        ],
+        "name": "DATA_DIR"
+      },
+      "description": "Change where zellij looks for plugins",
+      "name": [
+        "--data-dir"
+      ]
+    },
+    {
+      "description": "Print help information",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "template": "filepaths"
+          }
+        ],
+        "name": "LAYOUT"
+      },
+      "description": "Name of a predefined layout inside the layout directory or the path to a layout file",
+      "name": [
+        "-l",
+        "--layout"
+      ]
+    },
+    {
+      "args": {
+        "name": "MAX_PANES"
+      },
+      "description": "Maximum panes on screen, caution: opening more panes will close old ones",
+      "name": [
+        "--max-panes"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "template": "filepaths"
+          }
+        ],
+        "name": "NEW_SESSION_WITH_LAYOUT"
+      },
+      "description": "Name of a predefined layout inside the layout directory or the path to a layout file",
+      "name": [
+        "-n",
+        "--new-session-with-layout"
+      ]
+    },
+    {
+      "args": {
+        "name": "SESSION"
+      },
+      "description": "Specify name of a new session",
+      "name": [
+        "-s",
+        "--session"
+      ]
+    },
+    {
+      "description": "Print version information",
+      "name": [
+        "-V",
+        "--version"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Send actions to a specific session",
+      "name": "action",
+      "subcommands": [
+        {
+          "description": "Clear all buffers for a focused pane",
+          "name": "clear"
+        },
+        {
+          "description": "Close the focused pane",
+          "name": "close-pane"
+        },
+        {
+          "description": "Close the current tab",
+          "name": "close-tab"
+        },
+        {
+          "description": "Dump current layout to stdout",
+          "name": "dump-layout"
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "template": "filepaths"
+              }
+            ],
+            "name": "FILE"
+          },
+          "description": "Dump the focused pane to a file",
+          "name": "dump-screen"
+        },
+        {
+          "description": "Open the specified file in a new zellij pane with your default EDITOR",
+          "name": "edit"
+        },
+        {
+          "description": "Open the pane scrollback in your default editor",
+          "name": "edit-scrollback"
+        },
+        {
+          "description": "Change focus to the next pane",
+          "name": "focus-next-pane"
+        },
+        {
+          "description": "Change focus to the previous pane",
+          "name": "focus-previous-pane"
+        },
+        {
+          "description": "Go to the next tab",
+          "name": "go-to-next-tab"
+        },
+        {
+          "description": "Go to the previous tab",
+          "name": "go-to-previous-tab"
+        },
+        {
+          "description": "Go to tab with index [index]",
+          "name": "go-to-tab"
+        },
+        {
+          "description": "Go to tab with name [name]",
+          "name": "go-to-tab-name"
+        },
+        {
+          "description": "Scroll down half page in focus pane",
+          "name": "half-page-scroll-down"
+        },
+        {
+          "description": "Scroll up half page in focus pane",
+          "name": "half-page-scroll-up"
+        },
+        {
+          "description": "Print this message or the help of the given subcommand(s)",
+          "name": "help"
+        },
+        {
+          "description": "Launch or focus a plugin",
+          "name": "launch-or-focus-plugin"
+        },
+        {
+          "description": "Launch a plugin",
+          "name": "launch-plugin"
+        },
+        {
+          "description": "List connected clients",
+          "name": "list-clients"
+        },
+        {
+          "description": "Move the focused pane in the specified direction. [right|left|up|down]",
+          "name": "move-focus"
+        },
+        {
+          "description": "Move focus to the pane or tab (if on screen edge) in the specified direction [right|left|up|down]",
+          "name": "move-focus-or-tab"
+        },
+        {
+          "description": "Change the location of the focused pane in the specified direction or rotate forwards [right|left|up|down]",
+          "name": "move-pane"
+        },
+        {
+          "description": "Rotate the location of the previous pane backwards",
+          "name": "move-pane-backwards"
+        },
+        {
+          "description": "Move the focused tab in the specified direction. [right|left]",
+          "name": "move-tab"
+        },
+        {
+          "description": "Open a new pane in the specified direction [right|down] If no direction is specified, will try to use the biggest available space",
+          "name": "new-pane"
+        },
+        {
+          "description": "Create a new tab, optionally with a specified tab layout and name",
+          "name": "new-tab"
+        },
+        {
+          "description": "Swap to the next layout",
+          "name": "next-swap-layout"
+        },
+        {
+          "description": "Scroll down one page in focus pane",
+          "name": "page-scroll-down"
+        },
+        {
+          "description": "Scroll up one page in focus pane",
+          "name": "page-scroll-up"
+        },
+        {
+          "description": "Swap to the previous layout",
+          "name": "previous-swap-layout"
+        },
+        {
+          "description": "Query all tab names",
+          "name": "query-tab-names"
+        },
+        {
+          "description": "Renames the focused pane",
+          "name": "rename-pane"
+        },
+        {
+          "description": "Rename the current session",
+          "name": "rename-session"
+        },
+        {
+          "description": "Renames the focused pane",
+          "name": "rename-tab"
+        },
+        {
+          "description": "[increase|decrease] the focused panes area at the [left|down|up|right] border",
+          "name": "resize"
+        },
+        {
+          "description": "Scroll down in focus pane",
+          "name": "scroll-down"
+        },
+        {
+          "description": "Scroll down to bottom in focus pane",
+          "name": "scroll-to-bottom"
+        },
+        {
+          "description": "Scroll up to top in focus pane",
+          "name": "scroll-to-top"
+        },
+        {
+          "description": "Scroll up in the focused pane",
+          "name": "scroll-up"
+        },
+        {
+          "description": "Start or reload a plugin",
+          "name": "start-or-reload-plugin"
+        },
+        {
+          "description": "Switch input mode of all connected clients [locked|pane|tab|resize|move|search|session]",
+          "name": "switch-mode"
+        },
+        {
+          "description": "Toggle between sending text commands to all panes on the current tab and normal mode",
+          "name": "toggle-active-sync-tab"
+        },
+        {
+          "description": "Toggle the visibility of all floating panes in the current Tab, open one if none exist",
+          "name": "toggle-floating-panes"
+        },
+        {
+          "description": "Toggle between fullscreen focus pane and normal layout",
+          "name": "toggle-fullscreen"
+        },
+        {
+          "description": "Embed focused pane if floating or float focused pane if embedded",
+          "name": "toggle-pane-embed-or-floating"
+        },
+        {
+          "description": "Toggle frames around panes in the UI",
+          "name": "toggle-pane-frames"
+        },
+        {
+          "description": "Remove a previously set pane name",
+          "name": "undo-rename-pane"
+        },
+        {
+          "description": "Remove a previously set tab name",
+          "name": "undo-rename-tab"
+        },
+        {
+          "description": "Write bytes to the terminal",
+          "name": "write"
+        },
+        {
+          "description": "Write characters to the terminal",
+          "name": "write-chars"
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Name of the session to attach to",
+        "generators": [
+          {}
+        ],
+        "name": "SESSION_NAME"
+      },
+      "description": "Attach to a session",
+      "name": "attach",
+      "options": [
+        {
+          "description": "Create a detached session in the background if one does not exist",
+          "name": [
+            "-b",
+            "--background"
+          ]
+        },
+        {
+          "description": "Create a session if one does not exist",
+          "name": [
+            "-c",
+            "--create"
+          ]
+        },
+        {
+          "description": "If resurrecting a dead session, immediately run all its commands on startup",
+          "name": [
+            "-f",
+            "--force-run-commands"
+          ]
+        },
+        {
+          "description": "Number of the session index in the active sessions ordered creation date",
+          "name": [
+            "--index"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "template": "filepaths"
+          }
+        ],
+        "name": "CONFIG"
+      },
+      "description": "Convert configuration files",
+      "name": "convert-config"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "template": "filepaths"
+          }
+        ],
+        "name": "LAYOUT"
+      },
+      "description": "Convert layout files",
+      "name": "convert-layout"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "template": "filepaths"
+          }
+        ],
+        "name": "THEME"
+      },
+      "description": "Convert theme files",
+      "name": "convert-theme"
+    },
+    {
+      "description": "Delete all sessions",
+      "name": "delete-all-sessions",
+      "options": [
+        {
+          "description": "Kill the sessions if they're running before deleting them",
+          "name": [
+            "-f",
+            "--force"
+          ]
+        },
+        {
+          "description": "Automatic yes to prompts",
+          "name": [
+            "-y",
+            "--yes"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Name of the session to delete",
+        "generators": [
+          {}
+        ],
+        "name": "TARGET_SESSION"
+      },
+      "description": "Delete a specific session",
+      "name": "delete-session",
+      "options": [
+        {
+          "description": "Kill the sessions if they're running before deleting them",
+          "name": [
+            "-f",
+            "--force"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "template": "filepaths"
+          }
+        ],
+        "name": "FILE"
+      },
+      "description": "Edit file with default $EDITOR / $VISUAL",
+      "name": "edit",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "template": "folders"
+              }
+            ],
+            "name": "CWD"
+          },
+          "description": "Change the working directory of the editor",
+          "name": [
+            "--cwd"
+          ]
+        },
+        {
+          "args": {
+            "name": "DIRECTION"
+          },
+          "description": "Direction to open the new pane in",
+          "name": [
+            "-d",
+            "--direction"
+          ]
+        },
+        {
+          "description": "Open the new pane in floating mode",
+          "name": [
+            "-f",
+            "--floating"
+          ]
+        },
+        {
+          "args": {
+            "name": "HEIGHT"
+          },
+          "description": "The height if the pane is floating as a bare integer (eg. 1) or percent (eg. 10%)",
+          "name": [
+            "--height"
+          ]
+        },
+        {
+          "description": "Open the new pane in place of the current pane, temporarily suspending it",
+          "name": [
+            "-i",
+            "--in-place"
+          ]
+        },
+        {
+          "args": {
+            "name": "LINE_NUMBER"
+          },
+          "description": "Open the file in the specified line number",
+          "name": [
+            "-l",
+            "--line-number"
+          ]
+        },
+        {
+          "args": {
+            "name": "WIDTH"
+          },
+          "description": "The width if the pane is floating as a bare integer (eg. 1) or percent (eg. 10%)",
+          "name": [
+            "--width"
+          ]
+        },
+        {
+          "args": {
+            "name": "X"
+          },
+          "description": "The x coordinates if the pane is floating as a bare integer (eg. 1) or percent (eg. 10%)",
+          "name": [
+            "-x",
+            "--x"
+          ]
+        },
+        {
+          "args": {
+            "name": "Y"
+          },
+          "description": "The y coordinates if the pane is floating as a bare integer (eg. 1) or percent (eg. 10%)",
+          "name": [
+            "-y",
+            "--y"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Print this message or the help of the given subcommand(s)",
+      "name": "help"
+    },
+    {
+      "description": "Kill all sessions",
+      "name": "kill-all-sessions",
+      "options": [
+        {
+          "description": "Automatic yes to prompts",
+          "name": [
+            "-y",
+            "--yes"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Name of the session to kill",
+        "generators": [
+          {}
+        ],
+        "name": "TARGET_SESSION"
+      },
+      "description": "Kill a specific session",
+      "name": "kill-session"
+    },
+    {
+      "description": "List existing plugin aliases",
+      "name": "list-aliases"
+    },
+    {
+      "description": "List active sessions",
+      "name": "list-sessions",
+      "options": [
+        {
+          "description": "Do not add colors and formatting to the list",
+          "name": [
+            "-n",
+            "--no-formatting"
+          ]
+        },
+        {
+          "description": "List the sessions in reverse order",
+          "name": [
+            "-r",
+            "--reverse"
+          ]
+        },
+        {
+          "description": "Print just the session name",
+          "name": [
+            "-s",
+            "--short"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Change the behaviour of zellij",
+      "name": "options",
+      "options": [
+        {
+          "args": {
+            "name": "ATTACH_TO_SESSION",
+            "suggestions": [
+              {
+                "name": "true"
+              },
+              {
+                "name": "false"
+              }
+            ]
+          },
+          "description": "Whether to attach to a session specified in 'session-name' if it exists",
+          "name": [
+            "--attach-to-session"
+          ]
+        },
+        {
+          "args": {
+            "name": "AUTO_LAYOUT",
+            "suggestions": [
+              {
+                "name": "true"
+              },
+              {
+                "name": "false"
+              }
+            ]
+          },
+          "description": "Whether to lay out panes in a predefined set of layouts whenever possible",
+          "name": [
+            "--auto-layout"
+          ]
+        },
+        {
+          "args": {
+            "name": "COPY_CLIPBOARD",
+            "suggestions": [
+              {
+                "name": "system"
+              },
+              {
+                "name": "primary"
+              }
+            ]
+          },
+          "description": "OSC52 destination clipboard",
+          "name": [
+            "--copy-clipboard"
+          ]
+        },
+        {
+          "args": {
+            "name": "COPY_COMMAND"
+          },
+          "description": "Switch to using a user supplied command for clipboard instead of OSC52",
+          "name": [
+            "--copy-command"
+          ]
+        },
+        {
+          "args": {
+            "name": "COPY_ON_SELECT",
+            "suggestions": [
+              {
+                "name": "true"
+              },
+              {
+                "name": "false"
+              }
+            ]
+          },
+          "description": "Automatically copy when selecting text (true or false)",
+          "name": [
+            "--copy-on-select"
+          ]
+        },
+        {
+          "args": {
+            "name": "DEFAULT_CWD"
+          },
+          "description": "Set the default cwd",
+          "name": [
+            "--default-cwd"
+          ]
+        },
+        {
+          "args": {
+            "name": "DEFAULT_LAYOUT"
+          },
+          "description": "Set the default layout",
+          "name": [
+            "--default-layout"
+          ]
+        },
+        {
+          "args": {
+            "name": "DEFAULT_MODE"
+          },
+          "description": "Set the default mode",
+          "name": [
+            "--default-mode"
+          ]
+        },
+        {
+          "args": {
+            "name": "DEFAULT_SHELL"
+          },
+          "description": "Set the default shell",
+          "name": [
+            "--default-shell"
+          ]
+        },
+        {
+          "description": "Disable handling of mouse events",
+          "name": [
+            "--disable-mouse-mode"
+          ]
+        },
+        {
+          "args": {
+            "name": "DISABLE_SESSION_METADATA",
+            "suggestions": [
+              {
+                "name": "true"
+              },
+              {
+                "name": "false"
+              }
+            ]
+          },
+          "description": "If true, will disable writing session metadata to disk",
+          "name": [
+            "--disable-session-metadata"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "template": "folders"
+              }
+            ],
+            "name": "LAYOUT_DIR"
+          },
+          "description": "Set the layout_dir, defaults to subdirectory of config dir",
+          "name": [
+            "--layout-dir"
+          ]
+        },
+        {
+          "args": {
+            "name": "MIRROR_SESSION",
+            "suggestions": [
+              {
+                "name": "true"
+              },
+              {
+                "name": "false"
+              }
+            ]
+          },
+          "description": "Mirror session when multiple users are connected",
+          "name": [
+            "--mirror-session"
+          ]
+        },
+        {
+          "args": {
+            "name": "MOUSE_MODE",
+            "suggestions": [
+              {
+                "name": "true"
+              },
+              {
+                "name": "false"
+              }
+            ]
+          },
+          "description": "Set the handling of mouse events (true or false) Can be temporarily bypassed by the [SHIFT] key",
+          "name": [
+            "--mouse-mode"
+          ]
+        },
+        {
+          "description": "Disable display of pane frames",
+          "name": [
+            "--no-pane-frames"
+          ]
+        },
+        {
+          "args": {
+            "name": "ON_FORCE_CLOSE"
+          },
+          "description": "Set behaviour on force close (quit or detach)",
+          "name": [
+            "--on-force-close"
+          ]
+        },
+        {
+          "args": {
+            "name": "PANE_FRAMES",
+            "suggestions": [
+              {
+                "name": "true"
+              },
+              {
+                "name": "false"
+              }
+            ]
+          },
+          "description": "Set display of the pane frames (true or false)",
+          "name": [
+            "--pane-frames"
+          ]
+        },
+        {
+          "args": {
+            "name": "SCROLL_BUFFER_SIZE"
+          },
+          "name": [
+            "--scroll-buffer-size"
+          ]
+        },
+        {
+          "args": {
+            "name": "SCROLLBACK_EDITOR"
+          },
+          "description": "Explicit full path to open the scrollback editor (default is $EDITOR or $VISUAL)",
+          "name": [
+            "--scrollback-editor"
+          ]
+        },
+        {
+          "args": {
+            "name": "SCROLLBACK_LINES_TO_SERIALIZE"
+          },
+          "description": "Scrollback lines to serialize along with the pane viewport when serializing sessions, 0 defaults to the scrollback size. If this number is higher than the scrollback size, it will also default to the scrollback size",
+          "name": [
+            "--scrollback-lines-to-serialize"
+          ]
+        },
+        {
+          "args": {
+            "name": "SERIALIZATION_INTERVAL"
+          },
+          "description": "The interval at which to serialize sessions for resurrection (in seconds)",
+          "name": [
+            "--serialization-interval"
+          ]
+        },
+        {
+          "args": {
+            "name": "SERIALIZE_PANE_VIEWPORT",
+            "suggestions": [
+              {
+                "name": "true"
+              },
+              {
+                "name": "false"
+              }
+            ]
+          },
+          "description": "Whether pane viewports are serialized along with the session, default is false",
+          "name": [
+            "--serialize-pane-viewport"
+          ]
+        },
+        {
+          "args": {
+            "name": "SESSION_NAME"
+          },
+          "description": "The name of the session to create when starting Zellij",
+          "name": [
+            "--session-name"
+          ]
+        },
+        {
+          "args": {
+            "name": "SESSION_SERIALIZATION",
+            "suggestions": [
+              {
+                "name": "true"
+              },
+              {
+                "name": "false"
+              }
+            ]
+          },
+          "description": "Whether sessions should be serialized to the HD",
+          "name": [
+            "--session-serialization"
+          ]
+        },
+        {
+          "args": {
+            "name": "SIMPLIFIED_UI",
+            "suggestions": [
+              {
+                "name": "true"
+              },
+              {
+                "name": "false"
+              }
+            ]
+          },
+          "description": "Allow plugins to use a more simplified layout that is compatible with more fonts",
+          "name": [
+            "--simplified-ui"
+          ]
+        },
+        {
+          "args": {
+            "name": "STYLED_UNDERLINES",
+            "suggestions": [
+              {
+                "name": "true"
+              },
+              {
+                "name": "false"
+              }
+            ]
+          },
+          "description": "Whether to use ANSI styled underlines",
+          "name": [
+            "--styled-underlines"
+          ]
+        },
+        {
+          "args": {
+            "name": "SUPPORT_KITTY_KEYBOARD_PROTOCOL",
+            "suggestions": [
+              {
+                "name": "true"
+              },
+              {
+                "name": "false"
+              }
+            ]
+          },
+          "description": "Whether to enable support for the Kitty keyboard protocol",
+          "name": [
+            "--support-kitty-keyboard-protocol"
+          ]
+        },
+        {
+          "args": {
+            "name": "THEME"
+          },
+          "description": "Set the default theme",
+          "name": [
+            "--theme"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "template": "folders"
+              }
+            ],
+            "name": "THEME_DIR"
+          },
+          "description": "Set the theme_dir, defaults to subdirectory of config dir",
+          "name": [
+            "--theme-dir"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The data to send down this pipe",
+        "name": "PAYLOAD"
+      },
+      "description": "Send data to one or more plugins, launch them if they are not running",
+      "name": "pipe",
+      "options": [
+        {
+          "args": {
+            "name": "NAME"
+          },
+          "description": "The name of the pipe",
+          "name": [
+            "-n",
+            "--name"
+          ]
+        },
+        {
+          "args": {
+            "name": "ARGS"
+          },
+          "description": "The args of the pipe",
+          "name": [
+            "-a",
+            "--args"
+          ]
+        },
+        {
+          "args": {
+            "name": "PLUGIN"
+          },
+          "description": "The plugin url (eg. file:/tmp/my-plugin.wasm) to direct this pipe to, if not specified, will be sent to all plugins, if specified and is not running, the plugin will be launched",
+          "name": [
+            "-p",
+            "--plugin"
+          ]
+        },
+        {
+          "args": {
+            "name": "PLUGIN_CONFIGURATION"
+          },
+          "description": "The plugin configuration (note: the same plugin with different configuration is considered a different plugin for the purposes of determining the pipe destination)",
+          "name": [
+            "-c",
+            "--plugin-configuration"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Plugin URL, can either start with http(s), file: or zellij:",
+        "name": "URL"
+      },
+      "description": "Load a plugin",
+      "name": "plugin",
+      "options": [
+        {
+          "args": {
+            "name": "CONFIGURATION"
+          },
+          "description": "Plugin configuration",
+          "name": [
+            "-c",
+            "--configuration"
+          ]
+        },
+        {
+          "description": "Open the new pane in floating mode",
+          "name": [
+            "-f",
+            "--floating"
+          ]
+        },
+        {
+          "args": {
+            "name": "HEIGHT"
+          },
+          "description": "The height if the pane is floating as a bare integer (eg. 1) or percent (eg. 10%)",
+          "name": [
+            "--height"
+          ]
+        },
+        {
+          "description": "Open the new pane in place of the current pane, temporarily suspending it",
+          "name": [
+            "-i",
+            "--in-place"
+          ]
+        },
+        {
+          "args": {
+            "name": "WIDTH"
+          },
+          "description": "The width if the pane is floating as a bare integer (eg. 1) or percent (eg. 10%)",
+          "name": [
+            "--width"
+          ]
+        },
+        {
+          "args": {
+            "name": "X"
+          },
+          "description": "The x coordinates if the pane is floating as a bare integer (eg. 1) or percent (eg. 10%)",
+          "name": [
+            "-x",
+            "--x"
+          ]
+        },
+        {
+          "args": {
+            "name": "Y"
+          },
+          "description": "The y coordinates if the pane is floating as a bare integer (eg. 1) or percent (eg. 10%)",
+          "name": [
+            "-y",
+            "--y"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Command to run",
+        "name": "COMMAND"
+      },
+      "description": "Run a command in a new pane",
+      "name": "run",
+      "options": [
+        {
+          "description": "Close the pane immediately when its command exits",
+          "name": [
+            "-c",
+            "--close-on-exit"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "template": "folders"
+              }
+            ],
+            "name": "CWD"
+          },
+          "description": "Change the working directory of the new pane",
+          "name": [
+            "--cwd"
+          ]
+        },
+        {
+          "args": {
+            "name": "DIRECTION"
+          },
+          "description": "Direction to open the new pane in",
+          "name": [
+            "-d",
+            "--direction"
+          ]
+        },
+        {
+          "description": "Open the new pane in floating mode",
+          "name": [
+            "-f",
+            "--floating"
+          ]
+        },
+        {
+          "args": {
+            "name": "HEIGHT"
+          },
+          "description": "The height if the pane is floating as a bare integer (eg. 1) or percent (eg. 10%)",
+          "name": [
+            "--height"
+          ]
+        },
+        {
+          "description": "Open the new pane in place of the current pane, temporarily suspending it",
+          "name": [
+            "-i",
+            "--in-place"
+          ]
+        },
+        {
+          "args": {
+            "name": "NAME"
+          },
+          "description": "Name of the new pane",
+          "name": [
+            "-n",
+            "--name"
+          ]
+        },
+        {
+          "description": "Start the command suspended, only running after you first presses ENTER",
+          "name": [
+            "-s",
+            "--start-suspended"
+          ]
+        },
+        {
+          "args": {
+            "name": "WIDTH"
+          },
+          "description": "The width if the pane is floating as a bare integer (eg. 1) or percent (eg. 10%)",
+          "name": [
+            "--width"
+          ]
+        },
+        {
+          "args": {
+            "name": "X"
+          },
+          "description": "The x coordinates if the pane is floating as a bare integer (eg. 1) or percent (eg. 10%)",
+          "name": [
+            "-x",
+            "--x"
+          ]
+        },
+        {
+          "args": {
+            "name": "Y"
+          },
+          "description": "The y coordinates if the pane is floating as a bare integer (eg. 1) or percent (eg. 10%)",
+          "name": [
+            "-y",
+            "--y"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Setup zellij and check its configuration",
+      "name": "setup",
+      "options": [
+        {
+          "description": "Checks the configuration of zellij and displays currently used directories",
+          "name": [
+            "--check"
+          ]
+        },
+        {
+          "description": "Disables loading of configuration file at default location, loads the defaults that zellij ships with",
+          "name": [
+            "--clean"
+          ]
+        },
+        {
+          "description": "Dump the default configuration file to stdout",
+          "name": [
+            "--dump-config"
+          ]
+        },
+        {
+          "args": {
+            "name": "DUMP_LAYOUT"
+          },
+          "description": "Dump specified layout to stdout",
+          "name": [
+            "--dump-layout"
+          ]
+        },
+        {
+          "args": {
+            "name": "DIR"
+          },
+          "description": "Dump the builtin plugins to DIR or 'DATA DIR' if unspecified",
+          "name": [
+            "--dump-plugins"
+          ]
+        },
+        {
+          "args": {
+            "name": "DUMP_SWAP_LAYOUT"
+          },
+          "description": "Dump the specified swap layout file to stdout",
+          "name": [
+            "--dump-swap-layout"
+          ]
+        },
+        {
+          "args": {
+            "name": "SHELL"
+          },
+          "description": "Generates auto-start script for the specified shell",
+          "name": [
+            "--generate-auto-start"
+          ]
+        },
+        {
+          "args": {
+            "name": "SHELL",
+            "suggestions": [
+              {
+                "name": "bash"
+              },
+              {
+                "name": "fish"
+              },
+              {
+                "name": "zsh"
+              }
+            ]
+          },
+          "description": "Generates completion for the specified shell",
+          "name": [
+            "--generate-completion"
+          ]
+        }
+      ]
+    }
+  ]
+}

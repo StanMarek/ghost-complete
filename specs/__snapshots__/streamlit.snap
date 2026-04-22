@@ -1,0 +1,96 @@
+{
+  "description": "Streamlit",
+  "name": "streamlit",
+  "options": [
+    {
+      "args": {
+        "suggestions": [
+          {
+            "name": "error"
+          },
+          {
+            "name": "warning"
+          },
+          {
+            "name": "info"
+          },
+          {
+            "name": "debug"
+          }
+        ]
+      },
+      "description": "Set the log level",
+      "name": [
+        "--log_level"
+      ]
+    },
+    {
+      "description": "Show a help message and exit",
+      "name": [
+        "--help"
+      ]
+    },
+    {
+      "description": "Show the version and exit",
+      "name": [
+        "--version"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Activate Streamlit by entering your email",
+      "name": "activate"
+    },
+    {
+      "description": "Manage the Streamlit cache",
+      "name": "cache",
+      "subcommands": [
+        {
+          "description": "Clear st.cache, st.memo, and st.singleton caches",
+          "name": "clear"
+        }
+      ]
+    },
+    {
+      "description": "Manage Streamlit's config settings",
+      "name": "config",
+      "subcommands": [
+        {
+          "description": "Show all of Streamlit's config settings",
+          "name": "show"
+        }
+      ]
+    },
+    {
+      "description": "Show help in browser",
+      "name": "docs"
+    },
+    {
+      "description": "Runs the Hello World script",
+      "name": "hello"
+    },
+    {
+      "description": "Print the help message",
+      "name": "help"
+    },
+    {
+      "args": {
+        "description": "The Python script to run",
+        "generators": [
+          {
+            "js_source": "(h,g,b)=>ae(this,void 0,void 0,function*(){var d;let{isDangerous:_,currentWorkingDirectory:S,searchTerm:p}=b,w=(d=(0,y.getCurrentInsertedDirectory)(a??S,p,b))!==null&&d!==void 0?d:\"/\";try{let q=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:w}),Z=$(q.stdout.split(`\n`),[\".DS_Store\"]),R=[];for(let V of Z)if(V){let F=V.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&u!==\"only\"||F===\"folders\"&&u!==\"never\")&&R.push({type:F===\"filepaths\"?\"file\":\"folder\",name:V,insertValue:V,isDangerous:_,context:{templateType:F}})}return O(v(R))}catch{return[]}})",
+            "requires_js": true
+          }
+        ],
+        "name": "file"
+      },
+      "description": "Run a Python script, piping stderr to Streamlit",
+      "name": "run"
+    },
+    {
+      "description": "Print Streamlit's version number",
+      "name": "version"
+    }
+  ]
+}

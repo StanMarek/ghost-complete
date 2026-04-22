@@ -1,0 +1,79 @@
+{
+  "args": {
+    "generators": [
+      {
+        "js_source": "function(n){try{return n.split(`\n`).filter(e=>e.trim()&&e!==\"Available Generators:\").map(e=>({name:e.trim(),icon:\"https://avatars.githubusercontent.com/u/1714870?v=4\",displayName:o(e),description:`${o(e)} Generator`,priority:100,options:[{name:\"--help\",description:`Help of \"${o(e)}\" generator`}]}))}catch(e){return console.error(e),[]}}",
+        "requires_js": true,
+        "script": [
+          "yo",
+          "--generators"
+        ]
+      }
+    ],
+    "isOptional": true,
+    "name": "generator",
+    "suggestions": [
+      {
+        "description": "Running sanity checks on your system",
+        "name": "doctor"
+      },
+      {
+        "description": "To enable shell completion for the yo command",
+        "name": "completion"
+      }
+    ]
+  },
+  "description": "Yeoman generator",
+  "name": "yo",
+  "options": [
+    {
+      "description": "Print info and generator's options and usage",
+      "name": [
+        "--help"
+      ]
+    },
+    {
+      "description": "Overwrite files that already exist",
+      "name": [
+        "-f",
+        "--force"
+      ]
+    },
+    {
+      "description": "Print version",
+      "name": [
+        "--version"
+      ]
+    },
+    {
+      "description": "Disable color",
+      "name": [
+        "--no-color"
+      ]
+    },
+    {
+      "description": "Enable anonymous tracking",
+      "name": [
+        "--insight"
+      ]
+    },
+    {
+      "description": "Disable anonymous tracking",
+      "name": [
+        "--no-insight"
+      ]
+    },
+    {
+      "description": "Print available generators",
+      "name": [
+        "--generators"
+      ]
+    },
+    {
+      "description": "Disable lookup of globally-installed generators",
+      "name": [
+        "--local-only"
+      ]
+    }
+  ]
+}

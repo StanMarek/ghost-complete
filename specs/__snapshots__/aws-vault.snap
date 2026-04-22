@@ -1,0 +1,247 @@
+{
+  "description": "A vault for securely storing and accessing AWS credentials in development environments",
+  "name": "aws-vault",
+  "options": [
+    {
+      "description": "Show context-sensitive help (also try --help-long and --help-man)",
+      "name": [
+        "--help"
+      ]
+    },
+    {
+      "description": "Show application version",
+      "name": [
+        "--version"
+      ]
+    },
+    {
+      "description": "Show debugging output",
+      "name": [
+        "--debug"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "description": "The profile you want to add",
+        "name": "profile"
+      },
+      "description": "Add credentials to the secure keystore",
+      "name": "add"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "aws-vault",
+              "list",
+              "--profiles"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "profile"
+      },
+      "description": "Remove credentials from the secure keystore",
+      "name": "remove",
+      "options": [
+        {
+          "description": "Force-remove the profile without a prompt",
+          "name": [
+            "-f",
+            "--force"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "List profiles, along with their credentials and sessions",
+      "name": "list",
+      "options": [
+        {
+          "description": "Show only the profile names",
+          "name": [
+            "--profiles"
+          ]
+        },
+        {
+          "description": "Show only the session names",
+          "name": [
+            "--sessions"
+          ]
+        },
+        {
+          "description": "Show only the profiles with stored credential",
+          "name": [
+            "--credentials"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "aws-vault",
+              "list",
+              "--profiles"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "profile"
+      },
+      "description": "Rotate credentials",
+      "name": "rotate",
+      "options": [
+        {
+          "description": "Use master credentials, no session or role used",
+          "name": [
+            "-n",
+            "--no-session"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "script": [
+                "aws-vault",
+                "list",
+                "--profiles"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty"
+              ]
+            }
+          ],
+          "name": "profile"
+        },
+        {
+          "name": "command"
+        }
+      ],
+      "description": "Execute a command with AWS credentials",
+      "name": "exec",
+      "options": [
+        {
+          "args": {
+            "name": "DURATION"
+          },
+          "description": "Duration of the temporary or assume-role session. Defaults to 1h",
+          "name": [
+            "-d",
+            "--duration"
+          ]
+        },
+        {
+          "description": "Use master credentials, no session or role used",
+          "name": [
+            "-n",
+            "--no-session"
+          ]
+        },
+        {
+          "args": {
+            "name": "REGION"
+          },
+          "description": "The AWS region",
+          "name": [
+            "--region"
+          ]
+        },
+        {
+          "args": {
+            "name": "MFA-TOKEN"
+          },
+          "description": "The MFA token to use",
+          "name": [
+            "-t",
+            "--mfa-token"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "aws-vault",
+              "list",
+              "--profiles"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "profile"
+      },
+      "description": "Export AWS credentials",
+      "name": "export"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "aws-vault",
+              "list",
+              "--profiles"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "profile"
+      },
+      "description": "Clear temporary credentials from the secure keystore",
+      "name": "clear"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "aws-vault",
+              "list",
+              "--profiles"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "profile"
+      },
+      "description": "Generate a login link for the AWS Console",
+      "name": "login"
+    },
+    {
+      "args": {
+        "name": "command",
+        "template": "help"
+      },
+      "description": "Show help about the command",
+      "name": "help"
+    }
+  ]
+}

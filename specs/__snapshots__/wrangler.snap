@@ -1,0 +1,1062 @@
+{
+  "description": "Wrangler CLI for Cloudflare Workers",
+  "name": "wrangler",
+  "options": [
+    {
+      "description": "Prints help information",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Toggle verbose output (when applicable)",
+      "name": [
+        "--verbose"
+      ]
+    },
+    {
+      "description": "Prints version information",
+      "name": [
+        "-V",
+        "--version"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": [
+        {
+          "description": "The name of your worker! [default: worker]",
+          "isOptional": true,
+          "name": "name"
+        },
+        {
+          "description": "A link to a GitHub template! Defaults to \nhttps://github.com/cloudflare/worker-template",
+          "isOptional": true,
+          "name": "template"
+        }
+      ],
+      "description": "Generate a new worker project",
+      "name": "generate",
+      "options": [
+        {
+          "args": {
+            "name": "wrangler.toml",
+            "template": "filepaths"
+          },
+          "description": "Path to configuration file [default: wrangler.toml]",
+          "name": [
+            "-c",
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "Environment to perform a command on",
+          "name": [
+            "-e",
+            "--env"
+          ]
+        },
+        {
+          "description": "Prints help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Toggle verbose output (when applicable)",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "site"
+          },
+          "description": "Initializes a Workers Sites project. Overrides 'type' \nand 'template'",
+          "name": [
+            "-s",
+            "--site"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "type"
+          },
+          "description": "The type of project you want generated",
+          "name": [
+            "-t",
+            "--type"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Interact with your Workers KV Namespaces",
+      "name": "kv:namespace",
+      "options": [
+        {
+          "args": {
+            "name": "wrangler.toml",
+            "template": "filepaths"
+          },
+          "description": "Path to configuration file [default: wrangler.toml]",
+          "name": [
+            "-c",
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "Environment to perform a command on",
+          "name": [
+            "-e",
+            "--env"
+          ]
+        },
+        {
+          "description": "Prints help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Toggle verbose output (when applicable)",
+          "name": [
+            "--verbose"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": {
+            "name": "namespace"
+          },
+          "description": "Create a new namespace",
+          "name": "create"
+        },
+        {
+          "description": "Delete namespace",
+          "name": "delete"
+        },
+        {
+          "description": "List all namespaces on your Cloudflare account",
+          "name": "list"
+        }
+      ]
+    },
+    {
+      "description": "Individually manage Workers KV key-value",
+      "name": "kv:key",
+      "options": [
+        {
+          "args": {
+            "name": "wrangler.toml",
+            "template": "filepaths"
+          },
+          "description": "Path to configuration file [default: wrangler.toml]",
+          "name": [
+            "-c",
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "Environment to perform a command on",
+          "name": [
+            "-e",
+            "--env"
+          ]
+        },
+        {
+          "description": "Prints help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Toggle verbose output (when applicable)",
+          "name": [
+            "--verbose"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": {
+            "description": "Key whose value to delete",
+            "name": "key"
+          },
+          "description": "Delete a key and its value from a namespace",
+          "name": "delete",
+          "options": [
+            {
+              "args": {
+                "name": "binding"
+              },
+              "description": "The binding of the namespace this action applies to",
+              "name": [
+                "-b",
+                "--binding"
+              ]
+            },
+            {
+              "args": {
+                "name": "namespace-id"
+              },
+              "description": "The ID of the namespace this action applies to",
+              "name": [
+                "-n",
+                "--namespace-id"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "key"
+          },
+          "description": "Get a key's value from a namespace",
+          "name": "get"
+        },
+        {
+          "description": "Prints this message or the help of the given subcommand(s)",
+          "name": "help"
+        },
+        {
+          "description": "List all keys in a namespace. Produces JSON output",
+          "name": "list"
+        },
+        {
+          "args": {
+            "name": "key"
+          },
+          "description": "Put a key-value pair into a namespace",
+          "name": "put"
+        }
+      ]
+    },
+    {
+      "description": "Interact with multiple Workers KV key-value pairs at once",
+      "name": "kv:bulk",
+      "options": [
+        {
+          "args": {
+            "name": "wrangler.toml",
+            "template": "filepaths"
+          },
+          "description": "Path to configuration file [default: wrangler.toml]",
+          "name": [
+            "-c",
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "Environment to perform a command on",
+          "name": [
+            "-e",
+            "--env"
+          ]
+        },
+        {
+          "description": "Prints help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Toggle verbose output (when applicable)",
+          "name": [
+            "--verbose"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": {
+            "name": "keys"
+          },
+          "description": "Delete multiple keys and their values from a namespace",
+          "name": "delete"
+        },
+        {
+          "description": "Prints this message or the help of the given subcommand(s)",
+          "name": "help"
+        },
+        {
+          "args": {
+            "name": "keys",
+            "template": "filepaths"
+          },
+          "description": "Upload multiple key-value pairs to a namespace",
+          "name": "put"
+        }
+      ]
+    },
+    {
+      "description": "List or delete worker routes",
+      "name": "route",
+      "options": [
+        {
+          "args": {
+            "name": "wrangler.toml",
+            "template": "filepaths"
+          },
+          "description": "Path to configuration file [default: wrangler.toml]",
+          "name": [
+            "-c",
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "Environment to perform a command on",
+          "name": [
+            "-e",
+            "--env"
+          ]
+        },
+        {
+          "description": "Prints help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Toggle verbose output (when applicable)",
+          "name": [
+            "--verbose"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": {
+            "name": "routeId"
+          },
+          "description": "Delete a route by ID",
+          "name": "delete"
+        },
+        {
+          "description": "List all routes associated with a zone (outputs json)",
+          "name": "list"
+        }
+      ]
+    },
+    {
+      "description": "Generate a secret that can be referenced in the worker script",
+      "name": "secret",
+      "options": [
+        {
+          "args": {
+            "name": "wrangler.toml",
+            "template": "filepaths"
+          },
+          "description": "Path to configuration file [default: wrangler.toml]",
+          "name": [
+            "-c",
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "Environment to perform a command on",
+          "name": [
+            "-e",
+            "--env"
+          ]
+        },
+        {
+          "description": "Prints help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Toggle verbose output (when applicable)",
+          "name": [
+            "--verbose"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": {
+            "name": "secret"
+          },
+          "description": "Delete a secret variable from a script",
+          "name": "delete"
+        },
+        {
+          "description": "List all secrets for a script",
+          "name": "list"
+        },
+        {
+          "args": {
+            "name": "secret"
+          },
+          "description": "Create or update a secret variable for a script",
+          "name": "put"
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The name of your worker! [default: worker]",
+        "isOptional": true,
+        "name": "name"
+      },
+      "description": "Create a wrangler.toml for an existing project",
+      "name": "init",
+      "options": [
+        {
+          "args": {
+            "name": "wrangler.toml",
+            "template": "filepaths"
+          },
+          "description": "Path to configuration file [default: wrangler.toml]",
+          "name": [
+            "-c",
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "Environment to perform a command on",
+          "name": [
+            "-e",
+            "--env"
+          ]
+        },
+        {
+          "description": "Prints help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Toggle verbose output (when applicable)",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Initializes a Workers Sites project. Overrides 'type' \nand 'template'",
+          "name": [
+            "-s",
+            "--site"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "type"
+          },
+          "description": "The type of project you want generated",
+          "name": [
+            "-t",
+            "--type"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Build your worker",
+      "name": "build",
+      "options": [
+        {
+          "args": {
+            "name": "wrangler.toml",
+            "template": "filepaths"
+          },
+          "description": "Path to configuration file [default: wrangler.toml]",
+          "name": [
+            "-c",
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "Environment to perform a command on",
+          "name": [
+            "-e",
+            "--env"
+          ]
+        },
+        {
+          "description": "Prints help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Toggle verbose output (when applicable)",
+          "name": [
+            "--verbose"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Type of request to preview your worker with (get, post) \n[default: get]",
+          "isOptional": true,
+          "name": "method",
+          "suggestions": [
+            {
+              "name": "get"
+            },
+            {
+              "name": "post"
+            }
+          ]
+        },
+        {
+          "description": "Body string to post to your preview worker request",
+          "isOptional": true,
+          "name": "body"
+        }
+      ],
+      "description": "Preview your code temporarily on cloudflareworkers.com",
+      "name": "preview",
+      "options": [
+        {
+          "args": {
+            "name": "wrangler.toml",
+            "template": "filepaths"
+          },
+          "description": "Path to configuration file [default: wrangler.toml]",
+          "name": [
+            "-c",
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "Environment to perform a command on",
+          "name": [
+            "-e",
+            "--env"
+          ]
+        },
+        {
+          "description": "Prints help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Toggle verbose output (when applicable)",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Don't open the browser on preview",
+          "name": [
+            "--headless"
+          ]
+        },
+        {
+          "description": "Watch your project for changes and update the preview \nautomagically",
+          "name": [
+            "--watch"
+          ]
+        },
+        {
+          "description": "URL to open in the worker preview \n[default: https://example.com]",
+          "name": [
+            "-u",
+            "--url"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Start a local server for developing your worker",
+      "name": "dev",
+      "options": [
+        {
+          "args": {
+            "name": "wrangler.toml",
+            "template": "filepaths"
+          },
+          "description": "Path to configuration file [default: wrangler.toml]",
+          "name": [
+            "-c",
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "Environment to perform a command on",
+          "name": [
+            "-e",
+            "--env"
+          ]
+        },
+        {
+          "args": {
+            "name": "hostname"
+          },
+          "description": "Host to forward requests to, defaults to the zone of \nproject or to tutorial.cloudflareworkers.com if unauthenticated",
+          "name": [
+            "-h",
+            "--host"
+          ]
+        },
+        {
+          "args": {
+            "name": "ip_address"
+          },
+          "description": "IP to listen on. Defaults to 127.0.0.1",
+          "name": [
+            "-i",
+            "--ip"
+          ]
+        },
+        {
+          "args": {
+            "name": "port"
+          },
+          "description": "Port to listen on. Defaults to 8787",
+          "name": [
+            "-p",
+            "--port"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "[possible values: json]",
+        "isOptional": true,
+        "name": "output",
+        "suggestions": [
+          {
+            "name": "json"
+          }
+        ]
+      },
+      "description": "Publish your worker to the orange cloud",
+      "name": "publish",
+      "options": [
+        {
+          "args": {
+            "name": "wrangler.toml",
+            "template": "filepaths"
+          },
+          "description": "Path to configuration file [default: wrangler.toml]",
+          "name": [
+            "-c",
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "Environment to perform a command on",
+          "name": [
+            "-e",
+            "--env"
+          ]
+        },
+        {
+          "description": "Prints help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Toggle verbose output (when applicable)",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "args": {
+            "name": "delete-class"
+          },
+          "description": "Delete all durable objects associated with a class in your script",
+          "name": [
+            "--delete-class"
+          ]
+        },
+        {
+          "args": {
+            "name": "new-class"
+          },
+          "description": "Allow durable objects to be created from a class in your script",
+          "name": [
+            "--new-class"
+          ]
+        },
+        {
+          "args": {
+            "name": "rename-class new-name"
+          },
+          "description": "Rename a durable object class in your script",
+          "name": [
+            "--rename-class"
+          ]
+        },
+        {
+          "args": {
+            "name": "transfer-class"
+          },
+          "description": "Transfer all durable objects associated with a class in another script to a class in this script",
+          "name": [
+            "--transfer-class"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Authenticate Wrangler with a Cloudflare API Token or Global API Key",
+      "name": "config",
+      "options": [
+        {
+          "args": {
+            "name": "wrangler.toml",
+            "template": "filepaths"
+          },
+          "description": "Path to configuration file [default: wrangler.toml]",
+          "name": [
+            "-c",
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "Environment to perform a command on",
+          "name": [
+            "-e",
+            "--env"
+          ]
+        },
+        {
+          "description": "Prints help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Toggle verbose output (when applicable)",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Use an email and global API key for authentication. This is not recommended; use API tokens (the default) if possible",
+          "name": [
+            "--api-key"
+          ]
+        },
+        {
+          "description": "Do not verify provided credentials before writing out Wrangler config file",
+          "name": [
+            "--no-verify"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The subdomain on workers.dev you'd like to reserve",
+        "name": "name"
+      },
+      "description": "Configure your workers.dev subdomain",
+      "name": "subdomain",
+      "options": [
+        {
+          "args": {
+            "name": "wrangler.toml",
+            "template": "filepaths"
+          },
+          "description": "Path to configuration file [default: wrangler.toml]",
+          "name": [
+            "-c",
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "Environment to perform a command on",
+          "name": [
+            "-e",
+            "--env"
+          ]
+        },
+        {
+          "description": "Prints help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Toggle verbose output (when applicable)",
+          "name": [
+            "--verbose"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Retrieve your user info and test your auth config",
+      "name": "whoami",
+      "options": [
+        {
+          "args": {
+            "name": "wrangler.toml",
+            "template": "filepaths"
+          },
+          "description": "Path to configuration file [default: wrangler.toml]",
+          "name": [
+            "-c",
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "Environment to perform a command on",
+          "name": [
+            "-e",
+            "--env"
+          ]
+        },
+        {
+          "description": "Prints help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Toggle verbose output (when applicable)",
+          "name": [
+            "--verbose"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Aggregate logs from production worker",
+      "name": "tail",
+      "options": [
+        {
+          "args": {
+            "name": "wrangler.toml",
+            "template": "filepaths"
+          },
+          "description": "Path to configuration file [default: wrangler.toml]",
+          "name": [
+            "-c",
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "Environment to perform a command on",
+          "name": [
+            "-e",
+            "--env"
+          ]
+        },
+        {
+          "description": "Prints help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Toggle verbose output (when applicable)",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "args": {
+            "name": "format",
+            "suggestions": [
+              {
+                "name": "json"
+              },
+              {
+                "name": "pretty"
+              }
+            ]
+          },
+          "description": "Specify an output format [default: json]  [possible values: json, pretty]",
+          "name": [
+            "-f",
+            "--format"
+          ]
+        },
+        {
+          "args": {
+            "name": "metrics-port"
+          },
+          "description": "Provides endpoint for cloudflared metrics. Used to retrieve tunnel url",
+          "name": [
+            "--metrics"
+          ]
+        },
+        {
+          "args": {
+            "name": "port"
+          },
+          "description": "Port to accept tail log requests",
+          "name": [
+            "-p",
+            "--port"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Authenticate Wrangler with your Cloudflare username and password",
+      "name": "login",
+      "options": [
+        {
+          "args": {
+            "name": "wrangler.toml",
+            "template": "filepaths"
+          },
+          "description": "Path to configuration file [default: wrangler.toml]",
+          "name": [
+            "-c",
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "Environment to perform a command on",
+          "name": [
+            "-e",
+            "--env"
+          ]
+        },
+        {
+          "description": "Prints help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Toggle verbose output (when applicable)",
+          "name": [
+            "--verbose"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Report an error caught by Wrangler to Cloudflare",
+      "name": "report",
+      "options": [
+        {
+          "args": {
+            "name": "wrangler.toml",
+            "template": "filepaths"
+          },
+          "description": "Path to configuration file [default: wrangler.toml]",
+          "name": [
+            "-c",
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "Environment to perform a command on",
+          "name": [
+            "-e",
+            "--env"
+          ]
+        },
+        {
+          "description": "Prints help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Toggle verbose output (when applicable)",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "args": {
+            "name": "logfile",
+            "template": "filepaths"
+          },
+          "description": "Specifies a log to report (e.g. --log=1619728882567.log)",
+          "name": [
+            "log"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "command"
+      },
+      "description": "Prints this message or the help of the given subcommand(s)",
+      "name": "help"
+    }
+  ]
+}

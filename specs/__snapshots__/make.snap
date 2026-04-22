@@ -1,0 +1,245 @@
+{
+  "args": {
+    "generators": [
+      {
+        "js_source": "async(f,a)=>{let{stdout:m}=await a({command:\"bash\",args:[\"-c\",\"make -qp | awk -F':' '/^[a-zA-Z0-9][^$#\\\\/\\\\t=]*:([^=]|$)/ {split($1,A,/ /);for(i in A)print A[i]}' | sort -u\"]}),t=new Map;for(let e of m.split(`\n`))e!==\"Makefile\"&&t.set(e,{name:e.trim(),description:\"Make target\",icon:\"\\u{1F3AF}\",priority:80});let{stdout:c}=await a({command:\"cat\",args:[\"Makefile\",\"makefile\"]}),d=c.matchAll(/((?:^#.*\\n)*)(?:^\\.[A-Z_]+:.*\\n)*(^\\S*?):.*?(?:\\s#+[ \\t]*(.+))?$/gm),l=new Set([\".PHONY\",\".SUFFIXES\",\".DEFAULT\",\".PRECIOUS\",\".INTERMEDIATE\",\".SECONDARY\",\".SECONDEXPANSION\",\".DELETE_ON_ERROR\",\".IGNORE\",\".LOW_RESOLUTION_TIME\",\".SILENT\",\".EXPORT_ALL_VARIABLES\",\".NOTPARALLEL\",\".ONESHELL\",\".POSIX\"]);for(let e of d){let[u,r,i,o]=e;if(l.has(i)||/\\$\\(.+?\\)/.test(i))continue;let s=i.trim(),p=o?o.trim():r?r.replace(/^#+\\s*/gm,\"\").trim():\"Make target\";t.set(s,{name:s,description:p,icon:\"\\u{1F3AF}\",priority:80})}return[...t.values()]}",
+        "requires_js": true
+      }
+    ],
+    "name": "target"
+  },
+  "name": "make",
+  "options": [
+    {
+      "args": [
+        {
+          "name": "number"
+        },
+        {
+          "generators": [
+            {
+              "js_source": "async(f,a)=>{let{stdout:m}=await a({command:\"bash\",args:[\"-c\",\"make -qp | awk -F':' '/^[a-zA-Z0-9][^$#\\\\/\\\\t=]*:([^=]|$)/ {split($1,A,/ /);for(i in A)print A[i]}' | sort -u\"]}),t=new Map;for(let e of m.split(`\n`))e!==\"Makefile\"&&t.set(e,{name:e.trim(),description:\"Make target\",icon:\"\\u{1F3AF}\",priority:80});let{stdout:c}=await a({command:\"cat\",args:[\"Makefile\",\"makefile\"]}),d=c.matchAll(/((?:^#.*\\n)*)(?:^\\.[A-Z_]+:.*\\n)*(^\\S*?):.*?(?:\\s#+[ \\t]*(.+))?$/gm),l=new Set([\".PHONY\",\".SUFFIXES\",\".DEFAULT\",\".PRECIOUS\",\".INTERMEDIATE\",\".SECONDARY\",\".SECONDEXPANSION\",\".DELETE_ON_ERROR\",\".IGNORE\",\".LOW_RESOLUTION_TIME\",\".SILENT\",\".EXPORT_ALL_VARIABLES\",\".NOTPARALLEL\",\".ONESHELL\",\".POSIX\"]);for(let e of d){let[u,r,i,o]=e;if(l.has(i)||/\\$\\(.+?\\)/.test(i))continue;let s=i.trim(),p=o?o.trim():r?r.replace(/^#+\\s*/gm,\"\").trim():\"Make target\";t.set(s,{name:s,description:p,icon:\"\\u{1F3AF}\",priority:80})}return[...t.values()]}",
+              "requires_js": true
+            }
+          ],
+          "name": "target"
+        }
+      ],
+      "name": [
+        "-j"
+      ]
+    },
+    {
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      },
+      "description": "Read FILE as a makefile",
+      "name": [
+        "--file",
+        "-f",
+        "--makefile"
+      ]
+    },
+    {
+      "args": {
+        "name": "directory",
+        "template": "folders"
+      },
+      "description": "Change to DIRECTORY before doing anything",
+      "name": [
+        "-C",
+        "--directory"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "async(f,a)=>{let{stdout:m}=await a({command:\"bash\",args:[\"-c\",\"make -qp | awk -F':' '/^[a-zA-Z0-9][^$#\\\\/\\\\t=]*:([^=]|$)/ {split($1,A,/ /);for(i in A)print A[i]}' | sort -u\"]}),t=new Map;for(let e of m.split(`\n`))e!==\"Makefile\"&&t.set(e,{name:e.trim(),description:\"Make target\",icon:\"\\u{1F3AF}\",priority:80});let{stdout:c}=await a({command:\"cat\",args:[\"Makefile\",\"makefile\"]}),d=c.matchAll(/((?:^#.*\\n)*)(?:^\\.[A-Z_]+:.*\\n)*(^\\S*?):.*?(?:\\s#+[ \\t]*(.+))?$/gm),l=new Set([\".PHONY\",\".SUFFIXES\",\".DEFAULT\",\".PRECIOUS\",\".INTERMEDIATE\",\".SECONDARY\",\".SECONDEXPANSION\",\".DELETE_ON_ERROR\",\".IGNORE\",\".LOW_RESOLUTION_TIME\",\".SILENT\",\".EXPORT_ALL_VARIABLES\",\".NOTPARALLEL\",\".ONESHELL\",\".POSIX\"]);for(let e of d){let[u,r,i,o]=e;if(l.has(i)||/\\$\\(.+?\\)/.test(i))continue;let s=i.trim(),p=o?o.trim():r?r.replace(/^#+\\s*/gm,\"\").trim():\"Make target\";t.set(s,{name:s,description:p,icon:\"\\u{1F3AF}\",priority:80})}return[...t.values()]}",
+            "requires_js": true
+          }
+        ],
+        "name": "target"
+      },
+      "description": "Unconditionally make all targets",
+      "name": [
+        "-B",
+        "--always-make"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "async(f,a)=>{let{stdout:m}=await a({command:\"bash\",args:[\"-c\",\"make -qp | awk -F':' '/^[a-zA-Z0-9][^$#\\\\/\\\\t=]*:([^=]|$)/ {split($1,A,/ /);for(i in A)print A[i]}' | sort -u\"]}),t=new Map;for(let e of m.split(`\n`))e!==\"Makefile\"&&t.set(e,{name:e.trim(),description:\"Make target\",icon:\"\\u{1F3AF}\",priority:80});let{stdout:c}=await a({command:\"cat\",args:[\"Makefile\",\"makefile\"]}),d=c.matchAll(/((?:^#.*\\n)*)(?:^\\.[A-Z_]+:.*\\n)*(^\\S*?):.*?(?:\\s#+[ \\t]*(.+))?$/gm),l=new Set([\".PHONY\",\".SUFFIXES\",\".DEFAULT\",\".PRECIOUS\",\".INTERMEDIATE\",\".SECONDARY\",\".SECONDEXPANSION\",\".DELETE_ON_ERROR\",\".IGNORE\",\".LOW_RESOLUTION_TIME\",\".SILENT\",\".EXPORT_ALL_VARIABLES\",\".NOTPARALLEL\",\".ONESHELL\",\".POSIX\"]);for(let e of d){let[u,r,i,o]=e;if(l.has(i)||/\\$\\(.+?\\)/.test(i))continue;let s=i.trim(),p=o?o.trim():r?r.replace(/^#+\\s*/gm,\"\").trim():\"Make target\";t.set(s,{name:s,description:p,icon:\"\\u{1F3AF}\",priority:80})}return[...t.values()]}",
+            "requires_js": true
+          }
+        ],
+        "name": "target"
+      },
+      "description": "Environment variables override makefiles",
+      "name": [
+        "-e",
+        "--environment-overrides"
+      ]
+    },
+    {
+      "description": "Print this message and exit",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Ignore errors from commands",
+      "name": [
+        "-i",
+        "--ignore-errors"
+      ]
+    },
+    {
+      "description": "Keep going when some targets can't be made",
+      "name": [
+        "-k",
+        "--keep-going"
+      ]
+    },
+    {
+      "description": "Use the latest mtime between symlinks and target",
+      "name": [
+        "-L",
+        "--check-symlink-times"
+      ]
+    },
+    {
+      "description": "Print make's internal database",
+      "name": [
+        "-p",
+        "--print-data-base"
+      ]
+    },
+    {
+      "description": "Run no commands; exit status says if up to date",
+      "name": [
+        "-q",
+        "--question"
+      ]
+    },
+    {
+      "description": "Disable the built-in implicit rules",
+      "name": [
+        "-r",
+        "--no-builtin-rules"
+      ]
+    },
+    {
+      "description": "Disable the built-in variable settings",
+      "name": [
+        "-R",
+        "--no-builtin-variables"
+      ]
+    },
+    {
+      "description": "Touch targets instead of remaking them",
+      "name": [
+        "-t",
+        "--touch"
+      ]
+    },
+    {
+      "description": "Print the version number of make and exit",
+      "name": [
+        "-v",
+        "--version"
+      ]
+    },
+    {
+      "description": "Print the current directory",
+      "name": [
+        "-w",
+        "--print-directory"
+      ]
+    },
+    {
+      "description": "Print lots of debugging information",
+      "name": [
+        "-d"
+      ]
+    },
+    {
+      "description": "Print various types of debugging information",
+      "name": [
+        "--debug"
+      ]
+    },
+    {
+      "args": {
+        "name": "directory",
+        "template": "folders"
+      },
+      "description": "Search directory for included makefiles",
+      "name": [
+        "-I",
+        "--include-dir"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "N"
+      },
+      "description": "Don't start multiple jobs unless load is below N",
+      "name": [
+        "-l",
+        "--load-average"
+      ]
+    },
+    {
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      },
+      "description": "Consider file to be very old and don't remake it",
+      "name": [
+        "-o",
+        "--old-file"
+      ]
+    },
+    {
+      "description": "Turn off -w, even if it was turned on implicitly",
+      "name": [
+        "--no-print-directory"
+      ]
+    },
+    {
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      },
+      "description": "Consider file to be infinitely new",
+      "name": [
+        "-W",
+        "--what-if",
+        "--new-file",
+        "--assume-new"
+      ]
+    },
+    {
+      "description": "Warn when an undefined variable is referenced",
+      "name": [
+        "--warn-undefined-variables"
+      ]
+    },
+    {
+      "args": {
+        "name": "option"
+      },
+      "description": "Turn on value of next option",
+      "name": [
+        "-N",
+        "--Next-option"
+      ]
+    }
+  ]
+}

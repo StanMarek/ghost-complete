@@ -1,0 +1,413 @@
+{
+  "description": "Generates, manages and converts authentication keys for ssh",
+  "name": "ssh-keygen",
+  "options": [
+    {
+      "description": "For each of the key types (rsa, dsa, ecdsa and ed25519) for which host keys do not exist, generate the host keys with the default key file path, an empty passphrase, default bits for the key type, and default comment",
+      "name": [
+        "-A"
+      ]
+    },
+    {
+      "args": {
+        "description": "Number of rounds being used",
+        "isOptional": true,
+        "name": "rounds",
+        "suggestions": [
+          {
+            "name": "16"
+          }
+        ]
+      },
+      "description": "When saving a private key, this option specifies the number of KDF",
+      "name": [
+        "-a"
+      ]
+    },
+    {
+      "description": "Show the bubblebabble digest of specified private or public key file",
+      "name": [
+        "-B"
+      ]
+    },
+    {
+      "args": {
+        "description": "Number of bits in the key",
+        "name": "bits",
+        "suggestions": [
+          {
+            "name": "3072"
+          }
+        ]
+      },
+      "description": "Specifies the number of bits in the key to create",
+      "name": [
+        "-b"
+      ]
+    },
+    {
+      "args": {
+        "description": "New comment value",
+        "name": "comment"
+      },
+      "description": "Provides a new comment",
+      "name": [
+        "-C"
+      ]
+    },
+    {
+      "description": "Requests changing the comment in the private and public key files",
+      "name": [
+        "-c"
+      ]
+    },
+    {
+      "args": {
+        "description": "PKCS#11 public keys",
+        "name": "pkcs11"
+      },
+      "description": "Download the public keys provided by the PKCS#11",
+      "name": [
+        "-D"
+      ]
+    },
+    {
+      "args": {
+        "description": "Hash algorithm value",
+        "name": "fingerprint_hash",
+        "suggestions": [
+          {
+            "name": "md5"
+          },
+          {
+            "name": "sha256"
+          }
+        ]
+      },
+      "description": "Specifies the hash algorithm used",
+      "name": [
+        "-E"
+      ]
+    },
+    {
+      "description": "Read a OpenSSH key file and print to stdout",
+      "name": [
+        "-e"
+      ]
+    },
+    {
+      "args": {
+        "description": "Hostname with optional port number",
+        "name": "hostname"
+      },
+      "description": "Search for the specified hostname (with optional port number)",
+      "name": [
+        "-F"
+      ]
+    },
+    {
+      "args": {
+        "description": "Filename of the key file",
+        "name": "filename",
+        "template": "filepaths"
+      },
+      "description": "Specifies the filename of the key file",
+      "name": [
+        "-f"
+      ]
+    },
+    {
+      "description": "Use generic DNS format when printing fingerprint resource records",
+      "name": [
+        "-g"
+      ]
+    },
+    {
+      "description": "Hash a known_hosts file",
+      "name": [
+        "-H"
+      ]
+    },
+    {
+      "description": "Create a host certificate instead of a user",
+      "name": [
+        "-h"
+      ]
+    },
+    {
+      "args": {
+        "description": "Key identity value",
+        "name": "certificate_identity",
+        "template": "filepaths"
+      },
+      "description": "Specify the key identity when signing a public key",
+      "name": [
+        "-I"
+      ]
+    },
+    {
+      "description": "Read an unencrypted private (or public) key file",
+      "name": [
+        "-i"
+      ]
+    },
+    {
+      "description": "Download resident keys from a FIDO\tauthenticator",
+      "name": [
+        "-K"
+      ]
+    },
+    {
+      "description": "Generate a\tKRL file",
+      "name": [
+        "-k"
+      ]
+    },
+    {
+      "description": "Generate a\tKRL file",
+      "name": [
+        "-L"
+      ]
+    },
+    {
+      "description": "Show fingerprint of specified public key file",
+      "name": [
+        "-l"
+      ]
+    },
+    {
+      "args": {
+        "description": "Use generate or screen",
+        "name": "command",
+        "suggestions": [
+          {
+            "name": "generate"
+          },
+          {
+            "name": "screen"
+          }
+        ]
+      },
+      "description": "Use for Moduli generation",
+      "name": [
+        "-M"
+      ]
+    },
+    {
+      "args": {
+        "description": "Key format for key generation",
+        "name": "key_format"
+      },
+      "description": "Specify a key format for key generation",
+      "name": [
+        "-m"
+      ]
+    },
+    {
+      "args": {
+        "description": "New passphrase value",
+        "name": "new_passphrase"
+      },
+      "description": "Provides the new passphrase",
+      "name": [
+        "-N"
+      ]
+    },
+    {
+      "args": {
+        "description": "Principals to be included in a certificate when signing a key",
+        "name": "principals"
+      },
+      "description": "Specify one or more principals (user or host names) to be included in a certificate when signing a key",
+      "name": [
+        "-n"
+      ]
+    },
+    {
+      "args": {
+        "description": "Value for option",
+        "name": "option"
+      },
+      "description": "Specify a key/value option",
+      "name": [
+        "-O"
+      ]
+    },
+    {
+      "args": {
+        "description": "(Old) passphrase value",
+        "name": "passphrase"
+      },
+      "description": "Provides the (old) passphrase",
+      "name": [
+        "-P"
+      ]
+    },
+    {
+      "description": "Requests changing the passphrase of a private key file instead of creating a new private key",
+      "name": [
+        "-p"
+      ]
+    },
+    {
+      "description": "Test whether keys have been revoked in a KRL",
+      "name": [
+        "-Q"
+      ]
+    },
+    {
+      "description": "Silence ssh-keygen",
+      "name": [
+        "-q"
+      ]
+    },
+    {
+      "args": {
+        "description": "Hostname to remove keys from a known_hosts file",
+        "name": "hostname"
+      },
+      "description": "Removes all keys belonging to hostname",
+      "name": [
+        "-R"
+      ]
+    },
+    {
+      "args": {
+        "description": "Hostname for the specified public key file",
+        "name": "hostname"
+      },
+      "description": "Print the SSHFP fingerprint resource record named hostname for the specified public key file",
+      "name": [
+        "-r"
+      ]
+    },
+    {
+      "args": {
+        "description": "Hostname for the specified public key file",
+        "name": "ca_key"
+      },
+      "description": "Certify (sign) a public key using the specified CA\tkey",
+      "name": [
+        "-s"
+      ]
+    },
+    {
+      "args": {
+        "name": "command",
+        "suggestions": [
+          {
+            "name": "dsa"
+          },
+          {
+            "name": "ecdsa-sk"
+          },
+          {
+            "name": "ed25519"
+          },
+          {
+            "name": "ed25519-sk"
+          },
+          {
+            "name": "rsa"
+          }
+        ]
+      },
+      "description": "Specifies the type of key to create",
+      "name": [
+        "-t"
+      ]
+    },
+    {
+      "description": "When used in combination with -s, this option indicates that a CA key resides in a ssh-agent(1)",
+      "name": [
+        "-U"
+      ]
+    },
+    {
+      "description": "Update a KRL",
+      "name": [
+        "-u"
+      ]
+    },
+    {
+      "args": {
+        "description": "Value for validity interval",
+        "name": "validity_interval"
+      },
+      "description": "Specify a validity interval when signing a certificate",
+      "name": [
+        "-V"
+      ]
+    },
+    {
+      "description": "Verbose mode",
+      "name": [
+        "-v"
+      ]
+    },
+    {
+      "args": {
+        "description": "Path to library to be used when creating FIDO authenticator-hosted keys",
+        "name": "provider"
+      },
+      "description": "Specifies a path to a library that will be used when creating FIDO authenticator-hosted keys",
+      "name": [
+        "-w"
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "command",
+        "suggestions": [
+          {
+            "description": "Find the principal(s) associated with the public key of a signature",
+            "name": "find-principals"
+          },
+          {
+            "description": "Checks that a signature generated using ssh-keygen -Y sign has a valid structure",
+            "name": "check-novalidate"
+          },
+          {
+            "description": "Cryptographically sign a file or some data using a SSH key",
+            "name": "sign"
+          },
+          {
+            "description": "Request to verify a signature generated using ssh-keygen -Y",
+            "name": "verify"
+          }
+        ]
+      },
+      "description": "Multiple functions: find principals, match principals, check novalidate, sign, verify",
+      "name": [
+        "-Y"
+      ]
+    },
+    {
+      "description": "Read a private OpenSSH format file and print an OpenSSH public key to stdout",
+      "name": [
+        "-y"
+      ]
+    },
+    {
+      "args": {
+        "description": "Cipher to use for encryption",
+        "name": "cipher"
+      },
+      "description": "Specifies the cipher to use for encryption when writing an OpenSSH-format private key file",
+      "name": [
+        "-Z"
+      ]
+    },
+    {
+      "args": {
+        "description": "Serial number to distinguish this certificate",
+        "name": "serial_number"
+      },
+      "description": "Specifies a serial number to be embedded in the certificate to distinguish this certificate from others from the same CA",
+      "name": [
+        "-z"
+      ]
+    }
+  ]
+}

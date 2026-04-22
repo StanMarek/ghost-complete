@@ -1,0 +1,578 @@
+{
+  "args": {
+    "isOptional": true,
+    "name": "datasource",
+    "suggestions": [
+      {
+        "name": "."
+      },
+      {
+        "name": ".."
+      },
+      {
+        "name": "localhost"
+      },
+      {
+        "name": "localonly"
+      }
+    ]
+  },
+  "description": "Directory Service command line utility",
+  "name": "dscl",
+  "options": [
+    {
+      "description": "Prompt for password",
+      "name": [
+        "-p"
+      ]
+    },
+    {
+      "args": {
+        "description": "User to authenticate as",
+        "name": "user"
+      },
+      "description": "Authenticate as user",
+      "name": [
+        "-u"
+      ]
+    },
+    {
+      "args": {
+        "description": "Password to authenticate with",
+        "name": "password"
+      },
+      "description": "Authenticate with password",
+      "name": [
+        "-P"
+      ]
+    },
+    {
+      "args": {
+        "description": "File path",
+        "name": "file"
+      },
+      "description": "Targeted local node database file path",
+      "name": [
+        "-f"
+      ]
+    },
+    {
+      "description": "Don't strip off prefix from DirectoryService API constants",
+      "name": [
+        "-raw"
+      ]
+    },
+    {
+      "description": "Print out record(s) or attribute(s) in XML plist format",
+      "name": [
+        "-plist"
+      ]
+    },
+    {
+      "description": "Print record attribute values in URL-style encoding",
+      "name": [
+        "-url"
+      ]
+    },
+    {
+      "description": "Quiet - no interactive prompt",
+      "name": [
+        "-q"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": [
+        {
+          "description": "Path to the record",
+          "generators": [
+            {
+              "js_source": "async(t,s)=>{let r=t[t.length-1];if(r===\"\")return[];let c=t.indexOf(\"dscl\"),n;for(let i=c+1;i<t.length;i++){let p=t[i];if(p.startsWith(\"-\"))continue;let m=t[i-1];if(!f.has(m)){n=p;break}}let o=r.lastIndexOf(\"/\"),h=r.slice(0,o<0?0:o),{stdout:u}=await s({command:\"dscl\",args:[n,\"-list\",h??\"/\"]});return u.trim().split(`\n`).map(i=>({name:i,icon:\"\\u{1F4C1}\",priority:i[i.lastIndexOf(\"/\")+1]===\"_\"?49:50}))}",
+              "requires_js": true
+            }
+          ],
+          "isOptional": true,
+          "name": "path"
+        },
+        {
+          "description": "Directory Service record attribute type",
+          "isOptional": true,
+          "isVariadic": true,
+          "name": "keys"
+        }
+      ],
+      "description": "Prints a directory",
+      "name": "read"
+    },
+    {
+      "args": [
+        {
+          "description": "Path to the record",
+          "generators": [
+            {
+              "js_source": "async(t,s)=>{let r=t[t.length-1];if(r===\"\")return[];let c=t.indexOf(\"dscl\"),n;for(let i=c+1;i<t.length;i++){let p=t[i];if(p.startsWith(\"-\"))continue;let m=t[i-1];if(!f.has(m)){n=p;break}}let o=r.lastIndexOf(\"/\"),h=r.slice(0,o<0?0:o),{stdout:u}=await s({command:\"dscl\",args:[n,\"-list\",h??\"/\"]});return u.trim().split(`\n`).map(i=>({name:i,icon:\"\\u{1F4C1}\",priority:i[i.lastIndexOf(\"/\")+1]===\"_\"?49:50}))}",
+              "requires_js": true
+            }
+          ],
+          "isOptional": true,
+          "name": "path"
+        },
+        {
+          "description": "Directory Service record attribute type",
+          "isOptional": true,
+          "isVariadic": true,
+          "name": "keys"
+        }
+      ],
+      "description": "Prints all the records of a given type",
+      "name": "readall"
+    },
+    {
+      "args": [
+        {
+          "description": "Path to the record",
+          "generators": [
+            {
+              "js_source": "async(t,s)=>{let r=t[t.length-1];if(r===\"\")return[];let c=t.indexOf(\"dscl\"),n;for(let i=c+1;i<t.length;i++){let p=t[i];if(p.startsWith(\"-\"))continue;let m=t[i-1];if(!f.has(m)){n=p;break}}let o=r.lastIndexOf(\"/\"),h=r.slice(0,o<0?0:o),{stdout:u}=await s({command:\"dscl\",args:[n,\"-list\",h??\"/\"]});return u.trim().split(`\n`).map(i=>({name:i,icon:\"\\u{1F4C1}\",priority:i[i.lastIndexOf(\"/\")+1]===\"_\"?49:50}))}",
+              "requires_js": true
+            }
+          ],
+          "name": "path"
+        },
+        {
+          "description": "Directory Service record attribute type",
+          "name": "key"
+        },
+        {
+          "description": "Path to the plist file",
+          "name": "plist path"
+        }
+      ],
+      "description": "Prints the contents of plist_path",
+      "name": "readpl"
+    },
+    {
+      "args": [
+        {
+          "description": "Path to the record",
+          "generators": [
+            {
+              "js_source": "async(t,s)=>{let r=t[t.length-1];if(r===\"\")return[];let c=t.indexOf(\"dscl\"),n;for(let i=c+1;i<t.length;i++){let p=t[i];if(p.startsWith(\"-\"))continue;let m=t[i-1];if(!f.has(m)){n=p;break}}let o=r.lastIndexOf(\"/\"),h=r.slice(0,o<0?0:o),{stdout:u}=await s({command:\"dscl\",args:[n,\"-list\",h??\"/\"]});return u.trim().split(`\n`).map(i=>({name:i,icon:\"\\u{1F4C1}\",priority:i[i.lastIndexOf(\"/\")+1]===\"_\"?49:50}))}",
+              "requires_js": true
+            }
+          ],
+          "name": "path"
+        },
+        {
+          "description": "Directory Service record attribute type",
+          "name": "key"
+        },
+        {
+          "description": "Value index of the key",
+          "name": "value index"
+        },
+        {
+          "description": "Path to the plist file",
+          "name": "plist path"
+        }
+      ],
+      "description": "Prints the contents of plist_path for the plist at value_index of the key",
+      "name": "readpli"
+    },
+    {
+      "args": [
+        {
+          "description": "Path to the record",
+          "generators": [
+            {
+              "js_source": "async(t,s)=>{let r=t[t.length-1];if(r===\"\")return[];let c=t.indexOf(\"dscl\"),n;for(let i=c+1;i<t.length;i++){let p=t[i];if(p.startsWith(\"-\"))continue;let m=t[i-1];if(!f.has(m)){n=p;break}}let o=r.lastIndexOf(\"/\"),h=r.slice(0,o<0?0:o),{stdout:u}=await s({command:\"dscl\",args:[n,\"-list\",h??\"/\"]});return u.trim().split(`\n`).map(i=>({name:i,icon:\"\\u{1F4C1}\",priority:i[i.lastIndexOf(\"/\")+1]===\"_\"?49:50}))}",
+              "requires_js": true
+            }
+          ],
+          "name": "path"
+        },
+        {
+          "description": "Directory Service record attribute type",
+          "isOptional": true,
+          "name": "key"
+        }
+      ],
+      "description": "Lists the subdirectories of the given directory",
+      "name": "list"
+    },
+    {
+      "args": [
+        {
+          "description": "Path to the record",
+          "generators": [
+            {
+              "js_source": "async(t,s)=>{let r=t[t.length-1];if(r===\"\")return[];let c=t.indexOf(\"dscl\"),n;for(let i=c+1;i<t.length;i++){let p=t[i];if(p.startsWith(\"-\"))continue;let m=t[i-1];if(!f.has(m)){n=p;break}}let o=r.lastIndexOf(\"/\"),h=r.slice(0,o<0?0:o),{stdout:u}=await s({command:\"dscl\",args:[n,\"-list\",h??\"/\"]});return u.trim().split(`\n`).map(i=>({name:i,icon:\"\\u{1F4C1}\",priority:i[i.lastIndexOf(\"/\")+1]===\"_\"?49:50}))}",
+              "requires_js": true
+            }
+          ],
+          "name": "path"
+        },
+        {
+          "description": "Directory Service record attribute type",
+          "name": "key"
+        },
+        {
+          "description": "Value of the key",
+          "name": "val"
+        }
+      ],
+      "description": "Searches for records that match a pattern",
+      "name": "search"
+    },
+    {
+      "args": [
+        {
+          "description": "Path to the record",
+          "generators": [
+            {
+              "js_source": "async(t,s)=>{let r=t[t.length-1];if(r===\"\")return[];let c=t.indexOf(\"dscl\"),n;for(let i=c+1;i<t.length;i++){let p=t[i];if(p.startsWith(\"-\"))continue;let m=t[i-1];if(!f.has(m)){n=p;break}}let o=r.lastIndexOf(\"/\"),h=r.slice(0,o<0?0:o),{stdout:u}=await s({command:\"dscl\",args:[n,\"-list\",h??\"/\"]});return u.trim().split(`\n`).map(i=>({name:i,icon:\"\\u{1F4C1}\",priority:i[i.lastIndexOf(\"/\")+1]===\"_\"?49:50}))}",
+              "requires_js": true
+            }
+          ],
+          "name": "path"
+        },
+        {
+          "description": "Directory Service record attribute type",
+          "isOptional": true,
+          "name": "key"
+        },
+        {
+          "description": "Value of the key",
+          "isOptional": true,
+          "isVariadic": true,
+          "name": "vals"
+        }
+      ],
+      "description": "Creates a new record",
+      "name": "create"
+    },
+    {
+      "args": [
+        {
+          "description": "Path to the record",
+          "generators": [
+            {
+              "js_source": "async(t,s)=>{let r=t[t.length-1];if(r===\"\")return[];let c=t.indexOf(\"dscl\"),n;for(let i=c+1;i<t.length;i++){let p=t[i];if(p.startsWith(\"-\"))continue;let m=t[i-1];if(!f.has(m)){n=p;break}}let o=r.lastIndexOf(\"/\"),h=r.slice(0,o<0?0:o),{stdout:u}=await s({command:\"dscl\",args:[n,\"-list\",h??\"/\"]});return u.trim().split(`\n`).map(i=>({name:i,icon:\"\\u{1F4C1}\",priority:i[i.lastIndexOf(\"/\")+1]===\"_\"?49:50}))}",
+              "requires_js": true
+            }
+          ],
+          "name": "path"
+        },
+        {
+          "description": "Directory Service record attribute type",
+          "name": "key"
+        },
+        {
+          "description": "Path to the plist file",
+          "name": "plist path"
+        },
+        {
+          "description": "Value of the key",
+          "name": "val"
+        },
+        {
+          "description": "Value of the key",
+          "isOptional": true,
+          "isVariadic": true,
+          "name": "vals"
+        }
+      ],
+      "description": "Creates a string, or array of strings at plist_path",
+      "name": "createpl"
+    },
+    {
+      "args": [
+        {
+          "description": "Path to the record",
+          "generators": [
+            {
+              "js_source": "async(t,s)=>{let r=t[t.length-1];if(r===\"\")return[];let c=t.indexOf(\"dscl\"),n;for(let i=c+1;i<t.length;i++){let p=t[i];if(p.startsWith(\"-\"))continue;let m=t[i-1];if(!f.has(m)){n=p;break}}let o=r.lastIndexOf(\"/\"),h=r.slice(0,o<0?0:o),{stdout:u}=await s({command:\"dscl\",args:[n,\"-list\",h??\"/\"]});return u.trim().split(`\n`).map(i=>({name:i,icon:\"\\u{1F4C1}\",priority:i[i.lastIndexOf(\"/\")+1]===\"_\"?49:50}))}",
+              "requires_js": true
+            }
+          ],
+          "name": "path"
+        },
+        {
+          "description": "Directory Service record attribute type",
+          "name": "key"
+        },
+        {
+          "description": "Value index of the key",
+          "name": "value index"
+        },
+        {
+          "description": "Path to the plist file",
+          "name": "plist path"
+        },
+        {
+          "description": "Value of the key",
+          "name": "val"
+        },
+        {
+          "description": "Value of the key",
+          "isOptional": true,
+          "isVariadic": true,
+          "name": "vals"
+        }
+      ],
+      "description": "Creates a string, or array of strings at plist_path for the plist at value_index of the key",
+      "name": "createpli"
+    },
+    {
+      "args": [
+        {
+          "description": "Path to the record",
+          "generators": [
+            {
+              "js_source": "async(t,s)=>{let r=t[t.length-1];if(r===\"\")return[];let c=t.indexOf(\"dscl\"),n;for(let i=c+1;i<t.length;i++){let p=t[i];if(p.startsWith(\"-\"))continue;let m=t[i-1];if(!f.has(m)){n=p;break}}let o=r.lastIndexOf(\"/\"),h=r.slice(0,o<0?0:o),{stdout:u}=await s({command:\"dscl\",args:[n,\"-list\",h??\"/\"]});return u.trim().split(`\n`).map(i=>({name:i,icon:\"\\u{1F4C1}\",priority:i[i.lastIndexOf(\"/\")+1]===\"_\"?49:50}))}",
+              "requires_js": true
+            }
+          ],
+          "name": "path"
+        },
+        {
+          "description": "Directory Service record attribute type",
+          "name": "key"
+        },
+        {
+          "description": "Value of the key",
+          "isVariadic": true,
+          "name": "vals"
+        }
+      ],
+      "description": "Appends one or more values to a property in a given record",
+      "name": "append"
+    },
+    {
+      "args": [
+        {
+          "description": "Path to the record",
+          "generators": [
+            {
+              "js_source": "async(t,s)=>{let r=t[t.length-1];if(r===\"\")return[];let c=t.indexOf(\"dscl\"),n;for(let i=c+1;i<t.length;i++){let p=t[i];if(p.startsWith(\"-\"))continue;let m=t[i-1];if(!f.has(m)){n=p;break}}let o=r.lastIndexOf(\"/\"),h=r.slice(0,o<0?0:o),{stdout:u}=await s({command:\"dscl\",args:[n,\"-list\",h??\"/\"]});return u.trim().split(`\n`).map(i=>({name:i,icon:\"\\u{1F4C1}\",priority:i[i.lastIndexOf(\"/\")+1]===\"_\"?49:50}))}",
+              "requires_js": true
+            }
+          ],
+          "name": "path"
+        },
+        {
+          "description": "Directory Service record attribute type",
+          "name": "key"
+        },
+        {
+          "description": "Value of the key",
+          "isVariadic": true,
+          "name": "vals"
+        }
+      ],
+      "description": "Appends one or more values to a property in a given directory if the property does not already have those values",
+      "name": "merge"
+    },
+    {
+      "args": [
+        {
+          "description": "Path to the record",
+          "generators": [
+            {
+              "js_source": "async(t,s)=>{let r=t[t.length-1];if(r===\"\")return[];let c=t.indexOf(\"dscl\"),n;for(let i=c+1;i<t.length;i++){let p=t[i];if(p.startsWith(\"-\"))continue;let m=t[i-1];if(!f.has(m)){n=p;break}}let o=r.lastIndexOf(\"/\"),h=r.slice(0,o<0?0:o),{stdout:u}=await s({command:\"dscl\",args:[n,\"-list\",h??\"/\"]});return u.trim().split(`\n`).map(i=>({name:i,icon:\"\\u{1F4C1}\",priority:i[i.lastIndexOf(\"/\")+1]===\"_\"?49:50}))}",
+              "requires_js": true
+            }
+          ],
+          "name": "path"
+        },
+        {
+          "description": "Directory Service record attribute type",
+          "isOptional": true,
+          "name": "key"
+        },
+        {
+          "description": "Value of the key",
+          "isOptional": true,
+          "isVariadic": true,
+          "name": "vals"
+        }
+      ],
+      "description": "Delete a directory, property, or value",
+      "name": "delete"
+    },
+    {
+      "args": [
+        {
+          "description": "Path to the record",
+          "generators": [
+            {
+              "js_source": "async(t,s)=>{let r=t[t.length-1];if(r===\"\")return[];let c=t.indexOf(\"dscl\"),n;for(let i=c+1;i<t.length;i++){let p=t[i];if(p.startsWith(\"-\"))continue;let m=t[i-1];if(!f.has(m)){n=p;break}}let o=r.lastIndexOf(\"/\"),h=r.slice(0,o<0?0:o),{stdout:u}=await s({command:\"dscl\",args:[n,\"-list\",h??\"/\"]});return u.trim().split(`\n`).map(i=>({name:i,icon:\"\\u{1F4C1}\",priority:i[i.lastIndexOf(\"/\")+1]===\"_\"?49:50}))}",
+              "requires_js": true
+            }
+          ],
+          "name": "path"
+        },
+        {
+          "description": "Directory Service record attribute type",
+          "name": "key"
+        },
+        {
+          "description": "Path to the plist file",
+          "name": "plist path"
+        },
+        {
+          "description": "Value of the key",
+          "isOptional": true,
+          "isVariadic": true,
+          "name": "vals"
+        }
+      ],
+      "description": "Deletes a value in a plist",
+      "name": "deletepl"
+    },
+    {
+      "args": [
+        {
+          "description": "Path to the record",
+          "generators": [
+            {
+              "js_source": "async(t,s)=>{let r=t[t.length-1];if(r===\"\")return[];let c=t.indexOf(\"dscl\"),n;for(let i=c+1;i<t.length;i++){let p=t[i];if(p.startsWith(\"-\"))continue;let m=t[i-1];if(!f.has(m)){n=p;break}}let o=r.lastIndexOf(\"/\"),h=r.slice(0,o<0?0:o),{stdout:u}=await s({command:\"dscl\",args:[n,\"-list\",h??\"/\"]});return u.trim().split(`\n`).map(i=>({name:i,icon:\"\\u{1F4C1}\",priority:i[i.lastIndexOf(\"/\")+1]===\"_\"?49:50}))}",
+              "requires_js": true
+            }
+          ],
+          "name": "path"
+        },
+        {
+          "description": "Directory Service record attribute type",
+          "name": "key"
+        },
+        {
+          "description": "Value index of the key",
+          "name": "value index"
+        },
+        {
+          "description": "Path to the plist file",
+          "name": "plist path"
+        },
+        {
+          "description": "Value of the key",
+          "isOptional": true,
+          "isVariadic": true,
+          "name": "vals"
+        }
+      ],
+      "description": "Deletes a value for the plist at value_index of the key",
+      "name": "deletepli"
+    },
+    {
+      "args": [
+        {
+          "description": "Path to the record",
+          "generators": [
+            {
+              "js_source": "async(t,s)=>{let r=t[t.length-1];if(r===\"\")return[];let c=t.indexOf(\"dscl\"),n;for(let i=c+1;i<t.length;i++){let p=t[i];if(p.startsWith(\"-\"))continue;let m=t[i-1];if(!f.has(m)){n=p;break}}let o=r.lastIndexOf(\"/\"),h=r.slice(0,o<0?0:o),{stdout:u}=await s({command:\"dscl\",args:[n,\"-list\",h??\"/\"]});return u.trim().split(`\n`).map(i=>({name:i,icon:\"\\u{1F4C1}\",priority:i[i.lastIndexOf(\"/\")+1]===\"_\"?49:50}))}",
+              "requires_js": true
+            }
+          ],
+          "name": "path"
+        },
+        {
+          "description": "Directory Service record attribute type",
+          "name": "key"
+        },
+        {
+          "description": "Old value of the key",
+          "name": "old val"
+        },
+        {
+          "description": "New value of the key",
+          "name": "new val"
+        }
+      ],
+      "description": "Replaces the given old value in the list of values of the given key with the new value in the specified record",
+      "name": "change"
+    },
+    {
+      "args": [
+        {
+          "description": "Path to the record",
+          "generators": [
+            {
+              "js_source": "async(t,s)=>{let r=t[t.length-1];if(r===\"\")return[];let c=t.indexOf(\"dscl\"),n;for(let i=c+1;i<t.length;i++){let p=t[i];if(p.startsWith(\"-\"))continue;let m=t[i-1];if(!f.has(m)){n=p;break}}let o=r.lastIndexOf(\"/\"),h=r.slice(0,o<0?0:o),{stdout:u}=await s({command:\"dscl\",args:[n,\"-list\",h??\"/\"]});return u.trim().split(`\n`).map(i=>({name:i,icon:\"\\u{1F4C1}\",priority:i[i.lastIndexOf(\"/\")+1]===\"_\"?49:50}))}",
+              "requires_js": true
+            }
+          ],
+          "name": "path"
+        },
+        {
+          "description": "Directory Service record attribute type",
+          "name": "key"
+        },
+        {
+          "description": "Value index of the key",
+          "name": "value index"
+        },
+        {
+          "description": "New value of the key",
+          "name": "new val"
+        }
+      ],
+      "description": "Replaces the value at the given index in the list of values of the given key with the new value in the specified record",
+      "name": "changei"
+    },
+    {
+      "args": [
+        {
+          "description": "Path to the record",
+          "generators": [
+            {
+              "js_source": "async(t,s)=>{let r=t[t.length-1];if(r===\"\")return[];let c=t.indexOf(\"dscl\"),n;for(let i=c+1;i<t.length;i++){let p=t[i];if(p.startsWith(\"-\"))continue;let m=t[i-1];if(!f.has(m)){n=p;break}}let o=r.lastIndexOf(\"/\"),h=r.slice(0,o<0?0:o),{stdout:u}=await s({command:\"dscl\",args:[n,\"-list\",h??\"/\"]});return u.trim().split(`\n`).map(i=>({name:i,icon:\"\\u{1F4C1}\",priority:i[i.lastIndexOf(\"/\")+1]===\"_\"?49:50}))}",
+              "requires_js": true
+            }
+          ],
+          "name": "path"
+        },
+        {
+          "description": "Path to the record",
+          "generators": [
+            {
+              "js_source": "async(t,s)=>{let r=t[t.length-1];if(r===\"\")return[];let c=t.indexOf(\"dscl\"),n;for(let i=c+1;i<t.length;i++){let p=t[i];if(p.startsWith(\"-\"))continue;let m=t[i-1];if(!f.has(m)){n=p;break}}let o=r.lastIndexOf(\"/\"),h=r.slice(0,o<0?0:o),{stdout:u}=await s({command:\"dscl\",args:[n,\"-list\",h??\"/\"]});return u.trim().split(`\n`).map(i=>({name:i,icon:\"\\u{1F4C1}\",priority:i[i.lastIndexOf(\"/\")+1]===\"_\"?49:50}))}",
+              "requires_js": true
+            }
+          ],
+          "name": "path"
+        },
+        {
+          "description": "Directory Service record attribute type",
+          "isOptional": true,
+          "isVariadic": true,
+          "name": "keys"
+        }
+      ],
+      "description": "Compares the data from path1 and path2 looking at the specified keys (or all if no keys are specified)",
+      "name": "diff"
+    },
+    {
+      "args": [
+        {
+          "description": "Path to the record",
+          "generators": [
+            {
+              "js_source": "async(t,s)=>{let r=t[t.length-1];if(r===\"\")return[];let c=t.indexOf(\"dscl\"),n;for(let i=c+1;i<t.length;i++){let p=t[i];if(p.startsWith(\"-\"))continue;let m=t[i-1];if(!f.has(m)){n=p;break}}let o=r.lastIndexOf(\"/\"),h=r.slice(0,o<0?0:o),{stdout:u}=await s({command:\"dscl\",args:[n,\"-list\",h??\"/\"]});return u.trim().split(`\n`).map(i=>({name:i,icon:\"\\u{1F4C1}\",priority:i[i.lastIndexOf(\"/\")+1]===\"_\"?49:50}))}",
+              "requires_js": true
+            }
+          ],
+          "name": "path"
+        },
+        {
+          "description": "New password of the user",
+          "isOptional": true,
+          "name": "new password"
+        }
+      ],
+      "description": "Changes the password of a user",
+      "name": "passwd"
+    }
+  ]
+}

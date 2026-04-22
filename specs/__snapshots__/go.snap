@@ -1,0 +1,2717 @@
+{
+  "description": "Go is a tool for managing Go source code",
+  "name": "go",
+  "subcommands": [
+    {
+      "description": "Start a bug report",
+      "name": "bug"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "packages",
+        "template": [
+          "filepaths"
+        ]
+      },
+      "description": "Compile packages and dependencies",
+      "name": "build",
+      "options": [
+        {
+          "description": "Print the commands but do not run them",
+          "name": [
+            "-n"
+          ]
+        },
+        {
+          "description": "Print the names of packages as they are compiled",
+          "name": [
+            "-v"
+          ]
+        },
+        {
+          "description": "Print the commands",
+          "name": [
+            "-x"
+          ]
+        },
+        {
+          "args": {
+            "name": "tags"
+          },
+          "description": "A comma-separated list of build tags to consider satisfied during the build",
+          "name": [
+            "-tags"
+          ]
+        },
+        {
+          "args": {
+            "name": "cmd"
+          },
+          "description": "A program to use to invoke toolchain programs like vet and asm",
+          "name": [
+            "-toolexec"
+          ]
+        },
+        {
+          "description": "Force rebuilding of packages that are already up-to-date",
+          "name": [
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "name": "programs"
+          },
+          "description": "The number of programs, such as build commands or",
+          "name": [
+            "-p"
+          ]
+        },
+        {
+          "description": "Enable data race detection.\nSupported only on linux/amd64, freebsd/amd64, darwin/amd64, windows/amd64,\nlinux/ppc64le and linux/arm64 (only for 48-bit VMA)",
+          "name": [
+            "-race"
+          ]
+        },
+        {
+          "description": "Enable interoperation with memory sanitizer.\nSupported only on linux/amd64, linux/arm64\nand only with Clang/LLVM as the host C compiler.\nOn linux/arm64, pie build mode will be used",
+          "name": [
+            "-msan"
+          ]
+        },
+        {
+          "description": "Print the name of the temporary work directory and\ndo not delete it when exiting",
+          "name": [
+            "-work"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "flag"
+          },
+          "description": "Arguments to pass on each go tool asm invocation",
+          "name": [
+            "-asmflags"
+          ]
+        },
+        {
+          "args": {
+            "name": "mode",
+            "suggestions": [
+              {
+                "description": "Build the listed non-main packages into .a files",
+                "name": "archive"
+              },
+              {
+                "description": "Build the listed main package, plus all packages it imports, into a C archive file",
+                "name": "c-archive"
+              },
+              {
+                "description": "Build the listed main package, plus all packages it imports, into a C shared library",
+                "name": "c-shared"
+              },
+              {
+                "description": "Listed main packages are built into executables and listed non-main packages are built into .a files",
+                "name": "default"
+              },
+              {
+                "description": "Combine all the listed non-main packages into a single shared library that will be used when building with the -linkshared option",
+                "name": "shared"
+              },
+              {
+                "description": "Build the listed main packages and everything they import into executables",
+                "name": "exe"
+              },
+              {
+                "description": "Build the listed main packages and everything they import into position independent executables (PIE)",
+                "name": "pie"
+              },
+              {
+                "description": "Build the listed main packages, plus all packages that they import, into a Go plugin",
+                "name": "plugin"
+              }
+            ]
+          },
+          "description": "Build mode to use. See 'go help buildmode' for more",
+          "name": [
+            "-buildmode"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Name of compiler to use, as in runtime.Compiler (gccgo or gc)",
+          "name": [
+            "-compiler"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "flag"
+          },
+          "description": "Arguments to pass on each gccgo compiler/linker invocation",
+          "name": [
+            "-gccgoflags"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "flag"
+          },
+          "description": "Arguments to pass on each go tool compile invocation",
+          "name": [
+            "-gcflags"
+          ]
+        },
+        {
+          "args": {
+            "name": "suffix"
+          },
+          "description": "A suffix to use in the name of the package installation directory,",
+          "name": [
+            "-installsuffix"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "flag"
+          },
+          "description": "Arguments to pass on each go tool link invocation",
+          "name": [
+            "-ldflags"
+          ]
+        },
+        {
+          "description": "Build code that will be linked against shared libraries previously",
+          "name": [
+            "-linkshared"
+          ]
+        },
+        {
+          "args": {
+            "name": "mode",
+            "suggestions": [
+              {
+                "name": "readonly"
+              },
+              {
+                "name": "vendor"
+              },
+              {
+                "name": "mod"
+              }
+            ]
+          },
+          "description": "Module download mode to use: readonly, vendor, or mod",
+          "name": [
+            "-mod"
+          ]
+        },
+        {
+          "description": "Leave newly-created directories in the module cache read-write",
+          "name": [
+            "-modcacherw"
+          ]
+        },
+        {
+          "args": {
+            "name": "file"
+          },
+          "description": "In module aware mode, read (and possibly write) an alternate go.mod file instead of the one in the module root directory",
+          "name": [
+            "-modfile"
+          ]
+        },
+        {
+          "args": {
+            "name": "file"
+          },
+          "description": "Read a JSON config file that provides an overlay for build operations",
+          "name": [
+            "-overlay"
+          ]
+        },
+        {
+          "args": {
+            "name": "dir"
+          },
+          "description": "Install and load all packages from dir instead of the usual locations",
+          "name": [
+            "-pkgdir"
+          ]
+        },
+        {
+          "description": "Remove all file system paths from the resulting executable",
+          "name": [
+            "-trimpath"
+          ]
+        },
+        {
+          "args": {
+            "template": [
+              "filepaths",
+              "folders"
+            ]
+          },
+          "description": "Write the resulting executable or object to the named output file or directory",
+          "name": [
+            "-o"
+          ]
+        },
+        {
+          "description": "Install the packages that are dependencies of the target",
+          "name": [
+            "-i"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Remove object files and cached files",
+      "name": "clean",
+      "options": [
+        {
+          "description": "Print the commands but do not run them",
+          "name": [
+            "-n"
+          ]
+        },
+        {
+          "description": "Print the names of packages as they are compiled",
+          "name": [
+            "-v"
+          ]
+        },
+        {
+          "description": "Print the commands",
+          "name": [
+            "-x"
+          ]
+        },
+        {
+          "args": {
+            "name": "tags"
+          },
+          "description": "A comma-separated list of build tags to consider satisfied during the build",
+          "name": [
+            "-tags"
+          ]
+        },
+        {
+          "args": {
+            "name": "cmd"
+          },
+          "description": "A program to use to invoke toolchain programs like vet and asm",
+          "name": [
+            "-toolexec"
+          ]
+        },
+        {
+          "description": "Force rebuilding of packages that are already up-to-date",
+          "name": [
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "name": "programs"
+          },
+          "description": "The number of programs, such as build commands or",
+          "name": [
+            "-p"
+          ]
+        },
+        {
+          "description": "Enable data race detection.\nSupported only on linux/amd64, freebsd/amd64, darwin/amd64, windows/amd64,\nlinux/ppc64le and linux/arm64 (only for 48-bit VMA)",
+          "name": [
+            "-race"
+          ]
+        },
+        {
+          "description": "Enable interoperation with memory sanitizer.\nSupported only on linux/amd64, linux/arm64\nand only with Clang/LLVM as the host C compiler.\nOn linux/arm64, pie build mode will be used",
+          "name": [
+            "-msan"
+          ]
+        },
+        {
+          "description": "Print the name of the temporary work directory and\ndo not delete it when exiting",
+          "name": [
+            "-work"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "flag"
+          },
+          "description": "Arguments to pass on each go tool asm invocation",
+          "name": [
+            "-asmflags"
+          ]
+        },
+        {
+          "args": {
+            "name": "mode",
+            "suggestions": [
+              {
+                "description": "Build the listed non-main packages into .a files",
+                "name": "archive"
+              },
+              {
+                "description": "Build the listed main package, plus all packages it imports, into a C archive file",
+                "name": "c-archive"
+              },
+              {
+                "description": "Build the listed main package, plus all packages it imports, into a C shared library",
+                "name": "c-shared"
+              },
+              {
+                "description": "Listed main packages are built into executables and listed non-main packages are built into .a files",
+                "name": "default"
+              },
+              {
+                "description": "Combine all the listed non-main packages into a single shared library that will be used when building with the -linkshared option",
+                "name": "shared"
+              },
+              {
+                "description": "Build the listed main packages and everything they import into executables",
+                "name": "exe"
+              },
+              {
+                "description": "Build the listed main packages and everything they import into position independent executables (PIE)",
+                "name": "pie"
+              },
+              {
+                "description": "Build the listed main packages, plus all packages that they import, into a Go plugin",
+                "name": "plugin"
+              }
+            ]
+          },
+          "description": "Build mode to use. See 'go help buildmode' for more",
+          "name": [
+            "-buildmode"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Name of compiler to use, as in runtime.Compiler (gccgo or gc)",
+          "name": [
+            "-compiler"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "flag"
+          },
+          "description": "Arguments to pass on each gccgo compiler/linker invocation",
+          "name": [
+            "-gccgoflags"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "flag"
+          },
+          "description": "Arguments to pass on each go tool compile invocation",
+          "name": [
+            "-gcflags"
+          ]
+        },
+        {
+          "args": {
+            "name": "suffix"
+          },
+          "description": "A suffix to use in the name of the package installation directory,",
+          "name": [
+            "-installsuffix"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "flag"
+          },
+          "description": "Arguments to pass on each go tool link invocation",
+          "name": [
+            "-ldflags"
+          ]
+        },
+        {
+          "description": "Build code that will be linked against shared libraries previously",
+          "name": [
+            "-linkshared"
+          ]
+        },
+        {
+          "args": {
+            "name": "mode",
+            "suggestions": [
+              {
+                "name": "readonly"
+              },
+              {
+                "name": "vendor"
+              },
+              {
+                "name": "mod"
+              }
+            ]
+          },
+          "description": "Module download mode to use: readonly, vendor, or mod",
+          "name": [
+            "-mod"
+          ]
+        },
+        {
+          "description": "Leave newly-created directories in the module cache read-write",
+          "name": [
+            "-modcacherw"
+          ]
+        },
+        {
+          "args": {
+            "name": "file"
+          },
+          "description": "In module aware mode, read (and possibly write) an alternate go.mod file instead of the one in the module root directory",
+          "name": [
+            "-modfile"
+          ]
+        },
+        {
+          "args": {
+            "name": "file"
+          },
+          "description": "Read a JSON config file that provides an overlay for build operations",
+          "name": [
+            "-overlay"
+          ]
+        },
+        {
+          "args": {
+            "name": "dir"
+          },
+          "description": "Install and load all packages from dir instead of the usual locations",
+          "name": [
+            "-pkgdir"
+          ]
+        },
+        {
+          "description": "Remove all file system paths from the resulting executable",
+          "name": [
+            "-trimpath"
+          ]
+        },
+        {
+          "description": "Remove the corresponding installed archive or binary",
+          "name": [
+            "-i"
+          ]
+        },
+        {
+          "description": "Apply recursively to all the dependencies of the packages named by the import paths",
+          "name": [
+            "-r"
+          ]
+        },
+        {
+          "description": "Remove the entire go build cache",
+          "name": [
+            "-cache"
+          ]
+        },
+        {
+          "description": "Expire all test results in the go build cache",
+          "name": [
+            "-testcache"
+          ]
+        },
+        {
+          "description": "Remove the entire module download cache, including unpacked source code of versioned dependencies",
+          "name": [
+            "-modcache"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "package"
+      },
+      "description": "Show documentation for package or symbol",
+      "name": "doc",
+      "options": [
+        {
+          "description": "Show all the documentation for the package",
+          "name": [
+            "-all"
+          ]
+        },
+        {
+          "description": "Respect case when matching symbols",
+          "name": [
+            "-c"
+          ]
+        },
+        {
+          "description": "Treat a command (package main) like a regular package. Otherwise package main's exported symbols are hidden when showing the package's top-level documentation",
+          "name": [
+            "-cmd"
+          ]
+        },
+        {
+          "description": "One-line representation for each symbol",
+          "name": [
+            "-short"
+          ]
+        },
+        {
+          "description": "Show the full source code for the symbol",
+          "name": [
+            "-src"
+          ]
+        },
+        {
+          "description": "Show documentation for unexported as well as exported symbols, methods, and fields",
+          "name": [
+            "-u"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Print Go environment information",
+      "name": "env",
+      "options": [
+        {
+          "description": "Prints the environment in JSON format instead of as a shell script",
+          "name": [
+            "-json"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true
+          },
+          "description": "Unset the default setting for the named environment variables",
+          "name": [
+            "-u"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true
+          },
+          "description": "Change the default settings of the named environment variables to the given values",
+          "name": [
+            "-w"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "packages",
+        "template": [
+          "filepaths"
+        ]
+      },
+      "description": "Update packages to use new APIs",
+      "name": "fix"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "packages",
+        "template": [
+          "filepaths"
+        ]
+      },
+      "description": "Gofmt (reformat) package sources",
+      "name": "fmt",
+      "options": [
+        {
+          "description": "Print the commands that would be executed",
+          "name": [
+            "-n"
+          ]
+        },
+        {
+          "description": "Print the commands as they are executed",
+          "name": [
+            "-x"
+          ]
+        },
+        {
+          "args": {
+            "name": "mode",
+            "suggestions": [
+              {
+                "name": "readonly"
+              },
+              {
+                "name": "vendor"
+              }
+            ]
+          },
+          "description": "Which module download mode to use",
+          "name": [
+            "-mod"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generate Go files by processing source",
+      "name": "generate",
+      "options": [
+        {
+          "description": "Print the commands but do not run them",
+          "name": [
+            "-n"
+          ]
+        },
+        {
+          "description": "Print the names of packages as they are compiled",
+          "name": [
+            "-v"
+          ]
+        },
+        {
+          "description": "Print the commands",
+          "name": [
+            "-x"
+          ]
+        },
+        {
+          "args": {
+            "name": "tags"
+          },
+          "description": "A comma-separated list of build tags to consider satisfied during the build",
+          "name": [
+            "-tags"
+          ]
+        },
+        {
+          "args": {
+            "name": "cmd"
+          },
+          "description": "A program to use to invoke toolchain programs like vet and asm",
+          "name": [
+            "-toolexec"
+          ]
+        },
+        {
+          "description": "Force rebuilding of packages that are already up-to-date",
+          "name": [
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "name": "programs"
+          },
+          "description": "The number of programs, such as build commands or",
+          "name": [
+            "-p"
+          ]
+        },
+        {
+          "description": "Enable data race detection.\nSupported only on linux/amd64, freebsd/amd64, darwin/amd64, windows/amd64,\nlinux/ppc64le and linux/arm64 (only for 48-bit VMA)",
+          "name": [
+            "-race"
+          ]
+        },
+        {
+          "description": "Enable interoperation with memory sanitizer.\nSupported only on linux/amd64, linux/arm64\nand only with Clang/LLVM as the host C compiler.\nOn linux/arm64, pie build mode will be used",
+          "name": [
+            "-msan"
+          ]
+        },
+        {
+          "description": "Print the name of the temporary work directory and\ndo not delete it when exiting",
+          "name": [
+            "-work"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "flag"
+          },
+          "description": "Arguments to pass on each go tool asm invocation",
+          "name": [
+            "-asmflags"
+          ]
+        },
+        {
+          "args": {
+            "name": "mode",
+            "suggestions": [
+              {
+                "description": "Build the listed non-main packages into .a files",
+                "name": "archive"
+              },
+              {
+                "description": "Build the listed main package, plus all packages it imports, into a C archive file",
+                "name": "c-archive"
+              },
+              {
+                "description": "Build the listed main package, plus all packages it imports, into a C shared library",
+                "name": "c-shared"
+              },
+              {
+                "description": "Listed main packages are built into executables and listed non-main packages are built into .a files",
+                "name": "default"
+              },
+              {
+                "description": "Combine all the listed non-main packages into a single shared library that will be used when building with the -linkshared option",
+                "name": "shared"
+              },
+              {
+                "description": "Build the listed main packages and everything they import into executables",
+                "name": "exe"
+              },
+              {
+                "description": "Build the listed main packages and everything they import into position independent executables (PIE)",
+                "name": "pie"
+              },
+              {
+                "description": "Build the listed main packages, plus all packages that they import, into a Go plugin",
+                "name": "plugin"
+              }
+            ]
+          },
+          "description": "Build mode to use. See 'go help buildmode' for more",
+          "name": [
+            "-buildmode"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Name of compiler to use, as in runtime.Compiler (gccgo or gc)",
+          "name": [
+            "-compiler"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "flag"
+          },
+          "description": "Arguments to pass on each gccgo compiler/linker invocation",
+          "name": [
+            "-gccgoflags"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "flag"
+          },
+          "description": "Arguments to pass on each go tool compile invocation",
+          "name": [
+            "-gcflags"
+          ]
+        },
+        {
+          "args": {
+            "name": "suffix"
+          },
+          "description": "A suffix to use in the name of the package installation directory,",
+          "name": [
+            "-installsuffix"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "flag"
+          },
+          "description": "Arguments to pass on each go tool link invocation",
+          "name": [
+            "-ldflags"
+          ]
+        },
+        {
+          "description": "Build code that will be linked against shared libraries previously",
+          "name": [
+            "-linkshared"
+          ]
+        },
+        {
+          "args": {
+            "name": "mode",
+            "suggestions": [
+              {
+                "name": "readonly"
+              },
+              {
+                "name": "vendor"
+              },
+              {
+                "name": "mod"
+              }
+            ]
+          },
+          "description": "Module download mode to use: readonly, vendor, or mod",
+          "name": [
+            "-mod"
+          ]
+        },
+        {
+          "description": "Leave newly-created directories in the module cache read-write",
+          "name": [
+            "-modcacherw"
+          ]
+        },
+        {
+          "args": {
+            "name": "file"
+          },
+          "description": "In module aware mode, read (and possibly write) an alternate go.mod file instead of the one in the module root directory",
+          "name": [
+            "-modfile"
+          ]
+        },
+        {
+          "args": {
+            "name": "file"
+          },
+          "description": "Read a JSON config file that provides an overlay for build operations",
+          "name": [
+            "-overlay"
+          ]
+        },
+        {
+          "args": {
+            "name": "dir"
+          },
+          "description": "Install and load all packages from dir instead of the usual locations",
+          "name": [
+            "-pkgdir"
+          ]
+        },
+        {
+          "description": "Remove all file system paths from the resulting executable",
+          "name": [
+            "-trimpath"
+          ]
+        },
+        {
+          "description": "Specifies a regular expression to select directives whose full original source text matches the expression",
+          "name": [
+            "-run"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "url"
+      },
+      "description": "Add dependencies to current module and install them",
+      "name": "get",
+      "options": [
+        {
+          "description": "Print the commands but do not run them",
+          "name": [
+            "-n"
+          ]
+        },
+        {
+          "description": "Print the names of packages as they are compiled",
+          "name": [
+            "-v"
+          ]
+        },
+        {
+          "description": "Print the commands",
+          "name": [
+            "-x"
+          ]
+        },
+        {
+          "args": {
+            "name": "tags"
+          },
+          "description": "A comma-separated list of build tags to consider satisfied during the build",
+          "name": [
+            "-tags"
+          ]
+        },
+        {
+          "args": {
+            "name": "cmd"
+          },
+          "description": "A program to use to invoke toolchain programs like vet and asm",
+          "name": [
+            "-toolexec"
+          ]
+        },
+        {
+          "description": "Force rebuilding of packages that are already up-to-date",
+          "name": [
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "name": "programs"
+          },
+          "description": "The number of programs, such as build commands or",
+          "name": [
+            "-p"
+          ]
+        },
+        {
+          "description": "Enable data race detection.\nSupported only on linux/amd64, freebsd/amd64, darwin/amd64, windows/amd64,\nlinux/ppc64le and linux/arm64 (only for 48-bit VMA)",
+          "name": [
+            "-race"
+          ]
+        },
+        {
+          "description": "Enable interoperation with memory sanitizer.\nSupported only on linux/amd64, linux/arm64\nand only with Clang/LLVM as the host C compiler.\nOn linux/arm64, pie build mode will be used",
+          "name": [
+            "-msan"
+          ]
+        },
+        {
+          "description": "Print the name of the temporary work directory and\ndo not delete it when exiting",
+          "name": [
+            "-work"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "flag"
+          },
+          "description": "Arguments to pass on each go tool asm invocation",
+          "name": [
+            "-asmflags"
+          ]
+        },
+        {
+          "args": {
+            "name": "mode",
+            "suggestions": [
+              {
+                "description": "Build the listed non-main packages into .a files",
+                "name": "archive"
+              },
+              {
+                "description": "Build the listed main package, plus all packages it imports, into a C archive file",
+                "name": "c-archive"
+              },
+              {
+                "description": "Build the listed main package, plus all packages it imports, into a C shared library",
+                "name": "c-shared"
+              },
+              {
+                "description": "Listed main packages are built into executables and listed non-main packages are built into .a files",
+                "name": "default"
+              },
+              {
+                "description": "Combine all the listed non-main packages into a single shared library that will be used when building with the -linkshared option",
+                "name": "shared"
+              },
+              {
+                "description": "Build the listed main packages and everything they import into executables",
+                "name": "exe"
+              },
+              {
+                "description": "Build the listed main packages and everything they import into position independent executables (PIE)",
+                "name": "pie"
+              },
+              {
+                "description": "Build the listed main packages, plus all packages that they import, into a Go plugin",
+                "name": "plugin"
+              }
+            ]
+          },
+          "description": "Build mode to use. See 'go help buildmode' for more",
+          "name": [
+            "-buildmode"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Name of compiler to use, as in runtime.Compiler (gccgo or gc)",
+          "name": [
+            "-compiler"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "flag"
+          },
+          "description": "Arguments to pass on each gccgo compiler/linker invocation",
+          "name": [
+            "-gccgoflags"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "flag"
+          },
+          "description": "Arguments to pass on each go tool compile invocation",
+          "name": [
+            "-gcflags"
+          ]
+        },
+        {
+          "args": {
+            "name": "suffix"
+          },
+          "description": "A suffix to use in the name of the package installation directory,",
+          "name": [
+            "-installsuffix"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "flag"
+          },
+          "description": "Arguments to pass on each go tool link invocation",
+          "name": [
+            "-ldflags"
+          ]
+        },
+        {
+          "description": "Build code that will be linked against shared libraries previously",
+          "name": [
+            "-linkshared"
+          ]
+        },
+        {
+          "args": {
+            "name": "mode",
+            "suggestions": [
+              {
+                "name": "readonly"
+              },
+              {
+                "name": "vendor"
+              },
+              {
+                "name": "mod"
+              }
+            ]
+          },
+          "description": "Module download mode to use: readonly, vendor, or mod",
+          "name": [
+            "-mod"
+          ]
+        },
+        {
+          "description": "Leave newly-created directories in the module cache read-write",
+          "name": [
+            "-modcacherw"
+          ]
+        },
+        {
+          "args": {
+            "name": "file"
+          },
+          "description": "In module aware mode, read (and possibly write) an alternate go.mod file instead of the one in the module root directory",
+          "name": [
+            "-modfile"
+          ]
+        },
+        {
+          "args": {
+            "name": "file"
+          },
+          "description": "Read a JSON config file that provides an overlay for build operations",
+          "name": [
+            "-overlay"
+          ]
+        },
+        {
+          "args": {
+            "name": "dir"
+          },
+          "description": "Install and load all packages from dir instead of the usual locations",
+          "name": [
+            "-pkgdir"
+          ]
+        },
+        {
+          "description": "Remove all file system paths from the resulting executable",
+          "name": [
+            "-trimpath"
+          ]
+        },
+        {
+          "description": "Modules needed to build tests of packages specified on the command line",
+          "name": [
+            "-t"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "suggestions": [
+              {
+                "description": "Update to newer patch releases",
+                "name": "patch"
+              }
+            ]
+          },
+          "description": "Update to newer minor or patch releases when available",
+          "name": [
+            "-u"
+          ]
+        },
+        {
+          "description": "Permit fetching from insecure origins",
+          "name": [
+            "-insecure"
+          ]
+        },
+        {
+          "description": "Only update go.mod and download source code needed to build packages",
+          "name": [
+            "-d"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "packages"
+      },
+      "description": "Compile and install packages and dependencies",
+      "name": "install",
+      "options": [
+        {
+          "description": "Print the commands but do not run them",
+          "name": [
+            "-n"
+          ]
+        },
+        {
+          "description": "Print the names of packages as they are compiled",
+          "name": [
+            "-v"
+          ]
+        },
+        {
+          "description": "Print the commands",
+          "name": [
+            "-x"
+          ]
+        },
+        {
+          "args": {
+            "name": "tags"
+          },
+          "description": "A comma-separated list of build tags to consider satisfied during the build",
+          "name": [
+            "-tags"
+          ]
+        },
+        {
+          "args": {
+            "name": "cmd"
+          },
+          "description": "A program to use to invoke toolchain programs like vet and asm",
+          "name": [
+            "-toolexec"
+          ]
+        },
+        {
+          "description": "Force rebuilding of packages that are already up-to-date",
+          "name": [
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "name": "programs"
+          },
+          "description": "The number of programs, such as build commands or",
+          "name": [
+            "-p"
+          ]
+        },
+        {
+          "description": "Enable data race detection.\nSupported only on linux/amd64, freebsd/amd64, darwin/amd64, windows/amd64,\nlinux/ppc64le and linux/arm64 (only for 48-bit VMA)",
+          "name": [
+            "-race"
+          ]
+        },
+        {
+          "description": "Enable interoperation with memory sanitizer.\nSupported only on linux/amd64, linux/arm64\nand only with Clang/LLVM as the host C compiler.\nOn linux/arm64, pie build mode will be used",
+          "name": [
+            "-msan"
+          ]
+        },
+        {
+          "description": "Print the name of the temporary work directory and\ndo not delete it when exiting",
+          "name": [
+            "-work"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "flag"
+          },
+          "description": "Arguments to pass on each go tool asm invocation",
+          "name": [
+            "-asmflags"
+          ]
+        },
+        {
+          "args": {
+            "name": "mode",
+            "suggestions": [
+              {
+                "description": "Build the listed non-main packages into .a files",
+                "name": "archive"
+              },
+              {
+                "description": "Build the listed main package, plus all packages it imports, into a C archive file",
+                "name": "c-archive"
+              },
+              {
+                "description": "Build the listed main package, plus all packages it imports, into a C shared library",
+                "name": "c-shared"
+              },
+              {
+                "description": "Listed main packages are built into executables and listed non-main packages are built into .a files",
+                "name": "default"
+              },
+              {
+                "description": "Combine all the listed non-main packages into a single shared library that will be used when building with the -linkshared option",
+                "name": "shared"
+              },
+              {
+                "description": "Build the listed main packages and everything they import into executables",
+                "name": "exe"
+              },
+              {
+                "description": "Build the listed main packages and everything they import into position independent executables (PIE)",
+                "name": "pie"
+              },
+              {
+                "description": "Build the listed main packages, plus all packages that they import, into a Go plugin",
+                "name": "plugin"
+              }
+            ]
+          },
+          "description": "Build mode to use. See 'go help buildmode' for more",
+          "name": [
+            "-buildmode"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Name of compiler to use, as in runtime.Compiler (gccgo or gc)",
+          "name": [
+            "-compiler"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "flag"
+          },
+          "description": "Arguments to pass on each gccgo compiler/linker invocation",
+          "name": [
+            "-gccgoflags"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "flag"
+          },
+          "description": "Arguments to pass on each go tool compile invocation",
+          "name": [
+            "-gcflags"
+          ]
+        },
+        {
+          "args": {
+            "name": "suffix"
+          },
+          "description": "A suffix to use in the name of the package installation directory,",
+          "name": [
+            "-installsuffix"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "flag"
+          },
+          "description": "Arguments to pass on each go tool link invocation",
+          "name": [
+            "-ldflags"
+          ]
+        },
+        {
+          "description": "Build code that will be linked against shared libraries previously",
+          "name": [
+            "-linkshared"
+          ]
+        },
+        {
+          "args": {
+            "name": "mode",
+            "suggestions": [
+              {
+                "name": "readonly"
+              },
+              {
+                "name": "vendor"
+              },
+              {
+                "name": "mod"
+              }
+            ]
+          },
+          "description": "Module download mode to use: readonly, vendor, or mod",
+          "name": [
+            "-mod"
+          ]
+        },
+        {
+          "description": "Leave newly-created directories in the module cache read-write",
+          "name": [
+            "-modcacherw"
+          ]
+        },
+        {
+          "args": {
+            "name": "file"
+          },
+          "description": "In module aware mode, read (and possibly write) an alternate go.mod file instead of the one in the module root directory",
+          "name": [
+            "-modfile"
+          ]
+        },
+        {
+          "args": {
+            "name": "file"
+          },
+          "description": "Read a JSON config file that provides an overlay for build operations",
+          "name": [
+            "-overlay"
+          ]
+        },
+        {
+          "args": {
+            "name": "dir"
+          },
+          "description": "Install and load all packages from dir instead of the usual locations",
+          "name": [
+            "-pkgdir"
+          ]
+        },
+        {
+          "description": "Remove all file system paths from the resulting executable",
+          "name": [
+            "-trimpath"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true
+      },
+      "description": "List packages or modules",
+      "name": "list",
+      "options": [
+        {
+          "description": "Print the commands but do not run them",
+          "name": [
+            "-n"
+          ]
+        },
+        {
+          "description": "Print the names of packages as they are compiled",
+          "name": [
+            "-v"
+          ]
+        },
+        {
+          "description": "Print the commands",
+          "name": [
+            "-x"
+          ]
+        },
+        {
+          "args": {
+            "name": "tags"
+          },
+          "description": "A comma-separated list of build tags to consider satisfied during the build",
+          "name": [
+            "-tags"
+          ]
+        },
+        {
+          "args": {
+            "name": "cmd"
+          },
+          "description": "A program to use to invoke toolchain programs like vet and asm",
+          "name": [
+            "-toolexec"
+          ]
+        },
+        {
+          "description": "Force rebuilding of packages that are already up-to-date",
+          "name": [
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "name": "programs"
+          },
+          "description": "The number of programs, such as build commands or",
+          "name": [
+            "-p"
+          ]
+        },
+        {
+          "description": "Enable data race detection.\nSupported only on linux/amd64, freebsd/amd64, darwin/amd64, windows/amd64,\nlinux/ppc64le and linux/arm64 (only for 48-bit VMA)",
+          "name": [
+            "-race"
+          ]
+        },
+        {
+          "description": "Enable interoperation with memory sanitizer.\nSupported only on linux/amd64, linux/arm64\nand only with Clang/LLVM as the host C compiler.\nOn linux/arm64, pie build mode will be used",
+          "name": [
+            "-msan"
+          ]
+        },
+        {
+          "description": "Print the name of the temporary work directory and\ndo not delete it when exiting",
+          "name": [
+            "-work"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "flag"
+          },
+          "description": "Arguments to pass on each go tool asm invocation",
+          "name": [
+            "-asmflags"
+          ]
+        },
+        {
+          "args": {
+            "name": "mode",
+            "suggestions": [
+              {
+                "description": "Build the listed non-main packages into .a files",
+                "name": "archive"
+              },
+              {
+                "description": "Build the listed main package, plus all packages it imports, into a C archive file",
+                "name": "c-archive"
+              },
+              {
+                "description": "Build the listed main package, plus all packages it imports, into a C shared library",
+                "name": "c-shared"
+              },
+              {
+                "description": "Listed main packages are built into executables and listed non-main packages are built into .a files",
+                "name": "default"
+              },
+              {
+                "description": "Combine all the listed non-main packages into a single shared library that will be used when building with the -linkshared option",
+                "name": "shared"
+              },
+              {
+                "description": "Build the listed main packages and everything they import into executables",
+                "name": "exe"
+              },
+              {
+                "description": "Build the listed main packages and everything they import into position independent executables (PIE)",
+                "name": "pie"
+              },
+              {
+                "description": "Build the listed main packages, plus all packages that they import, into a Go plugin",
+                "name": "plugin"
+              }
+            ]
+          },
+          "description": "Build mode to use. See 'go help buildmode' for more",
+          "name": [
+            "-buildmode"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Name of compiler to use, as in runtime.Compiler (gccgo or gc)",
+          "name": [
+            "-compiler"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "flag"
+          },
+          "description": "Arguments to pass on each gccgo compiler/linker invocation",
+          "name": [
+            "-gccgoflags"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "flag"
+          },
+          "description": "Arguments to pass on each go tool compile invocation",
+          "name": [
+            "-gcflags"
+          ]
+        },
+        {
+          "args": {
+            "name": "suffix"
+          },
+          "description": "A suffix to use in the name of the package installation directory,",
+          "name": [
+            "-installsuffix"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "flag"
+          },
+          "description": "Arguments to pass on each go tool link invocation",
+          "name": [
+            "-ldflags"
+          ]
+        },
+        {
+          "description": "Build code that will be linked against shared libraries previously",
+          "name": [
+            "-linkshared"
+          ]
+        },
+        {
+          "args": {
+            "name": "mode",
+            "suggestions": [
+              {
+                "name": "readonly"
+              },
+              {
+                "name": "vendor"
+              },
+              {
+                "name": "mod"
+              }
+            ]
+          },
+          "description": "Module download mode to use: readonly, vendor, or mod",
+          "name": [
+            "-mod"
+          ]
+        },
+        {
+          "description": "Leave newly-created directories in the module cache read-write",
+          "name": [
+            "-modcacherw"
+          ]
+        },
+        {
+          "args": {
+            "name": "file"
+          },
+          "description": "In module aware mode, read (and possibly write) an alternate go.mod file instead of the one in the module root directory",
+          "name": [
+            "-modfile"
+          ]
+        },
+        {
+          "args": {
+            "name": "file"
+          },
+          "description": "Read a JSON config file that provides an overlay for build operations",
+          "name": [
+            "-overlay"
+          ]
+        },
+        {
+          "args": {
+            "name": "dir"
+          },
+          "description": "Install and load all packages from dir instead of the usual locations",
+          "name": [
+            "-pkgdir"
+          ]
+        },
+        {
+          "description": "Remove all file system paths from the resulting executable",
+          "name": [
+            "-trimpath"
+          ]
+        },
+        {
+          "description": "Set CompiledGoFiles to the Go source files",
+          "name": [
+            "-compiled"
+          ]
+        },
+        {
+          "description": "Terate over not just the named packages but also all their dependencies",
+          "name": [
+            "-deps"
+          ]
+        },
+        {
+          "args": {
+            "name": "format"
+          },
+          "description": "Specify an alternate format for the list",
+          "name": [
+            "-f"
+          ]
+        },
+        {
+          "description": "Processes the erroneous packages with the usual printing",
+          "name": [
+            "-e"
+          ]
+        },
+        {
+          "description": "Set the Export field to the name of a file containing up-to-date export information for the given package",
+          "name": [
+            "-export"
+          ]
+        },
+        {
+          "description": "Identify the named packages but not resolve their dependencies",
+          "name": [
+            "-find"
+          ]
+        },
+        {
+          "description": "Report test binaries",
+          "name": [
+            "-test"
+          ]
+        },
+        {
+          "description": "List modules instead of packages",
+          "name": [
+            "-m"
+          ]
+        },
+        {
+          "description": "Add information about available upgrades",
+          "name": [
+            "-u"
+          ]
+        },
+        {
+          "description": "Set the Module's Versions field to a list of all known versions of that module",
+          "name": [
+            "-versions"
+          ]
+        },
+        {
+          "description": "Eport information about retracted module versions",
+          "name": [
+            "-retracted"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Module maintenance",
+      "name": "mod",
+      "subcommands": [
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "modules"
+          },
+          "description": "Download the named modules into the module cache",
+          "name": "download",
+          "options": [
+            {
+              "description": "Print a sequence of JSON objects to standard output, describing each downloaded module (or failure)",
+              "name": [
+                "-json"
+              ]
+            },
+            {
+              "description": "Print the commands download executes to standard error",
+              "name": [
+                "-x"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Edit and format go.mod files",
+          "name": "edit",
+          "options": [
+            {
+              "description": "Change the module's path",
+              "name": [
+                "-module"
+              ]
+            },
+            {
+              "args": {
+                "name": "version"
+              },
+              "description": "Set the expected Go language version",
+              "name": [
+                "-go"
+              ]
+            },
+            {
+              "args": {
+                "name": "path"
+              },
+              "description": "Add a requirement on the given module",
+              "name": [
+                "-require"
+              ]
+            },
+            {
+              "args": {
+                "name": "path"
+              },
+              "description": "Drop a requirement on the given module",
+              "name": [
+                "-droprequire"
+              ]
+            },
+            {
+              "args": {
+                "name": "path"
+              },
+              "description": "Add an exclusion on the given module",
+              "name": [
+                "-exclude"
+              ]
+            },
+            {
+              "args": {
+                "name": "path"
+              },
+              "description": "Drop an exclusion on the given module",
+              "name": [
+                "-dropexclude"
+              ]
+            },
+            {
+              "args": {
+                "name": "path"
+              },
+              "description": "Add a replacement of the given module path and version pair",
+              "name": [
+                "-replace"
+              ]
+            },
+            {
+              "args": {
+                "name": "path"
+              },
+              "description": "Drops a replacement of the given module path and version pair",
+              "name": [
+                "-dropreplace"
+              ]
+            },
+            {
+              "args": {
+                "name": "version"
+              },
+              "description": "Add a retraction for the given version",
+              "name": [
+                "-retract"
+              ]
+            },
+            {
+              "args": {
+                "name": "version"
+              },
+              "description": "Drop a retraction for the given version",
+              "name": [
+                "-dropretract"
+              ]
+            },
+            {
+              "description": "Format the go.mod file without making other changes",
+              "name": [
+                "-fmt"
+              ]
+            },
+            {
+              "description": "Print the final go.mod in its text format instead of writing it back to disk",
+              "name": [
+                "-print"
+              ]
+            },
+            {
+              "description": "Print the final go.mod in JSON format instead of writing it back to disk in text forma",
+              "name": [
+                "-json"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Print the module requirement graph",
+          "name": "graph"
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "module path"
+          },
+          "description": "Initialize and write a new go.mod file in the current directory",
+          "name": "init"
+        },
+        {
+          "description": "Ensure that the go.mod file matches the source code in the module",
+          "name": "tidy",
+          "options": [
+            {
+              "description": "Attempt to proceed despite errors encountered while loading packages",
+              "name": [
+                "-e"
+              ]
+            },
+            {
+              "description": "Print information about removed modules",
+              "name": [
+                "-v"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Construct a directory named vendor in the main module's root directory",
+          "name": "vendor",
+          "options": [
+            {
+              "description": "Attempt to proceed despite errors encountered while loading packages",
+              "name": [
+                "-e"
+              ]
+            },
+            {
+              "description": "Print information about removed modules",
+              "name": [
+                "-v"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Check that dependencies of the main module stored in the module cache have not been modified since they were downloaded",
+          "name": "verify"
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "packages"
+          },
+          "description": "Show a shortest path in the import graph from the main module to each of the listed packages",
+          "name": "why",
+          "options": [
+            {
+              "description": "Treat its arguments as a list of modules",
+              "name": [
+                "-m"
+              ]
+            },
+            {
+              "description": "Ignore imports in tests of packages outside the main module",
+              "name": [
+                "-vendor"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Workspace maintenance",
+      "name": "work",
+      "subcommands": [
+        {
+          "description": "Edit go.work from tools or scripts",
+          "name": "edit",
+          "options": [
+            {
+              "description": "The -fmt flag reformats the go.work file without making other changes. This reformatting is also implied by any other modifications that use or rewrite the go.mod file. The only time this flag is needed is if no other flags are specified, as in 'go work edit -fmt'",
+              "name": [
+                "-fmt"
+              ]
+            },
+            {
+              "args": {
+                "name": "path"
+              },
+              "description": "The -use=path and -dropuse=path flags add and drop a use directive from the go.work file's set of module directories",
+              "name": [
+                "-use"
+              ]
+            },
+            {
+              "args": {
+                "name": "path"
+              },
+              "description": "The -use=path and -dropuse=path flags add and drop a use directive from the go.work file's set of module directories",
+              "name": [
+                "-dropuse"
+              ]
+            },
+            {
+              "args": {
+                "name": "old[@v]=new[@v]"
+              },
+              "description": "The -replace=old[@v]=new[@v] flag adds a replacement of the given module path and version pair. If the @v in old@v is omitted, a replacement without a version on the left side is added, which applies to all versions of the old module path. If the @v in new@v is omitted, the new path should be a local module root directory, not a module path. Note that -replace overrides any redundant replacements for old[@v], so omitting @v will drop existing replacements for specific versions",
+              "name": [
+                "-replace"
+              ]
+            },
+            {
+              "args": {
+                "name": "old[@v]"
+              },
+              "description": "The -dropreplace=old[@v] flag drops a replacement of the given module path and version pair. If the @v is omitted, a replacement without a version on the left side is dropped",
+              "name": [
+                "-dropreplace"
+              ]
+            },
+            {
+              "args": {
+                "name": "version"
+              },
+              "description": "Set the expected Go language version",
+              "name": [
+                "-go"
+              ]
+            },
+            {
+              "description": "The -print flag prints the final go.work in its text format instead of writing it back to go.mod",
+              "name": [
+                "-print"
+              ]
+            },
+            {
+              "description": "The -json flag prints the final go.work file in JSON format instead of writing it back to go.mod",
+              "name": [
+                "-json"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "moddirs"
+          },
+          "description": "Initialize workspace file",
+          "name": "init"
+        },
+        {
+          "description": "Sync workspace build list to modules",
+          "name": "sync"
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "moddirs"
+          },
+          "description": "Add modules to workspace file",
+          "name": "use",
+          "options": [
+            {
+              "description": "The -r flag searches recursively for modules in the argument directories, and the use command operates as if each of the directories were specified as arguments: namely, use directives will be added for directories that exist, and removed for directories that do not exist",
+              "name": [
+                "-r"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "package"
+      },
+      "description": "Compile and run Go program",
+      "name": "run",
+      "options": [
+        {
+          "description": "Print the commands but do not run them",
+          "name": [
+            "-n"
+          ]
+        },
+        {
+          "description": "Print the names of packages as they are compiled",
+          "name": [
+            "-v"
+          ]
+        },
+        {
+          "description": "Print the commands",
+          "name": [
+            "-x"
+          ]
+        },
+        {
+          "args": {
+            "name": "tags"
+          },
+          "description": "A comma-separated list of build tags to consider satisfied during the build",
+          "name": [
+            "-tags"
+          ]
+        },
+        {
+          "args": {
+            "name": "cmd"
+          },
+          "description": "A program to use to invoke toolchain programs like vet and asm",
+          "name": [
+            "-toolexec"
+          ]
+        },
+        {
+          "description": "Force rebuilding of packages that are already up-to-date",
+          "name": [
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "name": "programs"
+          },
+          "description": "The number of programs, such as build commands or",
+          "name": [
+            "-p"
+          ]
+        },
+        {
+          "description": "Enable data race detection.\nSupported only on linux/amd64, freebsd/amd64, darwin/amd64, windows/amd64,\nlinux/ppc64le and linux/arm64 (only for 48-bit VMA)",
+          "name": [
+            "-race"
+          ]
+        },
+        {
+          "description": "Enable interoperation with memory sanitizer.\nSupported only on linux/amd64, linux/arm64\nand only with Clang/LLVM as the host C compiler.\nOn linux/arm64, pie build mode will be used",
+          "name": [
+            "-msan"
+          ]
+        },
+        {
+          "description": "Print the name of the temporary work directory and\ndo not delete it when exiting",
+          "name": [
+            "-work"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "flag"
+          },
+          "description": "Arguments to pass on each go tool asm invocation",
+          "name": [
+            "-asmflags"
+          ]
+        },
+        {
+          "args": {
+            "name": "mode",
+            "suggestions": [
+              {
+                "description": "Build the listed non-main packages into .a files",
+                "name": "archive"
+              },
+              {
+                "description": "Build the listed main package, plus all packages it imports, into a C archive file",
+                "name": "c-archive"
+              },
+              {
+                "description": "Build the listed main package, plus all packages it imports, into a C shared library",
+                "name": "c-shared"
+              },
+              {
+                "description": "Listed main packages are built into executables and listed non-main packages are built into .a files",
+                "name": "default"
+              },
+              {
+                "description": "Combine all the listed non-main packages into a single shared library that will be used when building with the -linkshared option",
+                "name": "shared"
+              },
+              {
+                "description": "Build the listed main packages and everything they import into executables",
+                "name": "exe"
+              },
+              {
+                "description": "Build the listed main packages and everything they import into position independent executables (PIE)",
+                "name": "pie"
+              },
+              {
+                "description": "Build the listed main packages, plus all packages that they import, into a Go plugin",
+                "name": "plugin"
+              }
+            ]
+          },
+          "description": "Build mode to use. See 'go help buildmode' for more",
+          "name": [
+            "-buildmode"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Name of compiler to use, as in runtime.Compiler (gccgo or gc)",
+          "name": [
+            "-compiler"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "flag"
+          },
+          "description": "Arguments to pass on each gccgo compiler/linker invocation",
+          "name": [
+            "-gccgoflags"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "flag"
+          },
+          "description": "Arguments to pass on each go tool compile invocation",
+          "name": [
+            "-gcflags"
+          ]
+        },
+        {
+          "args": {
+            "name": "suffix"
+          },
+          "description": "A suffix to use in the name of the package installation directory,",
+          "name": [
+            "-installsuffix"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "flag"
+          },
+          "description": "Arguments to pass on each go tool link invocation",
+          "name": [
+            "-ldflags"
+          ]
+        },
+        {
+          "description": "Build code that will be linked against shared libraries previously",
+          "name": [
+            "-linkshared"
+          ]
+        },
+        {
+          "args": {
+            "name": "mode",
+            "suggestions": [
+              {
+                "name": "readonly"
+              },
+              {
+                "name": "vendor"
+              },
+              {
+                "name": "mod"
+              }
+            ]
+          },
+          "description": "Module download mode to use: readonly, vendor, or mod",
+          "name": [
+            "-mod"
+          ]
+        },
+        {
+          "description": "Leave newly-created directories in the module cache read-write",
+          "name": [
+            "-modcacherw"
+          ]
+        },
+        {
+          "args": {
+            "name": "file"
+          },
+          "description": "In module aware mode, read (and possibly write) an alternate go.mod file instead of the one in the module root directory",
+          "name": [
+            "-modfile"
+          ]
+        },
+        {
+          "args": {
+            "name": "file"
+          },
+          "description": "Read a JSON config file that provides an overlay for build operations",
+          "name": [
+            "-overlay"
+          ]
+        },
+        {
+          "args": {
+            "name": "dir"
+          },
+          "description": "Install and load all packages from dir instead of the usual locations",
+          "name": [
+            "-pkgdir"
+          ]
+        },
+        {
+          "description": "Remove all file system paths from the resulting executable",
+          "name": [
+            "-trimpath"
+          ]
+        },
+        {
+          "args": {},
+          "description": "Invoke the binary using xprog",
+          "name": [
+            "-exec"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Test packages",
+      "name": "test",
+      "options": [
+        {
+          "description": "Print the commands but do not run them",
+          "name": [
+            "-n"
+          ]
+        },
+        {
+          "description": "Print the names of packages as they are compiled",
+          "name": [
+            "-v"
+          ]
+        },
+        {
+          "description": "Print the commands",
+          "name": [
+            "-x"
+          ]
+        },
+        {
+          "args": {
+            "name": "tags"
+          },
+          "description": "A comma-separated list of build tags to consider satisfied during the build",
+          "name": [
+            "-tags"
+          ]
+        },
+        {
+          "args": {
+            "name": "cmd"
+          },
+          "description": "A program to use to invoke toolchain programs like vet and asm",
+          "name": [
+            "-toolexec"
+          ]
+        },
+        {
+          "description": "Force rebuilding of packages that are already up-to-date",
+          "name": [
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "name": "programs"
+          },
+          "description": "The number of programs, such as build commands or",
+          "name": [
+            "-p"
+          ]
+        },
+        {
+          "description": "Enable data race detection.\nSupported only on linux/amd64, freebsd/amd64, darwin/amd64, windows/amd64,\nlinux/ppc64le and linux/arm64 (only for 48-bit VMA)",
+          "name": [
+            "-race"
+          ]
+        },
+        {
+          "description": "Enable interoperation with memory sanitizer.\nSupported only on linux/amd64, linux/arm64\nand only with Clang/LLVM as the host C compiler.\nOn linux/arm64, pie build mode will be used",
+          "name": [
+            "-msan"
+          ]
+        },
+        {
+          "description": "Print the name of the temporary work directory and\ndo not delete it when exiting",
+          "name": [
+            "-work"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "flag"
+          },
+          "description": "Arguments to pass on each go tool asm invocation",
+          "name": [
+            "-asmflags"
+          ]
+        },
+        {
+          "args": {
+            "name": "mode",
+            "suggestions": [
+              {
+                "description": "Build the listed non-main packages into .a files",
+                "name": "archive"
+              },
+              {
+                "description": "Build the listed main package, plus all packages it imports, into a C archive file",
+                "name": "c-archive"
+              },
+              {
+                "description": "Build the listed main package, plus all packages it imports, into a C shared library",
+                "name": "c-shared"
+              },
+              {
+                "description": "Listed main packages are built into executables and listed non-main packages are built into .a files",
+                "name": "default"
+              },
+              {
+                "description": "Combine all the listed non-main packages into a single shared library that will be used when building with the -linkshared option",
+                "name": "shared"
+              },
+              {
+                "description": "Build the listed main packages and everything they import into executables",
+                "name": "exe"
+              },
+              {
+                "description": "Build the listed main packages and everything they import into position independent executables (PIE)",
+                "name": "pie"
+              },
+              {
+                "description": "Build the listed main packages, plus all packages that they import, into a Go plugin",
+                "name": "plugin"
+              }
+            ]
+          },
+          "description": "Build mode to use. See 'go help buildmode' for more",
+          "name": [
+            "-buildmode"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Name of compiler to use, as in runtime.Compiler (gccgo or gc)",
+          "name": [
+            "-compiler"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "flag"
+          },
+          "description": "Arguments to pass on each gccgo compiler/linker invocation",
+          "name": [
+            "-gccgoflags"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "flag"
+          },
+          "description": "Arguments to pass on each go tool compile invocation",
+          "name": [
+            "-gcflags"
+          ]
+        },
+        {
+          "args": {
+            "name": "suffix"
+          },
+          "description": "A suffix to use in the name of the package installation directory,",
+          "name": [
+            "-installsuffix"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "flag"
+          },
+          "description": "Arguments to pass on each go tool link invocation",
+          "name": [
+            "-ldflags"
+          ]
+        },
+        {
+          "description": "Build code that will be linked against shared libraries previously",
+          "name": [
+            "-linkshared"
+          ]
+        },
+        {
+          "args": {
+            "name": "mode",
+            "suggestions": [
+              {
+                "name": "readonly"
+              },
+              {
+                "name": "vendor"
+              },
+              {
+                "name": "mod"
+              }
+            ]
+          },
+          "description": "Module download mode to use: readonly, vendor, or mod",
+          "name": [
+            "-mod"
+          ]
+        },
+        {
+          "description": "Leave newly-created directories in the module cache read-write",
+          "name": [
+            "-modcacherw"
+          ]
+        },
+        {
+          "args": {
+            "name": "file"
+          },
+          "description": "In module aware mode, read (and possibly write) an alternate go.mod file instead of the one in the module root directory",
+          "name": [
+            "-modfile"
+          ]
+        },
+        {
+          "args": {
+            "name": "file"
+          },
+          "description": "Read a JSON config file that provides an overlay for build operations",
+          "name": [
+            "-overlay"
+          ]
+        },
+        {
+          "args": {
+            "name": "dir"
+          },
+          "description": "Install and load all packages from dir instead of the usual locations",
+          "name": [
+            "-pkgdir"
+          ]
+        },
+        {
+          "description": "Remove all file system paths from the resulting executable",
+          "name": [
+            "-trimpath"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true
+          },
+          "description": "Pass the remainder of the command line to the test binary",
+          "name": [
+            "-args"
+          ]
+        },
+        {
+          "description": "Compile the test binary to pkg.test but do not run it",
+          "name": [
+            "-c"
+          ]
+        },
+        {
+          "args": {},
+          "description": "Invoke the binary using xprog",
+          "name": [
+            "-exec"
+          ]
+        },
+        {
+          "description": "Install packages that are dependencies of the test",
+          "name": [
+            "-i"
+          ]
+        },
+        {
+          "description": "Convert test output to JSON suitable",
+          "name": [
+            "-json"
+          ]
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Compile the test binary to the named file",
+          "name": [
+            "-o"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "go",
+              "tool"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "tool"
+      },
+      "description": "Run specified go tool",
+      "name": "tool",
+      "options": [
+        {
+          "description": "Print the command that would be executed but not execute it",
+          "name": [
+            "-n"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "file"
+      },
+      "description": "Print Go version",
+      "name": "version",
+      "options": [
+        {
+          "description": "Print each executable's embedded module version information",
+          "name": [
+            "-m"
+          ]
+        },
+        {
+          "description": "Report unrecognized files",
+          "name": [
+            "-v"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "package"
+      },
+      "description": "Report likely mistakes in packages",
+      "name": "vet",
+      "options": [
+        {
+          "description": "Print the commands but do not run them",
+          "name": [
+            "-n"
+          ]
+        },
+        {
+          "description": "Print the names of packages as they are compiled",
+          "name": [
+            "-v"
+          ]
+        },
+        {
+          "description": "Print the commands",
+          "name": [
+            "-x"
+          ]
+        },
+        {
+          "args": {
+            "name": "tags"
+          },
+          "description": "A comma-separated list of build tags to consider satisfied during the build",
+          "name": [
+            "-tags"
+          ]
+        },
+        {
+          "args": {
+            "name": "cmd"
+          },
+          "description": "A program to use to invoke toolchain programs like vet and asm",
+          "name": [
+            "-toolexec"
+          ]
+        },
+        {
+          "args": {
+            "name": "tool"
+          },
+          "description": "Select a different analysis tool with alternative or additional checks",
+          "name": [
+            "-vettool"
+          ]
+        }
+      ]
+    }
+  ]
+}

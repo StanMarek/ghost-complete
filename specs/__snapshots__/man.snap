@@ -1,0 +1,173 @@
+{
+  "args": {
+    "generators": [
+      {
+        "js_source": "async(e,t)=>{let n=e[e.length-1],s=Date.now();if(s-Z>je&&(A.clear(),Z=s),!D&&A.size===0){D=!0;let{stdout:i}=await t({command:\"man\",args:[\"-k\",\".\"]}),r=new Set;for(let o of i.split(`\n`)){let c=o.indexOf(\" - \"),f=o.slice(0,c),l=o.slice(c+3)||\"Manual page\";l=l[0].toLocaleUpperCase()+l.slice(1);let a=f.split(\", \");for(let u of a){let h=u.lastIndexOf(\"(\"),m=u.slice(0,h),p=u.slice(h);if(r.has(m))continue;r.add(m);let g={name:m,description:`${p} ${l}`,icon:\"fig://icon?type=string\"},v=A.get(m[0]);v?v.push(g):A.set(m[0],[g])}}D=!1}else D&&await new Promise(i=>setTimeout(()=>i(),4e3));return A.get(n[0]||\"a\")||[]}",
+        "requires_js": true
+      }
+    ],
+    "isOptional": true,
+    "isVariadic": true
+  },
+  "description": "Format and display the on-line manual pages",
+  "name": "man",
+  "options": [
+    {
+      "args": {
+        "name": "config_file"
+      },
+      "description": "Specify the configuration file to use",
+      "name": [
+        "-C"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "template": "folders"
+          }
+        ],
+        "name": "path"
+      },
+      "description": "Specify the list of directories to search (colon separated)",
+      "name": [
+        "-M"
+      ]
+    },
+    {
+      "args": {
+        "name": "pager"
+      },
+      "description": "Specify the pager program",
+      "name": [
+        "-P"
+      ]
+    },
+    {
+      "args": {
+        "name": "browser"
+      },
+      "description": "Specify which browser to use for HTML files",
+      "name": [
+        "-B"
+      ]
+    },
+    {
+      "args": {
+        "name": "command"
+      },
+      "description": "Specify a command that renders HTML files as text",
+      "name": [
+        "-H"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "(...r)=>F(this,void 0,void 0,function*(){var o;let c=yield N(t,s?e:\"\",n,r);if(i)return c;let[f]=r,l=(o=f[f.length-1])===null||o===void 0?void 0:o.split(e);return E(l,c)})",
+            "requires_js": true
+          }
+        ],
+        "name": "sections"
+      },
+      "description": "Specify a colon-separated list of manual sections to search",
+      "name": [
+        "-S"
+      ]
+    },
+    {
+      "description": "Open every matching page instead of just the first",
+      "name": [
+        "-a"
+      ]
+    },
+    {
+      "description": "Reformat the source page, even when an up-to-date cat-page exists",
+      "name": [
+        "-c"
+      ]
+    },
+    {
+      "description": "Don't actually display the pages (dry run)",
+      "name": [
+        "-d"
+      ]
+    },
+    {
+      "description": "Both display and print debugging info",
+      "name": [
+        "-D"
+      ]
+    },
+    {
+      "description": "Equivalent to `whatis`",
+      "name": [
+        "-f"
+      ]
+    },
+    {
+      "description": "Format only, do not display",
+      "name": [
+        "-F",
+        "--preformat"
+      ]
+    },
+    {
+      "description": "Print a help message and exit",
+      "name": [
+        "-h"
+      ]
+    },
+    {
+      "description": "Equivalent to apropos",
+      "name": [
+        "-k"
+      ]
+    },
+    {
+      "description": "Search for a given string in all pages",
+      "name": [
+        "-K"
+      ]
+    },
+    {
+      "args": {
+        "name": "system"
+      },
+      "description": "Specify an alternate set of pages to search based on the system name given",
+      "name": [
+        "-m"
+      ]
+    },
+    {
+      "args": {
+        "name": "preprocessors"
+      },
+      "description": "Specify the sequence of preprocessors to run before nroff or troff",
+      "name": [
+        "-p"
+      ]
+    },
+    {
+      "description": "Use `/usr/bin/groff -Tps -mandoc -c` to format the page",
+      "name": [
+        "-t"
+      ]
+    },
+    {
+      "description": "Print the location of files that would be displayed",
+      "name": [
+        "-w",
+        "--path"
+      ]
+    },
+    {
+      "description": "Print file locations, one per line",
+      "name": [
+        "-W"
+      ]
+    }
+  ]
+}

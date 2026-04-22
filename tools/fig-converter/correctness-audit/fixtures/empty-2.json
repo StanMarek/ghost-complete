@@ -1,0 +1,14 @@
+{
+  "shape_id": "empty-2",
+  "rationale": "Fingerprint is empty — source body is imperative. Canonical member (bosh) checks `n.startsWith(\"fatal:\")` and returns []. Other members in this 18-generator bucket use different error prefixes (`command not found`, empty-string guards) so a universal fixture must route ALL members through their error-branches. We feed a `fatal:` string to trigger the bosh-style guard; JS members that check for `command not found` will fall through to a JSON.parse catch and also return []. Rust mirrors this with `error_guard(starts_with=\"fatal:\")` which aborts the pipeline and emits []. For inputs that DON'T trigger either branch, the bucket is too loose (each member parses a different JSON structure) — those will fail, and that's the right signal.",
+  "expected_transforms": [
+    { "type": "error_guard", "starts_with": "fatal:" },
+    "split_lines",
+    "filter_empty"
+  ],
+  "inputs": [
+    "fatal: director not reachable",
+    "fatal: no deployment found",
+    "fatal: token expired\nadditional details"
+  ]
+}

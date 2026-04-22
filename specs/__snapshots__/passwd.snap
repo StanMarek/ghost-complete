@@ -1,0 +1,68 @@
+{
+  "description": "Modify a user's password",
+  "name": "passwd",
+  "options": [
+    {
+      "args": {
+        "description": "The directory system",
+        "name": "infosystem",
+        "suggestions": [
+          {
+            "name": "PAM"
+          },
+          {
+            "name": "opendirectory"
+          },
+          {
+            "name": "file"
+          },
+          {
+            "name": "nis"
+          }
+        ]
+      },
+      "description": "Specify where the password update should be applied",
+      "name": [
+        "-i"
+      ]
+    },
+    {
+      "args": {
+        "description": "The location of the chosen directory system",
+        "name": "location",
+        "template": [
+          "filepaths",
+          "folders"
+        ]
+      },
+      "description": "Causes the password to be updated in the given location of the chosen directory system",
+      "name": [
+        "-l"
+      ]
+    },
+    {
+      "args": {
+        "description": "The user name",
+        "generators": [
+          {
+            "script": [
+              "bash",
+              "-c",
+              "dscl . -list /Users | grep -E -v '^_'"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "name": "authname"
+      },
+      "description": "Specify the user name to use when authenticating to the directory node",
+      "name": [
+        "-u"
+      ]
+    }
+  ]
+}

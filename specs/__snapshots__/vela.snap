@@ -1,0 +1,1222 @@
+{
+  "description": "A Highly Extensible Platform Engine based on Kubernetes and Open Application Model",
+  "name": "vela",
+  "options": [
+    {
+      "description": "Show help for vela",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "isVariadic": true,
+        "template": [
+          "history"
+        ]
+      },
+      "description": "Show the reference doc for component, trait or workflow types",
+      "name": "show",
+      "options": [
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Specify environment name for application",
+          "name": [
+            "-e",
+            "--env"
+          ]
+        },
+        {
+          "description": "Help for show command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Specify the Kubernetes namespace to use",
+          "name": [
+            "-n",
+            "--namespace"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage environments for vela applications to run",
+      "name": "env",
+      "subcommands": [
+        {
+          "args": {
+            "isVariadic": true,
+            "template": [
+              "history"
+            ]
+          },
+          "description": "Delete an environment",
+          "name": "delete"
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "template": [
+              "history"
+            ]
+          },
+          "description": "Delete an environment",
+          "name": "init",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify K8s namespace for env",
+              "name": [
+                "--namespace"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "template": [
+              "history"
+            ]
+          },
+          "description": "List all environments for vela applications to run",
+          "name": "ls"
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "template": [
+              "history"
+            ]
+          },
+          "description": "Set an environment as the default one for running vela applications",
+          "name": "set"
+        }
+      ]
+    },
+    {
+      "description": "Create scaffold for vela application",
+      "name": "init",
+      "options": [
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Specify environment name for application",
+          "name": [
+            "--env",
+            "-e"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Specify the Kubernetes namespace to use",
+          "name": [
+            "--namespace",
+            "-n"
+          ]
+        },
+        {
+          "description": "Rendering vela.yaml in current dir and do not deploy",
+          "name": [
+            "--render-only"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "template": [
+          "history"
+        ]
+      },
+      "description": "Deploy one application",
+      "name": "up",
+      "options": [
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "The environment name for the CLI request",
+          "name": [
+            "--env",
+            "-e"
+          ]
+        },
+        {
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "The file path for appfile or application. It could be a remote url",
+          "name": [
+            "--file",
+            "-f"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "If present, the namespace scope for this CLI request",
+          "name": [
+            "--namespace",
+            "-n"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "The publish version for deploying application",
+          "name": [
+            "--publish-version",
+            "-v"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "The revision to use for deploying the application, if empty, the current application configuration will be used",
+          "name": [
+            "--revision",
+            "-r"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage Kubernetes Clusters for Continuous Delivery",
+      "name": "cluster",
+      "subcommands": [
+        {
+          "description": "Alias a named cluster",
+          "name": "alias"
+        },
+        {
+          "description": "Detach managed cluster",
+          "name": "detach",
+          "options": [
+            {
+              "args": {
+                "name": "path",
+                "template": "filepaths"
+              },
+              "description": "Specify the kubeconfig path of managed cluster. If you use ocm to manage your cluster, you must set the kubeconfig-path",
+              "name": [
+                "--kubeconfig-path",
+                "-p"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Join managed cluster by kubeconfig",
+          "name": "join",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specifies the namespace need to create in managedCluster (default \"vela-system\")",
+              "name": [
+                "--create-namespace"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify the cluster name. If empty, it will use the cluster name in config file. Default to be empty",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Manage Kubernetes Cluster Labels",
+          "name": "labels",
+          "subcommands": [
+            {
+              "description": "Add labels to managed cluster",
+              "name": "add"
+            },
+            {
+              "description": "Delete labels for managed cluster",
+              "name": "del"
+            }
+          ]
+        },
+        {
+          "description": "List managed clusters",
+          "name": "list"
+        },
+        {
+          "description": "Health probe managed cluster",
+          "name": "probe"
+        },
+        {
+          "description": "Rename managed cluster",
+          "name": "rename"
+        }
+      ]
+    },
+    {
+      "description": "Operate the Workflow during Application Delivery",
+      "name": "workflow",
+      "subcommands": [
+        {
+          "description": "Restart an application workflow",
+          "name": "restart",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify environment name for application",
+              "name": [
+                "--env",
+                "-e"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify the Kubernetes namespace to use",
+              "name": [
+                "--namespace",
+                "-n"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Resume a suspend application workflow",
+          "name": "resume",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify environment name for application",
+              "name": [
+                "--env",
+                "-e"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify the Kubernetes namespace to use",
+              "name": [
+                "--namespace",
+                "-n"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Rollback an application workflow to the latest revision",
+          "name": "rollback",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify environment name for application",
+              "name": [
+                "--env",
+                "-e"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify the Kubernetes namespace to use",
+              "name": [
+                "--namespace",
+                "-n"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Suspend an application workflow",
+          "name": "suspend",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify environment name for application",
+              "name": [
+                "--env",
+                "-e"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify the Kubernetes namespace to use",
+              "name": [
+                "--namespace",
+                "-n"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Terminate an application workflow",
+          "name": "terminate",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify environment name for application",
+              "name": [
+                "--env",
+                "-e"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify the Kubernetes namespace to use",
+              "name": [
+                "--namespace",
+                "-n"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage addons for extension",
+      "name": "addon",
+      "subcommands": [
+        {
+          "description": "Disable an addon",
+          "name": "disable",
+          "options": [
+            {
+              "description": "Skip checking if applications are still using this addon",
+              "name": [
+                "--force",
+                "-f"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Enable an addon",
+          "name": "enable",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify the runtime-clusters to enable",
+              "name": [
+                "--clusters",
+                "-c"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List addons",
+          "name": "list"
+        },
+        {
+          "description": "Manage addon registry",
+          "name": "registry",
+          "subcommands": [
+            {
+              "description": "Add an addon registry",
+              "name": "add",
+              "options": [
+                {
+                  "args": {
+                    "name": "string"
+                  },
+                  "description": "Specify the OSS bucket name",
+                  "name": [
+                    "--bucket"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "string"
+                  },
+                  "description": "Specify the addon registry endpoint",
+                  "name": [
+                    "--endpoint"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "string"
+                  },
+                  "description": "Specify the github repo token",
+                  "name": [
+                    "--gitToken"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "string"
+                  },
+                  "description": "Specify the addon registry OSS path",
+                  "name": [
+                    "--path"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "string"
+                  },
+                  "description": "Specify the addon registry type",
+                  "name": [
+                    "--type"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Delete an addon registry",
+              "name": "delete"
+            },
+            {
+              "description": "Get an addon registry",
+              "name": "get"
+            },
+            {
+              "description": "List addon registries",
+              "name": "list"
+            },
+            {
+              "description": "Update an addon registry",
+              "name": "update",
+              "options": [
+                {
+                  "args": {
+                    "name": "string"
+                  },
+                  "description": "Specify the OSS bucket name",
+                  "name": [
+                    "--bucket"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "string"
+                  },
+                  "description": "Specify the addon registry endpoint",
+                  "name": [
+                    "--endpoint"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "string"
+                  },
+                  "description": "Specify the github repo token",
+                  "name": [
+                    "--gitToken"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "string"
+                  },
+                  "description": "Specify the addon registry OSS path",
+                  "name": [
+                    "--path"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "string"
+                  },
+                  "description": "Specify the addon registry type",
+                  "name": [
+                    "--type"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Get addon status",
+          "name": "status"
+        },
+        {
+          "description": "Upgrade an addon",
+          "name": "upgrade"
+        }
+      ]
+    },
+    {
+      "description": "Manage UI schema for addons",
+      "name": "uischema",
+      "subcommands": [
+        {
+          "description": "Apply UI schema from a file or dir",
+          "name": "apply"
+        }
+      ]
+    },
+    {
+      "description": "Manage X-Definition for addons",
+      "name": "def",
+      "subcommands": [
+        {
+          "args": {
+            "isVariadic": true,
+            "template": [
+              "filepaths",
+              "folders"
+            ]
+          },
+          "description": "Apply X-Definition",
+          "name": "apply",
+          "options": [
+            {
+              "description": "Only build definition from CUE into CRB object without applying it to kubernetes clusters",
+              "name": [
+                "--dry-run"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify which namespace to apply. (default \"vela-system\")",
+              "name": [
+                "--namespace",
+                "-n"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "template": [
+              "filepaths",
+              "folders"
+            ]
+          },
+          "description": "Delete X-Definition",
+          "name": "del",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify which namespace to apply. (default \"vela-system\")",
+              "name": [
+                "--namespace",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify the definition type of target. Valid types: workflow-step, component, trait, policy, workload, scope",
+              "name": [
+                "--type",
+                "-t"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Generate documentation of definitions (Only Terraform typed definitions are supported)",
+          "name": "doc-gen",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify the definition type of target. Valid types: workflow-step, component, trait, policy, workload, scope",
+              "name": [
+                "--type",
+                "-t"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Edit X-Definition",
+          "name": "edit",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify which namespace to apply. (default \"vela-system\")",
+              "name": [
+                "--namespace",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify the definition type of target. Valid types: workflow-step, component, trait, policy, workload, scope",
+              "name": [
+                "--type",
+                "-t"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Get X-Definition",
+          "name": "get",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify which namespace to apply. (default \"vela-system\")",
+              "name": [
+                "--namespace",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify the definition type of target. Valid types: workflow-step, component, trait, policy, workload, scope",
+              "name": [
+                "--type",
+                "-t"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Init a new definition",
+          "name": "init",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify the description of the new definition",
+              "name": [
+                "--desc",
+                "-d"
+              ]
+            },
+            {
+              "description": "Specify whether use interactive process to help generate definitions",
+              "name": [
+                "--interactive",
+                "-i"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify which git repository the configuration(HCL) is stored in. Valid when --provider/-p is set",
+              "name": [
+                "--git"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify the local path of the configuration(HCL) file. Valid when --provider/-p is set",
+              "name": [
+                "--local"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify the output path of the generated definition. If empty, the definition will be printed in the console",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify which path the configuration(HCL) is stored in the Git repository. Valid when --git is set",
+              "name": [
+                "--path"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify which provider the cloud resource definition belongs to. Only alibaba, `aws`, `azure` are supported",
+              "name": [
+                "--provider",
+                "-p"
+              ]
+            },
+            {
+              "args": {
+                "name": "path",
+                "template": "filepaths"
+              },
+              "description": "Specify the template yaml file that definition will use to build the schema. If empty, a default template for the given definition type will be used",
+              "name": [
+                "--template-yaml",
+                "-f"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify the type of the new definition. Valid types: scope, workflow-step, component, trait, policy, workload",
+              "name": [
+                "--type",
+                "-t"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List X-Definition",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify which namespace to apply. (default \"vela-system\")",
+              "name": [
+                "--namespace",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify the definition type of target. Valid types: workflow-step, component, trait, policy, workload, scope",
+              "name": [
+                "--type",
+                "-t"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Render X-Definition",
+          "name": "render",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify the header message of the generated YAML file. For example, declaring author information",
+              "name": [
+                "--message"
+              ]
+            },
+            {
+              "args": {
+                "name": "path",
+                "template": "folders"
+              },
+              "description": "Specify the output path of the rendered definition YAML. If empty, the definition will be printed in the console. If input is a directory, the output path is expected to be a directory as well",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "template": [
+              "filepaths",
+              "folders"
+            ]
+          },
+          "description": "Validate X-Definition",
+          "name": "vet"
+        }
+      ]
+    },
+    {
+      "description": "Manage Registry of X-Definitions for extension",
+      "name": "registry",
+      "subcommands": [
+        {
+          "description": "Configure (add if not exist) a registry, default is local (built-in capabilities)",
+          "name": "config",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Github Repo token",
+              "name": [
+                "--token",
+                "-t"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List all configured registry",
+          "name": "ls"
+        },
+        {
+          "description": "Remove specified registry",
+          "name": "remove"
+        }
+      ]
+    },
+    {
+      "description": "List component types installed and discover more registry",
+      "name": "component",
+      "options": [
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Discover more registry",
+          "name": [
+            "--discover"
+          ]
+        },
+        {
+          "args": {
+            "name": "key=value"
+          },
+          "description": "A label to filter components, the format is --label type=terraform",
+          "name": [
+            "--label"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Specify the registry name (default \"default\")",
+          "name": [
+            "--registry"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Specify token when using --url to specify registry url",
+          "name": [
+            "--token"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Specify the registry url",
+          "name": [
+            "--url"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Get component from type",
+          "name": "get",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify the registry name (default \"default\")",
+              "name": [
+                "--registry"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify token when using --url to specify registry url",
+              "name": [
+                "--token"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify the registry url",
+              "name": [
+                "--url"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "List trait types installed and discover more in registry",
+      "name": "trait",
+      "options": [
+        {
+          "description": "Discover traits in registries",
+          "name": [
+            "--discover"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Specify the registry name (default \"default\")",
+          "name": [
+            "--registry"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Specify token when using --url to specify registry url",
+          "name": [
+            "--token"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Specify the registry url",
+          "name": [
+            "--url"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Get trait from registry",
+          "name": "get",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify the registry name (default \"default\")",
+              "name": [
+                "--registry"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify token when using --url to specify registry url",
+              "name": [
+                "--token"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify the registry url",
+              "name": [
+                "--url"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Uninstalls KubeVela from a Kubernetes cluster",
+      "name": "uninstall",
+      "options": [
+        {
+          "description": "Force uninstall whole vela include all addons",
+          "name": [
+            "--force",
+            "-f"
+          ]
+        },
+        {
+          "description": "Show detail log of uninstall information",
+          "name": [
+            "--detail",
+            "-d"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Namespace scope for installing KubeVela Core. (default \"vela-system\")",
+          "name": [
+            "--namespace",
+            "-n"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Installs KubeVela into a Kubernetes cluster",
+      "name": "install",
+      "options": [
+        {
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Custom the chart path of KubeVela control plane",
+          "name": [
+            "--file",
+            "-f"
+          ]
+        },
+        {
+          "description": "Show detail log of install information",
+          "name": [
+            "--detail",
+            "-d"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Namespace scope for installing KubeVela Core",
+          "name": [
+            "--namespace",
+            "-n"
+          ]
+        },
+        {
+          "args": {
+            "name": "bool"
+          },
+          "description": "Will re-use the user's last supplied values. (default true)",
+          "name": [
+            "--reuse",
+            "-r"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Specify the version of KubeVela to install",
+          "name": [
+            "--version",
+            "-v"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Output shell completion code for the specified shell (bash or zsh). The shell code must be evaluated to provide interactive completion of vela commands",
+      "name": "completion",
+      "subcommands": [
+        {
+          "description": "Output bash completion code",
+          "name": "bash"
+        },
+        {
+          "description": "Output zsh completion code",
+          "name": "zsh"
+        }
+      ]
+    },
+    {
+      "description": "Export deploy manifests from appfile or application",
+      "name": "export",
+      "options": [
+        {
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Specify the appfile path",
+          "name": [
+            "--file",
+            "-f"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Specify environment name for application",
+          "name": [
+            "--env",
+            "-e"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Specify the Kubernetes namespace to use",
+          "name": [
+            "--namespace",
+            "-n"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Prints the version",
+      "name": "version",
+      "subcommands": [
+        {
+          "description": "List all available versions",
+          "name": "list"
+        }
+      ]
+    }
+  ]
+}
