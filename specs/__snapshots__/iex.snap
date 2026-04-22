@@ -1,0 +1,266 @@
+{
+  "args": [
+    {
+      "description": ".exs file",
+      "generators": [
+        {
+          "js_source": "(p,g,O)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:_,searchTerm:h}=O,x=(f=(0,v.getCurrentInsertedDirectory)(c??_,h,O))!==null&&f!==void 0?f:\"/\";try{let N=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:x}),Z=H(N.stdout.split(`\n`),[\".DS_Store\"]),q=[];for(let L of Z)if(L){let F=L.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&u!==\"only\"||F===\"folders\"&&u!==\"never\")&&q.push({type:F===\"filepaths\"?\"file\":\"folder\",name:L,insertValue:L,isDangerous:b,context:{templateType:F}})}return S(m(q))}catch{return[]}})",
+          "requires_js": true
+        }
+      ],
+      "name": "file"
+    },
+    {
+      "isOptional": true,
+      "name": "data"
+    }
+  ],
+  "description": "Elixir Interactive Shell",
+  "name": "iex",
+  "options": [
+    {
+      "args": {
+        "name": "EXPRESSION"
+      },
+      "description": "Evaluates the given command",
+      "name": [
+        "-e",
+        "--eval"
+      ]
+    },
+    {
+      "description": "Prints this message and exits",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "args": {
+        "name": "FILE",
+        "template": "filepaths"
+      },
+      "description": "Requires the given files/patterns",
+      "name": [
+        "-r"
+      ]
+    },
+    {
+      "args": {
+        "name": "SCRIPT"
+      },
+      "description": "Finds and executes the given script in $PATH",
+      "name": [
+        "-S"
+      ]
+    },
+    {
+      "args": {
+        "name": "FILE",
+        "template": "filepaths"
+      },
+      "description": "Requires the given files/patterns in parallel",
+      "name": [
+        "-pr"
+      ]
+    },
+    {
+      "args": {
+        "name": "PATH",
+        "template": "filepaths"
+      },
+      "description": "Prepends the given path to Erlang code path",
+      "name": [
+        "-pa"
+      ]
+    },
+    {
+      "args": {
+        "name": "PATH",
+        "template": "filepaths"
+      },
+      "description": "Appends the given path to Erlang code path",
+      "name": [
+        "-pz"
+      ]
+    },
+    {
+      "description": "Prints Elixir version and exits",
+      "name": [
+        "-v",
+        "--version"
+      ]
+    },
+    {
+      "args": {
+        "name": "APP"
+      },
+      "description": "Starts the given app and its dependencies",
+      "name": [
+        "--app"
+      ]
+    },
+    {
+      "args": {
+        "name": "SWITCHES"
+      },
+      "description": "Switches to be passed down to Erlang",
+      "name": [
+        "--erl"
+      ]
+    },
+    {
+      "args": {
+        "name": "BOOL"
+      },
+      "description": "Enables or disables OTP reporting",
+      "name": [
+        "--logger-otp-reports"
+      ]
+    },
+    {
+      "args": {
+        "name": "BOOL"
+      },
+      "description": "Enables or disables SASL reporting",
+      "name": [
+        "--logger-sasl-reports"
+      ]
+    },
+    {
+      "description": "Does not halt the Erlang VM after execution",
+      "name": [
+        "--no-halt"
+      ]
+    },
+    {
+      "description": "Uses Erlang's Windows shell GUI (Windows only)",
+      "name": [
+        "--werl"
+      ]
+    },
+    {
+      "args": {
+        "name": "COOKIE"
+      },
+      "description": "Sets a cookie for this distributed node",
+      "name": [
+        "--cookie"
+      ]
+    },
+    {
+      "description": "Makes a hidden node",
+      "name": [
+        "--hidden"
+      ]
+    },
+    {
+      "args": {
+        "name": "NAME"
+      },
+      "description": "Makes and assigns a name to the distributed node",
+      "name": [
+        "--name"
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "NODE"
+        },
+        {
+          "name": "COMMAND"
+        }
+      ],
+      "description": "Evaluates the given command on the given remote node",
+      "name": [
+        "--rpc-eval"
+      ]
+    },
+    {
+      "args": {
+        "name": "NAME"
+      },
+      "description": "Makes and assigns a short name to the distributed node",
+      "name": [
+        "--sname"
+      ]
+    },
+    {
+      "args": {
+        "name": "FILE",
+        "template": "filepaths"
+      },
+      "description": "Uses the given FILE.boot to start the system",
+      "name": [
+        "--boot"
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "VAR"
+        },
+        {
+          "name": "VALUE"
+        }
+      ],
+      "description": "Makes $VAR available as VALUE to FILE.boot",
+      "name": [
+        "--boot-var"
+      ]
+    },
+    {
+      "args": {
+        "name": "FILE"
+      },
+      "description": "Loads configuration in FILE.config written in Erlang",
+      "name": [
+        "--erl-config"
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "PIPEDIR"
+        },
+        {
+          "name": "LOGDIR"
+        }
+      ],
+      "description": "Starts the Erlang VM as a named PIPEDIR and LOGDIR",
+      "name": [
+        "--pipe-to"
+      ]
+    },
+    {
+      "args": {
+        "name": "FILE",
+        "template": "filepaths"
+      },
+      "description": "Passes the contents in file as arguments to the VM",
+      "name": [
+        "--vm-args"
+      ]
+    },
+    {
+      "args": {
+        "name": "PATH",
+        "template": "filepaths"
+      },
+      "description": "Overrides default .iex.exs file and uses path instead; path can be empty, then no file will be loaded",
+      "name": [
+        "--dot-iex"
+      ]
+    },
+    {
+      "args": {
+        "name": "NAME"
+      },
+      "description": "Connects to a node using a remote shell",
+      "name": [
+        "--remsh"
+      ]
+    }
+  ]
+}

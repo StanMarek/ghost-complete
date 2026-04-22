@@ -1,0 +1,85 @@
+{
+  "args": {
+    "description": "Directory to jump to",
+    "generators": [
+      {
+        "js_source": "async(r,s,c)=>{let{stdout:p}=await s({command:\"cat\",args:[`${c.environmentVariables.HOME}/Library/autojump/autojump.txt`]}),m=p.split(`\n`).map(t=>{let[e,i]=t.split(\"\t\");return{weight:Number(e),dir:i}}),n=r.slice(1,r.length-1);return m.filter(({dir:t})=>n.every(e=>t.includes(e))).map(({weight:t,dir:e})=>{let i=e.split(\"/\"),a=i[i.length-1];if(!n.includes(a))return{name:a,description:e,priority:75+t}})}",
+        "requires_js": true
+      }
+    ],
+    "isVariadic": true,
+    "name": "directory"
+  },
+  "description": "A faster way to navigate your filesystem",
+  "name": "autojump",
+  "options": [
+    {
+      "description": "Show the help message and exit",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "args": {
+        "name": "directory",
+        "template": [
+          "folders"
+        ]
+      },
+      "description": "Add path",
+      "name": [
+        "-a",
+        "--add"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "weight"
+      },
+      "description": "Increase current directory weight",
+      "name": [
+        "-i",
+        "--increase"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "weight"
+      },
+      "description": "Decrease current directory weight",
+      "name": [
+        "-d",
+        "--decrease"
+      ]
+    },
+    {
+      "description": "Used for tab completion",
+      "name": [
+        "--complete"
+      ]
+    },
+    {
+      "description": "Remove non-existent paths from database",
+      "name": [
+        "--purge"
+      ]
+    },
+    {
+      "description": "Show database entries and their key weights",
+      "name": [
+        "-s",
+        "--stat"
+      ]
+    },
+    {
+      "description": "Show version information",
+      "name": [
+        "-v",
+        "--version"
+      ]
+    }
+  ]
+}

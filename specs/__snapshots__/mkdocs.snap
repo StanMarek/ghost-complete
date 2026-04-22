@@ -1,0 +1,387 @@
+{
+  "description": "Project documentation with Markdown",
+  "name": "mkdocs",
+  "options": [
+    {
+      "description": "Show help message and exit",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Show the version and exit",
+      "name": [
+        "-V",
+        "--version"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Build the MkDocs documentation",
+      "name": "build",
+      "options": [
+        {
+          "description": "help for build",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Silence warnings",
+          "name": [
+            "-q",
+            "--quiet"
+          ]
+        },
+        {
+          "description": "Enable verbose output",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "args": {
+            "template": "filepaths"
+          },
+          "description": "Provide a specific MkDocs config",
+          "name": [
+            "-f",
+            "--config-file"
+          ]
+        },
+        {
+          "description": "Enable strict mode. This will cause MkDocs to abort the build on any warnings",
+          "name": [
+            "-s",
+            "--strict"
+          ]
+        },
+        {
+          "args": {
+            "name": "theme"
+          },
+          "description": "The theme to use when building your documentation",
+          "name": [
+            "-t",
+            "--theme"
+          ]
+        },
+        {
+          "description": "Use directory URLs when building pages (the default)",
+          "name": [
+            "--use-directory-urls"
+          ]
+        },
+        {
+          "description": "Don't use directory URLs when building pages",
+          "name": [
+            "--no-directory-urls"
+          ]
+        },
+        {
+          "description": "Remove old files from the site directory before building (the default)",
+          "name": [
+            "-c",
+            "--clean"
+          ]
+        },
+        {
+          "description": "Only rebuild pages that have been modified since last build",
+          "name": [
+            "--dirty"
+          ]
+        },
+        {
+          "args": {
+            "template": "folders"
+          },
+          "description": "The directory to output the result of the documentation build",
+          "name": [
+            "-d",
+            "--site-dir"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Deploy your documentation to GitHub Pages",
+      "name": "gh-deploy",
+      "options": [
+        {
+          "description": "help for gh-deploy",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Silence warnings",
+          "name": [
+            "-q",
+            "--quiet"
+          ]
+        },
+        {
+          "description": "Enable verbose output",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "args": {
+            "template": "filepaths"
+          },
+          "description": "Provide a specific MkDocs config",
+          "name": [
+            "-f",
+            "--config-file"
+          ]
+        },
+        {
+          "description": "Enable strict mode. This will cause MkDocs to abort the build on any warnings",
+          "name": [
+            "-s",
+            "--strict"
+          ]
+        },
+        {
+          "args": {
+            "name": "theme"
+          },
+          "description": "The theme to use when building your documentation",
+          "name": [
+            "-t",
+            "--theme"
+          ]
+        },
+        {
+          "description": "Use directory URLs when building pages (the default)",
+          "name": [
+            "--use-directory-urls"
+          ]
+        },
+        {
+          "description": "Don't use directory URLs when building pages",
+          "name": [
+            "--no-directory-urls"
+          ]
+        },
+        {
+          "description": "Remove old files from the site directory before building (the default)",
+          "name": [
+            "-c",
+            "--clean"
+          ]
+        },
+        {
+          "description": "Only rebuild pages that have been modified since last build",
+          "name": [
+            "--dirty"
+          ]
+        },
+        {
+          "args": {
+            "name": "message"
+          },
+          "description": "A commit message to use when committing to the GitHub Pages remote branch. Commit {sha} and MkDocs {version} are available as expansions",
+          "name": [
+            "-m",
+            "--message"
+          ]
+        },
+        {
+          "args": {
+            "name": "branch name"
+          },
+          "description": "The remote branch to commit to for GitHub Pages. This overrides the value specified in config",
+          "name": [
+            "-b",
+            "--remote-branch"
+          ]
+        },
+        {
+          "args": {
+            "name": "remote name"
+          },
+          "description": "The remote name to commit to for GitHub Pages. This overrides the value specified in config",
+          "name": [
+            "-r",
+            "--remote-name"
+          ]
+        },
+        {
+          "description": "Force the push to the repository",
+          "name": [
+            "--force"
+          ]
+        },
+        {
+          "description": "Replace the whole Git history with one new commit",
+          "name": [
+            "--no-history"
+          ]
+        },
+        {
+          "description": "Ignore check that build is not being deployed with an older version of MkDocs",
+          "name": [
+            "--ignore-version"
+          ]
+        },
+        {
+          "description": "Use the shell when invoking Git",
+          "name": [
+            "--shell"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "template": "folders"
+      },
+      "description": "Create a new MkDocs project",
+      "name": "new",
+      "options": [
+        {
+          "description": "help for new",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Silence warnings",
+          "name": [
+            "-q",
+            "--quiet"
+          ]
+        },
+        {
+          "description": "Enable verbose output",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Run the builtin development server",
+      "name": "serve",
+      "options": [
+        {
+          "description": "help for serve",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Silence warnings",
+          "name": [
+            "-q",
+            "--quiet"
+          ]
+        },
+        {
+          "description": "Enable verbose output",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "args": {
+            "template": "filepaths"
+          },
+          "description": "Provide a specific MkDocs config",
+          "name": [
+            "-f",
+            "--config-file"
+          ]
+        },
+        {
+          "description": "Enable strict mode. This will cause MkDocs to abort the build on any warnings",
+          "name": [
+            "-s",
+            "--strict"
+          ]
+        },
+        {
+          "args": {
+            "name": "theme"
+          },
+          "description": "The theme to use when building your documentation",
+          "name": [
+            "-t",
+            "--theme"
+          ]
+        },
+        {
+          "description": "Use directory URLs when building pages (the default)",
+          "name": [
+            "--use-directory-urls"
+          ]
+        },
+        {
+          "description": "Don't use directory URLs when building pages",
+          "name": [
+            "--no-directory-urls"
+          ]
+        },
+        {
+          "args": {
+            "name": "IP:PORT"
+          },
+          "description": "IP address and port to serve documentation locally (default: localhost:8000)",
+          "name": [
+            "-a",
+            "--dev-addr"
+          ]
+        },
+        {
+          "description": "Enable the live reloading in the development server (this is the default)",
+          "name": [
+            "--live-reload"
+          ]
+        },
+        {
+          "description": "Disable the live reloading in the development server",
+          "name": [
+            "--no-reload"
+          ]
+        },
+        {
+          "description": "Enable the live reloading in the development server, but only re-build files that have changed",
+          "name": [
+            "--dirtyreload"
+          ]
+        },
+        {
+          "description": "Include the theme in list of files to watch for live reloading. Ignored when live reload is not used",
+          "name": [
+            "--watch-theme"
+          ]
+        },
+        {
+          "args": {
+            "template": [
+              "folders",
+              "filepaths"
+            ]
+          },
+          "description": "A directory or file to watch for live reloading. Can be supplied multiple times",
+          "name": [
+            "-w",
+            "--watch"
+          ]
+        }
+      ]
+    }
+  ]
+}

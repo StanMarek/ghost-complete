@@ -1,0 +1,347 @@
+{
+  "description": "Run Qodana as fast as possible, with minimum effort required",
+  "name": "qodana",
+  "options": [
+    {
+      "description": "Show help page for command",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Version for Qodana",
+      "name": [
+        "-v",
+        "--version"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Configure project for Qodana",
+      "name": "init",
+      "options": [
+        {
+          "args": {
+            "name": "string",
+            "template": "folders"
+          },
+          "description": "Root directory of the project to configure (default \".\")",
+          "name": [
+            "-i",
+            "--project-dir"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Scan a project with Qodana",
+      "name": "scan",
+      "options": [
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Unique report identifier (GUID) to be used by Qodana Cloud",
+          "name": [
+            "-a",
+            "--analysis-id"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Provide the path to an existing SARIF report to be used in the baseline state calculation",
+          "name": [
+            "-b",
+            "--baseline"
+          ]
+        },
+        {
+          "description": "Include in the output report the results from the baseline run that are absent in the current run",
+          "name": [
+            "--baseline-include-absent"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Override cache directory (default <userCacheDir>/JetBrains/<linter>/cache)",
+          "name": [
+            "--cache-dir"
+          ]
+        },
+        {
+          "description": "Override the docker image to be used for the analysis",
+          "name": [
+            "-c",
+            "--changes"
+          ]
+        },
+        {
+          "description": "Clear the local Qodana cache before running the analysis",
+          "name": [
+            "--clear-cache"
+          ]
+        },
+        {
+          "description": "Skip running the inspections configured by the sanity profile",
+          "name": [
+            "--disable-sanity"
+          ]
+        },
+        {
+          "args": {
+            "name": "stringArray"
+          },
+          "description": "Define additional environment variables for the Qodana container (you can use the flag multiple times). CLI is not reading full host environment variables and does not pass it to the Qodana container for security reasons",
+          "name": [
+            "-e",
+            "--env"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Set the number of problems that will serve as a quality gate. If this number is reached, the inspection run is terminated with a non-zero exit code",
+          "name": [
+            "--fail-threshold"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Override linter to use",
+          "name": [
+            "-l",
+            "--linter"
+          ]
+        },
+        {
+          "args": {
+            "name": "int"
+          },
+          "description": "Port to serve the report on (default 8080)",
+          "name": [
+            "--port"
+          ]
+        },
+        {
+          "description": "Print all found problems by Qodana in the CLI output",
+          "name": [
+            "--print-problems"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Profile name defined in the project",
+          "name": [
+            "-n",
+            "--profile-name"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "template": "filepaths"
+          },
+          "description": "Path to the profile file",
+          "name": [
+            "-p",
+            "--profile-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "template": "folders"
+          },
+          "description": "Root directory of the inspected project (default \".\")",
+          "name": [
+            "-i",
+            "--project-dir"
+          ]
+        },
+        {
+          "args": {
+            "name": "stringArray"
+          },
+          "description": "Set a JVM property to be used while running Qodana using the --property property.name=value1,value2,...,valueN notation",
+          "name": [
+            "--property"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Override directory to save Qodana inspection results to (default <userCacheDir>/JetBrains/<linter>/results)",
+          "name": [
+            "-o",
+            "--results-dir"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "suggestions": [
+              {
+                "name": "true"
+              },
+              {
+                "name": "false"
+              }
+            ]
+          },
+          "description": "Set to 'true' to have the application run the inspections configured by the promo profile; set to 'false' otherwise (default: 'true' only if Qodana is executed with the default profile)",
+          "name": [
+            "--run-promo"
+          ]
+        },
+        {
+          "description": "Generate HTML report (default true)",
+          "name": [
+            "-s",
+            "--save-report"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Override the run scenario (default \"default\")",
+          "name": [
+            "--script"
+          ]
+        },
+        {
+          "description": "Send the inspection report to Qodana Cloud, requires the '--token' option to be specified",
+          "name": [
+            "--send-report"
+          ]
+        },
+        {
+          "description": "Serve HTML report on port",
+          "name": [
+            "-w",
+            "--show-report"
+          ]
+        },
+        {
+          "description": "Skip pulling the latest Qodana container",
+          "name": [
+            "--skip-pull"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Directory inside the project-dir directory must be inspected. If not specified, the whole project is inspected",
+          "name": [
+            "-d",
+            "--source-directory"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Absolute path to the fallback profile file. This option is applied in case the profile was not specified using any available options",
+          "name": [
+            "--stub-profile"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "User to run Qodana container as. Please specify user id – '$UID' or user id and group id $(id -u):$(id -g). Use 'root' to run as the root user (default: the current user)",
+          "name": [
+            "-u",
+            "--user"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "Define additional volumes for the Qodana container (you can use the flag multiple times)",
+          "name": [
+            "-v",
+            "--volume"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Show Qodana report",
+      "name": "show",
+      "options": [
+        {
+          "description": "Open report directory only, don't serve it",
+          "name": [
+            "-d",
+            "--dir-only"
+          ]
+        },
+        {
+          "args": {
+            "name": "int"
+          },
+          "description": "Specify port to serve report at (default 8080)",
+          "name": [
+            "-p",
+            "--port"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "template": "folders"
+          },
+          "description": "Root directory of the inspected project (default \".\")",
+          "name": [
+            "-i",
+            "--project-dir"
+          ]
+        },
+        {
+          "args": {
+            "name": "string",
+            "template": "folders"
+          },
+          "description": "Specify HTML report path (the one with index.html inside) (default <userCacheDir>/JetBrains/<linter>/results/report)",
+          "name": [
+            "-r",
+            "--report-dir"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "View SARIF files in CLI",
+      "name": "view",
+      "options": [
+        {
+          "args": {
+            "name": "string",
+            "template": "filepaths"
+          },
+          "description": "Path to the SARIF file (default \"./qodana.sarif.json\")",
+          "name": [
+            "-f",
+            "--sarif-file"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1222 @@
+{
+  "args": {},
+  "description": "Pre-commit",
+  "name": "pre-commit",
+  "options": [
+    {
+      "description": "Show help message and exit",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Show program's version number and exit",
+      "name": [
+        "-V",
+        "--version"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Auto-update pre-commit config to the latest repos' versions",
+      "name": "autoupdate",
+      "options": [
+        {
+          "description": "Show help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "color",
+            "suggestions": [
+              {
+                "name": "auto"
+              },
+              {
+                "name": "always"
+              },
+              {
+                "name": "never"
+              }
+            ]
+          },
+          "description": "Whether to use color in output. Defaults to `auto`",
+          "name": [
+            "--color"
+          ]
+        },
+        {
+          "args": {
+            "name": "CONFIG",
+            "template": "filepaths"
+          },
+          "description": "Path to alternate config file",
+          "name": [
+            "--config",
+            "-c"
+          ]
+        },
+        {
+          "description": "Update to the bleeding edge of `master` instead of the latest tagged version (the default behavior)",
+          "name": [
+            "--bleeding-edge"
+          ]
+        },
+        {
+          "description": "Store 'frozen' hashes in `rev` instead of tag names",
+          "name": [
+            "--freeze"
+          ]
+        },
+        {
+          "args": {
+            "name": "REPO"
+          },
+          "description": "Only update this repository -- may be specified multiple times",
+          "name": [
+            "--repo"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Clean out pre-commit files",
+      "name": "clean",
+      "options": [
+        {
+          "description": "Show help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "color",
+            "suggestions": [
+              {
+                "name": "auto"
+              },
+              {
+                "name": "always"
+              },
+              {
+                "name": "never"
+              }
+            ]
+          },
+          "description": "Whether to use color in output. Defaults to `auto`",
+          "name": [
+            "--color"
+          ]
+        },
+        {
+          "args": {
+            "name": "CONFIG",
+            "template": "filepaths"
+          },
+          "description": "Path to alternate config file",
+          "name": [
+            "--config",
+            "-c"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Clean unused cached repos",
+      "name": "gc",
+      "options": [
+        {
+          "description": "Show help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "color",
+            "suggestions": [
+              {
+                "name": "auto"
+              },
+              {
+                "name": "always"
+              },
+              {
+                "name": "never"
+              }
+            ]
+          },
+          "description": "Whether to use color in output. Defaults to `auto`",
+          "name": [
+            "--color"
+          ]
+        },
+        {
+          "args": {
+            "name": "CONFIG",
+            "template": "filepaths"
+          },
+          "description": "Path to alternate config file",
+          "name": [
+            "--config",
+            "-c"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Install hook script in a directory intended for use with `git config init.templateDir`",
+      "name": "init-templatedir",
+      "options": [
+        {
+          "description": "Show help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "color",
+            "suggestions": [
+              {
+                "name": "auto"
+              },
+              {
+                "name": "always"
+              },
+              {
+                "name": "never"
+              }
+            ]
+          },
+          "description": "Whether to use color in output. Defaults to `auto`",
+          "name": [
+            "--color"
+          ]
+        },
+        {
+          "args": {
+            "name": "CONFIG",
+            "template": "filepaths"
+          },
+          "description": "Path to alternate config file",
+          "name": [
+            "--config",
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "name": "HOOK_TYPE",
+            "suggestions": [
+              {
+                "name": "pre-commit"
+              },
+              {
+                "name": "pre-merge-commit"
+              },
+              {
+                "name": "pre-push"
+              },
+              {
+                "name": "prepare-commit-msg"
+              },
+              {
+                "name": "commit-msg"
+              },
+              {
+                "name": "post-commit"
+              },
+              {
+                "name": "post-checkout"
+              },
+              {
+                "name": "post-merge"
+              },
+              {
+                "name": "post-rewrite"
+              }
+            ]
+          },
+          "description": "Type of hook to install",
+          "name": [
+            "-t",
+            "--hook-type"
+          ]
+        },
+        {
+          "description": "Assume cloned repos should have a `pre-commit` config",
+          "name": [
+            "--no-allow-missing-config"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Install the pre-commit script",
+      "name": "install",
+      "options": [
+        {
+          "description": "Show help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "color",
+            "suggestions": [
+              {
+                "name": "auto"
+              },
+              {
+                "name": "always"
+              },
+              {
+                "name": "never"
+              }
+            ]
+          },
+          "description": "Whether to use color in output. Defaults to `auto`",
+          "name": [
+            "--color"
+          ]
+        },
+        {
+          "args": {
+            "name": "CONFIG",
+            "template": "filepaths"
+          },
+          "description": "Path to alternate config file",
+          "name": [
+            "--config",
+            "-c"
+          ]
+        },
+        {
+          "description": "Overwrite existing hooks / remove migration mode",
+          "name": [
+            "-f",
+            "--overwrite"
+          ]
+        },
+        {
+          "description": "Whether to install hook environments for all environments in the config file",
+          "name": [
+            "install-hooks"
+          ]
+        },
+        {
+          "args": {
+            "name": "HOOK_TYPE",
+            "suggestions": [
+              {
+                "name": "pre-commit"
+              },
+              {
+                "name": "pre-merge-commit"
+              },
+              {
+                "name": "pre-push"
+              },
+              {
+                "name": "prepare-commit-msg"
+              },
+              {
+                "name": "commit-msg"
+              },
+              {
+                "name": "post-commit"
+              },
+              {
+                "name": "post-checkout"
+              },
+              {
+                "name": "post-merge"
+              },
+              {
+                "name": "post-rewrite"
+              }
+            ]
+          },
+          "description": "Type of hook to install",
+          "name": [
+            "-t",
+            "--hook-type"
+          ]
+        },
+        {
+          "description": "Whether to allow a missing `pre-commit` configuration file or exit with a failure code",
+          "name": [
+            "--allow-missing-config"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Migrate list configuration to new map configuration",
+      "name": "migrate-config",
+      "options": [
+        {
+          "description": "Show help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "color",
+            "suggestions": [
+              {
+                "name": "auto"
+              },
+              {
+                "name": "always"
+              },
+              {
+                "name": "never"
+              }
+            ]
+          },
+          "description": "Whether to use color in output. Defaults to `auto`",
+          "name": [
+            "--color"
+          ]
+        },
+        {
+          "args": {
+            "name": "CONFIG",
+            "template": "filepaths"
+          },
+          "description": "Path to alternate config file",
+          "name": [
+            "--config",
+            "-c"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "A single hook-id to run",
+        "generators": [
+          {
+            "js_source": "i=>{let e=[];try{let t=Ps.parse(i).repos;return t&&t.forEach(s=>{s.hooks.forEach(n=>{e.push({name:`${n.id}`})})}),e}catch(t){console.log(t)}}",
+            "requires_js": true,
+            "script": [
+              "cat",
+              ".pre-commit-config.yaml"
+            ]
+          }
+        ],
+        "isOptional": true,
+        "name": "hook"
+      },
+      "description": "Run hooks",
+      "name": "run",
+      "options": [
+        {
+          "description": "Show help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "color",
+            "suggestions": [
+              {
+                "name": "auto"
+              },
+              {
+                "name": "always"
+              },
+              {
+                "name": "never"
+              }
+            ]
+          },
+          "description": "Whether to use color in output. Defaults to `auto`",
+          "name": [
+            "--color"
+          ]
+        },
+        {
+          "args": {
+            "name": "CONFIG",
+            "template": "filepaths"
+          },
+          "description": "Path to alternate config file",
+          "name": [
+            "--config",
+            "-c"
+          ]
+        },
+        {
+          "name": [
+            "--verbose",
+            "-v"
+          ]
+        },
+        {
+          "description": "Run all files in the repo",
+          "name": [
+            "--all-files",
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "FILES",
+            "template": [
+              "filepaths",
+              "folders"
+            ]
+          },
+          "description": "Specific filenames to run hooks on",
+          "name": [
+            "--files"
+          ]
+        },
+        {
+          "description": "When hooks fail, run `git diff` directly afterward",
+          "name": [
+            "--show-diff-on-failure"
+          ]
+        },
+        {
+          "args": {
+            "suggestions": [
+              {
+                "name": "pre-commit"
+              },
+              {
+                "name": "pre-merge-commit"
+              },
+              {
+                "name": "pre-push"
+              },
+              {
+                "name": "prepare-commit-msg"
+              },
+              {
+                "name": "commit-msg"
+              },
+              {
+                "name": "post-commit"
+              },
+              {
+                "name": "post-checkout"
+              },
+              {
+                "name": "post-merge"
+              },
+              {
+                "name": "post-rewrite"
+              }
+            ]
+          },
+          "description": "The stage during which the hook is fired",
+          "name": [
+            "--hook-stage"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "git",
+                  "--no-optional-locks",
+                  "branch",
+                  "-a",
+                  "--no-color",
+                  "--sort=-committerdate"
+                ],
+                "transforms": [
+                  {
+                    "starts_with": "fatal:",
+                    "type": "error_guard"
+                  },
+                  "split_lines",
+                  "filter_empty",
+                  "trim",
+                  {
+                    "name": 0,
+                    "pattern": "\\S+",
+                    "type": "regex_extract"
+                  }
+                ]
+              }
+            ],
+            "name": "REMOTE_BRANCH"
+          },
+          "description": "Remote branch ref used by `git push`",
+          "name": [
+            "--remote-branch"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "git",
+                  "--no-optional-locks",
+                  "branch",
+                  "--no-color",
+                  "--sort=-committerdate"
+                ],
+                "transforms": [
+                  {
+                    "starts_with": "fatal:",
+                    "type": "error_guard"
+                  },
+                  "split_lines",
+                  "filter_empty",
+                  "trim",
+                  {
+                    "name": 0,
+                    "pattern": "\\S+",
+                    "type": "regex_extract"
+                  }
+                ]
+              }
+            ],
+            "name": "LOCAL_BRANCH"
+          },
+          "description": "Local branch ref used by `git push`",
+          "name": [
+            "--local-branch"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "_corrected_in": "v0.10.0",
+                "js_source": "function(i){let e=Ae(i);return e.startsWith(\"fatal:\")?[]:e.split(`\n`).map(t=>({name:t.substring(0,7),icon:\"fig://icon?type=node\",description:t.substring(7)}))}",
+                "requires_js": true,
+                "script": [
+                  "git",
+                  "rev-list",
+                  "--all",
+                  "--oneline"
+                ]
+              }
+            ],
+            "name": "FROM_REF"
+          },
+          "description": "Represents the original ref in a `from_ref...to_ref` diff expression. For `pre-push` hooks, this represents the branch you are pushing to. For `post-checkout` hooks, this represents the branch that was previously checked out",
+          "name": [
+            "--from-ref",
+            "--source",
+            "-s"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "_corrected_in": "v0.10.0",
+                "js_source": "function(i){let e=Ae(i);return e.startsWith(\"fatal:\")?[]:e.split(`\n`).map(t=>({name:t.substring(0,7),icon:\"fig://icon?type=node\",description:t.substring(7)}))}",
+                "requires_js": true,
+                "script": [
+                  "git",
+                  "rev-list",
+                  "--all",
+                  "--oneline"
+                ]
+              }
+            ],
+            "name": "TO_REF"
+          },
+          "description": "Represents the destination ref in a `from_ref...to_ref` diff expression. For `pre-push` hooks, this represents the branch being pushed. For `post-checkout` hooks, this represents the branch that is now checked out",
+          "name": [
+            "--to-ref",
+            "--origin",
+            "-o"
+          ]
+        },
+        {
+          "args": {
+            "name": "COMMIT_MSG_FILENAME"
+          },
+          "description": "Filename to check when running during `commit-msg`",
+          "name": [
+            "--commit-msg-filename"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "function(i){let e=i.split(`\n`).reduce((t,s)=>{let n=s.split(\"\t\"),o=n[0],r=n[1].split(\" \")[0];return t[o]=r,t},{});return Object.keys(e).map(t=>{let s=e[t],n=\"box\";return s.includes(\"github.com\")&&(n=\"github\"),s.includes(\"gitlab.com\")&&(n=\"gitlab\"),s.includes(\"heroku.com\")&&(n=\"heroku\"),{name:t,icon:`fig://icon?type=${n}`,description:\"Remote\"}})}",
+                "requires_js": true,
+                "script": [
+                  "git",
+                  "--no-optional-locks",
+                  "remote",
+                  "-v"
+                ]
+              }
+            ],
+            "name": "REMOTE_NAME"
+          },
+          "description": "Remote name used by `git push`",
+          "name": [
+            "--remote-name"
+          ]
+        },
+        {
+          "args": {
+            "name": "REMOTE_URL"
+          },
+          "description": "Remote URL used by `git push`",
+          "name": [
+            "--remote-url"
+          ]
+        },
+        {
+          "args": {
+            "name": "CHECKOUT_TYPE"
+          },
+          "description": "Indicates whether the checkout was a branch checkout (changing branches, flag=1) or a file checkout (retrieving a file from the index, flag=0)",
+          "name": [
+            "--checkout-type"
+          ]
+        },
+        {
+          "args": {
+            "name": "IS_SQUASH_MERGE"
+          },
+          "description": "During a post-merge hook, indicates whether the merge was a squash merge",
+          "name": [
+            "--is-squash-merge"
+          ]
+        },
+        {
+          "args": {
+            "name": "REWRITE_COMMAND"
+          },
+          "description": "During a post-rewrite hook, specifies the command that invoked the rewrite",
+          "name": [
+            "--rewrite-command"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Produce a sample .pre-commit-config.yaml file",
+      "name": "sample-config",
+      "options": [
+        {
+          "description": "Show help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "color",
+            "suggestions": [
+              {
+                "name": "auto"
+              },
+              {
+                "name": "always"
+              },
+              {
+                "name": "never"
+              }
+            ]
+          },
+          "description": "Whether to use color in output. Defaults to `auto`",
+          "name": [
+            "--color"
+          ]
+        },
+        {
+          "args": {
+            "name": "CONFIG",
+            "template": "filepaths"
+          },
+          "description": "Path to alternate config file",
+          "name": [
+            "--config",
+            "-c"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Repository to source hooks from",
+          "name": "repo"
+        },
+        {
+          "description": "A single hook-id to run",
+          "generators": [
+            {
+              "js_source": "i=>{let e=[];try{let t=Ps.parse(i).repos;return t&&t.forEach(s=>{s.hooks.forEach(n=>{e.push({name:`${n.id}`})})}),e}catch(t){console.log(t)}}",
+              "requires_js": true,
+              "script": [
+                "cat",
+                ".pre-commit-config.yaml"
+              ]
+            }
+          ],
+          "isOptional": true,
+          "name": "hook"
+        }
+      ],
+      "description": "Try the hooks in a repository, useful for developing new hooks",
+      "name": "try-repo",
+      "options": [
+        {
+          "description": "Show help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "color",
+            "suggestions": [
+              {
+                "name": "auto"
+              },
+              {
+                "name": "always"
+              },
+              {
+                "name": "never"
+              }
+            ]
+          },
+          "description": "Whether to use color in output. Defaults to `auto`",
+          "name": [
+            "--color"
+          ]
+        },
+        {
+          "args": {
+            "name": "CONFIG",
+            "template": "filepaths"
+          },
+          "description": "Path to alternate config file",
+          "name": [
+            "--config",
+            "-c"
+          ]
+        },
+        {
+          "name": [
+            "--verbose",
+            "-v"
+          ]
+        },
+        {
+          "description": "Run all files in the repo",
+          "name": [
+            "--all-files",
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "FILES",
+            "template": [
+              "filepaths",
+              "folders"
+            ]
+          },
+          "description": "Specific filenames to run hooks on",
+          "name": [
+            "--files"
+          ]
+        },
+        {
+          "description": "When hooks fail, run `git diff` directly afterward",
+          "name": [
+            "--show-diff-on-failure"
+          ]
+        },
+        {
+          "args": {
+            "suggestions": [
+              {
+                "name": "pre-commit"
+              },
+              {
+                "name": "pre-merge-commit"
+              },
+              {
+                "name": "pre-push"
+              },
+              {
+                "name": "prepare-commit-msg"
+              },
+              {
+                "name": "commit-msg"
+              },
+              {
+                "name": "post-commit"
+              },
+              {
+                "name": "post-checkout"
+              },
+              {
+                "name": "post-merge"
+              },
+              {
+                "name": "post-rewrite"
+              }
+            ]
+          },
+          "description": "The stage during which the hook is fired",
+          "name": [
+            "--hook-stage"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "git",
+                  "--no-optional-locks",
+                  "branch",
+                  "-a",
+                  "--no-color",
+                  "--sort=-committerdate"
+                ],
+                "transforms": [
+                  {
+                    "starts_with": "fatal:",
+                    "type": "error_guard"
+                  },
+                  "split_lines",
+                  "filter_empty",
+                  "trim",
+                  {
+                    "name": 0,
+                    "pattern": "\\S+",
+                    "type": "regex_extract"
+                  }
+                ]
+              }
+            ],
+            "name": "REMOTE_BRANCH"
+          },
+          "description": "Remote branch ref used by `git push`",
+          "name": [
+            "--remote-branch"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "git",
+                  "--no-optional-locks",
+                  "branch",
+                  "--no-color",
+                  "--sort=-committerdate"
+                ],
+                "transforms": [
+                  {
+                    "starts_with": "fatal:",
+                    "type": "error_guard"
+                  },
+                  "split_lines",
+                  "filter_empty",
+                  "trim",
+                  {
+                    "name": 0,
+                    "pattern": "\\S+",
+                    "type": "regex_extract"
+                  }
+                ]
+              }
+            ],
+            "name": "LOCAL_BRANCH"
+          },
+          "description": "Local branch ref used by `git push`",
+          "name": [
+            "--local-branch"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "_corrected_in": "v0.10.0",
+                "js_source": "function(i){let e=Ae(i);return e.startsWith(\"fatal:\")?[]:e.split(`\n`).map(t=>({name:t.substring(0,7),icon:\"fig://icon?type=node\",description:t.substring(7)}))}",
+                "requires_js": true,
+                "script": [
+                  "git",
+                  "rev-list",
+                  "--all",
+                  "--oneline"
+                ]
+              }
+            ],
+            "name": "FROM_REF"
+          },
+          "description": "Represents the original ref in a `from_ref...to_ref` diff expression. For `pre-push` hooks, this represents the branch you are pushing to. For `post-checkout` hooks, this represents the branch that was previously checked out",
+          "name": [
+            "--from-ref",
+            "--source",
+            "-s"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "_corrected_in": "v0.10.0",
+                "js_source": "function(i){let e=Ae(i);return e.startsWith(\"fatal:\")?[]:e.split(`\n`).map(t=>({name:t.substring(0,7),icon:\"fig://icon?type=node\",description:t.substring(7)}))}",
+                "requires_js": true,
+                "script": [
+                  "git",
+                  "rev-list",
+                  "--all",
+                  "--oneline"
+                ]
+              }
+            ],
+            "name": "TO_REF"
+          },
+          "description": "Represents the destination ref in a `from_ref...to_ref` diff expression. For `pre-push` hooks, this represents the branch being pushed. For `post-checkout` hooks, this represents the branch that is now checked out",
+          "name": [
+            "--to-ref",
+            "--origin",
+            "-o"
+          ]
+        },
+        {
+          "args": {
+            "name": "COMMIT_MSG_FILENAME"
+          },
+          "description": "Filename to check when running during `commit-msg`",
+          "name": [
+            "--commit-msg-filename"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "function(i){let e=i.split(`\n`).reduce((t,s)=>{let n=s.split(\"\t\"),o=n[0],r=n[1].split(\" \")[0];return t[o]=r,t},{});return Object.keys(e).map(t=>{let s=e[t],n=\"box\";return s.includes(\"github.com\")&&(n=\"github\"),s.includes(\"gitlab.com\")&&(n=\"gitlab\"),s.includes(\"heroku.com\")&&(n=\"heroku\"),{name:t,icon:`fig://icon?type=${n}`,description:\"Remote\"}})}",
+                "requires_js": true,
+                "script": [
+                  "git",
+                  "--no-optional-locks",
+                  "remote",
+                  "-v"
+                ]
+              }
+            ],
+            "name": "REMOTE_NAME"
+          },
+          "description": "Remote name used by `git push`",
+          "name": [
+            "--remote-name"
+          ]
+        },
+        {
+          "args": {
+            "name": "REMOTE_URL"
+          },
+          "description": "Remote URL used by `git push`",
+          "name": [
+            "--remote-url"
+          ]
+        },
+        {
+          "args": {
+            "name": "CHECKOUT_TYPE"
+          },
+          "description": "Indicates whether the checkout was a branch checkout (changing branches, flag=1) or a file checkout (retrieving a file from the index, flag=0)",
+          "name": [
+            "--checkout-type"
+          ]
+        },
+        {
+          "args": {
+            "name": "IS_SQUASH_MERGE"
+          },
+          "description": "During a post-merge hook, indicates whether the merge was a squash merge",
+          "name": [
+            "--is-squash-merge"
+          ]
+        },
+        {
+          "args": {
+            "name": "REWRITE_COMMAND"
+          },
+          "description": "During a post-rewrite hook, specifies the command that invoked the rewrite",
+          "name": [
+            "--rewrite-command"
+          ]
+        },
+        {
+          "args": {
+            "name": "REV"
+          },
+          "description": "Manually select a rev to run against, otherwise the `HEAD` revision will be used",
+          "name": [
+            "--ref",
+            "--rev"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Uninstall the pre-commit script",
+      "name": "uninstall",
+      "options": [
+        {
+          "description": "Show help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "color",
+            "suggestions": [
+              {
+                "name": "auto"
+              },
+              {
+                "name": "always"
+              },
+              {
+                "name": "never"
+              }
+            ]
+          },
+          "description": "Whether to use color in output. Defaults to `auto`",
+          "name": [
+            "--color"
+          ]
+        },
+        {
+          "args": {
+            "name": "CONFIG",
+            "template": "filepaths"
+          },
+          "description": "Path to alternate config file",
+          "name": [
+            "--config",
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "name": "HOOK_TYPE",
+            "suggestions": [
+              {
+                "name": "pre-commit"
+              },
+              {
+                "name": "pre-merge-commit"
+              },
+              {
+                "name": "pre-push"
+              },
+              {
+                "name": "prepare-commit-msg"
+              },
+              {
+                "name": "commit-msg"
+              },
+              {
+                "name": "post-commit"
+              },
+              {
+                "name": "post-checkout"
+              },
+              {
+                "name": "post-merge"
+              },
+              {
+                "name": "post-rewrite"
+              }
+            ]
+          },
+          "description": "Type of hook to install",
+          "name": [
+            "-t",
+            "--hook-type"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Show help for a specific command",
+      "name": "help",
+      "options": [
+        {
+          "description": "Show help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "color",
+            "suggestions": [
+              {
+                "name": "auto"
+              },
+              {
+                "name": "always"
+              },
+              {
+                "name": "never"
+              }
+            ]
+          },
+          "description": "Whether to use color in output. Defaults to `auto`",
+          "name": [
+            "--color"
+          ]
+        },
+        {
+          "args": {
+            "name": "CONFIG",
+            "template": "filepaths"
+          },
+          "description": "Path to alternate config file",
+          "name": [
+            "--config",
+            "-c"
+          ]
+        }
+      ]
+    }
+  ]
+}

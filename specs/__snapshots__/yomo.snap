@@ -1,0 +1,107 @@
+{
+  "description": "CLI interface for YoMo",
+  "name": "yomo",
+  "options": [
+    {
+      "description": "Show help for yomo",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "description": "StreamFunction name to initialize locally",
+        "name": "function name"
+      },
+      "description": "Initial an example StreamFunction",
+      "name": "init",
+      "options": [
+        {
+          "description": "Generate Rx code template",
+          "name": [
+            "--rx"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The .go file to build",
+        "generators": [
+          {
+            "js_source": "(p,m,b)=>ue(this,void 0,void 0,function*(){var d;let{isDangerous:_,currentWorkingDirectory:O,searchTerm:h}=b,w=(d=(0,g.getCurrentInsertedDirectory)(u??O,h,b))!==null&&d!==void 0?d:\"/\";try{let W=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:w}),X=$(W.stdout.split(`\n`),[\".DS_Store\"]),z=[];for(let F of X)if(F){let V=F.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&c!==\"only\"||V===\"folders\"&&c!==\"never\")&&z.push({type:V===\"filepaths\"?\"file\":\"folder\",name:F,insertValue:F,isDangerous:_,context:{templateType:V}})}return S(y(z))}catch{return[]}})",
+            "requires_js": true
+          }
+        ],
+        "name": ".go file"
+      },
+      "description": "Build a StreamFunction to WebAssembly",
+      "name": "build",
+      "options": [
+        {
+          "args": [
+            {
+              "name": "wasm"
+            },
+            {
+              "name": "binary"
+            }
+          ],
+          "description": "Build to wasm or binary",
+          "name": [
+            "--target"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "(p,m,b)=>ue(this,void 0,void 0,function*(){var d;let{isDangerous:_,currentWorkingDirectory:O,searchTerm:h}=b,w=(d=(0,g.getCurrentInsertedDirectory)(u??O,h,b))!==null&&d!==void 0?d:\"/\";try{let W=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:w}),X=$(W.stdout.split(`\n`),[\".DS_Store\"]),z=[];for(let F of X)if(F){let V=F.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&c!==\"only\"||V===\"folders\"&&c!==\"never\")&&z.push({type:V===\"filepaths\"?\"file\":\"folder\",name:F,insertValue:F,isDangerous:_,context:{templateType:V}})}return S(y(z))}catch{return[]}})",
+                "requires_js": true
+              }
+            ],
+            "name": "module"
+          },
+          "description": "Custom go.mod filepath",
+          "name": [
+            "-m",
+            "--modfile"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The .wasm file to run",
+        "generators": [
+          {
+            "js_source": "(p,m,b)=>ue(this,void 0,void 0,function*(){var d;let{isDangerous:_,currentWorkingDirectory:O,searchTerm:h}=b,w=(d=(0,g.getCurrentInsertedDirectory)(u??O,h,b))!==null&&d!==void 0?d:\"/\";try{let W=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:w}),X=$(W.stdout.split(`\n`),[\".DS_Store\"]),z=[];for(let F of X)if(F){let V=F.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&c!==\"only\"||V===\"folders\"&&c!==\"never\")&&z.push({type:V===\"filepaths\"?\"file\":\"folder\",name:F,insertValue:F,isDangerous:_,context:{templateType:V}})}return S(y(z))}catch{return[]}})",
+            "requires_js": true
+          }
+        ],
+        "name": ".wasm file"
+      },
+      "description": "Run a wasm stream function",
+      "name": "run",
+      "options": [
+        {
+          "description": "Zipper endpoint this StreamFunction will connect to",
+          "name": [
+            "-z",
+            "--zipper"
+          ]
+        },
+        {
+          "description": "Specify the name of this StreamFunction",
+          "name": [
+            "-n",
+            "--name"
+          ]
+        }
+      ]
+    }
+  ]
+}

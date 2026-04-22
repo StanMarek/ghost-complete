@@ -1,0 +1,274 @@
+{
+  "description": "A smarter cd command for your terminal",
+  "name": "zoxide",
+  "options": [
+    {
+      "description": "Print help information",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Print version information",
+      "name": [
+        "-V",
+        "--version"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "paths",
+        "template": "folders"
+      },
+      "description": "Add a new directory or increment its rank",
+      "name": "add",
+      "options": [
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Print version information",
+          "name": [
+            "-V",
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "filepaths"
+      },
+      "description": "Import entries from another application",
+      "name": "import",
+      "options": [
+        {
+          "args": {
+            "name": "from",
+            "suggestions": [
+              {
+                "name": "autojump"
+              },
+              {
+                "name": "z"
+              }
+            ]
+          },
+          "description": "Application to import from",
+          "name": [
+            "--from"
+          ]
+        },
+        {
+          "description": "Merge into existing database",
+          "name": [
+            "--merge"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Print version information",
+          "name": [
+            "-V",
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "shell",
+        "suggestions": [
+          {
+            "name": "bash"
+          },
+          {
+            "name": "elvish"
+          },
+          {
+            "name": "fish"
+          },
+          {
+            "name": "nushell"
+          },
+          {
+            "name": "posix"
+          },
+          {
+            "name": "powershell"
+          },
+          {
+            "name": "xonsh"
+          },
+          {
+            "name": "zsh"
+          }
+        ]
+      },
+      "description": "Generate shell configuration",
+      "name": "init",
+      "options": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "cmd"
+          },
+          "description": "Changes the prefix of the `z` and `zi` commands",
+          "name": [
+            "--cmd"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "hook",
+            "suggestions": [
+              {
+                "name": "none"
+              },
+              {
+                "name": "prompt"
+              },
+              {
+                "name": "pwd"
+              }
+            ]
+          },
+          "description": "Changes how often zoxide increments a directory's score",
+          "name": [
+            "--hook"
+          ]
+        },
+        {
+          "description": "Prevents zoxide from defining the `z` and `zi` commands",
+          "name": [
+            "--no-cmd"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Print version information",
+          "name": [
+            "-V",
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "keywords"
+      },
+      "description": "Search for a directory in the database",
+      "name": "query",
+      "options": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "exclude",
+            "template": "folders"
+          },
+          "description": "Exclude a path from results",
+          "name": [
+            "--exclude"
+          ]
+        },
+        {
+          "description": "Show deleted directories",
+          "name": [
+            "--all"
+          ]
+        },
+        {
+          "description": "Use interactive selection",
+          "name": [
+            "-i",
+            "--interactive"
+          ]
+        },
+        {
+          "description": "List all matching directories",
+          "name": [
+            "-l",
+            "--list"
+          ]
+        },
+        {
+          "description": "Print score with results",
+          "name": [
+            "-s",
+            "--score"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Print version information",
+          "name": [
+            "-V",
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "paths",
+        "template": "folders"
+      },
+      "description": "Remove a directory from the database",
+      "name": "remove",
+      "options": [
+        {
+          "description": "Use interactive selection",
+          "name": [
+            "-i",
+            "--interactive"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Print version information",
+          "name": [
+            "-V",
+            "--version"
+          ]
+        }
+      ]
+    }
+  ]
+}

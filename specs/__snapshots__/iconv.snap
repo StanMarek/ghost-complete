@@ -1,0 +1,112 @@
+{
+  "args": {
+    "isVariadic": true,
+    "name": "inputfile",
+    "template": "filepaths"
+  },
+  "description": "Character set conversion",
+  "name": "iconv",
+  "options": [
+    {
+      "description": "Show help for iconv",
+      "name": [
+        "--help"
+      ]
+    },
+    {
+      "description": "Output version information and exit",
+      "name": [
+        "--version"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "bash",
+              "-c",
+              "iconv -l | command tr ' ' '\\n' | sort"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "encoding"
+      },
+      "description": "Specifies the encoding of the input",
+      "name": [
+        "-f",
+        "--from-code"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "bash",
+              "-c",
+              "iconv -l | command tr ' ' '\\n' | sort"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "encoding"
+      },
+      "description": "Specifies the encoding of the output",
+      "name": [
+        "-t",
+        "--to-code"
+      ]
+    },
+    {
+      "description": "Discard unconvertible characters",
+      "name": [
+        "-c"
+      ]
+    },
+    {
+      "description": "List the supported encodings",
+      "name": [
+        "-l",
+        "--list"
+      ]
+    },
+    {
+      "args": {
+        "description": "The formatstring must be a format string in the same format as for the printf command",
+        "name": "FORMATSTRING"
+      },
+      "description": "Substitution for unconvertible Unicode characters",
+      "name": [
+        "--unicode-subst"
+      ]
+    },
+    {
+      "args": {
+        "description": "The formatstring must be a format string in the same format as for the printf command",
+        "name": "FORMATSTRING"
+      },
+      "description": "Substitution for unconvertible bytes",
+      "name": [
+        "--byte-subst"
+      ]
+    },
+    {
+      "args": {
+        "description": "The formatstring must be a format string in the same format as for the printf command",
+        "name": "FORMATSTRING"
+      },
+      "description": "Substitution for unconvertible wide characters",
+      "name": [
+        "--widechar-subst"
+      ]
+    }
+  ]
+}

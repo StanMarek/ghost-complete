@@ -1,0 +1,4811 @@
+{
+  "args": {
+    "description": "Custom user defined gh alias",
+    "generators": [
+      {
+        "script": [
+          "gh",
+          "alias",
+          "list"
+        ],
+        "transforms": [
+          "split_lines",
+          "filter_empty",
+          "trim"
+        ]
+      }
+    ],
+    "isOptional": true,
+    "name": "alias"
+  },
+  "description": "GitHub's CLI tool",
+  "name": "gh",
+  "options": [
+    {
+      "description": "Show help for command",
+      "name": [
+        "--help"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Create command shortcuts",
+      "name": "alias",
+      "subcommands": [
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "gh",
+                  "alias",
+                  "list"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty",
+                  "trim"
+                ]
+              }
+            ],
+            "name": "alias"
+          },
+          "description": "Delete an alias",
+          "name": "delete"
+        },
+        {
+          "description": "List available aliases",
+          "name": "list"
+        },
+        {
+          "args": [
+            {
+              "description": "A word that will expand to the gh command",
+              "name": "alias"
+            },
+            {
+              "description": "The gh command to be invoked, more info with --help",
+              "name": "expansion"
+            }
+          ],
+          "description": "Set an alias for a gh command",
+          "name": "set",
+          "options": [
+            {
+              "description": "Declare an alias to be passed through a shell interpreter",
+              "name": [
+                "-s",
+                "--shell"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Make an authenticated GitHub API request",
+      "name": "api"
+    },
+    {
+      "description": "Login, logout, and refresh your authentication",
+      "name": "auth",
+      "subcommands": [
+        {
+          "description": "Authenticate with a GitHub host",
+          "name": "login",
+          "options": [
+            {
+              "args": {
+                "name": "hostname"
+              },
+              "description": "The hostname of the GitHub instance to authenticate with",
+              "name": [
+                "-h",
+                "--hostname"
+              ]
+            },
+            {
+              "args": {
+                "name": "scopes"
+              },
+              "description": "Additional authentication scopes for gh to have",
+              "name": [
+                "-s",
+                "--scopes"
+              ]
+            },
+            {
+              "description": "Open a browser to authenticate",
+              "name": [
+                "-w",
+                "--web"
+              ]
+            },
+            {
+              "args": {
+                "name": "token"
+              },
+              "description": "Read token from standard input",
+              "name": [
+                "--with-token"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Log out of a GitHub host",
+          "name": "logout",
+          "options": [
+            {
+              "args": {
+                "name": "hostname"
+              },
+              "description": "The hostname of the GitHub instance to authenticate with",
+              "name": [
+                "-h",
+                "--hostname"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Refresh stored authentication credentials",
+          "name": "refresh",
+          "options": [
+            {
+              "args": {
+                "name": "hostname"
+              },
+              "description": "The hostname of the GitHub instance to authenticate with",
+              "name": [
+                "-h",
+                "--hostname"
+              ]
+            },
+            {
+              "args": {
+                "name": "scopes"
+              },
+              "description": "Additional authentication scopes for gh to have",
+              "name": [
+                "-s",
+                "--scopes"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Configure git to use GitHub CLI as a credential helper",
+          "name": "setup-git",
+          "options": [
+            {
+              "args": {
+                "name": "hostname"
+              },
+              "description": "The hostname of the GitHub instance to authenticate with",
+              "name": [
+                "-h",
+                "--hostname"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "View authentication status",
+          "name": "status",
+          "options": [
+            {
+              "args": {
+                "name": "hostname"
+              },
+              "description": "The hostname of the GitHub instance to authenticate with",
+              "name": [
+                "-h",
+                "--hostname"
+              ]
+            },
+            {
+              "args": {
+                "name": "token"
+              },
+              "description": "Read token from standard input",
+              "name": [
+                "--with-token"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage GPG keys registered with your GitHub account",
+      "name": "gpg-key",
+      "subcommands": [
+        {
+          "description": "Add a GPG key to your GitHub account",
+          "name": "add"
+        },
+        {
+          "description": "Lists GPG keys in your GitHub account",
+          "name": "list"
+        }
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "cache": {},
+            "js_source": "e=>JSON.parse(e).map(n=>{let{number:i,title:r,headRefName:o,state:s}=n;return{name:i.toString(),displayName:r,description:`#${i} | ${o}`,icon:s===\"OPEN\"?\"\\u2705\":\"\\u2611\\uFE0F\"}})",
+            "requires_js": true,
+            "script": [
+              "gh",
+              "pr",
+              "list",
+              "--json=number,title,headRefName,state"
+            ]
+          }
+        ],
+        "name": "[pr | issue | path[:line]"
+      },
+      "description": "Open the repository in the browser",
+      "name": "browse",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "git",
+                  "--no-optional-locks",
+                  "branch",
+                  "-r",
+                  "--no-color",
+                  "--sort=-committerdate"
+                ],
+                "transforms": [
+                  {
+                    "starts_with": "fatal:",
+                    "type": "error_guard"
+                  },
+                  "split_lines",
+                  "filter_empty",
+                  "trim",
+                  {
+                    "name": 0,
+                    "pattern": "\\S+",
+                    "type": "regex_extract"
+                  }
+                ]
+              }
+            ],
+            "name": "branch"
+          },
+          "description": "Select another branch by passing in the branch name",
+          "name": [
+            "-b",
+            "--branch"
+          ]
+        },
+        {
+          "description": "Open the last commit",
+          "name": [
+            "-c",
+            "--commit"
+          ]
+        },
+        {
+          "description": "Print destination URL instead of opening the browser",
+          "name": [
+            "-n",
+            "--no-browser"
+          ]
+        },
+        {
+          "description": "Open repository projects",
+          "name": [
+            "-p",
+            "--projects"
+          ]
+        },
+        {
+          "args": {
+            "name": "[HOST/]OWNER/REPO"
+          },
+          "description": "Select another repository using the [HOST/]OWNER/REPO format",
+          "name": [
+            "-R",
+            "--repo"
+          ]
+        },
+        {
+          "description": "Open repository settings",
+          "name": [
+            "-s",
+            "--settings"
+          ]
+        },
+        {
+          "description": "Open repository wiki",
+          "name": [
+            "-w",
+            "--wiki"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generate shell completion scripts",
+      "name": "completion",
+      "options": [
+        {
+          "args": {
+            "name": "shell",
+            "suggestions": [
+              {
+                "name": "bash"
+              },
+              {
+                "name": "zsh"
+              },
+              {
+                "name": "fish"
+              },
+              {
+                "name": "powershell"
+              }
+            ]
+          },
+          "name": [
+            "-s",
+            "--shell"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage configuration for gh",
+      "name": "config",
+      "subcommands": [
+        {
+          "args": {
+            "name": "key",
+            "suggestions": [
+              {
+                "name": "git_protocol"
+              },
+              {
+                "name": "editor"
+              },
+              {
+                "name": "prompt"
+              },
+              {
+                "name": "pager"
+              },
+              {
+                "name": "http_unix_socket"
+              }
+            ]
+          },
+          "description": "Print the value of a given configuration key",
+          "name": "get",
+          "options": [
+            {
+              "args": {
+                "name": "host"
+              },
+              "description": "Get per-host setting",
+              "name": [
+                "-h",
+                "--host"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Update configuration with a value for the given key",
+          "name": "set",
+          "options": [
+            {
+              "args": {
+                "name": "host"
+              },
+              "description": "Get per-host setting",
+              "name": [
+                "-h",
+                "--host"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "args": {
+                "name": "option",
+                "suggestions": [
+                  {
+                    "name": "https"
+                  },
+                  {
+                    "name": "ssh"
+                  }
+                ]
+              },
+              "description": "The protocol to use for git clone and push operations",
+              "name": "git_protocol"
+            },
+            {
+              "args": {
+                "name": "editor",
+                "suggestions": [
+                  {
+                    "name": "vim"
+                  },
+                  {
+                    "name": "nano"
+                  }
+                ]
+              },
+              "description": "The text editor program to use for authoring text",
+              "name": "editor"
+            },
+            {
+              "args": {
+                "name": "value",
+                "suggestions": [
+                  {
+                    "name": "enable"
+                  },
+                  {
+                    "name": "disable"
+                  }
+                ]
+              },
+              "description": "Toggle interactive prompting in the terminal",
+              "name": "prompt"
+            },
+            {
+              "args": {
+                "name": "value"
+              },
+              "description": "The terminal pager program to send standard output to",
+              "name": "pager"
+            },
+            {
+              "args": {
+                "name": "path"
+              },
+              "description": "The path to a unix socket through which to make HTTP connection",
+              "name": "http_unix_socket"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage gh extensions",
+      "name": "extensions",
+      "subcommands": [
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Create a new extension",
+          "name": "create"
+        },
+        {
+          "args": {
+            "name": "repo"
+          },
+          "description": "Install a gh extension from a repository",
+          "name": "install"
+        },
+        {
+          "description": "List installed extension commands",
+          "name": "list"
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Remove an installed extension",
+          "name": "remove"
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Upgrade installed extensions",
+          "name": "upgrade",
+          "options": [
+            {
+              "description": "Upgrade all extensions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Force upgrade extensions",
+              "name": [
+                "--force"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage gists",
+      "name": "gist",
+      "subcommands": [
+        {
+          "args": [
+            {
+              "description": "Gist ID or URL",
+              "name": "gist"
+            },
+            {
+              "isOptional": true,
+              "name": "directory",
+              "template": "folders"
+            }
+          ],
+          "description": "Clone a gist locally",
+          "name": "clone"
+        },
+        {
+          "args": {
+            "name": "filename",
+            "template": "filepaths"
+          },
+          "description": "Create a new gist",
+          "name": "create",
+          "options": [
+            {
+              "args": {
+                "name": "description"
+              },
+              "description": "A description for this gist",
+              "name": [
+                "-d",
+                "--desc"
+              ]
+            },
+            {
+              "args": {
+                "name": "filename",
+                "template": "filepaths"
+              },
+              "description": "Provide a filename to be used when reading from STDIN",
+              "name": [
+                "-f",
+                "--filename"
+              ]
+            },
+            {
+              "description": "List the gist publicly (default: secret)",
+              "name": [
+                "-p",
+                "--public"
+              ]
+            },
+            {
+              "description": "Open the web browser with created gist",
+              "name": [
+                "-w",
+                "--web"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Gist ID or URL",
+            "name": "gist"
+          },
+          "description": "Delete a gist",
+          "name": "delete"
+        },
+        {
+          "args": {
+            "description": "Gist ID or URL",
+            "name": "gist"
+          },
+          "description": "Edit one of your gists",
+          "name": "edit",
+          "options": [
+            {
+              "args": {
+                "name": "filename",
+                "template": "filepaths"
+              },
+              "description": "Add a new file to the gist",
+              "name": [
+                "-a",
+                "--add"
+              ]
+            },
+            {
+              "description": "Select a file to edit",
+              "name": [
+                "-f",
+                "--filename"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List your gists",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "name": "int"
+              },
+              "description": "Maximum number of gists to fetch (default 10)",
+              "name": [
+                "-L",
+                "--limit"
+              ]
+            },
+            {
+              "description": "Show only public gists",
+              "name": [
+                "--public"
+              ]
+            },
+            {
+              "description": "Show only secret gists",
+              "name": [
+                "--secret"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Gist ID or URL",
+            "name": "gist"
+          },
+          "description": "View a gist",
+          "name": "view",
+          "options": [
+            {
+              "description": "Display a single file from the gist",
+              "name": [
+                "-f",
+                "--filename"
+              ]
+            },
+            {
+              "description": "List file names from the gist",
+              "name": [
+                "--files"
+              ]
+            },
+            {
+              "description": "Print raw instead of rendered gist contents",
+              "name": [
+                "-r",
+                "--raw"
+              ]
+            },
+            {
+              "description": "Open gist in the browser",
+              "name": [
+                "-w",
+                "--web"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage issues",
+      "name": "issue",
+      "subcommands": [
+        {
+          "args": {
+            "description": "Number or URL",
+            "name": "issue"
+          },
+          "description": "Close issue",
+          "name": "close",
+          "options": [
+            {
+              "args": {
+                "name": "repo"
+              },
+              "description": "Select another repository using the [HOST/]OWNER/REPO format",
+              "name": [
+                "-R",
+                "--repo"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Number or URL",
+            "name": "issue"
+          },
+          "description": "Create a new issue comment",
+          "name": "comment",
+          "options": [
+            {
+              "args": {
+                "name": "repo"
+              },
+              "description": "Select another repository using the [HOST/]OWNER/REPO format",
+              "name": [
+                "-R",
+                "--repo"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Supply a body. Will prompt for one otherwise",
+              "name": [
+                "-b",
+                "--body"
+              ]
+            },
+            {
+              "args": {
+                "name": "file",
+                "template": "filepaths"
+              },
+              "description": "Read body text from file",
+              "name": [
+                "-F",
+                "--body-file"
+              ]
+            },
+            {
+              "args": {
+                "name": "editor"
+              },
+              "description": "Add body using editor",
+              "name": [
+                "-e",
+                "--editor"
+              ]
+            },
+            {
+              "description": "Add body in browser",
+              "name": [
+                "-w",
+                "--web"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Create a new issue",
+          "name": "create",
+          "options": [
+            {
+              "args": {
+                "name": "repo"
+              },
+              "description": "Select another repository using the [HOST/]OWNER/REPO format",
+              "name": [
+                "-R",
+                "--repo"
+              ]
+            },
+            {
+              "args": {
+                "name": "login"
+              },
+              "description": "Assign people by their login. Use \"@me\" to self-assign",
+              "name": [
+                "-a",
+                "--assignee"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Supply a body. Will prompt for one otherwise",
+              "name": [
+                "-b",
+                "--body"
+              ]
+            },
+            {
+              "args": {
+                "name": "file",
+                "template": "filepaths"
+              },
+              "description": "Read body text from file",
+              "name": [
+                "-F",
+                "--body-file"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Add labels by name",
+              "name": [
+                "-l",
+                "--label"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Add the issue to a milestone by name",
+              "name": [
+                "-m",
+                "--milestone"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Add the issue to projects by name",
+              "name": [
+                "-p",
+                "--project"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Recover input from a failed run of create",
+              "name": [
+                "--recover"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Supply a title. Will prompt for one otherwise",
+              "name": [
+                "-t",
+                "--title"
+              ]
+            },
+            {
+              "description": "Open the browser to create an issue",
+              "name": [
+                "-w",
+                "--web"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Delete issue",
+          "name": "delete",
+          "options": [
+            {
+              "args": {
+                "name": "repo"
+              },
+              "description": "Select another repository using the [HOST/]OWNER/REPO format",
+              "name": [
+                "-R",
+                "--repo"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Number or URL",
+            "name": "issue"
+          },
+          "description": "Edit an issue",
+          "name": "edit",
+          "options": [
+            {
+              "args": {
+                "name": "repo"
+              },
+              "description": "Select another repository using the [HOST/]OWNER/REPO format",
+              "name": [
+                "-R",
+                "--repo"
+              ]
+            },
+            {
+              "args": {
+                "name": "login"
+              },
+              "description": "Add assigned users by their login. Use \"@me\" to assign yourself",
+              "name": [
+                "--add-assignee"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Add labels by name",
+              "name": [
+                "--add-label"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Set the new body",
+              "name": [
+                "-b",
+                "--body"
+              ]
+            },
+            {
+              "args": {
+                "name": "file",
+                "template": "filepaths"
+              },
+              "description": "Read body text from file",
+              "name": [
+                "-F",
+                "--body-file"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Edit the milestone the issue belongs to by name",
+              "name": [
+                "-m",
+                "--milestone"
+              ]
+            },
+            {
+              "args": {
+                "name": "login"
+              },
+              "description": "Remove assigned users by their login. Use \"@me\" to unassign yourself",
+              "name": [
+                "--remove-assignee"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Remove labels by name",
+              "name": [
+                "--remove-label"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Remove the issue from projects by name",
+              "name": [
+                "--remove-project"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Set the new title",
+              "name": [
+                "-t",
+                "--title"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List and filter issues in this repository",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "name": "repo"
+              },
+              "description": "Select another repository using the [HOST/]OWNER/REPO format",
+              "name": [
+                "-R",
+                "--repo"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Filter by assignee",
+              "name": [
+                "-a",
+                "--assignee"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Filter by author",
+              "name": [
+                "-A",
+                "--author"
+              ]
+            },
+            {
+              "args": {
+                "name": "expression"
+              },
+              "description": "Filter JSON output using a jq expression",
+              "name": [
+                "-q",
+                "--jq"
+              ]
+            },
+            {
+              "args": {
+                "name": "fields"
+              },
+              "description": "Output JSON with the specified fields",
+              "name": [
+                "--json"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Filter by labels",
+              "name": [
+                "-l",
+                "--label"
+              ]
+            },
+            {
+              "args": {
+                "name": "int"
+              },
+              "description": "Maximum number of issues to fetch (default 30)",
+              "name": [
+                "-L",
+                "--limit"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Filter by mention",
+              "name": [
+                "--mention"
+              ]
+            },
+            {
+              "args": {
+                "description": "Number or Title",
+                "name": "number"
+              },
+              "description": "Filter by milestone number or `title`",
+              "name": [
+                "-m",
+                "--milestone"
+              ]
+            },
+            {
+              "args": {
+                "name": "query"
+              },
+              "description": "Search issues with query",
+              "name": [
+                "-S",
+                "--search"
+              ]
+            },
+            {
+              "args": {
+                "description": "(default \"open\")",
+                "name": "state",
+                "suggestions": [
+                  {
+                    "name": "open"
+                  },
+                  {
+                    "name": "closed"
+                  },
+                  {
+                    "name": "all"
+                  }
+                ]
+              },
+              "description": "Filter by state (default \"open\")",
+              "name": [
+                "-s",
+                "--state"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Format JSON output using a Go template",
+              "name": [
+                "-t",
+                "--template"
+              ]
+            },
+            {
+              "description": "Open the browser to list the issue(s)",
+              "name": [
+                "-w",
+                "--web"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Reopen issue",
+          "name": "reopen",
+          "options": [
+            {
+              "args": {
+                "name": "repo"
+              },
+              "description": "Select another repository using the [HOST/]OWNER/REPO format",
+              "name": [
+                "-R",
+                "--repo"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Show status of relevant issues",
+          "name": "status",
+          "options": [
+            {
+              "args": {
+                "name": "repo"
+              },
+              "description": "Select another repository using the [HOST/]OWNER/REPO format",
+              "name": [
+                "-R",
+                "--repo"
+              ]
+            },
+            {
+              "args": {
+                "name": "expression"
+              },
+              "description": "Filter JSON output using a jq expression",
+              "name": [
+                "-q",
+                "--jq"
+              ]
+            },
+            {
+              "args": {
+                "name": "fields"
+              },
+              "description": "Output JSON with the specified fields",
+              "name": [
+                "--json"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Format JSON output using a Go template",
+              "name": [
+                "-t",
+                "--template"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "description": "Number or URL",
+              "name": "issue"
+            },
+            {
+              "name": "destination-repo"
+            }
+          ],
+          "description": "Transfer issue to another repository",
+          "name": "transfer",
+          "options": [
+            {
+              "args": {
+                "name": "repo"
+              },
+              "description": "Select another repository using the [HOST/]OWNER/REPO format",
+              "name": [
+                "-R",
+                "--repo"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Number or URL",
+            "name": "issue"
+          },
+          "description": "View an issue",
+          "name": "view",
+          "options": [
+            {
+              "args": {
+                "name": "repo"
+              },
+              "description": "Select another repository using the [HOST/]OWNER/REPO format",
+              "name": [
+                "-R",
+                "--repo"
+              ]
+            },
+            {
+              "description": "View issue comments",
+              "name": [
+                "-c",
+                "--comments"
+              ]
+            },
+            {
+              "args": {
+                "name": "expression"
+              },
+              "description": "Filter JSON output using a jq expression",
+              "name": [
+                "-q",
+                "--jq"
+              ]
+            },
+            {
+              "args": {
+                "name": "fields"
+              },
+              "description": "Output JSON with the specified fields",
+              "name": [
+                "--json"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Format JSON output using a Go template",
+              "name": [
+                "-t",
+                "--template"
+              ]
+            },
+            {
+              "description": "Open an issue in the browser",
+              "name": [
+                "-w",
+                "--web"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage pull requests",
+      "name": "pr",
+      "subcommands": [
+        {
+          "args": {
+            "generators": [
+              {
+                "cache": {},
+                "js_source": "e=>JSON.parse(e).map(n=>{let{number:i,title:r,headRefName:o,state:s}=n;return{name:i.toString(),displayName:r,description:`#${i} | ${o}`,icon:s===\"OPEN\"?\"\\u2705\":\"\\u2611\\uFE0F\"}})",
+                "requires_js": true,
+                "script": [
+                  "gh",
+                  "pr",
+                  "list",
+                  "--json=number,title,headRefName,state"
+                ]
+              }
+            ],
+            "name": "number | url | branch"
+          },
+          "description": "Check out a pull request in git",
+          "name": "checkout",
+          "options": [
+            {
+              "description": "Update all active submodules (recursively)",
+              "name": [
+                "--recurse-submodules"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "cache": {},
+                "js_source": "e=>JSON.parse(e).map(n=>{let{number:i,title:r,headRefName:o,state:s}=n;return{name:i.toString(),displayName:r,description:`#${i} | ${o}`,icon:s===\"OPEN\"?\"\\u2705\":\"\\u2611\\uFE0F\"}})",
+                "requires_js": true,
+                "script": [
+                  "gh",
+                  "pr",
+                  "list",
+                  "--json=number,title,headRefName,state"
+                ]
+              }
+            ],
+            "name": "number | url | branch"
+          },
+          "description": "Show CI status for a single pull request",
+          "name": "checks",
+          "options": [
+            {
+              "description": "Open the web browser to show details about checks",
+              "name": [
+                "-w",
+                "--web"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "cache": {},
+                "js_source": "e=>JSON.parse(e).map(n=>{let{number:i,title:r,headRefName:o,state:s}=n;return{name:i.toString(),displayName:r,description:`#${i} | ${o}`,icon:s===\"OPEN\"?\"\\u2705\":\"\\u2611\\uFE0F\"}})",
+                "requires_js": true,
+                "script": [
+                  "gh",
+                  "pr",
+                  "list",
+                  "--json=number,title,headRefName,state"
+                ]
+              }
+            ],
+            "name": "number | url | branch"
+          },
+          "description": "Close a pull request",
+          "name": "close",
+          "options": [
+            {
+              "description": "Delete the local and remote branch after close",
+              "name": [
+                "-d",
+                "--delete-branch"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "cache": {},
+                "js_source": "e=>JSON.parse(e).map(n=>{let{number:i,title:r,headRefName:o,state:s}=n;return{name:i.toString(),displayName:r,description:`#${i} | ${o}`,icon:s===\"OPEN\"?\"\\u2705\":\"\\u2611\\uFE0F\"}})",
+                "requires_js": true,
+                "script": [
+                  "gh",
+                  "pr",
+                  "list",
+                  "--json=number,title,headRefName,state"
+                ]
+              }
+            ],
+            "name": "number | url | branch"
+          },
+          "description": "Edit a pull request. Without an argument, the pull request that belongs to the current branch is selected",
+          "name": "edit",
+          "options": [
+            {
+              "args": {
+                "name": "login"
+              },
+              "description": "Add assigned users by their login. Use \"@me\" to assign yourself",
+              "name": [
+                "--add-assignee"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Add labels by name",
+              "name": [
+                "--add-label"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Add the pull request to projects by name",
+              "name": [
+                "--add-project"
+              ]
+            },
+            {
+              "args": {
+                "name": "login"
+              },
+              "description": "Add reviewers by their login",
+              "name": [
+                "--add-reviewer"
+              ]
+            },
+            {
+              "args": {
+                "name": "branch"
+              },
+              "description": "Change the base branch for this pull request",
+              "name": [
+                "-B",
+                "--base"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Set the new body",
+              "name": [
+                "-b",
+                "--body"
+              ]
+            },
+            {
+              "args": {
+                "name": "file"
+              },
+              "description": "Read body text from file (use \"-\" to read from standard input)",
+              "name": [
+                "-F",
+                "--body-file"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Edit the milestone the pull request belongs to by name",
+              "name": [
+                "-m",
+                "--milestone"
+              ]
+            },
+            {
+              "args": {
+                "name": "login"
+              },
+              "description": "Remove assigned users by their login. Use \"@me\" to unassign yourself",
+              "name": [
+                "--remove-assignee"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Remove labels by name",
+              "name": [
+                "--remove-label"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Remove the pull request from projects by name",
+              "name": [
+                "--remove-project"
+              ]
+            },
+            {
+              "args": {
+                "name": "login"
+              },
+              "description": "Remove reviewers by their login",
+              "name": [
+                "--remove-reviewer"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Set the new title",
+              "name": [
+                "-t",
+                "--title"
+              ]
+            },
+            {
+              "args": {
+                "name": "[HOST/]OWNER/REPO"
+              },
+              "description": "Select another repository",
+              "name": [
+                "--repo",
+                "-R"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "cache": {},
+                "js_source": "e=>JSON.parse(e).map(n=>{let{number:i,title:r,headRefName:o,state:s}=n;return{name:i.toString(),displayName:r,description:`#${i} | ${o}`,icon:s===\"OPEN\"?\"\\u2705\":\"\\u2611\\uFE0F\"}})",
+                "requires_js": true,
+                "script": [
+                  "gh",
+                  "pr",
+                  "list",
+                  "--json=number,title,headRefName,state"
+                ]
+              }
+            ],
+            "name": "number | url | branch"
+          },
+          "description": "Create a new pr comment",
+          "name": "comment",
+          "options": [
+            {
+              "args": {
+                "name": "message"
+              },
+              "description": "Supply a body. Will prompt for one otherwise",
+              "name": [
+                "-b",
+                "--body"
+              ]
+            },
+            {
+              "description": "Add body using editor",
+              "name": [
+                "-e",
+                "--editor"
+              ]
+            },
+            {
+              "description": "Add body in browser",
+              "name": [
+                "-w",
+                "--web"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Create a pull request",
+          "name": "create",
+          "options": [
+            {
+              "args": {
+                "name": "login"
+              },
+              "description": "Assign people by their login",
+              "name": [
+                "-a",
+                "--assignee"
+              ]
+            },
+            {
+              "args": {
+                "generators": [
+                  {
+                    "script": [
+                      "git",
+                      "--no-optional-locks",
+                      "branch",
+                      "-r",
+                      "--no-color",
+                      "--sort=-committerdate"
+                    ],
+                    "transforms": [
+                      {
+                        "starts_with": "fatal:",
+                        "type": "error_guard"
+                      },
+                      "split_lines",
+                      "filter_empty",
+                      "trim",
+                      {
+                        "name": 0,
+                        "pattern": "\\S+",
+                        "type": "regex_extract"
+                      }
+                    ]
+                  }
+                ],
+                "name": "branch"
+              },
+              "description": "The branch into which you want your code merged",
+              "name": [
+                "-B",
+                "--base"
+              ]
+            },
+            {
+              "args": {
+                "name": "body"
+              },
+              "description": "Body for the pull request",
+              "name": [
+                "-b",
+                "--body"
+              ]
+            },
+            {
+              "description": "Mark pull request as a draft",
+              "name": [
+                "-d",
+                "--draft"
+              ]
+            },
+            {
+              "description": "Do not prompt for title/body and just use commit info",
+              "name": [
+                "-f",
+                "--fill"
+              ]
+            },
+            {
+              "args": {
+                "name": "branch"
+              },
+              "description": "The branch that contains commits for your pull request (default: current branch)",
+              "name": [
+                "-H",
+                "--head"
+              ]
+            },
+            {
+              "args": {
+                "name": "branch"
+              },
+              "description": "The branch that contains commits for your pull request (default: current branch)",
+              "name": [
+                "-l",
+                "--label"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Add the pull request to a milestone by name",
+              "name": [
+                "-m",
+                "--milestone"
+              ]
+            },
+            {
+              "description": "Disable maintainer's ability to modify pull request",
+              "name": [
+                "--no-maintainer-edit"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Add the pull request to projects by name",
+              "name": [
+                "-p",
+                "--project"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Recover input from a failed run of create",
+              "name": [
+                "-recover"
+              ]
+            },
+            {
+              "args": {
+                "name": "handle"
+              },
+              "description": "Request reviews from people or teams by their handle",
+              "name": [
+                "-r",
+                "--reviewer"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Title for the pull request",
+              "name": [
+                "-t",
+                "--title"
+              ]
+            },
+            {
+              "description": "Open the web browser to create a pull request",
+              "name": [
+                "-w",
+                "--web"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "cache": {},
+                "js_source": "e=>JSON.parse(e).map(n=>{let{number:i,title:r,headRefName:o,state:s}=n;return{name:i.toString(),displayName:r,description:`#${i} | ${o}`,icon:s===\"OPEN\"?\"\\u2705\":\"\\u2611\\uFE0F\"}})",
+                "requires_js": true,
+                "script": [
+                  "gh",
+                  "pr",
+                  "list",
+                  "--json=number,title,headRefName,state"
+                ]
+              }
+            ],
+            "name": "number | url | branch"
+          },
+          "description": "View changes in a pull request",
+          "name": "diff",
+          "options": [
+            {
+              "args": {
+                "name": "choice"
+              },
+              "description": "Use color in diff output: {always|never|auto}",
+              "name": [
+                "--color"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List and filter pull requests in this repository",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Filter by assignee",
+              "name": [
+                "-a",
+                "--assignee"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Filter by base branch",
+              "name": [
+                "-B",
+                "--base"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Filter by labels",
+              "name": [
+                "-l",
+                "--label"
+              ]
+            },
+            {
+              "args": {
+                "name": "int"
+              },
+              "description": "Maximum number of items to fetch",
+              "name": [
+                "-L",
+                "--limit"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Filter by state: {open|closed|merged|all}",
+              "name": [
+                "-s",
+                "--state"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Open the browser to list the pull requests",
+              "name": [
+                "-w",
+                "--web"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "cache": {},
+                "js_source": "e=>JSON.parse(e).map(n=>{let{number:i,title:r,headRefName:o,state:s}=n;return{name:i.toString(),displayName:r,description:`#${i} | ${o}`,icon:s===\"OPEN\"?\"\\u2705\":\"\\u2611\\uFE0F\"}})",
+                "requires_js": true,
+                "script": [
+                  "gh",
+                  "pr",
+                  "list",
+                  "--json=number,title,headRefName,state"
+                ]
+              }
+            ],
+            "name": "number | url | branch"
+          },
+          "description": "Merge a pull request",
+          "name": "merge",
+          "options": [
+            {
+              "description": "Delete the local and remote branch after merge",
+              "name": [
+                "-d",
+                "--delete-branch"
+              ]
+            },
+            {
+              "description": "Merge the commits with the base branch",
+              "name": [
+                "-m",
+                "--merge"
+              ]
+            },
+            {
+              "description": "Rebase the commits onto the base branch",
+              "name": [
+                "-r",
+                "--rebase"
+              ]
+            },
+            {
+              "description": "Squash the commits into one commit and merge it into the base branch",
+              "name": [
+                "-s",
+                "--squash"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "cache": {},
+                "js_source": "e=>JSON.parse(e).map(n=>{let{number:i,title:r,headRefName:o,state:s}=n;return{name:i.toString(),displayName:r,description:`#${i} | ${o}`,icon:s===\"OPEN\"?\"\\u2705\":\"\\u2611\\uFE0F\"}})",
+                "requires_js": true,
+                "script": [
+                  "gh",
+                  "pr",
+                  "list",
+                  "--json=number,title,headRefName,state"
+                ]
+              }
+            ],
+            "name": "number | url | branch"
+          },
+          "description": "Mark a pull request as ready for review",
+          "name": "ready"
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "cache": {},
+                "js_source": "e=>JSON.parse(e).map(n=>{let{number:i,title:r,headRefName:o,state:s}=n;return{name:i.toString(),displayName:r,description:`#${i} | ${o}`,icon:s===\"OPEN\"?\"\\u2705\":\"\\u2611\\uFE0F\"}})",
+                "requires_js": true,
+                "script": [
+                  "gh",
+                  "pr",
+                  "list",
+                  "--json=number,title,headRefName,state"
+                ]
+              }
+            ],
+            "name": "number | url | branch"
+          },
+          "description": "Reopen a pull request",
+          "name": "reopen"
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "cache": {},
+                "js_source": "e=>JSON.parse(e).map(n=>{let{number:i,title:r,headRefName:o,state:s}=n;return{name:i.toString(),displayName:r,description:`#${i} | ${o}`,icon:s===\"OPEN\"?\"\\u2705\":\"\\u2611\\uFE0F\"}})",
+                "requires_js": true,
+                "script": [
+                  "gh",
+                  "pr",
+                  "list",
+                  "--json=number,title,headRefName,state"
+                ]
+              }
+            ],
+            "name": "number | url | branch"
+          },
+          "description": "Add a review to a pull request",
+          "name": "review",
+          "options": [
+            {
+              "description": "Approve pull request",
+              "name": [
+                "-a",
+                "--approve"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify the body of a review",
+              "name": [
+                "-b",
+                "--body"
+              ]
+            },
+            {
+              "description": "Comment on a pull request",
+              "name": [
+                "-c",
+                "--comment"
+              ]
+            },
+            {
+              "description": "Request changes on a pull request",
+              "name": [
+                "-r",
+                "--request-changes"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Show status of relevant pull requests",
+          "name": "status"
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "cache": {},
+                "js_source": "e=>JSON.parse(e).map(n=>{let{number:i,title:r,headRefName:o,state:s}=n;return{name:i.toString(),displayName:r,description:`#${i} | ${o}`,icon:s===\"OPEN\"?\"\\u2705\":\"\\u2611\\uFE0F\"}})",
+                "requires_js": true,
+                "script": [
+                  "gh",
+                  "pr",
+                  "list",
+                  "--json=number,title,headRefName,state"
+                ]
+              }
+            ],
+            "name": "number | url | branch"
+          },
+          "description": "View a pull request",
+          "name": "view",
+          "options": [
+            {
+              "description": "View pull request comments",
+              "name": [
+                "-c",
+                "--comments"
+              ]
+            },
+            {
+              "description": "Open a pull request in the browser",
+              "name": [
+                "-w",
+                "--web"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage GitHub releases",
+      "name": "release"
+    },
+    {
+      "description": "Work with GitHub repositories",
+      "name": "repo",
+      "subcommands": [
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "e=>{if(e){let t=`[${e.replace(/(?:\\r\\n|\\r|\\n)/g,\",\")}]`;try{return JSON.parse(t).map(ee)}catch{return[]}}return[]}",
+                "requires_js": true,
+                "script": [
+                  "gh",
+                  "api",
+                  "graphql",
+                  "--paginate",
+                  "-f",
+                  "query='query($endCursor: String) { viewer { repositories(first: 100, after: $endCursor) { nodes { isPrivate, nameWithOwner, description } pageInfo { hasNextPage endCursor }}}}'",
+                  "--jq",
+                  ".data.viewer.repositories.nodes[]"
+                ]
+              }
+            ],
+            "isOptional": true,
+            "name": "repository"
+          },
+          "description": "Archive a GitHub repository. With no argument, archives the current repository",
+          "name": "archive",
+          "options": [
+            {
+              "description": "Skip the confirmation prompt",
+              "name": [
+                "-y",
+                "--confirm"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "generators": [
+                {
+                  "js_source": "e=>{if(e){let t=`[${e.replace(/(?:\\r\\n|\\r|\\n)/g,\",\")}]`;try{return JSON.parse(t).map(ee)}catch{return[]}}return[]}",
+                  "requires_js": true,
+                  "script": [
+                    "gh",
+                    "api",
+                    "graphql",
+                    "--paginate",
+                    "-f",
+                    "query='query($endCursor: String) { viewer { repositories(first: 100, after: $endCursor) { nodes { isPrivate, nameWithOwner, description } pageInfo { hasNextPage endCursor }}}}'",
+                    "--jq",
+                    ".data.viewer.repositories.nodes[]"
+                  ]
+                },
+                {
+                  "js_source": "async(e,t)=>{let n=e.pop();if(!n)return[];let i=n.split(\"/\");if(i.length===0)return[];let r=i.shift();if(!r)return[];let{stdout:o,status:s}=await t({command:\"gh\",args:[\"repo\",\"list\",r,\"--limit\",\"9999\",\"--json\",\"nameWithOwner,description,isPrivate\"]});return s!==0?[]:JSON.parse(o).map(ee)}",
+                  "requires_js": true
+                }
+              ],
+              "name": "repository"
+            },
+            {
+              "isOptional": true,
+              "name": "directory"
+            }
+          ],
+          "description": "Clone a GitHub repository locally.\nIf the \"OWNER/\" portion of the \"OWNER/REPO\" repository argument is omitted, it\ndefaults to the name of the authenticating user.\nPass additional 'git clone' flags by listing them after '--'",
+          "name": "clone",
+          "options": [
+            {
+              "args": {
+                "description": "Flags to pass to git when cloning",
+                "isVariadic": true,
+                "name": "flags"
+              },
+              "description": "Flags to pass to git when cloning",
+              "name": [
+                "--"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Upstream remote name when cloning a fork (default \"upstream\")",
+              "name": [
+                "-u",
+                "--upstream-remote-name"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Create a new GitHub repository.\nTo create a repository interactively, use 'gh repo create' with no arguments.\nTo create a remote repository non-interactively, supply the repository name and one of '--public', '--private', or '--internal'.\nPass '--clone' to clone the new repository locally.\nTo create a remote repository from an existing local repository, specify the source directory with '--source'. \nBy default, the remote repository name will be the name of the source directory. \nPass '--push' to push any local commits to the new repository",
+          "name": "create",
+          "options": [
+            {
+              "description": "Skip the confirmation prompt",
+              "name": [
+                "-y",
+                "--confirm"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Description of the repository",
+              "name": [
+                "-d",
+                "--description"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Repository home page URL",
+              "name": [
+                "-h",
+                "--homepage"
+              ]
+            },
+            {
+              "description": "Make the repository public",
+              "name": [
+                "--public"
+              ]
+            },
+            {
+              "description": "Make the repository private",
+              "name": [
+                "--private"
+              ]
+            },
+            {
+              "description": "Make the repository internal",
+              "name": [
+                "--internal"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Make the new repository based on a template repository",
+              "name": [
+                "-p",
+                "--template"
+              ]
+            },
+            {
+              "description": "Clone the new repository to the current directory",
+              "name": [
+                "-c",
+                "--clone"
+              ]
+            },
+            {
+              "description": "Disable issues in the new repository",
+              "name": [
+                "--disable-issues"
+              ]
+            },
+            {
+              "description": "Disable wiki in the new repository",
+              "name": [
+                "--disable-wiki"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify a gitignore template for the repository",
+              "name": [
+                "-g",
+                "--gitignore"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify an Open Source License for the repository",
+              "name": [
+                "-l",
+                "--license"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify remote name for the new repository",
+              "name": [
+                "-r",
+                "--remote"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify path to local repository to use as source",
+              "name": [
+                "-s",
+                "--source"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The name of the organization team to be granted access",
+              "name": [
+                "-t",
+                "--team"
+              ]
+            },
+            {
+              "description": "Include all branches from template repository",
+              "name": [
+                "--include-all-branches"
+              ]
+            },
+            {
+              "description": "Push local commits to the new repository",
+              "name": [
+                "--push"
+              ]
+            },
+            {
+              "description": "Add a README file to the new repository",
+              "name": [
+                "--add-readme"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Manage deploy keys in a repository",
+          "name": "deploy-key",
+          "options": [
+            {
+              "args": {
+                "name": "[HOST/]OWNER/REPO"
+              },
+              "description": "Select another repository using the `[HOST/]OWNER/REPO` format",
+              "name": [
+                "-R",
+                "--repo"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "args": {
+                "description": "Path to the public key file",
+                "name": "key-file",
+                "template": "filepaths"
+              },
+              "description": "Add a deploy key to a GitHub repository",
+              "name": "add",
+              "options": [
+                {
+                  "description": "Allow write access for the key",
+                  "name": [
+                    "-w",
+                    "--allow-write"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "string"
+                  },
+                  "description": "Title of the new key",
+                  "name": [
+                    "-t",
+                    "--title"
+                  ]
+                }
+              ]
+            },
+            {
+              "args": {
+                "description": "ID of the key to delete",
+                "name": "key-id"
+              },
+              "description": "Delete a deploy key from a GitHub repository",
+              "name": "delete"
+            },
+            {
+              "description": "List deploy keys in a GitHub repository",
+              "name": "list"
+            }
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "e=>{if(e){let t=`[${e.replace(/(?:\\r\\n|\\r|\\n)/g,\",\")}]`;try{return JSON.parse(t).map(ee)}catch{return[]}}return[]}",
+                "requires_js": true,
+                "script": [
+                  "gh",
+                  "api",
+                  "graphql",
+                  "--paginate",
+                  "-f",
+                  "query='query($endCursor: String) { viewer { repositories(first: 100, after: $endCursor) { nodes { isPrivate, nameWithOwner, description } pageInfo { hasNextPage endCursor }}}}'",
+                  "--jq",
+                  ".data.viewer.repositories.nodes[]"
+                ]
+              }
+            ],
+            "isOptional": true,
+            "name": "repository"
+          },
+          "description": "Delete a GitHub repository.\nWith no argument, deletes the current repository. Otherwise, deletes the specified repository.\nDeletion requires authorization with the \"delete_repo\" scope. \nTo authorize, run \"gh auth refresh -s delete_repo\"",
+          "name": "delete",
+          "options": [
+            {
+              "description": "Skip the confirmation prompt",
+              "name": [
+                "-y",
+                "--confirm"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "e=>{if(e){let t=`[${e.replace(/(?:\\r\\n|\\r|\\n)/g,\",\")}]`;try{return JSON.parse(t).map(ee)}catch{return[]}}return[]}",
+                "requires_js": true,
+                "script": [
+                  "gh",
+                  "api",
+                  "graphql",
+                  "--paginate",
+                  "-f",
+                  "query='query($endCursor: String) { viewer { repositories(first: 100, after: $endCursor) { nodes { isPrivate, nameWithOwner, description } pageInfo { hasNextPage endCursor }}}}'",
+                  "--jq",
+                  ".data.viewer.repositories.nodes[]"
+                ]
+              }
+            ],
+            "isOptional": true,
+            "name": "repository"
+          },
+          "description": "Edit repository settings",
+          "name": "edit",
+          "options": [
+            {
+              "description": "Clone the fork {true|false}",
+              "name": [
+                "--clone"
+              ]
+            },
+            {
+              "args": {
+                "name": "topic names"
+              },
+              "description": "Add repository topic",
+              "name": [
+                "--add-topic"
+              ]
+            },
+            {
+              "description": "Allow forking of an organization repository",
+              "name": [
+                "--allow-forking"
+              ]
+            },
+            {
+              "args": {
+                "name": "branch name"
+              },
+              "description": "Set the default branch name for the repository",
+              "name": [
+                "--default-branch"
+              ]
+            },
+            {
+              "description": "Delete head branch when pull requests are merged",
+              "name": [
+                "--delete-branch-on-merge"
+              ]
+            },
+            {
+              "args": {
+                "name": "description"
+              },
+              "description": "Description of the repository",
+              "name": [
+                "-d",
+                "--description"
+              ]
+            },
+            {
+              "description": "Enable auto-merge functionality",
+              "name": [
+                "--enable-auto-merge"
+              ]
+            },
+            {
+              "description": "Enable issues in the repository",
+              "name": [
+                "--enable-issues"
+              ]
+            },
+            {
+              "description": "Enable merging pull requests via merge commit",
+              "name": [
+                "--enable-merge-commit"
+              ]
+            },
+            {
+              "description": "Enable projects in the repository",
+              "name": [
+                "--enable-projects"
+              ]
+            },
+            {
+              "description": "Enable merging pull requests via rebase",
+              "name": [
+                "--enable-rebase-merge"
+              ]
+            },
+            {
+              "description": "Enable merging pull requests via squashed commit",
+              "name": [
+                "--enable-squash-merge"
+              ]
+            },
+            {
+              "description": "Enable wiki in the repository",
+              "name": [
+                "--enable-wiki"
+              ]
+            },
+            {
+              "args": {
+                "name": "URL"
+              },
+              "description": "Repository home page URL",
+              "name": [
+                "-h",
+                "--homepage"
+              ]
+            },
+            {
+              "args": {
+                "name": "topic names"
+              },
+              "description": "Remove repository topic",
+              "name": [
+                "--remove-topic"
+              ]
+            },
+            {
+              "description": "Make the repository available as a template repository",
+              "name": [
+                "--template"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "name": "public"
+                  },
+                  {
+                    "name": "private"
+                  },
+                  {
+                    "name": "internal"
+                  }
+                ]
+              },
+              "description": "Change the visibility of the repository to {public,private,internal}",
+              "name": [
+                "--visibility"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "e=>{if(e){let t=`[${e.replace(/(?:\\r\\n|\\r|\\n)/g,\",\")}]`;try{return JSON.parse(t).map(ee)}catch{return[]}}return[]}",
+                "requires_js": true,
+                "script": [
+                  "gh",
+                  "api",
+                  "graphql",
+                  "--paginate",
+                  "-f",
+                  "query='query($endCursor: String) { viewer { repositories(first: 100, after: $endCursor) { nodes { isPrivate, nameWithOwner, description } pageInfo { hasNextPage endCursor }}}}'",
+                  "--jq",
+                  ".data.viewer.repositories.nodes[]"
+                ]
+              },
+              {
+                "js_source": "async(e,t)=>{let n=e.pop();if(!n)return[];let i=n.split(\"/\");if(i.length===0)return[];let r=i.shift();if(!r)return[];let{stdout:o,status:s}=await t({command:\"gh\",args:[\"repo\",\"list\",r,\"--limit\",\"9999\",\"--json\",\"nameWithOwner,description,isPrivate\"]});return s!==0?[]:JSON.parse(o).map(ee)}",
+                "requires_js": true
+              }
+            ],
+            "name": "repository"
+          },
+          "description": "Create a fork of a repository.\nWith no argument, creates a fork of the current repository. Otherwise, forks\nthe specified repository.\nBy default, the new fork is set to be your 'origin' remote and any existing\norigin remote is renamed to 'upstream'. To alter this behavior, you can set\na name for the new fork's remote with --remote-name.\nAdditional 'git clone' flags can be passed in by listing them after '--'",
+          "name": "fork",
+          "options": [
+            {
+              "args": {
+                "description": "Flags to pass to git when cloning",
+                "isVariadic": true,
+                "name": "flags"
+              },
+              "description": "Flags to pass to git when cloning",
+              "name": [
+                "--"
+              ]
+            },
+            {
+              "description": "Clone the fork",
+              "name": [
+                "--clone"
+              ]
+            },
+            {
+              "description": "Add remote for fork {true|false}",
+              "name": [
+                "--remote"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify a name for a fork's new remote. (default \"origin\")",
+              "name": [
+                "--remote-name"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Create the fork in an organization",
+              "name": [
+                "--org"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Rename the forked repository",
+              "name": [
+                "--fork-name"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "owner"
+          },
+          "description": "List repositories owned by user or organization.\nFor more information about output formatting flags, see 'gh help formatting'",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "name": "visibility",
+                "suggestions": [
+                  {
+                    "name": "public"
+                  },
+                  {
+                    "name": "private"
+                  },
+                  {
+                    "name": "internal"
+                  }
+                ]
+              },
+              "description": "Filter repositories by visibility",
+              "name": [
+                "--visibility"
+              ]
+            },
+            {
+              "description": "Show only archived repositories",
+              "name": [
+                "--archived"
+              ]
+            },
+            {
+              "description": "Show only forked repositories",
+              "name": [
+                "--fork"
+              ]
+            },
+            {
+              "description": "Filter by primary coding language",
+              "name": [
+                "-l",
+                "--language"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Maximum number of repositories to list (default 30)",
+              "name": [
+                "-L",
+                "--limit"
+              ]
+            },
+            {
+              "description": "Omit archived repositories",
+              "name": [
+                "--no-archived"
+              ]
+            },
+            {
+              "description": "Show only non-forks",
+              "name": [
+                "--source"
+              ]
+            },
+            {
+              "description": "Filter JSON output using a jq expression",
+              "name": [
+                "-q",
+                "--jq"
+              ]
+            },
+            {
+              "description": "Output JSON with the specified fields",
+              "name": [
+                "--json"
+              ]
+            },
+            {
+              "description": "Format JSON output using a Go template",
+              "name": [
+                "-t",
+                "--template"
+              ]
+            },
+            {
+              "args": {
+                "name": "topic"
+              },
+              "description": "Filter by topic",
+              "name": [
+                "--topic"
+              ]
+            },
+            {
+              "description": "Show only private repositories",
+              "name": [
+                "--private"
+              ]
+            },
+            {
+              "description": "Show only public repositories",
+              "name": [
+                "--public"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "new-name"
+          },
+          "description": "Rename a GitHub repository.\nBy default, this renames the current repository; otherwise renames the specified repository",
+          "name": "rename",
+          "options": [
+            {
+              "description": "Skip the confirmation prompt",
+              "name": [
+                "-y",
+                "--confirm"
+              ]
+            },
+            {
+              "args": {
+                "name": "[HOST/]OWNER/REPO"
+              },
+              "description": "Select another repository",
+              "name": [
+                "--repo",
+                "-R"
+              ]
+            },
+            {
+              "args": {
+                "name": "[HOST/]OWNER/REPO"
+              },
+              "description": "Select another repository using the `[HOST/]OWNER/REPO` format",
+              "name": [
+                "-R",
+                "--repo"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "e=>{if(e){let t=`[${e.replace(/(?:\\r\\n|\\r|\\n)/g,\",\")}]`;try{return JSON.parse(t).map(ee)}catch{return[]}}return[]}",
+                "requires_js": true,
+                "script": [
+                  "gh",
+                  "api",
+                  "graphql",
+                  "--paginate",
+                  "-f",
+                  "query='query($endCursor: String) { viewer { repositories(first: 100, after: $endCursor) { nodes { isPrivate, nameWithOwner, description } pageInfo { hasNextPage endCursor }}}}'",
+                  "--jq",
+                  ".data.viewer.repositories.nodes[]"
+                ]
+              },
+              {
+                "js_source": "async(e,t)=>{let n=e.pop();if(!n)return[];let i=n.split(\"/\");if(i.length===0)return[];let r=i.shift();if(!r)return[];let{stdout:o,status:s}=await t({command:\"gh\",args:[\"repo\",\"list\",r,\"--limit\",\"9999\",\"--json\",\"nameWithOwner,description,isPrivate\"]});return s!==0?[]:JSON.parse(o).map(ee)}",
+                "requires_js": true
+              }
+            ],
+            "isOptional": true,
+            "name": "repository"
+          },
+          "description": "Sets the default remote repository to use when querying the GitHub API for the locally cloned repository",
+          "name": "set-default",
+          "options": [
+            {
+              "description": "Unset the current default repository",
+              "name": [
+                "-u",
+                "--unset"
+              ]
+            },
+            {
+              "description": "View the current default repository",
+              "name": [
+                "-v",
+                "--view"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "destination-repository"
+          },
+          "description": "Sync destination repository from source repository. Syncing uses the main branch\nof the source repository to update the matching branch on the destination\nrepository so they are equal. A fast forward update will be used execept when the\n'--force' flag is specified, then the two branches will\nby synced using a hard reset.    \nWithout an argument, the local repository is selected as the destination repository.\nThe source repository is the parent of the destination repository by default.\nThis can be overridden with the '--source' flag",
+          "name": "sync",
+          "options": [
+            {
+              "args": {
+                "name": "branch name"
+              },
+              "description": "Branch to sync",
+              "name": [
+                "-b",
+                "--branch"
+              ]
+            },
+            {
+              "description": "Hard reset the branch of the destination repository to match the source repository",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "args": {
+                "name": "source repository"
+              },
+              "description": "Source repository",
+              "name": [
+                "-s",
+                "--source"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "e=>{if(e){let t=`[${e.replace(/(?:\\r\\n|\\r|\\n)/g,\",\")}]`;try{return JSON.parse(t).map(ee)}catch{return[]}}return[]}",
+                "requires_js": true,
+                "script": [
+                  "gh",
+                  "api",
+                  "graphql",
+                  "--paginate",
+                  "-f",
+                  "query='query($endCursor: String) { viewer { repositories(first: 100, after: $endCursor) { nodes { isPrivate, nameWithOwner, description } pageInfo { hasNextPage endCursor }}}}'",
+                  "--jq",
+                  ".data.viewer.repositories.nodes[]"
+                ]
+              },
+              {
+                "js_source": "async(e,t)=>{let n=e.pop();if(!n)return[];let i=n.split(\"/\");if(i.length===0)return[];let r=i.shift();if(!r)return[];let{stdout:o,status:s}=await t({command:\"gh\",args:[\"repo\",\"list\",r,\"--limit\",\"9999\",\"--json\",\"nameWithOwner,description,isPrivate\"]});return s!==0?[]:JSON.parse(o).map(ee)}",
+                "requires_js": true
+              }
+            ],
+            "isOptional": true,
+            "name": "repository"
+          },
+          "description": "Display the description and the README of a GitHub repository.\nWith no argument, the repository for the current directory is displayed.\nWith '--web', open the repository in a web browser instead.\nWith '--branch', view a specific branch of the repository.\nFor more information about output formatting flags, see 'gh help formatting'",
+          "name": "view",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "View a specific branch of the repository",
+              "name": [
+                "-b",
+                "--branch"
+              ]
+            },
+            {
+              "description": "Open a repository in the browser",
+              "name": [
+                "-w",
+                "--web"
+              ]
+            },
+            {
+              "args": {
+                "name": "expression"
+              },
+              "description": "Filter JSON output using a jq expression",
+              "name": [
+                "-q",
+                "--jq"
+              ]
+            },
+            {
+              "args": {
+                "name": "fields"
+              },
+              "description": "Output JSON with the specified fields",
+              "name": [
+                "--json"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Format JSON output using a Go template",
+              "name": [
+                "-t",
+                "--template"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "View details about workflow runs",
+      "name": "run",
+      "options": [
+        {
+          "args": {
+            "name": "[HOST/]OWNER/REPO"
+          },
+          "description": "Select another repository",
+          "name": [
+            "--repo",
+            "-R"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": {
+            "name": "run-id"
+          },
+          "description": "Download artifacts generated by a workflow run",
+          "name": "download"
+        },
+        {
+          "description": "List recent workflow runs",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "name": "[HOST/]OWNER/REPO"
+              },
+              "description": "Select another repository",
+              "name": [
+                "--repo",
+                "-R"
+              ]
+            },
+            {
+              "args": {
+                "name": "int"
+              },
+              "description": "Maximum number of runs to fetch (default 20)",
+              "name": [
+                "-L",
+                "--limit"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Filter runs by workflow",
+              "name": [
+                "-w",
+                "--workflow"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "run-id"
+          },
+          "description": "Rerun a failed run",
+          "name": "rerun",
+          "options": [
+            {
+              "args": {
+                "name": "[HOST/]OWNER/REPO"
+              },
+              "description": "Select another repository",
+              "name": [
+                "--repo",
+                "-R"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "run-id"
+          },
+          "description": "View a summary of a workflow run",
+          "name": "view",
+          "options": [
+            {
+              "args": {
+                "name": "[HOST/]OWNER/REPO"
+              },
+              "description": "Select another repository",
+              "name": [
+                "--repo",
+                "-R"
+              ]
+            },
+            {
+              "description": "Exit with non-zero status if run failed",
+              "name": [
+                "--exit-status"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "View a specific job ID from a run",
+              "name": [
+                "-j",
+                "--job"
+              ]
+            },
+            {
+              "description": "View full log for either a run or specific job",
+              "name": [
+                "--log"
+              ]
+            },
+            {
+              "description": "View the log for any failed steps in a run or specific job",
+              "name": [
+                "--log-failed"
+              ]
+            },
+            {
+              "description": "Show job steps",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Open run in the browser",
+              "name": [
+                "-w",
+                "--web"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Watch a run until it completes, showing its progress",
+          "name": "watch",
+          "options": [
+            {
+              "args": {
+                "name": "[HOST/]OWNER/REPO"
+              },
+              "description": "Select another repository",
+              "name": [
+                "--repo",
+                "-R"
+              ]
+            },
+            {
+              "description": "Exit with non-zero status if run fails",
+              "name": [
+                "--exit-status"
+              ]
+            },
+            {
+              "args": {
+                "name": "int"
+              },
+              "description": "Refresh interval in seconds (default 3)",
+              "name": [
+                "-i",
+                "--interval"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage GitHub secrets",
+      "name": "secret",
+      "options": [
+        {
+          "args": {
+            "name": "[HOST/]OWNER/REPO"
+          },
+          "description": "Select another repository",
+          "name": [
+            "--repo",
+            "-R"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "List secrets for a repository, environment, or organization",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "name": "[HOST/]OWNER/REPO"
+              },
+              "description": "Select another repository",
+              "name": [
+                "--repo",
+                "-R"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "List secrets for an environment",
+              "name": [
+                "-e",
+                "--env"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "List secrets for an environment",
+              "name": [
+                "-o",
+                "--org"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Remove secrets",
+          "name": "remove",
+          "options": [
+            {
+              "args": {
+                "name": "[HOST/]OWNER/REPO"
+              },
+              "description": "Select another repository",
+              "name": [
+                "--repo",
+                "-R"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "List secrets for an environment",
+              "name": [
+                "-e",
+                "--env"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "List secrets for an environment",
+              "name": [
+                "-o",
+                "--org"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Create or update secrets",
+          "name": "set",
+          "options": [
+            {
+              "args": {
+                "name": "[HOST/]OWNER/REPO"
+              },
+              "description": "Select another repository",
+              "name": [
+                "--repo",
+                "-R"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "List secrets for an environment",
+              "name": [
+                "-e",
+                "--env"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "List secrets for an environment",
+              "name": [
+                "-o",
+                "--org"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "A value for the secret. Reads from STDIN if not specified",
+              "name": [
+                "-b",
+                "--body"
+              ]
+            },
+            {
+              "args": {
+                "name": "string",
+                "suggestions": [
+                  {
+                    "name": "private"
+                  },
+                  {
+                    "name": "selected"
+                  },
+                  {
+                    "name": "all"
+                  }
+                ]
+              },
+              "description": "Set visibility for an organization secret: all, `private`, or `selected` (default 'private')",
+              "name": [
+                "-v",
+                "--visibility"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage SSH keys",
+      "name": "ssh-key",
+      "subcommands": [
+        {
+          "args": {
+            "name": "<key-file>",
+            "template": "filepaths"
+          },
+          "description": "Add an SSH key to your GitHub account",
+          "name": "add",
+          "options": [
+            {
+              "args": {
+                "name": "[HOST/]OWNER/REPO"
+              },
+              "description": "Select another repository",
+              "name": [
+                "--repo",
+                "-R"
+              ]
+            },
+            {
+              "description": "Title for the new key",
+              "name": [
+                "-t",
+                "--title"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Lists SSH keys in your GitHub account",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "name": "[HOST/]OWNER/REPO"
+              },
+              "description": "Select another repository",
+              "name": [
+                "--repo",
+                "-R"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "View details about GitHub Actions workflows",
+      "name": "workflow",
+      "options": [
+        {
+          "args": {
+            "name": "[HOST/]OWNER/REPO"
+          },
+          "description": "Select another repository",
+          "name": [
+            "--repo",
+            "-R"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": {
+            "name": "[<workflow-id> | <workflow-name>]"
+          },
+          "description": "Disable a workflow",
+          "name": "disable",
+          "options": [
+            {
+              "args": {
+                "name": "[HOST/]OWNER/REPO"
+              },
+              "description": "Select another repository",
+              "name": [
+                "--repo",
+                "-R"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "[<workflow-id> | <workflow-name>]"
+          },
+          "description": "Enable a workflow",
+          "name": "enable",
+          "options": [
+            {
+              "args": {
+                "name": "[HOST/]OWNER/REPO"
+              },
+              "description": "Select another repository",
+              "name": [
+                "--repo",
+                "-R"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "[<workflow-id> | <workflow-name>]"
+          },
+          "description": "List workflows",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "name": "[HOST/]OWNER/REPO"
+              },
+              "description": "Select another repository",
+              "name": [
+                "--repo",
+                "-R"
+              ]
+            },
+            {
+              "description": "Show all workflows, including disabled workflows",
+              "name": [
+                "-a",
+                "--all"
+              ]
+            },
+            {
+              "args": {
+                "description": "Maximum number of workflows to fetch (default 50)",
+                "name": "int"
+              },
+              "description": "Show all workflows, including disabled workflows",
+              "name": [
+                "-L",
+                "--limit"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "[<workflow-id> | <workflow-name>]"
+          },
+          "description": "Run a workflow by creating a workflow_dispatch event",
+          "name": "run",
+          "options": [
+            {
+              "args": {
+                "name": "[HOST/]OWNER/REPO"
+              },
+              "description": "Select another repository",
+              "name": [
+                "--repo",
+                "-R"
+              ]
+            },
+            {
+              "args": {
+                "name": "key=value"
+              },
+              "description": "Add a string parameter in key=value format, respecting @ syntax",
+              "name": [
+                "-F",
+                "--field"
+              ]
+            },
+            {
+              "description": "Read workflow inputs as JSON via STDIN",
+              "name": [
+                "--json"
+              ]
+            },
+            {
+              "args": {
+                "name": "key=value"
+              },
+              "description": "Add a string parameter in key=value format",
+              "name": [
+                "-f",
+                "--raw-field"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The branch or tag name which contains the version of the workflow file you'd like to run",
+              "name": [
+                "-r",
+                "--ref"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "name": "workflow-id"
+            },
+            {
+              "name": "workflow-name"
+            },
+            {
+              "name": "filename",
+              "template": "filepaths"
+            }
+          ],
+          "description": "View the summary of a workflow",
+          "name": "view",
+          "options": [
+            {
+              "args": {
+                "name": "[HOST/]OWNER/REPO"
+              },
+              "description": "Select another repository",
+              "name": [
+                "--repo",
+                "-R"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The branch or tag name which contains the version of the workflow file you'd like to view",
+              "name": [
+                "-r",
+                "--ref"
+              ]
+            },
+            {
+              "description": "Open workflow in the browser",
+              "name": [
+                "-w",
+                "--web"
+              ]
+            },
+            {
+              "description": "View the workflow yaml file",
+              "name": [
+                "-y",
+                "--yaml"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Connect to and manage codespaces",
+      "name": "codespace",
+      "subcommands": [
+        {
+          "description": "Open a codespace in Visual Studio Code",
+          "name": "code",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Name of the codespace",
+              "name": [
+                "-c",
+                "--codespace"
+              ]
+            },
+            {
+              "description": "Use the insiders version of Visual Studio Code",
+              "name": [
+                "--insiders"
+              ]
+            },
+            {
+              "description": "Use the web version of Visual Studio Code",
+              "name": [
+                "-w",
+                "--web"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "isVariadic": true,
+              "name": "sources"
+            },
+            {
+              "name": "dest"
+            }
+          ],
+          "description": "The cp command copies files between the local and remote file systems",
+          "name": "cp",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Name of the codespace",
+              "name": [
+                "-c",
+                "--codespace"
+              ]
+            },
+            {
+              "description": "Expand remote file names on remote shell",
+              "name": [
+                "-e",
+                "--expand"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Name of the SSH profile to use",
+              "name": [
+                "-p",
+                "--profile"
+              ]
+            },
+            {
+              "description": "Recursively copy directories",
+              "name": [
+                "-r",
+                "--recursive"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Create a codespace",
+          "name": "create",
+          "options": [
+            {
+              "description": "Repository branch",
+              "name": [
+                "-b",
+                "--branch"
+              ]
+            },
+            {
+              "description": "Do not prompt to accept additional permissions requested by the codespace",
+              "name": [
+                "--default-permissions"
+              ]
+            },
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "(h,y,R)=>ue(this,void 0,void 0,function*(){var g;let{isDangerous:O,currentWorkingDirectory:j,searchTerm:f}=R,T=(g=(0,w.getCurrentInsertedDirectory)(l??j,f,R))!==null&&g!==void 0?g:\"/\";try{let I=yield y({command:\"ls\",args:[\"-1ApL\"],cwd:T}),te=J(I.stdout.split(`\n`),[\".DS_Store\"]),M=[];for(let D of te)if(D){let P=D.endsWith(\"/\")?\"folders\":\"filepaths\";(P===\"filepaths\"&&d!==\"only\"||P===\"folders\"&&d!==\"never\")&&M.push({type:P===\"filepaths\"?\"file\":\"folder\",name:D,insertValue:D,isDangerous:O,context:{templateType:P}})}return k(b(M))}catch{return[]}})",
+                    "requires_js": true
+                  }
+                ]
+              },
+              "description": "Path to the devcontainer.json file to use when creating codespace",
+              "name": [
+                "--devcontainer-path"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Display name for the codespace",
+              "name": [
+                "-d",
+                "--display-name"
+              ]
+            },
+            {
+              "args": {
+                "description": "Example: '10m', '1h'",
+                "name": "duration"
+              },
+              "description": "Allowed inactivity before codespace is stopped",
+              "name": [
+                "--idle-timeout"
+              ]
+            },
+            {
+              "args": {
+                "name": "location",
+                "suggestions": [
+                  {
+                    "name": "EastUs"
+                  },
+                  {
+                    "name": "SouthEastAsia"
+                  },
+                  {
+                    "name": "WestEurope"
+                  },
+                  {
+                    "name": "WestUs2"
+                  }
+                ]
+              },
+              "description": "Determined automatically if not provided",
+              "name": [
+                "-l",
+                "--location"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Hardware specifications for the VM",
+              "name": [
+                "-m",
+                "--machine"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Repository name with owner: user/repo",
+              "name": [
+                "-R",
+                "--repo"
+              ]
+            },
+            {
+              "args": {
+                "description": "Example: '10m', '1h'",
+                "name": "duration"
+              },
+              "description": "Allowed time after shutting down before the codespace is automatically deleted (maximum 30 days)",
+              "name": [
+                "--retention-period"
+              ]
+            },
+            {
+              "description": "Show status of post-create command and dotfiles",
+              "name": [
+                "-s",
+                "--status"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Delete codespaces based on selection criteria. All codespaces for the authenticated user can be deleted, as well as codespaces for a specific repository. Alternatively, only codespaces older than N days can be deleted. Organization administrators may delete any codespace billed to the organization",
+          "name": "delete",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Name of the codespace",
+              "name": [
+                "-c",
+                "--codespace"
+              ]
+            },
+            {
+              "description": "Delete all codespaces",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "args": {
+                "name": "N days"
+              },
+              "description": "Delete codespaces older than N days",
+              "name": [
+                "--days"
+              ]
+            },
+            {
+              "description": "Skip confirmation for codespaces that contain unsaved changes",
+              "name": [
+                "-f",
+                "--force"
+              ]
+            },
+            {
+              "args": {
+                "name": "login"
+              },
+              "description": "The login handle of the organization (admin-only)",
+              "name": [
+                "-o",
+                "--org"
+              ]
+            },
+            {
+              "args": {
+                "name": "repository"
+              },
+              "description": "Delete codespaces for a repository",
+              "name": [
+                "-r",
+                "--repo"
+              ]
+            },
+            {
+              "args": {
+                "name": "username"
+              },
+              "description": "The username to delete codespaces for",
+              "name": [
+                "-u",
+                "--user"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Edit a codespace",
+          "name": "edit",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Name of the codespace",
+              "name": [
+                "-c",
+                "--codespace"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Set the display name",
+              "name": [
+                "-d",
+                "--display-name"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Set hardware specifications for the VM",
+              "name": [
+                "-m",
+                "--machine"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Open a codespace in JupyterLab",
+          "name": "jupyter",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Name of the codespace",
+              "name": [
+                "-c",
+                "--codespace"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List codespaces of the authenticated user. Alternatively, organization administrators may list all codespaces billed to the organization",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "name": "expression"
+              },
+              "description": "Filter JSON output using a jq expression",
+              "name": [
+                "-q",
+                "--jq"
+              ]
+            },
+            {
+              "args": {
+                "name": "fields"
+              },
+              "description": "Output JSON with the specified fields",
+              "name": [
+                "--json"
+              ]
+            },
+            {
+              "args": {
+                "name": "int"
+              },
+              "description": "Maximum number of codespaces to list",
+              "name": [
+                "-L",
+                "--limit"
+              ]
+            },
+            {
+              "args": {
+                "name": "login"
+              },
+              "description": "The login handle of the organization to list codespaces for (admin-only)",
+              "name": [
+                "-o",
+                "--org"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Repository name with owner: user/repo",
+              "name": [
+                "-R",
+                "--repo"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Format JSON output using a Go template; see 'gh help formatting'",
+              "name": [
+                "-t",
+                "--template"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The username to list codespaces for",
+              "name": [
+                "-u",
+                "--user"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Access codespace logs",
+          "name": "logs",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Name of the codespace",
+              "name": [
+                "-c",
+                "--codespace"
+              ]
+            },
+            {
+              "description": "Tail and follow the logs",
+              "name": [
+                "-f",
+                "--follow"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List ports in a codespace",
+          "name": "ports",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Name of the codespace",
+              "name": [
+                "-c",
+                "--codespace"
+              ]
+            },
+            {
+              "args": {
+                "name": "expression"
+              },
+              "description": "Filter JSON output using a jq expression",
+              "name": [
+                "-q",
+                "--jq"
+              ]
+            },
+            {
+              "args": {
+                "name": "fields"
+              },
+              "description": "Output JSON with the specified fields",
+              "name": [
+                "--json"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Format JSON output using a Go template; see 'gh help formatting'",
+              "name": [
+                "-t",
+                "--template"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "(...o)=>A(this,void 0,void 0,function*(){let[s]=o,d=!s[s.length-1].includes(e),c=d?t:n,a=K(d,i);return G(c,d&&r?e:\"\",a,o)})",
+                    "requires_js": true
+                  }
+                ],
+                "isVariadic": true
+              },
+              "description": "Forward ports",
+              "name": "forward",
+              "options": [
+                {
+                  "args": {
+                    "name": "string"
+                  },
+                  "description": "Name of the codespace",
+                  "name": [
+                    "-c",
+                    "--codespace"
+                  ]
+                }
+              ]
+            },
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "(...o)=>A(this,void 0,void 0,function*(){let[s]=o,d=!s[s.length-1].includes(e),c=d?t:n,a=K(d,i);return G(c,d&&r?e:\"\",a,o)})",
+                    "requires_js": true
+                  }
+                ],
+                "isVariadic": true
+              },
+              "description": "Change the visibility of the forwarded port",
+              "name": "visibility",
+              "options": [
+                {
+                  "args": {
+                    "name": "string"
+                  },
+                  "description": "Name of the codespace",
+                  "name": [
+                    "-c",
+                    "--codespace"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Rebuild a codespace",
+          "name": "rebuild",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Name of the codespace",
+              "name": [
+                "-c",
+                "--codespace"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "command"
+          },
+          "description": "SSH into a codespace",
+          "name": "ssh",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Name of the codespace",
+              "name": [
+                "-c",
+                "--codespace"
+              ]
+            },
+            {
+              "description": "Write OpenSSH configuration to stdout",
+              "name": [
+                "--config"
+              ]
+            },
+            {
+              "description": "Log debug data to a file",
+              "name": [
+                "-d",
+                "--debug"
+              ]
+            },
+            {
+              "args": {
+                "name": "file",
+                "template": "filepaths"
+              },
+              "description": "Path of the file log to",
+              "name": [
+                "--debug-file"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Name of the SSH profile to use",
+              "name": [
+                "--profile"
+              ]
+            },
+            {
+              "args": {
+                "name": "int"
+              },
+              "description": "SSH server port number (0 => pick unused)",
+              "name": [
+                "--server-port"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Stop running a codespace",
+          "name": "stop",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Name of the codespace",
+              "name": [
+                "-c",
+                "--codespace"
+              ]
+            },
+            {
+              "args": {
+                "name": "login"
+              },
+              "description": "The login handle of the organization (admin-only)",
+              "name": [
+                "-o",
+                "--org"
+              ]
+            },
+            {
+              "args": {
+                "name": "username"
+              },
+              "description": "The username to delete codespaces for",
+              "name": [
+                "-u",
+                "--user"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage projects",
+      "name": "project",
+      "subcommands": [
+        {
+          "description": "Create a project",
+          "name": "create",
+          "options": [
+            {
+              "args": {
+                "name": "title"
+              },
+              "description": "Title for the project",
+              "name": [
+                "--title"
+              ]
+            },
+            {
+              "args": {
+                "name": "owner"
+              },
+              "description": "Login of the owner. Use \"@me\" for the current user",
+              "name": [
+                "--owner"
+              ]
+            },
+            {
+              "args": {
+                "name": "body"
+              },
+              "description": "Output format: {json}",
+              "name": [
+                "--format"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Edit a project",
+          "name": "edit",
+          "options": [
+            {
+              "args": {
+                "name": "title"
+              },
+              "description": "New title of the project",
+              "name": [
+                "--title"
+              ]
+            },
+            {
+              "args": {
+                "name": "description"
+              },
+              "description": "New description of the project",
+              "name": [
+                "-d",
+                "--description"
+              ]
+            },
+            {
+              "args": {
+                "name": "owner"
+              },
+              "description": "Login of the owner. Use \"@me\" for the current user",
+              "name": [
+                "--owner"
+              ]
+            },
+            {
+              "args": {
+                "name": "readme"
+              },
+              "description": "New readme for the project",
+              "name": [
+                "--readme"
+              ]
+            },
+            {
+              "args": {
+                "name": "visibility",
+                "suggestions": [
+                  {
+                    "name": "PUBLIC"
+                  },
+                  {
+                    "name": "PRIVATE"
+                  }
+                ]
+              },
+              "description": "Change project visibility",
+              "name": [
+                "--visibility"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List projects",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "name": "closed"
+              },
+              "description": "Include closed projects",
+              "name": [
+                "--closed"
+              ]
+            },
+            {
+              "args": {
+                "name": "owner"
+              },
+              "description": "Login of the owner",
+              "name": [
+                "--owner"
+              ]
+            },
+            {
+              "args": {
+                "name": "int"
+              },
+              "description": "Maximum number of projects to fetch",
+              "name": [
+                "-L",
+                "--limit"
+              ]
+            },
+            {
+              "args": {
+                "name": "format"
+              },
+              "description": "Output format: {json}",
+              "name": [
+                "--format"
+              ]
+            },
+            {
+              "description": "Open projects list in the browser",
+              "name": [
+                "--web"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Delete a project",
+          "name": "delete",
+          "options": [
+            {
+              "args": {
+                "name": "owner"
+              },
+              "description": "Login of the owner. Use @me for the current user",
+              "name": [
+                "--owner"
+              ]
+            },
+            {
+              "args": {
+                "name": "format"
+              },
+              "description": "Output format: {json}",
+              "name": [
+                "--format"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Close a project",
+          "name": "close",
+          "options": [
+            {
+              "args": {
+                "name": "owner"
+              },
+              "description": "Login of the owner. Use @me for the current user",
+              "name": [
+                "--owner"
+              ]
+            },
+            {
+              "args": {
+                "name": "format"
+              },
+              "description": "Output format: {json}",
+              "name": [
+                "--format"
+              ]
+            },
+            {
+              "description": "Reopen a closed project",
+              "name": [
+                "--undo"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "View a project",
+          "name": "view",
+          "options": [
+            {
+              "args": {
+                "name": "owner"
+              },
+              "description": "Login of the owner. Use @me for the current user",
+              "name": [
+                "--owner"
+              ]
+            },
+            {
+              "args": {
+                "name": "format"
+              },
+              "description": "Output format: {json}",
+              "name": [
+                "--format"
+              ]
+            },
+            {
+              "description": "Open project in the browser",
+              "name": [
+                "-w",
+                "--web"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Copy a project",
+          "name": "copy",
+          "options": [
+            {
+              "args": {
+                "name": "title"
+              },
+              "description": "Title for the new project",
+              "name": [
+                "--title"
+              ]
+            },
+            {
+              "args": {
+                "name": "target-owner"
+              },
+              "description": "Login of the target owner. Use @me for the current user",
+              "name": [
+                "--target-owner"
+              ]
+            },
+            {
+              "args": {
+                "name": "source-owner"
+              },
+              "description": "Login of the source owner. Use @me for the current user",
+              "name": [
+                "--source-owner"
+              ]
+            },
+            {
+              "args": {
+                "name": "format"
+              },
+              "description": "Output format: {json}",
+              "name": [
+                "--format"
+              ]
+            },
+            {
+              "description": "Include draft issues when copying",
+              "name": [
+                "--drafts"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Create a project field",
+          "name": "field-create",
+          "options": [
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the field",
+              "name": [
+                "--name"
+              ]
+            },
+            {
+              "args": {
+                "name": "data-type",
+                "suggestions": [
+                  {
+                    "name": "TEXT"
+                  },
+                  {
+                    "name": "SINGLE_SELECT"
+                  },
+                  {
+                    "name": "DATE"
+                  },
+                  {
+                    "name": "NUMBER"
+                  }
+                ]
+              },
+              "description": "DataType of the new field",
+              "name": [
+                "--data-type"
+              ]
+            },
+            {
+              "args": {
+                "name": "owner"
+              },
+              "description": "Login of the owner. Use @me for the current user",
+              "name": [
+                "--owner"
+              ]
+            },
+            {
+              "args": {
+                "name": "format"
+              },
+              "description": "Output format: {json}",
+              "name": [
+                "--format"
+              ]
+            },
+            {
+              "args": {
+                "name": "single-select-options"
+              },
+              "description": "Options for SINGLE_SELECT data type",
+              "name": [
+                "--single-select-options"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Delete a project field",
+          "name": "field-delete",
+          "options": [
+            {
+              "args": {
+                "name": "id"
+              },
+              "description": "ID of the field to delete",
+              "name": [
+                "--id"
+              ]
+            },
+            {
+              "description": "Output format: {json}",
+              "name": [
+                "--format"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List project fields",
+          "name": "field-list",
+          "options": [
+            {
+              "args": {
+                "name": "owner"
+              },
+              "description": "Login of the owner. Use @me for the current user",
+              "name": [
+                "--owner"
+              ]
+            },
+            {
+              "description": "Output format: {json}",
+              "name": [
+                "--format"
+              ]
+            },
+            {
+              "args": {
+                "name": "int"
+              },
+              "description": "Maximum number of fields to fetch",
+              "name": [
+                "-L",
+                "--limit"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Create a draft issue item in a project",
+          "name": "item-create",
+          "options": [
+            {
+              "args": {
+                "name": "title"
+              },
+              "description": "Title for the draft issue",
+              "name": [
+                "--title"
+              ]
+            },
+            {
+              "args": {
+                "name": "body"
+              },
+              "description": "Body for the draft issue",
+              "name": [
+                "--body"
+              ]
+            },
+            {
+              "args": {
+                "name": "format"
+              },
+              "description": "Output format: {json}",
+              "name": [
+                "--format"
+              ]
+            },
+            {
+              "args": {
+                "name": "owner"
+              },
+              "description": "Login of the owner. Use @me for the current user",
+              "name": [
+                "--owner"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Edit a project item",
+          "name": "item-edit",
+          "options": [
+            {
+              "args": {
+                "name": "id"
+              },
+              "description": "ID of the item to edit",
+              "name": [
+                "--id"
+              ]
+            },
+            {
+              "args": {
+                "name": "project-id"
+              },
+              "description": "ID of the project to which the field belongs to",
+              "name": [
+                "--project-id"
+              ]
+            },
+            {
+              "args": {
+                "name": "title"
+              },
+              "description": "Title of the draft issue item",
+              "name": [
+                "--title"
+              ]
+            },
+            {
+              "args": {
+                "name": "body"
+              },
+              "description": "Body of the draft issue item",
+              "name": [
+                "--body"
+              ]
+            },
+            {
+              "args": {
+                "name": "format"
+              },
+              "description": "Output format: {json}",
+              "name": [
+                "--format"
+              ]
+            },
+            {
+              "args": {
+                "name": "field-id"
+              },
+              "description": "ID of the field to update",
+              "name": [
+                "--field-id"
+              ]
+            },
+            {
+              "args": {
+                "name": "iteration-id"
+              },
+              "description": "ID of the iteration value to set on the field",
+              "name": [
+                "--iteration-id"
+              ]
+            },
+            {
+              "args": {
+                "name": "text"
+              },
+              "description": "Text value for the field",
+              "name": [
+                "--text"
+              ]
+            },
+            {
+              "args": {
+                "name": "number"
+              },
+              "description": "Number value for the field",
+              "name": [
+                "--number"
+              ]
+            },
+            {
+              "args": {
+                "name": "single-select-option-id"
+              },
+              "description": "ID of the single select option value to set on the field",
+              "name": [
+                "--single-select-option-id"
+              ]
+            },
+            {
+              "args": {
+                "name": "date"
+              },
+              "description": "Date value for the field (YYYY-MM-DD)",
+              "name": [
+                "--date"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Delete a project item",
+          "name": "item-delete",
+          "options": [
+            {
+              "args": {
+                "name": "id"
+              },
+              "description": "ID of the item to delete",
+              "name": [
+                "--id"
+              ]
+            },
+            {
+              "args": {
+                "name": "format"
+              },
+              "description": "Output format: {json}",
+              "name": [
+                "--format"
+              ]
+            },
+            {
+              "args": {
+                "name": "owner"
+              },
+              "description": "Login of the owner. Use @me for the current user",
+              "name": [
+                "--owner"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List project items",
+          "name": "item-list",
+          "options": [
+            {
+              "args": {
+                "name": "format"
+              },
+              "description": "Output format: {json}",
+              "name": [
+                "--format"
+              ]
+            },
+            {
+              "args": {
+                "name": "int"
+              },
+              "description": "Maximum number of items to fetch",
+              "name": [
+                "-L",
+                "--limit"
+              ]
+            },
+            {
+              "args": {
+                "name": "owner"
+              },
+              "description": "Login of the owner. Use @me for the current user",
+              "name": [
+                "--owner"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Add a pull request or an issue to a project",
+          "name": "item-add",
+          "options": [
+            {
+              "args": {
+                "name": "url"
+              },
+              "description": "URL of the issue or pull request to add to the project",
+              "name": [
+                "--url"
+              ]
+            },
+            {
+              "args": {
+                "name": "owner"
+              },
+              "description": "Login of the owner. Use @me for the current user",
+              "name": [
+                "--owner"
+              ]
+            },
+            {
+              "args": {
+                "name": "format"
+              },
+              "description": "Output format: {json}",
+              "name": [
+                "--format"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Archive a project item",
+          "name": "item-archive",
+          "options": [
+            {
+              "args": {
+                "name": "id"
+              },
+              "description": "ID of the item to archive",
+              "name": [
+                "--id"
+              ]
+            },
+            {
+              "args": {
+                "name": "format"
+              },
+              "description": "Output format: {json}",
+              "name": [
+                "--format"
+              ]
+            },
+            {
+              "args": {
+                "name": "owner"
+              },
+              "description": "Login of the owner. Use @me for the current user",
+              "name": [
+                "--owner"
+              ]
+            },
+            {
+              "description": "Unarchive a project item",
+              "name": [
+                "--undo"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

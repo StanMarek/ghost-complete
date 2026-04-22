@@ -1,0 +1,105 @@
+{
+  "description": "Terraform version manager",
+  "name": "tfenv",
+  "options": [
+    {
+      "description": "View your current tfenv version",
+      "name": [
+        "-v",
+        "--version"
+      ]
+    },
+    {
+      "description": "View commands",
+      "name": [
+        "--help"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "description": "Possible Terraform Version",
+        "generators": [
+          {
+            "script": [
+              "tfenv",
+              "list-remote"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "version",
+        "suggestions": [
+          {
+            "name": "latest"
+          },
+          {
+            "name": "min-required"
+          }
+        ]
+      },
+      "description": "Install a specific version of Terraform",
+      "name": "install"
+    },
+    {
+      "args": {
+        "description": "Installed Terraform Version",
+        "generators": [
+          {
+            "script": [
+              "tfenv",
+              "list"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "version"
+      },
+      "description": "Switch to a version to use",
+      "name": "use"
+    },
+    {
+      "args": {
+        "description": "Installed Terraform Version",
+        "generators": [
+          {
+            "script": [
+              "tfenv",
+              "list"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "version"
+      },
+      "description": "Uninstall a specific version of Terraform",
+      "name": "uninstall"
+    },
+    {
+      "description": "List all installed versions",
+      "name": "list"
+    },
+    {
+      "description": "List all installable versions",
+      "name": "list-remote"
+    },
+    {
+      "description": "Print current version",
+      "name": "version-name"
+    },
+    {
+      "description": "Update environment to use tfenv correctly",
+      "name": "init"
+    }
+  ]
+}

@@ -1,0 +1,1770 @@
+{
+  "description": "Starkli, a ⚡ blazing ⚡ fast ⚡ CLI tool for Starknet powered by 🦀 starknet-rs 🦀",
+  "name": "starkli",
+  "subcommands": [
+    {
+      "description": "Account management commands",
+      "name": "account",
+      "options": [
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": {
+            "description": "Contract address",
+            "name": "ADDRESS"
+          },
+          "description": "Fetch account config from an already deployed account contract",
+          "name": "fetch",
+          "options": [
+            {
+              "args": {
+                "name": "RPC"
+              },
+              "description": "Starknet JSON-RPC endpoint",
+              "name": [
+                "--rpc"
+              ]
+            },
+            {
+              "args": {
+                "name": "NETWORK",
+                "suggestions": [
+                  {
+                    "name": "mainnet"
+                  },
+                  {
+                    "name": "goerli-1"
+                  },
+                  {
+                    "name": "goerli-2"
+                  },
+                  {
+                    "name": "integration"
+                  }
+                ]
+              },
+              "description": "Starknet network",
+              "name": [
+                "--network"
+              ]
+            },
+            {
+              "description": "Overwrite the file if it already exists",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "args": {
+                "name": "OUTPUT",
+                "template": "filepaths"
+              },
+              "description": "Path to save the account config file",
+              "name": [
+                "--output"
+              ]
+            },
+            {
+              "description": "Log raw request/response traffic of providers",
+              "name": [
+                "--log-traffic"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Path to the account config file",
+            "name": "FILE",
+            "template": "filepaths"
+          },
+          "description": "Deploy account contract with a DeployAccount transaction",
+          "name": "deploy",
+          "options": [
+            {
+              "args": {
+                "name": "RPC"
+              },
+              "description": "Starknet JSON-RPC endpoint",
+              "name": [
+                "--rpc"
+              ]
+            },
+            {
+              "args": {
+                "name": "NETWORK",
+                "suggestions": [
+                  {
+                    "name": "mainnet"
+                  },
+                  {
+                    "name": "goerli-1"
+                  },
+                  {
+                    "name": "goerli-2"
+                  },
+                  {
+                    "name": "integration"
+                  }
+                ]
+              },
+              "description": "Starknet network",
+              "name": [
+                "--network"
+              ]
+            },
+            {
+              "args": {
+                "name": "KEYSTORE",
+                "template": "filepaths"
+              },
+              "description": "Path to keystore JSON file",
+              "name": [
+                "--keystore"
+              ]
+            },
+            {
+              "args": {
+                "name": "keystore password"
+              },
+              "description": "Supply keystore password from command line option instead of prompt",
+              "name": [
+                "--keystore-password"
+              ]
+            },
+            {
+              "args": {
+                "name": "PRIVATE_KEY"
+              },
+              "description": "Private key in hex in plain text",
+              "name": [
+                "--private-key"
+              ]
+            },
+            {
+              "args": {
+                "name": "MAX_FEE"
+              },
+              "description": "Maximum transaction fee in Ether (18 decimals)",
+              "name": [
+                "--max-fee"
+              ]
+            },
+            {
+              "args": {
+                "name": "MAX_FEE_RAW"
+              },
+              "description": "Maximum transaction fee in Wei",
+              "name": [
+                "--max-fee-raw"
+              ]
+            },
+            {
+              "description": "Only estimate transaction fee without sending transaction",
+              "name": [
+                "--estimate-only"
+              ]
+            },
+            {
+              "description": "Log raw request/response traffic of providers",
+              "name": [
+                "--log-traffic"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Create and manage OpenZeppelin account contracts",
+          "name": "oz",
+          "options": [
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "description": "Create a new account configuration without actually deploying",
+              "name": "init"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Block number, hash, or tag (latest/pending)",
+        "isOptional": true,
+        "name": "BLOCK_ID"
+      },
+      "description": "Get Starknet block",
+      "name": "block",
+      "options": [
+        {
+          "args": {
+            "name": "RPC"
+          },
+          "description": "Starknet JSON-RPC endpoint",
+          "name": [
+            "--rpc"
+          ]
+        },
+        {
+          "args": {
+            "name": "NETWORK",
+            "suggestions": [
+              {
+                "name": "mainnet"
+              },
+              {
+                "name": "goerli-1"
+              },
+              {
+                "name": "goerli-2"
+              },
+              {
+                "name": "integration"
+              }
+            ]
+          },
+          "description": "Starknet network",
+          "name": [
+            "--network"
+          ]
+        },
+        {
+          "description": "Fetch full transactions instead of hashes only",
+          "name": [
+            "--full"
+          ]
+        },
+        {
+          "description": "Log raw request/response traffic of providers",
+          "name": [
+            "--log-traffic"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Get latest block hash",
+      "name": "block-hash",
+      "options": [
+        {
+          "args": {
+            "name": "RPC"
+          },
+          "description": "Starknet JSON-RPC endpoint",
+          "name": [
+            "--rpc"
+          ]
+        },
+        {
+          "args": {
+            "name": "NETWORK",
+            "suggestions": [
+              {
+                "name": "mainnet"
+              },
+              {
+                "name": "goerli-1"
+              },
+              {
+                "name": "goerli-2"
+              },
+              {
+                "name": "integration"
+              }
+            ]
+          },
+          "description": "Starknet network",
+          "name": [
+            "--network"
+          ]
+        },
+        {
+          "description": "Log raw request/response traffic of providers",
+          "name": [
+            "--log-traffic"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Get latest block number",
+      "name": "block-number",
+      "options": [
+        {
+          "args": {
+            "name": "RPC"
+          },
+          "description": "Starknet JSON-RPC endpoint",
+          "name": [
+            "--rpc"
+          ]
+        },
+        {
+          "args": {
+            "name": "NETWORK",
+            "suggestions": [
+              {
+                "name": "mainnet"
+              },
+              {
+                "name": "goerli-1"
+              },
+              {
+                "name": "goerli-2"
+              },
+              {
+                "name": "integration"
+              }
+            ]
+          },
+          "description": "Starknet network",
+          "name": [
+            "--network"
+          ]
+        },
+        {
+          "description": "Log raw request/response traffic of providers",
+          "name": [
+            "--log-traffic"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Block number, hash, or tag (latest/pending)",
+        "isOptional": true,
+        "name": "BLOCK_ID"
+      },
+      "description": "Get Starknet block timestamp only",
+      "name": "block-time",
+      "options": [
+        {
+          "args": {
+            "name": "RPC"
+          },
+          "description": "Starknet JSON-RPC endpoint",
+          "name": [
+            "--rpc"
+          ]
+        },
+        {
+          "args": {
+            "name": "NETWORK",
+            "suggestions": [
+              {
+                "name": "mainnet"
+              },
+              {
+                "name": "goerli-1"
+              },
+              {
+                "name": "goerli-2"
+              },
+              {
+                "name": "integration"
+              }
+            ]
+          },
+          "description": "Starknet network",
+          "name": [
+            "--network"
+          ]
+        },
+        {
+          "description": "Show block time in Unix timestamp format",
+          "name": [
+            "--unix"
+          ]
+        },
+        {
+          "description": "Show block time in RFC 2822 format",
+          "name": [
+            "--rfc2822"
+          ]
+        },
+        {
+          "description": "Log raw request/response traffic of providers",
+          "name": [
+            "--log-traffic"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Contract address",
+          "name": "CONTRACT_ADDRESS"
+        },
+        {
+          "description": "Name of the function being called",
+          "name": "SELECTOR"
+        },
+        {
+          "description": "Raw function call arguments",
+          "name": "CALLDATA"
+        }
+      ],
+      "description": "Call contract functions without sending transactions",
+      "name": "call",
+      "options": [
+        {
+          "args": {
+            "name": "RPC"
+          },
+          "description": "Starknet JSON-RPC endpoint",
+          "name": [
+            "--rpc"
+          ]
+        },
+        {
+          "args": {
+            "name": "NETWORK",
+            "suggestions": [
+              {
+                "name": "mainnet"
+              },
+              {
+                "name": "goerli-1"
+              },
+              {
+                "name": "goerli-2"
+              },
+              {
+                "name": "integration"
+              }
+            ]
+          },
+          "description": "Starknet network",
+          "name": [
+            "--network"
+          ]
+        },
+        {
+          "description": "Log raw request/response traffic of providers",
+          "name": [
+            "--log-traffic"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Block number, hash, or tag (latest/pending)",
+        "isOptional": true,
+        "name": "BLOCK_ID"
+      },
+      "description": "Get Starknet network ID",
+      "name": "chain-id",
+      "options": [
+        {
+          "args": {
+            "name": "RPC"
+          },
+          "description": "Starknet JSON-RPC endpoint",
+          "name": [
+            "--rpc"
+          ]
+        },
+        {
+          "args": {
+            "name": "NETWORK",
+            "suggestions": [
+              {
+                "name": "mainnet"
+              },
+              {
+                "name": "goerli-1"
+              },
+              {
+                "name": "goerli-2"
+              },
+              {
+                "name": "integration"
+              }
+            ]
+          },
+          "description": "Starknet network",
+          "name": [
+            "--network"
+          ]
+        },
+        {
+          "description": "Do not show the decoded text",
+          "name": [
+            "--no-decode"
+          ]
+        },
+        {
+          "description": "Display the decimal instead of hexadecimal representation",
+          "name": [
+            "--dec"
+          ]
+        },
+        {
+          "description": "Log raw request/response traffic of providers",
+          "name": [
+            "--log-traffic"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Contract address",
+        "name": "ADDRESS"
+      },
+      "description": "Get contract class deployed at a certain address",
+      "name": "class-at",
+      "options": [
+        {
+          "args": {
+            "name": "RPC"
+          },
+          "description": "Starknet JSON-RPC endpoint",
+          "name": [
+            "--rpc"
+          ]
+        },
+        {
+          "args": {
+            "name": "NETWORK",
+            "suggestions": [
+              {
+                "name": "mainnet"
+              },
+              {
+                "name": "goerli-1"
+              },
+              {
+                "name": "goerli-2"
+              },
+              {
+                "name": "integration"
+              }
+            ]
+          },
+          "description": "Starknet network",
+          "name": [
+            "--network"
+          ]
+        },
+        {
+          "description": "Log raw request/response traffic of providers",
+          "name": [
+            "--log-traffic"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Class hash",
+        "name": "HASH"
+      },
+      "description": "Get contract class by hash",
+      "name": "class-by-hash",
+      "options": [
+        {
+          "args": {
+            "name": "RPC"
+          },
+          "description": "Starknet JSON-RPC endpoint",
+          "name": [
+            "--rpc"
+          ]
+        },
+        {
+          "args": {
+            "name": "NETWORK",
+            "suggestions": [
+              {
+                "name": "mainnet"
+              },
+              {
+                "name": "goerli-1"
+              },
+              {
+                "name": "goerli-2"
+              },
+              {
+                "name": "integration"
+              }
+            ]
+          },
+          "description": "Starknet network",
+          "name": [
+            "--network"
+          ]
+        },
+        {
+          "description": "Log raw request/response traffic of providers",
+          "name": [
+            "--log-traffic"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Path to contract artifact file",
+        "name": "FILE",
+        "template": "filepaths"
+      },
+      "description": "Calculate class hash from any contract artifacts (Sierra, casm, legacy)",
+      "name": "class-hash",
+      "options": [
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Contract address",
+        "name": "ADDRESS"
+      },
+      "description": "Get contract class hash deployed at a certain address",
+      "name": "class-hash-at",
+      "options": [
+        {
+          "args": {
+            "name": "RPC"
+          },
+          "description": "Starknet JSON-RPC endpoint",
+          "name": [
+            "--rpc"
+          ]
+        },
+        {
+          "args": {
+            "name": "NETWORK",
+            "suggestions": [
+              {
+                "name": "mainnet"
+              },
+              {
+                "name": "goerli-1"
+              },
+              {
+                "name": "goerli-2"
+              },
+              {
+                "name": "integration"
+              }
+            ]
+          },
+          "description": "Starknet network",
+          "name": [
+            "--network"
+          ]
+        },
+        {
+          "description": "Log raw request/response traffic of providers",
+          "name": [
+            "--log-traffic"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generate shell completions script",
+      "name": "completions"
+    },
+    {
+      "args": {
+        "description": "Path to contract artifact file",
+        "name": "FILE",
+        "template": "filepaths"
+      },
+      "description": "Declare a contract class",
+      "name": "declare",
+      "options": [
+        {
+          "args": {
+            "name": "RPC"
+          },
+          "description": "Starknet JSON-RPC endpoint",
+          "name": [
+            "--rpc"
+          ]
+        },
+        {
+          "args": {
+            "name": "NETWORK",
+            "suggestions": [
+              {
+                "name": "mainnet"
+              },
+              {
+                "name": "goerli-1"
+              },
+              {
+                "name": "goerli-2"
+              },
+              {
+                "name": "integration"
+              }
+            ]
+          },
+          "description": "Starknet network",
+          "name": [
+            "--network"
+          ]
+        },
+        {
+          "args": {
+            "name": "KEYSTORE",
+            "template": "filepaths"
+          },
+          "description": "Path to keystore JSON file",
+          "name": [
+            "--keystore"
+          ]
+        },
+        {
+          "args": {
+            "name": "KEYSTORE_PASSWORD"
+          },
+          "description": "Supply keystore password from command line option instead of prompt",
+          "name": [
+            "--keystore-password"
+          ]
+        },
+        {
+          "args": {
+            "name": "PRIVATE_KEY"
+          },
+          "description": "Private key in hex in plain text",
+          "name": [
+            "--private-key"
+          ]
+        },
+        {
+          "args": {
+            "name": "COMPILER_VERSION",
+            "suggestions": [
+              {
+                "name": "2.0.1"
+              }
+            ]
+          },
+          "description": "Statically-linked Sierra compiler version",
+          "name": [
+            "--compiler-version"
+          ]
+        },
+        {
+          "args": {
+            "name": "CASM_HASH"
+          },
+          "description": "Override Sierra compilation and use CASM hash directly",
+          "name": [
+            "--casm-hash"
+          ]
+        },
+        {
+          "args": {
+            "name": "ACCOUNT",
+            "template": "filepaths"
+          },
+          "description": "Path to account config JSON file",
+          "name": [
+            "--account"
+          ]
+        },
+        {
+          "args": {
+            "name": "MAX_FEE"
+          },
+          "description": "Maximum transaction fee in Ether (18 decimals)",
+          "name": [
+            "--max-fee"
+          ]
+        },
+        {
+          "args": {
+            "name": "MAX_FEE_RAW"
+          },
+          "description": "Maximum transaction fee in Wei",
+          "name": [
+            "--max-fee-raw"
+          ]
+        },
+        {
+          "description": "Only estimate transaction fee without sending transaction",
+          "name": [
+            "--estimate-only"
+          ]
+        },
+        {
+          "description": "Wait for the transaction to confirm",
+          "name": [
+            "--watch"
+          ]
+        },
+        {
+          "description": "Log raw request/response traffic of providers",
+          "name": [
+            "--log-traffic"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Class hash",
+          "name": "CLASS_HASH"
+        },
+        {
+          "description": "Raw constructor arguments",
+          "name": "CTOR_ARGS"
+        }
+      ],
+      "description": "Deploy contract via the Universal Deployer Contract",
+      "name": "deploy",
+      "options": [
+        {
+          "args": {
+            "name": "RPC"
+          },
+          "description": "Starknet JSON-RPC endpoint",
+          "name": [
+            "--rpc"
+          ]
+        },
+        {
+          "args": {
+            "name": "NETWORK",
+            "suggestions": [
+              {
+                "name": "mainnet"
+              },
+              {
+                "name": "goerli-1"
+              },
+              {
+                "name": "goerli-2"
+              },
+              {
+                "name": "integration"
+              }
+            ]
+          },
+          "description": "Starknet network",
+          "name": [
+            "--network"
+          ]
+        },
+        {
+          "args": {
+            "name": "KEYSTORE",
+            "template": "filepaths"
+          },
+          "description": "Path to keystore JSON file",
+          "name": [
+            "--keystore"
+          ]
+        },
+        {
+          "args": {
+            "name": "KEYSTORE_PASSWORD"
+          },
+          "description": "Supply keystore password from command line option instead of prompt",
+          "name": [
+            "--keystore-password"
+          ]
+        },
+        {
+          "args": {
+            "name": "PRIVATE_KEY"
+          },
+          "description": "Private key in hex in plain text",
+          "name": [
+            "--private-key"
+          ]
+        },
+        {
+          "description": "Do not derive contract address from deployer address",
+          "name": [
+            "--not-unique"
+          ]
+        },
+        {
+          "args": {
+            "name": "ACCOUNT",
+            "template": "filepaths"
+          },
+          "description": "Path to account config JSON file",
+          "name": [
+            "--account"
+          ]
+        },
+        {
+          "args": {
+            "name": "MAX_FEE"
+          },
+          "description": "Maximum transaction fee in Ether (18 decimals)",
+          "name": [
+            "--max-fee"
+          ]
+        },
+        {
+          "args": {
+            "name": "MAX_FEE_RAW"
+          },
+          "description": "Maximum transaction fee in Wei",
+          "name": [
+            "--max-fee-raw"
+          ]
+        },
+        {
+          "description": "Only estimate transaction fee without sending transaction",
+          "name": [
+            "--estimate-only"
+          ]
+        },
+        {
+          "args": {
+            "name": "SALT"
+          },
+          "description": "Use the given salt to compute contract deploy address",
+          "name": [
+            "--salt"
+          ]
+        },
+        {
+          "description": "Wait for the transaction to confirm",
+          "name": [
+            "--watch"
+          ]
+        },
+        {
+          "description": "Log raw request/response traffic of providers",
+          "name": [
+            "--log-traffic"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "One or more contract calls. See documentation for more details",
+        "name": "CALLS"
+      },
+      "description": "Send an invoke transaction from an account contract",
+      "name": "invoke",
+      "options": [
+        {
+          "args": {
+            "name": "RPC"
+          },
+          "description": "Starknet JSON-RPC endpoint",
+          "name": [
+            "--rpc"
+          ]
+        },
+        {
+          "args": {
+            "name": "NETWORK",
+            "suggestions": [
+              {
+                "name": "mainnet"
+              },
+              {
+                "name": "goerli-1"
+              },
+              {
+                "name": "goerli-2"
+              },
+              {
+                "name": "integration"
+              }
+            ]
+          },
+          "description": "Starknet network",
+          "name": [
+            "--network"
+          ]
+        },
+        {
+          "args": {
+            "name": "KEYSTORE",
+            "template": "filepaths"
+          },
+          "description": "Path to keystore JSON file",
+          "name": [
+            "--keystore"
+          ]
+        },
+        {
+          "args": {
+            "name": "KEYSTORE_PASSWORD"
+          },
+          "description": "Supply keystore password from command line option instead of prompt",
+          "name": [
+            "--keystore-password"
+          ]
+        },
+        {
+          "args": {
+            "name": "PRIVATE_KEY"
+          },
+          "description": "Private key in hex in plain text",
+          "name": [
+            "--private-key"
+          ]
+        },
+        {
+          "args": {
+            "name": "ACCOUNT",
+            "template": "filepaths"
+          },
+          "description": "Path to account config JSON file",
+          "name": [
+            "--account"
+          ]
+        },
+        {
+          "args": {
+            "name": "MAX_FEE"
+          },
+          "description": "Maximum transaction fee in Ether (18 decimals)",
+          "name": [
+            "--max-fee"
+          ]
+        },
+        {
+          "args": {
+            "name": "MAX_FEE_RAW"
+          },
+          "description": "Maximum transaction fee in Wei",
+          "name": [
+            "--max-fee-raw"
+          ]
+        },
+        {
+          "description": "Only estimate transaction fee without sending transaction",
+          "name": [
+            "--estimate-only"
+          ]
+        },
+        {
+          "description": "Wait for the transaction to confirm",
+          "name": [
+            "--watch"
+          ]
+        },
+        {
+          "description": "Log raw request/response traffic of providers",
+          "name": [
+            "--log-traffic"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Encoded string value in felt, in decimal or hexadecimal representation",
+        "name": "FELT"
+      },
+      "description": "Print the montgomery representation of a field element",
+      "name": "mont",
+      "options": [
+        {
+          "description": "Emit array elements in hexadecimal format",
+          "name": [
+            "--hex"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Contract address",
+        "name": "ADDRESS"
+      },
+      "description": "Get nonce for a certain contract",
+      "name": "nonce",
+      "options": [
+        {
+          "args": {
+            "name": "RPC"
+          },
+          "description": "Starknet JSON-RPC endpoint",
+          "name": [
+            "--rpc"
+          ]
+        },
+        {
+          "args": {
+            "name": "NETWORK",
+            "suggestions": [
+              {
+                "name": "mainnet"
+              },
+              {
+                "name": "goerli-1"
+              },
+              {
+                "name": "goerli-2"
+              },
+              {
+                "name": "integration"
+              }
+            ]
+          },
+          "description": "Starknet network",
+          "name": [
+            "--network"
+          ]
+        },
+        {
+          "description": "Log raw request/response traffic of providers",
+          "name": [
+            "--log-traffic"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Encoded string value in felt, in decimal or hexadecimal representation",
+        "name": "FELT"
+      },
+      "description": "Decode string from felt with the Cairo short string representation",
+      "name": "parse-cairo-string",
+      "options": [
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Selector name",
+        "name": "NAME"
+      },
+      "description": "Calculate selector from name",
+      "name": "selector",
+      "options": [
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Signer management commands",
+      "name": "signer",
+      "options": [
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Keystore management commands",
+          "name": "keystore",
+          "options": [
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "args": {
+                "description": "Path to save the JSON keystore",
+                "name": "FILE",
+                "template": "filepaths"
+              },
+              "description": "Randomly generate a new keystore",
+              "name": "new",
+              "options": [
+                {
+                  "args": {
+                    "name": "PASSWORD"
+                  },
+                  "description": "Supply password from command line option instead of prompt",
+                  "name": [
+                    "--password"
+                  ]
+                },
+                {
+                  "description": "Overwrite the file if it already exists",
+                  "name": [
+                    "--force"
+                  ]
+                },
+                {
+                  "description": "Print help",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            },
+            {
+              "args": {
+                "description": "Path to save the JSON keystore",
+                "name": "FILE",
+                "template": "filepaths"
+              },
+              "description": "Create a keystore file from an existing private key",
+              "name": "from-key",
+              "options": [
+                {
+                  "description": "Overwrite the file if it already exists",
+                  "name": [
+                    "--force"
+                  ]
+                },
+                {
+                  "description": "Take the private key from stdin instead of prompt",
+                  "name": [
+                    "--private-key-stdin"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "PASSWORD"
+                  },
+                  "description": "Supply password from command line option instead of prompt",
+                  "name": [
+                    "--password"
+                  ]
+                },
+                {
+                  "description": "Print help",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            },
+            {
+              "args": {
+                "description": "Path to the JSON keystore",
+                "name": "FILE",
+                "template": "filepaths"
+              },
+              "description": "Check the public key of an existing keystore file",
+              "name": "inspect",
+              "options": [
+                {
+                  "args": {
+                    "name": "PASSWORD"
+                  },
+                  "description": "Supply password from command line option instead of prompt",
+                  "name": [
+                    "--password"
+                  ]
+                },
+                {
+                  "description": "Print the public key only",
+                  "name": [
+                    "--raw"
+                  ]
+                },
+                {
+                  "description": "Print help",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            },
+            {
+              "args": {
+                "description": "Path to the JSON keystore",
+                "name": "FILE",
+                "template": "filepaths"
+              },
+              "description": "Check the private key of an existing keystore file",
+              "name": "inspect-private",
+              "options": [
+                {
+                  "args": {
+                    "name": "PASSWORD"
+                  },
+                  "description": "Supply password from command line option instead of prompt",
+                  "name": [
+                    "--password"
+                  ]
+                },
+                {
+                  "description": "Print the private key only",
+                  "name": [
+                    "--raw"
+                  ]
+                },
+                {
+                  "description": "Print help",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Randomly generate a new key pair",
+          "name": "gen-keypair"
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Block number, hash, or tag (latest/pending)",
+        "isOptional": true,
+        "name": "BLOCK_ID"
+      },
+      "description": "Get state update from a certain block",
+      "name": "state-update",
+      "options": [
+        {
+          "args": {
+            "name": "RPC"
+          },
+          "description": "Starknet JSON-RPC endpoint",
+          "name": [
+            "--rpc"
+          ]
+        },
+        {
+          "args": {
+            "name": "NETWORK",
+            "suggestions": [
+              {
+                "name": "mainnet"
+              },
+              {
+                "name": "goerli-1"
+              },
+              {
+                "name": "goerli-2"
+              },
+              {
+                "name": "integration"
+              }
+            ]
+          },
+          "description": "Starknet network",
+          "name": [
+            "--network"
+          ]
+        },
+        {
+          "description": "Log raw request/response traffic of providers",
+          "name": [
+            "--log-traffic"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Contract address",
+          "name": "ADDRESS"
+        },
+        {
+          "description": "Storage key",
+          "name": "KEY"
+        }
+      ],
+      "description": "Get storage value for a slot at a contract",
+      "name": "storage",
+      "options": [
+        {
+          "args": {
+            "name": "RPC"
+          },
+          "description": "Starknet JSON-RPC endpoint",
+          "name": [
+            "--rpc"
+          ]
+        },
+        {
+          "args": {
+            "name": "NETWORK",
+            "suggestions": [
+              {
+                "name": "mainnet"
+              },
+              {
+                "name": "goerli-1"
+              },
+              {
+                "name": "goerli-2"
+              },
+              {
+                "name": "integration"
+              }
+            ]
+          },
+          "description": "Starknet network",
+          "name": [
+            "--network"
+          ]
+        },
+        {
+          "description": "Log raw request/response traffic of providers",
+          "name": [
+            "--log-traffic"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Get node syncing status",
+      "name": "syncing",
+      "options": [
+        {
+          "args": {
+            "name": "RPC"
+          },
+          "description": "Starknet JSON-RPC endpoint",
+          "name": [
+            "--rpc"
+          ]
+        },
+        {
+          "args": {
+            "name": "NETWORK",
+            "suggestions": [
+              {
+                "name": "mainnet"
+              },
+              {
+                "name": "goerli-1"
+              },
+              {
+                "name": "goerli-2"
+              },
+              {
+                "name": "integration"
+              }
+            ]
+          },
+          "description": "Starknet network",
+          "name": [
+            "--network"
+          ]
+        },
+        {
+          "description": "Log raw request/response traffic of providers",
+          "name": [
+            "--log-traffic"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Text to be encoded in felt",
+        "name": "TEXT"
+      },
+      "description": "Encode string into felt with the Cairo short string representation",
+      "name": "to-cairo-string",
+      "options": [
+        {
+          "description": "Display the encoded value in decimal representation",
+          "name": [
+            "--dec"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Transaction hash",
+        "name": "HASH"
+      },
+      "description": "Get Starknet transaction by hash",
+      "name": "transaction",
+      "options": [
+        {
+          "args": {
+            "name": "RPC"
+          },
+          "description": "Starknet JSON-RPC endpoint",
+          "name": [
+            "--rpc"
+          ]
+        },
+        {
+          "args": {
+            "name": "NETWORK",
+            "suggestions": [
+              {
+                "name": "mainnet"
+              },
+              {
+                "name": "goerli-1"
+              },
+              {
+                "name": "goerli-2"
+              },
+              {
+                "name": "integration"
+              }
+            ]
+          },
+          "description": "Starknet network",
+          "name": [
+            "--network"
+          ]
+        },
+        {
+          "description": "Log raw request/response traffic of providers",
+          "name": [
+            "--log-traffic"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Transaction hash",
+        "name": "HASH"
+      },
+      "description": "Get transaction receipt by hash",
+      "name": "transaction-receipt",
+      "options": [
+        {
+          "args": {
+            "name": "RPC"
+          },
+          "description": "Starknet JSON-RPC endpoint",
+          "name": [
+            "--rpc"
+          ]
+        },
+        {
+          "args": {
+            "name": "NETWORK",
+            "suggestions": [
+              {
+                "name": "mainnet"
+              },
+              {
+                "name": "goerli-1"
+              },
+              {
+                "name": "goerli-2"
+              },
+              {
+                "name": "integration"
+              }
+            ]
+          },
+          "description": "Starknet network",
+          "name": [
+            "--network"
+          ]
+        },
+        {
+          "description": "Log raw request/response traffic of providers",
+          "name": [
+            "--log-traffic"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    }
+  ]
+}

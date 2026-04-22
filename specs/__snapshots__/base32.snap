@@ -1,0 +1,71 @@
+{
+  "args": {
+    "description": "File to base32 encode/decode",
+    "name": "FILE",
+    "template": "filepaths"
+  },
+  "description": "Base32 encode/decode data and print to standard output",
+  "name": "base32",
+  "options": [
+    {
+      "description": "Display this help and exit",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "description": "Decode data",
+      "name": [
+        "--decode",
+        "-d"
+      ]
+    },
+    {
+      "description": "When decoding, ignore non-alphabet characters",
+      "name": [
+        "--ignore-garbage",
+        "-i"
+      ]
+    },
+    {
+      "args": {
+        "name": "COLS",
+        "suggestions": [
+          {
+            "name": "76"
+          },
+          {
+            "name": "78"
+          },
+          {
+            "name": "80"
+          },
+          {
+            "name": "100"
+          },
+          {
+            "name": "120"
+          },
+          {
+            "name": "160"
+          },
+          {
+            "name": "0"
+          }
+        ]
+      },
+      "description": "Wrap encoded lines after COLS character (default 76).  Use 0 to disable line wrapping",
+      "name": [
+        "--wrap",
+        "-w"
+      ]
+    },
+    {
+      "description": "Output version information and exit",
+      "name": [
+        "--version"
+      ]
+    }
+  ]
+}

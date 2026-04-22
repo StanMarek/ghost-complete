@@ -1,0 +1,299 @@
+{
+  "description": "A pluggable and configurable code formatting platform written in Rust",
+  "name": "dprint",
+  "options": [
+    {
+      "args": {
+        "name": "config"
+      },
+      "description": "Path or url to JSON configuration file. Defaults to dprint.json or .dprint.json in current or ancestor directory when not provided",
+      "name": [
+        "-c",
+        "--config"
+      ]
+    },
+    {
+      "description": "Prints help information",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "args": {
+        "name": "urls/files",
+        "template": "filepaths"
+      },
+      "description": "List of urls or file paths of plugins to use. This overrides what is specified in the config file",
+      "name": [
+        "--plugins"
+      ]
+    },
+    {
+      "description": "Prints additional diagnostic information",
+      "name": [
+        "--verbose"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Initializes a configuration file in the current directory",
+      "name": "init"
+    },
+    {
+      "args": {
+        "description": "List of file patterns in quotes to format. This overrides what is specified in the config file",
+        "isVariadic": true,
+        "name": "files"
+      },
+      "description": "Formats the source files and writes the result to the file system",
+      "name": "fmt",
+      "options": [
+        {
+          "description": "Outputs a check-like diff of every formatted file",
+          "name": [
+            "--diff"
+          ]
+        },
+        {
+          "args": {
+            "name": "extension/file-name/file-path",
+            "template": "filepaths"
+          },
+          "description": "Format stdin and output the result to stdout. Provide an absolute file path to apply the inclusion and exclusion rules or an extension or file name to always format the text",
+          "name": [
+            "--stdin"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "incremental",
+            "suggestions": [
+              {
+                "name": "true"
+              },
+              {
+                "name": "false"
+              }
+            ]
+          },
+          "description": "Only format files when they change. This may alternatively be specified in the configuration file",
+          "name": [
+            "--incremental"
+          ]
+        },
+        {
+          "args": {
+            "name": "pattern",
+            "template": [
+              "filepaths",
+              "folders"
+            ]
+          },
+          "description": "List of file patterns or directories in quotes to exclude when formatting. This overrides what is specified in the config file",
+          "name": [
+            "--excludes"
+          ]
+        },
+        {
+          "description": "Allows traversing node module directories (unstable - This flag will be renamed to be non-node specific in the future)",
+          "name": [
+            "--allow-node-modules"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "List of file patterns in quotes to format. This overrides what is specified in the config file",
+        "isVariadic": true,
+        "name": "files"
+      },
+      "description": "Checks for any files that haven't been formatted",
+      "name": "check",
+      "options": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "incremental",
+            "suggestions": [
+              {
+                "name": "true"
+              },
+              {
+                "name": "false"
+              }
+            ]
+          },
+          "description": "Only format files when they change. This may alternatively be specified in the configuration file",
+          "name": [
+            "--incremental"
+          ]
+        },
+        {
+          "args": {
+            "name": "pattern",
+            "template": [
+              "filepaths",
+              "folders"
+            ]
+          },
+          "description": "List of file patterns or directories in quotes to exclude when formatting. This overrides what is specified in the config file",
+          "name": [
+            "--excludes"
+          ]
+        },
+        {
+          "description": "Allows traversing node module directories (unstable - This flag will be renamed to be non-node specific in the future)",
+          "name": [
+            "--allow-node-modules"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Functionality related to the configuration file",
+      "name": "config",
+      "subcommands": [
+        {
+          "args": {
+            "name": "url-or-plugin-name"
+          },
+          "description": "Adds a plugin to the configuration file",
+          "name": "add"
+        },
+        {
+          "description": "Initializes a configuration file in the current directory",
+          "name": "init"
+        },
+        {
+          "description": "Updates the plugins in the configuration file",
+          "name": "update",
+          "options": [
+            {
+              "description": "Upgrade process plugins without prompting to confirm checksums",
+              "name": [
+                "-y",
+                "--yes"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "The subcommand whose help message to display",
+            "isVariadic": true,
+            "name": "SUBCOMMAND"
+          },
+          "description": "Prints the help of the given subcommand(s)",
+          "name": "help"
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "List of file patterns in quotes to format. This overrides what is specified in the config file",
+        "isVariadic": true,
+        "name": "files"
+      },
+      "description": "Prints the resolved file paths for the plugins based on the args and configuration",
+      "name": "output-file-paths",
+      "options": [
+        {
+          "args": {
+            "name": "pattern",
+            "template": [
+              "filepaths",
+              "folders"
+            ]
+          },
+          "description": "List of file patterns or directories in quotes to exclude when formatting. This overrides what is specified in the config file",
+          "name": [
+            "--excludes"
+          ]
+        },
+        {
+          "description": "Allows traversing node module directories (unstable - This flag will be renamed to be non-node specific in the future)",
+          "name": [
+            "--allow-node-modules"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Prints the resolved configuration for the plugins based on the args and configuration",
+      "name": "output-resolved-config"
+    },
+    {
+      "args": {
+        "description": "List of file patterns in quotes to format. This overrides what is specified in the config file",
+        "isVariadic": true,
+        "name": "files"
+      },
+      "description": "Prints the amount of time it takes to format each file. Use this for debugging",
+      "name": "output-format-times",
+      "options": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "incremental",
+            "suggestions": [
+              {
+                "name": "true"
+              },
+              {
+                "name": "false"
+              }
+            ]
+          },
+          "description": "Only format files when they change. This may alternatively be specified in the configuration file",
+          "name": [
+            "--incremental"
+          ]
+        },
+        {
+          "args": {
+            "name": "pattern",
+            "template": [
+              "filepaths",
+              "folders"
+            ]
+          },
+          "description": "List of file patterns or directories in quotes to exclude when formatting. This overrides what is specified in the config file",
+          "name": [
+            "--excludes"
+          ]
+        },
+        {
+          "description": "Allows traversing node module directories (unstable - This flag will be renamed to be non-node specific in the future)",
+          "name": [
+            "--allow-node-modules"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Deletes the plugin cache directory",
+      "name": "clear-cache"
+    },
+    {
+      "description": "Upgrades the dprint executable",
+      "name": "upgrade"
+    },
+    {
+      "description": "Outputs the software license",
+      "name": "license"
+    },
+    {
+      "args": {
+        "description": "The subcommand whose help message to display",
+        "isVariadic": true,
+        "name": "SUBCOMMAND"
+      },
+      "description": "Prints the help of the given subcommand(s)",
+      "name": "help"
+    }
+  ]
+}

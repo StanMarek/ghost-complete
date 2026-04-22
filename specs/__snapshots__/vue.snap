@@ -1,0 +1,601 @@
+{
+  "description": "Vue cli tools",
+  "name": "vue",
+  "options": [
+    {
+      "description": "Output the version number",
+      "name": [
+        "-V",
+        "--version"
+      ]
+    },
+    {
+      "description": "Output usage information",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "name": "app-name"
+      },
+      "description": "Create a new project powered by vue-cli-service",
+      "name": "create",
+      "options": [
+        {
+          "args": {
+            "name": "presetName"
+          },
+          "description": "Skip prompts and use saved or remote preset",
+          "name": [
+            "-p",
+            "--preset"
+          ]
+        },
+        {
+          "description": "Skip prompts and use default preset",
+          "name": [
+            "-d",
+            "--default"
+          ]
+        },
+        {
+          "args": {
+            "name": "json"
+          },
+          "description": "Skip prompts and use inline JSON string as preset",
+          "name": [
+            "-i",
+            "--inlinePreset"
+          ]
+        },
+        {
+          "args": {
+            "name": "command"
+          },
+          "description": "Use specified npm client when installing dependencies",
+          "name": [
+            "-m",
+            "--packageManager"
+          ]
+        },
+        {
+          "args": {
+            "name": "url"
+          },
+          "description": "Use specified npm registry when installing dependencies (only for npm)",
+          "name": [
+            "-r",
+            "--registry"
+          ]
+        },
+        {
+          "args": {
+            "name": "message"
+          },
+          "description": "Force git initialization with initial commit message",
+          "name": [
+            "-g",
+            "--git"
+          ]
+        },
+        {
+          "description": "Skip git initialization",
+          "name": [
+            "-n",
+            "--no-git"
+          ]
+        },
+        {
+          "description": "Overwrite target directory if it exists",
+          "name": [
+            "-f",
+            "--force"
+          ]
+        },
+        {
+          "description": "Merge target directory if it exists",
+          "name": [
+            "--merge"
+          ]
+        },
+        {
+          "description": "Use git clone when fetching remote preset",
+          "name": [
+            "-c",
+            "--clone"
+          ]
+        },
+        {
+          "args": {
+            "name": "proxyUrl"
+          },
+          "description": "Use specified proxy when creating project",
+          "name": [
+            "-X",
+            "--proxy"
+          ]
+        },
+        {
+          "description": "Scaffold project without beginner instructions",
+          "name": [
+            "-b",
+            "--bar"
+          ]
+        },
+        {
+          "description": "Skip displaying \"Get started\" instructions",
+          "name": [
+            "--skipGetStarted"
+          ]
+        },
+        {
+          "description": "Output usage information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "plugin"
+      },
+      "description": "Install a plugin and invoke its generator in an already created project",
+      "name": "add",
+      "options": [
+        {
+          "args": {
+            "name": "url"
+          },
+          "description": "Use specified npm registry when installing dependencies (only for npm)",
+          "name": [
+            "--registry"
+          ]
+        },
+        {
+          "description": "Output usage information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "plugin"
+      },
+      "description": "Invoke the generator of a plugin in an already created project",
+      "name": "invoke",
+      "options": [
+        {
+          "args": {
+            "name": "url"
+          },
+          "description": "Use specified npm registry when installing dependencies (only for npm)",
+          "name": [
+            "--registry"
+          ]
+        },
+        {
+          "description": "Output usage information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {},
+      "description": "Inspect the webpack config in a project with vue-cli-service",
+      "name": "inspect",
+      "options": [
+        {
+          "args": {
+            "name": "mode"
+          },
+          "name": [
+            "--mode"
+          ]
+        },
+        {
+          "args": {
+            "name": "ruleName"
+          },
+          "description": "Inspect a specific module rule",
+          "name": [
+            "--rule"
+          ]
+        },
+        {
+          "args": {
+            "name": "pluginName"
+          },
+          "description": "Inspect a specific plugin",
+          "name": [
+            "--plugin"
+          ]
+        },
+        {
+          "description": "List all module rule names",
+          "name": [
+            "--rules"
+          ]
+        },
+        {
+          "description": "List all plugin names",
+          "name": [
+            "--plugins"
+          ]
+        },
+        {
+          "description": "Show full function definitions in output",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Output usage information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "template": "filepaths"
+      },
+      "description": "Serve a .js or .vue file in development mode with zero config",
+      "name": "serve",
+      "options": [
+        {
+          "description": "Open browser",
+          "name": [
+            "-o",
+            "--open"
+          ]
+        },
+        {
+          "description": "Copy local url to clipboard",
+          "name": [
+            "-c",
+            "--copy"
+          ]
+        },
+        {
+          "args": {
+            "name": "port"
+          },
+          "description": "Port used by the server (default: 8080 or next available port)",
+          "name": [
+            "-p",
+            "--port"
+          ]
+        },
+        {
+          "description": "Output usage information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "template": "filepaths"
+      },
+      "description": "Build a .js or .vue file in production mode with zero config",
+      "name": "build",
+      "options": [
+        {
+          "args": {
+            "name": "target"
+          },
+          "description": "Build target (app | lib | wc | wc-async, default: app)",
+          "name": [
+            "-t",
+            "--target"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Name for lib or web-component mode (default: entry filename)",
+          "name": [
+            "-n",
+            "--name"
+          ]
+        },
+        {
+          "args": {
+            "name": "dir"
+          },
+          "description": "Output directory (default: dist)",
+          "name": [
+            "-d",
+            "--destination"
+          ]
+        },
+        {
+          "description": "Output usage information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Start and open the vue-cli ui",
+      "name": "ui",
+      "options": [
+        {
+          "args": {
+            "name": "host"
+          },
+          "description": "Host used for the UI server (default: localhost)",
+          "name": [
+            "-H",
+            "--host"
+          ]
+        },
+        {
+          "args": {
+            "name": "port"
+          },
+          "description": "Port used for the UI server (by default search for available port)",
+          "name": [
+            "-p",
+            "--port"
+          ]
+        },
+        {
+          "description": "Run in dev mode",
+          "name": [
+            "-D",
+            "--dev"
+          ]
+        },
+        {
+          "description": "Don't output starting messages",
+          "name": [
+            "--quiet"
+          ]
+        },
+        {
+          "description": "Don't open browser on start and output port",
+          "name": [
+            "--headless"
+          ]
+        },
+        {
+          "description": "Output usage information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "template"
+        },
+        {
+          "name": "app-name"
+        }
+      ],
+      "description": "Generate a project from a remote template (legacy API, requires @vue/cli-init)",
+      "name": "init",
+      "options": [
+        {
+          "description": "Use git clone when fetching remote template",
+          "name": [
+            "-c",
+            "--clone"
+          ]
+        },
+        {
+          "description": "Use cached template",
+          "name": [
+            "--offline"
+          ]
+        },
+        {
+          "description": "Output usage information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Inspect and modify the config",
+      "name": "config",
+      "options": [
+        {
+          "args": {
+            "name": "path"
+          },
+          "description": "Get value from option",
+          "name": [
+            "-g",
+            "--get"
+          ]
+        },
+        {
+          "args": {
+            "name": "value"
+          },
+          "description": "Set option value",
+          "name": [
+            "-s",
+            "--set"
+          ]
+        },
+        {
+          "args": {
+            "name": "path"
+          },
+          "description": "Delete option from config",
+          "name": [
+            "-d",
+            "--delete"
+          ]
+        },
+        {
+          "description": "Open config with default editor",
+          "name": [
+            "-e",
+            "--edit"
+          ]
+        },
+        {
+          "description": "Outputs JSON result only",
+          "name": [
+            "--json"
+          ]
+        },
+        {
+          "description": "Output usage information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "(experimental) check for outdated vue cli service / plugins",
+      "name": "outdated",
+      "options": [
+        {
+          "description": "Also check for alpha / beta / rc versions when upgrading",
+          "name": [
+            "--next"
+          ]
+        },
+        {
+          "description": "Output usage information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "plugin-name"
+      },
+      "description": "(experimental) upgrade vue cli service / plugins",
+      "name": "upgrade",
+      "options": [
+        {
+          "args": {
+            "name": "version"
+          },
+          "description": "Upgrade <package-name> to a version that is not latest",
+          "name": [
+            "-t",
+            "--to"
+          ]
+        },
+        {
+          "args": {
+            "name": "version"
+          },
+          "description": "Skip probing installed plugin, assuming it is upgraded from the designated version",
+          "name": [
+            "-f",
+            "--from"
+          ]
+        },
+        {
+          "args": {
+            "name": "url"
+          },
+          "description": "Use specified npm registry when installing dependencies",
+          "name": [
+            "-r",
+            "--registry"
+          ]
+        },
+        {
+          "description": "Upgrade all plugins",
+          "name": [
+            "--all"
+          ]
+        },
+        {
+          "description": "Also check for alpha / beta /rc versions when upgrading",
+          "name": [
+            "--next"
+          ]
+        },
+        {
+          "description": "Output usage information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "plugin-name"
+      },
+      "description": "(experimental) run migrator for an already-installed cli plugin",
+      "name": "migrate",
+      "options": [
+        {
+          "args": {
+            "name": "version"
+          },
+          "description": "The base version for the migrator to migrate from",
+          "name": [
+            "-f",
+            "--from"
+          ]
+        },
+        {
+          "description": "Output usage information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Print debugging information about your environment",
+      "name": "info",
+      "options": [
+        {
+          "description": "Output usage information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    }
+  ]
+}

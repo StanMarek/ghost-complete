@@ -1,0 +1,251 @@
+{
+  "args": [
+    {
+      "description": "Offset",
+      "isOptional": true,
+      "name": "[+]offset[.][Bb]",
+      "suggestions": [
+        {
+          "name": "+0b"
+        }
+      ]
+    },
+    {
+      "description": "File name",
+      "isOptional": true,
+      "isVariadic": true,
+      "name": "file",
+      "template": "filepaths"
+    }
+  ],
+  "description": "Octal, decimal, hex, ASCII dump",
+  "name": "od",
+  "options": [
+    {
+      "args": {
+        "name": "base",
+        "suggestions": [
+          {
+            "name": "d"
+          },
+          {
+            "name": "o"
+          },
+          {
+            "name": "x"
+          },
+          {
+            "name": "n"
+          }
+        ]
+      },
+      "description": "Specify the input address base.  The argument base may be\none of d, o, x or n, which specify decimal, octal,\nhexadecimal addresses or no address, respectively",
+      "name": [
+        "-A"
+      ]
+    },
+    {
+      "description": "Output named characters.  Equivalent to -t a",
+      "name": [
+        "-a"
+      ]
+    },
+    {
+      "description": "Output octal shorts.  Equivalent to -t o2",
+      "name": [
+        "-B",
+        "-o"
+      ]
+    },
+    {
+      "description": "Output octal bytes.  Equivalent to -t o1",
+      "name": [
+        "-b"
+      ]
+    },
+    {
+      "description": "Output C-style escaped characters.  Equivalent to -t c",
+      "name": [
+        "-c"
+      ]
+    },
+    {
+      "description": "Output unsigned decimal ints.  Equivalent to -t u4",
+      "name": [
+        "-D"
+      ]
+    },
+    {
+      "description": "Output unsigned decimal shorts.  Equivalent to -t u2",
+      "name": [
+        "-d"
+      ]
+    },
+    {
+      "description": "Output double-precision floating point numbers.  Equivalent to -t fD",
+      "name": [
+        "-e",
+        "-F"
+      ]
+    },
+    {
+      "description": "Output single-precision floating point numbers.  Equivalent to -t fF",
+      "name": [
+        "-f"
+      ]
+    },
+    {
+      "description": "Output hexadecimal ints.  Equivalent to -t x4",
+      "name": [
+        "-H",
+        "-X"
+      ]
+    },
+    {
+      "description": "Output hexadecimal shorts.  Equivalent to -t x2",
+      "name": [
+        "-h",
+        "-x"
+      ]
+    },
+    {
+      "description": "Output signed decimal longs.  Equivalent to -t dL",
+      "name": [
+        "-I",
+        "-L",
+        "-l"
+      ]
+    },
+    {
+      "description": "Output signed decimal ints.  Equivalent to -t dI",
+      "name": [
+        "-i"
+      ]
+    },
+    {
+      "args": {
+        "name": "skip"
+      },
+      "description": "Skip skip bytes of the combined input before dumping.  The\nnumber may be followed by one of b, k, m or g which\nspecify the units of the number as blocks (512 bytes),\nkilobytes, megabytes and gigabytes, respectively",
+      "name": [
+        "-j"
+      ]
+    },
+    {
+      "args": {
+        "name": "length"
+      },
+      "description": "Dump at most length bytes of input",
+      "name": [
+        "-N"
+      ]
+    },
+    {
+      "description": "Output octal ints.  Equivalent to -t o4",
+      "name": [
+        "-O"
+      ]
+    },
+    {
+      "description": "Output signed decimal shorts.  Equivalent to -t d2",
+      "name": [
+        "-s"
+      ]
+    },
+    {
+      "args": {
+        "name": "type",
+        "suggestions": [
+          {
+            "name": "a"
+          },
+          {
+            "name": "c"
+          },
+          {
+            "name": "dC"
+          },
+          {
+            "name": "dS"
+          },
+          {
+            "name": "dI"
+          },
+          {
+            "name": "dL"
+          },
+          {
+            "name": "dn"
+          },
+          {
+            "name": "oC"
+          },
+          {
+            "name": "oS"
+          },
+          {
+            "name": "oI"
+          },
+          {
+            "name": "oL"
+          },
+          {
+            "name": "on"
+          },
+          {
+            "name": "uC"
+          },
+          {
+            "name": "uS"
+          },
+          {
+            "name": "uI"
+          },
+          {
+            "name": "uL"
+          },
+          {
+            "name": "un"
+          },
+          {
+            "name": "xC"
+          },
+          {
+            "name": "xS"
+          },
+          {
+            "name": "xI"
+          },
+          {
+            "name": "xL"
+          },
+          {
+            "name": "xn"
+          },
+          {
+            "name": "fF"
+          },
+          {
+            "name": "fD"
+          },
+          {
+            "name": "fL"
+          },
+          {
+            "name": "fn"
+          }
+        ]
+      },
+      "description": "Specify the output format.  The type argument is a string\ncontaining one or more of the following kinds of type specificers: a,\nc, [d|o|u|x][C|S|I|L|n], or f[F|D|L|n]. See the man page for meanings",
+      "name": [
+        "-t"
+      ]
+    },
+    {
+      "description": "Write all input data, instead of replacing lines of duplicate values with a '*'",
+      "name": [
+        "-v"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,533 @@
+{
+  "description": "Next-generation ES module bundler",
+  "name": "rollup",
+  "options": [
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "(p,h,w)=>ce(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:S,searchTerm:m}=w,x=(f=(0,y.getCurrentInsertedDirectory)(c??S,m,w))!==null&&f!==void 0?f:\"/\";try{let L=yield h({command:\"ls\",args:[\"-1ApL\"],cwd:x}),X=R(L.stdout.split(`\n`),[\".DS_Store\"]),P=[];for(let A of X)if(A){let k=A.endsWith(\"/\")?\"folders\":\"filepaths\";(k===\"filepaths\"&&u!==\"only\"||k===\"folders\"&&u!==\"never\")&&P.push({type:k===\"filepaths\"?\"file\":\"folder\",name:A,insertValue:A,isDangerous:b,context:{templateType:k}})}return _(g(P))}catch{return[]}})",
+            "requires_js": true
+          }
+        ],
+        "name": "filename"
+      },
+      "description": "Use this config file (if argument is used but value is unspecified, defaults to rollup.config.js)",
+      "name": [
+        "-c",
+        "--config"
+      ]
+    },
+    {
+      "args": {
+        "description": "Directory for chunks (if absent, prints to stdout)",
+        "name": "dirname",
+        "template": "folders"
+      },
+      "name": [
+        "-d",
+        "--dir"
+      ]
+    },
+    {
+      "args": {
+        "description": "Comma-separate list of module IDs to exclude",
+        "name": "ids"
+      },
+      "name": [
+        "-e",
+        "--external"
+      ]
+    },
+    {
+      "args": {
+        "description": "Type of output (amd, cjs, es, iife, umd, system)",
+        "name": "format",
+        "suggestions": [
+          {
+            "name": "amd"
+          },
+          {
+            "name": "cjs"
+          },
+          {
+            "name": "es"
+          },
+          {
+            "name": "iife"
+          },
+          {
+            "name": "umd"
+          },
+          {
+            "name": "system"
+          }
+        ]
+      },
+      "name": [
+        "-f",
+        "--format"
+      ]
+    },
+    {
+      "args": {
+        "description": "Comma-separate list of `moduleID:Global` pairs",
+        "name": "pairs"
+      },
+      "name": [
+        "-g",
+        "--globals"
+      ]
+    },
+    {
+      "description": "Show help message",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "args": {
+        "description": "Input (alternative to <entry file>)",
+        "name": "filename",
+        "template": "filepaths"
+      },
+      "name": [
+        "-i",
+        "--input"
+      ]
+    },
+    {
+      "description": "Generate sourcemap (`-m inline` for inline map)",
+      "name": [
+        "-m",
+        "--sourcemap"
+      ]
+    },
+    {
+      "args": {
+        "description": "Name for UMD export",
+        "name": "name"
+      },
+      "name": [
+        "-n",
+        "--name"
+      ]
+    },
+    {
+      "args": {
+        "description": "Single output file (if absent, prints to stdout)",
+        "name": "output"
+      },
+      "name": [
+        "-o",
+        "--file"
+      ]
+    },
+    {
+      "args": {
+        "description": "Use the plugin specified (may be repeated)",
+        "name": "plugin"
+      },
+      "name": [
+        "-p",
+        "--plugin"
+      ]
+    },
+    {
+      "description": "Show version number",
+      "name": [
+        "-v",
+        "--version"
+      ]
+    },
+    {
+      "description": "Watch files in bundle and rebuild on changes",
+      "name": [
+        "-w",
+        "--watch"
+      ]
+    },
+    {
+      "args": {
+        "description": "ID for AMD module (default is anonymous)",
+        "name": "id"
+      },
+      "name": [
+        "--amd.id"
+      ]
+    },
+    {
+      "description": "Generate the AMD ID based off the chunk name",
+      "name": [
+        "--amd.autoId"
+      ]
+    },
+    {
+      "args": {
+        "description": "Path to prepend to auto generated AMD ID",
+        "name": "prefix"
+      },
+      "name": [
+        "--amd.basePath"
+      ]
+    },
+    {
+      "args": {
+        "description": "Function to use in place of 'define'",
+        "name": "name"
+      },
+      "name": [
+        "--amd.define"
+      ]
+    },
+    {
+      "args": {
+        "description": "Name pattern for emitted assets",
+        "name": "pattern"
+      },
+      "name": [
+        "--assetFileNames"
+      ]
+    },
+    {
+      "args": {
+        "description": "Code to insert at top of bundle (outside wrapper)",
+        "name": "text"
+      },
+      "name": [
+        "--banner"
+      ]
+    },
+    {
+      "args": {
+        "description": "Name pattern for emitted secondary chunks",
+        "name": "pattern"
+      },
+      "name": [
+        "--chunkFileNames"
+      ]
+    },
+    {
+      "description": "Minify wrapper code",
+      "name": [
+        "--compact"
+      ]
+    },
+    {
+      "args": {
+        "description": "Specify top-level 'this' value",
+        "name": "variable"
+      },
+      "name": [
+        "--context"
+      ]
+    },
+    {
+      "args": {
+        "description": "Name pattern for emitted entry chunks",
+        "name": "pattern"
+      },
+      "name": [
+        "--entryFileNames"
+      ]
+    },
+    {
+      "args": {
+        "description": "Settings passed to config file",
+        "name": "values"
+      },
+      "name": [
+        "--environment"
+      ]
+    },
+    {
+      "description": "Do not add __esmodule property",
+      "name": [
+        "--no-esModule"
+      ]
+    },
+    {
+      "args": {
+        "description": "Specify export mode (auto, default, named, none)",
+        "name": "mode"
+      },
+      "name": [
+        "--exports"
+      ]
+    },
+    {
+      "description": "Extend global variable defined by --name",
+      "name": [
+        "--extend"
+      ]
+    },
+    {
+      "description": "Do not generate code to support live bindings",
+      "name": [
+        "--no-externalLiveBindings"
+      ]
+    },
+    {
+      "description": "Exit with an error if the build produced warnings",
+      "name": [
+        "--failAfterWarnings"
+      ]
+    },
+    {
+      "args": {
+        "description": "Code to insert at end of bundle (outside wrapper)",
+        "name": "text"
+      },
+      "name": [
+        "--footer"
+      ]
+    },
+    {
+      "description": "Do not freeze namespace objects",
+      "name": [
+        "--no-freeze"
+      ]
+    },
+    {
+      "description": "Do not hoist transistive imports into entry chunks",
+      "name": [
+        "--no-hoistTransistiveImports"
+      ]
+    },
+    {
+      "description": "Don't indent result",
+      "name": [
+        "--no-indent"
+      ]
+    },
+    {
+      "description": "Do not include interop block",
+      "name": [
+        "--no-interop"
+      ]
+    },
+    {
+      "description": "Create a single bundle when using dynamic imports",
+      "name": [
+        "--inlineDynamicImports"
+      ]
+    },
+    {
+      "args": {
+        "description": "Code to insert at top of bundle (inside wrapper)",
+        "name": "text"
+      },
+      "name": [
+        "--intro"
+      ]
+    },
+    {
+      "description": "Force or disable minification of internal imports",
+      "name": [
+        "--minifyInternalImports"
+      ]
+    },
+    {
+      "description": "Create proper '.toString' methods for namespaces",
+      "name": [
+        "--namespaceToStringTag"
+      ]
+    },
+    {
+      "description": "Generate a noConflict method for UMD globals",
+      "name": [
+        "--noConflict"
+      ]
+    },
+    {
+      "args": {
+        "description": "Code to insert at end of bundle (inside wrapper)",
+        "name": "text"
+      },
+      "name": [
+        "--outro"
+      ]
+    },
+    {
+      "description": "Use 'const' instead of 'var' for exports",
+      "name": [
+        "--preferConst"
+      ]
+    },
+    {
+      "description": "Avoid facade chunks for entry points",
+      "name": [
+        "--no-preserveEntrySignatures"
+      ]
+    },
+    {
+      "description": "Preserve module structure",
+      "name": [
+        "--preserveModules"
+      ]
+    },
+    {
+      "description": "Put preserved modules under this path at root level",
+      "name": [
+        "--preserveModulesRoot"
+      ]
+    },
+    {
+      "description": "Do not follow symlinks when resolving files",
+      "name": [
+        "--preserveSymlinks"
+      ]
+    },
+    {
+      "description": "Do not replace invalid characters in file names",
+      "name": [
+        "--no-sanitizeFileName"
+      ]
+    },
+    {
+      "description": "Create shim variables for missing exports",
+      "name": [
+        "--shimMissingExports"
+      ]
+    },
+    {
+      "description": "Don't print warnings",
+      "name": [
+        "--silent"
+      ]
+    },
+    {
+      "description": "Do not include source code in source maps",
+      "name": [
+        "--sourcemapExcludeSources"
+      ]
+    },
+    {
+      "args": {
+        "name": "file"
+      },
+      "description": "Specify bundle position for source maps",
+      "name": [
+        "--sourcemapFile"
+      ]
+    },
+    {
+      "description": "Specify file extension used for stdin input",
+      "name": [
+        "--stdin=ext"
+      ]
+    },
+    {
+      "description": "Do not read \"-\" from stdin",
+      "name": [
+        "--no-stdin"
+      ]
+    },
+    {
+      "description": "Don't emit '\"use strict\"; in the generated modules",
+      "name": [
+        "--no-strict"
+      ]
+    },
+    {
+      "description": "Throw errors for deprecated features",
+      "name": [
+        "--strictDeprecations"
+      ]
+    },
+    {
+      "description": "Replace empty SystemJS setters with 'null'",
+      "name": [
+        "--systemNullSetters"
+      ]
+    },
+    {
+      "description": "Disable tree-shaking optimizations",
+      "name": [
+        "--no-treeshake"
+      ]
+    },
+    {
+      "description": "Ignore pure call annotations",
+      "name": [
+        "--no-treeshake.annotations"
+      ]
+    },
+    {
+      "description": "Assume modules have no side effects",
+      "name": [
+        "--no-treeshake.moduleSideEffects"
+      ]
+    },
+    {
+      "description": "Ignore property access side-effects",
+      "name": [
+        "--no-treeshake.propertyReadSideEffects"
+      ]
+    },
+    {
+      "description": "Do not turn off try-catch-tree-shaking",
+      "name": [
+        "--no-treeshake.tryCatchDeoptimization"
+      ]
+    },
+    {
+      "description": "Assume unknown globals do not throw",
+      "name": [
+        "--no-treeshake.unknownGlobalSideEffects"
+      ]
+    },
+    {
+      "description": "Wait for bundle input files",
+      "name": [
+        "--waitForBuildInput"
+      ]
+    },
+    {
+      "args": {
+        "name": "number"
+      },
+      "description": "Throttle watch rebuilds",
+      "name": [
+        "--watch.buildDelay"
+      ]
+    },
+    {
+      "description": "Do not clear the screen when rebuilding",
+      "name": [
+        "--no-watch.clearScreen"
+      ]
+    },
+    {
+      "description": "Do not write files to disk when watching",
+      "name": [
+        "--watch.skipWrite"
+      ]
+    },
+    {
+      "args": {
+        "name": "files"
+      },
+      "description": "Exclude files from being watched",
+      "name": [
+        "--watch.exclude"
+      ]
+    },
+    {
+      "args": {
+        "name": "files"
+      },
+      "description": "Limit watching to specified files",
+      "name": [
+        "--watch.include"
+      ]
+    },
+    {
+      "description": "Validate output",
+      "name": [
+        "--validate"
+      ]
+    }
+  ]
+}

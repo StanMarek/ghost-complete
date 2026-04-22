@@ -1,0 +1,291 @@
+{
+  "description": "Turborepo is a high-performance build system for JavaScript and TypeScript codebases",
+  "name": "turbo",
+  "options": [
+    {
+      "description": "Print the version",
+      "name": [
+        "--version"
+      ]
+    },
+    {
+      "description": "Print a help message",
+      "name": [
+        "--help"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Get the path to the turbo binary",
+      "name": "bin"
+    },
+    {
+      "description": "Link your local directory to a Vercel organization and enable remote caching",
+      "name": "link",
+      "options": [
+        {
+          "description": "Do not create or modify .gitignore",
+          "name": [
+            "--no-gitignore"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Login to your Vercel account",
+      "name": "login",
+      "options": [
+        {
+          "description": "Attempt to authenticate to the specified team using SSO",
+          "name": [
+            "--sso-team"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Logout of your Vercel account",
+      "name": "logout"
+    },
+    {
+      "description": "Prepare a subset of your monorepo",
+      "name": "prune",
+      "options": [
+        {
+          "args": {
+            "name": "package"
+          },
+          "description": "Specify package to act as entry point for pruned monorepo",
+          "name": [
+            "--scope"
+          ]
+        },
+        {
+          "description": "Output pruned workspace into 'fill' and 'json' directories optimized for Docker layer caching",
+          "name": [
+            "--docker"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Unlink the current directory from your Vercel organization and disable remote caching",
+      "name": "unlink"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "e=>{let t;try{t=JSON.parse(e)}catch(i){return console.error(i),[]}return Object.entries(t.pipeline).map(([i,o])=>{let a=[];return\"dependsOn\"in o&&a.push(`depends on ${o.dependsOn.map(s=>`'${s}'`).join(\", \")}`),\"outputs\"in o&&a.push(`outputs ${o.outputs.map(s=>`'${s}'`).join(\", \")}`),{name:i,description:a.length>0?\"Task: \"+a.join(\", \"):\"Task\",icon:ne}})}",
+            "requires_js": true,
+            "script": [
+              "bash",
+              "-c",
+              "until [[ ( -f turbo.json || $PWD = '/' ) ]]; do cd ..; done; cat turbo.json"
+            ]
+          }
+        ],
+        "isVariadic": true,
+        "name": "tasks"
+      },
+      "description": "Run tasks in your monorepo",
+      "name": "run",
+      "options": [
+        {
+          "args": {
+            "name": "package"
+          },
+          "description": "Specify packages to act as entry points for task execution",
+          "name": [
+            "--scope"
+          ]
+        },
+        {
+          "args": {
+            "name": "dir",
+            "template": "folders"
+          },
+          "description": "Specify local filesystem cache directory",
+          "name": [
+            "--cache-dir"
+          ]
+        },
+        {
+          "args": {
+            "name": "limit"
+          },
+          "description": "Limit the concurrency of task execution (use `1` for serial)",
+          "name": [
+            "--concurrency"
+          ]
+        },
+        {
+          "description": "Continue execution even if a task exits with an error",
+          "name": [
+            "--continue"
+          ]
+        },
+        {
+          "description": "Ignore the existing cache",
+          "name": [
+            "--force"
+          ]
+        },
+        {
+          "description": "Generate a Dot graph of the task execution",
+          "name": [
+            "--graph"
+          ]
+        },
+        {
+          "args": {
+            "name": "glob"
+          },
+          "description": "Specify glob of global filesystem dependencies to be hashed (useful for .env and files in the root directory)",
+          "name": [
+            "--global-deps"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "git",
+                  "--no-optional-locks",
+                  "branch",
+                  "-a",
+                  "--no-color",
+                  "--sort=-committerdate"
+                ],
+                "transforms": [
+                  {
+                    "starts_with": "fatal:",
+                    "type": "error_guard"
+                  },
+                  "split_lines",
+                  "filter_empty",
+                  "trim",
+                  {
+                    "name": 0,
+                    "pattern": "\\S+",
+                    "type": "regex_extract"
+                  }
+                ]
+              }
+            ],
+            "name": "branch"
+          },
+          "description": "Limit/set scope to changed packages since a mergebase",
+          "name": [
+            "--since"
+          ]
+        },
+        {
+          "args": {
+            "name": "slug"
+          },
+          "description": "The slug of a turborepo.com team",
+          "name": [
+            "--team"
+          ]
+        },
+        {
+          "args": {
+            "name": "token"
+          },
+          "description": "A turborepo.com access token",
+          "name": [
+            "--token"
+          ]
+        },
+        {
+          "args": {
+            "name": "files"
+          },
+          "description": "Files to ignore when calculating changed files (supports globs)",
+          "name": [
+            "--ignore"
+          ]
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "File to write turbo's performance profile into",
+          "name": [
+            "--profile"
+          ]
+        },
+        {
+          "description": "Execute all tasks in parallel",
+          "name": [
+            "--parallel"
+          ]
+        },
+        {
+          "description": "Include the dependencies of tasks in execution",
+          "name": [
+            "--include-dependencies"
+          ]
+        },
+        {
+          "description": "Exclude dependent task consumers from execution",
+          "name": [
+            "--no-deps"
+          ]
+        },
+        {
+          "description": "Avoid saving task results to the cache (useful for development/watch tasks)",
+          "name": [
+            "--no-cache"
+          ]
+        },
+        {
+          "args": {
+            "name": "level",
+            "suggestions": [
+              {
+                "description": "Only new output with hashes for cached tasks",
+                "name": "new-only"
+              },
+              {
+                "description": "Only turbo-computed task hashes",
+                "name": "hash-only"
+              },
+              {
+                "description": "Show all output",
+                "name": "full"
+              },
+              {
+                "description": "Hide process output",
+                "name": "none"
+              }
+            ]
+          },
+          "name": [
+            "--output-logs"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "format",
+            "suggestions": [
+              {
+                "name": "json"
+              }
+            ]
+          },
+          "description": "List the packages in scope and the tasks that would be run",
+          "name": [
+            "--dry",
+            "--dry-run"
+          ]
+        }
+      ]
+    }
+  ]
+}

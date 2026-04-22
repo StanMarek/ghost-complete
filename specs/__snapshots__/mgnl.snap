@@ -1,0 +1,479 @@
+{
+  "description": "Magnolia CLI is a command line interface (CLI) tool to set up and facilitate light development with Magnolia",
+  "name": "mgnl",
+  "options": [
+    {
+      "description": "Show help for mgnl",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": [
+        {
+          "description": "The component you want to make available",
+          "name": "<[module-id:]path-to-component>"
+        },
+        {
+          "description": "The page you want to make the component available to",
+          "name": "<path-to-page[@area]>"
+        }
+      ],
+      "description": "This command makes a component available to a page",
+      "name": "add-availability",
+      "options": [
+        {
+          "args": {
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "The path to the light module that contains the page template",
+          "name": [
+            "-p",
+            "--path"
+          ]
+        },
+        {
+          "description": "Add this parameter to autogenerate the component instead of providing plain availability",
+          "name": [
+            "-g"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The name of the new app. The name cannot contain spaces",
+        "name": "name"
+      },
+      "description": "This command creates a content type and an app",
+      "name": "create-app",
+      "options": [
+        {
+          "args": {
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "The path to the light module where you want to create the app",
+          "name": [
+            "-p",
+            "--path"
+          ]
+        },
+        {
+          "args": {
+            "name": "prototype"
+          },
+          "description": "The name of the prototype variant to create the app",
+          "name": [
+            "-P",
+            "--prototype"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The name of the new block definition. The block name cannot contain spaces",
+        "name": "blockName"
+      },
+      "description": "This command creates a block",
+      "name": "create-block",
+      "options": [
+        {
+          "args": {
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "The path to the light module to add the new block to",
+          "name": [
+            "-p",
+            "--path"
+          ]
+        },
+        {
+          "args": {
+            "name": "prototype"
+          },
+          "description": "The name of the prototype variant to create the block",
+          "name": [
+            "-P",
+            "--prototype"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The name of the new component template. The name cannot contain spaces",
+        "name": "name"
+      },
+      "description": "This command creates a new component template",
+      "name": "create-component",
+      "options": [
+        {
+          "args": {
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "The path to the light module you want to add the component template to",
+          "name": [
+            "-p",
+            "--path"
+          ]
+        },
+        {
+          "args": {
+            "name": "<path-to-page[@area]>"
+          },
+          "description": "The page you want to make the component available to",
+          "name": [
+            "-a",
+            "--available"
+          ]
+        },
+        {
+          "args": {
+            "name": "<path-to-page[@area]>"
+          },
+          "description": "Add this parameter to autogenerate the component instead of providing plain availability",
+          "name": [
+            "-g",
+            "--autogenerate"
+          ]
+        },
+        {
+          "args": {
+            "name": "prototype"
+          },
+          "description": "The name of the prototype variant to create the component",
+          "name": [
+            "-P",
+            "--prototype"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The name of the new content type. The name cannot contain spaces",
+        "name": "name"
+      },
+      "description": "This command creates a content type",
+      "name": "create-content-type",
+      "options": [
+        {
+          "description": "Creates also a new app that references the content type. With the -a option, the command is functionally equivalent to the create-app command",
+          "name": [
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "The path to the light module where you want to create the content type",
+          "name": [
+            "-p",
+            "--path"
+          ]
+        },
+        {
+          "args": {
+            "name": "prototype"
+          },
+          "description": "The name of the prototype variant to create the content type",
+          "name": [
+            "-P",
+            "--prototype"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The name of the new light module. Avoid spaces and special characters since this name is used as folder name",
+        "name": "moduleName"
+      },
+      "description": "This command creates a new light module in the form of a set of empty light module folders",
+      "name": "create-light-module",
+      "options": [
+        {
+          "args": {
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "The path of the parent directory for the new light module",
+          "name": [
+            "-p",
+            "--path"
+          ]
+        },
+        {
+          "args": {
+            "name": "prototype"
+          },
+          "description": "The name of the prototype variant to create the light module",
+          "name": [
+            "-P",
+            "--prototype"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The name of the new page template. The template name cannot contain spaces",
+        "name": "templateName"
+      },
+      "description": "This command creates a new page template",
+      "name": "create-page",
+      "options": [
+        {
+          "args": {
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "The path to the light module to add the new template to",
+          "name": [
+            "-p",
+            "--path"
+          ]
+        },
+        {
+          "args": {
+            "name": "prototype"
+          },
+          "description": "The name of the prototype variant to create the page",
+          "name": [
+            "-P",
+            "--prototype"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The name of the new URI configuration",
+        "name": "virtualUriName"
+      },
+      "description": "The command creates a virtual URI mapping configuration file (a YAML definition file) in the light module",
+      "name": "create-virtual-uri",
+      "options": [
+        {
+          "args": {
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "The path to the light module",
+          "name": [
+            "-p",
+            "--path"
+          ]
+        },
+        {
+          "args": {
+            "name": "uri"
+          },
+          "description": "The pattern to be matched in the requested URI. Enclose the <uri> value in quotes",
+          "name": [
+            "-f",
+            "--formUri"
+          ]
+        },
+        {
+          "args": {
+            "name": "<prefix:uri>"
+          },
+          "description": "A concrete URI that the request is mapped to. Enclose the <prefix:uri> value in quotes",
+          "name": [
+            "-t",
+            "--toUri"
+          ]
+        },
+        {
+          "args": {
+            "name": "prototype"
+          },
+          "description": "The name of the prototype variant to create the mapping",
+          "name": [
+            "-P",
+            "--prototype"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Run this command to create a local configuration",
+      "name": "customize-local-config",
+      "options": [
+        {
+          "args": {
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "The path into which the mgnl-cli-prototypes folder and mgnl-cli.json file are installed",
+          "name": [
+            "-p",
+            "--path"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "At least one name of a light module to be downloaded from npm. If you are installing more than one module from the repository, separate the module names with a space",
+        "generators": [
+          {
+            "js_source": "async(s,c,d)=>{let a=s[s.length-1];if(a===\"\")return[];let r=n&&n.length>0?`+keywords:${n.join(\",\")}`:\"\",u=[\"-s\",\"-H\",\"Accept: application/json\",r?`https://api.npms.io/v2/search?size=20&q=${a}${r}`:`https://api.npms.io/v2/search/suggestions?q=${a}&size=20`],m=[\"-s\",\"-H\",\"Accept: application/vnd.npm.install-v1+json\",`https://registry.npmjs.org/${a.slice(0,-1)}`],I=l=>c({command:\"curl\",args:l[l.length-1]===\"@\"?m:u}),D=a.startsWith(\"@\")?P(a)>1:a.includes(\"@\");try{let l=JSON.parse((await I(a)).stdout);if(D){let v=Object.entries(l[\"dist-tags\"]||{}).map(([j,M])=>({name:j,description:M}));return v.push(...Object.keys(l.versions).map(j=>({name:j})).reverse()),v}return(r?l.results:l).map(v=>({name:v.package.name,description:v.package.description}))}catch(l){return console.error({error:l}),[]}}",
+            "requires_js": true
+          }
+        ],
+        "isVariadic": true,
+        "name": "light-module-name"
+      },
+      "description": "Downloads and installs one or more light modules from npm to the light module directory",
+      "name": "install",
+      "options": [
+        {
+          "args": {
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "The path to the light-modules folder",
+          "name": [
+            "-p",
+            "--path"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "This command downloads, unpacks and pre-configures a Magnolia Tomcat server together with a specific webapp",
+      "name": "jumpstart",
+      "options": [
+        {
+          "args": {
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "The path to the light modules root folder which is observed for changes",
+          "name": [
+            "-p",
+            "--path"
+          ]
+        },
+        {
+          "args": {
+            "name": "version"
+          },
+          "description": "Use to choose a specific version of the Magnolia webapp. If not provided, the latest stable version of the specified webapp is downloaded",
+          "name": [
+            "-m",
+            "--magnolia-version"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "If provided, a sample light module under the light modules root folder with the given name is created",
+          "name": [
+            "-i",
+            "--install-sample-module"
+          ]
+        },
+        {
+          "description": "Downloads the latest snapshot development version of the specified webapp",
+          "name": [
+            "-s",
+            "--snapshot"
+          ]
+        },
+        {
+          "args": {
+            "name": "webapp",
+            "suggestions": [
+              {
+                "name": "magnolia-empty-webapp"
+              },
+              {
+                "name": "magnolia-community-webapp"
+              },
+              {
+                "name": "magnolia-community-demo-webapp"
+              },
+              {
+                "name": "magnolia-dx-core-webapp"
+              },
+              {
+                "name": "magnolia-dx-core-demo-webapp"
+              }
+            ]
+          },
+          "description": "Use to directly specify which Magnolia webapp you want to install",
+          "name": [
+            "-w",
+            "--webapp"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "command",
+        "suggestions": [
+          {
+            "name": "install"
+          },
+          {
+            "name": "uninstall"
+          }
+        ]
+      },
+      "description": "Run the command to install or uninstall autocompletion for Magnolia CLI commands",
+      "name": "tab-completion"
+    },
+    {
+      "args": {
+        "description": "The search query sent to the npm's API. The query can contain multiple terms separated with commas and no spaces",
+        "generators": [
+          {
+            "js_source": "async(s,c,d)=>{let a=s[s.length-1];if(a===\"\")return[];let r=n&&n.length>0?`+keywords:${n.join(\",\")}`:\"\",u=[\"-s\",\"-H\",\"Accept: application/json\",r?`https://api.npms.io/v2/search?size=20&q=${a}${r}`:`https://api.npms.io/v2/search/suggestions?q=${a}&size=20`],m=[\"-s\",\"-H\",\"Accept: application/vnd.npm.install-v1+json\",`https://registry.npmjs.org/${a.slice(0,-1)}`],I=l=>c({command:\"curl\",args:l[l.length-1]===\"@\"?m:u}),D=a.startsWith(\"@\")?P(a)>1:a.includes(\"@\");try{let l=JSON.parse((await I(a)).stdout);if(D){let v=Object.entries(l[\"dist-tags\"]||{}).map(([j,M])=>({name:j,description:M}));return v.push(...Object.keys(l.versions).map(j=>({name:j})).reverse()),v}return(r?l.results:l).map(v=>({name:v.package.name,description:v.package.description}))}catch(l){return console.error({error:l}),[]}}",
+            "requires_js": true
+          }
+        ],
+        "name": "query"
+      },
+      "description": "Searches for Magnolia-related packages available from npm",
+      "name": "search"
+    },
+    {
+      "description": "This command starts up Magnolia and displays the main log file",
+      "name": "start",
+      "options": [
+        {
+          "args": {
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "The path to the apache-tomcat folder",
+          "name": [
+            "-p",
+            "--path"
+          ]
+        },
+        {
+          "description": "Does NOT ignore the open files limit check. The files limit check is ignored by default",
+          "name": [
+            "-d"
+          ]
+        }
+      ]
+    }
+  ]
+}

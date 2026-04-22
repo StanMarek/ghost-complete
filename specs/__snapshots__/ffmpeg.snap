@@ -1,0 +1,1554 @@
+{
+  "args": {
+    "description": "Output file",
+    "name": "outfile",
+    "template": "filepaths"
+  },
+  "description": "Play, record, convert, and stream audio and video",
+  "name": "ffmpeg",
+  "options": [
+    {
+      "args": {
+        "name": "infile",
+        "template": "filepaths"
+      },
+      "description": "Input file",
+      "name": [
+        "-i"
+      ]
+    },
+    {
+      "description": "Show license",
+      "name": [
+        "-L"
+      ]
+    },
+    {
+      "args": {
+        "name": "topic"
+      },
+      "description": "Show help",
+      "name": [
+        "-h"
+      ]
+    },
+    {
+      "args": {
+        "name": "topic"
+      },
+      "description": "Show help",
+      "name": [
+        "-?"
+      ]
+    },
+    {
+      "args": {
+        "name": "topic"
+      },
+      "description": "Show help",
+      "name": [
+        "-help"
+      ]
+    },
+    {
+      "args": {
+        "name": "topic"
+      },
+      "description": "Show help",
+      "name": [
+        "--help"
+      ]
+    },
+    {
+      "description": "Show version",
+      "name": [
+        "-version"
+      ]
+    },
+    {
+      "description": "Show build configuration",
+      "name": [
+        "-buildconf"
+      ]
+    },
+    {
+      "description": "Show available formats",
+      "name": [
+        "-formats"
+      ]
+    },
+    {
+      "description": "Show available muxers",
+      "name": [
+        "-muxers"
+      ]
+    },
+    {
+      "description": "Show available demuxers",
+      "name": [
+        "-demuxers"
+      ]
+    },
+    {
+      "description": "Show available devices",
+      "name": [
+        "-devices"
+      ]
+    },
+    {
+      "description": "Show available codecs",
+      "name": [
+        "-codecs"
+      ]
+    },
+    {
+      "description": "Show available decoders",
+      "name": [
+        "-decoders"
+      ]
+    },
+    {
+      "description": "Show available encoders",
+      "name": [
+        "-encoders"
+      ]
+    },
+    {
+      "description": "Show available bit stream filters",
+      "name": [
+        "-bsfs"
+      ]
+    },
+    {
+      "description": "Show available protocols",
+      "name": [
+        "-protocols"
+      ]
+    },
+    {
+      "description": "Show available filters",
+      "name": [
+        "-filters"
+      ]
+    },
+    {
+      "description": "Show available pixel formats",
+      "name": [
+        "-pix_fmts"
+      ]
+    },
+    {
+      "description": "Show standard channel layouts",
+      "name": [
+        "-layouts"
+      ]
+    },
+    {
+      "description": "Show available audio sample formats",
+      "name": [
+        "-sample_fmts"
+      ]
+    },
+    {
+      "description": "Show available stream dispositions",
+      "name": [
+        "-dispositions"
+      ]
+    },
+    {
+      "description": "Show available color names",
+      "name": [
+        "-colors"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "ffmpeg",
+              "-devices"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "device"
+      },
+      "description": "List sources of the input device",
+      "name": [
+        "-sources"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "ffmpeg",
+              "-devices"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "device"
+      },
+      "description": "List sinks of the output device",
+      "name": [
+        "-sinks"
+      ]
+    },
+    {
+      "description": "Show available HW acceleration methods",
+      "name": [
+        "-hwaccels"
+      ]
+    },
+    {
+      "args": {
+        "name": "loglevel"
+      },
+      "description": "Set logging level",
+      "name": [
+        "-loglevel"
+      ]
+    },
+    {
+      "args": {
+        "name": "loglevel"
+      },
+      "description": "Set logging level",
+      "name": [
+        "-v"
+      ]
+    },
+    {
+      "description": "Generate a report",
+      "name": [
+        "-report"
+      ]
+    },
+    {
+      "args": {
+        "name": "bytes"
+      },
+      "description": "Set maximum size of a single allocated block",
+      "name": [
+        "-max_alloc"
+      ]
+    },
+    {
+      "description": "Overwrite output files",
+      "name": [
+        "-y"
+      ]
+    },
+    {
+      "description": "Never overwrite output files",
+      "name": [
+        "-n"
+      ]
+    },
+    {
+      "description": "Ignore unknown stream types",
+      "name": [
+        "-ignore_unknown"
+      ]
+    },
+    {
+      "description": "Number of non-complex filter threads",
+      "name": [
+        "-filter_threads"
+      ]
+    },
+    {
+      "description": "Number of threads for -filter_complex",
+      "name": [
+        "-filter_complex_threads"
+      ]
+    },
+    {
+      "description": "Print progress report during encoding",
+      "name": [
+        "-stats"
+      ]
+    },
+    {
+      "args": {
+        "name": "maximum error rate"
+      },
+      "description": "Ratio of decoding errors (0.0: no errors, 1.0: 100% errors) above which ffmpeg returns an error instead of success",
+      "name": [
+        "-max_error_rate"
+      ]
+    },
+    {
+      "args": {
+        "name": "volume"
+      },
+      "description": "Change audio volume (256=normal)",
+      "name": [
+        "-vol"
+      ]
+    },
+    {
+      "args": {
+        "name": "flags"
+      },
+      "description": "Force specific cpu flags",
+      "name": [
+        "-cpuflags"
+      ]
+    },
+    {
+      "args": {
+        "name": "count"
+      },
+      "description": "Force specific cpu count",
+      "name": [
+        "-cpucount"
+      ]
+    },
+    {
+      "args": {
+        "name": "hide_banner"
+      },
+      "description": "Do not show program banner",
+      "name": [
+        "-hide_banner"
+      ]
+    },
+    {
+      "description": "Copy unknown stream types",
+      "name": [
+        "-copy_unknown"
+      ]
+    },
+    {
+      "description": "Allow recasting stream type in order to force a decoder of different media type",
+      "name": [
+        "-recast_media"
+      ]
+    },
+    {
+      "description": "Add timings for benchmarking",
+      "name": [
+        "-benchmark"
+      ]
+    },
+    {
+      "description": "Add timings for each task",
+      "name": [
+        "-benchmark_all"
+      ]
+    },
+    {
+      "args": {
+        "name": "url"
+      },
+      "description": "Write program-readable progress information",
+      "name": [
+        "-progress"
+      ]
+    },
+    {
+      "description": "Enable or disable interaction on standard input",
+      "name": [
+        "-stdin"
+      ]
+    },
+    {
+      "args": {
+        "name": "limit"
+      },
+      "description": "Set max runtime in seconds in CPU user time",
+      "name": [
+        "-timelimit"
+      ]
+    },
+    {
+      "description": "Dump each input packet",
+      "name": [
+        "-dump"
+      ]
+    },
+    {
+      "description": "When dumping packets, also dump the payload",
+      "name": [
+        "-hex"
+      ]
+    },
+    {
+      "description": "Set video sync method globally; deprecated, use -fps_mode",
+      "name": [
+        "-vsync"
+      ]
+    },
+    {
+      "description": "Frame drop threshold",
+      "name": [
+        "-frame_drop_threshold"
+      ]
+    },
+    {
+      "description": "Audio sync method",
+      "name": [
+        "-async"
+      ]
+    },
+    {
+      "args": {
+        "name": "threshold"
+      },
+      "description": "Audio drift threshold",
+      "name": [
+        "-adrift_threshold"
+      ]
+    },
+    {
+      "description": "Copy timestamps",
+      "name": [
+        "-copyts"
+      ]
+    },
+    {
+      "description": "Shift input timestamps to start at 0 when using copyts",
+      "name": [
+        "-start_at_zero"
+      ]
+    },
+    {
+      "args": {
+        "name": "mode"
+      },
+      "description": "Copy input stream time base when stream copying",
+      "name": [
+        "-copytb"
+      ]
+    },
+    {
+      "args": {
+        "name": "threshold"
+      },
+      "description": "Timestamp discontinuity delta threshold",
+      "name": [
+        "-dts_delta_threshold"
+      ]
+    },
+    {
+      "args": {
+        "name": "threshold"
+      },
+      "description": "Timestamp error delta threshold",
+      "name": [
+        "-dts_error_threshold"
+      ]
+    },
+    {
+      "args": {
+        "name": "error"
+      },
+      "description": "Exit on error",
+      "name": [
+        "-xerror"
+      ]
+    },
+    {
+      "args": {
+        "name": "flags"
+      },
+      "description": "Abort on the specified condition flags",
+      "name": [
+        "-abort_on"
+      ]
+    },
+    {
+      "args": {
+        "name": "graph_description"
+      },
+      "description": "Create a complex filtergraph",
+      "name": [
+        "-filter_complex"
+      ]
+    },
+    {
+      "args": {
+        "name": "graph_description"
+      },
+      "description": "Create a complex filtergraph",
+      "name": [
+        "-lavfi"
+      ]
+    },
+    {
+      "args": {
+        "name": "filename"
+      },
+      "description": "Read complex filtergraph description from a file",
+      "name": [
+        "-filter_complex_script"
+      ]
+    },
+    {
+      "description": "Enable automatic conversion filters globally",
+      "name": [
+        "-auto_conversion_filters"
+      ]
+    },
+    {
+      "args": {
+        "name": "time"
+      },
+      "description": "Set the period at which ffmpeg updates stats and -progress output",
+      "name": [
+        "-stats_period"
+      ]
+    },
+    {
+      "description": "Print timestamp debugging info",
+      "name": [
+        "-debug_ts"
+      ]
+    },
+    {
+      "description": "Calculate PSNR of compressed frames",
+      "name": [
+        "-psnr"
+      ]
+    },
+    {
+      "description": "Dump video coding statistics to file",
+      "name": [
+        "-vstats"
+      ]
+    },
+    {
+      "args": {
+        "name": "file"
+      },
+      "description": "Dump video coding statistics to file",
+      "name": [
+        "-vstats_file"
+      ]
+    },
+    {
+      "description": "Version of the vstats format to use",
+      "name": [
+        "-vstats_version"
+      ]
+    },
+    {
+      "description": "Show QP histogram",
+      "name": [
+        "-qphist"
+      ]
+    },
+    {
+      "args": {
+        "name": "file"
+      },
+      "description": "Specify a file in which to print sdp information",
+      "name": [
+        "-sdp_file"
+      ]
+    },
+    {
+      "args": {
+        "name": "args"
+      },
+      "description": "Initialise hardware device",
+      "name": [
+        "-init_hw_device"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "ffmpeg",
+              "-devices"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "device"
+      },
+      "description": "Set hardware device used when filtering",
+      "name": [
+        "-filter_hw_device"
+      ]
+    },
+    {
+      "args": {
+        "name": "fmt"
+      },
+      "description": "Force format",
+      "name": [
+        "-f"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "ffmpeg",
+              "-codecs"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "codec"
+      },
+      "description": "Codec name",
+      "name": [
+        "-c"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "ffmpeg",
+              "-codecs"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "codec"
+      },
+      "description": "Codec name",
+      "name": [
+        "-codec"
+      ]
+    },
+    {
+      "args": {
+        "name": "preset"
+      },
+      "description": "Preset name",
+      "name": [
+        "-pre"
+      ]
+    },
+    {
+      "args": {
+        "name": "outfile[,metadata]:infile[,metadata]"
+      },
+      "description": "Set metadata information of outfile from infile",
+      "name": [
+        "-map_metadata"
+      ]
+    },
+    {
+      "args": {
+        "name": "duration"
+      },
+      "description": "Record or transcode \"duration\" seconds of audio/video",
+      "name": [
+        "-t"
+      ]
+    },
+    {
+      "args": {
+        "name": "time_stop"
+      },
+      "description": "Record or transcode stop time",
+      "name": [
+        "-to"
+      ]
+    },
+    {
+      "args": {
+        "name": "limit_size"
+      },
+      "description": "Set the limit file size in bytes",
+      "name": [
+        "-fs"
+      ]
+    },
+    {
+      "args": {
+        "name": "time_off"
+      },
+      "description": "Set the start time offset",
+      "name": [
+        "-ss"
+      ]
+    },
+    {
+      "args": {
+        "name": "time_off"
+      },
+      "description": "Set the start time offset relative to EOF",
+      "name": [
+        "-sseof"
+      ]
+    },
+    {
+      "description": "Enable/disable seeking by timestamp with -ss",
+      "name": [
+        "-seek_timestamp"
+      ]
+    },
+    {
+      "args": {
+        "name": "time"
+      },
+      "description": "Set the recording timestamp ('now' to set the current time)",
+      "name": [
+        "-timestamp"
+      ]
+    },
+    {
+      "args": {
+        "name": "string=string"
+      },
+      "description": "Add metadata",
+      "name": [
+        "-metadata"
+      ]
+    },
+    {
+      "args": {
+        "name": "title=string:st=number..."
+      },
+      "description": "Add program with specified streams",
+      "name": [
+        "-program"
+      ]
+    },
+    {
+      "args": {
+        "name": "type"
+      },
+      "description": "Specify target file type (\"vcd\", \"svcd\", \"dvd\", \"dv\" or \"dv50\" with optional prefixes \"pal-\", \"ntsc-\" or \"film-\")",
+      "name": [
+        "-target"
+      ]
+    },
+    {
+      "description": "Audio pad",
+      "name": [
+        "-apad"
+      ]
+    },
+    {
+      "args": {
+        "name": "number"
+      },
+      "description": "Set the number of frames to output",
+      "name": [
+        "-frames"
+      ]
+    },
+    {
+      "args": {
+        "name": "filter_graph"
+      },
+      "description": "Set stream filtergraph",
+      "name": [
+        "-filter"
+      ]
+    },
+    {
+      "args": {
+        "name": "filename"
+      },
+      "description": "Read stream filtergraph description from a file",
+      "name": [
+        "-filter_script"
+      ]
+    },
+    {
+      "description": "Reinit filtergraph on input parameter changes",
+      "name": [
+        "-reinit_filter"
+      ]
+    },
+    {
+      "description": "Discard",
+      "name": [
+        "-discard"
+      ]
+    },
+    {
+      "description": "Disposition",
+      "name": [
+        "-disposition"
+      ]
+    },
+    {
+      "args": {
+        "name": "[-]input_file_id[:stream_specifier][,sync_file_id[:stream_specifier]]"
+      },
+      "description": "Set input stream mapping",
+      "name": [
+        "-map"
+      ]
+    },
+    {
+      "args": {
+        "name": "file.stream.channel[:syncfile.syncstream]"
+      },
+      "description": "Map an audio channel from one stream to another",
+      "name": [
+        "-map_channel"
+      ]
+    },
+    {
+      "args": {
+        "name": "input_file_index"
+      },
+      "description": "Set chapters mapping",
+      "name": [
+        "-map_chapters"
+      ]
+    },
+    {
+      "description": "Enable/disable accurate seeking with -ss",
+      "name": [
+        "-accurate_seek"
+      ]
+    },
+    {
+      "args": {
+        "name": "sync ref"
+      },
+      "description": "Indicate the input index for sync reference",
+      "name": [
+        "-isync"
+      ]
+    },
+    {
+      "args": {
+        "name": "time_off"
+      },
+      "description": "Set the input ts offset",
+      "name": [
+        "-itsoffset"
+      ]
+    },
+    {
+      "args": {
+        "name": "scale"
+      },
+      "description": "Set the input ts scale",
+      "name": [
+        "-itsscale"
+      ]
+    },
+    {
+      "args": {
+        "name": "number"
+      },
+      "description": "Set the number of data frames to output",
+      "name": [
+        "-dframes"
+      ]
+    },
+    {
+      "description": "Read input at native frame rate; equivalent to -readrate 1",
+      "name": [
+        "-re"
+      ]
+    },
+    {
+      "args": {
+        "name": "speed"
+      },
+      "description": "Read input at specified rate",
+      "name": [
+        "-readrate"
+      ]
+    },
+    {
+      "description": "Finish encoding within shortest input",
+      "name": [
+        "-shortest"
+      ]
+    },
+    {
+      "description": "Bitexact mode",
+      "name": [
+        "-bitexact"
+      ]
+    },
+    {
+      "description": "Copy initial non-keyframes",
+      "name": [
+        "-copyinkf"
+      ]
+    },
+    {
+      "description": "Copy or discard frames before start time",
+      "name": [
+        "-copypriorss"
+      ]
+    },
+    {
+      "args": {
+        "name": "fourcc/tag"
+      },
+      "description": "Force codec tag/fourcc",
+      "name": [
+        "-tag"
+      ]
+    },
+    {
+      "args": {
+        "name": "q"
+      },
+      "description": "Use fixed quality scale (VBR)",
+      "name": [
+        "-q"
+      ]
+    },
+    {
+      "args": {
+        "name": "q"
+      },
+      "description": "Use fixed quality scale (VBR)",
+      "name": [
+        "-qscale"
+      ]
+    },
+    {
+      "args": {
+        "name": "profile"
+      },
+      "description": "Set profile",
+      "name": [
+        "-profile"
+      ]
+    },
+    {
+      "args": {
+        "name": "filename"
+      },
+      "description": "Add an attachment to the output file",
+      "name": [
+        "-attach"
+      ]
+    },
+    {
+      "args": {
+        "name": "filename"
+      },
+      "description": "Extract an attachment into a file",
+      "name": [
+        "-dump_attachment"
+      ]
+    },
+    {
+      "args": {
+        "name": "loop count"
+      },
+      "description": "Set number of times input stream shall be looped",
+      "name": [
+        "-stream_loop"
+      ]
+    },
+    {
+      "description": "Set the maximum number of queued packets from the demuxer",
+      "name": [
+        "-thread_queue_size"
+      ]
+    },
+    {
+      "description": "Read and decode the streams to fill missing information with heuristics",
+      "name": [
+        "-find_stream_info"
+      ]
+    },
+    {
+      "args": {
+        "name": "number"
+      },
+      "description": "Set the number of bits per raw sample",
+      "name": [
+        "-bits_per_raw_sample"
+      ]
+    },
+    {
+      "description": "Automatically insert correct rotate filters",
+      "name": [
+        "-autorotate"
+      ]
+    },
+    {
+      "description": "Automatically insert a scale filter at the end of the filter graph",
+      "name": [
+        "-autoscale"
+      ]
+    },
+    {
+      "args": {
+        "name": "seconds"
+      },
+      "description": "Set the maximum demux-decode delay",
+      "name": [
+        "-muxdelay"
+      ]
+    },
+    {
+      "args": {
+        "name": "seconds"
+      },
+      "description": "Set the initial demux-decode delay",
+      "name": [
+        "-muxpreload"
+      ]
+    },
+    {
+      "args": {
+        "name": "ratio"
+      },
+      "description": "Set the desired time base hint for output stream (1:24, 1:48000 or 0.04166, 2.0833e-5)",
+      "name": [
+        "-time_base"
+      ]
+    },
+    {
+      "args": {
+        "name": "ratio"
+      },
+      "description": "Set the desired time base for the encoder (1:24, 1:48000 or 0.04166, 2.0833e-5). two special values are defined - 0 = use frame rate (video) or sample rate (audio),-1 = match source time base",
+      "name": [
+        "-enc_time_base"
+      ]
+    },
+    {
+      "args": {
+        "name": "bitstream_filters"
+      },
+      "description": "A comma-separated list of bitstream filters",
+      "name": [
+        "-bsf"
+      ]
+    },
+    {
+      "args": {
+        "name": "filename"
+      },
+      "description": "Set options from indicated preset file",
+      "name": [
+        "-fpre"
+      ]
+    },
+    {
+      "args": {
+        "name": "packets"
+      },
+      "description": "Maximum number of packets that can be buffered while waiting for all streams to initialize",
+      "name": [
+        "-max_muxing_queue_size"
+      ]
+    },
+    {
+      "args": {
+        "name": "bytes"
+      },
+      "description": "Set the threshold after which max_muxing_queue_size is taken into account",
+      "name": [
+        "-muxing_queue_data_threshold"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "ffmpeg",
+              "-codecs"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "codec"
+      },
+      "description": "Force data codec ('copy' to copy stream)",
+      "name": [
+        "-dcodec"
+      ]
+    },
+    {
+      "args": {
+        "name": "number"
+      },
+      "description": "Set the number of video frames to output",
+      "name": [
+        "-vframes"
+      ]
+    },
+    {
+      "args": {
+        "name": "rate"
+      },
+      "description": "Set frame rate (Hz value, fraction or abbreviation)",
+      "name": [
+        "-r"
+      ]
+    },
+    {
+      "args": {
+        "name": "rate"
+      },
+      "description": "Set max frame rate (Hz value, fraction or abbreviation)",
+      "name": [
+        "-fpsmax"
+      ]
+    },
+    {
+      "args": {
+        "name": "size"
+      },
+      "description": "Set frame size (WxH or abbreviation)",
+      "name": [
+        "-s"
+      ]
+    },
+    {
+      "args": {
+        "name": "aspect"
+      },
+      "description": "Set aspect ratio (4:3, 16:9 or 1.3333, 1.7777)",
+      "name": [
+        "-aspect"
+      ]
+    },
+    {
+      "description": "Disable video",
+      "name": [
+        "-vn"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "ffmpeg",
+              "-codecs"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "codec"
+      },
+      "description": "Force video codec ('copy' to copy stream)",
+      "name": [
+        "-vcodec"
+      ]
+    },
+    {
+      "args": {
+        "name": "hh:mm:ss[:;.]ff"
+      },
+      "description": "Set initial TimeCode value",
+      "name": [
+        "-timecode"
+      ]
+    },
+    {
+      "args": {
+        "name": "n"
+      },
+      "description": "Select the pass number (1 to 3)",
+      "name": [
+        "-pass"
+      ]
+    },
+    {
+      "args": {
+        "name": "filter_graph"
+      },
+      "description": "Set video filters",
+      "name": [
+        "-vf"
+      ]
+    },
+    {
+      "args": {
+        "name": "bitrate"
+      },
+      "description": "Audio bitrate (please use -b:a)",
+      "name": [
+        "-ab"
+      ]
+    },
+    {
+      "args": {
+        "name": "bitrate"
+      },
+      "description": "Video bitrate (please use -b:v)",
+      "name": [
+        "-b"
+      ]
+    },
+    {
+      "description": "Disable data",
+      "name": [
+        "-dn"
+      ]
+    },
+    {
+      "args": {
+        "name": "format"
+      },
+      "description": "Set pixel format",
+      "name": [
+        "-pix_fmt"
+      ]
+    },
+    {
+      "args": {
+        "name": "override"
+      },
+      "description": "Rate control override for specific intervals",
+      "name": [
+        "-rc_override"
+      ]
+    },
+    {
+      "args": {
+        "name": "prefix"
+      },
+      "description": "Select two pass log file name prefix",
+      "name": [
+        "-passlogfile"
+      ]
+    },
+    {
+      "args": {
+        "name": "matrix"
+      },
+      "description": "Specify intra matrix coeffs",
+      "name": [
+        "-intra_matrix"
+      ]
+    },
+    {
+      "args": {
+        "name": "matrix"
+      },
+      "description": "Specify inter matrix coeffs",
+      "name": [
+        "-inter_matrix"
+      ]
+    },
+    {
+      "args": {
+        "name": "matrix"
+      },
+      "description": "Specify intra matrix coeffs",
+      "name": [
+        "-chroma_intra_matrix"
+      ]
+    },
+    {
+      "description": "Top=1/bottom=0/auto=-1 field first",
+      "name": [
+        "-top"
+      ]
+    },
+    {
+      "args": {
+        "name": "fourcc/tag"
+      },
+      "description": "Force video tag/fourcc",
+      "name": [
+        "-vtag"
+      ]
+    },
+    {
+      "description": "Set framerate mode for matching video streams; overrides vsync",
+      "name": [
+        "-fps_mode"
+      ]
+    },
+    {
+      "description": "Force the selected framerate, disable the best supported framerate selection",
+      "name": [
+        "-force_fps"
+      ]
+    },
+    {
+      "args": {
+        "name": "streamIndex:value"
+      },
+      "description": "Set the value of an outfile streamid",
+      "name": [
+        "-streamid"
+      ]
+    },
+    {
+      "args": {
+        "name": "timestamps"
+      },
+      "description": "Force key frames at specified timestamps",
+      "name": [
+        "-force_key_frames"
+      ]
+    },
+    {
+      "args": {
+        "name": "hwaccel name"
+      },
+      "description": "Use HW accelerated decoding",
+      "name": [
+        "-hwaccel"
+      ]
+    },
+    {
+      "args": {
+        "name": "devicename"
+      },
+      "description": "Select a device for HW acceleration",
+      "name": [
+        "-hwaccel_device"
+      ]
+    },
+    {
+      "args": {
+        "name": "format"
+      },
+      "description": "Select output format used with HW accelerated decoding",
+      "name": [
+        "-hwaccel_output_format"
+      ]
+    },
+    {
+      "args": {
+        "name": "video bitstream_filters"
+      },
+      "description": "Deprecated",
+      "name": [
+        "-vbsf"
+      ]
+    },
+    {
+      "args": {
+        "name": "preset"
+      },
+      "description": "Set the video options to the indicated preset",
+      "name": [
+        "-vpre"
+      ]
+    },
+    {
+      "args": {
+        "name": "number"
+      },
+      "description": "Set the number of audio frames to output",
+      "name": [
+        "-aframes"
+      ]
+    },
+    {
+      "args": {
+        "name": "quality"
+      },
+      "description": "Set audio quality (codec-specific)",
+      "name": [
+        "-aq"
+      ]
+    },
+    {
+      "args": {
+        "name": "rate"
+      },
+      "description": "Set audio sampling rate (in Hz)",
+      "name": [
+        "-ar"
+      ]
+    },
+    {
+      "args": {
+        "name": "channels"
+      },
+      "description": "Set number of audio channels",
+      "name": [
+        "-ac"
+      ]
+    },
+    {
+      "description": "Disable audio",
+      "name": [
+        "-an"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "ffmpeg",
+              "-codecs"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "codec"
+      },
+      "description": "Force audio codec ('copy' to copy stream)",
+      "name": [
+        "-acodec"
+      ]
+    },
+    {
+      "args": {
+        "name": "filter_graph"
+      },
+      "description": "Set audio filters",
+      "name": [
+        "-af"
+      ]
+    },
+    {
+      "args": {
+        "name": "fourcc/tag"
+      },
+      "description": "Force audio tag/fourcc",
+      "name": [
+        "-atag"
+      ]
+    },
+    {
+      "args": {
+        "name": "format"
+      },
+      "description": "Set sample format",
+      "name": [
+        "-sample_fmt"
+      ]
+    },
+    {
+      "args": {
+        "name": "layout"
+      },
+      "description": "Set channel layout",
+      "name": [
+        "-channel_layout"
+      ]
+    },
+    {
+      "args": {
+        "name": "layout"
+      },
+      "description": "Set channel layout",
+      "name": [
+        "-ch_layout"
+      ]
+    },
+    {
+      "description": "Set the maximum number of channels to try to guess the channel layout",
+      "name": [
+        "-guess_layout_max"
+      ]
+    },
+    {
+      "args": {
+        "name": "audio bitstream_filters"
+      },
+      "description": "Deprecated",
+      "name": [
+        "-absf"
+      ]
+    },
+    {
+      "args": {
+        "name": "preset"
+      },
+      "description": "Set the audio options to the indicated preset",
+      "name": [
+        "-apre"
+      ]
+    },
+    {
+      "description": "Disable subtitle",
+      "name": [
+        "-sn"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "ffmpeg",
+              "-codecs"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "codec"
+      },
+      "description": "Force subtitle codec ('copy' to copy stream)",
+      "name": [
+        "-scodec"
+      ]
+    },
+    {
+      "args": {
+        "name": "fourcc/tag"
+      },
+      "description": "Force subtitle tag/fourcc",
+      "name": [
+        "-stag"
+      ]
+    },
+    {
+      "description": "Fix subtitles duration",
+      "name": [
+        "-fix_sub_duration"
+      ]
+    },
+    {
+      "args": {
+        "name": "size"
+      },
+      "description": "Set canvas size (WxH or abbreviation)",
+      "name": [
+        "-canvas_size"
+      ]
+    },
+    {
+      "args": {
+        "name": "preset"
+      },
+      "description": "Set the subtitle options to the indicated preset",
+      "name": [
+        "-spre"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,513 @@
+{
+  "description": "Time Machine utility",
+  "name": "tmutil",
+  "subcommands": [
+    {
+      "description": "Print the current version",
+      "name": "version"
+    },
+    {
+      "description": "Turn on automatic backups (required root + full disk access)",
+      "name": "enable"
+    },
+    {
+      "description": "Turn off automatic backups (required root + full disk access)",
+      "name": "disable"
+    },
+    {
+      "description": "Begin a backup if one is not already running",
+      "name": "startbackup",
+      "options": [
+        {
+          "description": "Run the backup in a mode similar to system-scheduled backups",
+          "name": [
+            "-a",
+            "--auto"
+          ]
+        },
+        {
+          "description": "Wait (block) until the backup is finished before exiting",
+          "name": [
+            "-b",
+            "--block"
+          ]
+        },
+        {
+          "description": "Allow automatic destination rotation during backup",
+          "name": [
+            "-r",
+            "--rotation"
+          ]
+        },
+        {
+          "args": {
+            "name": "destination id"
+          },
+          "description": "Perform the backup to the destination corresponding to the specified ID",
+          "name": [
+            "-d",
+            "--destination"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Cancel a backup currently in progress",
+      "name": "stopbackup"
+    },
+    {
+      "description": "Deletes backups with the specified timestamp from the backup volume mounted at the given mountpoint",
+      "name": "delete",
+      "options": [
+        {
+          "args": {
+            "name": "backup mount point"
+          },
+          "description": "Delete from the given mount point",
+          "name": [
+            "-d"
+          ]
+        },
+        {
+          "args": {
+            "name": "timestamp"
+          },
+          "description": "Delete backups with this timestamp",
+          "name": [
+            "-t"
+          ]
+        },
+        {
+          "args": {
+            "name": "path",
+            "template": [
+              "filepaths",
+              "folders"
+            ]
+          },
+          "description": "A specific path to delete (HFS backup disk)",
+          "name": [
+            "-p"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "machine directory"
+      },
+      "description": "Delete all in-progress backups for a machine directory",
+      "name": "deleteinprogress"
+    },
+    {
+      "args": [
+        {
+          "isVariadic": true,
+          "name": "source"
+        },
+        {
+          "name": "destination"
+        }
+      ],
+      "description": "Restore the item `source`, which is inside a backup, to the location `destination`. Same semantics as `cp`",
+      "name": "restore",
+      "options": [
+        {
+          "description": "Be verbose, showing files as they are copied",
+          "name": [
+            "-v"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "backup or path"
+        },
+        {
+          "isOptional": true,
+          "name": "path (if not backup)"
+        }
+      ],
+      "description": "Perform a backup diff",
+      "name": "compare",
+      "options": [
+        {
+          "description": "Compare extended attributes",
+          "name": [
+            "-@"
+          ]
+        },
+        {
+          "description": "Compare all supported metadata",
+          "name": [
+            "-a"
+          ]
+        },
+        {
+          "description": "Compare creation times",
+          "name": [
+            "-c"
+          ]
+        },
+        {
+          "description": "Compare file data forks",
+          "name": [
+            "-d"
+          ]
+        },
+        {
+          "description": "Compare ACLs",
+          "name": [
+            "-e"
+          ]
+        },
+        {
+          "description": "Compare file flags",
+          "name": [
+            "-f"
+          ]
+        },
+        {
+          "description": "Compare GIDs",
+          "name": [
+            "-g"
+          ]
+        },
+        {
+          "description": "Unknown",
+          "name": [
+            "-h"
+          ]
+        },
+        {
+          "description": "Unknown",
+          "name": [
+            "-l"
+          ]
+        },
+        {
+          "description": "Compare file modes",
+          "name": [
+            "-m"
+          ]
+        },
+        {
+          "description": "No metadata comparison",
+          "name": [
+            "-n"
+          ]
+        },
+        {
+          "description": "Compare sizes",
+          "name": [
+            "-s"
+          ]
+        },
+        {
+          "description": "Compare modification times",
+          "name": [
+            "-t"
+          ]
+        },
+        {
+          "description": "Compare UIDs",
+          "name": [
+            "-u"
+          ]
+        },
+        {
+          "description": "Don't take exclusions into account when comparing items inside volumes",
+          "name": [
+            "-E"
+          ]
+        },
+        {
+          "description": "Ignore logical volume identity (volume UUIDs) when directly comparing a local volume or volume store to a volume store",
+          "name": [
+            "-U"
+          ]
+        },
+        {
+          "description": "Print output in XML property list format",
+          "name": [
+            "-X"
+          ]
+        },
+        {
+          "args": {
+            "name": "depth"
+          },
+          "description": "Limit traversal depth to depth levels from the beginning of iteration",
+          "name": [
+            "-D"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Ignore paths with a path component equal to name during iteration",
+          "name": [
+            "-I"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "destination"
+      },
+      "description": "Configure a local HFS+ or APFS volume, AFP share, or SMB share as a backup destination (requires root + Full Disk Access)",
+      "name": "setdestination",
+      "options": [
+        {
+          "description": "Add the arg to the list of destinations, instead of replacing the list",
+          "name": [
+            "-a"
+          ]
+        },
+        {
+          "description": "Enter a password in a non-echoing interactive prompt",
+          "name": [
+            "-p"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "destination id"
+      },
+      "description": "Remove the destination with the specified unique identifier from the Time Machine configuration (requires root + Full Disk Access)",
+      "name": "removedestination"
+    },
+    {
+      "description": "Print information about destinations currently configured for use with Time Machine",
+      "name": "destinationinfo",
+      "options": [
+        {
+          "description": "Print output in XML plist format",
+          "name": [
+            "-X"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "item"
+      },
+      "description": "Configure an exclusion that tells Time Machine not to backup a file, directory, or volume during future backups",
+      "name": "addexclusion",
+      "options": [
+        {
+          "description": "Configure fixed-path exclusions",
+          "name": [
+            "-p"
+          ]
+        },
+        {
+          "description": "Configure volume exclusions",
+          "name": [
+            "-v"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "item"
+      },
+      "description": "Configure  Time Machine to backup a file, directory, or volume during future backups",
+      "name": "removeexclusion",
+      "options": [
+        {
+          "description": "Configure fixed-path exclusions",
+          "name": [
+            "-p"
+          ]
+        },
+        {
+          "description": "Configure volume exclusions",
+          "name": [
+            "-v"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "item"
+      },
+      "description": "Determine if a file, directory, or volume are excluded from Time Machine backups",
+      "name": "isexcluded"
+    },
+    {
+      "args": {
+        "name": "machine directory or sparsebundle"
+      },
+      "description": "Claim a machine directory or sparsebundle for use by the current machine",
+      "name": "inheritbackup"
+    },
+    {
+      "args": [
+        {
+          "name": "mount point"
+        },
+        {
+          "name": "volume backup directory"
+        }
+      ],
+      "description": "Bind a volume store directory to the specified local disk, thereby reconfiguring the backup history (requires root + Full Disk Access)",
+      "name": "associatedisk",
+      "options": [
+        {
+          "description": "Find all volume stores in the same machine directory that match the identity of the volume backup directory",
+          "name": [
+            "-a"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "List this computer's latest completed backup",
+      "name": "latestbackup",
+      "options": [
+        {
+          "description": "Specify a destination volume to list backups from",
+          "name": [
+            "-d"
+          ]
+        },
+        {
+          "description": "Attempt to mount the backups and list their mounted paths",
+          "name": [
+            "-m"
+          ]
+        },
+        {
+          "description": "Only show the backup timestampt rather than the full name or path",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "List all of this computer's completed backups",
+      "name": "listbackups",
+      "options": [
+        {
+          "description": "Specify a destination volume to list backups from",
+          "name": [
+            "-d"
+          ]
+        },
+        {
+          "description": "Attempt to mount the backups and list their mounted paths",
+          "name": [
+            "-m"
+          ]
+        },
+        {
+          "description": "Only show the backup timestampt rather than the full name or path",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Print the path to the current machine directory for this computer",
+      "name": "machinedirectory"
+    },
+    {
+      "args": {
+        "name": "machine directory"
+      },
+      "description": "Analyze the backups in an HFS machine directory and determine the amount of change between each",
+      "name": "calculatedrift"
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "path",
+        "template": "filepaths"
+      },
+      "description": "Analyze the specified path in an HFS+ backup or path to an APFS backup and determine its unique size",
+      "name": "uniquesize"
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "path",
+        "template": "filepaths"
+      },
+      "description": "Compute a checksum of data contained within a backup and verify the results against checksum information computed at the time of backup",
+      "name": "verifychecksums"
+    },
+    {
+      "description": "Create new local Time Machine snapshots of all APFS volumes included in the Time Machine backup",
+      "name": "localsnapshot"
+    },
+    {
+      "args": {
+        "name": "mount point"
+      },
+      "description": "List local Time Machine snapshots of the specified volume",
+      "name": "listlocalsnapshots"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "mount point"
+      },
+      "description": "List the creation dates of all local Time Machine snapshots",
+      "name": "listlocalsnapshotdates"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "mount point or snapshot date"
+      },
+      "description": "Delete all local Time Machine snapshots on all mounted disks for the specified date or on the given disk",
+      "name": "deletelocalsnapshots"
+    },
+    {
+      "args": [
+        {
+          "name": "mount point"
+        },
+        {
+          "isOptional": true,
+          "name": "purge amount (bytes)"
+        },
+        {
+          "isOptional": true,
+          "name": "urgency",
+          "suggestions": [
+            {
+              "name": "1"
+            },
+            {
+              "name": "2"
+            },
+            {
+              "name": "3"
+            },
+            {
+              "name": "4"
+            }
+          ]
+        }
+      ],
+      "description": "Think local Time Machine snapshots for the specified volume",
+      "name": "thinlocalsnapshots"
+    }
+  ]
+}

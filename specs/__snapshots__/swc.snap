@@ -1,0 +1,225 @@
+{
+  "description": "SWC is a super-fast compiler written in rust; producing widely-supported javascript from modern standards and typescript",
+  "name": "swc",
+  "options": [
+    {
+      "args": {
+        "description": "Path to the file",
+        "name": "FILE",
+        "template": [
+          "filepaths"
+        ]
+      },
+      "description": "Filename to use when reading from stdin. This will be used in source maps and errors",
+      "name": [
+        "--filename",
+        "-f"
+      ]
+    },
+    {
+      "args": {
+        "description": "Path to a .swcrc file to use",
+        "name": "CONFIG_FILE",
+        "template": [
+          "filepaths"
+        ]
+      },
+      "description": "Path to a .swcrc file to use",
+      "name": [
+        "--config-file"
+      ]
+    },
+    {
+      "args": {
+        "description": "The name of the 'env' to use when loading configs and plugins. Defaults to the value of SWC_ENV, or else NODE_ENV, or else development",
+        "name": "ENV_NAME",
+        "suggestions": [
+          {
+            "name": "production"
+          },
+          {
+            "name": "development"
+          },
+          {
+            "name": "test"
+          }
+        ]
+      },
+      "description": "The name of the 'env' to use when loading configs and plugins. Defaults to the value of SWC_ENV, or else NODE_ENV, or else development",
+      "name": [
+        "--env-name"
+      ]
+    },
+    {
+      "description": "Whether or not to look up .swcrc files",
+      "name": [
+        "--no-swcrc"
+      ]
+    },
+    {
+      "args": {
+        "description": "A glob path to not compile",
+        "name": "PATH",
+        "template": [
+          "filepaths",
+          "folders"
+        ]
+      },
+      "description": "List of glob paths to not compile",
+      "name": [
+        "--ignore"
+      ]
+    },
+    {
+      "args": {
+        "description": "A glob path to only compile",
+        "name": "PATH",
+        "template": [
+          "filepaths",
+          "folders"
+        ]
+      },
+      "description": "List of glob paths to only compile",
+      "name": [
+        "--only"
+      ]
+    },
+    {
+      "description": "Watch for changes and recompile",
+      "name": [
+        "--watch",
+        "-w"
+      ]
+    },
+    {
+      "description": "Suppress compilation output",
+      "name": [
+        "--quiet",
+        "-q"
+      ]
+    },
+    {
+      "args": {
+        "description": "Source map type",
+        "name": "SOURCE_MAP",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          },
+          {
+            "name": "inline"
+          },
+          {
+            "name": "both"
+          }
+        ]
+      },
+      "description": "Generate source maps",
+      "name": [
+        "--source-maps",
+        "-s"
+      ]
+    },
+    {
+      "args": {
+        "description": "The file for the source map",
+        "name": "FILE",
+        "template": [
+          "filepaths"
+        ]
+      },
+      "description": "Define the file for the source map",
+      "name": [
+        "--source-map-target"
+      ]
+    },
+    {
+      "description": "Set sources[0] on returned source map",
+      "name": [
+        "--source-file-name"
+      ]
+    },
+    {
+      "description": "The root from which all sources are relative",
+      "name": [
+        "--source-root"
+      ]
+    },
+    {
+      "args": {
+        "description": "The output file",
+        "name": "OUTPUT_FILE",
+        "template": [
+          "filepaths"
+        ]
+      },
+      "description": "Compile all input files into a single file",
+      "name": [
+        "--out-file",
+        "-o"
+      ]
+    },
+    {
+      "args": {
+        "description": "The output directory",
+        "name": "OUTPUT_DIR",
+        "template": [
+          "folders"
+        ]
+      },
+      "description": "Compile an input directory of modules into an output directory",
+      "name": [
+        "--out-dir",
+        "-d"
+      ]
+    },
+    {
+      "description": "When compiling a directory, copy over non-compilable files",
+      "name": [
+        "--copy-files",
+        "-D"
+      ]
+    },
+    {
+      "description": "Include dotfiles when compiling and copying non-compilable files",
+      "name": [
+        "--include-dotfiles"
+      ]
+    },
+    {
+      "args": {
+        "description": "Path to .swcrc file",
+        "name": "CONFIG_FILE",
+        "template": [
+          "filepaths"
+        ]
+      },
+      "description": "Override a config from .swcrc file",
+      "name": [
+        "--config",
+        "-C"
+      ]
+    },
+    {
+      "description": "Invoke swc synchronously. Useful for debugging",
+      "name": [
+        "--sync"
+      ]
+    },
+    {
+      "description": "Log a message when a watched file is successfully compiled",
+      "name": [
+        "--log-watch-compilation"
+      ]
+    },
+    {
+      "description": "Log a message when a watched file is successfully compiled",
+      "name": [
+        "--extensions"
+      ]
+    }
+  ]
+}

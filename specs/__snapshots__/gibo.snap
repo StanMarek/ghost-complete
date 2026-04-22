@@ -1,0 +1,64 @@
+{
+  "description": "Easy access to gitignore boilerplates",
+  "name": "gibo",
+  "options": [
+    {
+      "description": "Show help for gibo",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "description": "Name of the boilerplate to dump",
+        "generators": [
+          {
+            "script": [
+              "gibo",
+              "list"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "isVariadic": true,
+        "name": "boilerplate"
+      },
+      "description": "Dump one or more boilerplates to STDOUT",
+      "name": "dump"
+    },
+    {
+      "args": {
+        "description": "Name of the language or framework to search for",
+        "name": "search term"
+      },
+      "description": "Search for boilerplates",
+      "name": "search"
+    },
+    {
+      "description": "Show the directory where gibo stores its boilerplates",
+      "name": "root"
+    },
+    {
+      "description": "Show help information",
+      "name": "help"
+    },
+    {
+      "description": "Show the list of available boilerplates",
+      "name": "list"
+    },
+    {
+      "description": "Update the list of available boilerplates",
+      "name": "update"
+    },
+    {
+      "description": "Show the current version of gibo installed",
+      "name": "version"
+    }
+  ]
+}

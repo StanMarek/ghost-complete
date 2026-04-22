@@ -1,0 +1,460 @@
+{
+  "args": {},
+  "description": "A delightful JavaScript Testing Framework with a focus on simplicity",
+  "name": "jest",
+  "options": [
+    {
+      "args": {
+        "name": "n"
+      },
+      "description": "Exit the test suite immediately upon n number of failing test suite. Defaults to 1",
+      "name": [
+        "--bail",
+        "-b"
+      ]
+    },
+    {
+      "description": "Whether to use the cache",
+      "name": [
+        "--cache"
+      ]
+    },
+    {
+      "description": "Whether to use the cache",
+      "name": [
+        "--no-cache"
+      ]
+    },
+    {
+      "description": "Runs tests related to the current changes and the changes made in the last commit",
+      "name": [
+        "--changedFilesWithAncestor"
+      ]
+    },
+    {
+      "args": {
+        "name": "since"
+      },
+      "description": "Runs tests related to the changes since the provided branch or commit hash",
+      "name": [
+        "--changedSince"
+      ]
+    },
+    {
+      "description": "Instead of the regular behavior of storing a new snapshot automatically, will fail the test and require Jest to be run with --updateSnapshot",
+      "name": [
+        "--ci"
+      ]
+    },
+    {
+      "args": {
+        "name": "cacheDirectory"
+      },
+      "description": "Deletes the Jest cache directory and then exits without running tests",
+      "name": [
+        "--clearCache"
+      ]
+    },
+    {
+      "args": {
+        "name": "glob"
+      },
+      "description": "A glob pattern relative to rootDir matching the files that coverage info needs to be collected from",
+      "name": [
+        "--collectCoverageFrom"
+      ]
+    },
+    {
+      "description": "Forces test results output highlighting even if stdout is not a TTY",
+      "name": [
+        "--colors"
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "filepaths"
+      },
+      "description": "The path to a Jest config file specifying how to find and execute tests",
+      "name": [
+        "--config",
+        "-c"
+      ]
+    },
+    {
+      "args": {
+        "name": "true|false",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Enable or disable coverage, disabled by default",
+      "name": [
+        "--coverage"
+      ]
+    },
+    {
+      "args": {
+        "name": "babel|v8",
+        "suggestions": [
+          {
+            "name": "babel"
+          },
+          {
+            "name": "v8"
+          }
+        ]
+      },
+      "description": "Indicates which provider should be used to instrument code for coverage",
+      "name": [
+        "--coverageProvider"
+      ]
+    },
+    {
+      "description": "Print debugging info about your Jest config",
+      "name": [
+        "--debug"
+      ]
+    },
+    {
+      "description": "Attempt to collect and print open handles preventing Jest from exiting cleanly",
+      "name": [
+        "--detectOpenHandles"
+      ]
+    },
+    {
+      "args": {
+        "name": "jsdom|node|path/to/env.js",
+        "suggestions": [
+          {
+            "name": "jsdom"
+          },
+          {
+            "name": "node"
+          }
+        ],
+        "template": "filepaths"
+      },
+      "description": "The test environment used for all tests",
+      "name": [
+        "--env"
+      ]
+    },
+    {
+      "description": "Make calling deprecated APIs throw helpful error messages",
+      "name": [
+        "--errorOnDeprecated"
+      ]
+    },
+    {
+      "description": "Use this flag to show full diffs and errors instead of a patch",
+      "name": [
+        "--expand",
+        "-e"
+      ]
+    },
+    {
+      "args": {
+        "name": "<path1> ... <pathN>"
+      },
+      "description": "Find and run the tests that cover a space separated list of source files that were passed in as arguments",
+      "name": [
+        "--findRelatedTests"
+      ]
+    },
+    {
+      "description": "Force Jest to exit after all tests have completed running",
+      "name": [
+        "--forceExit"
+      ]
+    },
+    {
+      "description": "Show the help information",
+      "name": [
+        "--help"
+      ]
+    },
+    {
+      "description": "Generate a basic configuration file",
+      "name": [
+        "--init"
+      ]
+    },
+    {
+      "description": "Insert Jest's globals (expect, test, describe, beforeEach etc.) into the global environment",
+      "name": [
+        "--injectGlobals"
+      ]
+    },
+    {
+      "description": "Prints the test results in JSON",
+      "name": [
+        "--json"
+      ]
+    },
+    {
+      "args": {
+        "name": "filename"
+      },
+      "description": "Write test results to a file when the --json option is also specified",
+      "name": [
+        "--outputFile"
+      ]
+    },
+    {
+      "description": "Run all tests affected by file changes in the last commit made",
+      "name": [
+        "--lastCommit"
+      ]
+    },
+    {
+      "description": "Lists all tests as JSON that Jest will run given the arguments, and exits",
+      "name": [
+        "--listTests"
+      ]
+    },
+    {
+      "description": "Logs the heap usage after every test",
+      "name": [
+        "--logHeapUsage"
+      ]
+    },
+    {
+      "args": {
+        "name": "num"
+      },
+      "description": "Prevents Jest from executing more than the specified amount of tests at the same time",
+      "name": [
+        "--maxConcurrency"
+      ]
+    },
+    {
+      "args": {
+        "name": "<num>|<string>"
+      },
+      "description": "Specifies the maximum number of workers the worker-pool will spawn for running tests",
+      "name": [
+        "--maxWorkers",
+        "-w"
+      ]
+    },
+    {
+      "description": "Disables stack trace in test results output",
+      "name": [
+        "--noStackTrace"
+      ]
+    },
+    {
+      "description": "Activates notifications for test results",
+      "name": [
+        "--notify"
+      ]
+    },
+    {
+      "description": "Attempts to identify which tests to run based on which files have changed in the current repository",
+      "name": [
+        "--onlyChanged",
+        "-o"
+      ]
+    },
+    {
+      "description": "Allows the test suite to pass when no files are found",
+      "name": [
+        "--passWithNoTests"
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "<path1> ... <pathN>",
+        "template": "filepaths"
+      },
+      "description": "Run tests from one or more projects, found in the specified paths; also takes path globs",
+      "name": [
+        "--projects"
+      ]
+    },
+    {
+      "args": {
+        "name": "reporter"
+      },
+      "description": "Run tests with specified reporters",
+      "name": [
+        "--reporters"
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "<path1> ... <pathN>",
+        "template": "folders"
+      },
+      "description": "A list of paths to directories that Jest should use to search for files in",
+      "name": [
+        "--roots"
+      ]
+    },
+    {
+      "description": "Run all tests serially in the current process, rather than creating a worker pool of child processes that run tests",
+      "name": [
+        "--runInBand",
+        "-i"
+      ]
+    },
+    {
+      "args": {
+        "name": "<project1> ... <projectN>"
+      },
+      "description": "Run only the tests of the specified projects",
+      "name": [
+        "--selectProjects"
+      ]
+    },
+    {
+      "description": "Run only the tests that were specified with their exact paths",
+      "name": [
+        "--runTestsByPath"
+      ]
+    },
+    {
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      },
+      "description": "The path to a module that runs some code to configure or set up the testing framework before each test",
+      "name": [
+        "--setupTestFrameworkScriptFile"
+      ]
+    },
+    {
+      "description": "Print your Jest config and then exits",
+      "name": [
+        "--showConfig"
+      ]
+    },
+    {
+      "description": "Prevent tests from printing messages through the console",
+      "name": [
+        "--silent"
+      ]
+    },
+    {
+      "args": {
+        "name": "regex"
+      },
+      "description": "Run only tests with a name that matches the regex",
+      "name": [
+        "--testNamePattern",
+        "-t"
+      ]
+    },
+    {
+      "description": "Adds a location field to test results",
+      "name": [
+        "--testLocationInResults"
+      ]
+    },
+    {
+      "args": {
+        "name": "regex"
+      },
+      "description": "A regexp pattern string that is matched against all tests paths before executing the test",
+      "name": [
+        "--testPathPattern"
+      ]
+    },
+    {
+      "args": {
+        "name": "[array]"
+      },
+      "description": "An array of regexp pattern strings that are tested against all tests paths before executing the test",
+      "name": [
+        "--testPathIgnorePatterns"
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "filepaths"
+      },
+      "description": "Lets you specify a custom test runner",
+      "name": [
+        "--testRunner"
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "filepaths"
+      },
+      "description": "Lets you specify a custom test sequencer",
+      "name": [
+        "--testSequencer"
+      ]
+    },
+    {
+      "args": {
+        "name": "timeout in ms"
+      },
+      "description": "Default timeout of a test in milliseconds",
+      "name": [
+        "--testTimeout"
+      ]
+    },
+    {
+      "description": "Use this flag to re-record every snapshot that fails during this test run",
+      "name": [
+        "--updateSnapshot",
+        "-u"
+      ]
+    },
+    {
+      "description": "Divert all output to stderr",
+      "name": [
+        "--useStderr"
+      ]
+    },
+    {
+      "description": "Display individual test results with the test suite hierarchy",
+      "name": [
+        "--verbose"
+      ]
+    },
+    {
+      "description": "Print the version and exit",
+      "name": [
+        "--version",
+        "-v"
+      ]
+    },
+    {
+      "description": "Watch files for changes and rerun tests related to changed files",
+      "name": [
+        "--watch"
+      ]
+    },
+    {
+      "description": "Watch files for changes and rerun all tests when something changes",
+      "name": [
+        "--watchAll"
+      ]
+    },
+    {
+      "description": "Whether to use watchman for file crawling",
+      "name": [
+        "--watchman"
+      ]
+    },
+    {
+      "description": "Whether to use watchman for file crawling",
+      "name": [
+        "--no-watchman"
+      ]
+    }
+  ]
+}

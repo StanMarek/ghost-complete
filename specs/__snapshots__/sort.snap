@@ -1,0 +1,312 @@
+{
+  "args": {
+    "isVariadic": true,
+    "name": "file",
+    "template": "filepaths"
+  },
+  "description": "Sort or merge records (lines) of text and binary files",
+  "name": "sort",
+  "options": [
+    {
+      "description": "Shows help message",
+      "name": [
+        "--help"
+      ]
+    },
+    {
+      "description": "Displays the current version of sort",
+      "name": [
+        "--version"
+      ]
+    },
+    {
+      "args": {
+        "description": "Suppress errors on false check",
+        "isOptional": true,
+        "name": "output",
+        "suggestions": [
+          {
+            "name": "silent"
+          },
+          {
+            "name": "quiet"
+          }
+        ]
+      },
+      "description": "Check that the single input file is sorted",
+      "name": [
+        "-c",
+        "--check",
+        "-C"
+      ]
+    },
+    {
+      "description": "Merge only.  The input files are assumed to be pre-sorted.  If they are not sorted the output order is undefined",
+      "name": [
+        "-m",
+        "--merge"
+      ]
+    },
+    {
+      "args": {
+        "name": "output"
+      },
+      "description": "Print the output to the output file instead of the standard output",
+      "name": [
+        "-o",
+        "--output"
+      ]
+    },
+    {
+      "args": {
+        "name": "size"
+      },
+      "description": "Use size for the maximum size of the memory buffer",
+      "name": [
+        "-S",
+        "--buffer-size"
+      ]
+    },
+    {
+      "args": {
+        "name": "dir",
+        "template": "folders"
+      },
+      "description": "Store temporary files in the directory dir",
+      "name": [
+        "-T",
+        "--temporary-directory"
+      ]
+    },
+    {
+      "description": "Unique keys. Suppress all lines that have a key that is equal to an already processed one",
+      "name": [
+        "-u",
+        "--unique"
+      ]
+    },
+    {
+      "description": "Stable sort. This option maintains the original record order of records that have an equal key",
+      "name": [
+        "-s"
+      ]
+    },
+    {
+      "description": "Ignore leading blank characters when comparing lines",
+      "name": [
+        "-b",
+        "--ignore-leading-blanks"
+      ]
+    },
+    {
+      "description": "Consider only blank spaces and alphanumeric characters in comparisons",
+      "name": [
+        "-d",
+        "--dictionary-order"
+      ]
+    },
+    {
+      "description": "Convert all lowercase characters to their upper case equivalent before comparison",
+      "name": [
+        "-f",
+        "--ignore-case"
+      ]
+    },
+    {
+      "description": "Sort by general numerical value",
+      "name": [
+        "-g",
+        "--general-numeric-sort"
+      ]
+    },
+    {
+      "description": "Sort by numerical value, but take into account the SI suffix, if present",
+      "name": [
+        "-h",
+        "--human-numeric-sort"
+      ]
+    },
+    {
+      "description": "Ignore all non-printable characters",
+      "name": [
+        "-i",
+        "--ignore-nonprinting"
+      ]
+    },
+    {
+      "description": "Sort by month abbreviations.  Unknown strings are considered smaller than the month names",
+      "name": [
+        "-M",
+        "--month-sort"
+      ]
+    },
+    {
+      "description": "Sort fields numerically by arithmetic value",
+      "name": [
+        "-n",
+        "--numeric-sort"
+      ]
+    },
+    {
+      "description": "Sort by a random order",
+      "name": [
+        "-R",
+        "--random-sort"
+      ]
+    },
+    {
+      "description": "Sort in reverse order",
+      "name": [
+        "-r",
+        "--reverse"
+      ]
+    },
+    {
+      "description": "Sort version numbers",
+      "name": [
+        "-V",
+        "--version-sort"
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "field1"
+        },
+        {
+          "isOptional": true,
+          "name": "field2"
+        }
+      ],
+      "description": "Define a restricted sort key that has the starting position field1, and optional ending position field2",
+      "name": [
+        "-k",
+        "--key"
+      ]
+    },
+    {
+      "args": {
+        "name": "char"
+      },
+      "description": "Use char as a field separator character",
+      "name": [
+        "-t",
+        "--field-separator"
+      ]
+    },
+    {
+      "description": "Use NUL as record separator",
+      "name": [
+        "-z",
+        "--zero-terminated"
+      ]
+    },
+    {
+      "args": {
+        "name": "num"
+      },
+      "description": "Specify maximum number of files that can be opened by sort at once",
+      "name": [
+        "--batch-size"
+      ]
+    },
+    {
+      "args": {
+        "name": "PROGRAM",
+        "template": "filepaths"
+      },
+      "description": "Use PROGRAM to compress temporary files (eg. bzip2)",
+      "name": [
+        "--compress-program"
+      ]
+    },
+    {
+      "args": {
+        "name": "filename",
+        "template": "filepaths"
+      },
+      "description": "In random sort, the file content is used as the source of the 'seed' data for the hash function choice",
+      "name": [
+        "--random-source"
+      ]
+    },
+    {
+      "description": "Print some extra information about the sorting process to the standard output",
+      "name": [
+        "--debug"
+      ]
+    },
+    {
+      "description": "Set the maximum number of execution threads.  Default number equals to the number of CPUs",
+      "name": [
+        "--parallel"
+      ]
+    },
+    {
+      "args": {
+        "name": "filename",
+        "template": "filepaths"
+      },
+      "description": "Take the input file list from the file filename",
+      "name": [
+        "--files0-from"
+      ]
+    },
+    {
+      "description": "Try to use radix sort, if the sort specifications allow",
+      "name": [
+        "--radixsort"
+      ]
+    },
+    {
+      "description": "Use mergesort.  This is a universal algorithm that can always be used, but it is not always the fastest",
+      "name": [
+        "--mergesort"
+      ]
+    },
+    {
+      "description": "Try to use quick sort, if the sort specifications allow.  This sort algorithm cannot be used with -u and -s",
+      "name": [
+        "--qsort"
+      ]
+    },
+    {
+      "description": "Try to use heap sort, if the sort specifications allow.  This sort algorithm cannot be used with -u and -s",
+      "name": [
+        "--heapsort"
+      ]
+    },
+    {
+      "description": "Try to use file memory mapping system call.  It may increase speed in some cases",
+      "name": [
+        "--mmap"
+      ]
+    },
+    {
+      "args": {
+        "name": "type",
+        "suggestions": [
+          {
+            "name": "general-numeric"
+          },
+          {
+            "name": "human-numeric"
+          },
+          {
+            "name": "month"
+          },
+          {
+            "name": "numeric"
+          },
+          {
+            "name": "random"
+          }
+        ]
+      },
+      "description": "Select how to sort values",
+      "name": [
+        "--sort"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,273 @@
+{
+  "description": "Fastlane is an open source platform aimed at simplifying Android and iOS deployment",
+  "name": "fastlane",
+  "options": [
+    {
+      "args": {
+        "description": "One of android, ios or mac",
+        "name": "platform",
+        "suggestions": [
+          {
+            "name": "ios"
+          },
+          {
+            "name": "android"
+          },
+          {
+            "name": "mac"
+          }
+        ]
+      },
+      "description": "Only show actions available on the given platform",
+      "name": [
+        "--platform"
+      ]
+    },
+    {
+      "description": "Show help for fastlane",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Show version information for fastlane",
+      "name": [
+        "-v",
+        "--version"
+      ]
+    },
+    {
+      "description": "Show version information for fastlane",
+      "name": [
+        "--verbose"
+      ]
+    },
+    {
+      "description": "Captures the output of the current run, and generates a markdown issue template",
+      "name": [
+        "--capture_output"
+      ]
+    },
+    {
+      "description": "Enables extended verbose mode. Use with caution, as this even includes ALL sensitive data. Cannot be used on CI",
+      "name": [
+        "--troubleshoot"
+      ]
+    },
+    {
+      "description": "Add environment(s) to use with `dotenv`",
+      "name": [
+        "--env"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Helps you with your initial fastlane setup",
+      "name": "init",
+      "options": [
+        {
+          "args": {
+            "description": "Your Apple ID",
+            "name": "appleID"
+          },
+          "description": "Only iOS projects Your Apple ID",
+          "name": [
+            "-u",
+            "--user"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Fastlane configuration written in Swift (Beta). Swift setup is still in beta",
+          "name": "swift"
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "tool_name"
+      },
+      "description": "Shows more information for a specific command",
+      "name": "action"
+    },
+    {
+      "description": "Lists all available fastlane actions",
+      "name": "actions"
+    },
+    {
+      "args": {
+        "name": "plugin_name"
+      },
+      "description": "Add a new plugin to your fastlane setup",
+      "name": "add_plugin"
+    },
+    {
+      "description": "Generate a markdown based documentation based on the Fastfile",
+      "name": "docs",
+      "options": [
+        {
+          "description": "Overwrite the existing README.md in the ./fastlane folder",
+          "name": [
+            "-f",
+            "--force"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Enable tab auto completion",
+      "name": "enable_auto_complete",
+      "options": [
+        {
+          "args": {
+            "name": "<command1>...<commandN>"
+          },
+          "description": "Add custom command(s) for which tab auto complete should be enabled too",
+          "name": [
+            "-c",
+            "--custom"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Print your fastlane environment, use this when you submit an issue on GitHub",
+      "name": "env"
+    },
+    {
+      "description": "Display global or [command] help documentation",
+      "name": "help"
+    },
+    {
+      "description": "Install all plugins for this project",
+      "name": "install_plugins"
+    },
+    {
+      "description": "Lists all available lanes and shows their description",
+      "name": "lanes"
+    },
+    {
+      "description": "Lists all available lanes without description",
+      "name": "list",
+      "options": [
+        {
+          "description": "Output the lanes in JSON instead of text",
+          "name": [
+            "-j",
+            "--json"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Create a new custom action for fastlane",
+      "name": "new_action",
+      "options": [
+        {
+          "args": {
+            "name": "action_name"
+          },
+          "description": "Name of your new action",
+          "name": [
+            "--name"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "plugin_name"
+      },
+      "description": "Create a new plugin that can be used with fastlane",
+      "name": "new_plugin"
+    },
+    {
+      "args": {
+        "name": "action"
+      },
+      "description": "Run a fastlane one-off action without a full lane",
+      "name": "run"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "search_query"
+      },
+      "description": "Search for plugins, search query is optional",
+      "name": "search_plugins"
+    },
+    {
+      "description": "Starts local socket server and enables only a single local connection",
+      "name": "socket_server",
+      "options": [
+        {
+          "description": "Keeps socket server up even after error or disconnects, requires CTRL-C to kill",
+          "name": [
+            "-s",
+            "--stay_alive"
+          ]
+        },
+        {
+          "args": {
+            "description": "Connection timeout in seconds",
+            "name": "seconds"
+          },
+          "description": "Sets connection established timeout",
+          "name": [
+            "-c",
+            "--connection_timeout"
+          ]
+        },
+        {
+          "args": {
+            "description": "The port on localhost",
+            "name": "port"
+          },
+          "description": "Sets the port on localhost for the socket connection",
+          "name": [
+            "-p",
+            "--port"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Specific lane to trigger",
+        "name": "lane"
+      },
+      "description": "Run a specific lane. Pass the lane name and optionally the platform first",
+      "name": "trigger",
+      "options": [
+        {
+          "description": "Prevents fastlane from attempting to update FastlaneRunner swift project",
+          "name": [
+            "--disable_runner_upgrades"
+          ]
+        },
+        {
+          "args": {
+            "description": "Set specific port to communicate between fastlane and FastlaneRunner",
+            "name": "port"
+          },
+          "description": "Prevents fastlane from attempting to update FastlaneRunner swift project",
+          "name": [
+            "--swift_server_port"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Update fastlane to the latest release",
+      "name": "update_fastlane"
+    },
+    {
+      "description": "Update all plugin dependencies",
+      "name": "update_plugins"
+    }
+  ]
+}

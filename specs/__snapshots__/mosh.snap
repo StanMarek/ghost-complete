@@ -1,0 +1,179 @@
+{
+  "args": {
+    "description": "Address of remote machine to log into",
+    "generators": [
+      {
+        "js_source": "async(n,e,o)=>{let{stdout:a}=await e({command:\"cat\",args:[`${o.environmentVariables.HOME}/.ssh/known_hosts`]});return a.split(`\n`).map(t=>{let i=h.exec(t);if(i)return String(i)}).filter((t,i,r)=>t&&r.indexOf(t)===i).map(t=>({name:(n[1].endsWith(\"@\")?n[1]:\"\")+t,description:\"SSH host\"}))}",
+        "requires_js": true
+      },
+      {
+        "js_source": "async(n,e,o)=>(await c(\"config\",e,o.environmentVariables.HOME,\"~/.ssh\")).filter(t=>t.trim().toLowerCase().startsWith(\"host \")&&!t.includes(\"*\")).map(t=>({name:t.split(\" \")[1],description:\"SSH host\",priority:90}))",
+        "requires_js": true
+      },
+      {
+        "template": "history"
+      }
+    ],
+    "name": "user@hostname"
+  },
+  "name": "mosh",
+  "options": [
+    {
+      "description": "Show help for mosh",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "description": "Mosh client on local machine (default: \"mosh-client\")",
+      "name": [
+        "--client"
+      ]
+    },
+    {
+      "description": "Mosh server on remote machine (default: \"mosh-server\")",
+      "name": [
+        "--server"
+      ]
+    },
+    {
+      "args": {
+        "suggestions": [
+          {
+            "description": "Local echo for slower links [default]",
+            "name": "adaptive"
+          },
+          {
+            "description": "Use local echo even on fast links",
+            "name": "always"
+          },
+          {
+            "description": "Never use local echo",
+            "name": "never"
+          },
+          {
+            "description": "Aggressively echo even when incorrect",
+            "name": "experimental"
+          }
+        ]
+      },
+      "description": "Local echo options",
+      "name": [
+        "--predict"
+      ]
+    },
+    {
+      "description": "Use IPv4 only",
+      "name": [
+        "-4"
+      ]
+    },
+    {
+      "description": "Use IPv6 only",
+      "name": [
+        "-6"
+      ]
+    },
+    {
+      "args": {
+        "suggestions": [
+          {
+            "description": "Use IPv4 only",
+            "name": "inet"
+          },
+          {
+            "description": "Use IPv6 only",
+            "name": "ine6"
+          },
+          {
+            "description": "Autodetect network type for single-family hosts only",
+            "name": "auto"
+          },
+          {
+            "description": "Try all network types",
+            "name": "all"
+          },
+          {
+            "description": "Use all network types, but try IPv4 first [default]",
+            "name": "prefer-inet4"
+          },
+          {
+            "description": "Use all network types, but try IPv6 first",
+            "name": "prefer-inet6"
+          }
+        ]
+      },
+      "description": "Network Type",
+      "name": [
+        "--family"
+      ]
+    },
+    {
+      "description": "Server-side UDP port or range, (No effect on server-side SSH port)",
+      "name": [
+        "--port",
+        "-p"
+      ]
+    },
+    {
+      "description": "{ssh|any|IP}, ask the server to reply from an IP address, (default: \"ssh\")",
+      "name": [
+        "--bind-server"
+      ]
+    },
+    {
+      "args": {
+        "name": "command"
+      },
+      "description": "Ssh command to run when setting up session, (example: \"ssh -p 2222\")",
+      "name": [
+        "--ssh"
+      ]
+    },
+    {
+      "description": "Do not allocate a pseudo tty on ssh connection",
+      "name": [
+        "--no-ssh-pty"
+      ]
+    },
+    {
+      "description": "Do not send terminal initialization string",
+      "name": [
+        "--no-init"
+      ]
+    },
+    {
+      "description": "Run mosh-server locally without using ssh",
+      "name": [
+        "--local"
+      ]
+    },
+    {
+      "args": {
+        "name": "method",
+        "suggestions": [
+          {
+            "name": "local"
+          },
+          {
+            "name": "remote"
+          },
+          {
+            "name": "proxy"
+          }
+        ]
+      },
+      "description": "Select the method for discovering the remote IP address to use for mosh",
+      "name": [
+        "--experimental-remote-ip"
+      ]
+    },
+    {
+      "description": "Version and copyright information",
+      "name": [
+        "--version"
+      ]
+    }
+  ]
+}

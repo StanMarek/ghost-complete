@@ -1,0 +1,464 @@
+{
+  "description": "Onboardbase manages app secrets and credentials securely with team work and contractors in mind",
+  "name": "onboardbase",
+  "subcommands": [
+    {
+      "args": {
+        "name": "command"
+      },
+      "description": "Run a command with secrets injected into the environment",
+      "name": "build",
+      "options": [
+        {
+          "description": "Show CLI help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "project name"
+          },
+          "description": "Name of project",
+          "name": [
+            "-p",
+            "--project"
+          ]
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "Environment to run by default",
+          "name": [
+            "-e",
+            "--environment"
+          ]
+        },
+        {
+          "args": {
+            "name": "Command to Run"
+          },
+          "description": "Command to run",
+          "name": [
+            "-c",
+            "--command"
+          ]
+        },
+        {
+          "args": {
+            "name": "Project Prefix"
+          },
+          "description": "Prefix",
+          "name": [
+            "-k",
+            "--prefix"
+          ]
+        },
+        {
+          "args": {
+            "name": "Encryption Passphrase"
+          },
+          "description": "Passphrase",
+          "name": [
+            "-s",
+            "--passphrase"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Get all tokens",
+      "name": "config:get-token",
+      "options": [
+        {
+          "args": {
+            "name": "project scope"
+          },
+          "description": "Scope",
+          "name": [
+            "-S",
+            "--scope"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Update your onboardbase config",
+      "name": "config:set",
+      "options": [
+        {
+          "args": {
+            "name": "project scope"
+          },
+          "description": "Scope",
+          "name": [
+            "-s",
+            "--scope"
+          ]
+        },
+        {
+          "args": {
+            "name": "Auth Token"
+          },
+          "description": "Auth Token",
+          "name": [
+            "-t",
+            "--token"
+          ]
+        },
+        {
+          "args": {
+            "name": "Api Host"
+          },
+          "description": "API Host",
+          "name": [
+            "-A",
+            "--api-host"
+          ]
+        },
+        {
+          "args": {
+            "name": "Dashboard Host"
+          },
+          "description": "Dashboard Host",
+          "name": [
+            "-D",
+            "--dashboard-host"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "token"
+      },
+      "description": "Set up Configuration token manually",
+      "name": "config:set-token",
+      "options": [
+        {
+          "args": {},
+          "description": "Scope",
+          "name": [
+            "-S",
+            "--scope"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Cleanup Onboardbase artifacts including backup and authentication",
+      "name": "destroy"
+    },
+    {
+      "description": "Create an environment under a project",
+      "name": "environment:create",
+      "options": [
+        {
+          "description": "Show CLI help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {},
+          "description": "Name of project",
+          "name": [
+            "-p",
+            "--project"
+          ]
+        },
+        {
+          "args": {
+            "name": "Environment Name"
+          },
+          "description": "Environment Title",
+          "name": [
+            "-e",
+            "--environment"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Describe the command here",
+      "name": "login",
+      "options": [
+        {
+          "name": [
+            "--overwrite"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Log out of the CLI",
+      "name": "logout"
+    },
+    {
+      "description": "Create a project",
+      "name": "project:create",
+      "options": [
+        {
+          "description": "Show CLI help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {},
+          "description": "Name of project",
+          "name": [
+            "-t",
+            "--title"
+          ]
+        },
+        {
+          "args": {
+            "name": "Project Description"
+          },
+          "description": "Project description",
+          "name": [
+            "-d",
+            "--description"
+          ]
+        },
+        {
+          "args": {
+            "name": "default environment"
+          },
+          "description": "Environment to run by default",
+          "name": [
+            "-e",
+            "--environment"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "secrets"
+      },
+      "description": "Create a recommendation",
+      "name": "recommendation:create",
+      "options": [
+        {
+          "description": "Show CLI help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "project name"
+          },
+          "description": "Name of project",
+          "name": [
+            "-p",
+            "--project"
+          ]
+        },
+        {
+          "args": {
+            "name": "project description"
+          },
+          "description": "Note",
+          "name": [
+            "-n",
+            "--note"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Log secrets in JSON file",
+      "name": "secrets",
+      "options": [
+        {
+          "description": "Show CLI help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "project name"
+          },
+          "description": "Name of project",
+          "name": [
+            "-p",
+            "--project"
+          ]
+        },
+        {
+          "args": {
+            "name": "default environment"
+          },
+          "description": "Environment to run by default",
+          "name": [
+            "-e",
+            "--environment"
+          ]
+        },
+        {
+          "description": "JSON format",
+          "name": [
+            "-J",
+            "--json"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "secrets"
+      },
+      "description": "Update secrets on Onboardbase",
+      "name": "secrets:delete",
+      "options": [
+        {
+          "description": "Show CLI help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {},
+          "description": "Name of project",
+          "name": [
+            "-p",
+            "--project"
+          ]
+        },
+        {
+          "args": {
+            "name": "Environment to update"
+          },
+          "description": "Environment to run by default",
+          "name": [
+            "-e",
+            "--environment"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "secrets"
+      },
+      "description": "Update secrets on Onboardbase",
+      "name": "secrets:update",
+      "options": [
+        {
+          "description": "Show CLI help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {},
+          "description": "Name of project",
+          "name": [
+            "-p",
+            "--project"
+          ]
+        },
+        {
+          "args": {
+            "name": "Environment to update"
+          },
+          "description": "Environment to run by default",
+          "name": [
+            "-e",
+            "--environment"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "secrets"
+      },
+      "description": "Upload secrets",
+      "name": "secrets:upload",
+      "options": [
+        {
+          "description": "Show CLI help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {},
+          "description": "Name of project",
+          "name": [
+            "-p",
+            "--project"
+          ]
+        },
+        {
+          "args": {
+            "name": "Environment to update"
+          },
+          "description": "Environment to run by default",
+          "name": [
+            "-e",
+            "--environment"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Setup the Onboardbase CLI for managing secrets",
+      "name": "setup"
+    },
+    {
+      "description": "Share your local onboardbase.yaml secrets with a teammate",
+      "name": "share",
+      "options": [
+        {
+          "description": "Show CLI help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "project name"
+          },
+          "description": "Project name",
+          "name": [
+            "-p",
+            "--project"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Command to show help for",
+        "isOptional": true,
+        "name": "command"
+      },
+      "description": "Display help for <%= config.bin %>",
+      "name": "help",
+      "options": [
+        {
+          "description": "See all commands in CLI",
+          "name": [
+            "--all"
+          ]
+        }
+      ]
+    }
+  ]
+}

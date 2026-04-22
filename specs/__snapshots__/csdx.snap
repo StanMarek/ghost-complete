@@ -1,0 +1,428 @@
+{
+  "description": "Content Stack CLI",
+  "name": "csdx",
+  "options": [
+    {
+      "description": "Show help for csdx",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "The auth:login command lets you log in to Contentstack and save the session",
+      "name": "login",
+      "options": [
+        {
+          "args": {
+            "name": "email address"
+          },
+          "description": "Email address of your Contentstack account",
+          "name": [
+            "-u",
+            "--username"
+          ]
+        },
+        {
+          "args": {
+            "name": "password"
+          },
+          "description": "Password can be passed in command",
+          "name": [
+            "-p",
+            "--password"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Lets you add an existing management token from your Contentstack account and save it to the session for further use",
+      "name": "auth:tokens:add",
+      "options": [
+        {
+          "args": {
+            "name": "alias"
+          },
+          "description": "Alias (name) you want to assign to the token",
+          "name": [
+            "-a",
+            "--alias"
+          ]
+        },
+        {
+          "description": "Alias (name) you want to assign to the token",
+          "name": [
+            "--management"
+          ]
+        },
+        {
+          "description": "Flag to set delivery token",
+          "name": [
+            "--delivery"
+          ]
+        },
+        {
+          "args": {
+            "name": "stack-api-key"
+          },
+          "description": "API key of the stack where the token exists",
+          "name": [
+            "-k",
+            "--stack-api-key"
+          ]
+        },
+        {
+          "args": {
+            "name": "token"
+          },
+          "description": "Value of the token",
+          "name": [
+            "--token"
+          ]
+        },
+        {
+          "description": "Force token replace",
+          "name": [
+            "-f",
+            "--force"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "The auth:tokens:remove command lets you delete a management/ delivery token from your local CLI session",
+      "name": "auth:tokens:remove",
+      "options": [
+        {
+          "args": {
+            "name": "alias"
+          },
+          "description": "Alias (name) you want to assign to the token",
+          "name": [
+            "-a",
+            "--alias"
+          ]
+        },
+        {
+          "description": "Ignores if token not present. Command",
+          "name": [
+            "-i",
+            "--ignore"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "The 'Bootstrap' plugin in Contentstack CLI allows users to automate the process of project setup for starter apps",
+      "name": "cm:bootstrap",
+      "options": [
+        {
+          "args": {
+            "name": "app-name",
+            "suggestions": [
+              {
+                "name": "reactjs-starter"
+              },
+              {
+                "name": "nextjs-starter"
+              },
+              {
+                "name": "gatsby-starter"
+              },
+              {
+                "name": "angular-starter"
+              },
+              {
+                "name": "nuxt-starter"
+              }
+            ]
+          },
+          "description": "The name of the starter app you want to use. Example: reactjs-starter, nextjs-starter, gatsby-starter, angular-starter, nuxt-starter",
+          "name": [
+            "--app-name"
+          ]
+        },
+        {
+          "args": {
+            "name": "project-dir"
+          },
+          "description": "Directory/path to setup the project. If directory name has a space then provide the path as a string or escap the space using back slash as shown in the below example",
+          "name": [
+            "--project-dir"
+          ]
+        },
+        {
+          "args": {
+            "name": "app-type",
+            "suggestions": [
+              {
+                "name": "Sample"
+              },
+              {
+                "name": "Starter"
+              }
+            ]
+          },
+          "description": "Sample or Starter app",
+          "name": [
+            "--app-type"
+          ]
+        },
+        {
+          "args": {
+            "name": "stack-api-key"
+          },
+          "description": "Provide stack API key to seed content",
+          "name": [
+            "-k",
+            "--stack-api-key"
+          ]
+        },
+        {
+          "args": {
+            "name": "org"
+          },
+          "description": "Provide organization UID to create a new stack",
+          "name": [
+            "--org"
+          ]
+        },
+        {
+          "args": {
+            "name": "stack-name"
+          },
+          "description": "Name of the new stack that will be created",
+          "name": [
+            "-n",
+            "--stack-name"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "The auth:tokens command lists the existing tokens added to the session",
+      "name": "auth:tokens",
+      "options": [
+        {
+          "description": "To show extra columns",
+          "name": [
+            "-x",
+            "--extended"
+          ]
+        },
+        {
+          "args": {
+            "name": "columns"
+          },
+          "description": "To display specific columns, separated by comma",
+          "name": [
+            "--columns"
+          ]
+        },
+        {
+          "description": "Output is csv format",
+          "name": [
+            "--csv"
+          ]
+        },
+        {
+          "args": {
+            "name": "filter"
+          },
+          "description": "To filter the property by partial string matching, ex: name=foo",
+          "name": [
+            "--filter"
+          ]
+        },
+        {
+          "description": "To hide table’s header in output",
+          "name": [
+            "--no-header"
+          ]
+        },
+        {
+          "description": "To not truncate output to fit screen",
+          "name": [
+            "--no-truncate"
+          ]
+        },
+        {
+          "args": {
+            "name": "format",
+            "suggestions": [
+              {
+                "name": "csv"
+              },
+              {
+                "name": "json"
+              },
+              {
+                "name": "yaml"
+              }
+            ]
+          },
+          "description": "To display output in a particular format",
+          "name": [
+            "--output"
+          ]
+        },
+        {
+          "args": {
+            "name": "sort"
+          },
+          "description": "To sort the list, prepend '-' to sort in a descending order",
+          "name": [
+            "--sort"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "The config:get:region command will return the name of the region on which you are performing actions in Contentstack, via the CLI",
+      "name": "config:get:region"
+    },
+    {
+      "args": {
+        "description": "The ContentStack AWS region you want to use",
+        "name": "region",
+        "suggestions": [
+          {
+            "name": "EU"
+          },
+          {
+            "name": "AZURE-NA"
+          },
+          {
+            "name": "NA"
+          }
+        ]
+      },
+      "description": "The config:set:region command lets you select a region, from the available Contentstack regions, to perform actions using the CLI",
+      "name": "config:set:region"
+    },
+    {
+      "description": "The cm:stacks:export command lets you export content from one stack to another",
+      "name": "cm:stacks:export",
+      "options": [
+        {
+          "args": {
+            "name": "config"
+          },
+          "description": "[optional] path of the config",
+          "name": [
+            "-c",
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "name": "stack-api-key"
+          },
+          "description": "API key of the source stack",
+          "name": [
+            "-k",
+            "--stack-api-key"
+          ]
+        },
+        {
+          "args": {
+            "name": "alias"
+          },
+          "description": "The management token of the source stack from which you will export content",
+          "name": [
+            "-a",
+            "--alias"
+          ]
+        },
+        {
+          "args": {
+            "name": "data-dir"
+          },
+          "description": "The path or the location in your file system to store the exported content. For e.g., ./content",
+          "name": [
+            "-d",
+            "--data-dir"
+          ]
+        },
+        {
+          "args": {
+            "name": "branch"
+          },
+          "description": "The name of the branch where you want to export your content. If you don’t mention the branch name, then by default the content will be exported from all the branches of your stack",
+          "name": [
+            "--branch"
+          ]
+        },
+        {
+          "args": {
+            "name": "module",
+            "suggestions": [
+              {
+                "name": "assets"
+              },
+              {
+                "name": "content-types"
+              },
+              {
+                "name": "entries"
+              },
+              {
+                "name": "environments"
+              },
+              {
+                "name": "extensions"
+              },
+              {
+                "name": "global-fields"
+              },
+              {
+                "name": "labels"
+              },
+              {
+                "name": "locales"
+              },
+              {
+                "name": "webhooks"
+              },
+              {
+                "name": "workflows"
+              }
+            ]
+          },
+          "description": "[optional] Specific module name. If not specified, the export command will export all the modules to the stack. The available modules are assets, content-types, entries, environments, extensions, global-fields, labels, locales, webhooks, and workflows",
+          "name": [
+            "--module"
+          ]
+        },
+        {
+          "args": {
+            "name": "content-types"
+          },
+          "description": "[optional] content type",
+          "name": [
+            "--content-types"
+          ]
+        },
+        {
+          "args": {
+            "name": "secured-assets"
+          },
+          "description": "[optional] use when assets are secured",
+          "name": [
+            "--secured-assets"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "The auth:logout command lets you log out of Contentstack and clear the session",
+      "name": "logout"
+    },
+    {
+      "description": "The csdx auth:whoami command returns the username (email address) of the user who is currently logged in to the session",
+      "name": "whoami"
+    }
+  ]
+}

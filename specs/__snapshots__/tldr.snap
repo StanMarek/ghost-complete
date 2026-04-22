@@ -1,0 +1,142 @@
+{
+  "args": {
+    "generators": [
+      {
+        "js_source": "async(s,e,c)=>{let{stdout:l}=await e({command:\"ls\",args:[\"-Al\",...[p,m,r,a,i,g].map(t=>t.replace(/^~/,c.environmentVariables.HOME))]});return l.split(`\n`).filter(t=>o.test(t)).map(t=>({name:t.split(\" \").at(-1).slice(0,-3),description:\"Tldr page\",icon:\"fig://icon?type=string\"}))}",
+        "requires_js": true
+      }
+    ]
+  },
+  "description": "A simpler man page than the existing man page",
+  "name": "tldr",
+  "options": [
+    {
+      "description": "Display help for command",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "args": {
+        "name": "query"
+      },
+      "description": "Search all pages for the query",
+      "name": [
+        "-s",
+        "--search"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "bash",
+              "-c",
+              "command ls -Al ~/.tldrc/tldr/pages/linux/ 2>/dev/null"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ]
+      },
+      "description": "Show command page for Linux",
+      "name": [
+        "--linux"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "bash",
+              "-c",
+              "command ls -l ~/.tldrc/tldr/pages/osx/ 2>/dev/null"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ]
+      },
+      "description": "Show command page for OSX",
+      "name": [
+        "--osx"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "bash",
+              "-c",
+              "command ls -l ~/.tldrc/tldr/pages/sunos/ 2>/dev/null"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ]
+      },
+      "description": "Show command page for SunOS",
+      "name": [
+        "--sunos"
+      ]
+    },
+    {
+      "description": "Show all pages for current platform",
+      "name": [
+        "-l",
+        "--list"
+      ]
+    },
+    {
+      "description": "Download the latest pages and generate search index",
+      "name": [
+        "-u",
+        "--update"
+      ]
+    },
+    {
+      "description": "Delete the entire local cache",
+      "name": [
+        "-c",
+        "--clear-cache"
+      ]
+    },
+    {
+      "args": {
+        "name": "platform",
+        "suggestions": [
+          {
+            "name": "linux"
+          },
+          {
+            "name": "osx"
+          },
+          {
+            "name": "sunos"
+          },
+          {
+            "name": "windows"
+          },
+          {
+            "name": "common"
+          }
+        ]
+      },
+      "description": "Select platform",
+      "name": [
+        "--platform",
+        "-p"
+      ]
+    }
+  ]
+}

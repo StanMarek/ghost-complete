@@ -1,0 +1,563 @@
+{
+  "args": {
+    "isVariadic": true,
+    "name": "file",
+    "template": "filepaths"
+  },
+  "description": "A Ruby static code analyzer and formatter, based on the community Ruby style guide",
+  "name": "rubocop",
+  "options": [
+    {
+      "description": "Run only lint cops",
+      "name": [
+        "-l",
+        "--lint"
+      ]
+    },
+    {
+      "description": "Run only layout cops, with autocorrect on",
+      "name": [
+        "-x",
+        "--fix-layout"
+      ]
+    },
+    {
+      "description": "Run only safe cops",
+      "name": [
+        "--safe"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "rubocop",
+              "--show-cops"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "isVariadic": true,
+        "name": "COP"
+      },
+      "description": "Exclude the given cop(s)",
+      "name": [
+        "--except"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "rubocop",
+              "--show-cops"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "isVariadic": true,
+        "name": "COP"
+      },
+      "description": "Run only the given cop(s)",
+      "name": [
+        "--only"
+      ]
+    },
+    {
+      "description": "Run only cops for rules that link to a style guide",
+      "name": [
+        "--only-guide-cops"
+      ]
+    },
+    {
+      "description": "Inspect files in order of modification time and stop after the first file containing offenses",
+      "name": [
+        "-F",
+        "--fail-fast"
+      ]
+    },
+    {
+      "description": "Run without pending cops",
+      "name": [
+        "--disable-pending-cops"
+      ]
+    },
+    {
+      "description": "Run with pending cops",
+      "name": [
+        "--enable-pending-cops"
+      ]
+    },
+    {
+      "description": "Run cops even when they are disabled locally by a `rubocop:disable` directive",
+      "name": [
+        "--ignore-disable-comments"
+      ]
+    },
+    {
+      "description": "Any files excluded by `Exclude` in configuration files will be excluded, even if given explicitly as arguments",
+      "name": [
+        "--force-exclusion"
+      ]
+    },
+    {
+      "description": "Inspect files given on the command line only if they are listed in `AllCops/Include` parameters of user configuration or default configuration",
+      "name": [
+        "--only-recognized-file-types"
+      ]
+    },
+    {
+      "description": "Prevent from inheriting `AllCops/Exclude` from parent folders",
+      "name": [
+        "--ignore-parent-exclusion"
+      ]
+    },
+    {
+      "description": "Ignore unrecognized cops or departments in the config",
+      "name": [
+        "--ignore-unrecognized-cops"
+      ]
+    },
+    {
+      "description": "Use default configuration even if configuration files are present in the directory tree",
+      "name": [
+        "--force-default-config"
+      ]
+    },
+    {
+      "args": {
+        "name": "FILE",
+        "template": "filepaths"
+      },
+      "description": "Pipe source from STDIN, using FILE in offense reports. This is useful for editor integration",
+      "name": [
+        "--stdin",
+        "-s"
+      ]
+    },
+    {
+      "description": "Use available CPUs to execute inspection in parallel default true",
+      "name": [
+        "-P",
+        "--parallel"
+      ]
+    },
+    {
+      "description": "Disable parallel inspection (default: false)",
+      "name": [
+        "--no-parallel"
+      ]
+    },
+    {
+      "args": {
+        "name": "SEVERITY",
+        "suggestions": [
+          {
+            "name": "A"
+          },
+          {
+            "name": "I"
+          },
+          {
+            "name": "R"
+          },
+          {
+            "name": "C"
+          },
+          {
+            "name": "W"
+          },
+          {
+            "name": "E"
+          },
+          {
+            "name": "F"
+          }
+        ]
+      },
+      "description": "Minimum severity for exit with error code",
+      "name": [
+        "--fail-level"
+      ]
+    },
+    {
+      "args": {
+        "name": "FLAG"
+      },
+      "description": "Use result caching (FLAG=true) or don't (FLAG=false), default determined by configuration parameter AllCops: UseCache",
+      "name": [
+        "-C",
+        "--cache"
+      ]
+    },
+    {
+      "args": {
+        "name": "DIR",
+        "template": "folders"
+      },
+      "description": "Set the cache root directory. Takes precedence over the configuration parameter AllCops: CacheRootDirectory and the $RUBOCOP_CACHE_ROOT environment variable",
+      "name": [
+        "--cache-root"
+      ]
+    },
+    {
+      "description": "Do not use server even if it's available",
+      "name": [
+        "--no-server"
+      ]
+    },
+    {
+      "description": "If a server process has not been started yet, start the server process and execute inspection with server.  Default is true.  You can specify the server host and port with the $RUBOCOP_SERVER_HOST and the $RUBOCOP_SERVER_PORT environment variables",
+      "name": [
+        "--server"
+      ]
+    },
+    {
+      "description": "Restart server process",
+      "name": [
+        "--restart-server"
+      ]
+    },
+    {
+      "description": "Start server process",
+      "name": [
+        "--start-server"
+      ]
+    },
+    {
+      "description": "Stop server process",
+      "name": [
+        "--stop-server"
+      ]
+    },
+    {
+      "description": "Show server status",
+      "name": [
+        "--server-status"
+      ]
+    },
+    {
+      "args": {
+        "name": "FORMATTER",
+        "suggestions": [
+          {
+            "name": "a"
+          },
+          {
+            "name": "c"
+          },
+          {
+            "name": "e"
+          },
+          {
+            "name": "fi"
+          },
+          {
+            "name": "fu"
+          },
+          {
+            "name": "g"
+          },
+          {
+            "name": "h"
+          },
+          {
+            "name": "j"
+          },
+          {
+            "name": "ju"
+          },
+          {
+            "name": "m"
+          },
+          {
+            "name": "o"
+          },
+          {
+            "name": "pa"
+          },
+          {
+            "name": "p"
+          },
+          {
+            "name": "q"
+          },
+          {
+            "name": "s"
+          },
+          {
+            "name": "t"
+          },
+          {
+            "name": "w"
+          },
+          {
+            "name": "[custom]"
+          }
+        ]
+      },
+      "description": "Choose an output formatter. This option can be specified multiple times to enable multiple formatters at the same time",
+      "name": [
+        "-f",
+        "--format"
+      ]
+    },
+    {
+      "description": "Display cop names in offense messages.  Default is true",
+      "name": [
+        "-D",
+        "--display-cop-names"
+      ]
+    },
+    {
+      "description": "Disable displaying cop names in offense messages. Default false",
+      "name": [
+        "--no-display-cop-names"
+      ]
+    },
+    {
+      "description": "Display extra details in offense messages",
+      "name": [
+        "-E",
+        "--extra-details"
+      ]
+    },
+    {
+      "description": "Display style guide URLs in offense messages",
+      "name": [
+        "-S",
+        "--display-style-guide"
+      ]
+    },
+    {
+      "args": {
+        "name": "FILE",
+        "template": "filepaths"
+      },
+      "description": "Write output to a file instead of STDOUT.  This option applies to the previously specified --format, or the default format if no format is specified",
+      "name": [
+        "-o",
+        "--out"
+      ]
+    },
+    {
+      "description": "Write all output to stderr except for the autocorrected source. This is especially useful when combined with --autocorrect and --stdin",
+      "name": [
+        "--stderr"
+      ]
+    },
+    {
+      "description": "Display elapsed time in seconds",
+      "name": [
+        "--display-time"
+      ]
+    },
+    {
+      "description": "Only output offense messages. Omit passing cops. Only valid for --format junit",
+      "name": [
+        "--display-only-failed"
+      ]
+    },
+    {
+      "description": "Only output offense messages at the specified --fail-level or above",
+      "name": [
+        "--display-only-fail-level-offenses"
+      ]
+    },
+    {
+      "description": "Only output correctable offense messages",
+      "name": [
+        "--display-only-correctable"
+      ]
+    },
+    {
+      "description": "Only output safe-correctable offense messages when combined with --display-only-correctable",
+      "name": [
+        "--display-only-safe-correctable"
+      ]
+    },
+    {
+      "description": "Autocorrect offenses (only when it's safe)",
+      "name": [
+        "-a",
+        "--autocorrect"
+      ]
+    },
+    {
+      "description": "Autocorrect offenses (safe and unsafe)",
+      "name": [
+        "-A",
+        "--autocorrect-all"
+      ]
+    },
+    {
+      "description": "Annotates any offenses that do not support autocorrect with `rubocop:todo` comments",
+      "name": [
+        "--disable-uncorrectable"
+      ]
+    },
+    {
+      "description": "Generate a configuration file acting as a TODO list",
+      "name": [
+        "--auto-gen-config"
+      ]
+    },
+    {
+      "description": "Regenerate the TODO configuration file using the last configuration. If there is no existing TODO file, acts like --auto-gen-config",
+      "name": [
+        "--regenerate-todo"
+      ]
+    },
+    {
+      "args": {
+        "name": "COUNT"
+      },
+      "description": "Set the limit for how many files to explicitly exclude.  If there are more files than the limit, the cop will be disabled instead. Default is 15",
+      "name": [
+        "--exclude-limit"
+      ]
+    },
+    {
+      "description": "Include offense counts in configuration file generated by --auto-gen-config.  Default is true",
+      "name": [
+        "--offense-counts"
+      ]
+    },
+    {
+      "description": "Generate only Exclude parameters and not Max when running --auto-gen-config, except if the number of files with offenses is bigger than exclude-limit. Default is false",
+      "name": [
+        "--auto-gen-only-exclude"
+      ]
+    },
+    {
+      "description": "Include the date and time when the --auto-gen-config was run in the file it generates. Default is true",
+      "name": [
+        "--auto-gen-timestamp"
+      ]
+    },
+    {
+      "description": "List all files RuboCop will inspect",
+      "name": [
+        "-L",
+        "--list-target-files"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "rubocop",
+              "--show-cops"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "isVariadic": true,
+        "name": "COP"
+      },
+      "description": "Shows the given cops, or all cops by default, and their configurations for the current directory",
+      "name": [
+        "--show-cops"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "rubocop",
+              "--show-cops"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "isVariadic": true,
+        "name": "COP"
+      },
+      "description": "Display url to documentation for the given cops, or base url by default",
+      "name": [
+        "--show-docs-url"
+      ]
+    },
+    {
+      "description": "Generate a .rubocop.yml file in the current directory",
+      "name": [
+        "--init"
+      ]
+    },
+    {
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      },
+      "description": "Specify configuration file",
+      "name": [
+        "-c",
+        "--config"
+      ]
+    },
+    {
+      "description": "Display debug info",
+      "name": [
+        "-d",
+        "--debug"
+      ]
+    },
+    {
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      },
+      "description": "Require Ruby file",
+      "name": [
+        "-r",
+        "--require"
+      ]
+    },
+    {
+      "description": "Disable color output",
+      "name": [
+        "--no-color"
+      ]
+    },
+    {
+      "description": "Force color output",
+      "name": [
+        "--color"
+      ]
+    },
+    {
+      "description": "Display version",
+      "name": [
+        "-v",
+        "--version"
+      ]
+    },
+    {
+      "description": "Display verbose version",
+      "name": [
+        "-V",
+        "--verbose-version"
+      ]
+    }
+  ]
+}

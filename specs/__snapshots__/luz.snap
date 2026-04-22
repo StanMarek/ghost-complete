@@ -1,0 +1,68 @@
+{
+  "description": "A next-generation build system for Apple Darwin-based systems",
+  "name": "luz",
+  "options": [
+    {
+      "description": "Show help for Luz",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Build the target in the current directory",
+      "name": "build",
+      "options": [
+        {
+          "description": "Show help for the build command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        },
+        {
+          "description": "Clean the build directory before building",
+          "name": [
+            "--clean",
+            "-c"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generate a new project",
+      "name": "gen",
+      "options": [
+        {
+          "description": "Show help for the gen command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        },
+        {
+          "args": {
+            "name": "type",
+            "suggestions": [
+              {
+                "description": "A command-line tool",
+                "name": "tool"
+              },
+              {
+                "description": "A tweak",
+                "name": "tweak"
+              }
+            ]
+          },
+          "description": "The type of project to generate",
+          "name": [
+            "--type",
+            "-t"
+          ]
+        }
+      ]
+    }
+  ]
+}

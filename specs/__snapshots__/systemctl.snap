@@ -1,0 +1,1179 @@
+{
+  "name": "systemctl",
+  "options": [
+    {
+      "description": "Show this help",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Show package version",
+      "name": [
+        "--version"
+      ]
+    },
+    {
+      "description": "Connect to system manager",
+      "name": [
+        "--system"
+      ]
+    },
+    {
+      "description": "Connect to user service manager",
+      "name": [
+        "--user"
+      ]
+    },
+    {
+      "args": {
+        "name": "[USER@]HOST"
+      },
+      "description": "Operate on remote host",
+      "name": [
+        "-H",
+        "--host"
+      ]
+    },
+    {
+      "args": {
+        "name": "CONTAINER"
+      },
+      "description": "Operate on a local container",
+      "name": [
+        "-M",
+        "--machine"
+      ]
+    },
+    {
+      "args": {
+        "name": "TYPE"
+      },
+      "description": "List units of a particular type",
+      "name": [
+        "-t",
+        "--type"
+      ]
+    },
+    {
+      "args": {
+        "name": "STATE"
+      },
+      "description": "List units with particular LOAD or SUB or ACTIVE state",
+      "name": [
+        "--state"
+      ]
+    },
+    {
+      "description": "Shortcut for --state=failed",
+      "name": [
+        "--failed"
+      ]
+    },
+    {
+      "args": {
+        "name": "NAME"
+      },
+      "description": "Show only properties by this name",
+      "name": [
+        "-p",
+        "--property"
+      ]
+    },
+    {
+      "description": "Equivalent to --value --property=NAME",
+      "name": [
+        "-P"
+      ]
+    },
+    {
+      "description": "Show all properties/all units currently in memory, including dead/empty ones. To list all units installed on the system, use 'list-unit-files' instead",
+      "name": [
+        "-a",
+        "--all"
+      ]
+    },
+    {
+      "description": "Don't ellipsize unit names on output",
+      "name": [
+        "-l",
+        "--full"
+      ]
+    },
+    {
+      "description": "Show unit list of host and local containers",
+      "name": [
+        "-r",
+        "--recursive"
+      ]
+    },
+    {
+      "description": "Show reverse dependencies with 'list-dependencies'",
+      "name": [
+        "--reverse"
+      ]
+    },
+    {
+      "description": "Show unit dependencies with 'status', 'cat', 'list-units', and 'list-unit-files'",
+      "name": [
+        "--with-dependencies"
+      ]
+    },
+    {
+      "args": {
+        "name": "MODE"
+      },
+      "description": "Specify how to deal with already queued jobs, when queueing a new job",
+      "name": [
+        "--job-mode"
+      ]
+    },
+    {
+      "description": "When enqueuing a unit job, show full transaction",
+      "name": [
+        "-T",
+        "--show-transaction"
+      ]
+    },
+    {
+      "description": "When showing sockets, explicitly show their type",
+      "name": [
+        "--show-types"
+      ]
+    },
+    {
+      "description": "When showing properties, only print the value",
+      "name": [
+        "--value"
+      ]
+    },
+    {
+      "args": {
+        "name": "MODE"
+      },
+      "description": "Specify if checking inhibitors before shutting down sleeping or hibernating",
+      "name": [
+        "--check-inhibitors"
+      ]
+    },
+    {
+      "description": "Shortcut for --check-inhibitors=no",
+      "name": [
+        "-i"
+      ]
+    },
+    {
+      "args": {
+        "name": "WHO"
+      },
+      "description": "Whom to send signal to",
+      "name": [
+        "--kill-who"
+      ]
+    },
+    {
+      "args": {
+        "name": "SIGNAL"
+      },
+      "description": "Which signal to send",
+      "name": [
+        "-s",
+        "--signal"
+      ]
+    },
+    {
+      "args": {
+        "name": "RESOURCES"
+      },
+      "description": "Which types of resources to remove",
+      "name": [
+        "--what"
+      ]
+    },
+    {
+      "description": "Start or stop unit after enabling or disabling it",
+      "name": [
+        "--now"
+      ]
+    },
+    {
+      "description": "Only print what would be done",
+      "name": [
+        "--dry-run"
+      ]
+    },
+    {
+      "description": "Supress output",
+      "name": [
+        "-q",
+        "--quiet"
+      ]
+    },
+    {
+      "description": "For (re)start, wait until service stopped again. For is-system-running, wait until startup is completed",
+      "name": [
+        "--wait"
+      ]
+    },
+    {
+      "description": "Do not wait until operation finished",
+      "name": [
+        "--no-block"
+      ]
+    },
+    {
+      "description": "Don't send wall message before halt/power-off/reboot",
+      "name": [
+        "--no-wall"
+      ]
+    },
+    {
+      "description": "Don't reload daemon after en-/dis-abling unit files",
+      "name": [
+        "--no-reload"
+      ]
+    },
+    {
+      "args": {
+        "name": "BOOL",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Enable/disable the legend (column headers and hints)",
+      "name": [
+        "--legend"
+      ]
+    },
+    {
+      "description": "Do not pipe output into a pager",
+      "name": [
+        "--no-pager"
+      ]
+    },
+    {
+      "description": "Do not ask for system passwords",
+      "name": [
+        "--no-ask-password"
+      ]
+    },
+    {
+      "description": "Edit/enable/disable/mask default user unit files globally",
+      "name": [
+        "--global"
+      ]
+    },
+    {
+      "description": "Edit/enable/disable/mask unit files temporarily until next reboot",
+      "name": [
+        "--runtime"
+      ]
+    },
+    {
+      "description": "When enabling unit files, override existing symlinks. When shutting down, execute action immediately",
+      "name": [
+        "-f",
+        "--force"
+      ]
+    },
+    {
+      "args": {
+        "name": "MODE"
+      },
+      "description": "Apply only enable, only disable, or all presets",
+      "name": [
+        "--preset-mode"
+      ]
+    },
+    {
+      "args": {
+        "name": "PATH"
+      },
+      "description": "Edit/enable/disable/mask unit files in the specified root directory",
+      "name": [
+        "--root"
+      ]
+    },
+    {
+      "args": {
+        "name": "N"
+      },
+      "description": "Number of journal entries to show",
+      "name": [
+        "-n",
+        "--lines"
+      ]
+    },
+    {
+      "args": {
+        "name": "MODE",
+        "suggestions": [
+          {
+            "name": "short"
+          },
+          {
+            "name": "short-precise"
+          },
+          {
+            "name": "short-iso"
+          },
+          {
+            "name": "short-iso-precise"
+          },
+          {
+            "name": "short-full"
+          },
+          {
+            "name": "short-monotonic"
+          },
+          {
+            "name": "short-unix"
+          },
+          {
+            "name": "verbose"
+          },
+          {
+            "name": "export"
+          },
+          {
+            "name": "json"
+          },
+          {
+            "name": "json-pretty"
+          },
+          {
+            "name": "json-sse"
+          },
+          {
+            "name": "cat"
+          }
+        ]
+      },
+      "description": "Change journal output mode",
+      "name": [
+        "-o",
+        "--output"
+      ]
+    },
+    {
+      "description": "Tell the firmware to show the setup menu on next boot",
+      "name": [
+        "--firmware-setup"
+      ]
+    },
+    {
+      "args": {
+        "name": "TIME"
+      },
+      "description": "Boot into boot loader menu on next boot",
+      "name": [
+        "--boot-loader-menu"
+      ]
+    },
+    {
+      "args": {
+        "name": "NAME"
+      },
+      "description": "Boot into a specific boot loader entry on next boot",
+      "name": [
+        "--boot-loader-entry"
+      ]
+    },
+    {
+      "description": "Print unit dependencies as a list instead of a tree",
+      "name": [
+        "--plain"
+      ]
+    },
+    {
+      "args": {
+        "name": "FORMAT",
+        "suggestions": [
+          {
+            "name": "pretty"
+          },
+          {
+            "name": "unix"
+          },
+          {
+            "name": "us"
+          },
+          {
+            "name": "utc"
+          },
+          {
+            "name": "us+utc"
+          }
+        ]
+      },
+      "description": "Change format of printed timestamps",
+      "name": [
+        "--timestamp"
+      ]
+    },
+    {
+      "description": "Create read-only bind mount",
+      "name": [
+        "--read-only"
+      ]
+    },
+    {
+      "description": "Create directory before mounting, if missing",
+      "name": [
+        "--mkdir"
+      ]
+    },
+    {
+      "description": "Restart/reload previously marked units",
+      "name": [
+        "--marked"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}",
+            "requires_js": true
+          }
+        ],
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "PATTERN"
+      },
+      "description": "List units currently in memory",
+      "name": "list-units"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "PATTERN"
+      },
+      "description": "List socket units currently in memory ordered by address",
+      "name": "list-sockets"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "PATTERN"
+      },
+      "description": "List timer units currently in memory ordered by next elapse",
+      "name": "list-timers"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}",
+            "requires_js": true
+          }
+        ],
+        "isVariadic": true,
+        "name": "PATTERN"
+      },
+      "description": "Check whether units are active",
+      "name": "is-active"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}",
+            "requires_js": true
+          }
+        ],
+        "isVariadic": true,
+        "name": "PATTERN"
+      },
+      "description": "Check whether units are failed",
+      "name": "is-failed"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}",
+            "requires_js": true
+          }
+        ],
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "PATTERN or PID"
+      },
+      "description": "Show runtime status of one or more units",
+      "name": "status"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}",
+            "requires_js": true
+          }
+        ],
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "PATTERN or JOB"
+      },
+      "description": "Show properties of one or more",
+      "name": "show"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}",
+            "requires_js": true
+          }
+        ],
+        "isVariadic": true,
+        "name": "PATTERN"
+      },
+      "description": "Show files and drop-ins of specified units",
+      "name": "cat"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}",
+            "requires_js": true
+          }
+        ],
+        "isVariadic": true,
+        "name": "PATTERN or PID"
+      },
+      "description": "Show manual for one or more units",
+      "name": "help"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}",
+            "requires_js": true
+          }
+        ],
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "PATTERN"
+      },
+      "description": "Recursively show units which are required or wanted by the units or by which those",
+      "name": "list-dependencies"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}",
+            "requires_js": true
+          }
+        ],
+        "isVariadic": true,
+        "name": "UNIT"
+      },
+      "description": "Start (activate) one or more units",
+      "name": "start"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}",
+            "requires_js": true
+          }
+        ],
+        "isVariadic": true,
+        "name": "UNIT"
+      },
+      "description": "Stop (deactivate) one or more units",
+      "name": "stop"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}",
+            "requires_js": true
+          }
+        ],
+        "isVariadic": true,
+        "name": "UNIT"
+      },
+      "description": "Reload one or more units",
+      "name": "reload"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}",
+            "requires_js": true
+          }
+        ],
+        "isVariadic": true,
+        "name": "UNIT"
+      },
+      "description": "Start or restart one or more units",
+      "name": "restart"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}",
+            "requires_js": true
+          }
+        ],
+        "isVariadic": true,
+        "name": "UNIT"
+      },
+      "description": "Restart one or more units if active",
+      "name": "try-restart"
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "UNIT"
+      },
+      "description": "Reload one or more units if possible, otherwise start or restart",
+      "name": "reload-or-restart"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}",
+            "requires_js": true
+          }
+        ],
+        "isVariadic": true,
+        "name": "UNIT"
+      },
+      "description": "If active, reload one or more units, if supported, otherwise restart",
+      "name": "try-reload-or-restart"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}",
+            "requires_js": true
+          }
+        ],
+        "name": "UNIT"
+      },
+      "description": "Start one unit and stop all others",
+      "name": "isolate"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}",
+            "requires_js": true
+          }
+        ],
+        "isVariadic": true,
+        "name": "UNIT"
+      },
+      "description": "Send signal to processes of a unit",
+      "name": "kill"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}",
+            "requires_js": true
+          }
+        ],
+        "isVariadic": true,
+        "name": "UNIT"
+      },
+      "description": "Clean runtime, cache, state, logs or configuration of unit",
+      "name": "clean"
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "PATTERN"
+      },
+      "description": "Freeze execution of unit processes",
+      "name": "freeze"
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "PATTERN"
+      },
+      "description": "Resume execution of a frozen unit",
+      "name": "thaw"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}",
+              "requires_js": true
+            }
+          ],
+          "name": "UNIT"
+        },
+        {
+          "name": "PROPERTY=VALUE"
+        }
+      ],
+      "description": "Sets one or more properties of a unit",
+      "name": "set-property"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}",
+              "requires_js": true
+            }
+          ],
+          "name": "UNIT"
+        },
+        {
+          "name": "PATH",
+          "template": "filepaths"
+        },
+        {
+          "isOptional": true,
+          "name": "PATH",
+          "template": "filepaths"
+        }
+      ],
+      "description": "Bind-mount a path from the host into a unit's namespace",
+      "name": "bind"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}",
+              "requires_js": true
+            }
+          ],
+          "name": "UNIT"
+        },
+        {
+          "name": "PATH",
+          "template": "filepaths"
+        },
+        {
+          "isOptional": true,
+          "name": "PATH",
+          "template": "filepaths"
+        },
+        {
+          "isOptional": true,
+          "name": "OPTS"
+        }
+      ],
+      "description": "Mount an image from the host into a unit's namespace",
+      "name": "mount-image"
+    },
+    {
+      "args": [
+        {
+          "name": "SERVICE"
+        },
+        {
+          "isOptional": true,
+          "name": "LEVEL"
+        }
+      ],
+      "description": "Get/set logging threshold for service",
+      "name": "service-log-level"
+    },
+    {
+      "args": [
+        {
+          "name": "SERVICE"
+        },
+        {
+          "isOptional": true,
+          "name": "TARGET"
+        }
+      ],
+      "description": "Get/set logging target for service",
+      "name": "service-log-target"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "PATTERN"
+      },
+      "description": "Reset failed state for all, one, or more units",
+      "name": "reset-failed"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-unit-files\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.state===\"enabled\"?o=\"\\u2705\":a.state===\"disabled\"?o=\"\\u{1F6D1}\":o=\"\\u2753\";let u=a.state?.charAt(0).toUpperCase()+a.state?.slice(1);return{name:a.unit_file,description:u,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}",
+            "requires_js": true
+          }
+        ],
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "PATTERN"
+      },
+      "description": "List installed unit files",
+      "name": "list-unit-files"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-unit-files\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.state===\"enabled\"?o=\"\\u2705\":a.state===\"disabled\"?o=\"\\u{1F6D1}\":o=\"\\u2753\";let u=a.state?.charAt(0).toUpperCase()+a.state?.slice(1);return{name:a.unit_file,description:u,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}",
+            "requires_js": true
+          },
+          {
+            "js_source": "(f,h,w)=>de(this,void 0,void 0,function*(){var p;let{isDangerous:T,currentWorkingDirectory:O,searchTerm:g}=w,E=(p=(0,v.getCurrentInsertedDirectory)(o??O,g,w))!==null&&p!==void 0?p:\"/\";try{let F=yield h({command:\"ls\",args:[\"-1ApL\"],cwd:E}),Z=H(F.stdout.split(`\n`),[\".DS_Store\"]),q=[];for(let R of Z)if(R){let P=R.endsWith(\"/\")?\"folders\":\"filepaths\";(P===\"filepaths\"&&u!==\"only\"||P===\"folders\"&&u!==\"never\")&&q.push({type:P===\"filepaths\"?\"file\":\"folder\",name:R,insertValue:R,isDangerous:T,context:{templateType:P}})}return S(y(q))}catch{return[]}})",
+            "requires_js": true
+          }
+        ],
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "UNIT|PATH"
+      },
+      "description": "Enable one or more unit files",
+      "name": "enable"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}",
+            "requires_js": true
+          },
+          {
+            "js_source": "(f,h,w)=>de(this,void 0,void 0,function*(){var p;let{isDangerous:T,currentWorkingDirectory:O,searchTerm:g}=w,E=(p=(0,v.getCurrentInsertedDirectory)(o??O,g,w))!==null&&p!==void 0?p:\"/\";try{let F=yield h({command:\"ls\",args:[\"-1ApL\"],cwd:E}),Z=H(F.stdout.split(`\n`),[\".DS_Store\"]),q=[];for(let R of Z)if(R){let P=R.endsWith(\"/\")?\"folders\":\"filepaths\";(P===\"filepaths\"&&u!==\"only\"||P===\"folders\"&&u!==\"never\")&&q.push({type:P===\"filepaths\"?\"file\":\"folder\",name:R,insertValue:R,isDangerous:T,context:{templateType:P}})}return S(y(q))}catch{return[]}})",
+            "requires_js": true
+          }
+        ],
+        "isVariadic": true,
+        "name": "UNIT|PATH"
+      },
+      "description": "Disable one or more unit files",
+      "name": "disable"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-unit-files\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.state===\"enabled\"?o=\"\\u2705\":a.state===\"disabled\"?o=\"\\u{1F6D1}\":o=\"\\u2753\";let u=a.state?.charAt(0).toUpperCase()+a.state?.slice(1);return{name:a.unit_file,description:u,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}",
+            "requires_js": true
+          }
+        ],
+        "isVariadic": true,
+        "name": "UNIT"
+      },
+      "description": "Reenable one or more unit files",
+      "name": "reenable"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-unit-files\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.state===\"enabled\"?o=\"\\u2705\":a.state===\"disabled\"?o=\"\\u{1F6D1}\":o=\"\\u2753\";let u=a.state?.charAt(0).toUpperCase()+a.state?.slice(1);return{name:a.unit_file,description:u,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}",
+            "requires_js": true
+          }
+        ],
+        "isVariadic": true,
+        "name": "UNIT"
+      },
+      "description": "Enable/disable one or more unit files based on preset configuration",
+      "name": "preset"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-unit-files\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.state===\"enabled\"?o=\"\\u2705\":a.state===\"disabled\"?o=\"\\u{1F6D1}\":o=\"\\u2753\";let u=a.state?.charAt(0).toUpperCase()+a.state?.slice(1);return{name:a.unit_file,description:u,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}",
+            "requires_js": true
+          }
+        ],
+        "isVariadic": true,
+        "name": "UNIT"
+      },
+      "description": "Enable/disable all unit files based on preset configuration",
+      "name": "preset-all"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-unit-files\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.state===\"enabled\"?o=\"\\u2705\":a.state===\"disabled\"?o=\"\\u{1F6D1}\":o=\"\\u2753\";let u=a.state?.charAt(0).toUpperCase()+a.state?.slice(1);return{name:a.unit_file,description:u,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}",
+            "requires_js": true
+          }
+        ],
+        "isVariadic": true,
+        "name": "UNIT"
+      },
+      "description": "Mask one or more unit files",
+      "name": "mask"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-unit-files\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.state===\"enabled\"?o=\"\\u2705\":a.state===\"disabled\"?o=\"\\u{1F6D1}\":o=\"\\u2753\";let u=a.state?.charAt(0).toUpperCase()+a.state?.slice(1);return{name:a.unit_file,description:u,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}",
+            "requires_js": true
+          }
+        ],
+        "isVariadic": true,
+        "name": "UNIT"
+      },
+      "description": "Unmask one or more unit files",
+      "name": "unmask"
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "PATH",
+        "template": "filepaths"
+      },
+      "description": "Link one or more units files into the search path",
+      "name": "link"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-unit-files\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.state===\"enabled\"?o=\"\\u2705\":a.state===\"disabled\"?o=\"\\u{1F6D1}\":o=\"\\u2753\";let u=a.state?.charAt(0).toUpperCase()+a.state?.slice(1);return{name:a.unit_file,description:u,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}",
+            "requires_js": true
+          }
+        ],
+        "isVariadic": true,
+        "name": "UNIT"
+      },
+      "description": "Revert one or more unit files to vendor version",
+      "name": "revert"
+    },
+    {
+      "args": [
+        {
+          "name": "TARGET"
+        },
+        {
+          "isVariadic": true,
+          "name": "UNIT"
+        }
+      ],
+      "description": "Add 'Wants' dependency for the target on specified one or more units",
+      "name": "add-wants"
+    },
+    {
+      "args": [
+        {
+          "name": "TARGET"
+        },
+        {
+          "isVariadic": true,
+          "name": "UNIT"
+        }
+      ],
+      "description": "Add 'Requires' dependency for the target on specified one or more units",
+      "name": "add-requires"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}",
+            "requires_js": true
+          }
+        ],
+        "isVariadic": true,
+        "name": "UNIT"
+      },
+      "description": "Edit one or more unit files",
+      "name": "edit"
+    },
+    {
+      "description": "Get the name of the default target",
+      "name": "get-default"
+    },
+    {
+      "args": {
+        "name": "TARGET"
+      },
+      "description": "Set the default target",
+      "name": "set-default"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "PATTERN"
+      },
+      "description": "List jobs",
+      "name": "list-jobs"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "JOB"
+      },
+      "description": "Cancel all, one, or more jobs",
+      "name": "cancel"
+    },
+    {
+      "description": "Dump environment",
+      "name": "show-environment"
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "VARIABLE=VALUE"
+      },
+      "description": "Set one or more environment variables",
+      "name": "set-environment"
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "VARIABLE"
+      },
+      "description": "Unset one or more environment variables",
+      "name": "unset-environment"
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "VARIABLE"
+      },
+      "description": "Import all or some environment variables",
+      "name": "import-environment"
+    },
+    {
+      "description": "Reload systemd manager configuration",
+      "name": "daemon-reload"
+    },
+    {
+      "description": "Reexecute systemd manager",
+      "name": "daemon-reexec"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "LEVEL"
+      },
+      "description": "Get/set logging threshold for manager",
+      "name": "log-level"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "TARGET"
+      },
+      "description": "Get/set logging target for manager",
+      "name": "log-target"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "BOOL",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Get/set service watchdog state",
+      "name": "service-watchdogs"
+    },
+    {
+      "description": "Check whether system is fully running",
+      "name": "is-system-running"
+    },
+    {
+      "description": "Enter system default mode",
+      "name": "default"
+    },
+    {
+      "description": "Enter system rescue mode",
+      "name": "rescue"
+    },
+    {
+      "description": "Enter system emergency mode",
+      "name": "emergency"
+    },
+    {
+      "description": "Shut down and halt the system",
+      "name": "halt"
+    },
+    {
+      "description": "Shut down and power-off the system",
+      "name": "poweroff"
+    },
+    {
+      "description": "Shut down and reboot the system",
+      "name": "reboot"
+    },
+    {
+      "description": "Shut down and reboot the system with kexec",
+      "name": "kexec"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "EXIT_CODE"
+      },
+      "description": "Request user instance or container exit",
+      "name": "exit"
+    },
+    {
+      "args": [
+        {
+          "name": "ROOT"
+        },
+        {
+          "name": "INIT"
+        }
+      ],
+      "description": "Change to a different root file system",
+      "name": "switch-root"
+    },
+    {
+      "description": "Suspend the system",
+      "name": "suspend"
+    },
+    {
+      "description": "Hibernate the system",
+      "name": "hibernate"
+    },
+    {
+      "description": "Hibernate and suspend the system",
+      "name": "hybrid-sleep"
+    },
+    {
+      "description": "Suspend the system, wake after a period of time, and hibernate",
+      "name": "suspend-then-hibernate"
+    }
+  ]
+}

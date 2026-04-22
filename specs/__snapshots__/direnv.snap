@@ -1,0 +1,355 @@
+{
+  "description": "Unclutter your .profile",
+  "name": "direnv",
+  "options": [
+    {
+      "args": {
+        "isOptional": true,
+        "name": "VERSION_AT_LEAST"
+      },
+      "description": "Prints the version or checks that direnv is older than VERSION_AT_LEAST",
+      "name": [
+        "--version"
+      ]
+    },
+    {
+      "args": {
+        "description": "Any string",
+        "isOptional": true,
+        "name": "SHOW_PRIVATE"
+      },
+      "description": "Help for direnv",
+      "name": [
+        "--help"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "generators": [
+          {
+            "template": "filepaths"
+          }
+        ],
+        "isOptional": true,
+        "name": "PATH_TO_RC"
+      },
+      "description": "Grants direnv to load the given .envrc",
+      "name": "allow"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "template": "filepaths"
+          }
+        ],
+        "isOptional": true,
+        "name": "PATH_TO_RC"
+      },
+      "description": "Revokes the authorization of a given .envrc",
+      "name": "deny"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "template": "filepaths"
+          }
+        ],
+        "isOptional": true,
+        "name": "PATH_TO_RC"
+      },
+      "description": "Opens PATH_TO_RC or the current .envrc into an $EDITOR and allow the file to be loaded afterwards",
+      "name": "edit"
+    },
+    {
+      "args": [
+        {
+          "name": "DIR",
+          "template": "folders"
+        },
+        {
+          "name": "COMMAND"
+        }
+      ],
+      "description": "Executes a command after loading the first .envrc found in DIR",
+      "name": "exec"
+    },
+    {
+      "args": [
+        {
+          "name": "url"
+        },
+        {
+          "description": "Check if the `integrity hash` is equal to the hash value of the file obtained from the `url`",
+          "isOptional": true,
+          "name": "integrity-hash"
+        }
+      ],
+      "description": "Fetches a given URL into direnv's CAS",
+      "name": "fetchurl"
+    },
+    {
+      "args": {
+        "description": "Any string",
+        "isOptional": true,
+        "name": "SHOW_PRIVATE"
+      },
+      "description": "Help for direnv",
+      "name": "help"
+    },
+    {
+      "args": {
+        "name": "SHELL",
+        "suggestions": [
+          {
+            "name": "bash"
+          },
+          {
+            "name": "zsh"
+          },
+          {
+            "name": "fish"
+          },
+          {
+            "name": "tcsh"
+          },
+          {
+            "name": "elvish"
+          }
+        ]
+      },
+      "description": "Used to setup the shell hook",
+      "name": "hook"
+    },
+    {
+      "description": "Removes old allowed files",
+      "name": "prune"
+    },
+    {
+      "description": "Triggers an env reload",
+      "name": "reload"
+    },
+    {
+      "description": "Prints some debug status information",
+      "name": "status"
+    },
+    {
+      "description": "Displays the stdlib available in the .envrc execution context",
+      "name": "stdlib"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "VERSION_AT_LEAST"
+      },
+      "description": "Prints the version or checks that direnv is older than VERSION_AT_LEAST",
+      "name": "version"
+    },
+    {
+      "args": {
+        "name": "FILE",
+        "template": "filepaths"
+      },
+      "description": "Accepts a filename containing `direnv dump` output and generates a series of bash export statements to apply the given env",
+      "name": "apply_dump"
+    },
+    {
+      "args": {
+        "name": "DUMP",
+        "template": "filepaths"
+      },
+      "description": "Show the data inside of a dump for debugging purposes",
+      "name": "show_dump"
+    },
+    {
+      "args": [
+        {
+          "isOptional": true,
+          "name": "SHELL",
+          "suggestions": [
+            {
+              "name": "bash"
+            },
+            {
+              "name": "zsh"
+            },
+            {
+              "name": "fish"
+            },
+            {
+              "name": "tcsh"
+            },
+            {
+              "name": "elvish"
+            }
+          ]
+        },
+        {
+          "generators": [
+            {
+              "js_source": "(p,g,_)=>ge(this,void 0,void 0,function*(){var f;let{isDangerous:O,currentWorkingDirectory:S,searchTerm:h}=_,T=(f=(0,v.getCurrentInsertedDirectory)(u??S,h,_))!==null&&f!==void 0?f:\"/\";try{let q=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:T}),ie=z(q.stdout.split(`\n`),[\".DS_Store\"]),W=[];for(let R of ie)if(R){let P=R.endsWith(\"/\")?\"folders\":\"filepaths\";(P===\"filepaths\"&&c!==\"only\"||P===\"folders\"&&c!==\"never\")&&W.push({type:P===\"filepaths\"?\"file\":\"folder\",name:R,insertValue:R,isDangerous:O,context:{templateType:P}})}return b(m(W))}catch{return[]}})",
+              "requires_js": true
+            }
+          ],
+          "name": "PATH_TO_DOTENV"
+        }
+      ],
+      "description": "Transforms a .env file to evaluatable `export KEY=PAIR` statements",
+      "name": "dotenv"
+    },
+    {
+      "args": [
+        {
+          "isOptional": true,
+          "name": "SHELL",
+          "suggestions": [
+            {
+              "name": "bash"
+            },
+            {
+              "name": "zsh"
+            },
+            {
+              "name": "fish"
+            },
+            {
+              "name": "tcsh"
+            },
+            {
+              "name": "elvish"
+            }
+          ]
+        },
+        {
+          "description": "Overwrites by dump data",
+          "isOptional": true,
+          "name": "FILE",
+          "template": "filepaths"
+        }
+      ],
+      "description": "Used to export the inner bash state at the end of execution",
+      "name": "dump"
+    },
+    {
+      "args": {
+        "name": "SHELL",
+        "suggestions": [
+          {
+            "name": "bash"
+          },
+          {
+            "name": "zsh"
+          },
+          {
+            "name": "fish"
+          },
+          {
+            "name": "tcsh"
+          },
+          {
+            "name": "elvish"
+          }
+        ]
+      },
+      "description": "Loads an .envrc and prints the diff in terms of exports",
+      "name": "export"
+    },
+    {
+      "args": [
+        {
+          "name": "SHELL",
+          "suggestions": [
+            {
+              "name": "bash"
+            },
+            {
+              "name": "zsh"
+            },
+            {
+              "name": "fish"
+            },
+            {
+              "name": "tcsh"
+            },
+            {
+              "name": "elvish"
+            }
+          ]
+        },
+        {
+          "isVariadic": true,
+          "name": "PATH",
+          "template": "filepaths"
+        }
+      ],
+      "description": "Adds a path to the list that direnv watches for changes",
+      "name": "watch"
+    },
+    {
+      "args": [
+        {
+          "name": "SHELL",
+          "suggestions": [
+            {
+              "name": "bash"
+            },
+            {
+              "name": "zsh"
+            },
+            {
+              "name": "fish"
+            },
+            {
+              "name": "tcsh"
+            },
+            {
+              "name": "elvish"
+            }
+          ]
+        },
+        {
+          "name": "DIR",
+          "template": "folders"
+        }
+      ],
+      "description": "Recursively adds a directory to the list that direnv watches for changes",
+      "name": "watch-dir"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "SHELL",
+        "suggestions": [
+          {
+            "name": "bash"
+          },
+          {
+            "name": "zsh"
+          },
+          {
+            "name": "fish"
+          },
+          {
+            "name": "tcsh"
+          },
+          {
+            "name": "elvish"
+          }
+        ]
+      },
+      "description": "Pipe pairs of `mtime path` to stdin to build a list of files to watch",
+      "name": "watch-list"
+    },
+    {
+      "args": {
+        "name": "PATH",
+        "template": "filepaths"
+      },
+      "description": "Reports whether direnv's view of a file is current (or stale)",
+      "name": "current"
+    }
+  ]
+}

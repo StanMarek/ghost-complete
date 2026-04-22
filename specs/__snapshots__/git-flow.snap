@@ -1,0 +1,144 @@
+{
+  "description": "A collection of Git extensions to provide high-level repository operations for Vincent Driessen's branching model",
+  "name": "git-flow",
+  "subcommands": [
+    {
+      "description": "Initialize a new git repo with support for the branching model",
+      "name": "init",
+      "options": [
+        {
+          "description": "Use default branch naming conventions",
+          "name": [
+            "-d"
+          ]
+        },
+        {
+          "description": "Force setting of gitflow branches, even if already configured",
+          "name": [
+            "-f"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "List all feature branches",
+      "name": "feature",
+      "subcommands": [
+        {
+          "args": {
+            "description": "The name of the new feature branch",
+            "name": "name"
+          },
+          "description": "Create a new feature branch",
+          "name": "start"
+        },
+        {
+          "args": {
+            "description": "The name of the feature branch to finish",
+            "generators": [
+              {
+                "js_source": "async(a,t)=>{let n=await s(a[1],t),{stdout:e}=await t({command:\"git\",args:[\"--no-optional-locks\",\"branch\",\"-a\",\"--no-color\",\"--sort=-committerdate\"]});return o(e,[n])}",
+                "requires_js": true
+              }
+            ],
+            "name": "name"
+          },
+          "description": "Merge a feature branch into develop",
+          "name": "finish"
+        },
+        {
+          "args": {
+            "description": "The name of the feature branch to publish",
+            "name": "name"
+          },
+          "description": "Push a feature branch to the remote repository",
+          "name": "publish"
+        },
+        {
+          "args": [
+            {
+              "description": "The name of the remote feature branch",
+              "name": "origin"
+            },
+            {
+              "description": "The name of the local feature branch",
+              "name": "name"
+            }
+          ],
+          "description": "Pull a feature branch from the remote repository",
+          "name": "pull"
+        }
+      ]
+    },
+    {
+      "description": "List all release branches",
+      "name": "release",
+      "subcommands": [
+        {
+          "args": {
+            "description": "The name of the new release branch",
+            "name": "name"
+          },
+          "description": "Create a new release branch",
+          "name": "start"
+        },
+        {
+          "args": {
+            "description": "The name of the release branch to finish",
+            "generators": [
+              {
+                "js_source": "async(a,t)=>{let n=await s(a[1],t),{stdout:e}=await t({command:\"git\",args:[\"--no-optional-locks\",\"branch\",\"-a\",\"--no-color\",\"--sort=-committerdate\"]});return o(e,[n])}",
+                "requires_js": true
+              }
+            ],
+            "name": "name"
+          },
+          "description": "Merge a release branch into develop",
+          "name": "finish"
+        }
+      ]
+    },
+    {
+      "description": "List all hotfix branches",
+      "name": "hotfix",
+      "subcommands": [
+        {
+          "args": {
+            "description": "The name of the new hotfix branch",
+            "name": "name"
+          },
+          "description": "Create a new hotfix branch",
+          "name": "start"
+        },
+        {
+          "args": {
+            "description": "The name of the hotfix branch to finish",
+            "generators": [
+              {
+                "js_source": "async(a,t)=>{let n=await s(a[1],t),{stdout:e}=await t({command:\"git\",args:[\"--no-optional-locks\",\"branch\",\"-a\",\"--no-color\",\"--sort=-committerdate\"]});return o(e,[n])}",
+                "requires_js": true
+              }
+            ],
+            "name": "name"
+          },
+          "description": "Merge a hotfix branch into develop",
+          "name": "finish"
+        }
+      ]
+    },
+    {
+      "description": "List all support branches",
+      "name": "support",
+      "subcommands": [
+        {
+          "args": {
+            "description": "The name of the new support branch",
+            "name": "name"
+          },
+          "description": "Create a new support branch",
+          "name": "start"
+        }
+      ]
+    }
+  ]
+}

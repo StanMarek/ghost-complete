@@ -1,0 +1,89 @@
+{
+  "name": "wasm-pack",
+  "options": [
+    {
+      "description": "Show help for wasm-pack or for the given subcommand(s)",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "description": "Suppress output from stdout",
+      "name": [
+        "--quiet",
+        "-q"
+      ]
+    },
+    {
+      "description": "Show version for wasm-pack",
+      "name": [
+        "--version",
+        "-V"
+      ]
+    },
+    {
+      "description": "Log verbosity is based off the number of v used",
+      "name": [
+        "--verbose",
+        "-v"
+      ]
+    },
+    {
+      "args": {
+        "name": "log-level",
+        "suggestions": [
+          {
+            "name": "info"
+          },
+          {
+            "name": "warn"
+          },
+          {
+            "name": "error"
+          }
+        ]
+      },
+      "description": "The maximum level of messages that should be logged by wasm-pack",
+      "name": [
+        "--log-level",
+        "-l"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Build an npm package",
+      "name": "build"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "subcommand",
+        "template": "help"
+      },
+      "description": "Prints this message or the help of the given subcommand(s)",
+      "name": "help"
+    },
+    {
+      "description": "Add an npm registry user account",
+      "name": "login"
+    },
+    {
+      "description": "Create a new project with a template",
+      "name": "new"
+    },
+    {
+      "description": "Create a tarball of the npm package (does not publish)",
+      "name": "pack"
+    },
+    {
+      "description": "Pack and publish a package to npm",
+      "name": "publish"
+    },
+    {
+      "description": "Run tests for WebAssembly module",
+      "name": "test"
+    }
+  ]
+}

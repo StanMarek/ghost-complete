@@ -1,0 +1,188 @@
+{
+  "description": "Command line interface to a user's defaults",
+  "name": "defaults",
+  "subcommands": [
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "function(n){return n.split(\",\").map(i=>({name:i.trim()}))}",
+              "requires_js": true,
+              "script": [
+                "defaults",
+                "domains"
+              ]
+            }
+          ],
+          "name": "domain",
+          "suggestions": [
+            {
+              "description": "Global domain",
+              "name": "-globalDomain"
+            },
+            {
+              "description": "Application name",
+              "name": "-app"
+            }
+          ]
+        },
+        {
+          "name": "key"
+        }
+      ],
+      "description": "Shows defaults",
+      "name": "read"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "function(n){return n.split(\",\").map(i=>({name:i.trim()}))}",
+              "requires_js": true,
+              "script": [
+                "defaults",
+                "domains"
+              ]
+            }
+          ],
+          "name": "domain",
+          "suggestions": [
+            {
+              "description": "Global domain",
+              "name": "-globalDomain"
+            },
+            {
+              "description": "Application name",
+              "name": "-app"
+            }
+          ]
+        },
+        {
+          "name": "key"
+        },
+        {
+          "name": "value"
+        }
+      ],
+      "description": "Writes key for domain",
+      "name": "write"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "function(n){return n.split(\",\").map(i=>({name:i.trim()}))}",
+              "requires_js": true,
+              "script": [
+                "defaults",
+                "domains"
+              ]
+            }
+          ],
+          "name": "domain",
+          "suggestions": [
+            {
+              "description": "Global domain",
+              "name": "-globalDomain"
+            },
+            {
+              "description": "Application name",
+              "name": "-app"
+            }
+          ]
+        },
+        {
+          "name": "key"
+        }
+      ],
+      "description": "Deletes domain or key in domain",
+      "name": "delete"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "function(n){return n.split(\",\").map(i=>({name:i.trim()}))}",
+              "requires_js": true,
+              "script": [
+                "defaults",
+                "domains"
+              ]
+            }
+          ],
+          "name": "domain",
+          "suggestions": [
+            {
+              "description": "Global domain",
+              "name": "-globalDomain"
+            },
+            {
+              "description": "Application name",
+              "name": "-app"
+            }
+          ]
+        },
+        {
+          "name": "old_key"
+        },
+        {
+          "name": "new_key"
+        }
+      ],
+      "description": "Renames old_key to new_key",
+      "name": "rename"
+    },
+    {
+      "description": "Lists all domains",
+      "name": "domains"
+    },
+    {
+      "args": {
+        "description": "The word to search for",
+        "name": "word"
+      },
+      "description": "Lists all entries containing word",
+      "name": "find"
+    },
+    {
+      "description": "Show help text",
+      "name": "help"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "function(n){return n.split(\",\").map(i=>({name:i.trim()}))}",
+              "requires_js": true,
+              "script": [
+                "defaults",
+                "domains"
+              ]
+            }
+          ],
+          "name": "domain",
+          "suggestions": [
+            {
+              "description": "Global domain",
+              "name": "-globalDomain"
+            },
+            {
+              "description": "Application name",
+              "name": "-app"
+            }
+          ]
+        },
+        {
+          "name": "key"
+        }
+      ],
+      "description": "Shows the type for the given domain, key",
+      "name": "read-type"
+    }
+  ]
+}

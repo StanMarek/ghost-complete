@@ -1,0 +1,898 @@
+{
+  "args": {
+    "description": "The test file or directory you want to run pytest on. If omitted, pytest will run all       of the files of the form test_*.py or *_test.py in the current directory       and its subdirectories",
+    "isOptional": true,
+    "name": "File or Directory",
+    "template": [
+      "filepaths",
+      "folders"
+    ]
+  },
+  "name": "pytest",
+  "options": [
+    {
+      "args": {
+        "name": "Mode",
+        "suggestions": [
+          {
+            "name": "plain"
+          },
+          {
+            "name": "rewrite"
+          }
+        ]
+      },
+      "description": "Control assertion debugging tools. 'plain' performs no assertion debugging. 'rewrite' (the default) rewrites assert statements in test modules on import to provide assert expression information",
+      "name": [
+        "--assert"
+      ]
+    },
+    {
+      "args": {
+        "name": "Directory",
+        "template": "folders"
+      },
+      "description": "Base temporary directory for this test run.(warning: this directory is removed if it exists)",
+      "name": [
+        "--basetemp"
+      ]
+    },
+    {
+      "args": {
+        "name": "File",
+        "template": "filepaths"
+      },
+      "description": "Load configuration from `file` instead of trying to locate one of the implicit configuration files",
+      "name": [
+        "-c"
+      ]
+    },
+    {
+      "description": "Remove all cache contents at start of test run",
+      "name": [
+        "--cache-clear"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "Glob"
+      },
+      "description": "Show cache contents, don't perform collection or tests. Optional argument: glob (default: '*')",
+      "name": [
+        "--cache-show"
+      ]
+    },
+    {
+      "args": {
+        "description": "One of fd|sys|no|tee-sys",
+        "name": "Method",
+        "suggestions": [
+          {
+            "name": "fd"
+          },
+          {
+            "name": "sys"
+          },
+          {
+            "name": "no"
+          },
+          {
+            "name": "tee-sys"
+          }
+        ]
+      },
+      "description": "Per-test capturing method",
+      "name": [
+        "--capture"
+      ]
+    },
+    {
+      "args": {
+        "name": "Highlight",
+        "suggestions": [
+          {
+            "name": "yes"
+          },
+          {
+            "name": "no"
+          }
+        ]
+      },
+      "description": "Whether code should be highlighted (only if --color is also enabled)",
+      "name": [
+        "--code-highlight"
+      ]
+    },
+    {
+      "description": "Only collect tests, don't execute them",
+      "name": [
+        "--co",
+        "--collect-only"
+      ]
+    },
+    {
+      "description": "Don't ignore tests in a local virtualenv directory",
+      "name": [
+        "--collect-in-virtualenv"
+      ]
+    },
+    {
+      "args": {
+        "name": "Color",
+        "suggestions": [
+          {
+            "name": "yes"
+          },
+          {
+            "name": "no"
+          },
+          {
+            "name": "auto"
+          }
+        ]
+      },
+      "description": "Color terminal output",
+      "name": [
+        "--color"
+      ]
+    },
+    {
+      "args": {
+        "name": "Dir",
+        "template": [
+          "folders"
+        ]
+      },
+      "description": "Only load conftest.py's relative to specified dir",
+      "name": [
+        "--confcutdir"
+      ]
+    },
+    {
+      "description": "Force test execution even if collection errors occur",
+      "name": [
+        "--continue-on-collection-errors"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "Debug File Name"
+      },
+      "description": "Store internal tracing debug information in this log file. This file is opened with 'w' and truncated as a result, care advised. Defaults to 'pytestdebug.log'",
+      "name": [
+        "--debug"
+      ]
+    },
+    {
+      "args": {
+        "description": "(N=0 for all)",
+        "name": "N"
+      },
+      "description": "Show N slowest setup/test durations (N=0 for all)",
+      "name": [
+        "--durations"
+      ]
+    },
+    {
+      "args": {
+        "name": "N"
+      },
+      "description": "Minimal duration in seconds for inclusion in slowest list",
+      "name": [
+        "--durations-min"
+      ]
+    },
+    {
+      "args": {
+        "name": "nodeid_prefix"
+      },
+      "description": "Deselect item (via node id prefix) during collection (multi-allowed)",
+      "name": [
+        "--deselect"
+      ]
+    },
+    {
+      "description": "Disable warnings summary",
+      "name": [
+        "--disable-warnings",
+        "--disable-pytest-warnings"
+      ]
+    },
+    {
+      "description": "For a given doctest, continue to run after the first failure",
+      "name": [
+        "--doctest-continue-on-failure"
+      ]
+    },
+    {
+      "description": "Ignore doctest ImportErrors",
+      "name": [
+        "--doctest-ignore-import-errors"
+      ]
+    },
+    {
+      "description": "Run doctests in all .py modules",
+      "name": [
+        "--doctest-modules"
+      ]
+    },
+    {
+      "args": {
+        "description": "None,cdiff,ndiff,udiff,only_first_failure",
+        "name": "Output format",
+        "suggestions": [
+          {
+            "name": "none"
+          },
+          {
+            "name": "cdiff"
+          },
+          {
+            "name": "ndiff"
+          },
+          {
+            "name": "udiff"
+          },
+          {
+            "name": "only_first_failure"
+          }
+        ]
+      },
+      "description": "Choose another output format for diffs on doctest failure",
+      "name": [
+        "--doctest-report"
+      ]
+    },
+    {
+      "args": {
+        "name": "Pattern"
+      },
+      "description": "Doctests file matching pattern, default: test*.txt",
+      "name": [
+        "--doctest-glob"
+      ]
+    },
+    {
+      "description": "Exit instantly on first error or failed test",
+      "name": [
+        "--exitfirst",
+        "-x"
+      ]
+    },
+    {
+      "description": "Run all tests, but run the last failures first",
+      "name": [
+        "--failed-first",
+        "--ff"
+      ]
+    },
+    {
+      "description": "Shows builtin and custom fixtures. Note that this command omits fixtures with leading _ unless the -v option is added",
+      "name": [
+        "--fixtures"
+      ]
+    },
+    {
+      "description": "Show fixtures per test",
+      "name": [
+        "--fixtures-per-test"
+      ]
+    },
+    {
+      "description": "Don't cut any tracebacks (default is to cut)",
+      "name": [
+        "--full-trace"
+      ]
+    },
+    {
+      "description": "This shows help on command line and config-line options",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "args": {
+        "name": "Path",
+        "template": "filepaths"
+      },
+      "description": "Ignore path during collection (multi-allowed)",
+      "name": [
+        "--ignore"
+      ]
+    },
+    {
+      "args": {
+        "name": "Path",
+        "template": "filepaths"
+      },
+      "description": "Ignore path pattern during collection (multi-allowed)",
+      "name": [
+        "--ignore-glob"
+      ]
+    },
+    {
+      "args": {
+        "name": "Mode",
+        "suggestions": [
+          {
+            "name": "prepend"
+          },
+          {
+            "name": "append"
+          },
+          {
+            "name": "importlib"
+          }
+        ]
+      },
+      "description": "Prepend/append to sys.path when importing test modules and conftest files, default is to prepend",
+      "name": [
+        "--import-mode"
+      ]
+    },
+    {
+      "args": {
+        "name": "Path",
+        "template": [
+          "filepaths",
+          "folders"
+        ]
+      },
+      "description": "Create junit-xml style report file at given path",
+      "name": [
+        "--junit-xml"
+      ]
+    },
+    {
+      "args": {
+        "description": "String to prepend",
+        "name": "Str"
+      },
+      "description": "Prepend prefix to classnames in junit-xml output",
+      "name": [
+        "--junit-prefix"
+      ]
+    },
+    {
+      "args": {
+        "description": "Ex: 'test_method or test_other'",
+        "name": "Expression"
+      },
+      "description": "Only run tests which match the given substring expression. An expression is a python evaluatable expression where all names are substring-matched against test names and their parent classes. Example: -k 'test_method or test_other' matches all test functions and classes whose name contains 'test_method' or 'test_other', while -k 'not test_method' matches those that don't contain 'test_method' in their names. -k 'not test_method and not test_other' will eliminate the matches. Additionally keywords are matched to classes and functions containing extra names in their 'extra_keyword_matches' set, as well as functions which have names assigned directly to them. The matching is case- insensitive",
+      "name": [
+        "-k"
+      ]
+    },
+    {
+      "description": "Keep duplicate tests",
+      "name": [
+        "--keep-duplicates"
+      ]
+    },
+    {
+      "description": "Show locals in tracebacks (disabled by default)",
+      "name": [
+        "--showlocals",
+        "-l"
+      ]
+    },
+    {
+      "args": {
+        "name": "Tests",
+        "suggestions": [
+          {
+            "name": "all"
+          },
+          {
+            "name": "none"
+          }
+        ]
+      },
+      "description": "Which tests to run with no previously (known) failures",
+      "name": [
+        "--last-failed-no-failures",
+        "--lfnf"
+      ]
+    },
+    {
+      "description": "Rerun only the tests that failed at the last run (or all if none failed)",
+      "name": [
+        "--last-failed",
+        "--lf"
+      ]
+    },
+    {
+      "args": {
+        "name": "Log Auto Indent Setting",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Auto-indent multiline messages passed to the logging module. Accepts true|on, false|off or an integer",
+      "name": [
+        "--log-auto-indent"
+      ]
+    },
+    {
+      "args": {
+        "name": "Log CLI Level",
+        "suggestions": [
+          {
+            "name": "CRITICAL"
+          },
+          {
+            "name": "ERROR"
+          },
+          {
+            "name": "WARNING"
+          },
+          {
+            "name": "INFO"
+          },
+          {
+            "name": "DEBUG"
+          }
+        ]
+      },
+      "description": "Cli logging level",
+      "name": [
+        "--log-cli-level"
+      ]
+    },
+    {
+      "args": {
+        "name": "Log CLI Format"
+      },
+      "description": "Log format as used by the logging module",
+      "name": [
+        "--log-cli-format"
+      ]
+    },
+    {
+      "args": {
+        "name": "Log CLI Date Format"
+      },
+      "description": "Log date format as used by the logging module",
+      "name": [
+        "--log-cli-date-format"
+      ]
+    },
+    {
+      "args": {
+        "name": "Log Date Format"
+      },
+      "description": "Log date format as used by the logging module",
+      "name": [
+        "--log-date-format"
+      ]
+    },
+    {
+      "args": {
+        "name": "Log Format"
+      },
+      "description": "Log format as used by the logging module",
+      "name": [
+        "--log-format"
+      ]
+    },
+    {
+      "args": {
+        "name": "Log File Path",
+        "template": "filepaths"
+      },
+      "description": "Path to a file where logging will be written to",
+      "name": [
+        "--log-file"
+      ]
+    },
+    {
+      "args": {
+        "name": "Log File Level",
+        "suggestions": [
+          {
+            "name": "CRITICAL"
+          },
+          {
+            "name": "ERROR"
+          },
+          {
+            "name": "WARNING"
+          },
+          {
+            "name": "INFO"
+          },
+          {
+            "name": "DEBUG"
+          }
+        ]
+      },
+      "description": "Log file logging level",
+      "name": [
+        "--log-file-level"
+      ]
+    },
+    {
+      "args": {
+        "name": "Log File Date Format"
+      },
+      "description": "Log date format as used by the logging module",
+      "name": [
+        "--log-file-date-format"
+      ]
+    },
+    {
+      "args": {
+        "name": "Log File Format"
+      },
+      "description": "Log format as used by the logging module",
+      "name": [
+        "--log-file-format"
+      ]
+    },
+    {
+      "args": {
+        "name": "Level",
+        "suggestions": [
+          {
+            "name": "CRITICAL"
+          },
+          {
+            "name": "ERROR"
+          },
+          {
+            "name": "WARNING"
+          },
+          {
+            "name": "INFO"
+          },
+          {
+            "name": "DEBUG"
+          }
+        ]
+      },
+      "description": "Level of messages to catch/display. Not set by default, so it depends on the root/parent log handler's effective level, where it is `WARNING` by default",
+      "name": [
+        "--log-level"
+      ]
+    },
+    {
+      "args": {
+        "name": "Mark Expression"
+      },
+      "description": "Only run tests matching given mark expression",
+      "name": [
+        "-m"
+      ]
+    },
+    {
+      "description": "Show markers (builtin, plugin and per-project ones)",
+      "name": [
+        "--markers"
+      ]
+    },
+    {
+      "args": {
+        "name": "num"
+      },
+      "description": "Exit after first num failures or errors",
+      "name": [
+        "--maxfail"
+      ]
+    },
+    {
+      "description": "Run tests from new files first, then the rest of the tests sorted by file mtime",
+      "name": [
+        "--new-first",
+        "--nf"
+      ]
+    },
+    {
+      "description": "Don't load any conftest.py files",
+      "name": [
+        "--noconftest"
+      ]
+    },
+    {
+      "description": "Disable header",
+      "name": [
+        "--no-header"
+      ]
+    },
+    {
+      "description": "Disable summary",
+      "name": [
+        "--no-summary"
+      ]
+    },
+    {
+      "args": {
+        "description": "Ex: `-o xfail_strict=True -o cache_dir=cache",
+        "name": "Override INI"
+      },
+      "description": "Override ini option with `option=value` style`",
+      "name": [
+        "--override-ini",
+        "-o"
+      ]
+    },
+    {
+      "args": {
+        "name": "Plugin name"
+      },
+      "description": "Early-load given plugin module name or entry point (multi-allowed)",
+      "name": [
+        "-p"
+      ]
+    },
+    {
+      "args": {
+        "name": "mode",
+        "suggestions": [
+          {
+            "name": "failed"
+          },
+          {
+            "name": "all"
+          }
+        ]
+      },
+      "description": "Send failed|all info to bpaste.net pastebin service",
+      "name": [
+        "--pastebin"
+      ]
+    },
+    {
+      "description": "Start the interactive Python debugger on errors or KeyboardInterrupt",
+      "name": [
+        "--pdb"
+      ]
+    },
+    {
+      "args": {
+        "description": "Ex: --pdbcls=IPython.terminal.debugger:TerminalPdb",
+        "name": "modulename:classname"
+      },
+      "description": "Specify a custom interactive Python debugger for use with --pdb",
+      "name": [
+        "--pdbcls"
+      ]
+    },
+    {
+      "description": "Try to interpret all arguments as python packages",
+      "name": [
+        "--pyargs"
+      ]
+    },
+    {
+      "description": "Decrease verbosity",
+      "name": [
+        "--quiet",
+        "-q"
+      ]
+    },
+    {
+      "args": {
+        "name": "chars",
+        "suggestions": [
+          {
+            "name": "a"
+          },
+          {
+            "name": "A"
+          },
+          {
+            "name": "E"
+          },
+          {
+            "name": "f"
+          },
+          {
+            "name": "N"
+          },
+          {
+            "name": "p"
+          },
+          {
+            "name": "P"
+          },
+          {
+            "name": "s"
+          },
+          {
+            "name": "w"
+          },
+          {
+            "name": "x"
+          },
+          {
+            "name": "X"
+          }
+        ]
+      },
+      "description": "Show extra test summary info as specified by chars: (f)ailed, (E)rror, (s)kipped, (x)failed, (X)passed, (p)assed, (P)assed with output, (a)ll except passed (p/P), or (A)ll. (w)arnings are enabled by default (see --disable-warnings), 'N' can be used to reset the list. (default: 'fE')",
+      "name": [
+        "-r"
+      ]
+    },
+    {
+      "args": {
+        "name": "Root Dir",
+        "template": "folders"
+      },
+      "description": "Define root directory for tests. Can be relative path: 'root_dir', './root_dir', 'root_dir/another_dir/'; absolute path: '/home/user/root_dir'; path with variables:'$HOME/root_dir'",
+      "name": [
+        "--rootdir"
+      ]
+    },
+    {
+      "description": "Report the results of xfail tests as if they were not marked",
+      "name": [
+        "--runxfail"
+      ]
+    },
+    {
+      "description": "Shortcut for --capture=no",
+      "name": [
+        "-s"
+      ]
+    },
+    {
+      "description": "Only setup fixtures, do not execute tests",
+      "name": [
+        "--setup-only"
+      ]
+    },
+    {
+      "description": "Show setup of fixtures while executing tests",
+      "name": [
+        "--setup-show"
+      ]
+    },
+    {
+      "description": "Show what fixtures and tests would be executed but don't execute anything",
+      "name": [
+        "--setup-plan"
+      ]
+    },
+    {
+      "args": {
+        "name": "Capture method",
+        "suggestions": [
+          {
+            "name": "no"
+          },
+          {
+            "name": "stdout"
+          },
+          {
+            "name": "stderr"
+          },
+          {
+            "name": "log"
+          },
+          {
+            "name": "all"
+          }
+        ]
+      },
+      "description": "Controls how captured stdout/stderr/log is shown on failed tests",
+      "name": [
+        "--show-capture"
+      ]
+    },
+    {
+      "description": "Exit on test failure and continue from last failing test next time",
+      "name": [
+        "--stepwise",
+        "--sw"
+      ]
+    },
+    {
+      "description": "Ignore the first failing test but stop on the next failing test",
+      "name": [
+        "--stepwise-skip",
+        "--sw-skip"
+      ]
+    },
+    {
+      "description": "Alias to --strict-markers",
+      "name": [
+        "--strict"
+      ]
+    },
+    {
+      "description": "Any warnings encountered while parsing the `pytest` section of the configuration file raise errors",
+      "name": [
+        "--strict-config"
+      ]
+    },
+    {
+      "description": "Markers not registered in the `markers` section of the configuration file raise errors",
+      "name": [
+        "--strict-markers"
+      ]
+    },
+    {
+      "args": {
+        "name": "Traceback print mode",
+        "suggestions": [
+          {
+            "name": "auto"
+          },
+          {
+            "name": "long"
+          },
+          {
+            "name": "short"
+          },
+          {
+            "name": "line"
+          },
+          {
+            "name": "native"
+          },
+          {
+            "name": "no"
+          }
+        ]
+      },
+      "description": "Traceback print mode",
+      "name": [
+        "--tb"
+      ]
+    },
+    {
+      "description": "Immediately break when running each test",
+      "name": [
+        "--trace"
+      ]
+    },
+    {
+      "description": "Trace considerations of conftest.py files",
+      "name": [
+        "--trace-config"
+      ]
+    },
+    {
+      "description": "Increase verbosity",
+      "name": [
+        "--verbose",
+        "-v"
+      ]
+    },
+    {
+      "args": {
+        "name": "Verbosity level"
+      },
+      "description": "Set verbosity. Default is 0",
+      "name": [
+        "--verbosity"
+      ]
+    },
+    {
+      "description": "Display pytest version and information about plugins. When given twice, also display information about plugins",
+      "name": [
+        "--version",
+        "-V"
+      ]
+    },
+    {
+      "args": {
+        "name": "Warnings to report"
+      },
+      "description": "Set which warnings to report, see -W option of python itself",
+      "name": [
+        "--pythonwarnings",
+        "-W"
+      ]
+    }
+  ]
+}

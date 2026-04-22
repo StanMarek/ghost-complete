@@ -1,0 +1,463 @@
+{
+  "description": "Rome CLI",
+  "name": "rome",
+  "options": [
+    {
+      "args": {
+        "name": "mode",
+        "suggestions": [
+          {
+            "name": "off"
+          },
+          {
+            "name": "force"
+          }
+        ]
+      },
+      "description": "Set the formatting mode for markup",
+      "name": [
+        "--colors"
+      ]
+    },
+    {
+      "description": "Connect to a running instance of the Rome daemon server",
+      "name": [
+        "--use-server"
+      ]
+    },
+    {
+      "description": "Show the Rome version information and quit",
+      "name": [
+        "--version"
+      ]
+    },
+    {
+      "args": {
+        "name": "BYTES"
+      },
+      "description": "The maximum allowed size for source code files in bytes",
+      "name": [
+        "--files-max-size"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "file, dir",
+        "template": [
+          "filepaths",
+          "folders"
+        ]
+      },
+      "description": "Run the linter on a set of files",
+      "name": "check",
+      "options": [
+        {
+          "description": "Apply safe fixes",
+          "name": [
+            "--apply"
+          ]
+        },
+        {
+          "description": "Apply safe and unsafe fixes",
+          "name": [
+            "--apply-unsafe"
+          ]
+        },
+        {
+          "args": {
+            "name": "NUMBER"
+          },
+          "description": "Cap the amount of diagnostics displayed",
+          "name": [
+            "--max-diagnostics"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "dir",
+            "template": [
+              "folders"
+            ]
+          },
+          "description": "Set the filesystem path to the config dir of the rome.json file",
+          "name": [
+            "--config-path"
+          ]
+        },
+        {
+          "description": "Print additional verbose advices on diagnostics",
+          "name": [
+            "--verbose"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "file, dir",
+        "template": [
+          "filepaths",
+          "folders"
+        ]
+      },
+      "description": "Run the linter and formatter check on a set of files",
+      "name": "ci",
+      "options": [
+        {
+          "description": "Allow to enable or disable the formatter check",
+          "name": [
+            "--formatter-enabled"
+          ]
+        },
+        {
+          "description": "Allow to enable or disable the linter check",
+          "name": [
+            "--linter-enabled"
+          ]
+        },
+        {
+          "description": "Allow to enable or disable the organize imports",
+          "name": [
+            "--organize-imports-enabled"
+          ]
+        },
+        {
+          "args": {
+            "name": "NUMBER"
+          },
+          "description": "Cap the amount of diagnostics displayed",
+          "name": [
+            "--max-diagnostics"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "dir",
+            "template": [
+              "folders"
+            ]
+          },
+          "description": "Set the filesystem path to the config dir of the rome.json file",
+          "name": [
+            "--config-path"
+          ]
+        },
+        {
+          "description": "Print additional verbose advices on diagnostics",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "args": {
+            "name": "style",
+            "suggestions": [
+              {
+                "name": "tabs"
+              },
+              {
+                "name": "space"
+              }
+            ]
+          },
+          "description": "Change the indention character",
+          "name": [
+            "--indent-style"
+          ]
+        },
+        {
+          "args": {
+            "name": "SIZE"
+          },
+          "description": "How many spaces should be used for indentation",
+          "name": [
+            "--indent-size"
+          ]
+        },
+        {
+          "args": {
+            "name": "width"
+          },
+          "description": "How many characters the formatter is allowed to print in a single line",
+          "name": [
+            "--line-width"
+          ]
+        },
+        {
+          "args": {
+            "name": "style",
+            "suggestions": [
+              {
+                "name": "single"
+              },
+              {
+                "name": "double"
+              }
+            ]
+          },
+          "description": "Changes the quotation character for strings",
+          "name": [
+            "--quote-style"
+          ]
+        },
+        {
+          "args": {
+            "name": "property",
+            "suggestions": [
+              {
+                "name": "as-needed"
+              },
+              {
+                "name": "preserve"
+              }
+            ]
+          },
+          "description": "Changes when properties in object should be quoted",
+          "name": [
+            "--quote-properties"
+          ]
+        },
+        {
+          "args": {
+            "name": "trailing",
+            "suggestions": [
+              {
+                "name": "all"
+              },
+              {
+                "name": "es5"
+              },
+              {
+                "name": "none"
+              }
+            ]
+          },
+          "description": "Changes trailing commas in multi-line comma-separated syntactic structures",
+          "name": [
+            "--trailing-comma"
+          ]
+        },
+        {
+          "args": {
+            "name": "rule",
+            "suggestions": [
+              {
+                "name": "always"
+              },
+              {
+                "name": "as-needed"
+              }
+            ]
+          },
+          "description": "Changes when to print semicolons for statements",
+          "name": [
+            "--semicolons"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "file, dir",
+        "template": [
+          "filepaths",
+          "folders"
+        ]
+      },
+      "description": "Run the formatter on a set of files",
+      "name": "format",
+      "options": [
+        {
+          "description": "Edit the files in place (beware!) instead of printing the diff to the console",
+          "name": [
+            "--write"
+          ]
+        },
+        {
+          "description": "Skip over files containing syntax errors instead of emitting an error diagnostic",
+          "name": [
+            "--skip-errors"
+          ]
+        },
+        {
+          "args": {
+            "name": "NUMBER"
+          },
+          "description": "Cap the amount of diagnostics displayed",
+          "name": [
+            "--max-diagnostics"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "dir",
+            "template": [
+              "folders"
+            ]
+          },
+          "description": "Set the filesystem path to the config dir of the rome.json file",
+          "name": [
+            "--config-path"
+          ]
+        },
+        {
+          "description": "Print additional verbose advices on diagnostics",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "args": {
+            "name": "style",
+            "suggestions": [
+              {
+                "name": "tabs"
+              },
+              {
+                "name": "space"
+              }
+            ]
+          },
+          "description": "Change the indention character",
+          "name": [
+            "--indent-style"
+          ]
+        },
+        {
+          "args": {
+            "name": "SIZE"
+          },
+          "description": "How many spaces should be used for indentation",
+          "name": [
+            "--indent-size"
+          ]
+        },
+        {
+          "args": {
+            "name": "width"
+          },
+          "description": "How many characters the formatter is allowed to print in a single line",
+          "name": [
+            "--line-width"
+          ]
+        },
+        {
+          "args": {
+            "name": "style",
+            "suggestions": [
+              {
+                "name": "single"
+              },
+              {
+                "name": "double"
+              }
+            ]
+          },
+          "description": "Changes the quotation character for strings",
+          "name": [
+            "--quote-style"
+          ]
+        },
+        {
+          "args": {
+            "name": "property",
+            "suggestions": [
+              {
+                "name": "as-needed"
+              },
+              {
+                "name": "preserve"
+              }
+            ]
+          },
+          "description": "Changes when properties in object should be quoted",
+          "name": [
+            "--quote-properties"
+          ]
+        },
+        {
+          "args": {
+            "name": "trailing",
+            "suggestions": [
+              {
+                "name": "all"
+              },
+              {
+                "name": "es5"
+              },
+              {
+                "name": "none"
+              }
+            ]
+          },
+          "description": "Changes trailing commas in multi-line comma-separated syntactic structures",
+          "name": [
+            "--trailing-comma"
+          ]
+        },
+        {
+          "args": {
+            "name": "rule",
+            "suggestions": [
+              {
+                "name": "always"
+              },
+              {
+                "name": "as-needed"
+              }
+            ]
+          },
+          "description": "Changes when to print semicolons for statements",
+          "name": [
+            "--semicolons"
+          ]
+        },
+        {
+          "args": {
+            "name": "string"
+          },
+          "description": "A file name with its extension to pass when reading from standard in",
+          "name": [
+            "--stdin-file-path"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Bootstraps a new rome project",
+      "name": "init"
+    },
+    {
+      "description": "Start the Rome daemon server process",
+      "name": "start"
+    },
+    {
+      "description": "Stop the Rome daemon server process",
+      "name": "stop"
+    },
+    {
+      "description": "Acts as a server for the Language Server Protocol over stdin/stdout",
+      "name": "lsp-proxy"
+    },
+    {
+      "description": "Prints information for debugging",
+      "name": "rage"
+    },
+    {
+      "description": "Shows the Rome version information and quit",
+      "name": "version"
+    },
+    {
+      "description": "Prints help message",
+      "name": "help"
+    }
+  ]
+}

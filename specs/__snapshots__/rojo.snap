@@ -1,0 +1,230 @@
+{
+  "description": "Enables professional-grade development tools for Roblox developers",
+  "name": "rojo",
+  "options": [
+    {
+      "description": "Print help information",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "args": {
+        "name": "COLOR",
+        "suggestions": [
+          {
+            "name": "auto"
+          },
+          {
+            "name": "always"
+          },
+          {
+            "name": "never"
+          }
+        ]
+      },
+      "description": "Set color behavior. Valid values are auto, always, and never [default: auto]",
+      "name": [
+        "--color"
+      ]
+    },
+    {
+      "description": "Sets verbosity level. Can be specified multiple times",
+      "name": [
+        "--verbose",
+        "-v"
+      ]
+    },
+    {
+      "description": "Print version information",
+      "name": [
+        "--version",
+        "-V"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "name": "SUBCOMMAND",
+        "template": "help"
+      },
+      "description": "Print this message or the help of the given subcommand(s)",
+      "name": "help"
+    },
+    {
+      "args": {
+        "description": "Path to the project to serve. Defaults to the current directory [default: ]",
+        "name": "PROJECT"
+      },
+      "description": "Generates a model or place file from the Rojo project",
+      "name": "build",
+      "options": [
+        {
+          "args": {
+            "description": "Where to output the result. Should end in .rbxm, .rbxl, .rbxmx, or .rbxlx",
+            "generators": [
+              {
+                "js_source": "(p,m,O)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:_,searchTerm:h}=O,j=(f=(0,v.getCurrentInsertedDirectory)(u??_,h,O))!==null&&f!==void 0?f:\"/\";try{let k=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:j}),X=U(k.stdout.split(`\n`),[\".DS_Store\"]),W=[];for(let P of X)if(P){let R=P.endsWith(\"/\")?\"folders\":\"filepaths\";(R===\"filepaths\"&&c!==\"only\"||R===\"folders\"&&c!==\"never\")&&W.push({type:R===\"filepaths\"?\"file\":\"folder\",name:P,insertValue:P,isDangerous:b,context:{templateType:R}})}return x(g(W))}catch{return[]}})",
+                "requires_js": true
+              }
+            ],
+            "name": "OUTPUT"
+          },
+          "description": "Where to output the result. Should end in .rbxm, .rbxl, .rbxmx, or .rbxlx",
+          "name": [
+            "--output",
+            "-o"
+          ]
+        },
+        {
+          "description": "Whether to automatically rebuild when any input files change",
+          "name": [
+            "--watch"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Open Rojo's documentation in your browser",
+      "name": "doc"
+    },
+    {
+      "args": {
+        "description": "Path to the project to format. Defaults to the current directory [default: ]",
+        "name": "PROJECT"
+      },
+      "description": "Reformat a Rojo project using the standard JSON formatting rules",
+      "name": "fmt-project"
+    },
+    {
+      "args": {
+        "description": "Path to the place to create the project. Defaults to the current directory [default: ]",
+        "name": "PATH"
+      },
+      "description": "Initializes a new Rojo project",
+      "name": "init",
+      "options": [
+        {
+          "args": {
+            "description": "The kind of project to create, 'place' or 'model'. Defaults to place",
+            "name": "KIND",
+            "suggestions": [
+              {
+                "name": "place"
+              },
+              {
+                "name": "model"
+              }
+            ]
+          },
+          "description": "The kind of project to create, 'place' or 'model'. Defaults to place",
+          "name": [
+            "--kind"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Install Rojo's plugin",
+      "name": "plugin"
+    },
+    {
+      "description": "Expose a Rojo project to the Rojo Studio plugin",
+      "name": "serve",
+      "options": [
+        {
+          "args": {
+            "description": "The IP address to listen on. Defaults to `127.0.0.1`",
+            "name": "ADDRESS"
+          },
+          "description": "The IP address to listen on. Defaults to `127.0.0.1`",
+          "name": [
+            "address"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Path to the project to use for the sourcemap. Defaults to the current directory [default: ]",
+        "name": "PROJECT"
+      },
+      "description": "Generates a sourcemap file from the Rojo project",
+      "name": "sourcemap",
+      "options": [
+        {
+          "description": "If non-script files should be included or not. Defaults to false",
+          "name": [
+            "--include-non-scripts"
+          ]
+        },
+        {
+          "args": {
+            "description": "Where to output the sourcemap. Omit this to use stdout instead of writing to a file. Should end in .json",
+            "generators": [
+              {
+                "js_source": "(p,m,O)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:_,searchTerm:h}=O,j=(f=(0,v.getCurrentInsertedDirectory)(u??_,h,O))!==null&&f!==void 0?f:\"/\";try{let k=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:j}),X=U(k.stdout.split(`\n`),[\".DS_Store\"]),W=[];for(let P of X)if(P){let R=P.endsWith(\"/\")?\"folders\":\"filepaths\";(R===\"filepaths\"&&c!==\"only\"||R===\"folders\"&&c!==\"never\")&&W.push({type:R===\"filepaths\"?\"file\":\"folder\",name:P,insertValue:P,isDangerous:b,context:{templateType:R}})}return x(g(W))}catch{return[]}})",
+                "requires_js": true
+              }
+            ],
+            "name": "OUTPUT"
+          },
+          "description": "Where to output the sourcemap. Omit this to use stdout instead of writing to a file. Should end in .json",
+          "name": [
+            "--output",
+            "-o"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {},
+      "description": "Builds the project and uploads it to Roblox",
+      "name": "upload",
+      "options": [
+        {
+          "args": {
+            "description": "API key obtained from create.roblox.com/credentials. Rojo will use the Open Cloud API when this is provided. Only supports uploading to a place",
+            "name": "API_KEY"
+          },
+          "description": "API key obtained from create.roblox.com/credentials. Rojo will use the Open Cloud API when this is provided. Only supports uploading to a place",
+          "name": [
+            "--api-key"
+          ]
+        },
+        {
+          "args": {
+            "description": "Asset ID to upload to",
+            "name": "ASSET_ID"
+          },
+          "description": "Asset ID to upload to",
+          "name": [
+            "--asset_id"
+          ]
+        },
+        {
+          "args": {
+            "description": "Authenication cookie to use. If not specified, Rojo will attempt to find one from the system automatically",
+            "name": "COOKIE"
+          },
+          "description": "Authenication cookie to use. If not specified, Rojo will attempt to find one from the system automatically",
+          "name": [
+            "--cookie"
+          ]
+        },
+        {
+          "args": {
+            "description": "The Universe ID of the given place. Required when using the Open Cloud API",
+            "name": "UNIVERSE_ID"
+          },
+          "description": "The Universe ID of the given place. Required when using the Open Cloud API",
+          "name": [
+            "--universe_id"
+          ]
+        }
+      ]
+    }
+  ]
+}

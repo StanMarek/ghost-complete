@@ -1,0 +1,53 @@
+{
+  "args": {
+    "generators": [
+      {
+        "js_source": "async function(n,s){if(!n.includes(\"-g\")&&!n.includes(\"--global\")){let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=JSON.parse(p),r=t.dependencies??{},h=t.devDependencies,g=t.optionalDependencies??{};return Object.assign(r,h,g),Object.keys(r).filter(d=>!n.some(D=>D===d)).map(d=>({name:d,icon:\"\\u{1F4E6}\",description:r[d]?\"dependency\":g[d]?\"optionalDependency\":\"devDependency\"}))}else{let{stdout:c}=await s({command:\"bash\",args:[\"-c\",\"ls -1 `npm root -g`\"]});return c.split(`\n`).map(p=>({name:p,icon:\"\\u{1F4E6}\",description:\"Global dependency\"}))}}",
+        "requires_js": true
+      }
+    ],
+    "isVariadic": true,
+    "name": "package"
+  },
+  "description": "Use the right package manage - remove",
+  "name": "nrm",
+  "options": [
+    {
+      "description": "Operates in 'global' mode, so that packages are removed from the prefix folder instead of the current working directory",
+      "name": [
+        "-g"
+      ]
+    },
+    {
+      "description": "Package will be removed from your `devDependencies`",
+      "name": [
+        "-D"
+      ]
+    },
+    {
+      "description": "Remove package from your `peerDependencies`",
+      "name": [
+        "-P"
+      ]
+    },
+    {
+      "description": "Remove package from your `optionalDependencies`",
+      "name": [
+        "-O"
+      ]
+    },
+    {
+      "description": "Don't generate a lockfile and fail if an update is needed",
+      "name": [
+        "--frozen"
+      ]
+    },
+    {
+      "description": "Output usage information",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    }
+  ]
+}

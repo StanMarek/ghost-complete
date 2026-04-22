@@ -1,0 +1,5873 @@
+{
+  "description": "The flyctl is a command-line interface for fly.io",
+  "name": "fly",
+  "options": [
+    {
+      "args": {
+        "name": "access-token"
+      },
+      "description": "Fly API Access Token",
+      "name": [
+        "--access-token",
+        "-t"
+      ]
+    },
+    {
+      "args": {
+        "name": "builtinsfile"
+      },
+      "description": "Load builtins from named file",
+      "name": [
+        "--builtinsfile"
+      ]
+    },
+    {
+      "description": "Json output",
+      "name": [
+        "--json",
+        "-j"
+      ]
+    },
+    {
+      "description": "Verbose output",
+      "name": [
+        "--verbose"
+      ]
+    },
+    {
+      "description": "Display help",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Commands that manage the Fly agent, a background process that manages flyctl wireguard connections",
+      "name": "agent",
+      "subcommands": [
+        {
+          "description": "Ping the Fly agent",
+          "name": "ping"
+        },
+        {
+          "description": "Restart the Fly agent",
+          "name": "restart"
+        },
+        {
+          "description": "Run the Fly agent in the foreground",
+          "name": "daemon-start"
+        },
+        {
+          "description": "Start the Fly agent",
+          "name": "start"
+        },
+        {
+          "description": "Stop the Fly agent",
+          "name": "stop"
+        }
+      ]
+    },
+    {
+      "description": "Manage apps",
+      "name": "apps",
+      "subcommands": [
+        {
+          "description": "Create a new application",
+          "name": "create",
+          "options": [
+            {
+              "description": "Generate a name for the app",
+              "name": [
+                "--generate-name"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "The app name to use",
+              "name": [
+                "--name"
+              ]
+            },
+            {
+              "args": {
+                "name": "network"
+              },
+              "description": "Specify custom network id",
+              "name": [
+                "--network"
+              ]
+            },
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>{let t=JSON.parse(o);return Object.entries(t).sort(([n,i],[r,p])=>n==\"personal\"?-1:r==\"personal\"?1:i.localeCompare(p)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}",
+                    "requires_js": true,
+                    "script": [
+                      "fly",
+                      "orgs",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "org"
+              },
+              "description": "The organization to operate on",
+              "name": [
+                "--org",
+                "-o"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Permanently destroys an app",
+          "name": "destroy",
+          "options": [
+            {
+              "description": "Accept all confirmations",
+              "name": [
+                "--yes",
+                "-y"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List applications",
+          "name": "list"
+        },
+        {
+          "description": "Move an app to another organization",
+          "name": "move",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>{let t=JSON.parse(o);return Object.entries(t).sort(([n,i],[r,p])=>n==\"personal\"?-1:r==\"personal\"?1:i.localeCompare(p)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}",
+                    "requires_js": true,
+                    "script": [
+                      "fly",
+                      "orgs",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "org"
+              },
+              "description": "The organization to operate on",
+              "name": [
+                "--org",
+                "-o"
+              ]
+            },
+            {
+              "description": "Accept all confirmations",
+              "name": [
+                "--yes",
+                "-y"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Open browser to current deployed application",
+          "name": "open",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "Application name",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to application configuration file",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List app releases",
+          "name": "releases",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "Application name",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to application configuration file",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            },
+            {
+              "description": "Display the Docker image reference of the release",
+              "name": [
+                "--image"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "requires_js": true,
+                "script": [
+                  "flyctl",
+                  "apps",
+                  "list",
+                  "--json"
+                ]
+              }
+            ],
+            "name": "app"
+          },
+          "description": "Restart an application",
+          "name": "restart",
+          "options": [
+            {
+              "description": "Will issue a restart against each Machine even if there are errors. ( Machines only )",
+              "name": [
+                "-f",
+                "--force"
+              ]
+            },
+            {
+              "description": "Restarts app without waiting for health checks. ( Machines only )",
+              "name": [
+                "--skip-health-checks"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage authentication",
+      "name": "auth",
+      "subcommands": [
+        {
+          "description": "Authenticate docker",
+          "name": "docker"
+        },
+        {
+          "description": "Log in a user",
+          "name": "login",
+          "options": [
+            {
+              "args": {
+                "name": "email"
+              },
+              "description": "Login email",
+              "name": [
+                "--email"
+              ]
+            },
+            {
+              "description": "Log in with an email and password interactively",
+              "name": [
+                "--interactive",
+                "-i"
+              ]
+            },
+            {
+              "args": {
+                "name": "otp"
+              },
+              "description": "One time password",
+              "name": [
+                "--otp"
+              ]
+            },
+            {
+              "args": {
+                "name": "password"
+              },
+              "description": "Login password",
+              "name": [
+                "--password"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Logs out the currently logged in user",
+          "name": "logout"
+        },
+        {
+          "description": "Create a new fly account",
+          "name": "signup"
+        },
+        {
+          "description": "Show the current auth token",
+          "name": "token"
+        },
+        {
+          "description": "Displays the users email address/service identity currently authenticated and in use",
+          "name": "whoami"
+        }
+      ]
+    },
+    {
+      "description": "Autoscaling app resources",
+      "name": "autoscale",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "requires_js": true,
+                "script": [
+                  "flyctl",
+                  "apps",
+                  "list",
+                  "--json"
+                ]
+              }
+            ],
+            "name": "app"
+          },
+          "description": "App name to operate on",
+          "name": [
+            "--app",
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "name": "config",
+            "template": "filepaths"
+          },
+          "description": "Path to an app config file or directory containing one",
+          "name": [
+            "--config",
+            "-c"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Configure a traffic balanced app with params (min=int max=int)",
+          "name": "balanced",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Disable autoscaling",
+          "name": "disable",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Set current models autoscaling parameters",
+          "name": "set",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Show current autoscaling configuration",
+          "name": "show",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Configure a standard balanced app with params (min=int max=int)",
+          "name": "standard",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage application builds",
+      "name": "builds",
+      "subcommands": [
+        {
+          "description": "List builds",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "Application name",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to application configuration file",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage certificates",
+      "name": "certs",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "requires_js": true,
+                "script": [
+                  "flyctl",
+                  "apps",
+                  "list",
+                  "--json"
+                ]
+              }
+            ],
+            "name": "app"
+          },
+          "description": "App name to operate on",
+          "name": [
+            "--app",
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "name": "config",
+            "template": "filepaths"
+          },
+          "description": "Path to an app config file or directory containing one",
+          "name": [
+            "--config",
+            "-c"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Add a certificate for an app",
+          "name": "create",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Checks DNS configuration",
+          "name": "check",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List certificates for an app",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Removes a certificate from an app",
+          "name": "delete",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            },
+            {
+              "description": "Accept all confirmations",
+              "name": [
+                "--yes",
+                "-y"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Shows certificate information",
+          "name": "show",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage health checks",
+      "name": "checks",
+      "subcommands": [
+        {
+          "description": "Manage health check handlers",
+          "name": "handlers",
+          "subcommands": [
+            {
+              "description": "Create a health check handler",
+              "name": "create",
+              "options": [
+                {
+                  "args": {
+                    "name": "organization"
+                  },
+                  "description": "The organization to add the handler to",
+                  "name": [
+                    "--organization",
+                    "-o"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "type"
+                  },
+                  "description": "The type of handler to create, can be slack or pagerduty",
+                  "name": [
+                    "--type"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Delete a health check handler",
+              "name": "delete"
+            },
+            {
+              "description": "List health check handlers",
+              "name": "list"
+            }
+          ]
+        },
+        {
+          "description": "List app health checks",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "check-name"
+              },
+              "description": "Filter checks by name",
+              "name": [
+                "--check-name"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generate the autocompletion script for the specified shell",
+      "name": "completion",
+      "subcommands": [
+        {
+          "description": "Generate the autocompletion script for bash",
+          "name": "bash",
+          "options": [
+            {
+              "description": "Disable completion descriptions",
+              "name": [
+                "--no-descriptions"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Generate the autocompletion script for fish",
+          "name": "fish",
+          "options": [
+            {
+              "description": "Disable completion descriptions",
+              "name": [
+                "--no-descriptions"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Generate the autocompletion script for powershell",
+          "name": "powershell",
+          "options": [
+            {
+              "description": "Disable completion descriptions",
+              "name": [
+                "--no-descriptions"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Generate the autocompletion script for zsh",
+          "name": "zsh",
+          "options": [
+            {
+              "description": "Disable completion descriptions",
+              "name": [
+                "--no-descriptions"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage an app's configuration",
+      "name": "config",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "requires_js": true,
+                "script": [
+                  "flyctl",
+                  "apps",
+                  "list",
+                  "--json"
+                ]
+              }
+            ],
+            "name": "app"
+          },
+          "description": "App name to operate on",
+          "name": [
+            "--app",
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "name": "config",
+            "template": "filepaths"
+          },
+          "description": "Path to an app config file or directory containing one",
+          "name": [
+            "--config",
+            "-c"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Display an app's configuration",
+          "name": "display",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Display an app's runtime environment variables",
+          "name": "env",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Save an app's config file",
+          "name": "save",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Validate an app's config file",
+          "name": "validate",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Create a new application",
+      "name": "create",
+      "options": [
+        {
+          "description": "Generate a name for the app",
+          "name": [
+            "--generate-name"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "The app name to use",
+          "name": [
+            "--name"
+          ]
+        },
+        {
+          "args": {
+            "name": "network"
+          },
+          "description": "Specify custom network id",
+          "name": [
+            "--network"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "o=>{let t=JSON.parse(o);return Object.entries(t).sort(([n,i],[r,p])=>n==\"personal\"?-1:r==\"personal\"?1:i.localeCompare(p)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}",
+                "requires_js": true,
+                "script": [
+                  "fly",
+                  "orgs",
+                  "list",
+                  "--json"
+                ]
+              }
+            ],
+            "name": "org"
+          },
+          "description": "The organization to operate on",
+          "name": [
+            "--org",
+            "-o"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Run a performance test against a URL",
+      "name": "curl"
+    },
+    {
+      "description": "Open web browser on Fly Web UI for this app",
+      "name": "dash",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "requires_js": true,
+                "script": [
+                  "flyctl",
+                  "apps",
+                  "list",
+                  "--json"
+                ]
+              }
+            ],
+            "name": "app"
+          },
+          "description": "App name to operate on",
+          "name": [
+            "--app",
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "name": "config",
+            "template": "filepaths"
+          },
+          "description": "Path to an app config file or directory containing one",
+          "name": [
+            "--config",
+            "-c"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Open web browser on Fly Web UI for this app's metrics",
+          "name": "metrics",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Deploy Fly applications",
+      "name": "deploy",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "requires_js": true,
+                "script": [
+                  "flyctl",
+                  "apps",
+                  "list",
+                  "--json"
+                ]
+              }
+            ],
+            "name": "app"
+          },
+          "description": "Application name",
+          "name": [
+            "--app",
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "name": "build-arg"
+          },
+          "description": "Set of build time variables in the form of NAME=VALUE pairs. Can be specified multiple times",
+          "name": [
+            "--build-arg"
+          ]
+        },
+        {
+          "description": "Build but do not deploy",
+          "name": [
+            "--build-only"
+          ]
+        },
+        {
+          "args": {
+            "name": "build-target"
+          },
+          "description": "Set the target build stage to build if the Dockerfile has more than one stage",
+          "name": [
+            "--build-target"
+          ]
+        },
+        {
+          "args": {
+            "name": "config",
+            "template": "filepaths"
+          },
+          "description": "Path to application configuration file",
+          "name": [
+            "--config",
+            "-c"
+          ]
+        },
+        {
+          "description": "Return immediately instead of monitoring deployment progress",
+          "name": [
+            "--detach"
+          ]
+        },
+        {
+          "args": {
+            "name": "dockerfile"
+          },
+          "description": "Path to a Dockerfile. Defaults to the Dockerfile in the working directory",
+          "name": [
+            "--dockerfile"
+          ]
+        },
+        {
+          "args": {
+            "name": "env"
+          },
+          "description": "Set of environment variables in the form of NAME=VALUE pairs. Can be specified multiple times",
+          "name": [
+            "--env",
+            "-e"
+          ]
+        },
+        {
+          "args": {
+            "name": "image"
+          },
+          "description": "The image tag or ID to deploy",
+          "name": [
+            "--image",
+            "-i"
+          ]
+        },
+        {
+          "args": {
+            "name": "image-label"
+          },
+          "description": "Image label to use when tagging and pushing to the fly registry. Defaults to \"deployment-{timestamp}\"",
+          "name": [
+            "--image-label"
+          ]
+        },
+        {
+          "description": "Only perform builds locally using the local docker daemon",
+          "name": [
+            "--local-only"
+          ]
+        },
+        {
+          "description": "Build with Nix",
+          "name": [
+            "--nix"
+          ]
+        },
+        {
+          "description": "Do not use the build cache when building the image",
+          "name": [
+            "--no-cache"
+          ]
+        },
+        {
+          "description": "Deploy now without confirmation",
+          "name": [
+            "--now"
+          ]
+        },
+        {
+          "description": "Push image to registry after build is complete",
+          "name": [
+            "--push"
+          ]
+        },
+        {
+          "args": {
+            "name": "region"
+          },
+          "description": "The region to operate on",
+          "name": [
+            "--region",
+            "-r"
+          ]
+        },
+        {
+          "description": "Perform builds on a remote builder instance instead of using the local docker daemon",
+          "name": [
+            "--remote-only"
+          ]
+        },
+        {
+          "args": {
+            "name": "strategy"
+          },
+          "description": "The strategy for replacing running instances. Options are canary, rolling, bluegreen, or immediate. Default is canary, or rolling when max-per-region is set",
+          "name": [
+            "--strategy"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Permanently destroys an app",
+      "name": "destroy",
+      "options": [
+        {
+          "description": "Accept all confirmations",
+          "name": [
+            "--yes",
+            "-y"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Make DNS requests against Fly.io's internal DNS server",
+      "name": "dig",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "requires_js": true,
+                "script": [
+                  "flyctl",
+                  "apps",
+                  "list",
+                  "--json"
+                ]
+              }
+            ],
+            "name": "app"
+          },
+          "description": "Application name",
+          "name": [
+            "--app",
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "name": "config",
+            "template": "filepaths"
+          },
+          "description": "Path to application configuration file",
+          "name": [
+            "--config",
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "o=>{let t=JSON.parse(o);return Object.entries(t).sort(([n,i],[r,p])=>n==\"personal\"?-1:r==\"personal\"?1:i.localeCompare(p)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}",
+                "requires_js": true,
+                "script": [
+                  "fly",
+                  "orgs",
+                  "list",
+                  "--json"
+                ]
+              }
+            ],
+            "name": "org"
+          },
+          "description": "The organization to operate on",
+          "name": [
+            "--org",
+            "-o"
+          ]
+        },
+        {
+          "description": "Just print the answers, not DNS record details",
+          "name": [
+            "--short",
+            "-s"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage DNS records",
+      "name": "dns-records",
+      "subcommands": [
+        {
+          "description": "Export DNS records",
+          "name": "export",
+          "options": [
+            {
+              "name": [
+                "--overwrite"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Import DNS records",
+          "name": "import"
+        },
+        {
+          "description": "List DNS records",
+          "name": "list"
+        }
+      ]
+    },
+    {
+      "description": "View Fly documentation",
+      "name": "docs"
+    },
+    {
+      "description": "The DOCTOR command allows you to debug your Fly environment",
+      "name": "doctor",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "requires_js": true,
+                "script": [
+                  "flyctl",
+                  "apps",
+                  "list",
+                  "--json"
+                ]
+              }
+            ],
+            "name": "app"
+          },
+          "description": "Application name",
+          "name": [
+            "--app",
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "name": "config",
+            "template": "filepaths"
+          },
+          "description": "Path to application configuration file",
+          "name": [
+            "--config",
+            "-c"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Send diagnostic information about your applications back to Fly.io",
+          "name": "diag",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "Application name",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to application configuration file",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            },
+            {
+              "description": "Send diagnostics even if we can't find your local Fly.io app",
+              "name": [
+                "--force"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage domains",
+      "name": "domains",
+      "subcommands": [
+        {
+          "description": "Add a domain",
+          "name": "add"
+        },
+        {
+          "description": "List domains",
+          "name": "list"
+        },
+        {
+          "description": "Register a domain",
+          "name": "register"
+        },
+        {
+          "description": "Show domain",
+          "name": "show"
+        }
+      ]
+    },
+    {
+      "description": "List an app's change history",
+      "name": "history",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "requires_js": true,
+                "script": [
+                  "flyctl",
+                  "apps",
+                  "list",
+                  "--json"
+                ]
+              }
+            ],
+            "name": "app"
+          },
+          "description": "Application name",
+          "name": [
+            "--app",
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "name": "config",
+            "template": "filepaths"
+          },
+          "description": "Path to application configuration file",
+          "name": [
+            "--config",
+            "-c"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage app image",
+      "name": "img",
+      "subcommands": [
+        {
+          "description": "Show image details",
+          "name": "show",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "Application name",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to application configuration file",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Updates the app's image to the latest available version. (Fly Postgres only)",
+          "name": "update",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "Application name",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to application configuration file",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            },
+            {
+              "description": "Return immediately instead of monitoring update progress",
+              "name": [
+                "--detach"
+              ]
+            },
+            {
+              "description": "Accept all confirmations",
+              "name": [
+                "--yes",
+                "-y"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Show detailed app information",
+      "name": "info",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "requires_js": true,
+                "script": [
+                  "flyctl",
+                  "apps",
+                  "list",
+                  "--json"
+                ]
+              }
+            ],
+            "name": "app"
+          },
+          "description": "App name to operate on",
+          "name": [
+            "--app",
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "name": "config",
+            "template": "filepaths"
+          },
+          "description": "Path to an app config file or directory containing one",
+          "name": [
+            "--config",
+            "-c"
+          ]
+        },
+        {
+          "description": "Returns just the hostname",
+          "name": [
+            "--host"
+          ]
+        },
+        {
+          "description": "Returns just the appname",
+          "name": [
+            "--name",
+            "-n"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage IP addresses for apps",
+      "name": "ips",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "requires_js": true,
+                "script": [
+                  "flyctl",
+                  "apps",
+                  "list",
+                  "--json"
+                ]
+              }
+            ],
+            "name": "app"
+          },
+          "description": "App name to operate on",
+          "name": [
+            "--app",
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "name": "config",
+            "template": "filepaths"
+          },
+          "description": "Path to an app config file or directory containing one",
+          "name": [
+            "--config",
+            "-c"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Allocate an IPv4 address",
+          "name": "allocate-v4",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            },
+            {
+              "args": {
+                "name": "region"
+              },
+              "description": "The region where the address should be allocated",
+              "name": [
+                "--region"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Allocate an IPv6 address",
+          "name": "allocate-v6",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            },
+            {
+              "args": {
+                "name": "region"
+              },
+              "description": "The region where the address should be allocated",
+              "name": [
+                "--region"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List allocated IP addresses",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List instances private IP addresses",
+          "name": "private",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Release an IP address",
+          "name": "release",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Launch a new app",
+      "name": "launch",
+      "options": [
+        {
+          "description": "Use the configuration file if present without prompting",
+          "name": [
+            "--copy-config"
+          ]
+        },
+        {
+          "args": {
+            "name": "dockerfile"
+          },
+          "description": "Path to a Dockerfile. Defaults to the Dockerfile in the working directory",
+          "name": [
+            "--dockerfile"
+          ]
+        },
+        {
+          "description": "Always generate a name for the app",
+          "name": [
+            "--generate-name"
+          ]
+        },
+        {
+          "args": {
+            "name": "image"
+          },
+          "description": "The image to launch",
+          "name": [
+            "--image"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "The name of the new app",
+          "name": [
+            "--name"
+          ]
+        },
+        {
+          "description": "Do not prompt for deployment",
+          "name": [
+            "--no-deploy"
+          ]
+        },
+        {
+          "description": "Deploy now without confirmation",
+          "name": [
+            "--now"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "o=>{let t=JSON.parse(o);return Object.entries(t).sort(([n,i],[r,p])=>n==\"personal\"?-1:r==\"personal\"?1:i.localeCompare(p)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}",
+                "requires_js": true,
+                "script": [
+                  "fly",
+                  "orgs",
+                  "list",
+                  "--json"
+                ]
+              }
+            ],
+            "name": "org"
+          },
+          "description": "The organization that will own the app",
+          "name": [
+            "--org"
+          ]
+        },
+        {
+          "args": {
+            "name": "path"
+          },
+          "description": "Path to app code and where a fly.toml file will be saved",
+          "name": [
+            "--path"
+          ]
+        },
+        {
+          "args": {
+            "name": "region"
+          },
+          "description": "The region to launch the new app in",
+          "name": [
+            "--region"
+          ]
+        },
+        {
+          "description": "Perform builds remotely without using the local docker daemon",
+          "name": [
+            "--remote-only"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "View app logs",
+      "name": "logs",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "requires_js": true,
+                "script": [
+                  "flyctl",
+                  "apps",
+                  "list",
+                  "--json"
+                ]
+              }
+            ],
+            "name": "app"
+          },
+          "description": "Application name",
+          "name": [
+            "--app",
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "name": "config",
+            "template": "filepaths"
+          },
+          "description": "Path to application configuration file",
+          "name": [
+            "--config",
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "name": "instance"
+          },
+          "description": "Filter by instance ID",
+          "name": [
+            "--instance",
+            "-i"
+          ]
+        },
+        {
+          "args": {
+            "name": "region"
+          },
+          "description": "The region to operate on",
+          "name": [
+            "--region",
+            "-r"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Commands that manage machines",
+      "name": "machines",
+      "subcommands": [
+        {
+          "description": "Clones a Fly Machine",
+          "name": "clone",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "Application name",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to application configuration file",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            },
+            {
+              "description": "Detach from the machine's logs",
+              "name": [
+                "--detach",
+                "-d"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "The name of the new machine",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>{let t=JSON.parse(o);return Object.entries(t).sort(([n,i],[r,p])=>n==\"personal\"?-1:r==\"personal\"?1:i.localeCompare(p)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}",
+                    "requires_js": true,
+                    "script": [
+                      "fly",
+                      "orgs",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "org"
+              },
+              "description": "The organization to operate on",
+              "name": [
+                "--org",
+                "-o"
+              ]
+            },
+            {
+              "args": {
+                "name": "region"
+              },
+              "description": "The region to operate on",
+              "name": [
+                "--region",
+                "-r"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Kill (SIGKILL) a Fly machine",
+          "name": "kill",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "Application name",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to application configuration file",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List Fly machines",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "Application name",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to application configuration file",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            },
+            {
+              "description": "Only list machine ids",
+              "name": [
+                "--quiet",
+                "-q"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Remove a Fly machine",
+          "name": "rm",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "Application name",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to application configuration file",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            },
+            {
+              "description": "Force kill machine if it's running",
+              "name": [
+                "--force",
+                "-f"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Run a machine",
+          "name": "run",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "Application name",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "build-arg"
+              },
+              "description": "Set of build time variables in the form of NAME=VALUE pairs. Can be specified multiple times",
+              "name": [
+                "--build-arg"
+              ]
+            },
+            {
+              "description": "Only perform builds locally using the local docker daemon",
+              "name": [
+                "--build-local-only"
+              ]
+            },
+            {
+              "name": [
+                "--build-only"
+              ]
+            },
+            {
+              "description": "Perform builds remotely without using the local docker daemon",
+              "name": [
+                "--build-remote-only"
+              ]
+            },
+            {
+              "args": {
+                "name": "build-target"
+              },
+              "description": "Set the target build stage to build if the Dockerfile has more than one stage",
+              "name": [
+                "--build-target"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to application configuration file",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            },
+            {
+              "args": {
+                "name": "cpu-kind"
+              },
+              "description": "Kind of CPU to use (shared, dedicated)",
+              "name": [
+                "--cpu-kind"
+              ]
+            },
+            {
+              "args": {
+                "name": "cpus"
+              },
+              "description": "Number of CPUs",
+              "name": [
+                "--cpus"
+              ]
+            },
+            {
+              "description": "Detach from the machine's logs",
+              "name": [
+                "--detach",
+                "-d"
+              ]
+            },
+            {
+              "args": {
+                "name": "dockerfile"
+              },
+              "description": "Path to a Dockerfile. Defaults to the Dockerfile in the working directory",
+              "name": [
+                "--dockerfile"
+              ]
+            },
+            {
+              "args": {
+                "name": "entrypoint"
+              },
+              "description": "ENTRYPOINT replacement",
+              "name": [
+                "--entrypoint"
+              ]
+            },
+            {
+              "args": {
+                "name": "env"
+              },
+              "description": "Set of environment variables in the form of NAME=VALUE pairs. Can be specified multiple times",
+              "name": [
+                "--env",
+                "-e"
+              ]
+            },
+            {
+              "args": {
+                "name": "id"
+              },
+              "description": "Machine ID, if previously known",
+              "name": [
+                "--id"
+              ]
+            },
+            {
+              "args": {
+                "name": "image-label"
+              },
+              "description": "Image label to use when tagging and pushing to the fly registry. Defaults to \"deployment-{timestamp}\"",
+              "name": [
+                "--image-label"
+              ]
+            },
+            {
+              "args": {
+                "name": "memory"
+              },
+              "description": "Memory (in megabytes) to attribute to the machine",
+              "name": [
+                "--memory"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Machine name, will be generated if missing",
+              "name": [
+                "--name",
+                "-n"
+              ]
+            },
+            {
+              "description": "Do not use the cache when building the image",
+              "name": [
+                "--no-build-cache"
+              ]
+            },
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>{let t=JSON.parse(o);return Object.entries(t).sort(([n,i],[r,p])=>n==\"personal\"?-1:r==\"personal\"?1:i.localeCompare(p)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}",
+                    "requires_js": true,
+                    "script": [
+                      "fly",
+                      "orgs",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "org"
+              },
+              "description": "The organization that will own the app",
+              "name": [
+                "--org"
+              ]
+            },
+            {
+              "args": {
+                "name": "port"
+              },
+              "description": "Exposed port mappings (format: edgePort[:machinePort]/[protocol[:handler]])",
+              "name": [
+                "--port",
+                "-p"
+              ]
+            },
+            {
+              "args": {
+                "name": "region"
+              },
+              "description": "The region to operate on",
+              "name": [
+                "--region",
+                "-r"
+              ]
+            },
+            {
+              "args": {
+                "name": "size"
+              },
+              "description": "Preset guest cpu and memory for a machine",
+              "name": [
+                "--size",
+                "-s"
+              ]
+            },
+            {
+              "args": {
+                "name": "volume"
+              },
+              "description": "Volumes to mount in the form of <volume_id_or_name>:/path/inside/machine[:<options>]",
+              "name": [
+                "--volume",
+                "-v"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Start a Fly machine",
+          "name": "start",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "Application name",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to application configuration file",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Show current status of a running machine",
+          "name": "status",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "Application name",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to application configuration file",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Stop a Fly machine",
+          "name": "stop",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "Application name",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to application configuration file",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            },
+            {
+              "args": {
+                "name": "signal"
+              },
+              "description": "Signal to stop the machine with (default: SIGINT)",
+              "name": [
+                "--signal",
+                "-s"
+              ]
+            },
+            {
+              "args": {
+                "name": "time"
+              },
+              "description": "Seconds to wait before killing the machine",
+              "name": [
+                "--time"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Monitor currently running application deployments",
+      "name": "monitor",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "requires_js": true,
+                "script": [
+                  "flyctl",
+                  "apps",
+                  "list",
+                  "--json"
+                ]
+              }
+            ],
+            "name": "app"
+          },
+          "description": "Application name",
+          "name": [
+            "--app",
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "name": "config",
+            "template": "filepaths"
+          },
+          "description": "Path to application configuration file",
+          "name": [
+            "--config",
+            "-c"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Move an app to another organization",
+      "name": "move",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "o=>{let t=JSON.parse(o);return Object.entries(t).sort(([n,i],[r,p])=>n==\"personal\"?-1:r==\"personal\"?1:i.localeCompare(p)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}",
+                "requires_js": true,
+                "script": [
+                  "fly",
+                  "orgs",
+                  "list",
+                  "--json"
+                ]
+              }
+            ],
+            "name": "org"
+          },
+          "description": "The organization to operate on",
+          "name": [
+            "--org",
+            "-o"
+          ]
+        },
+        {
+          "description": "Accept all confirmations",
+          "name": [
+            "--yes",
+            "-y"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Open browser to current deployed application",
+      "name": "open",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "requires_js": true,
+                "script": [
+                  "flyctl",
+                  "apps",
+                  "list",
+                  "--json"
+                ]
+              }
+            ],
+            "name": "app"
+          },
+          "description": "Application name",
+          "name": [
+            "--app",
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "name": "config",
+            "template": "filepaths"
+          },
+          "description": "Path to application configuration file",
+          "name": [
+            "--config",
+            "-c"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Commands for managing Fly organizations",
+      "name": "orgs",
+      "subcommands": [
+        {
+          "description": "Manage remote builder",
+          "name": "builder",
+          "subcommands": [
+            {
+              "description": "Show details about an organization's remote builder image",
+              "name": "show"
+            },
+            {
+              "description": "Update an organization's remote builder image",
+              "name": "update"
+            }
+          ]
+        },
+        {
+          "description": "Create an organization",
+          "name": "create"
+        },
+        {
+          "description": "Delete an organization",
+          "name": "delete",
+          "options": [
+            {
+              "description": "Accept all confirmations",
+              "name": [
+                "--yes",
+                "-y"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Invite user (by email) to organization",
+          "name": "invite"
+        },
+        {
+          "description": "Lists organizations for current user",
+          "name": "list"
+        },
+        {
+          "description": "Remove a user from an organization",
+          "name": "remove"
+        },
+        {
+          "description": "Show information about an organization",
+          "name": "show"
+        }
+      ]
+    },
+    {
+      "description": "Test connectivity with ICMP ping messages",
+      "name": "ping",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "requires_js": true,
+                "script": [
+                  "flyctl",
+                  "apps",
+                  "list",
+                  "--json"
+                ]
+              }
+            ],
+            "name": "app"
+          },
+          "description": "Application name",
+          "name": [
+            "--app",
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "name": "config",
+            "template": "filepaths"
+          },
+          "description": "Path to application configuration file",
+          "name": [
+            "--config",
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "name": "count"
+          },
+          "description": "Number of probes to send (0=indefinite)",
+          "name": [
+            "--count",
+            "-n"
+          ]
+        },
+        {
+          "args": {
+            "name": "interval"
+          },
+          "description": "Interval between ping probes",
+          "name": [
+            "--interval",
+            "-i"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "o=>{let t=JSON.parse(o);return Object.entries(t).sort(([n,i],[r,p])=>n==\"personal\"?-1:r==\"personal\"?1:i.localeCompare(p)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}",
+                "requires_js": true,
+                "script": [
+                  "fly",
+                  "orgs",
+                  "list",
+                  "--json"
+                ]
+              }
+            ],
+            "name": "org"
+          },
+          "description": "The organization to operate on",
+          "name": [
+            "--org",
+            "-o"
+          ]
+        },
+        {
+          "args": {
+            "name": "size"
+          },
+          "description": "Size of probe to send (not including headers)",
+          "name": [
+            "--size",
+            "-s"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Fly platform information",
+      "name": "platform",
+      "subcommands": [
+        {
+          "description": "List regions",
+          "name": "regions"
+        },
+        {
+          "description": "Show current platform status",
+          "name": "status"
+        },
+        {
+          "description": "List VM Sizes",
+          "name": "vm-sizes"
+        }
+      ]
+    },
+    {
+      "description": "Manage postgres clusters",
+      "name": "pg",
+      "subcommands": [
+        {
+          "description": "Attach a postgres cluster to an app",
+          "name": "attach",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            },
+            {
+              "args": {
+                "name": "database-name"
+              },
+              "description": "Database to use, defaults to a new database with the same name as the app",
+              "name": [
+                "--database-name"
+              ]
+            },
+            {
+              "args": {
+                "name": "database-user"
+              },
+              "description": "The database user to create, defaults to creating a user with the same name as the consuming app",
+              "name": [
+                "--database-user"
+              ]
+            },
+            {
+              "args": {
+                "name": "postgres-app"
+              },
+              "description": "The postgres cluster to attach to the app",
+              "name": [
+                "--postgres-app"
+              ]
+            },
+            {
+              "args": {
+                "name": "variable-name"
+              },
+              "description": "The env variable name that will be added to the app. Defaults to DATABASE_URL",
+              "name": [
+                "--variable-name"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Connect to the Postgres console",
+          "name": "connect",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            },
+            {
+              "args": {
+                "name": "database"
+              },
+              "description": "The postgres database to connect to",
+              "name": [
+                "--database"
+              ]
+            },
+            {
+              "args": {
+                "name": "password"
+              },
+              "description": "The postgres user password",
+              "name": [
+                "--password"
+              ]
+            },
+            {
+              "args": {
+                "name": "user"
+              },
+              "description": "The postgres user to connect with",
+              "name": [
+                "--user"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Create a postgres cluster",
+          "name": "create",
+          "options": [
+            {
+              "args": {
+                "name": "image-ref"
+              },
+              "name": [
+                "--image-ref"
+              ]
+            },
+            {
+              "args": {
+                "name": "initial-cluster-size"
+              },
+              "description": "The size of the initial postgres cluster",
+              "name": [
+                "--initial-cluster-size"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "The name of the new app",
+              "name": [
+                "--name"
+              ]
+            },
+            {
+              "args": {
+                "name": "organization"
+              },
+              "description": "The organization that will own the app",
+              "name": [
+                "--organization"
+              ]
+            },
+            {
+              "args": {
+                "name": "password"
+              },
+              "description": "The superuser password. one will be generated for you if you leave this blank",
+              "name": [
+                "--password"
+              ]
+            },
+            {
+              "args": {
+                "name": "region"
+              },
+              "description": "The region to launch the new app in",
+              "name": [
+                "--region"
+              ]
+            },
+            {
+              "args": {
+                "name": "snapshot-id"
+              },
+              "description": "Creates the volume with the contents of the snapshot",
+              "name": [
+                "--snapshot-id"
+              ]
+            },
+            {
+              "args": {
+                "name": "vm-size"
+              },
+              "description": "The size of the VM",
+              "name": [
+                "--vm-size"
+              ]
+            },
+            {
+              "args": {
+                "name": "volume-size"
+              },
+              "description": "The size in GB for volumes",
+              "name": [
+                "--volume-size"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Manage databases in a cluster",
+          "name": "db",
+          "subcommands": [
+            {
+              "description": "List databases in a cluster",
+              "name": "list",
+              "options": [
+                {
+                  "args": {
+                    "generators": [
+                      {
+                        "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                        "requires_js": true,
+                        "script": [
+                          "flyctl",
+                          "apps",
+                          "list",
+                          "--json"
+                        ]
+                      }
+                    ],
+                    "name": "app"
+                  },
+                  "description": "App name to operate on",
+                  "name": [
+                    "--app",
+                    "-a"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "config",
+                    "template": "filepaths"
+                  },
+                  "description": "Path to an app config file or directory containing one",
+                  "name": [
+                    "--config",
+                    "-c"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Detach a postgres cluster from an app",
+          "name": "detach",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            },
+            {
+              "args": {
+                "name": "postgres-app"
+              },
+              "description": "The postgres cluster to detach from the app",
+              "name": [
+                "--postgres-app"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List postgres clusters",
+          "name": "list"
+        },
+        {
+          "description": "Manage users in a cluster",
+          "name": "users",
+          "subcommands": [
+            {
+              "description": "List users in a cluster",
+              "name": "list",
+              "options": [
+                {
+                  "args": {
+                    "generators": [
+                      {
+                        "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                        "requires_js": true,
+                        "script": [
+                          "flyctl",
+                          "apps",
+                          "list",
+                          "--json"
+                        ]
+                      }
+                    ],
+                    "name": "app"
+                  },
+                  "description": "App name to operate on",
+                  "name": [
+                    "--app",
+                    "-a"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "config",
+                    "template": "filepaths"
+                  },
+                  "description": "Path to an app config file or directory containing one",
+                  "name": [
+                    "--config",
+                    "-c"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Proxies connections to a fly VM",
+      "name": "proxy",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "requires_js": true,
+                "script": [
+                  "flyctl",
+                  "apps",
+                  "list",
+                  "--json"
+                ]
+              }
+            ],
+            "name": "app"
+          },
+          "description": "Application name",
+          "name": [
+            "--app",
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "name": "config",
+            "template": "filepaths"
+          },
+          "description": "Path to application configuration file",
+          "name": [
+            "--config",
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "o=>{let t=JSON.parse(o);return Object.entries(t).sort(([n,i],[r,p])=>n==\"personal\"?-1:r==\"personal\"?1:i.localeCompare(p)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}",
+                "requires_js": true,
+                "script": [
+                  "fly",
+                  "orgs",
+                  "list",
+                  "--json"
+                ]
+              }
+            ],
+            "name": "org"
+          },
+          "description": "The organization to operate on",
+          "name": [
+            "--org",
+            "-o"
+          ]
+        },
+        {
+          "description": "Prompt to select from available instances from the current application",
+          "name": [
+            "--select",
+            "-s"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage regions",
+      "name": "regions",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "requires_js": true,
+                "script": [
+                  "flyctl",
+                  "apps",
+                  "list",
+                  "--json"
+                ]
+              }
+            ],
+            "name": "app"
+          },
+          "description": "App name to operate on",
+          "name": [
+            "--app",
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "name": "config",
+            "template": "filepaths"
+          },
+          "description": "Path to an app config file or directory containing one",
+          "name": [
+            "--config",
+            "-c"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Allow the app to run in the provided regions",
+          "name": "add",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            },
+            {
+              "args": {
+                "name": "group"
+              },
+              "description": "The process group to add the region to",
+              "name": [
+                "--group"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Sets the backup region pool with provided regions",
+          "name": "backup",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Shows the list of regions the app is allowed to run in",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Prevent the app from running in the provided regions",
+          "name": "remove",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            },
+            {
+              "args": {
+                "name": "group"
+              },
+              "description": "The process group to remove the region from",
+              "name": [
+                "--group"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Sets the region pool with provided regions",
+          "name": "set",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            },
+            {
+              "args": {
+                "name": "group"
+              },
+              "description": "The process group to set regions for",
+              "name": [
+                "--group"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "List app releases",
+      "name": "releases",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "requires_js": true,
+                "script": [
+                  "flyctl",
+                  "apps",
+                  "list",
+                  "--json"
+                ]
+              }
+            ],
+            "name": "app"
+          },
+          "description": "Application name",
+          "name": [
+            "--app",
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "name": "config",
+            "template": "filepaths"
+          },
+          "description": "Path to application configuration file",
+          "name": [
+            "--config",
+            "-c"
+          ]
+        },
+        {
+          "description": "Display the Docker image reference of the release",
+          "name": [
+            "--image"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Restart an application",
+      "name": "restart"
+    },
+    {
+      "description": "Resume an application",
+      "name": "resume"
+    },
+    {
+      "description": "Scale app resources",
+      "name": "scale",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "requires_js": true,
+                "script": [
+                  "flyctl",
+                  "apps",
+                  "list",
+                  "--json"
+                ]
+              }
+            ],
+            "name": "app"
+          },
+          "description": "App name to operate on",
+          "name": [
+            "--app",
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "name": "config",
+            "template": "filepaths"
+          },
+          "description": "Path to an app config file or directory containing one",
+          "name": [
+            "--config",
+            "-c"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Change an app's VM count to the given value",
+          "name": "count",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            },
+            {
+              "args": {
+                "name": "max-per-region"
+              },
+              "description": "Max number of VMs per region",
+              "name": [
+                "--max-per-region"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Set VM memory",
+          "name": "memory",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            },
+            {
+              "args": {
+                "name": "group"
+              },
+              "description": "The process group to apply the memory size to",
+              "name": [
+                "--group"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Show current resources",
+          "name": "show",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Change an app's VM to a named size (eg. shared-cpu-1x, dedicated-cpu-1x, dedicated-cpu-2x...)",
+          "name": "vm",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            },
+            {
+              "args": {
+                "name": "group"
+              },
+              "description": "The process group to apply the VM size to",
+              "name": [
+                "--group"
+              ]
+            },
+            {
+              "args": {
+                "name": "memory"
+              },
+              "description": "Memory in MB for the VM",
+              "name": [
+                "--memory"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage app secrets",
+      "name": "secrets",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "requires_js": true,
+                "script": [
+                  "flyctl",
+                  "apps",
+                  "list",
+                  "--json"
+                ]
+              }
+            ],
+            "name": "app"
+          },
+          "description": "App name to operate on",
+          "name": [
+            "--app",
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "name": "config",
+            "template": "filepaths"
+          },
+          "description": "Path to an app config file or directory containing one",
+          "name": [
+            "--config",
+            "-c"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Read secrets in name=value from stdin",
+          "name": "import",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            },
+            {
+              "description": "Return immediately instead of monitoring deployment progress",
+              "name": [
+                "--detach"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Lists the secrets available to the app",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Set one or more encrypted secrets for an app",
+          "name": "set",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            },
+            {
+              "description": "Return immediately instead of monitoring deployment progress",
+              "name": [
+                "--detach"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Remove encrypted secrets from an app",
+          "name": "unset",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            },
+            {
+              "description": "Return immediately instead of monitoring deployment progress",
+              "name": [
+                "--detach"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Commands that manage SSH credentials",
+      "name": "ssh",
+      "subcommands": [
+        {
+          "description": "Connect to a running instance of the current app",
+          "name": "console",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "command"
+              },
+              "description": "Command to run on SSH session",
+              "name": [
+                "--command",
+                "-C"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            },
+            {
+              "description": "Test WireGuard connection after establishing",
+              "name": [
+                "--probe",
+                "-p"
+              ]
+            },
+            {
+              "args": {
+                "name": "region"
+              },
+              "description": "Region to create WireGuard connection in",
+              "name": [
+                "--region",
+                "-r"
+              ]
+            },
+            {
+              "description": "Select available instances",
+              "name": [
+                "--select",
+                "-s"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Create a root SSH certificate for your organization",
+          "name": "establish"
+        },
+        {
+          "description": "Issue a new SSH credential",
+          "name": "issue",
+          "options": [
+            {
+              "description": "Add key to SSH agent",
+              "name": [
+                "--agent"
+              ]
+            },
+            {
+              "description": "Store keys in ~/.ssh, like normal keys",
+              "name": [
+                "--dotssh",
+                "-d"
+              ]
+            },
+            {
+              "args": {
+                "name": "hours"
+              },
+              "description": "Expiration, in hours (<72)",
+              "name": [
+                "--hours"
+              ]
+            },
+            {
+              "description": "Overwrite existing SSH keys in same location, if we generated them",
+              "name": [
+                "--overwrite",
+                "-o"
+              ]
+            },
+            {
+              "args": {
+                "name": "username"
+              },
+              "description": "Unix username for SSH cert",
+              "name": [
+                "--username",
+                "-u"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Log of all issued certs",
+          "name": "log"
+        }
+      ]
+    },
+    {
+      "description": "Show app status",
+      "name": "status",
+      "options": [
+        {
+          "description": "Show completed instances",
+          "name": [
+            "--all"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "requires_js": true,
+                "script": [
+                  "flyctl",
+                  "apps",
+                  "list",
+                  "--json"
+                ]
+              }
+            ],
+            "name": "app"
+          },
+          "description": "Application name",
+          "name": [
+            "--app",
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "name": "config",
+            "template": "filepaths"
+          },
+          "description": "Path to application configuration file",
+          "name": [
+            "--config",
+            "-c"
+          ]
+        },
+        {
+          "description": "Always show deployment status",
+          "name": [
+            "--deployment"
+          ]
+        },
+        {
+          "args": {
+            "name": "rate"
+          },
+          "description": "Refresh Rate for --watch",
+          "name": [
+            "--rate"
+          ]
+        },
+        {
+          "description": "Refresh details",
+          "name": [
+            "--watch"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Show instance status",
+          "name": "instance",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "Application name",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to application configuration file",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Suspend an application",
+      "name": "suspend"
+    },
+    {
+      "description": "Launches heroku apps",
+      "name": "turboku",
+      "options": [
+        {
+          "args": {
+            "name": "heroku-token"
+          },
+          "description": "Heroku API token",
+          "name": [
+            "--heroku-token"
+          ]
+        },
+        {
+          "description": "Keep the app directory after deployment",
+          "name": [
+            "--keep"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "The name of the new app",
+          "name": [
+            "--name"
+          ]
+        },
+        {
+          "description": "Deploy now without confirmation",
+          "name": [
+            "--now"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "o=>{let t=JSON.parse(o);return Object.entries(t).sort(([n,i],[r,p])=>n==\"personal\"?-1:r==\"personal\"?1:i.localeCompare(p)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}",
+                "requires_js": true,
+                "script": [
+                  "fly",
+                  "orgs",
+                  "list",
+                  "--json"
+                ]
+              }
+            ],
+            "name": "org"
+          },
+          "description": "The organization that will own the app",
+          "name": [
+            "--org"
+          ]
+        },
+        {
+          "args": {
+            "name": "region"
+          },
+          "description": "The region to launch the new app in",
+          "name": [
+            "--region"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Show version information for the flyctl command",
+      "name": "version",
+      "options": [
+        {
+          "args": {
+            "name": "saveinstall"
+          },
+          "description": "Save parameter in config",
+          "name": [
+            "--saveinstall",
+            "-s"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Checks for available updates and automatically updates",
+          "name": "update"
+        }
+      ]
+    },
+    {
+      "description": "Commands that manage VM instances",
+      "name": "vm",
+      "subcommands": [
+        {
+          "description": "Restart a VM",
+          "name": "restart",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Show a VM's status",
+          "name": "status",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Stop a VM",
+          "name": "stop",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name to operate on",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to an app config file or directory containing one",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Volume management commands",
+      "name": "vol",
+      "subcommands": [
+        {
+          "description": "Create new volume for app",
+          "name": "create",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "Application name",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to application configuration file",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            },
+            {
+              "description": "Do not encrypt the volume contents",
+              "name": [
+                "--no-encryption"
+              ]
+            },
+            {
+              "args": {
+                "name": "region"
+              },
+              "description": "The region to operate on",
+              "name": [
+                "--region",
+                "-r"
+              ]
+            },
+            {
+              "description": "Require volume to be placed in separate hardware zone from existing volumes",
+              "name": [
+                "--require-unique-zone"
+              ]
+            },
+            {
+              "args": {
+                "name": "size"
+              },
+              "description": "Size of volume in gigabytes",
+              "name": [
+                "--size",
+                "-s"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Delete a volume from the app",
+          "name": "delete",
+          "options": [
+            {
+              "description": "Accept all confirmations",
+              "name": [
+                "--yes",
+                "-y"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List the volumes for app",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "generators": [
+                  {
+                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "requires_js": true,
+                    "script": [
+                      "flyctl",
+                      "apps",
+                      "list",
+                      "--json"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "Application name",
+              "name": [
+                "--app",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "config",
+                "template": "filepaths"
+              },
+              "description": "Path to application configuration file",
+              "name": [
+                "--config",
+                "-c"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Show details of an app's volume",
+          "name": "show"
+        },
+        {
+          "description": "Manage volume snapshots",
+          "name": "snaps",
+          "subcommands": [
+            {
+              "description": "List snapshots",
+              "name": "list"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Commands that manage WireGuard peer connections",
+      "name": "wg",
+      "subcommands": [
+        {
+          "description": "Add a WireGuard peer connection",
+          "name": "create"
+        },
+        {
+          "description": "List all WireGuard peer connections",
+          "name": "list"
+        },
+        {
+          "description": "Remove a WireGuard peer connection",
+          "name": "remove"
+        },
+        {
+          "description": "Reset WireGuard peer connection for an organization",
+          "name": "reset"
+        },
+        {
+          "description": "Get status a WireGuard peer connection",
+          "name": "status"
+        },
+        {
+          "description": "Commands that managed WireGuard delegated access tokens",
+          "name": "token",
+          "subcommands": [
+            {
+              "description": "Create a new WireGuard token",
+              "name": "create"
+            },
+            {
+              "description": "Delete a WireGuard token; token is name:<name> or token:<token>",
+              "name": "delete"
+            },
+            {
+              "description": "List all WireGuard tokens",
+              "name": "list"
+            },
+            {
+              "description": "Start a new WireGuard peer connection associated with a token (set FLY_WIREGUARD_TOKEN)",
+              "name": "start"
+            },
+            {
+              "description": "Rekey a WireGuard peer connection associated with a token (set FLY_WIREGUARD_TOKEN)",
+              "name": "update"
+            }
+          ]
+        },
+        {
+          "description": "Enable or disable WireGuard tunneling over WebSockets",
+          "name": "websockets"
+        }
+      ]
+    },
+    {
+      "description": "Help about any command",
+      "name": "help",
+      "subcommands": [
+        {
+          "description": "Short",
+          "name": "Use"
+        },
+        {
+          "description": "Commands that manage the Fly agent, a background process that manages flyctl wireguard connections",
+          "name": "agent",
+          "subcommands": [
+            {
+              "description": "Ping the Fly agent",
+              "name": "ping"
+            },
+            {
+              "description": "Restart the Fly agent",
+              "name": "restart"
+            },
+            {
+              "description": "Run the Fly agent in the foreground",
+              "name": "daemon-start"
+            },
+            {
+              "description": "Start the Fly agent",
+              "name": "start"
+            },
+            {
+              "description": "Stop the Fly agent",
+              "name": "stop"
+            }
+          ]
+        },
+        {
+          "description": "Manage apps",
+          "name": "apps",
+          "subcommands": [
+            {
+              "description": "Create a new application",
+              "name": "create"
+            },
+            {
+              "description": "Permanently destroys an app",
+              "name": "destroy"
+            },
+            {
+              "description": "List applications",
+              "name": "list"
+            },
+            {
+              "description": "Move an app to another organization",
+              "name": "move"
+            },
+            {
+              "description": "Open browser to current deployed application",
+              "name": "open"
+            },
+            {
+              "description": "List app releases",
+              "name": "releases"
+            },
+            {
+              "description": "Restart an application",
+              "name": "restart"
+            }
+          ]
+        },
+        {
+          "description": "Manage authentication",
+          "name": "auth",
+          "subcommands": [
+            {
+              "description": "Authenticate docker",
+              "name": "docker"
+            },
+            {
+              "description": "Log in a user",
+              "name": "login"
+            },
+            {
+              "description": "Logs out the currently logged in user",
+              "name": "logout"
+            },
+            {
+              "description": "Create a new fly account",
+              "name": "signup"
+            },
+            {
+              "description": "Show the current auth token",
+              "name": "token"
+            },
+            {
+              "description": "Displays the users email address/service identity currently authenticated and in use",
+              "name": "whoami"
+            }
+          ]
+        },
+        {
+          "description": "Autoscaling app resources",
+          "name": "autoscale",
+          "subcommands": [
+            {
+              "description": "Configure a traffic balanced app with params (min=int max=int)",
+              "name": "balanced"
+            },
+            {
+              "description": "Disable autoscaling",
+              "name": "disable"
+            },
+            {
+              "description": "Set current models autoscaling parameters",
+              "name": "set"
+            },
+            {
+              "description": "Show current autoscaling configuration",
+              "name": "show"
+            },
+            {
+              "description": "Configure a standard balanced app with params (min=int max=int)",
+              "name": "standard"
+            }
+          ]
+        },
+        {
+          "description": "Manage application builds",
+          "name": "builds",
+          "subcommands": [
+            {
+              "description": "List builds",
+              "name": "list"
+            }
+          ]
+        },
+        {
+          "description": "Manage certificates",
+          "name": "certs",
+          "subcommands": [
+            {
+              "description": "Add a certificate for an app",
+              "name": "create"
+            },
+            {
+              "description": "Checks DNS configuration",
+              "name": "check"
+            },
+            {
+              "description": "List certificates for an app",
+              "name": "list"
+            },
+            {
+              "description": "Removes a certificate from an app",
+              "name": "delete"
+            },
+            {
+              "description": "Shows certificate information",
+              "name": "show"
+            }
+          ]
+        },
+        {
+          "description": "Manage health checks",
+          "name": "checks",
+          "subcommands": [
+            {
+              "description": "Manage health check handlers",
+              "name": "handlers",
+              "subcommands": [
+                {
+                  "description": "Create a health check handler",
+                  "name": "create"
+                },
+                {
+                  "description": "Delete a health check handler",
+                  "name": "delete"
+                },
+                {
+                  "description": "List health check handlers",
+                  "name": "list"
+                }
+              ]
+            },
+            {
+              "description": "List app health checks",
+              "name": "list"
+            }
+          ]
+        },
+        {
+          "description": "Generate the autocompletion script for the specified shell",
+          "name": "completion",
+          "subcommands": [
+            {
+              "description": "Generate the autocompletion script for bash",
+              "name": "bash"
+            },
+            {
+              "description": "Generate the autocompletion script for fish",
+              "name": "fish"
+            },
+            {
+              "description": "Generate the autocompletion script for powershell",
+              "name": "powershell"
+            },
+            {
+              "description": "Generate the autocompletion script for zsh",
+              "name": "zsh"
+            }
+          ]
+        },
+        {
+          "description": "Manage an app's configuration",
+          "name": "config",
+          "subcommands": [
+            {
+              "description": "Display an app's configuration",
+              "name": "display"
+            },
+            {
+              "description": "Display an app's runtime environment variables",
+              "name": "env"
+            },
+            {
+              "description": "Save an app's config file",
+              "name": "save"
+            },
+            {
+              "description": "Validate an app's config file",
+              "name": "validate"
+            }
+          ]
+        },
+        {
+          "description": "Create a new application",
+          "name": "create"
+        },
+        {
+          "description": "Run a performance test against a URL",
+          "name": "curl"
+        },
+        {
+          "description": "Open web browser on Fly Web UI for this app",
+          "name": "dash",
+          "subcommands": [
+            {
+              "description": "Open web browser on Fly Web UI for this app's metrics",
+              "name": "metrics"
+            }
+          ]
+        },
+        {
+          "description": "Deploy Fly applications",
+          "name": "deploy"
+        },
+        {
+          "description": "Permanently destroys an app",
+          "name": "destroy"
+        },
+        {
+          "description": "Make DNS requests against Fly.io's internal DNS server",
+          "name": "dig"
+        },
+        {
+          "description": "Manage DNS records",
+          "name": "dns-records",
+          "subcommands": [
+            {
+              "description": "Export DNS records",
+              "name": "export"
+            },
+            {
+              "description": "Import DNS records",
+              "name": "import"
+            },
+            {
+              "description": "List DNS records",
+              "name": "list"
+            }
+          ]
+        },
+        {
+          "description": "View Fly documentation",
+          "name": "docs"
+        },
+        {
+          "description": "The DOCTOR command allows you to debug your Fly environment",
+          "name": "doctor",
+          "subcommands": [
+            {
+              "description": "Send diagnostic information about your applications back to Fly.io",
+              "name": "diag"
+            }
+          ]
+        },
+        {
+          "description": "Manage domains",
+          "name": "domains",
+          "subcommands": [
+            {
+              "description": "Add a domain",
+              "name": "add"
+            },
+            {
+              "description": "List domains",
+              "name": "list"
+            },
+            {
+              "description": "Register a domain",
+              "name": "register"
+            },
+            {
+              "description": "Show domain",
+              "name": "show"
+            }
+          ]
+        },
+        {
+          "description": "List an app's change history",
+          "name": "history"
+        },
+        {
+          "description": "Manage app image",
+          "name": "img",
+          "subcommands": [
+            {
+              "description": "Show image details",
+              "name": "show"
+            },
+            {
+              "description": "Updates the app's image to the latest available version. (Fly Postgres only)",
+              "name": "update"
+            }
+          ]
+        },
+        {
+          "description": "Show detailed app information",
+          "name": "info"
+        },
+        {
+          "description": "Manage IP addresses for apps",
+          "name": "ips",
+          "subcommands": [
+            {
+              "description": "Allocate an IPv4 address",
+              "name": "allocate-v4"
+            },
+            {
+              "description": "Allocate an IPv6 address",
+              "name": "allocate-v6"
+            },
+            {
+              "description": "List allocated IP addresses",
+              "name": "list"
+            },
+            {
+              "description": "List instances private IP addresses",
+              "name": "private"
+            },
+            {
+              "description": "Release an IP address",
+              "name": "release"
+            }
+          ]
+        },
+        {
+          "description": "Launch a new app",
+          "name": "launch"
+        },
+        {
+          "description": "Lists your Fly resources",
+          "name": "ls",
+          "subcommands": [
+            {
+              "description": "Lists all your apps",
+              "name": "apps"
+            },
+            {
+              "description": "List all your organizations",
+              "name": "orgs"
+            }
+          ]
+        },
+        {
+          "description": "View app logs",
+          "name": "logs"
+        },
+        {
+          "description": "Commands that manage machines",
+          "name": "machines",
+          "subcommands": [
+            {
+              "description": "Clones a Fly Machine",
+              "name": "clone"
+            },
+            {
+              "description": "Kill (SIGKILL) a Fly machine",
+              "name": "kill"
+            },
+            {
+              "description": "List Fly machines",
+              "name": "list"
+            },
+            {
+              "description": "Remove a Fly machine",
+              "name": "rm"
+            },
+            {
+              "description": "Run a machine",
+              "name": "run"
+            },
+            {
+              "description": "Start a Fly machine",
+              "name": "start"
+            },
+            {
+              "description": "Show current status of a running machine",
+              "name": "status"
+            },
+            {
+              "description": "Stop a Fly machine",
+              "name": "stop"
+            }
+          ]
+        },
+        {
+          "description": "Monitor currently running application deployments",
+          "name": "monitor"
+        },
+        {
+          "description": "Move an app to another organization",
+          "name": "move"
+        },
+        {
+          "description": "Open browser to current deployed application",
+          "name": "open"
+        },
+        {
+          "description": "Commands for managing Fly organizations",
+          "name": "orgs",
+          "subcommands": [
+            {
+              "description": "Manage remote builder",
+              "name": "builder",
+              "subcommands": [
+                {
+                  "description": "Show details about an organization's remote builder image",
+                  "name": "show"
+                },
+                {
+                  "description": "Update an organization's remote builder image",
+                  "name": "update"
+                }
+              ]
+            },
+            {
+              "description": "Create an organization",
+              "name": "create"
+            },
+            {
+              "description": "Delete an organization",
+              "name": "delete"
+            },
+            {
+              "description": "Invite user (by email) to organization",
+              "name": "invite"
+            },
+            {
+              "description": "Lists organizations for current user",
+              "name": "list"
+            },
+            {
+              "description": "Remove a user from an organization",
+              "name": "remove"
+            },
+            {
+              "description": "Show information about an organization",
+              "name": "show"
+            }
+          ]
+        },
+        {
+          "description": "Test connectivity with ICMP ping messages",
+          "name": "ping"
+        },
+        {
+          "description": "Fly platform information",
+          "name": "platform",
+          "subcommands": [
+            {
+              "description": "List regions",
+              "name": "regions"
+            },
+            {
+              "description": "Show current platform status",
+              "name": "status"
+            },
+            {
+              "description": "List VM Sizes",
+              "name": "vm-sizes"
+            }
+          ]
+        },
+        {
+          "description": "Manage postgres clusters",
+          "name": "pg",
+          "subcommands": [
+            {
+              "description": "Attach a postgres cluster to an app",
+              "name": "attach"
+            },
+            {
+              "description": "Connect to the Postgres console",
+              "name": "connect"
+            },
+            {
+              "description": "Create a postgres cluster",
+              "name": "create"
+            },
+            {
+              "description": "Manage databases in a cluster",
+              "name": "db",
+              "subcommands": [
+                {
+                  "description": "List databases in a cluster",
+                  "name": "list"
+                }
+              ]
+            },
+            {
+              "description": "Detach a postgres cluster from an app",
+              "name": "detach"
+            },
+            {
+              "description": "List postgres clusters",
+              "name": "list"
+            },
+            {
+              "description": "Manage users in a cluster",
+              "name": "users",
+              "subcommands": [
+                {
+                  "description": "List users in a cluster",
+                  "name": "list"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Proxies connections to a fly VM",
+          "name": "proxy"
+        },
+        {
+          "description": "Manage regions",
+          "name": "regions",
+          "subcommands": [
+            {
+              "description": "Allow the app to run in the provided regions",
+              "name": "add"
+            },
+            {
+              "description": "Sets the backup region pool with provided regions",
+              "name": "backup"
+            },
+            {
+              "description": "Shows the list of regions the app is allowed to run in",
+              "name": "list"
+            },
+            {
+              "description": "Prevent the app from running in the provided regions",
+              "name": "remove"
+            },
+            {
+              "description": "Sets the region pool with provided regions",
+              "name": "set"
+            }
+          ]
+        },
+        {
+          "description": "List app releases",
+          "name": "releases"
+        },
+        {
+          "description": "Restart an application",
+          "name": "restart"
+        },
+        {
+          "description": "Resume an application",
+          "name": "resume"
+        },
+        {
+          "description": "Scale app resources",
+          "name": "scale",
+          "subcommands": [
+            {
+              "description": "Change an app's VM count to the given value",
+              "name": "count"
+            },
+            {
+              "description": "Set VM memory",
+              "name": "memory"
+            },
+            {
+              "description": "Show current resources",
+              "name": "show"
+            },
+            {
+              "description": "Change an app's VM to a named size (eg. shared-cpu-1x, dedicated-cpu-1x, dedicated-cpu-2x...)",
+              "name": "vm"
+            }
+          ]
+        },
+        {
+          "description": "Manage app secrets",
+          "name": "secrets",
+          "subcommands": [
+            {
+              "description": "Read secrets in name=value from stdin",
+              "name": "import"
+            },
+            {
+              "description": "Lists the secrets available to the app",
+              "name": "list"
+            },
+            {
+              "description": "Set one or more encrypted secrets for an app",
+              "name": "set"
+            },
+            {
+              "description": "Remove encrypted secrets from an app",
+              "name": "unset"
+            }
+          ]
+        },
+        {
+          "description": "Commands that manage SSH credentials",
+          "name": "ssh",
+          "subcommands": [
+            {
+              "description": "Connect to a running instance of the current app",
+              "name": "console"
+            },
+            {
+              "description": "Create a root SSH certificate for your organization",
+              "name": "establish"
+            },
+            {
+              "description": "Issue a new SSH credential",
+              "name": "issue"
+            },
+            {
+              "description": "Log of all issued certs",
+              "name": "log"
+            }
+          ]
+        },
+        {
+          "description": "Show app status",
+          "name": "status",
+          "subcommands": [
+            {
+              "description": "Show instance status",
+              "name": "instance"
+            }
+          ]
+        },
+        {
+          "description": "Suspend an application",
+          "name": "suspend"
+        },
+        {
+          "description": "Launches heroku apps",
+          "name": "turboku"
+        },
+        {
+          "description": "Show version information for the flyctl command",
+          "name": "version",
+          "subcommands": [
+            {
+              "description": "Checks for available updates and automatically updates",
+              "name": "update"
+            }
+          ]
+        },
+        {
+          "description": "Commands that manage VM instances",
+          "name": "vm",
+          "subcommands": [
+            {
+              "description": "Restart a VM",
+              "name": "restart"
+            },
+            {
+              "description": "Show a VM's status",
+              "name": "status"
+            },
+            {
+              "description": "Stop a VM",
+              "name": "stop"
+            }
+          ]
+        },
+        {
+          "description": "Volume management commands",
+          "name": "vol",
+          "subcommands": [
+            {
+              "description": "Create new volume for app",
+              "name": "create"
+            },
+            {
+              "description": "Delete a volume from the app",
+              "name": "delete"
+            },
+            {
+              "description": "List the volumes for app",
+              "name": "list"
+            },
+            {
+              "description": "Show details of an app's volume",
+              "name": "show"
+            },
+            {
+              "description": "Manage volume snapshots",
+              "name": "snaps",
+              "subcommands": [
+                {
+                  "description": "List snapshots",
+                  "name": "list"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Commands that manage WireGuard peer connections",
+          "name": "wg",
+          "subcommands": [
+            {
+              "description": "Add a WireGuard peer connection",
+              "name": "create"
+            },
+            {
+              "description": "List all WireGuard peer connections",
+              "name": "list"
+            },
+            {
+              "description": "Remove a WireGuard peer connection",
+              "name": "remove"
+            },
+            {
+              "description": "Reset WireGuard peer connection for an organization",
+              "name": "reset"
+            },
+            {
+              "description": "Get status a WireGuard peer connection",
+              "name": "status"
+            },
+            {
+              "description": "Commands that managed WireGuard delegated access tokens",
+              "name": "token",
+              "subcommands": [
+                {
+                  "description": "Create a new WireGuard token",
+                  "name": "create"
+                },
+                {
+                  "description": "Delete a WireGuard token; token is name:<name> or token:<token>",
+                  "name": "delete"
+                },
+                {
+                  "description": "List all WireGuard tokens",
+                  "name": "list"
+                },
+                {
+                  "description": "Start a new WireGuard peer connection associated with a token (set FLY_WIREGUARD_TOKEN)",
+                  "name": "start"
+                },
+                {
+                  "description": "Rekey a WireGuard peer connection associated with a token (set FLY_WIREGUARD_TOKEN)",
+                  "name": "update"
+                }
+              ]
+            },
+            {
+              "description": "Enable or disable WireGuard tunneling over WebSockets",
+              "name": "websockets"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

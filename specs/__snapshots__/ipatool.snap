@@ -1,0 +1,205 @@
+{
+  "description": "IPATool is a command line tool that allows you to search for iOS apps on the App Store and download a copy of the app package, known as an ipa file",
+  "name": "ipatool",
+  "options": [
+    {
+      "description": "Show help for ipatool",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Run in non-interactive session",
+      "name": [
+        "--non-interactive"
+      ]
+    },
+    {
+      "description": "Enables verbose logs",
+      "name": [
+        "--verbose"
+      ]
+    },
+    {
+      "args": {
+        "name": "format",
+        "suggestions": [
+          {
+            "name": "text"
+          },
+          {
+            "name": "json"
+          }
+        ]
+      },
+      "description": "Output format",
+      "name": [
+        "--format"
+      ]
+    },
+    {
+      "description": "Show version for ipatool",
+      "name": [
+        "-v",
+        "--version"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Authenticate with the App Store",
+      "name": "auth",
+      "subcommands": [
+        {
+          "description": "Show current account info",
+          "name": "info"
+        },
+        {
+          "description": "Login to the App Store",
+          "name": "login",
+          "options": [
+            {
+              "args": {
+                "name": "2FA code"
+              },
+              "description": "2FA code for the Apple ID",
+              "name": [
+                "--auth-code"
+              ]
+            },
+            {
+              "description": "Apple ID email address",
+              "name": [
+                "-e",
+                "--email"
+              ]
+            },
+            {
+              "description": "Apple ID password",
+              "name": [
+                "-p",
+                "--password"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Revoke your App Store credentials",
+          "name": "revoke"
+        }
+      ]
+    },
+    {
+      "description": "Generate shell completion script",
+      "name": "completion",
+      "subcommands": [
+        {
+          "description": "Generate the autocompletion script for bash",
+          "name": "bash"
+        },
+        {
+          "description": "Generate the autocompletion script for fish",
+          "name": "fish"
+        },
+        {
+          "description": "Generate the autocompletion script for powershell",
+          "name": "powershell"
+        },
+        {
+          "description": "Generate the autocompletion script for zsh",
+          "name": "zsh"
+        }
+      ]
+    },
+    {
+      "description": "Download (encrypted) iOS app packages from the App Store",
+      "name": "download",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "e=>{let t=e[e.length-1];if(t)return[\"ipatool\",\"search\",t,\"--limit\",\"10\",\"--format\",\"json\"]}",
+                "requires_js": true
+              }
+            ],
+            "name": "identifier"
+          },
+          "description": "Bundle identifier of the app",
+          "name": [
+            "-b",
+            "--bundle-identifier"
+          ]
+        },
+        {
+          "args": {
+            "name": "output path",
+            "template": "folders"
+          },
+          "description": "The destination path of the downloaded app package",
+          "name": [
+            "-o",
+            "--output"
+          ]
+        },
+        {
+          "description": "Obtain a license for the app if needed",
+          "name": [
+            "--purchase"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "command",
+        "template": "help"
+      },
+      "description": "Display help for command",
+      "name": "help"
+    },
+    {
+      "description": "Obtain a license for the app from the App Store",
+      "name": "purchase",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "e=>{let t=e[e.length-1];if(t)return[\"ipatool\",\"search\",t,\"--limit\",\"10\",\"--format\",\"json\"]}",
+                "requires_js": true
+              }
+            ],
+            "name": "identifier"
+          },
+          "description": "Bundle identifier of the app",
+          "name": [
+            "-b",
+            "--bundle-identifier"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "query"
+      },
+      "description": "Search for iOS apps available on the App Store",
+      "name": "search",
+      "options": [
+        {
+          "args": {
+            "name": "limit"
+          },
+          "description": "Limit the number of results",
+          "name": [
+            "-l",
+            "--limit"
+          ]
+        }
+      ]
+    }
+  ]
+}

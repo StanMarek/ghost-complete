@@ -1,0 +1,178 @@
+{
+  "description": "Count your code, quickly",
+  "name": "tokei",
+  "options": [
+    {
+      "description": "Will print out statistics on individual files",
+      "name": [
+        "-f",
+        "--files"
+      ]
+    },
+    {
+      "description": "Prints help information",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Count hidden files",
+      "name": [
+        "--hidden"
+      ]
+    },
+    {
+      "description": "Prints out supported languages and their extensions",
+      "name": [
+        "-l",
+        "--languages"
+      ]
+    },
+    {
+      "description": "Don't respect ignore files (.gitignore, .ignore, etc.)",
+      "name": [
+        "--no-ignore"
+      ]
+    },
+    {
+      "description": "Don't respect .ignore and .tokeignore files, including those in parent directories",
+      "name": [
+        "--no-ignore-dot"
+      ]
+    },
+    {
+      "description": "Don't respect ignore files (.gitignore, .ignore, etc.) in parent directories",
+      "name": [
+        "--no-ignore-parent"
+      ]
+    },
+    {
+      "description": "Don't respect VCS ignore files (.gitignore, .hgignore, etc.), including those in parent directories",
+      "name": [
+        "--no-ignore-vcs"
+      ]
+    },
+    {
+      "description": "Prints version information",
+      "name": [
+        "-V",
+        "--version"
+      ]
+    },
+    {
+      "description": "Set log output level:",
+      "name": [
+        "-v",
+        "--verbose"
+      ]
+    },
+    {
+      "args": {
+        "name": "columns"
+      },
+      "description": "Sets a strict column width of the output, only available for terminal output",
+      "name": [
+        "-c",
+        "--columns"
+      ]
+    },
+    {
+      "args": {
+        "name": "exclude",
+        "template": "filepaths"
+      },
+      "description": "Ignore all files & directories matching the pattern",
+      "name": [
+        "-e",
+        "--exclude"
+      ]
+    },
+    {
+      "args": {
+        "name": "input",
+        "suggestions": [
+          {
+            "name": "stdin"
+          }
+        ],
+        "template": "filepaths"
+      },
+      "description": "Gives statistics from a previous tokei run. Can be given a file path, or \"stdin\" to read from stdin",
+      "name": [
+        "-i",
+        "--input"
+      ]
+    },
+    {
+      "args": {
+        "name": "output",
+        "suggestions": [
+          {
+            "name": "cbor"
+          },
+          {
+            "name": "json"
+          },
+          {
+            "name": "yaml"
+          }
+        ]
+      },
+      "description": "Outputs Tokei in a specific format",
+      "name": [
+        "-o",
+        "--output"
+      ]
+    },
+    {
+      "args": {
+        "name": "sort",
+        "suggestions": [
+          {
+            "name": "files"
+          },
+          {
+            "name": "lines"
+          },
+          {
+            "name": "blanks"
+          },
+          {
+            "name": "code"
+          },
+          {
+            "name": "comments"
+          }
+        ]
+      },
+      "description": "Sort languages based on column",
+      "name": [
+        "-s",
+        "--sort"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "tokei",
+              "--languages"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "type"
+      },
+      "description": "Filters output by language type, seperated by a comma. i.e. -t=Rust,Markdown",
+      "name": [
+        "-t",
+        "--type"
+      ]
+    }
+  ]
+}

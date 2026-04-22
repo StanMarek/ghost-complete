@@ -1,0 +1,192 @@
+{
+  "description": "Advanced package management for deno, based on import_map.json",
+  "name": "trex",
+  "options": [
+    {
+      "description": "Print help info",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Print version",
+      "name": [
+        "-v",
+        "--version"
+      ]
+    },
+    {
+      "args": {
+        "description": "Install a package from a custom URL source, eg: React=https://dev.jspm.io/react/index.js",
+        "name": "custom package"
+      },
+      "description": "Install custom package",
+      "name": [
+        "-c",
+        "--custom"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Install a package",
+      "name": "i",
+      "options": [
+        {
+          "args": {
+            "description": "Deno.land package name",
+            "name": "package name"
+          },
+          "description": "Install package from deno.land",
+          "name": [
+            "-m",
+            "--map"
+          ]
+        },
+        {
+          "args": {
+            "description": "Nest.land package name",
+            "name": "package name"
+          },
+          "description": "Install package from nest.land",
+          "name": [
+            "-n",
+            "--nest"
+          ]
+        },
+        {
+          "args": [
+            {
+              "description": "[user]/[repo or repo@tag/branch]/[path/to/file]",
+              "name": "repository"
+            },
+            {
+              "description": "Prefered package alias",
+              "name": "Package Name"
+            }
+          ],
+          "description": "Install package from some repository",
+          "name": [
+            "-p",
+            "--pkg"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "function(n){if(n)try{let e=JSON.parse(n);if(e.imports)return Object.entries(e.imports).map(([t,a])=>({name:t,icon:\"\\u{1F996}\",description:a}))}catch{return[]}return[]}",
+            "requires_js": true,
+            "script": [
+              "cat",
+              "import_map.json"
+            ]
+          }
+        ],
+        "name": "package name"
+      },
+      "description": "Delete a package",
+      "name": "delete"
+    },
+    {
+      "description": "Upgrade trex",
+      "name": "upgrade",
+      "options": [
+        {
+          "description": "Install from dev branch",
+          "name": [
+            "--canary"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "View dependency tree",
+      "name": "tree"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "function(n){if(n)try{let e=JSON.parse(n);if(e.scripts)return Object.entries(e.scripts).map(([t,a])=>({name:t,icon:\"\\u{1F680}\",description:\"trex script\"}))}catch{return[]}return[]}",
+            "requires_js": true,
+            "script": [
+              "cat",
+              "run.json"
+            ]
+          }
+        ],
+        "name": "script alias"
+      },
+      "description": "Run a script alias in a file run.json",
+      "name": "run",
+      "options": [
+        {
+          "description": "Use reboot script alias protocol (rsap)",
+          "name": [
+            "-w",
+            "--watch"
+          ]
+        },
+        {
+          "description": "Verbose output in --watch mode (rsap)",
+          "name": [
+            "-wv"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "function(n){if(n)try{let e=JSON.parse(n);if(e.imports)return Object.entries(e.imports).map(([t,a])=>({name:t,icon:\"\\u{1F996}\",description:a}))}catch{return[]}return[]}",
+            "requires_js": true,
+            "script": [
+              "cat",
+              "import_map.json"
+            ]
+          }
+        ],
+        "name": "package | url"
+      },
+      "description": "Remove a package or url from cache",
+      "name": "purge"
+    },
+    {
+      "description": "Shows the list of installed packages",
+      "name": "ls"
+    },
+    {
+      "args": {
+        "name": "cli tool"
+      },
+      "description": "Execute a cli tool with out install then",
+      "name": "exec",
+      "options": [
+        {
+          "description": "Specify cli permisions",
+          "name": [
+            "--perms"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Check deno.land [std/x] dependencies updates",
+      "name": "check",
+      "options": [
+        {
+          "description": "Update outdated dependencies",
+          "name": [
+            "-f",
+            "--fix"
+          ]
+        }
+      ]
+    }
+  ]
+}

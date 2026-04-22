@@ -1,0 +1,176 @@
+{
+  "description": "The Capacitor command-line interface (CLI) tool is used to develop Capacitor apps",
+  "name": "capacitor",
+  "options": [
+    {
+      "description": "Output usage information. Can be used with individual commands too",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "description": "Output the version number",
+      "name": [
+        "--version",
+        "-V"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "name": "platform",
+        "suggestions": [
+          {
+            "name": "android"
+          },
+          {
+            "name": "ios"
+          }
+        ]
+      },
+      "description": "Add a native platform project to your app",
+      "name": "add"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "platform",
+        "suggestions": [
+          {
+            "name": "android"
+          },
+          {
+            "name": "ios"
+          }
+        ]
+      },
+      "description": "Copy the web app build and Capacitor configuration file into the native platform project. Run this each time you make changes to your web app or change a configuration value",
+      "name": "copy"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "platform",
+        "suggestions": [
+          {
+            "name": "android"
+          },
+          {
+            "name": "ios"
+          }
+        ]
+      },
+      "description": "List all installed Cordova and Capacitor plugins",
+      "name": "ls"
+    },
+    {
+      "args": {
+        "name": "platform",
+        "suggestions": [
+          {
+            "name": "android"
+          },
+          {
+            "name": "ios"
+          }
+        ]
+      },
+      "description": "Opens the native project workspace in the specified native IDE (Xcode for iOS, Android Studio for Android)",
+      "name": "open"
+    },
+    {
+      "args": {
+        "name": "platform",
+        "suggestions": [
+          {
+            "name": "android"
+          },
+          {
+            "name": "ios"
+          }
+        ]
+      },
+      "description": "Opens the native project workspace in the specified native IDE (Xcode for iOS, Android Studio for Android)",
+      "name": "run",
+      "options": [
+        {
+          "description": "Print a list of target devices available to the given platform",
+          "name": [
+            "--list"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "async(i,o)=>{let[m,g,n]=i;if(!d(n))return[];let{stdout:t}=await o({command:\"npx\",args:[\"capacitor\",\"run\",n,\"--list\"]});return t.trim().split(`\n`).slice(2).map(a=>{let[s,r,p]=a.replace(/\\s\\s+/g,\"|\").split(\"|\");return{name:p,displayName:`${s} ${r}`,icon:\"\\u{1F4F1}\"}})}",
+                "requires_js": true
+              }
+            ],
+            "name": "target"
+          },
+          "description": "Run on a specific target device",
+          "name": [
+            "--target"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "platform",
+        "suggestions": [
+          {
+            "name": "android"
+          },
+          {
+            "name": "ios"
+          }
+        ]
+      },
+      "description": "This command runs copy and then update",
+      "name": "sync",
+      "options": [
+        {
+          "description": "Podfile.lock won't be deleted and pod install will use --deployment option",
+          "name": [
+            "--deployment"
+          ]
+        },
+        {
+          "description": "After syncing, all JS source maps will be inlined allowing for debugging an Android Web View in Chromium based browsers",
+          "name": [
+            "--inline"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "platform",
+        "suggestions": [
+          {
+            "name": "android"
+          },
+          {
+            "name": "ios"
+          }
+        ]
+      },
+      "description": "Updates the native plugins and dependencies referenced in package.json",
+      "name": "update",
+      "options": [
+        {
+          "description": "Podfile.lock won't be deleted and pod install will use --deployment option",
+          "name": [
+            "--deployment"
+          ]
+        }
+      ]
+    }
+  ]
+}

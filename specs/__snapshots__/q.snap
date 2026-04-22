@@ -1,0 +1,4818 @@
+{
+  "description": "The Amazon Q CLI",
+  "name": "q",
+  "options": [
+    {
+      "description": "Increase logging verbosity",
+      "name": [
+        "-v",
+        "--verbose"
+      ]
+    },
+    {
+      "description": "Print help for all subcommands",
+      "name": [
+        "--help-all"
+      ]
+    },
+    {
+      "description": "Print help",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Print version",
+      "name": [
+        "-V",
+        "--version"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Interact with the desktop app",
+      "name": "app",
+      "options": [
+        {
+          "description": "Increase logging verbosity",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Run the tutorial again",
+          "name": "onboarding",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Check if the desktop app is running",
+          "name": "running",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Launch the desktop app",
+          "name": "launch",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Restart the desktop app",
+          "name": "restart",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Quit the desktop app",
+          "name": "quit",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Uninstall the desktop app",
+          "name": "uninstall",
+          "options": [
+            {
+              "description": "Remove executable and user data",
+              "name": [
+                "--app-bundle"
+              ]
+            },
+            {
+              "description": "Remove input method",
+              "name": [
+                "--input-method"
+              ]
+            },
+            {
+              "description": "Remove dotfile shell integration",
+              "name": [
+                "--dotfiles"
+              ]
+            },
+            {
+              "description": "Remove SSH integration",
+              "name": [
+                "--ssh"
+              ]
+            },
+            {
+              "description": "Do not open the uninstallation page",
+              "name": [
+                "--no-open"
+              ]
+            },
+            {
+              "description": "Only open the uninstallation page",
+              "name": [
+                "--only-open"
+              ]
+            },
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Prompts shown on terminal startup",
+          "name": "prompts",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Print this message or the help of the given subcommand(s)",
+          "name": "help",
+          "subcommands": [
+            {
+              "description": "Run the tutorial again",
+              "name": "onboarding"
+            },
+            {
+              "description": "Check if the desktop app is running",
+              "name": "running"
+            },
+            {
+              "description": "Launch the desktop app",
+              "name": "launch"
+            },
+            {
+              "description": "Restart the desktop app",
+              "name": "restart"
+            },
+            {
+              "description": "Quit the desktop app",
+              "name": "quit"
+            },
+            {
+              "description": "Uninstall the desktop app",
+              "name": "uninstall"
+            },
+            {
+              "description": "Prompts shown on terminal startup",
+              "name": "prompts"
+            },
+            {
+              "description": "Print this message or the help of the given subcommand(s)",
+              "name": "help"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Hook commands",
+      "name": "hook",
+      "options": [
+        {
+          "description": "Increase logging verbosity",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": [
+            {
+              "name": "session_id"
+            },
+            {
+              "name": "integration"
+            },
+            {
+              "name": "tty"
+            },
+            {
+              "name": "pid"
+            },
+            {
+              "name": "histno"
+            },
+            {
+              "name": "cursor"
+            },
+            {
+              "name": "text"
+            }
+          ],
+          "name": "editbuffer",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "hide",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "name": "pid"
+            },
+            {
+              "name": "tty"
+            }
+          ],
+          "name": "init",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "integration"
+          },
+          "name": "integration-ready",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "name": "app_identifier"
+            },
+            {
+              "name": "focused_session_id"
+            }
+          ],
+          "name": "keyboard-focus-changed",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "name": "pid"
+            },
+            {
+              "name": "tty"
+            }
+          ],
+          "name": "pre-exec",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "name": "pid"
+            },
+            {
+              "name": "tty"
+            }
+          ],
+          "name": "prompt",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "name": "pid"
+            },
+            {
+              "name": "tty"
+            },
+            {
+              "name": "control_path"
+            },
+            {
+              "name": "remote_dest"
+            }
+          ],
+          "name": "ssh",
+          "options": [
+            {
+              "name": [
+                "--prompt"
+              ]
+            },
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "clear-autocomplete-cache",
+          "options": [
+            {
+              "args": {
+                "isOptional": true,
+                "name": "cli"
+              },
+              "name": [
+                "--cli"
+              ]
+            },
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Print this message or the help of the given subcommand(s)",
+          "name": "help",
+          "subcommands": [
+            {
+              "name": "editbuffer"
+            },
+            {
+              "name": "hide"
+            },
+            {
+              "name": "init"
+            },
+            {
+              "name": "integration-ready"
+            },
+            {
+              "name": "keyboard-focus-changed"
+            },
+            {
+              "name": "pre-exec"
+            },
+            {
+              "name": "prompt"
+            },
+            {
+              "name": "ssh"
+            },
+            {
+              "name": "clear-autocomplete-cache"
+            },
+            {
+              "description": "Print this message or the help of the given subcommand(s)",
+              "name": "help"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Debug the app",
+      "name": "debug",
+      "options": [
+        {
+          "description": "Increase logging verbosity",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Debug the app",
+          "name": "app",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "name": "app",
+              "suggestions": [
+                {
+                  "name": "dashboard"
+                },
+                {
+                  "name": "autocomplete"
+                }
+              ]
+            },
+            {
+              "isOptional": true,
+              "name": "build",
+              "suggestions": [
+                {
+                  "name": "production"
+                },
+                {
+                  "name": "beta"
+                },
+                {
+                  "name": "develop"
+                }
+              ]
+            }
+          ],
+          "description": "Switch to another branch of a Fig.js app",
+          "name": "build",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "mode",
+            "suggestions": [
+              {
+                "name": "on"
+              },
+              {
+                "name": "off"
+              }
+            ]
+          },
+          "description": "Toggle/set autocomplete window debug mode",
+          "name": "autocomplete-window",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "isVariadic": true,
+            "name": "files"
+          },
+          "description": "Show debug logs",
+          "name": "logs",
+          "options": [
+            {
+              "args": {
+                "isOptional": true,
+                "name": "level"
+              },
+              "name": [
+                "--level"
+              ]
+            },
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Input method debugger",
+          "name": "input-method",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "args": {
+                "isOptional": true,
+                "name": "bundle_path",
+                "template": "filepaths"
+              },
+              "name": "install",
+              "options": [
+                {
+                  "description": "Increase logging verbosity",
+                  "name": [
+                    "-v",
+                    "--verbose"
+                  ]
+                },
+                {
+                  "description": "Print help",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            },
+            {
+              "args": {
+                "isOptional": true,
+                "name": "bundle_path",
+                "template": "filepaths"
+              },
+              "name": "uninstall",
+              "options": [
+                {
+                  "description": "Increase logging verbosity",
+                  "name": [
+                    "-v",
+                    "--verbose"
+                  ]
+                },
+                {
+                  "description": "Print help",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "list",
+              "options": [
+                {
+                  "description": "Increase logging verbosity",
+                  "name": [
+                    "-v",
+                    "--verbose"
+                  ]
+                },
+                {
+                  "description": "Print help",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            },
+            {
+              "args": {
+                "isOptional": true,
+                "name": "bundle_path",
+                "template": "filepaths"
+              },
+              "name": "status",
+              "options": [
+                {
+                  "description": "Increase logging verbosity",
+                  "name": [
+                    "-v",
+                    "--verbose"
+                  ]
+                },
+                {
+                  "description": "Print help",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            },
+            {
+              "args": [
+                {
+                  "name": "bundle_identifier"
+                },
+                {
+                  "name": "action",
+                  "suggestions": [
+                    {
+                      "name": "enable"
+                    },
+                    {
+                      "name": "disable"
+                    },
+                    {
+                      "name": "select"
+                    },
+                    {
+                      "name": "deselect"
+                    }
+                  ]
+                }
+              ],
+              "name": "source",
+              "options": [
+                {
+                  "description": "Increase logging verbosity",
+                  "name": [
+                    "-v",
+                    "--verbose"
+                  ]
+                },
+                {
+                  "description": "Print help",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Print this message or the help of the given subcommand(s)",
+              "name": "help",
+              "subcommands": [
+                {
+                  "name": "install"
+                },
+                {
+                  "name": "uninstall"
+                },
+                {
+                  "name": "list"
+                },
+                {
+                  "name": "status"
+                },
+                {
+                  "name": "source"
+                },
+                {
+                  "description": "Print this message or the help of the given subcommand(s)",
+                  "name": "help"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Prompt accessibility",
+          "name": "prompt-accessibility",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Sample desktop process",
+          "name": "sample",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Debug application codesigning",
+          "name": "verify-codesign",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "action",
+            "suggestions": [
+              {
+                "name": "refresh"
+              },
+              {
+                "name": "reset"
+              },
+              {
+                "name": "prompt"
+              },
+              {
+                "name": "open"
+              },
+              {
+                "name": "status"
+              }
+            ]
+          },
+          "description": "Accessibility",
+          "name": "accessibility",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Key Tester",
+          "name": "key-tester",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Watches diagnostics",
+          "name": "diagnostics",
+          "options": [
+            {
+              "args": {
+                "isOptional": true,
+                "name": "rate"
+              },
+              "name": [
+                "--rate"
+              ]
+            },
+            {
+              "name": [
+                "--watch"
+              ]
+            },
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Queries remote repository for updates given the specified metadata",
+          "name": "query-index",
+          "options": [
+            {
+              "args": {
+                "name": "channel"
+              },
+              "name": [
+                "-c",
+                "--channel"
+              ]
+            },
+            {
+              "args": {
+                "name": "os"
+              },
+              "name": [
+                "-o",
+                "--os"
+              ]
+            },
+            {
+              "args": {
+                "name": "variant"
+              },
+              "name": [
+                "-V",
+                "--variant"
+              ]
+            },
+            {
+              "args": {
+                "name": "version"
+              },
+              "name": [
+                "-e",
+                "--version"
+              ]
+            },
+            {
+              "args": {
+                "name": "architecture"
+              },
+              "name": [
+                "-a",
+                "--architecture"
+              ]
+            },
+            {
+              "args": {
+                "isOptional": true,
+                "name": "override_threshold"
+              },
+              "name": [
+                "-t",
+                "--override-threshold"
+              ]
+            },
+            {
+              "args": {
+                "name": "file_type"
+              },
+              "name": [
+                "-f",
+                "--file-type"
+              ]
+            },
+            {
+              "name": [
+                "-r",
+                "--enable-rollout"
+              ]
+            },
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "app",
+            "suggestions": [
+              {
+                "name": "dashboard"
+              },
+              {
+                "name": "autocomplete"
+              }
+            ]
+          },
+          "description": "Open up the devtools of a specific webview",
+          "name": "devtools",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "channel"
+          },
+          "description": "Displays remote index",
+          "name": "get-index",
+          "options": [
+            {
+              "description": "Display using debug formatting",
+              "name": [
+                "-d",
+                "--debug"
+              ]
+            },
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Lists installed IntelliJ variants",
+          "name": "list-intellij-variants",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Disables sourcing of user shell config and instead uses a minimal shell config",
+          "name": "shell",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Print this message or the help of the given subcommand(s)",
+          "name": "help",
+          "subcommands": [
+            {
+              "description": "Debug the app",
+              "name": "app"
+            },
+            {
+              "description": "Switch to another branch of a Fig.js app",
+              "name": "build"
+            },
+            {
+              "description": "Toggle/set autocomplete window debug mode",
+              "name": "autocomplete-window"
+            },
+            {
+              "description": "Show debug logs",
+              "name": "logs"
+            },
+            {
+              "description": "Input method debugger",
+              "name": "input-method",
+              "subcommands": [
+                {
+                  "name": "install"
+                },
+                {
+                  "name": "uninstall"
+                },
+                {
+                  "name": "list"
+                },
+                {
+                  "name": "status"
+                },
+                {
+                  "name": "source"
+                }
+              ]
+            },
+            {
+              "description": "Prompt accessibility",
+              "name": "prompt-accessibility"
+            },
+            {
+              "description": "Sample desktop process",
+              "name": "sample"
+            },
+            {
+              "description": "Debug application codesigning",
+              "name": "verify-codesign"
+            },
+            {
+              "description": "Accessibility",
+              "name": "accessibility"
+            },
+            {
+              "description": "Key Tester",
+              "name": "key-tester"
+            },
+            {
+              "description": "Watches diagnostics",
+              "name": "diagnostics"
+            },
+            {
+              "description": "Queries remote repository for updates given the specified metadata",
+              "name": "query-index"
+            },
+            {
+              "description": "Open up the devtools of a specific webview",
+              "name": "devtools"
+            },
+            {
+              "description": "Displays remote index",
+              "name": "get-index"
+            },
+            {
+              "description": "Lists installed IntelliJ variants",
+              "name": "list-intellij-variants"
+            },
+            {
+              "description": "Disables sourcing of user shell config and instead uses a minimal shell config",
+              "name": "shell"
+            },
+            {
+              "description": "Print this message or the help of the given subcommand(s)",
+              "name": "help"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "isOptional": true,
+          "name": "key"
+        },
+        {
+          "isOptional": true,
+          "name": "value"
+        }
+      ],
+      "description": "Customize appearance & behavior",
+      "name": "settings",
+      "options": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "format",
+            "suggestions": [
+              {
+                "description": "Outputs the results as markdown",
+                "name": "plain"
+              },
+              {
+                "description": "Outputs the results as JSON",
+                "name": "json"
+              },
+              {
+                "description": "Outputs the results as pretty print JSON",
+                "name": "json-pretty"
+              }
+            ]
+          },
+          "description": "Format of the output",
+          "name": [
+            "-f",
+            "--format"
+          ]
+        },
+        {
+          "description": "Delete a value",
+          "name": [
+            "-d",
+            "--delete"
+          ]
+        },
+        {
+          "description": "Increase logging verbosity",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Print help (see more with '--help')",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Open the settings file",
+          "name": "open",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List all the settings",
+          "name": "all",
+          "options": [
+            {
+              "args": {
+                "isOptional": true,
+                "name": "format",
+                "suggestions": [
+                  {
+                    "description": "Outputs the results as markdown",
+                    "name": "plain"
+                  },
+                  {
+                    "description": "Outputs the results as JSON",
+                    "name": "json"
+                  },
+                  {
+                    "description": "Outputs the results as pretty print JSON",
+                    "name": "json-pretty"
+                  }
+                ]
+              },
+              "description": "Format of the output",
+              "name": [
+                "-f",
+                "--format"
+              ]
+            },
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help (see more with '--help')",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Print this message or the help of the given subcommand(s)",
+          "name": "help",
+          "subcommands": [
+            {
+              "description": "Open the settings file",
+              "name": "open"
+            },
+            {
+              "description": "List all the settings",
+              "name": "all"
+            },
+            {
+              "description": "Print this message or the help of the given subcommand(s)",
+              "name": "help"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Install cli components",
+      "name": "install",
+      "options": [
+        {
+          "description": "Install only the shell integrations",
+          "name": [
+            "--dotfiles"
+          ]
+        },
+        {
+          "description": "Prompt input method installation",
+          "name": [
+            "--input-method"
+          ]
+        },
+        {
+          "description": "Don't confirm automatic installation",
+          "name": [
+            "--no-confirm"
+          ]
+        },
+        {
+          "description": "Force installation of fig",
+          "name": [
+            "--force"
+          ]
+        },
+        {
+          "description": "Increase logging verbosity",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Uninstall Q",
+      "name": "uninstall",
+      "options": [
+        {
+          "description": "Force uninstall",
+          "name": [
+            "-y",
+            "--no-confirm"
+          ]
+        },
+        {
+          "description": "Increase logging verbosity",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Update the Q application",
+      "name": "update",
+      "options": [
+        {
+          "description": "Don't prompt for confirmation",
+          "name": [
+            "-y",
+            "--non-interactive"
+          ]
+        },
+        {
+          "description": "Relaunch into dashboard after update (false will launch in background)",
+          "name": [
+            "--relaunch-dashboard"
+          ]
+        },
+        {
+          "description": "Uses rollout",
+          "name": [
+            "--rollout"
+          ]
+        },
+        {
+          "description": "Increase logging verbosity",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Run diagnostic tests",
+      "name": "diagnostic",
+      "options": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "format",
+            "suggestions": [
+              {
+                "description": "Outputs the results as markdown",
+                "name": "plain"
+              },
+              {
+                "description": "Outputs the results as JSON",
+                "name": "json"
+              },
+              {
+                "description": "Outputs the results as pretty print JSON",
+                "name": "json-pretty"
+              }
+            ]
+          },
+          "description": "The format of the output",
+          "name": [
+            "-f",
+            "--format"
+          ]
+        },
+        {
+          "description": "Force limited diagnostic output",
+          "name": [
+            "--force"
+          ]
+        },
+        {
+          "description": "Increase logging verbosity",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Print help (see more with '--help')",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "shell",
+          "suggestions": [
+            {
+              "description": "Bash shell",
+              "name": "bash"
+            },
+            {
+              "description": "Zsh shell",
+              "name": "zsh"
+            },
+            {
+              "description": "Fish shell",
+              "name": "fish"
+            },
+            {
+              "description": "Nu shell",
+              "name": "nu"
+            }
+          ]
+        },
+        {
+          "name": "when",
+          "suggestions": [
+            {
+              "name": "pre"
+            },
+            {
+              "name": "post"
+            }
+          ]
+        }
+      ],
+      "description": "Generate the dotfiles for the given shell",
+      "name": "init",
+      "options": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "rcfile"
+          },
+          "name": [
+            "--rcfile"
+          ]
+        },
+        {
+          "description": "Increase logging verbosity",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Print help (see more with '--help')",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "q",
+              "theme",
+              "--list"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "isOptional": true,
+        "name": "theme"
+      },
+      "description": "Get or set theme",
+      "name": "theme",
+      "options": [
+        {
+          "name": [
+            "--list"
+          ]
+        },
+        {
+          "name": [
+            "--folder"
+          ]
+        },
+        {
+          "description": "Increase logging verbosity",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "description"
+      },
+      "description": "Create a new Github issue",
+      "name": "issue",
+      "options": [
+        {
+          "description": "Force issue creation",
+          "name": [
+            "-f",
+            "--force"
+          ]
+        },
+        {
+          "description": "Increase logging verbosity",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Login",
+      "name": "login",
+      "options": [
+        {
+          "description": "Increase logging verbosity",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Logout",
+      "name": "logout",
+      "options": [
+        {
+          "description": "Increase logging verbosity",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Prints details about the current user",
+      "name": "whoami",
+      "options": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "format",
+            "suggestions": [
+              {
+                "description": "Outputs the results as markdown",
+                "name": "plain"
+              },
+              {
+                "description": "Outputs the results as JSON",
+                "name": "json"
+              },
+              {
+                "description": "Outputs the results as pretty print JSON",
+                "name": "json-pretty"
+              }
+            ]
+          },
+          "description": "Output format to use",
+          "name": [
+            "-f",
+            "--format"
+          ]
+        },
+        {
+          "description": "Increase logging verbosity",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Print help (see more with '--help')",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage your account",
+      "name": "user",
+      "options": [
+        {
+          "description": "Increase logging verbosity",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Login",
+          "name": "login",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Logout",
+          "name": "logout",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Prints details about the current user",
+          "name": "whoami",
+          "options": [
+            {
+              "args": {
+                "isOptional": true,
+                "name": "format",
+                "suggestions": [
+                  {
+                    "description": "Outputs the results as markdown",
+                    "name": "plain"
+                  },
+                  {
+                    "description": "Outputs the results as JSON",
+                    "name": "json"
+                  },
+                  {
+                    "description": "Outputs the results as pretty print JSON",
+                    "name": "json-pretty"
+                  }
+                ]
+              },
+              "description": "Output format to use",
+              "name": [
+                "-f",
+                "--format"
+              ]
+            },
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help (see more with '--help')",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Print this message or the help of the given subcommand(s)",
+          "name": "help",
+          "subcommands": [
+            {
+              "description": "Login",
+              "name": "login"
+            },
+            {
+              "description": "Logout",
+              "name": "logout"
+            },
+            {
+              "description": "Prints details about the current user",
+              "name": "whoami"
+            },
+            {
+              "description": "Print this message or the help of the given subcommand(s)",
+              "name": "help"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Fix and diagnose common issues",
+      "name": "doctor",
+      "options": [
+        {
+          "description": "Run all doctor tests, with no fixes",
+          "name": [
+            "-a",
+            "--all"
+          ]
+        },
+        {
+          "description": "Error on warnings",
+          "name": [
+            "-s",
+            "--strict"
+          ]
+        },
+        {
+          "description": "Increase logging verbosity",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "shell",
+        "suggestions": [
+          {
+            "description": "Bash shell completions",
+            "name": "bash"
+          },
+          {
+            "description": "Fish shell completions",
+            "name": "fish"
+          },
+          {
+            "description": "Zsh shell completions",
+            "name": "zsh"
+          },
+          {
+            "description": "Fig completion spec",
+            "name": "fig"
+          }
+        ]
+      },
+      "description": "Generate CLI completion spec",
+      "name": "completion",
+      "options": [
+        {
+          "description": "Increase logging verbosity",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Print help (see more with '--help')",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Internal subcommands",
+      "name": "internal",
+      "options": [
+        {
+          "description": "Increase logging verbosity",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Command that is run during the PreCmd section of the Q integrations",
+          "name": "pre-cmd",
+          "options": [
+            {
+              "args": {
+                "isOptional": true,
+                "name": "alias"
+              },
+              "name": [
+                "--alias"
+              ]
+            },
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "isOptional": true,
+              "name": "key"
+            },
+            {
+              "isOptional": true,
+              "name": "value"
+            }
+          ],
+          "description": "Change the local-state file",
+          "name": "local-state",
+          "options": [
+            {
+              "args": {
+                "isOptional": true,
+                "name": "format",
+                "suggestions": [
+                  {
+                    "description": "Outputs the results as markdown",
+                    "name": "plain"
+                  },
+                  {
+                    "description": "Outputs the results as JSON",
+                    "name": "json"
+                  },
+                  {
+                    "description": "Outputs the results as pretty print JSON",
+                    "name": "json-pretty"
+                  }
+                ]
+              },
+              "description": "Format of the output",
+              "name": [
+                "-f",
+                "--format"
+              ]
+            },
+            {
+              "description": "Delete the state",
+              "name": [
+                "-d",
+                "--delete"
+              ]
+            },
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help (see more with '--help')",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "description": "Reload the state listener",
+              "name": "init",
+              "options": [
+                {
+                  "description": "Increase logging verbosity",
+                  "name": [
+                    "-v",
+                    "--verbose"
+                  ]
+                },
+                {
+                  "description": "Print help",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "List all the settings",
+              "name": "all",
+              "options": [
+                {
+                  "args": {
+                    "isOptional": true,
+                    "name": "format",
+                    "suggestions": [
+                      {
+                        "description": "Outputs the results as markdown",
+                        "name": "plain"
+                      },
+                      {
+                        "description": "Outputs the results as JSON",
+                        "name": "json"
+                      },
+                      {
+                        "description": "Outputs the results as pretty print JSON",
+                        "name": "json-pretty"
+                      }
+                    ]
+                  },
+                  "name": [
+                    "-f",
+                    "--format"
+                  ]
+                },
+                {
+                  "description": "Increase logging verbosity",
+                  "name": [
+                    "-v",
+                    "--verbose"
+                  ]
+                },
+                {
+                  "description": "Print help (see more with '--help')",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Print this message or the help of the given subcommand(s)",
+              "name": "help",
+              "subcommands": [
+                {
+                  "description": "Reload the state listener",
+                  "name": "init"
+                },
+                {
+                  "description": "List all the settings",
+                  "name": "all"
+                },
+                {
+                  "description": "Print this message or the help of the given subcommand(s)",
+                  "name": "help"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "name": "handler_id"
+            },
+            {
+              "isOptional": true,
+              "name": "filename"
+            },
+            {
+              "isOptional": true,
+              "name": "exit_code"
+            }
+          ],
+          "description": "Callback used for the internal pseudoterminal",
+          "name": "callback",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Install Q cli",
+          "name": "install",
+          "options": [
+            {
+              "description": "Install only the shell integrations",
+              "name": [
+                "--dotfiles"
+              ]
+            },
+            {
+              "description": "Prompt input method installation",
+              "name": [
+                "--input-method"
+              ]
+            },
+            {
+              "description": "Don't confirm automatic installation",
+              "name": [
+                "--no-confirm"
+              ]
+            },
+            {
+              "description": "Force installation of fig",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Uninstall Q cli",
+          "name": "uninstall",
+          "options": [
+            {
+              "description": "Uninstall only the shell integrations",
+              "name": [
+                "--dotfiles"
+              ]
+            },
+            {
+              "description": "Uninstall only the input method",
+              "name": [
+                "--input-method"
+              ]
+            },
+            {
+              "description": "Uninstall only the binary",
+              "name": [
+                "--binary"
+              ]
+            },
+            {
+              "description": "Uninstall only the ssh integration",
+              "name": [
+                "--ssh"
+              ]
+            },
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "get-shell",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "hostname",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Detects if Figterm should be launched",
+          "name": "should-figterm-launch",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help (see more with '--help')",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "event",
+          "options": [
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the event",
+              "name": [
+                "--name"
+              ]
+            },
+            {
+              "args": {
+                "isOptional": true,
+                "name": "payload"
+              },
+              "description": "Payload of the event as a JSON string",
+              "name": [
+                "--payload"
+              ]
+            },
+            {
+              "args": {
+                "isOptional": true,
+                "name": "apps"
+              },
+              "description": "Apps to send the event to",
+              "name": [
+                "--apps"
+              ]
+            },
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "sockets-dir",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "stream-from-socket",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "session_id"
+          },
+          "name": "figterm-socket-path",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "ipc",
+          "options": [
+            {
+              "args": {
+                "isOptional": true,
+                "name": "figterm"
+              },
+              "name": [
+                "--figterm"
+              ]
+            },
+            {
+              "args": {
+                "name": "json"
+              },
+              "name": [
+                "--json"
+              ]
+            },
+            {
+              "name": [
+                "--app"
+              ]
+            },
+            {
+              "name": [
+                "--recv"
+              ]
+            },
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Linux only",
+          "name": "uninstall-for-all-users",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "uuidgen",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "open-uninstall-page",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "name": "remote_dest"
+            },
+            {
+              "name": "uuid"
+            }
+          ],
+          "description": "Displays prompt to install remote shell integrations",
+          "name": "ssh-local-command",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "remote_dest"
+          },
+          "description": "\\[Deprecated\\] Displays prompt to install remote shell integrations",
+          "name": "prompt-ssh",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "bundle_path",
+            "template": "filepaths"
+          },
+          "name": "attempt-to-finish-input-method-installation",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "component",
+            "suggestions": [
+              {
+                "name": "figterm"
+              },
+              {
+                "name": "web-notifications"
+              }
+            ]
+          },
+          "name": "dump-state",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "finish-update",
+          "options": [
+            {
+              "args": {
+                "isOptional": true,
+                "name": "delete_bundle"
+              },
+              "name": [
+                "--delete-bundle"
+              ]
+            },
+            {
+              "name": [
+                "--relaunch-dashboard"
+              ]
+            },
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "name": "from",
+              "template": "filepaths"
+            },
+            {
+              "name": "to",
+              "template": "filepaths"
+            }
+          ],
+          "name": "swap-files",
+          "options": [
+            {
+              "name": [
+                "--not-same-bundle-name"
+              ]
+            },
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "brew-uninstall",
+          "options": [
+            {
+              "name": [
+                "--zap"
+              ]
+            },
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Generates an SSH configuration file",
+          "name": "generate-ssh",
+          "options": [
+            {
+              "args": {
+                "isOptional": true,
+                "name": "remote_host"
+              },
+              "description": "The remote host",
+              "name": [
+                "--remote-host"
+              ]
+            },
+            {
+              "args": {
+                "isOptional": true,
+                "name": "remote_port"
+              },
+              "description": "The remote port",
+              "name": [
+                "--remote-port"
+              ]
+            },
+            {
+              "args": {
+                "isOptional": true,
+                "name": "remote_username"
+              },
+              "description": "The remote username",
+              "name": [
+                "--remote-username"
+              ]
+            },
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help (see more with '--help')",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "inline-shell-completion",
+          "options": [
+            {
+              "args": {
+                "name": "buffer"
+              },
+              "name": [
+                "--buffer"
+              ]
+            },
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "inline-shell-completion-accept",
+          "options": [
+            {
+              "args": {
+                "name": "buffer"
+              },
+              "name": [
+                "--buffer"
+              ]
+            },
+            {
+              "args": {
+                "name": "suggestion"
+              },
+              "name": [
+                "--suggestion"
+              ]
+            },
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Print this message or the help of the given subcommand(s)",
+          "name": "help",
+          "subcommands": [
+            {
+              "description": "Command that is run during the PreCmd section of the Q integrations",
+              "name": "pre-cmd"
+            },
+            {
+              "description": "Change the local-state file",
+              "name": "local-state",
+              "subcommands": [
+                {
+                  "description": "Reload the state listener",
+                  "name": "init"
+                },
+                {
+                  "description": "List all the settings",
+                  "name": "all"
+                }
+              ]
+            },
+            {
+              "description": "Callback used for the internal pseudoterminal",
+              "name": "callback"
+            },
+            {
+              "description": "Install Q cli",
+              "name": "install"
+            },
+            {
+              "description": "Uninstall Q cli",
+              "name": "uninstall"
+            },
+            {
+              "name": "get-shell"
+            },
+            {
+              "name": "hostname"
+            },
+            {
+              "description": "Detects if Figterm should be launched",
+              "name": "should-figterm-launch"
+            },
+            {
+              "name": "event"
+            },
+            {
+              "name": "sockets-dir"
+            },
+            {
+              "name": "stream-from-socket"
+            },
+            {
+              "name": "figterm-socket-path"
+            },
+            {
+              "name": "ipc"
+            },
+            {
+              "description": "Linux only",
+              "name": "uninstall-for-all-users"
+            },
+            {
+              "name": "uuidgen"
+            },
+            {
+              "name": "open-uninstall-page"
+            },
+            {
+              "description": "Displays prompt to install remote shell integrations",
+              "name": "ssh-local-command"
+            },
+            {
+              "description": "\\[Deprecated\\] Displays prompt to install remote shell integrations",
+              "name": "prompt-ssh"
+            },
+            {
+              "name": "attempt-to-finish-input-method-installation"
+            },
+            {
+              "name": "dump-state"
+            },
+            {
+              "name": "finish-update"
+            },
+            {
+              "name": "swap-files"
+            },
+            {
+              "name": "brew-uninstall"
+            },
+            {
+              "description": "Generates an SSH configuration file",
+              "name": "generate-ssh"
+            },
+            {
+              "name": "inline-shell-completion"
+            },
+            {
+              "name": "inline-shell-completion-accept"
+            },
+            {
+              "description": "Print this message or the help of the given subcommand(s)",
+              "name": "help"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Launch the desktop app",
+      "name": "launch",
+      "options": [
+        {
+          "description": "Increase logging verbosity",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Quit the desktop app",
+      "name": "quit",
+      "options": [
+        {
+          "description": "Increase logging verbosity",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "process",
+        "suggestions": [
+          {
+            "description": "Desktop Process",
+            "name": "app"
+          }
+        ]
+      },
+      "description": "Restart the desktop app",
+      "name": "restart",
+      "options": [
+        {
+          "description": "Increase logging verbosity",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Run the tutorial",
+      "name": "onboarding",
+      "options": [
+        {
+          "description": "Increase logging verbosity",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage system integrations",
+      "name": "integrations",
+      "options": [
+        {
+          "description": "Increase logging verbosity",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "name": "install",
+          "options": [
+            {
+              "description": "Suppress status messages",
+              "name": [
+                "-s",
+                "--silent"
+              ]
+            },
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "args": {
+                "isOptional": true,
+                "name": "shell",
+                "suggestions": [
+                  {
+                    "description": "Bash shell",
+                    "name": "bash"
+                  },
+                  {
+                    "description": "Zsh shell",
+                    "name": "zsh"
+                  },
+                  {
+                    "description": "Fish shell",
+                    "name": "fish"
+                  },
+                  {
+                    "description": "Nu shell",
+                    "name": "nu"
+                  }
+                ]
+              },
+              "name": "dotfiles",
+              "options": [
+                {
+                  "description": "Increase logging verbosity",
+                  "name": [
+                    "-v",
+                    "--verbose"
+                  ]
+                },
+                {
+                  "description": "Print help (see more with '--help')",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "ssh",
+              "options": [
+                {
+                  "description": "Increase logging verbosity",
+                  "name": [
+                    "-v",
+                    "--verbose"
+                  ]
+                },
+                {
+                  "description": "Print help",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "input-method",
+              "options": [
+                {
+                  "description": "Increase logging verbosity",
+                  "name": [
+                    "-v",
+                    "--verbose"
+                  ]
+                },
+                {
+                  "description": "Print help",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "vscode",
+              "options": [
+                {
+                  "description": "Increase logging verbosity",
+                  "name": [
+                    "-v",
+                    "--verbose"
+                  ]
+                },
+                {
+                  "description": "Print help",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "intellij-plugin",
+              "options": [
+                {
+                  "description": "Increase logging verbosity",
+                  "name": [
+                    "-v",
+                    "--verbose"
+                  ]
+                },
+                {
+                  "description": "Print help",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "all",
+              "options": [
+                {
+                  "description": "Increase logging verbosity",
+                  "name": [
+                    "-v",
+                    "--verbose"
+                  ]
+                },
+                {
+                  "description": "Print help",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Print this message or the help of the given subcommand(s)",
+              "name": "help",
+              "subcommands": [
+                {
+                  "name": "dotfiles"
+                },
+                {
+                  "name": "ssh"
+                },
+                {
+                  "name": "input-method"
+                },
+                {
+                  "name": "vscode"
+                },
+                {
+                  "name": "intellij-plugin"
+                },
+                {
+                  "name": "all"
+                },
+                {
+                  "description": "Print this message or the help of the given subcommand(s)",
+                  "name": "help"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "uninstall",
+          "options": [
+            {
+              "description": "Suppress status messages",
+              "name": [
+                "-s",
+                "--silent"
+              ]
+            },
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "args": {
+                "isOptional": true,
+                "name": "shell",
+                "suggestions": [
+                  {
+                    "description": "Bash shell",
+                    "name": "bash"
+                  },
+                  {
+                    "description": "Zsh shell",
+                    "name": "zsh"
+                  },
+                  {
+                    "description": "Fish shell",
+                    "name": "fish"
+                  },
+                  {
+                    "description": "Nu shell",
+                    "name": "nu"
+                  }
+                ]
+              },
+              "name": "dotfiles",
+              "options": [
+                {
+                  "description": "Increase logging verbosity",
+                  "name": [
+                    "-v",
+                    "--verbose"
+                  ]
+                },
+                {
+                  "description": "Print help (see more with '--help')",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "ssh",
+              "options": [
+                {
+                  "description": "Increase logging verbosity",
+                  "name": [
+                    "-v",
+                    "--verbose"
+                  ]
+                },
+                {
+                  "description": "Print help",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "input-method",
+              "options": [
+                {
+                  "description": "Increase logging verbosity",
+                  "name": [
+                    "-v",
+                    "--verbose"
+                  ]
+                },
+                {
+                  "description": "Print help",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "vscode",
+              "options": [
+                {
+                  "description": "Increase logging verbosity",
+                  "name": [
+                    "-v",
+                    "--verbose"
+                  ]
+                },
+                {
+                  "description": "Print help",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "intellij-plugin",
+              "options": [
+                {
+                  "description": "Increase logging verbosity",
+                  "name": [
+                    "-v",
+                    "--verbose"
+                  ]
+                },
+                {
+                  "description": "Print help",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "all",
+              "options": [
+                {
+                  "description": "Increase logging verbosity",
+                  "name": [
+                    "-v",
+                    "--verbose"
+                  ]
+                },
+                {
+                  "description": "Print help",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Print this message or the help of the given subcommand(s)",
+              "name": "help",
+              "subcommands": [
+                {
+                  "name": "dotfiles"
+                },
+                {
+                  "name": "ssh"
+                },
+                {
+                  "name": "input-method"
+                },
+                {
+                  "name": "vscode"
+                },
+                {
+                  "name": "intellij-plugin"
+                },
+                {
+                  "name": "all"
+                },
+                {
+                  "description": "Print this message or the help of the given subcommand(s)",
+                  "name": "help"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "reinstall",
+          "options": [
+            {
+              "description": "Suppress status messages",
+              "name": [
+                "-s",
+                "--silent"
+              ]
+            },
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "args": {
+                "isOptional": true,
+                "name": "shell",
+                "suggestions": [
+                  {
+                    "description": "Bash shell",
+                    "name": "bash"
+                  },
+                  {
+                    "description": "Zsh shell",
+                    "name": "zsh"
+                  },
+                  {
+                    "description": "Fish shell",
+                    "name": "fish"
+                  },
+                  {
+                    "description": "Nu shell",
+                    "name": "nu"
+                  }
+                ]
+              },
+              "name": "dotfiles",
+              "options": [
+                {
+                  "description": "Increase logging verbosity",
+                  "name": [
+                    "-v",
+                    "--verbose"
+                  ]
+                },
+                {
+                  "description": "Print help (see more with '--help')",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "ssh",
+              "options": [
+                {
+                  "description": "Increase logging verbosity",
+                  "name": [
+                    "-v",
+                    "--verbose"
+                  ]
+                },
+                {
+                  "description": "Print help",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "input-method",
+              "options": [
+                {
+                  "description": "Increase logging verbosity",
+                  "name": [
+                    "-v",
+                    "--verbose"
+                  ]
+                },
+                {
+                  "description": "Print help",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "vscode",
+              "options": [
+                {
+                  "description": "Increase logging verbosity",
+                  "name": [
+                    "-v",
+                    "--verbose"
+                  ]
+                },
+                {
+                  "description": "Print help",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "intellij-plugin",
+              "options": [
+                {
+                  "description": "Increase logging verbosity",
+                  "name": [
+                    "-v",
+                    "--verbose"
+                  ]
+                },
+                {
+                  "description": "Print help",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "all",
+              "options": [
+                {
+                  "description": "Increase logging verbosity",
+                  "name": [
+                    "-v",
+                    "--verbose"
+                  ]
+                },
+                {
+                  "description": "Print help",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Print this message or the help of the given subcommand(s)",
+              "name": "help",
+              "subcommands": [
+                {
+                  "name": "dotfiles"
+                },
+                {
+                  "name": "ssh"
+                },
+                {
+                  "name": "input-method"
+                },
+                {
+                  "name": "vscode"
+                },
+                {
+                  "name": "intellij-plugin"
+                },
+                {
+                  "name": "all"
+                },
+                {
+                  "description": "Print this message or the help of the given subcommand(s)",
+                  "name": "help"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "status",
+          "options": [
+            {
+              "args": {
+                "isOptional": true,
+                "name": "format",
+                "suggestions": [
+                  {
+                    "description": "Outputs the results as markdown",
+                    "name": "plain"
+                  },
+                  {
+                    "description": "Outputs the results as JSON",
+                    "name": "json"
+                  },
+                  {
+                    "description": "Outputs the results as pretty print JSON",
+                    "name": "json-pretty"
+                  }
+                ]
+              },
+              "name": [
+                "-f",
+                "--format"
+              ]
+            },
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help (see more with '--help')",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "args": {
+                "isOptional": true,
+                "name": "shell",
+                "suggestions": [
+                  {
+                    "description": "Bash shell",
+                    "name": "bash"
+                  },
+                  {
+                    "description": "Zsh shell",
+                    "name": "zsh"
+                  },
+                  {
+                    "description": "Fish shell",
+                    "name": "fish"
+                  },
+                  {
+                    "description": "Nu shell",
+                    "name": "nu"
+                  }
+                ]
+              },
+              "name": "dotfiles",
+              "options": [
+                {
+                  "description": "Increase logging verbosity",
+                  "name": [
+                    "-v",
+                    "--verbose"
+                  ]
+                },
+                {
+                  "description": "Print help (see more with '--help')",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "ssh",
+              "options": [
+                {
+                  "description": "Increase logging verbosity",
+                  "name": [
+                    "-v",
+                    "--verbose"
+                  ]
+                },
+                {
+                  "description": "Print help",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "input-method",
+              "options": [
+                {
+                  "description": "Increase logging verbosity",
+                  "name": [
+                    "-v",
+                    "--verbose"
+                  ]
+                },
+                {
+                  "description": "Print help",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "vscode",
+              "options": [
+                {
+                  "description": "Increase logging verbosity",
+                  "name": [
+                    "-v",
+                    "--verbose"
+                  ]
+                },
+                {
+                  "description": "Print help",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "intellij-plugin",
+              "options": [
+                {
+                  "description": "Increase logging verbosity",
+                  "name": [
+                    "-v",
+                    "--verbose"
+                  ]
+                },
+                {
+                  "description": "Print help",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "all",
+              "options": [
+                {
+                  "description": "Increase logging verbosity",
+                  "name": [
+                    "-v",
+                    "--verbose"
+                  ]
+                },
+                {
+                  "description": "Print help",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Print this message or the help of the given subcommand(s)",
+              "name": "help",
+              "subcommands": [
+                {
+                  "name": "dotfiles"
+                },
+                {
+                  "name": "ssh"
+                },
+                {
+                  "name": "input-method"
+                },
+                {
+                  "name": "vscode"
+                },
+                {
+                  "name": "intellij-plugin"
+                },
+                {
+                  "name": "all"
+                },
+                {
+                  "description": "Print this message or the help of the given subcommand(s)",
+                  "name": "help"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Print this message or the help of the given subcommand(s)",
+          "name": "help",
+          "subcommands": [
+            {
+              "name": "install",
+              "subcommands": [
+                {
+                  "name": "dotfiles"
+                },
+                {
+                  "name": "ssh"
+                },
+                {
+                  "name": "input-method"
+                },
+                {
+                  "name": "vscode"
+                },
+                {
+                  "name": "intellij-plugin"
+                },
+                {
+                  "name": "all"
+                }
+              ]
+            },
+            {
+              "name": "uninstall",
+              "subcommands": [
+                {
+                  "name": "dotfiles"
+                },
+                {
+                  "name": "ssh"
+                },
+                {
+                  "name": "input-method"
+                },
+                {
+                  "name": "vscode"
+                },
+                {
+                  "name": "intellij-plugin"
+                },
+                {
+                  "name": "all"
+                }
+              ]
+            },
+            {
+              "name": "reinstall",
+              "subcommands": [
+                {
+                  "name": "dotfiles"
+                },
+                {
+                  "name": "ssh"
+                },
+                {
+                  "name": "input-method"
+                },
+                {
+                  "name": "vscode"
+                },
+                {
+                  "name": "intellij-plugin"
+                },
+                {
+                  "name": "all"
+                }
+              ]
+            },
+            {
+              "name": "status",
+              "subcommands": [
+                {
+                  "name": "dotfiles"
+                },
+                {
+                  "name": "ssh"
+                },
+                {
+                  "name": "input-method"
+                },
+                {
+                  "name": "vscode"
+                },
+                {
+                  "name": "intellij-plugin"
+                },
+                {
+                  "name": "all"
+                }
+              ]
+            },
+            {
+              "description": "Print this message or the help of the given subcommand(s)",
+              "name": "help"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "input"
+      },
+      "description": "Natural Language to Shell translation",
+      "name": "translate",
+      "options": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "n"
+          },
+          "description": "Number of completions to generate (must be <=5)",
+          "name": [
+            "-n",
+            "--n"
+          ]
+        },
+        {
+          "description": "Increase logging verbosity",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Enable/disable telemetry",
+      "name": "telemetry",
+      "options": [
+        {
+          "description": "Increase logging verbosity",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "name": "enable",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "disable",
+          "options": [
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "status",
+          "options": [
+            {
+              "args": {
+                "isOptional": true,
+                "name": "format",
+                "suggestions": [
+                  {
+                    "description": "Outputs the results as markdown",
+                    "name": "plain"
+                  },
+                  {
+                    "description": "Outputs the results as JSON",
+                    "name": "json"
+                  },
+                  {
+                    "description": "Outputs the results as pretty print JSON",
+                    "name": "json-pretty"
+                  }
+                ]
+              },
+              "description": "Format of the output",
+              "name": [
+                "-f",
+                "--format"
+              ]
+            },
+            {
+              "description": "Increase logging verbosity",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Print help (see more with '--help')",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Print this message or the help of the given subcommand(s)",
+          "name": "help",
+          "subcommands": [
+            {
+              "name": "enable"
+            },
+            {
+              "name": "disable"
+            },
+            {
+              "name": "status"
+            },
+            {
+              "description": "Print this message or the help of the given subcommand(s)",
+              "name": "help"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Version",
+      "name": "version",
+      "options": [
+        {
+          "description": "Increase logging verbosity",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Open the dashboard",
+      "name": "dashboard",
+      "options": [
+        {
+          "description": "Increase logging verbosity",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "input"
+      },
+      "description": "AI assistant in your terminal",
+      "name": "chat",
+      "options": [
+        {
+          "description": "Increase logging verbosity",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Print help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Print this message or the help of the given subcommand(s)",
+      "name": "help",
+      "subcommands": [
+        {
+          "description": "Interact with the desktop app",
+          "name": "app",
+          "subcommands": [
+            {
+              "description": "Run the tutorial again",
+              "name": "onboarding"
+            },
+            {
+              "description": "Check if the desktop app is running",
+              "name": "running"
+            },
+            {
+              "description": "Launch the desktop app",
+              "name": "launch"
+            },
+            {
+              "description": "Restart the desktop app",
+              "name": "restart"
+            },
+            {
+              "description": "Quit the desktop app",
+              "name": "quit"
+            },
+            {
+              "description": "Uninstall the desktop app",
+              "name": "uninstall"
+            },
+            {
+              "description": "Prompts shown on terminal startup",
+              "name": "prompts"
+            }
+          ]
+        },
+        {
+          "description": "Hook commands",
+          "name": "hook",
+          "subcommands": [
+            {
+              "name": "editbuffer"
+            },
+            {
+              "name": "hide"
+            },
+            {
+              "name": "init"
+            },
+            {
+              "name": "integration-ready"
+            },
+            {
+              "name": "keyboard-focus-changed"
+            },
+            {
+              "name": "pre-exec"
+            },
+            {
+              "name": "prompt"
+            },
+            {
+              "name": "ssh"
+            },
+            {
+              "name": "clear-autocomplete-cache"
+            }
+          ]
+        },
+        {
+          "description": "Debug the app",
+          "name": "debug",
+          "subcommands": [
+            {
+              "description": "Debug the app",
+              "name": "app"
+            },
+            {
+              "description": "Switch to another branch of a Fig.js app",
+              "name": "build"
+            },
+            {
+              "description": "Toggle/set autocomplete window debug mode",
+              "name": "autocomplete-window"
+            },
+            {
+              "description": "Show debug logs",
+              "name": "logs"
+            },
+            {
+              "description": "Input method debugger",
+              "name": "input-method",
+              "subcommands": [
+                {
+                  "name": "install"
+                },
+                {
+                  "name": "uninstall"
+                },
+                {
+                  "name": "list"
+                },
+                {
+                  "name": "status"
+                },
+                {
+                  "name": "source"
+                }
+              ]
+            },
+            {
+              "description": "Prompt accessibility",
+              "name": "prompt-accessibility"
+            },
+            {
+              "description": "Sample desktop process",
+              "name": "sample"
+            },
+            {
+              "description": "Debug application codesigning",
+              "name": "verify-codesign"
+            },
+            {
+              "description": "Accessibility",
+              "name": "accessibility"
+            },
+            {
+              "description": "Key Tester",
+              "name": "key-tester"
+            },
+            {
+              "description": "Watches diagnostics",
+              "name": "diagnostics"
+            },
+            {
+              "description": "Queries remote repository for updates given the specified metadata",
+              "name": "query-index"
+            },
+            {
+              "description": "Open up the devtools of a specific webview",
+              "name": "devtools"
+            },
+            {
+              "description": "Displays remote index",
+              "name": "get-index"
+            },
+            {
+              "description": "Lists installed IntelliJ variants",
+              "name": "list-intellij-variants"
+            },
+            {
+              "description": "Disables sourcing of user shell config and instead uses a minimal shell config",
+              "name": "shell"
+            }
+          ]
+        },
+        {
+          "description": "Customize appearance & behavior",
+          "name": "settings",
+          "subcommands": [
+            {
+              "description": "Open the settings file",
+              "name": "open"
+            },
+            {
+              "description": "List all the settings",
+              "name": "all"
+            }
+          ]
+        },
+        {
+          "description": "Install cli components",
+          "name": "install"
+        },
+        {
+          "description": "Uninstall Q",
+          "name": "uninstall"
+        },
+        {
+          "description": "Update the Q application",
+          "name": "update"
+        },
+        {
+          "description": "Run diagnostic tests",
+          "name": "diagnostic"
+        },
+        {
+          "description": "Generate the dotfiles for the given shell",
+          "name": "init"
+        },
+        {
+          "description": "Get or set theme",
+          "name": "theme"
+        },
+        {
+          "description": "Create a new Github issue",
+          "name": "issue"
+        },
+        {
+          "description": "Login",
+          "name": "login"
+        },
+        {
+          "description": "Logout",
+          "name": "logout"
+        },
+        {
+          "description": "Prints details about the current user",
+          "name": "whoami"
+        },
+        {
+          "description": "Manage your account",
+          "name": "user",
+          "subcommands": [
+            {
+              "description": "Login",
+              "name": "login"
+            },
+            {
+              "description": "Logout",
+              "name": "logout"
+            },
+            {
+              "description": "Prints details about the current user",
+              "name": "whoami"
+            }
+          ]
+        },
+        {
+          "description": "Fix and diagnose common issues",
+          "name": "doctor"
+        },
+        {
+          "description": "Generate CLI completion spec",
+          "name": "completion"
+        },
+        {
+          "description": "Internal subcommands",
+          "name": "internal",
+          "subcommands": [
+            {
+              "description": "Command that is run during the PreCmd section of the Q integrations",
+              "name": "pre-cmd"
+            },
+            {
+              "description": "Change the local-state file",
+              "name": "local-state",
+              "subcommands": [
+                {
+                  "description": "Reload the state listener",
+                  "name": "init"
+                },
+                {
+                  "description": "List all the settings",
+                  "name": "all"
+                }
+              ]
+            },
+            {
+              "description": "Callback used for the internal pseudoterminal",
+              "name": "callback"
+            },
+            {
+              "description": "Install Q cli",
+              "name": "install"
+            },
+            {
+              "description": "Uninstall Q cli",
+              "name": "uninstall"
+            },
+            {
+              "name": "get-shell"
+            },
+            {
+              "name": "hostname"
+            },
+            {
+              "description": "Detects if Figterm should be launched",
+              "name": "should-figterm-launch"
+            },
+            {
+              "name": "event"
+            },
+            {
+              "name": "sockets-dir"
+            },
+            {
+              "name": "stream-from-socket"
+            },
+            {
+              "name": "figterm-socket-path"
+            },
+            {
+              "name": "ipc"
+            },
+            {
+              "description": "Linux only",
+              "name": "uninstall-for-all-users"
+            },
+            {
+              "name": "uuidgen"
+            },
+            {
+              "name": "open-uninstall-page"
+            },
+            {
+              "description": "Displays prompt to install remote shell integrations",
+              "name": "ssh-local-command"
+            },
+            {
+              "description": "\\[Deprecated\\] Displays prompt to install remote shell integrations",
+              "name": "prompt-ssh"
+            },
+            {
+              "name": "attempt-to-finish-input-method-installation"
+            },
+            {
+              "name": "dump-state"
+            },
+            {
+              "name": "finish-update"
+            },
+            {
+              "name": "swap-files"
+            },
+            {
+              "name": "brew-uninstall"
+            },
+            {
+              "description": "Generates an SSH configuration file",
+              "name": "generate-ssh"
+            },
+            {
+              "name": "inline-shell-completion"
+            },
+            {
+              "name": "inline-shell-completion-accept"
+            }
+          ]
+        },
+        {
+          "description": "Launch the desktop app",
+          "name": "launch"
+        },
+        {
+          "description": "Quit the desktop app",
+          "name": "quit"
+        },
+        {
+          "description": "Restart the desktop app",
+          "name": "restart"
+        },
+        {
+          "description": "Run the tutorial",
+          "name": "onboarding"
+        },
+        {
+          "description": "Manage system integrations",
+          "name": "integrations",
+          "subcommands": [
+            {
+              "name": "install",
+              "subcommands": [
+                {
+                  "name": "dotfiles"
+                },
+                {
+                  "name": "ssh"
+                },
+                {
+                  "name": "input-method"
+                },
+                {
+                  "name": "vscode"
+                },
+                {
+                  "name": "intellij-plugin"
+                },
+                {
+                  "name": "all"
+                }
+              ]
+            },
+            {
+              "name": "uninstall",
+              "subcommands": [
+                {
+                  "name": "dotfiles"
+                },
+                {
+                  "name": "ssh"
+                },
+                {
+                  "name": "input-method"
+                },
+                {
+                  "name": "vscode"
+                },
+                {
+                  "name": "intellij-plugin"
+                },
+                {
+                  "name": "all"
+                }
+              ]
+            },
+            {
+              "name": "reinstall",
+              "subcommands": [
+                {
+                  "name": "dotfiles"
+                },
+                {
+                  "name": "ssh"
+                },
+                {
+                  "name": "input-method"
+                },
+                {
+                  "name": "vscode"
+                },
+                {
+                  "name": "intellij-plugin"
+                },
+                {
+                  "name": "all"
+                }
+              ]
+            },
+            {
+              "name": "status",
+              "subcommands": [
+                {
+                  "name": "dotfiles"
+                },
+                {
+                  "name": "ssh"
+                },
+                {
+                  "name": "input-method"
+                },
+                {
+                  "name": "vscode"
+                },
+                {
+                  "name": "intellij-plugin"
+                },
+                {
+                  "name": "all"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Natural Language to Shell translation",
+          "name": "translate"
+        },
+        {
+          "description": "Enable/disable telemetry",
+          "name": "telemetry",
+          "subcommands": [
+            {
+              "name": "enable"
+            },
+            {
+              "name": "disable"
+            },
+            {
+              "name": "status"
+            }
+          ]
+        },
+        {
+          "description": "Version",
+          "name": "version"
+        },
+        {
+          "description": "Open the dashboard",
+          "name": "dashboard"
+        },
+        {
+          "description": "AI assistant in your terminal",
+          "name": "chat"
+        },
+        {
+          "description": "Print this message or the help of the given subcommand(s)",
+          "name": "help"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,294 @@
+{
+  "description": "The Spring Boot CLI is a command line tool that you can use to bootstrap a new project from start.spring.io or encode a password",
+  "name": "spring",
+  "options": [
+    {
+      "description": "Show help for spring",
+      "name": [
+        "--help"
+      ]
+    },
+    {
+      "description": "Get spring CLI version",
+      "name": [
+        "--version"
+      ]
+    },
+    {
+      "description": "Print additional status information for the command you are running",
+      "name": [
+        "--debug"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Initialize a new project using Spring Initializr",
+      "name": "init",
+      "options": [
+        {
+          "args": {
+            "name": "Name"
+          },
+          "description": "Project coordinates",
+          "name": [
+            "-a",
+            "---artifact-id"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "async(e,t)=>{let n=await o(t);return n?n.bootVersion.values.map(i=>({name:i.id,displayName:i.name})):[]}",
+                "requires_js": true
+              }
+            ],
+            "name": "Version"
+          },
+          "description": "Spring Boot version",
+          "name": [
+            "-b",
+            "--boot-version"
+          ]
+        },
+        {
+          "args": {
+            "name": "System",
+            "suggestions": [
+              {
+                "name": "maven"
+              },
+              {
+                "name": "gradle"
+              }
+            ]
+          },
+          "description": "Build system to use",
+          "name": [
+            "--build"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "async(e,t)=>{let n=await o(t);if(!n)return[];let i=new Set(e[e.length-1]?.split(r));return n.dependencies.values.flatMap(({values:a})=>a).filter(({id:a})=>!i.has(a)).sort((a,c)=>a.name.localeCompare(c.name)).map(a=>({name:a.id,displayName:a.name,description:a.description}))}",
+                "requires_js": true
+              }
+            ],
+            "isVariadic": true,
+            "name": "Dependencies"
+          },
+          "description": "Comma-separated list of dependency identifiers to include in the generated project",
+          "name": [
+            "-d",
+            "--dependencies"
+          ]
+        },
+        {
+          "args": {
+            "name": "description"
+          },
+          "description": "Project description",
+          "name": [
+            "--description"
+          ]
+        },
+        {
+          "description": "Force overwrite of existing files",
+          "name": [
+            "-f",
+            "--force"
+          ]
+        },
+        {
+          "args": {
+            "name": "Format",
+            "suggestions": [
+              {
+                "name": "build"
+              },
+              {
+                "name": "project"
+              }
+            ]
+          },
+          "description": "Format of the generated content",
+          "name": [
+            "--format"
+          ]
+        },
+        {
+          "args": {
+            "name": "Group ID"
+          },
+          "description": "Project coordinates",
+          "name": [
+            "-g",
+            "--group-id"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "async(e,t)=>{let n=await o(t);return n?n.javaVersion.values.map(i=>({name:i.id,displayName:i.name})):[]}",
+                "requires_js": true
+              }
+            ],
+            "name": "Version"
+          },
+          "description": "Language level",
+          "name": [
+            "-j",
+            "--java-version"
+          ]
+        },
+        {
+          "description": "List the capabilities of the service",
+          "name": [
+            "--list"
+          ]
+        },
+        {
+          "args": {
+            "name": "Name"
+          },
+          "description": "Project name",
+          "name": [
+            "-n",
+            "--name"
+          ]
+        },
+        {
+          "args": {
+            "name": "Packaging",
+            "suggestions": [
+              {
+                "name": "jar"
+              },
+              {
+                "name": "war"
+              }
+            ]
+          },
+          "description": "Project packaging",
+          "name": [
+            "-p",
+            "--packaging"
+          ]
+        },
+        {
+          "args": {
+            "name": "Name"
+          },
+          "description": "Package name",
+          "name": [
+            "--package-name"
+          ]
+        },
+        {
+          "args": {
+            "name": "Type",
+            "suggestions": [
+              {
+                "description": "Generate a Gradle build file",
+                "name": "gradle-build"
+              },
+              {
+                "description": "Generate a Gradle based project archive using the Groovy DSL",
+                "name": "gradle-project"
+              },
+              {
+                "description": "Generate a Gradle based project archive using the Kotlin DSL",
+                "name": "gradle-project-kotlin"
+              },
+              {
+                "description": "Generate a Maven pom.xml",
+                "name": "maven-build"
+              },
+              {
+                "description": "Generate a Maven based project archive",
+                "name": "maven-project"
+              }
+            ]
+          },
+          "description": "Project type",
+          "name": [
+            "-t",
+            "--type"
+          ]
+        },
+        {
+          "args": {
+            "name": "URL"
+          },
+          "description": "URL of the service to use",
+          "name": [
+            "--target"
+          ]
+        },
+        {
+          "args": {
+            "name": "Version"
+          },
+          "description": "Project version",
+          "name": [
+            "-v",
+            "--version"
+          ]
+        },
+        {
+          "description": "Extract the project archive. Inferred if a location is specified without an extension",
+          "name": [
+            "-x",
+            "--extract"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "Password"
+      },
+      "description": "Encode a password for use with Spring Security",
+      "name": "encodepassword",
+      "options": [
+        {
+          "args": {
+            "name": "Algorithm",
+            "suggestions": [
+              {
+                "name": "default"
+              },
+              {
+                "name": "bcrypt"
+              },
+              {
+                "name": "pbkdf2"
+              }
+            ]
+          },
+          "description": "The algorithm to use",
+          "name": [
+            "-a",
+            "--algorithm"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Start a nested shell",
+      "name": "shell"
+    },
+    {
+      "args": {
+        "name": "Command",
+        "template": "help"
+      },
+      "description": "Show help for other commands",
+      "name": "help"
+    }
+  ]
+}

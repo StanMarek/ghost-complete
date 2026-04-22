@@ -1,0 +1,1115 @@
+{
+  "args": {
+    "isOptional": true,
+    "name": "file",
+    "template": [
+      "filepaths"
+    ]
+  },
+  "description": "A modern and intuitive terminal-based text editor",
+  "name": "micro",
+  "options": [
+    {
+      "description": "Cleans the configuration directory",
+      "name": [
+        "--clean"
+      ]
+    },
+    {
+      "args": {
+        "name": "dir"
+      },
+      "description": "Specify a custom location for the configuration directory",
+      "name": [
+        "--config-dir"
+      ]
+    },
+    {
+      "description": "Show all option help",
+      "name": [
+        "--options"
+      ]
+    },
+    {
+      "description": "Enable debug mode",
+      "name": [
+        "--debug"
+      ]
+    },
+    {
+      "description": "Show the version number and information",
+      "name": [
+        "--version"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "When creating a new line, use the same indentation as the previous line",
+      "name": [
+        "--autoindent"
+      ]
+    },
+    {
+      "args": {
+        "description": "Seconds",
+        "name": "n",
+        "suggestions": [
+          {
+            "name": "0"
+          },
+          {
+            "name": "60"
+          },
+          {
+            "name": "120"
+          },
+          {
+            "name": "300"
+          },
+          {
+            "name": "600"
+          },
+          {
+            "name": "1800"
+          }
+        ]
+      },
+      "description": "Automatically save the buffer every <n> seconds. If set to 0, no autosaving is performed",
+      "name": [
+        "--autosave"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Automatically attempt to use super user privileges to save without asking",
+      "name": [
+        "--autosu"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Automatically keep backups of all open buffers",
+      "name": [
+        "--backup"
+      ]
+    },
+    {
+      "args": {
+        "name": "dir",
+        "suggestions": [
+          {
+            "name": "~/.config/micro.backups"
+          }
+        ],
+        "template": "folders"
+      },
+      "description": "The directory to place backups in",
+      "name": [
+        "--backupdir"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "In the infobar and tabbar, show only the basename of the file being edited rather than the full path",
+      "name": [
+        "--basename"
+      ]
+    },
+    {
+      "args": {
+        "name": "type",
+        "suggestions": [
+          {
+            "description": "Accesses clipboard via an external tool, such as xclip/xsel or wl-clipboard on Linux, pbcopy/pbpaste on MacOS, and system calls on Windows",
+            "name": "external"
+          },
+          {
+            "description": "Accesses the clipboard via your terminal emulator",
+            "name": "terminal"
+          },
+          {
+            "description": "Uses an internal clipboard",
+            "name": "internal"
+          }
+        ]
+      },
+      "description": "Apecifies how the system clipboard should be accessed",
+      "name": [
+        "--clipboard"
+      ]
+    },
+    {
+      "args": {
+        "name": "value",
+        "suggestions": [
+          {
+            "name": "0"
+          },
+          {
+            "name": "1"
+          }
+        ]
+      },
+      "description": "Display a color at the specified column if not set to 0",
+      "name": [
+        "--colorcolumn"
+      ]
+    },
+    {
+      "args": {
+        "name": "scheme",
+        "suggestions": [
+          {
+            "name": "default"
+          }
+        ]
+      },
+      "description": "Loads the colorscheme stored in $(configDir)/colorschemes/<scheme>.micro",
+      "name": [
+        "--colorscheme"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Highlight the line that the cursor is on in a different color",
+      "name": [
+        "--cursorline"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Display diff indicators before lines",
+      "name": [
+        "--diffgutter"
+      ]
+    },
+    {
+      "args": {
+        "name": "chars",
+        "suggestions": [
+          {
+            "name": "|-"
+          }
+        ]
+      },
+      "description": "Specifies the divider characters used for the dividing line between vertical/horizontal splits (the first character is for vertical dividers, and the second is for horizontal dividers)",
+      "name": [
+        "--divchars"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Reverse colors specified by the colorscheme",
+      "name": [
+        "--divreverse"
+      ]
+    },
+    {
+      "args": {
+        "name": "encoding",
+        "suggestions": [
+          {
+            "name": "utf-8"
+          }
+        ]
+      },
+      "description": "The encoding to open and save files with",
+      "name": [
+        "--encoding"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Automatically add a newline to the end of the file if one does not exist",
+      "name": [
+        "--eofnewline"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Use 'fast dirty' algorithm to determine if a buffer is modified or not",
+      "name": [
+        "--fastdirty"
+      ]
+    },
+    {
+      "args": {
+        "name": "format",
+        "suggestions": [
+          {
+            "name": "unix"
+          },
+          {
+            "name": "dos"
+          }
+        ]
+      },
+      "description": "Type of line endings to be used for the file",
+      "name": [
+        "--fileformat"
+      ]
+    },
+    {
+      "args": {
+        "name": "type",
+        "suggestions": [
+          {
+            "description": "Automatically overridden depending on type of file opened",
+            "name": "unknown"
+          },
+          {
+            "description": "Disable file type detection",
+            "name": "off"
+          }
+        ]
+      },
+      "description": "File type for the current buffer",
+      "name": [
+        "--filetype"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Perform case-insensitive searches",
+      "name": [
+        "--ignorecase"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Enable incremental search in \"Find\" prompt",
+      "name": [
+        "--incsearch"
+      ]
+    },
+    {
+      "args": {
+        "name": "character",
+        "suggestions": [
+          {
+            "name": " "
+          },
+          {
+            "name": "\\t"
+          }
+        ]
+      },
+      "description": "Sets the indentation character",
+      "name": [
+        "--indentchar"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Enables the line at the bottom of the editor where messages are printed",
+      "name": [
+        "--infobar"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Remove trailing whitespace from a line with no insertions when moving to the next line",
+      "name": [
+        "--keepautoindent"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Display the nano-style key menu at the bottom of the screen",
+      "name": [
+        "--keymenu"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Underline matching braces for '()', '{}', '[]' when the cursor is on a brace character",
+      "name": [
+        "--matchbrace"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Allow parent directories to be created automatically when opening a file on a path that doesn't exist",
+      "name": [
+        "--mkparents"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Enable mouse support",
+      "name": [
+        "--mouse"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Treat characters sent from the terminal in a single chunk as a paste event rather than a series of manual key presses",
+      "name": [
+        "--paste"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Parse filenames such as file.txt:10:5 as requesting to open file.txt with the cursor at line 10 and column 5",
+      "name": [
+        "--parsecursor"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Cause backups to be permanently saved",
+      "name": [
+        "--permbackup"
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "url",
+        "suggestions": [
+          {
+            "name": "https://raw.githubusercontent.com/micro-editor/plugin-channel/master/channel.json"
+          }
+        ]
+      },
+      "description": "List of URLs pointing to plugin channels for downloading and installing plugins",
+      "name": [
+        "--pluginchannels"
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "link"
+      },
+      "description": "A list of links to plugin repositories",
+      "name": [
+        "--pluginrepos"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Disallow edits to the buffer",
+      "name": [
+        "--readonly"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Make line numbers display relatively",
+      "name": [
+        "--relativeruler"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Automatically trim trailing whitespaces at ends of lines",
+      "name": [
+        "--rmtrailingws"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Display line numbers",
+      "name": [
+        "--ruler"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Remember where the cursor was last time the file was opened and put it there when re-opened",
+      "name": [
+        "--savecursor"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Remember command history between closing and re-opening micro",
+      "name": [
+        "--savehistory"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Remember undo state between closing and re-opening a file",
+      "name": [
+        "--saveundo"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Display a scroll bar",
+      "name": [
+        "--scrollbar"
+      ]
+    },
+    {
+      "args": {
+        "name": "margin",
+        "suggestions": [
+          {
+            "name": "0"
+          },
+          {
+            "name": "1"
+          },
+          {
+            "name": "2"
+          },
+          {
+            "name": "3"
+          },
+          {
+            "name": "5"
+          },
+          {
+            "name": "10"
+          }
+        ]
+      },
+      "description": "Margin at which the view starts scrolling when the cursor approaches the edge of the view",
+      "name": [
+        "--scrollmargin"
+      ]
+    },
+    {
+      "args": {
+        "name": "number",
+        "suggestions": [
+          {
+            "name": "1"
+          },
+          {
+            "name": "2"
+          },
+          {
+            "name": "3"
+          },
+          {
+            "name": "4"
+          },
+          {
+            "name": "5"
+          }
+        ]
+      },
+      "description": "Number of lines to scroll for one scroll event",
+      "name": [
+        "--scrollspeed"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Add leading whitespace when pasting multiple lines",
+      "name": [
+        "--smartpaste"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Wrap lines that are too long to fit on the screen",
+      "name": [
+        "--softwrap"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "When a horizontal split is created, create it below the current split",
+      "name": [
+        "--splitbottom"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "When a vertical split is created, create it to the right of the current split",
+      "name": [
+        "--splitright"
+      ]
+    },
+    {
+      "args": {
+        "name": "format"
+      },
+      "description": "Format string definition for the left-justified part of the statusline",
+      "name": [
+        "--statusformatl"
+      ]
+    },
+    {
+      "args": {
+        "name": "format"
+      },
+      "description": "Format string definition for the right-justified part of the statusline",
+      "name": [
+        "--statusformatr"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Display the status line at the bottom of the screen",
+      "name": [
+        "--statusline"
+      ]
+    },
+    {
+      "args": {
+        "name": "command",
+        "suggestions": [
+          {
+            "name": "sudo"
+          },
+          {
+            "name": "doas"
+          }
+        ]
+      },
+      "description": "The super user command",
+      "name": [
+        "--sucmd"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Enables syntax highlighting",
+      "name": [
+        "--syntax"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Navigate spaces at the beginning of lines as if they are tabs",
+      "name": [
+        "--tabmovement"
+      ]
+    },
+    {
+      "args": {
+        "name": "size",
+        "suggestions": [
+          {
+            "name": "2"
+          },
+          {
+            "name": "4"
+          },
+          {
+            "name": "8"
+          },
+          {
+            "name": "16"
+          }
+        ]
+      },
+      "description": "The size in spaces that a tab character should be displayed with",
+      "name": [
+        "--tabsize"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Use spaces instead of tabs",
+      "name": [
+        "--tabstospaces"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Use the primary clipboard to copy selections in the background",
+      "name": [
+        "--useprimary"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Wrap long lines by words",
+      "name": [
+        "--wordwrap"
+      ]
+    },
+    {
+      "args": {
+        "description": "True/false",
+        "name": "bool",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Assume that the terminal conforms to xterm-256color regardless of what the $TERM variable actually contains",
+      "name": [
+        "--xterm"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Manage plugins",
+      "name": "--plugin",
+      "options": [
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "plugin"
+          },
+          "description": "Remove plugin(s)",
+          "name": [
+            "remove"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "plugin"
+          },
+          "description": "Update plugin(s) (if no argument is given, updates all plugins)",
+          "name": [
+            "update"
+          ]
+        },
+        {
+          "args": {
+            "name": "plugin"
+          },
+          "description": "Search for a plugin",
+          "name": [
+            "search"
+          ]
+        },
+        {
+          "description": "List installed plugins",
+          "name": [
+            "list"
+          ]
+        },
+        {
+          "description": "List available plugins",
+          "name": [
+            "available"
+          ]
+        }
+      ]
+    }
+  ]
+}

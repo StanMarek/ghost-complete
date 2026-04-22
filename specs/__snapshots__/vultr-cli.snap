@@ -1,0 +1,933 @@
+{
+  "description": "Official command line interface for the Vultr API",
+  "name": "vultr-cli",
+  "subcommands": [
+    {
+      "description": "Retrieve information about your account",
+      "name": "account"
+    },
+    {
+      "description": "Display all available applications",
+      "name": "apps",
+      "subcommands": [
+        {
+          "description": "List applications",
+          "name": "list"
+        }
+      ]
+    },
+    {
+      "description": "Display backups",
+      "name": "backups",
+      "subcommands": [
+        {
+          "args": {
+            "description": "Backup ID",
+            "name": "backupId"
+          },
+          "description": "Get backup",
+          "name": "get"
+        },
+        {
+          "description": "List backups",
+          "name": "list"
+        }
+      ]
+    },
+    {
+      "description": "Bare-metal is used to access bare metal server commands",
+      "name": "bare-metal",
+      "subcommands": [
+        {
+          "description": "App is used to access bare metal server application commands",
+          "name": "app",
+          "subcommands": [
+            {
+              "args": [
+                {
+                  "description": "Bare Metal ID",
+                  "name": "bareMetalId"
+                },
+                {
+                  "description": "Application ID",
+                  "name": "appID"
+                }
+              ],
+              "description": "Change a bare metal server's application",
+              "name": "change"
+            },
+            {
+              "args": {
+                "description": "Bare Metal ID",
+                "name": "bareMetalId"
+              },
+              "description": "Available apps a bare metal server can change to",
+              "name": "list"
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Bare Metal ID",
+            "name": "bareMetalId"
+          },
+          "description": "Get a bare metal server's bandwidth usage",
+          "name": "bandwidth"
+        },
+        {
+          "description": "Create a bare metal server",
+          "name": "create",
+          "options": [
+            {
+              "args": {
+                "name": "osId"
+              },
+              "description": "ID of the operating system that will be installed on the server",
+              "name": [
+                "--os",
+                "-o"
+              ]
+            },
+            {
+              "args": {
+                "name": "persistent",
+                "suggestions": [
+                  {
+                    "name": "true"
+                  },
+                  {
+                    "name": "false"
+                  }
+                ]
+              },
+              "description": "Enable persistent_pxe",
+              "name": [
+                "--persistent_pxe",
+                "-x"
+              ]
+            },
+            {
+              "args": {
+                "name": "planId"
+              },
+              "description": "ID of the plan that the server will subscribe to",
+              "name": [
+                "--plan",
+                "-p"
+              ]
+            },
+            {
+              "args": {
+                "name": "regionId"
+              },
+              "description": "ID of the region where the server will be created",
+              "name": [
+                "--region",
+                "-r"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Bare Metal ID",
+            "name": "bareMetalId"
+          },
+          "description": "Delete a bare metal server",
+          "name": "delete"
+        },
+        {
+          "args": {
+            "description": "Bare Metal ID",
+            "name": "bareMetalId"
+          },
+          "description": "Get a bare metal server by <bareMetalID>",
+          "name": "get"
+        },
+        {
+          "args": {
+            "description": "Bare Metal ID",
+            "name": "bareMetalId"
+          },
+          "description": "Halt a bare metal server",
+          "name": "halt"
+        },
+        {
+          "description": "Image is used to access bare metal server image commands",
+          "name": "image",
+          "subcommands": [
+            {
+              "args": [
+                {
+                  "description": "Bare Metal ID",
+                  "name": "bareMetalId"
+                },
+                {
+                  "description": "Image ID",
+                  "name": "imageID"
+                }
+              ],
+              "description": "Change a bare metal server's image",
+              "name": "change"
+            },
+            {
+              "args": {
+                "description": "Bare Metal ID",
+                "name": "bareMetalId"
+              },
+              "description": "Available images a bare metal server can change to",
+              "name": "list"
+            }
+          ]
+        },
+        {
+          "description": "List the IPv4 information of a bare metal server",
+          "name": "ipv4"
+        },
+        {
+          "description": "List the IPv6 information of a bare metal server",
+          "name": "ipv6"
+        },
+        {
+          "description": "List all bare metal servers",
+          "name": "list"
+        },
+        {
+          "description": "Os is used to access bare metal server operating system commands",
+          "name": "os"
+        },
+        {
+          "description": "Reboot a bare metal server. This is a hard reboot, which means that the server is powered off, then back on",
+          "name": "reboot"
+        },
+        {
+          "description": "Reinstall the operating system on a bare metal server",
+          "name": "reinstall"
+        },
+        {
+          "description": "Start a bare metal server",
+          "name": "start"
+        },
+        {
+          "description": "User-data is used to access bare metal server user-data commands",
+          "name": "user-data"
+        },
+        {
+          "args": {
+            "description": "Bare Metal ID",
+            "name": "bareMetalId"
+          },
+          "description": "Get a bare metal server's VNC url by <bareMetalID>",
+          "name": "vnc"
+        }
+      ]
+    },
+    {
+      "description": "Block storage commands",
+      "name": "block-storage",
+      "subcommands": [
+        {
+          "description": "Attaches a block storage to an instance",
+          "name": "attach"
+        },
+        {
+          "description": "Create a new block storage",
+          "name": "create"
+        },
+        {
+          "description": "Delete a block storage",
+          "name": "delete"
+        },
+        {
+          "description": "Detaches a block storage from an instance",
+          "name": "detach"
+        },
+        {
+          "description": "Retrieves a block storage",
+          "name": "get"
+        },
+        {
+          "description": "Sets a label for a block storage",
+          "name": "label"
+        },
+        {
+          "description": "Retrieves a list of active block storage",
+          "name": "list"
+        },
+        {
+          "description": "Resize a block storage",
+          "name": "resize"
+        }
+      ]
+    },
+    {
+      "description": "Generate the autocompletion script for the specified shell",
+      "name": "completion",
+      "subcommands": [
+        {
+          "description": "Generate the autocompletion script for bash",
+          "name": "bash"
+        },
+        {
+          "description": "Generate the autocompletion script for fish",
+          "name": "fish"
+        },
+        {
+          "description": "Generate the autocompletion script for powershell",
+          "name": "powershell"
+        },
+        {
+          "description": "Generate the autocompletion script for zsh",
+          "name": "zsh"
+        }
+      ]
+    },
+    {
+      "description": "Dns is used to access dns commands",
+      "name": "dns",
+      "subcommands": [
+        {
+          "description": "Dns domain",
+          "name": "domain"
+        },
+        {
+          "description": "Dns record",
+          "name": "record"
+        }
+      ]
+    },
+    {
+      "description": "Firewall is used to access firewall commands",
+      "name": "firewall",
+      "subcommands": [
+        {
+          "description": "Group is used to access firewall group commands",
+          "name": "group"
+        },
+        {
+          "description": "Rule is used to access firewall rule commands",
+          "name": "rule"
+        }
+      ]
+    },
+    {
+      "description": "Help about any command",
+      "name": "help",
+      "subcommands": [
+        {
+          "description": "Retrieve information about your account",
+          "name": "account"
+        },
+        {
+          "description": "Display all available applications",
+          "name": "apps"
+        },
+        {
+          "description": "Display backups",
+          "name": "backups"
+        },
+        {
+          "description": "Bare-metal is used to access bare metal server commands",
+          "name": "bare-metal"
+        },
+        {
+          "description": "Block storage commands",
+          "name": "block-storage"
+        },
+        {
+          "description": "Generate the autocompletion script for the specified shell",
+          "name": "completion"
+        },
+        {
+          "description": "Dns is used to access dns commands",
+          "name": "dns"
+        },
+        {
+          "description": "Firewall is used to access firewall commands",
+          "name": "firewall"
+        },
+        {
+          "description": "Help about any command",
+          "name": "help"
+        },
+        {
+          "description": "Commands to interact with instances on vultr",
+          "name": "instance"
+        },
+        {
+          "description": "Iso is used to access iso commands",
+          "name": "iso"
+        },
+        {
+          "description": "Kubernetes is used to access kubernetes commands",
+          "name": "kubernetes"
+        },
+        {
+          "description": "Load balancer commands",
+          "name": "load-balancer"
+        },
+        {
+          "description": "Network interacts with network actions",
+          "name": "network"
+        },
+        {
+          "description": "Object storage commands",
+          "name": "object-storage"
+        },
+        {
+          "description": "Os is used to access os commands",
+          "name": "os"
+        },
+        {
+          "description": "Get information about Vultr plans",
+          "name": "plans"
+        },
+        {
+          "description": "Get regions",
+          "name": "regions"
+        },
+        {
+          "description": "Reserved-ip lets you interact with reserved-ip",
+          "name": "reserved-ip"
+        },
+        {
+          "description": "Startup script commands",
+          "name": "script"
+        },
+        {
+          "description": "Snapshot commands",
+          "name": "snapshot"
+        },
+        {
+          "description": "Ssh-key commands",
+          "name": "ssh-key"
+        },
+        {
+          "description": "User commands",
+          "name": "user"
+        },
+        {
+          "description": "Display current version of Vultr-cli",
+          "name": "version"
+        }
+      ]
+    },
+    {
+      "description": "Commands to interact with instances on vultr",
+      "name": "instance",
+      "subcommands": [
+        {
+          "description": "Update application for an instance",
+          "name": "app"
+        },
+        {
+          "description": "List and create backup schedules for an instance",
+          "name": "backup"
+        },
+        {
+          "description": "Bandwidth for instance",
+          "name": "bandwidth"
+        },
+        {
+          "description": "Create an instance",
+          "name": "create",
+          "options": [
+            {
+              "args": {
+                "name": "osId"
+              },
+              "description": "ID of the operating system that will be installed on the server",
+              "name": [
+                "--os",
+                "-o"
+              ]
+            },
+            {
+              "args": {
+                "name": "persistent",
+                "suggestions": [
+                  {
+                    "name": "true"
+                  },
+                  {
+                    "name": "false"
+                  }
+                ]
+              },
+              "description": "Enable persistent_pxe",
+              "name": [
+                "--persistent_pxe",
+                "-x"
+              ]
+            },
+            {
+              "args": {
+                "name": "planId"
+              },
+              "description": "ID of the plan that the server will subscribe to",
+              "name": [
+                "--plan",
+                "-p"
+              ]
+            },
+            {
+              "args": {
+                "name": "regionId"
+              },
+              "description": "ID of the region where the server will be created",
+              "name": [
+                "--region",
+                "-r"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "vultr-cli",
+                  "instance",
+                  "list"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "instanceID"
+          },
+          "description": "Delete/destroy an instance",
+          "name": "delete"
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "vultr-cli",
+                  "instance",
+                  "list"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "instanceID"
+          },
+          "description": "Get info about a specific instance",
+          "name": "get"
+        },
+        {
+          "description": "Update image for an instance",
+          "name": "image"
+        },
+        {
+          "description": "List/create/delete ipv4 on instance",
+          "name": "ipv4"
+        },
+        {
+          "description": "Commands for ipv6 on instance",
+          "name": "ipv6"
+        },
+        {
+          "description": "Attach/detach ISOs to a given instance",
+          "name": "iso"
+        },
+        {
+          "description": "Label an instance",
+          "name": "label"
+        },
+        {
+          "description": "List all available instances",
+          "name": "list"
+        },
+        {
+          "description": "Update operating system for an instance",
+          "name": "os"
+        },
+        {
+          "description": "Update/list plans for an instance",
+          "name": "plan"
+        },
+        {
+          "description": "Reinstall an instance",
+          "name": "reinstall"
+        },
+        {
+          "description": "Restart an instance",
+          "name": "restart"
+        },
+        {
+          "description": "Restore instance from backup/snapshot",
+          "name": "restore"
+        },
+        {
+          "description": "Commands to handle reverse-dns on an instance",
+          "name": "reverse-dns"
+        },
+        {
+          "description": "Starts an instance",
+          "name": "start"
+        },
+        {
+          "description": "Stops an instance",
+          "name": "stop"
+        },
+        {
+          "description": "Add/modify tag on instance",
+          "name": "tag"
+        },
+        {
+          "description": "Assign a firewall group to instance",
+          "name": "update-firewall-group"
+        },
+        {
+          "description": "Commands to handle userdata on an instance",
+          "name": "user-data"
+        }
+      ]
+    },
+    {
+      "description": "Iso is used to access iso commands",
+      "name": "iso",
+      "subcommands": [
+        {
+          "description": "Create iso from url",
+          "name": "create"
+        },
+        {
+          "description": "Delete a private iso",
+          "name": "delete"
+        },
+        {
+          "args": {
+            "name": "isoID"
+          },
+          "description": "Get private ISO <isoID>",
+          "name": "get"
+        },
+        {
+          "description": "List all private ISOs available",
+          "name": "list"
+        },
+        {
+          "description": "List all public ISOs available",
+          "name": "public"
+        }
+      ]
+    },
+    {
+      "description": "Kubernetes is used to access kubernetes commands",
+      "name": "kubernetes",
+      "subcommands": [
+        {
+          "description": "Gets a kubernetes cluster's config",
+          "name": "config"
+        },
+        {
+          "description": "Create kubernetes cluster",
+          "name": "create"
+        },
+        {
+          "description": "Delete a kubernetes cluster",
+          "name": "delete"
+        },
+        {
+          "description": "Delete a kubernetes cluster and related resources",
+          "name": "delete-with-resources"
+        },
+        {
+          "description": "Retrieves a kubernetes cluster",
+          "name": "get"
+        },
+        {
+          "description": "List kubernetes clusters",
+          "name": "list"
+        },
+        {
+          "description": "Node pools commands for a kubernetes cluster",
+          "name": "node-pool"
+        },
+        {
+          "description": "Updates a kubernetes cluster",
+          "name": "update"
+        },
+        {
+          "description": "Gets supported kubernetes versions",
+          "name": "versions"
+        }
+      ]
+    },
+    {
+      "description": "Load balancer commands",
+      "name": "load-balancer",
+      "subcommands": [
+        {
+          "description": "Create a load balancer",
+          "name": "create"
+        },
+        {
+          "description": "Deletes a load balancer",
+          "name": "delete"
+        },
+        {
+          "description": "Get/list firewall rules for a load balancer",
+          "name": "firewall-rule"
+        },
+        {
+          "description": "Retrieves a load balancer",
+          "name": "get"
+        },
+        {
+          "description": "Retrieves a list of active load balancers",
+          "name": "list"
+        },
+        {
+          "description": "Create/delete/list forwarding rules for a load balancer",
+          "name": "rule"
+        },
+        {
+          "description": "Updates a load balancer",
+          "name": "update"
+        }
+      ]
+    },
+    {
+      "description": "Network interacts with network actions",
+      "name": "network",
+      "subcommands": [
+        {
+          "description": "Create a private network",
+          "name": "create"
+        },
+        {
+          "description": "Delete a private network",
+          "name": "delete"
+        },
+        {
+          "description": "Get a private network",
+          "name": "get"
+        },
+        {
+          "description": "List all private networks",
+          "name": "list"
+        }
+      ]
+    },
+    {
+      "description": "Object storage commands",
+      "name": "object-storage",
+      "subcommands": [
+        {
+          "description": "Create a new object storage subscription",
+          "name": "create"
+        },
+        {
+          "description": "Deletes an object storage subscription",
+          "name": "delete"
+        },
+        {
+          "description": "Retrieves a given object storage subscription",
+          "name": "get"
+        },
+        {
+          "description": "Change the label for object storage subscription",
+          "name": "label"
+        },
+        {
+          "description": "Retrieves a list of active object storage subscriptions",
+          "name": "list"
+        },
+        {
+          "description": "Retrieves a list of object storage clusters",
+          "name": "list-cluster"
+        },
+        {
+          "description": "Regenerate the S3 API keys of an object storage subscription",
+          "name": "s3key-regenerate"
+        }
+      ]
+    },
+    {
+      "description": "Os is used to access os commands",
+      "name": "os",
+      "subcommands": [
+        {
+          "description": "List all available operating systems",
+          "name": "list"
+        }
+      ]
+    },
+    {
+      "description": "Get information about Vultr plans",
+      "name": "plans",
+      "subcommands": [
+        {
+          "description": "List plans",
+          "name": "list"
+        }
+      ]
+    },
+    {
+      "description": "Get regions",
+      "name": "regions",
+      "subcommands": [
+        {
+          "description": "List availability in region",
+          "name": "availability"
+        },
+        {
+          "description": "List regions",
+          "name": "list"
+        }
+      ]
+    },
+    {
+      "description": "Reserved-ip lets you interact with reserved-ip",
+      "name": "reserved-ip",
+      "subcommands": [
+        {
+          "description": "Attach a reservedIP to an instance",
+          "name": "attach"
+        },
+        {
+          "description": "Convert IP address to reservedIP",
+          "name": "convert"
+        },
+        {
+          "description": "Create reservedIP",
+          "name": "create"
+        },
+        {
+          "description": "Delete a reserved ip",
+          "name": "delete"
+        },
+        {
+          "description": "Detach a reservedIP to an instance",
+          "name": "detach"
+        },
+        {
+          "description": "Get a reserved IP",
+          "name": "get"
+        },
+        {
+          "description": "List all reserved IPs",
+          "name": "list"
+        }
+      ]
+    },
+    {
+      "description": "Startup script commands",
+      "name": "script",
+      "subcommands": [
+        {
+          "description": "Create a startup script",
+          "name": "create"
+        },
+        {
+          "description": "Delete a startup script",
+          "name": "delete"
+        },
+        {
+          "description": "Displays the contents of specified script",
+          "name": "get"
+        },
+        {
+          "description": "List all startup scripts",
+          "name": "list"
+        },
+        {
+          "description": "Update startup script",
+          "name": "update"
+        }
+      ]
+    },
+    {
+      "description": "Snapshot commands",
+      "name": "snapshot",
+      "subcommands": [
+        {
+          "description": "Create a snapshot",
+          "name": "create"
+        },
+        {
+          "description": "Create a snapshot from a URL",
+          "name": "create-url"
+        },
+        {
+          "description": "Delete a snapshot",
+          "name": "delete"
+        },
+        {
+          "description": "Get a snapshot",
+          "name": "get"
+        },
+        {
+          "description": "List all snapshots",
+          "name": "list"
+        }
+      ]
+    },
+    {
+      "description": "Ssh-key commands",
+      "name": "ssh-key",
+      "subcommands": [
+        {
+          "description": "Create an SSH key",
+          "name": "create"
+        },
+        {
+          "description": "Delete an SSH key",
+          "name": "delete"
+        },
+        {
+          "description": "Get an SSH key",
+          "name": "get"
+        },
+        {
+          "description": "List all SSH keys",
+          "name": "list"
+        },
+        {
+          "description": "Update SSH key",
+          "name": "update"
+        }
+      ]
+    },
+    {
+      "description": "User commands",
+      "name": "user",
+      "subcommands": [
+        {
+          "description": "Create a user",
+          "name": "create"
+        },
+        {
+          "description": "Delete a user",
+          "name": "delete"
+        },
+        {
+          "description": "Get a user",
+          "name": "get"
+        },
+        {
+          "description": "List all available users",
+          "name": "list"
+        },
+        {
+          "description": "Update User",
+          "name": "update"
+        }
+      ]
+    },
+    {
+      "description": "Display current version of Vultr-cli",
+      "name": "version"
+    }
+  ]
+}

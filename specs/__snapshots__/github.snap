@@ -1,0 +1,100 @@
+{
+  "args": {
+    "generators": [
+      {
+        "template": "folders"
+      }
+    ],
+    "isOptional": true,
+    "name": "path"
+  },
+  "description": "Open a git repository in GitHub Desktop",
+  "name": "github",
+  "options": [
+    {
+      "args": {
+        "isOptional": true,
+        "name": "command",
+        "suggestions": [
+          {
+            "name": "clone"
+          },
+          {
+            "name": "open"
+          },
+          {
+            "name": "help"
+          }
+        ]
+      },
+      "description": "Show the help page for a command",
+      "name": [
+        "--help"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "name": "url|slug",
+        "suggestions": [
+          {
+            "name": "https://github.com/"
+          },
+          {
+            "name": "https://gitlab.com/"
+          },
+          {
+            "name": "https://bitbucket.com/"
+          }
+        ]
+      },
+      "description": "Clone a repository",
+      "name": "clone",
+      "options": [
+        {
+          "args": {
+            "name": "branch"
+          },
+          "description": "The branch to checkout after cloning",
+          "name": [
+            "--branch",
+            "-b"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "template": "folders"
+          }
+        ],
+        "isOptional": true,
+        "name": "path"
+      },
+      "description": "Open a git repository in GitHub Desktop",
+      "name": "open"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "command",
+        "suggestions": [
+          {
+            "name": "clone"
+          },
+          {
+            "name": "open"
+          },
+          {
+            "name": "help"
+          }
+        ]
+      },
+      "description": "Show the help page for a command",
+      "name": "help"
+    }
+  ]
+}

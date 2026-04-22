@@ -1,0 +1,195 @@
+{
+  "description": "Command-line tool for generating regular expressions from user-provided test cases",
+  "name": "grex",
+  "options": [
+    {
+      "description": "Converts any Unicode decimal digit to \\d",
+      "name": [
+        "-d",
+        "--digits"
+      ]
+    },
+    {
+      "description": "Converts any character which is not a Unicode decimal digit to \\D",
+      "name": [
+        "-D",
+        "--non-digits"
+      ]
+    },
+    {
+      "description": "Converts any Unicode whitespace character to \\s",
+      "name": [
+        "-s",
+        "--spaces"
+      ]
+    },
+    {
+      "description": "Converts any character which is not a Unicode whitespace character to \\S",
+      "name": [
+        "-S",
+        "--non-spaces"
+      ]
+    },
+    {
+      "description": "Converts any Unicode word character to \\w",
+      "name": [
+        "-w",
+        "--words"
+      ]
+    },
+    {
+      "description": "Converts any character which is not a Unicode word character to \\W",
+      "name": [
+        "-W",
+        "--non-words"
+      ]
+    },
+    {
+      "description": "Detects repeated non-overlapping substrings and converts them to {min,max} quantifier notation",
+      "name": [
+        "-r",
+        "--repetitions"
+      ]
+    },
+    {
+      "description": "Replaces all non-ASCII characters with unicode escape sequences",
+      "name": [
+        "-e",
+        "--escape"
+      ]
+    },
+    {
+      "description": "Converts astral code points to surrogate pairs if --escape is set",
+      "name": [
+        "--with-surrogates"
+      ]
+    },
+    {
+      "description": "Performs case-insensitive matching, letters match both upper and lower case",
+      "name": [
+        "-i",
+        "--ignore-case"
+      ]
+    },
+    {
+      "description": "Replaces non-capturing groups by capturing ones",
+      "name": [
+        "-g",
+        "--capture-groups"
+      ]
+    },
+    {
+      "description": "Provides syntax highlighting for the resulting regular expression",
+      "name": [
+        "-c",
+        "--colorize"
+      ]
+    },
+    {
+      "description": "Prints help information",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Prints version information",
+      "name": [
+        "-v",
+        "--version"
+      ]
+    },
+    {
+      "args": {
+        "template": "filepaths"
+      },
+      "description": "Reads test cases on separate lines from a file",
+      "name": [
+        "-f",
+        "--file"
+      ]
+    },
+    {
+      "args": {
+        "name": "QUANTITY",
+        "suggestions": [
+          {
+            "name": "1"
+          },
+          {
+            "name": "2"
+          },
+          {
+            "name": "3"
+          },
+          {
+            "name": "4"
+          },
+          {
+            "name": "5"
+          },
+          {
+            "name": "6"
+          },
+          {
+            "name": "7"
+          },
+          {
+            "name": "8"
+          },
+          {
+            "name": "9"
+          },
+          {
+            "name": "10"
+          }
+        ]
+      },
+      "description": "Specifies the minimum quantity of substring repetitions to be converted if --repetitions is set [default: 1]",
+      "name": [
+        "--min-repetitions"
+      ]
+    },
+    {
+      "args": {
+        "name": "LENGTH",
+        "suggestions": [
+          {
+            "name": "1"
+          },
+          {
+            "name": "2"
+          },
+          {
+            "name": "3"
+          },
+          {
+            "name": "4"
+          },
+          {
+            "name": "5"
+          },
+          {
+            "name": "6"
+          },
+          {
+            "name": "7"
+          },
+          {
+            "name": "8"
+          },
+          {
+            "name": "9"
+          },
+          {
+            "name": "10"
+          }
+        ]
+      },
+      "description": "Specifies the minimum length a repeated substring must have in order to be converted if --repetitions is set [default: 1]",
+      "name": [
+        "--min-substring-length"
+      ]
+    }
+  ]
+}

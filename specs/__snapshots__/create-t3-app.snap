@@ -1,0 +1,147 @@
+{
+  "args": {
+    "description": "The name of the application, as well as the name of the directory to create",
+    "isOptional": true,
+    "name": "dir",
+    "template": "folders"
+  },
+  "description": "A CLI for creating web applications with the t3 stack",
+  "name": "create-t3-app",
+  "options": [
+    {
+      "description": "Explicitly tell the CLI to not initialize a new git repo in the project (default: false)",
+      "name": [
+        "--noGit"
+      ]
+    },
+    {
+      "description": "Explicitly tell the CLI to not run the package manager's install command (default: false)",
+      "name": [
+        "--noInstall"
+      ]
+    },
+    {
+      "description": "Bypass the CLI and use all default options to bootstrap a new t3-app (default: false)",
+      "name": [
+        "-y",
+        "--default"
+      ]
+    },
+    {
+      "description": "Boolean value if we're running in CI (default: false)",
+      "name": [
+        "--CI"
+      ]
+    },
+    {
+      "args": {
+        "name": "boolean",
+        "suggestions": [
+          {
+            "description": "Install Tailwind CSS",
+            "name": "true"
+          },
+          {
+            "description": "Do not install Tailwind CSS",
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Experimental: Boolean value if we should install Tailwind CSS. Must be used in conjunction with `--CI`",
+      "name": [
+        "--tailwind"
+      ]
+    },
+    {
+      "args": {
+        "name": "boolean",
+        "suggestions": [
+          {
+            "description": "Install NextAuth.js",
+            "name": "true"
+          },
+          {
+            "description": "Do not install NextAuth.js",
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Experimental: Boolean value if we should install NextAuth.js. Must be used in conjunction with `--CI`",
+      "name": [
+        "--nextAuth"
+      ]
+    },
+    {
+      "args": {
+        "name": "boolean",
+        "suggestions": [
+          {
+            "description": "Install Prisma",
+            "name": "true"
+          },
+          {
+            "description": "Do not install Prisma",
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Experimental: Boolean value if we should install Prisma. Must be used in conjunction with `--CI`",
+      "name": [
+        "--prisma"
+      ]
+    },
+    {
+      "args": {
+        "name": "boolean",
+        "suggestions": [
+          {
+            "description": "Install tRPC",
+            "name": "true"
+          },
+          {
+            "description": "Do not install tRPC",
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Experimental: Boolean value if we should install tRPC. Must be used in conjunction with `--CI`",
+      "name": [
+        "--trpc"
+      ]
+    },
+    {
+      "args": {
+        "name": "alias",
+        "suggestions": [
+          {
+            "description": "Use the ~/ alias",
+            "name": "~/"
+          },
+          {
+            "description": "Use the @/ alias",
+            "name": "@/"
+          }
+        ]
+      },
+      "description": "Explicitly tell the CLI to use a custom import alias",
+      "name": [
+        "-i",
+        "--import-alias"
+      ]
+    },
+    {
+      "description": "Display the version number",
+      "name": [
+        "-v",
+        "--version"
+      ]
+    },
+    {
+      "description": "Display help for command",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ]
+}

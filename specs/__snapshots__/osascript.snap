@@ -1,0 +1,68 @@
+{
+  "args": {
+    "generators": [
+      {
+        "js_source": "(p,v,O)=>ae(this,void 0,void 0,function*(){var d;let{isDangerous:_,currentWorkingDirectory:b,searchTerm:h}=O,w=(d=(0,y.getCurrentInsertedDirectory)(a??b,h,O))!==null&&d!==void 0?d:\"/\";try{let q=yield v({command:\"ls\",args:[\"-1ApL\"],cwd:w}),Z=$(q.stdout.split(`\n`),[\".DS_Store\"]),N=[];for(let V of Z)if(V){let F=V.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&c!==\"only\"||F===\"folders\"&&c!==\"never\")&&N.push({type:F===\"filepaths\"?\"file\":\"folder\",name:V,insertValue:V,isDangerous:_,context:{templateType:F}})}return S(g(N))}catch{return[]}})",
+        "requires_js": true
+      }
+    ],
+    "isOptional": true,
+    "name": "script"
+  },
+  "description": "Execute OSA scripts (AppleScript, JavaScript, etc.)",
+  "name": "osascript",
+  "options": [
+    {
+      "args": {
+        "name": "statement"
+      },
+      "description": "Enter one line of a script",
+      "name": [
+        "-e"
+      ]
+    },
+    {
+      "description": "Interactive mode",
+      "name": [
+        "-i"
+      ]
+    },
+    {
+      "args": {
+        "name": "language"
+      },
+      "description": "Override the language for any plain text files",
+      "name": [
+        "-l"
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "flags",
+        "suggestions": [
+          {
+            "description": "Print values in human-readable form (default)",
+            "name": "h"
+          },
+          {
+            "description": "Print values in recompilable source form",
+            "name": "s"
+          },
+          {
+            "description": "Print script errors to stderr (default)",
+            "name": "e"
+          },
+          {
+            "description": "Print script errors to stdout",
+            "name": "o"
+          }
+        ]
+      },
+      "description": "Modify the output style",
+      "name": [
+        "-s"
+      ]
+    }
+  ]
+}

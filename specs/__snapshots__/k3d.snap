@@ -1,0 +1,1279 @@
+{
+  "description": "K3d is a lightweight wrapper to run k3s in Docker",
+  "name": "k3d",
+  "options": [
+    {
+      "description": "Help for k3d",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Verbose output",
+      "name": [
+        "--verbose"
+      ]
+    },
+    {
+      "description": "Trace output",
+      "name": [
+        "--trace"
+      ]
+    },
+    {
+      "description": "Print version information",
+      "name": [
+        "--version"
+      ]
+    },
+    {
+      "description": "Print timestamp in log output",
+      "name": [
+        "--timestamps"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Manage k3s clusters",
+      "name": "cluster",
+      "subcommands": [
+        {
+          "args": {
+            "description": "Name of the cluster to create",
+            "name": "cluster name"
+          },
+          "description": "Create a new k3s cluster",
+          "name": "create",
+          "options": [
+            {
+              "args": {
+                "description": "Number of agents to create",
+                "name": "number of agents"
+              },
+              "description": "Number of agents to create",
+              "name": [
+                "-a",
+                "--agents"
+              ]
+            },
+            {
+              "args": {
+                "description": "Memory limit imposed on the agents nodes",
+                "name": "memory limit"
+              },
+              "description": "Memory limit imposed on the agents nodes",
+              "name": [
+                "--agents-memory"
+              ]
+            },
+            {
+              "args": {
+                "description": "Specify the Kubernetes API server port exposed on the LoadBalancer",
+                "name": "port"
+              },
+              "description": "Specify the Kubernetes API server port exposed on the LoadBalancer",
+              "name": [
+                "--api-port"
+              ]
+            },
+            {
+              "args": {
+                "description": "Path of a config file to use",
+                "name": "path"
+              },
+              "description": "Path of a config file to use",
+              "name": [
+                "-c",
+                "--config"
+              ]
+            },
+            {
+              "args": {
+                "description": "Add environment variables to nodes",
+                "name": "environment variables"
+              },
+              "description": "Add environment variables to nodes",
+              "name": [
+                "-e",
+                "--env"
+              ]
+            },
+            {
+              "args": {
+                "description": "GPU devices to add to the cluster node containers",
+                "name": "devices"
+              },
+              "description": "GPU devices to add to the cluster node containers",
+              "name": [
+                "--gpus"
+              ]
+            },
+            {
+              "description": "Help for create",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Add ip:host[,host,...] mappings",
+                "name": "ip:host[,host,...]"
+              },
+              "description": "Add ip:host[,host,...] mappings",
+              "name": [
+                "--host-alias"
+              ]
+            },
+            {
+              "description": "Enable host pid mode of server(s) and agent(s)",
+              "name": [
+                "--host-pid-mode"
+              ]
+            },
+            {
+              "args": {
+                "description": "Specify k3s image that you want to use for the nodes",
+                "name": "image"
+              },
+              "description": "Specify k3s image that you want to use for the nodes",
+              "name": [
+                "-i",
+                "--image"
+              ]
+            },
+            {
+              "args": {
+                "description": "Additional args passed to k3s command",
+                "name": "ARG@NODEFILTER[;@NODEFILTER]"
+              },
+              "description": "Additional args passed to k3s command",
+              "name": [
+                "--k3s-arg"
+              ]
+            },
+            {
+              "args": {
+                "description": "Add label to k3s node",
+                "name": "KEY[=VALUE][@NODEFILTER[;NODEFILTER...]]"
+              },
+              "description": "Add label to k3s node",
+              "name": [
+                "--k3s-node-label"
+              ]
+            },
+            {
+              "description": "Directly switch the default kubeconfig's current-context to the new cluster's context (requires --kubeconfig-update-default) (default true)",
+              "name": [
+                "--kubeconfig-switch-context"
+              ]
+            },
+            {
+              "description": "Directly update the default kubeconfig with the new cluster's context (default true)",
+              "name": [
+                "--kubeconfig-update-default"
+              ]
+            },
+            {
+              "args": {
+                "name": "path"
+              },
+              "description": "Use dotted YAML path syntax to override nginx loadbalancer settings",
+              "name": [
+                "--lb-config-override"
+              ]
+            },
+            {
+              "args": {
+                "description": "Specify the docker network to use",
+                "name": "network"
+              },
+              "description": "Specify the docker network to use",
+              "name": [
+                "--network"
+              ]
+            },
+            {
+              "description": "Don't create a volume for the container's root filesystem",
+              "name": [
+                "--no-image-volume"
+              ]
+            },
+            {
+              "description": "Don't create a loadbalancer for the cluster",
+              "name": [
+                "--no-lb"
+              ]
+            },
+            {
+              "description": "Don't rollback changes if cluster creation failed",
+              "name": [
+                "--no-rollback"
+              ]
+            },
+            {
+              "args": {
+                "description": "Map ports from the node containers (via the serverlb) to the host",
+                "name": "port"
+              },
+              "description": "Map ports from the node containers (via the serverlb) to the host",
+              "name": [
+                "-p",
+                "--port"
+              ]
+            },
+            {
+              "args": {
+                "description": "Specify path to an extra registries.yaml file",
+                "name": "path"
+              },
+              "description": "Specify path to an extra registries.yaml file",
+              "name": [
+                "--registry-config"
+              ]
+            },
+            {
+              "args": {
+                "description": "Create a k3d-managed registry and connect it to the cluster (Format: NAME[:HOST][:HOSTPORT] - Example: `k3d cluster create --registry-create mycluster-registry",
+                "name": "NAME[:HOST][:HOSTPORT]"
+              },
+              "description": "Create a k3d-managed registry and connect it to the cluster (Format: NAME[:HOST][:HOSTPORT] - Example: `k3d cluster create --registry-create mycluster-registry",
+              "name": [
+                "--registry-create"
+              ]
+            },
+            {
+              "args": {
+                "name": "NAME[:HOST][:HOSTPORT]"
+              },
+              "description": "Connect to one or more k3d-managed registries running locally",
+              "name": [
+                "--registry-use"
+              ]
+            },
+            {
+              "description": "Add label to container runtime (Format: KEY[=VALUE][@NODEFILTER[;NODEFILTER...]] - Example: `k3d cluster create --agents 2 --runtime-label \"my.label@agent:0,1\" --runtime-label \"other.label=somevalue@server:0\"`",
+              "name": [
+                "--runtime-label"
+              ]
+            },
+            {
+              "args": {
+                "description": "Specify how many servers you want to create",
+                "name": "int"
+              },
+              "description": "Specify how many servers you want to create",
+              "name": [
+                "-s",
+                "--servers"
+              ]
+            },
+            {
+              "args": {
+                "description": "Memory limit imposed on the server nodes [From docker]",
+                "name": "string"
+              },
+              "description": "Memory limit imposed on the server nodes [From docker]",
+              "name": [
+                "--servers-memory"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "[Experimental: IPAM] Define a subnet for the newly created container network",
+              "name": [
+                "--subnet"
+              ]
+            },
+            {
+              "args": {
+                "description": "Rollback changes if cluster couldn't be created in specified duration",
+                "name": "duration"
+              },
+              "description": "Rollback changes if cluster couldn't be created in specified duration",
+              "name": [
+                "--timeout"
+              ]
+            },
+            {
+              "args": {
+                "description": "Specify a cluster token. By default, we generate one",
+                "name": "string"
+              },
+              "description": "Specify a cluster token. By default, we generate one",
+              "name": [
+                "--token"
+              ]
+            },
+            {
+              "args": {
+                "description": "Mount volumes into the nodes",
+                "name": "[SOURCE:]DEST[@NODEFILTER[;NODEFILTER...]]"
+              },
+              "description": "Mount volumes into the nodes",
+              "name": [
+                "-v",
+                "--volume"
+              ]
+            },
+            {
+              "description": "Wait for the server(s) to be ready before returning",
+              "name": [
+                "--wait"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Cluster to delete",
+            "generators": [
+              {
+                "script": [
+                  "k3d",
+                  "cluster",
+                  "list",
+                  "--no-headers"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "cluster"
+          },
+          "description": "Delete a cluster",
+          "name": "delete",
+          "options": [
+            {
+              "description": "Delete all clusters",
+              "name": [
+                "-a",
+                "--all"
+              ]
+            },
+            {
+              "args": {
+                "description": "Path of a config file to use",
+                "name": "path"
+              },
+              "description": "Path of a config file to use",
+              "name": [
+                "-c",
+                "--config"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Cluster to edit",
+            "generators": [
+              {
+                "script": [
+                  "k3d",
+                  "cluster",
+                  "list",
+                  "--no-headers"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "cluster"
+          },
+          "description": "Edit a cluster",
+          "name": "edit",
+          "options": [
+            {
+              "description": "Map ports from the node containers",
+              "name": [
+                "--port-add"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Cluster to list",
+            "generators": [
+              {
+                "script": [
+                  "k3d",
+                  "cluster",
+                  "list",
+                  "--no-headers"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "cluster"
+          },
+          "description": "List clusters",
+          "name": "list",
+          "options": [
+            {
+              "description": "Don't print headers",
+              "name": [
+                "--no-headers"
+              ]
+            },
+            {
+              "args": {
+                "description": "Output format",
+                "name": "string",
+                "suggestions": [
+                  {
+                    "name": "json"
+                  },
+                  {
+                    "name": "yaml"
+                  }
+                ]
+              },
+              "description": "Output format",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            },
+            {
+              "description": "Print k3s cluster token",
+              "name": [
+                "--token"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Cluster to start",
+            "generators": [
+              {
+                "script": [
+                  "k3d",
+                  "cluster",
+                  "list",
+                  "--no-headers"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "cluster"
+          },
+          "description": "Start a cluster",
+          "name": "start",
+          "options": [
+            {
+              "description": "Start all clusters",
+              "name": [
+                "a",
+                "--all"
+              ]
+            },
+            {
+              "args": {
+                "description": "Maximum waiting time for '--wait' before canceling/returning",
+                "name": "duration"
+              },
+              "description": "Maximum waiting time for '--wait' before canceling/returning",
+              "name": [
+                "--timeout"
+              ]
+            },
+            {
+              "description": "Wait for the server(s) (and loadbalancer) to be ready before returning",
+              "name": [
+                "--wait"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Cluster to stop",
+            "generators": [
+              {
+                "script": [
+                  "k3d",
+                  "cluster",
+                  "list",
+                  "--no-headers"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "cluster"
+          },
+          "description": "Stop a cluster",
+          "name": "stop",
+          "options": [
+            {
+              "description": "Stop all clusters",
+              "name": [
+                "-a",
+                "--all"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Shell to generate completion script for",
+        "name": "shell",
+        "suggestions": [
+          {
+            "description": "Bash shell",
+            "name": "bash"
+          },
+          {
+            "description": "Zsh shell",
+            "name": "zsh"
+          },
+          {
+            "description": "Fish shell",
+            "name": "fish"
+          },
+          {
+            "description": "Powershell",
+            "name": "powershell"
+          }
+        ]
+      },
+      "description": "Generate shell completion scripts",
+      "name": "completion"
+    },
+    {
+      "description": "Manage k3d config",
+      "name": "config",
+      "subcommands": [
+        {
+          "description": "Create a new config file",
+          "name": "init",
+          "options": [
+            {
+              "description": "Force overwrite of target file",
+              "name": [
+                "-f",
+                "--force"
+              ]
+            },
+            {
+              "description": "Write a default k3d config (default \"k3d-default.yaml\")",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Migrate a config file to the latest version",
+          "name": "migrate"
+        }
+      ]
+    },
+    {
+      "description": "Manage k3d images",
+      "name": "image",
+      "subcommands": [
+        {
+          "args": {
+            "description": "Image to import",
+            "generators": [
+              {
+                "script": [
+                  "docker",
+                  "image",
+                  "ls",
+                  "--format",
+                  "{{.Repository}}:{{.Tag}}"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "image"
+          },
+          "description": "Import image(s) from docker into k3d cluster(s)",
+          "name": "import",
+          "options": [
+            {
+              "args": {
+                "description": "Cluster to import image(s) into",
+                "generators": [
+                  {
+                    "script": [
+                      "k3d",
+                      "cluster",
+                      "list",
+                      "--no-headers"
+                    ],
+                    "transforms": [
+                      "split_lines",
+                      "filter_empty"
+                    ]
+                  }
+                ],
+                "name": "cluster"
+              },
+              "description": "Cluster to import image(s) into",
+              "name": [
+                "-c",
+                "--cluster"
+              ]
+            },
+            {
+              "description": "Do not delete the tarball containing the saved images from the shared volume",
+              "name": [
+                "-k",
+                "--keep-tarball"
+              ]
+            },
+            {
+              "description": "Do not delete the tools node after import",
+              "name": [
+                "-t",
+                "--keep-tools"
+              ]
+            },
+            {
+              "args": {
+                "description": "Import mode",
+                "name": "mode",
+                "suggestions": [
+                  {
+                    "name": "auto"
+                  },
+                  {
+                    "name": "direct"
+                  },
+                  {
+                    "name": "tools"
+                  }
+                ]
+              },
+              "description": "Import mode",
+              "name": [
+                "-m",
+                "--mode"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage k3d kubeconfig",
+      "name": "kubeconfig",
+      "subcommands": [
+        {
+          "args": {
+            "description": "Cluster to get kubeconfig for",
+            "generators": [
+              {
+                "script": [
+                  "k3d",
+                  "cluster",
+                  "list",
+                  "--no-headers"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "cluster"
+          },
+          "name": "get",
+          "options": [
+            {
+              "name": [
+                "-a",
+                "--all"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Cluster to get kubeconfig for",
+            "generators": [
+              {
+                "script": [
+                  "k3d",
+                  "cluster",
+                  "list",
+                  "--no-headers"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "cluster"
+          },
+          "description": "Write/Merge kubeconfig(s) from cluster(s) into new or existing kubeconfig/file",
+          "name": "merge",
+          "options": [
+            {
+              "name": [
+                "-a",
+                "--all"
+              ]
+            },
+            {
+              "description": "Merge into the default kubeconfig ($KUBECONFIG or /Users/balli/.kube/config)",
+              "name": [
+                "-d",
+                "--kubeconfig-merge-default"
+              ]
+            },
+            {
+              "description": "Switch to new context (default true)",
+              "name": [
+                "-s",
+                "--kubeconfig-switch-context"
+              ]
+            },
+            {
+              "args": {
+                "description": "Define output [ - | FILE ] (default from $KUBECONFIG or /Users/balli/.kube/config",
+                "name": "string"
+              },
+              "description": "Define output [ - | FILE ] (default from $KUBECONFIG or /Users/balli/.kube/config",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            },
+            {
+              "description": "[Careful!] Overwrite existing file, ignoring its contents",
+              "name": [
+                "--overwrite"
+              ]
+            },
+            {
+              "description": "Update conflicting fields in existing kubeconfig (default true)",
+              "name": [
+                "-u",
+                "--update"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage k3d nodes",
+      "name": "node",
+      "subcommands": [
+        {
+          "args": {
+            "description": "Name of the node",
+            "name": "Node Name"
+          },
+          "description": "Create a new node",
+          "name": "create",
+          "options": [
+            {
+              "args": {
+                "description": "Cluster to connect to",
+                "generators": [
+                  {
+                    "script": [
+                      "k3d",
+                      "cluster",
+                      "list",
+                      "--no-headers"
+                    ],
+                    "transforms": [
+                      "split_lines",
+                      "filter_empty"
+                    ]
+                  }
+                ],
+                "name": "cluster"
+              },
+              "description": "Cluster URL or k3d cluster name to connect to. (default \"k3s-default\")",
+              "name": [
+                "-c",
+                "--cluster"
+              ]
+            },
+            {
+              "args": {
+                "description": "Node image to use",
+                "name": "image"
+              },
+              "description": "Node image to use",
+              "name": [
+                "-i",
+                "--image"
+              ]
+            },
+            {
+              "args": {
+                "description": "Additional k3s arguments",
+                "name": "k3s-arg"
+              },
+              "description": "Additional k3s arguments",
+              "name": [
+                "--k3s-arg"
+              ]
+            },
+            {
+              "args": {
+                "description": "Specify k3s node labels in format \"foo=bar\"",
+                "name": "k3s-node-label"
+              },
+              "description": "Specify k3s node labels in format",
+              "name": [
+                "--k3s-node-label"
+              ]
+            },
+            {
+              "args": {
+                "description": "Memory limit for the node container",
+                "name": "memory"
+              },
+              "description": "Memory limit for the node container",
+              "name": [
+                "--memory"
+              ]
+            },
+            {
+              "args": {
+                "name": "network"
+              },
+              "description": "Add node to (another) runtime network",
+              "name": [
+                "-n",
+                "--network"
+              ]
+            },
+            {
+              "args": {
+                "description": "Number of replicas to create",
+                "name": "replicas",
+                "suggestions": [
+                  {
+                    "name": "1"
+                  },
+                  {
+                    "name": "2"
+                  },
+                  {
+                    "name": "3"
+                  },
+                  {
+                    "name": "4"
+                  },
+                  {
+                    "name": "5"
+                  }
+                ]
+              },
+              "description": "Number of replicas to create",
+              "name": [
+                "--replicas"
+              ]
+            },
+            {
+              "args": {
+                "description": "Node role",
+                "name": "role",
+                "suggestions": [
+                  {
+                    "name": "agent"
+                  },
+                  {
+                    "name": "server"
+                  }
+                ]
+              },
+              "description": "Node role",
+              "name": [
+                "--role"
+              ]
+            },
+            {
+              "args": {
+                "description": "Specify runtime labels in format \"foo=bar\"",
+                "name": "runtime-label"
+              },
+              "description": "Specify runtime labels in format",
+              "name": [
+                "--runtime-label"
+              ]
+            },
+            {
+              "args": {
+                "description": "Maximum waiting time for '--wait' before canceling/returning",
+                "name": "timeout"
+              },
+              "description": "Maximum waiting time for '--wait' before canceling/returning",
+              "name": [
+                "--timeout"
+              ]
+            },
+            {
+              "args": {
+                "name": "token"
+              },
+              "description": "Override cluster token",
+              "name": [
+                "-t",
+                "--token"
+              ]
+            },
+            {
+              "description": "Wait for the node(s) to be ready before returning",
+              "name": [
+                "--wait"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Name of the node",
+            "generators": [
+              {
+                "script": [
+                  "k3d",
+                  "node",
+                  "list",
+                  "--no-headers"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "Node Name"
+          },
+          "description": "Delete a node",
+          "name": "delete",
+          "options": [
+            {
+              "description": "Delete all existing nodes",
+              "name": [
+                "-a",
+                "--all"
+              ]
+            },
+            {
+              "description": "Also delete registries",
+              "name": [
+                "-r",
+                "--registry"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Name of the node",
+            "generators": [
+              {
+                "script": [
+                  "k3d",
+                  "node",
+                  "list",
+                  "--no-headers"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "Node Name"
+          },
+          "description": "[EXPERIMENTAL] Edit node(s)",
+          "name": "edit",
+          "options": [
+            {
+              "args": {
+                "description": "Map ports from the node container to the host",
+                "name": "port-add"
+              },
+              "description": "Map ports from the node container to the host",
+              "name": [
+                "--port-add"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List nodes",
+          "name": "list",
+          "options": [
+            {
+              "description": "Don't print headers (default print headers)",
+              "name": [
+                "--no-headers"
+              ]
+            },
+            {
+              "args": {
+                "description": "Output format",
+                "name": "output",
+                "suggestions": [
+                  {
+                    "name": "json"
+                  },
+                  {
+                    "name": "yaml"
+                  }
+                ]
+              },
+              "description": "Output format",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Name of the node",
+            "generators": [
+              {
+                "script": [
+                  "k3d",
+                  "node",
+                  "list",
+                  "--no-headers"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "Node Name"
+          },
+          "description": "Start a node",
+          "name": "start"
+        },
+        {
+          "args": {
+            "description": "Name of the node",
+            "generators": [
+              {
+                "script": [
+                  "k3d",
+                  "node",
+                  "list",
+                  "--no-headers"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "Node Name"
+          },
+          "description": "Stop a node",
+          "name": "stop"
+        }
+      ]
+    },
+    {
+      "description": "Manage registry/registries",
+      "name": "registry",
+      "subcommands": [
+        {
+          "args": {
+            "description": "Name of the registry",
+            "name": "Registry Name"
+          },
+          "description": "Create a new registry",
+          "name": "create",
+          "options": [
+            {
+              "description": "Specify the network connected to the registry (default \"bridge\")",
+              "name": [
+                "--default-network"
+              ]
+            },
+            {
+              "args": {
+                "name": "image"
+              },
+              "description": "Specify image used for the registry (default \"docker.io/library/registry:2\")",
+              "name": [
+                "-i",
+                "--image"
+              ]
+            },
+            {
+              "description": "Disable the help text (How-To use the registry)",
+              "name": [
+                "--no-help"
+              ]
+            },
+            {
+              "args": {
+                "name": "port"
+              },
+              "description": "Select which port the registry should be listening on your machine (localhost) (Format: [HOST:]HOSTPORT)",
+              "name": [
+                "-p",
+                "--port"
+              ]
+            },
+            {
+              "args": {
+                "name": "proxy-password"
+              },
+              "description": "Specify the password of the proxied remote registry",
+              "name": [
+                "--proxy-password"
+              ]
+            },
+            {
+              "args": {
+                "name": "proxy-remote-url"
+              },
+              "description": "Specify the url of the proxied remote registry",
+              "name": [
+                "--proxy-remote-url"
+              ]
+            },
+            {
+              "args": {
+                "name": "proxy-username"
+              },
+              "description": "Specify the username of the proxied remote registry",
+              "name": [
+                "--proxy-username"
+              ]
+            },
+            {
+              "args": {
+                "name": "volume"
+              },
+              "description": "Mount volumes into the registry node (Format: [SOURCE:]DEST",
+              "name": [
+                "-v",
+                "--volume"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Name of the registry",
+            "generators": [
+              {
+                "script": [
+                  "k3d",
+                  "registry",
+                  "list",
+                  "--no-headers"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "Registry Name"
+          },
+          "description": "Delete registry/registries",
+          "name": "delete",
+          "options": [
+            {
+              "name": [
+                "-a",
+                "--all"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Name of the registry",
+            "generators": [
+              {
+                "script": [
+                  "k3d",
+                  "registry",
+                  "list",
+                  "--no-headers"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "isOptional": true,
+            "name": "Registry Name"
+          },
+          "description": "List registries",
+          "name": "list",
+          "options": [
+            {
+              "description": "Don't print headers (default print headers)",
+              "name": [
+                "--no-headers"
+              ]
+            },
+            {
+              "args": {
+                "description": "Output format",
+                "name": "output",
+                "suggestions": [
+                  {
+                    "name": "json"
+                  },
+                  {
+                    "name": "yaml"
+                  }
+                ]
+              },
+              "description": "Output format",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Show k3d and default k3s version",
+      "name": "version"
+    }
+  ]
+}

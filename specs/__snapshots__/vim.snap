@@ -1,0 +1,316 @@
+{
+  "args": {
+    "template": "filepaths"
+  },
+  "description": "Vi IMproved, a programmer's text editor",
+  "name": "vim",
+  "options": [
+    {
+      "description": "Vi mode (like 'vi')",
+      "name": [
+        "-v"
+      ]
+    },
+    {
+      "description": "Ex mode (like 'ex')",
+      "name": [
+        "-e"
+      ]
+    },
+    {
+      "description": "Improved Ex mode",
+      "name": [
+        "-E"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "scriptin",
+        "template": "filepaths"
+      },
+      "description": "Enable silent mode (when in ex mode), or Read Normal mode commands from file",
+      "name": [
+        "-s"
+      ]
+    },
+    {
+      "description": "Diff mode (like 'vimdiff')",
+      "name": [
+        "-d"
+      ]
+    },
+    {
+      "description": "Easy mode (like 'evim', modeless)",
+      "name": [
+        "-y"
+      ]
+    },
+    {
+      "description": "Readonly mode (like 'view')",
+      "name": [
+        "-R"
+      ]
+    },
+    {
+      "description": "Restricted mode (like 'rvim')",
+      "name": [
+        "-Z"
+      ]
+    },
+    {
+      "description": "Modifications (writing files) not allowed",
+      "name": [
+        "-m"
+      ]
+    },
+    {
+      "description": "Modifications in text not allowed",
+      "name": [
+        "-M"
+      ]
+    },
+    {
+      "description": "Binary mode",
+      "name": [
+        "-b"
+      ]
+    },
+    {
+      "description": "Lisp mode",
+      "name": [
+        "-l"
+      ]
+    },
+    {
+      "description": "Compatible with Vi: 'compatible'",
+      "name": [
+        "-C"
+      ]
+    },
+    {
+      "description": "Not fully Vi compatible: 'nocompatible'",
+      "name": [
+        "-N"
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "N"
+        },
+        {
+          "name": "fname",
+          "template": "filepaths"
+        }
+      ],
+      "description": "Be verbose [level N] [log messages to fname]",
+      "name": [
+        "-V"
+      ]
+    },
+    {
+      "description": "Debugging mode",
+      "name": [
+        "-D"
+      ]
+    },
+    {
+      "description": "No swap file, use memory only",
+      "name": [
+        "-n"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "filename",
+        "template": "filepaths"
+      },
+      "description": "Recover crashed session if filename is specified, otherwise list swap files and exit",
+      "name": [
+        "-r"
+      ]
+    },
+    {
+      "args": {
+        "name": "filename",
+        "template": "filepaths"
+      },
+      "description": "Same as -r",
+      "name": [
+        "-L"
+      ]
+    },
+    {
+      "args": {
+        "name": "terminal"
+      },
+      "description": "Set terminal type to <terminal>",
+      "name": [
+        "-T"
+      ]
+    },
+    {
+      "description": "Skip warning for input/output not being a terminal",
+      "name": [
+        "--not-a-term"
+      ]
+    },
+    {
+      "description": "Exit if input or output is not a terminal",
+      "name": [
+        "--ttyfail"
+      ]
+    },
+    {
+      "args": {
+        "name": "vimrc",
+        "template": "filepaths"
+      },
+      "description": "Use <vimrc> instead of any .vimrc",
+      "name": [
+        "-u"
+      ]
+    },
+    {
+      "description": "Don't load plugin scripts",
+      "name": [
+        "--noplugin"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "N"
+      },
+      "description": "Open N tab pages (default: one for each file)",
+      "name": [
+        "-p"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "N"
+      },
+      "description": "Open N windows (default: one for each file)",
+      "name": [
+        "-o"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "N"
+      },
+      "description": "Like -o but split vertically",
+      "name": [
+        "-O"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "lnum"
+      },
+      "description": "Start at end of file, if line number is specified, start at that line",
+      "name": [
+        "+"
+      ]
+    },
+    {
+      "args": {
+        "name": "command"
+      },
+      "description": "Execute <command> before loading any vimrc file",
+      "name": [
+        "--cmd"
+      ]
+    },
+    {
+      "args": {
+        "name": "command"
+      },
+      "description": "Execute <command> after loading the first file",
+      "name": [
+        "-c"
+      ]
+    },
+    {
+      "args": {
+        "name": "session",
+        "template": "filepaths"
+      },
+      "description": "Source file <session> after loading the first file",
+      "name": [
+        "-S"
+      ]
+    },
+    {
+      "args": {
+        "name": "scriptout",
+        "template": "filepaths"
+      },
+      "description": "Append all typed commands to file <scriptout>",
+      "name": [
+        "-w"
+      ]
+    },
+    {
+      "args": {
+        "name": "scriptout",
+        "template": "filepaths"
+      },
+      "description": "Write all typed commands to file <scriptout>",
+      "name": [
+        "-W"
+      ]
+    },
+    {
+      "description": "Edit encrypted files",
+      "name": [
+        "-x"
+      ]
+    },
+    {
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      },
+      "description": "Write startup timing messages to <file>",
+      "name": [
+        "--startuptime"
+      ]
+    },
+    {
+      "args": {
+        "name": "viminfo",
+        "template": "filepaths"
+      },
+      "description": "Use <viminfo> instead of .viminfo",
+      "name": [
+        "-i"
+      ]
+    },
+    {
+      "description": "'nocompatible', Vim defaults, no plugins, no viminfo",
+      "name": [
+        "--clean"
+      ]
+    },
+    {
+      "description": "Print Help message and exit",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Print version information and exit",
+      "name": [
+        "--version"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,179 @@
+{
+  "description": "CLI provided by Astro to develop, build, and preview your project from a terminal window",
+  "name": "astro",
+  "options": [
+    {
+      "args": {
+        "name": "path",
+        "template": "filepaths"
+      },
+      "description": "Specify your config file",
+      "name": [
+        "--config"
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "folders"
+      },
+      "description": "Specify your project root folder",
+      "name": [
+        "--root"
+      ]
+    },
+    {
+      "args": {
+        "name": "url"
+      },
+      "description": "Specify your project site",
+      "name": [
+        "--site"
+      ]
+    },
+    {
+      "args": {
+        "name": "pathname",
+        "template": "folders"
+      },
+      "description": "Specify your project base",
+      "name": [
+        "--base"
+      ]
+    },
+    {
+      "description": "Enable verbose logging",
+      "name": [
+        "--verbose"
+      ]
+    },
+    {
+      "description": "Disable all logging",
+      "name": [
+        "--silent"
+      ]
+    },
+    {
+      "description": "Show the version number and exit",
+      "name": [
+        "--version"
+      ]
+    },
+    {
+      "description": "Show help for astro",
+      "name": [
+        "--help"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "name": "integration"
+      },
+      "description": "Add an integration",
+      "name": "add",
+      "options": [
+        {
+          "description": "Accept all prompts",
+          "name": [
+            "--yes"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Build your project and write it to disk",
+      "name": "build",
+      "options": [
+        {
+          "description": "Include Markdown draft pages in the build",
+          "name": [
+            "--drafts"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Check your project for errors",
+      "name": "check",
+      "options": [
+        {
+          "description": "Watch Astro files for changes and re-run checks",
+          "name": [
+            "--watch"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Starts the development server",
+      "name": "dev",
+      "options": [
+        {
+          "args": {
+            "name": "port"
+          },
+          "description": "Specify a port to listen on",
+          "name": [
+            "--port"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "custom address"
+          },
+          "description": "Listen on all addresses, including LAN and public addresses",
+          "name": [
+            "--host"
+          ]
+        },
+        {
+          "description": "Automatically open the app in the browser on server start",
+          "name": [
+            "--open"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Open documentation in your web browser",
+      "name": "docs"
+    },
+    {
+      "description": "Preview your build locally",
+      "name": "preview",
+      "options": [
+        {
+          "description": "Automatically open the app in the browser on server start",
+          "name": [
+            "--open"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generate content collection types",
+      "name": "sync"
+    },
+    {
+      "description": "Configure telemetry settings",
+      "name": "telemetry",
+      "subcommands": [
+        {
+          "description": "Enable anonymous data collection",
+          "name": "enable"
+        },
+        {
+          "description": "Disable anonymous data collection",
+          "name": "disable"
+        },
+        {
+          "description": "Reset anonymous data collection settings",
+          "name": "reset"
+        }
+      ]
+    }
+  ]
+}

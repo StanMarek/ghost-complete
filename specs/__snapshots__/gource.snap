@@ -1,0 +1,1021 @@
+{
+  "description": "Gource is an OpenGL-based 3D visualisation tool for source control repositories",
+  "name": "gource",
+  "options": [
+    {
+      "description": "Help ('-H' for extended help)",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "args": {
+        "description": "The size of the viewport (e.g. WIDTHxHEIGHT)",
+        "name": "size",
+        "suggestions": [
+          {
+            "name": "3840x2160"
+          },
+          {
+            "name": "2560x1440"
+          },
+          {
+            "name": "1920x1080"
+          },
+          {
+            "name": "1280x720"
+          },
+          {
+            "name": "800x600"
+          }
+        ]
+      },
+      "description": "Set the viewport size. If -f is also supplied, will attempt to set the video mode to this also. Add `!` to make the window non-resizable",
+      "name": [
+        "--viewport"
+      ]
+    },
+    {
+      "description": "Fullscreen",
+      "name": [
+        "-f"
+      ]
+    },
+    {
+      "args": {
+        "description": "The number of the screen to display on",
+        "generators": [
+          {
+            "js_source": "s=>{if(s.includes(\"command not found\"))return[];if(s.length===0)return[];try{let t=JSON.parse(s),a=[];for(let e of t.SPDisplaysDataType)if(e.spdisplays_ndrvs)for(let i of e.spdisplays_ndrvs)a.push({description:i._name,icon:\"\\u{1F5A5}\\uFE0F\"});return a.map((e,i)=>({...e,name:String(i+1)}))}catch{return[]}}",
+            "requires_js": true,
+            "script": [
+              "system_profiler",
+              "SPDisplaysDataType",
+              "-json"
+            ]
+          }
+        ],
+        "name": "screen"
+      },
+      "description": "Set the number of the screen to display on",
+      "name": [
+        "--screen"
+      ]
+    },
+    {
+      "description": "Request a high DPI display when creating the window. On some platforms such as MacOS, the window resolution is specified in points instead of pixels. The --high-dpi flag may be required to access some higher resolutions. E.g. requesting a high DPI 800x600 window may produce a window that is 1600x1200 pixels",
+      "name": [
+        "--high-dpi"
+      ]
+    },
+    {
+      "args": {
+        "description": "The initial window position on your desktop (e.g. XxY)",
+        "name": "position"
+      },
+      "description": "Initial window position on your desktop which may be made up of multiple monitors. This will override the screen setting so don't specify both",
+      "name": [
+        "--window-position"
+      ]
+    },
+    {
+      "description": "Frameless window",
+      "name": [
+        "--frameless"
+      ]
+    },
+    {
+      "description": "Make the background transparent. Only really useful for screenshots",
+      "name": [
+        "--transparent"
+      ]
+    },
+    {
+      "args": {
+        "description": "The start date and optional time",
+        "name": "date"
+      },
+      "description": "Start with the first entry after the supplied date and optional time. If a time zone offset isn't specified the local time zone is used. Example accepted formats: 'YYYY-MM-DD', 'YYYY-MM-DD hh:mm', 'YYYY-MM-DD hh:mm:ss +tz'",
+      "name": [
+        "--start-date"
+      ]
+    },
+    {
+      "args": {
+        "description": "The stop date and optional time",
+        "name": "date"
+      },
+      "description": "Stop at the last entry prior to the supplied date and optional time. Uses the same format as --start-date",
+      "name": [
+        "--stop-date"
+      ]
+    },
+    {
+      "args": {
+        "description": "The start position in the log",
+        "name": "position",
+        "suggestions": [
+          {
+            "name": "random"
+          },
+          {
+            "name": "0.0"
+          },
+          {
+            "name": "0.1"
+          },
+          {
+            "name": "0.2"
+          },
+          {
+            "name": "0.3"
+          },
+          {
+            "name": "0.4"
+          },
+          {
+            "name": "0.5"
+          },
+          {
+            "name": "0.6"
+          },
+          {
+            "name": "0.7"
+          },
+          {
+            "name": "0.8"
+          },
+          {
+            "name": "0.9"
+          },
+          {
+            "name": "1.0"
+          }
+        ]
+      },
+      "description": "Begin at some position in the log (between 0.0 and 1.0 or 'random')",
+      "name": [
+        "-p",
+        "--start-position"
+      ]
+    },
+    {
+      "args": {
+        "description": "The stop position in the log",
+        "name": "position",
+        "suggestions": [
+          {
+            "name": "random"
+          },
+          {
+            "name": "0.0"
+          },
+          {
+            "name": "0.1"
+          },
+          {
+            "name": "0.2"
+          },
+          {
+            "name": "0.3"
+          },
+          {
+            "name": "0.4"
+          },
+          {
+            "name": "0.5"
+          },
+          {
+            "name": "0.6"
+          },
+          {
+            "name": "0.7"
+          },
+          {
+            "name": "0.8"
+          },
+          {
+            "name": "0.9"
+          },
+          {
+            "name": "1.0"
+          }
+        ]
+      },
+      "description": "Stop (exit) at some position in the log (does not work with STDIN)",
+      "name": [
+        "--stop-position"
+      ]
+    },
+    {
+      "args": {
+        "description": "The number of seconds to wait before stopping",
+        "name": "seconds"
+      },
+      "description": "Stop (exit) after a specified number of seconds",
+      "name": [
+        "-t",
+        "--stop-at-time"
+      ]
+    },
+    {
+      "description": "Stop (exit) at the end of the log / stream",
+      "name": [
+        "--stop-at-end"
+      ]
+    },
+    {
+      "description": "Loop back to the start of the log when the end is reached",
+      "name": [
+        "--loop"
+      ]
+    },
+    {
+      "args": {
+        "name": "seconds"
+      },
+      "description": "Seconds to delay before looping",
+      "name": [
+        "--loop-delay-seconds"
+      ]
+    },
+    {
+      "args": {
+        "name": "seconds"
+      },
+      "description": "Automatically skip to next entry if nothing happens for a specified number of seconds",
+      "name": [
+        "-a",
+        "--auto-skip-seconds"
+      ]
+    },
+    {
+      "args": {
+        "name": "seconds"
+      },
+      "description": "Speed of simulation in seconds per day",
+      "name": [
+        "-s",
+        "--seconds-per-day"
+      ]
+    },
+    {
+      "description": "Realtime playback speed",
+      "name": [
+        "--realtime"
+      ]
+    },
+    {
+      "description": "Use the time of the last commit if the time of a commit is in the past",
+      "name": [
+        "--no-time-travel"
+      ]
+    },
+    {
+      "description": "Change simulation time scale",
+      "name": [
+        "-c",
+        "--time-scale"
+      ]
+    },
+    {
+      "description": "Time in seconds files remain idle before they are removed or 0 for no limit",
+      "name": [
+        "-i",
+        "--file-idle-time"
+      ]
+    },
+    {
+      "args": {
+        "name": "seconds"
+      },
+      "description": "Time in seconds files remain idle at the end before they are removed",
+      "name": [
+        "--file-idle-time-at-end"
+      ]
+    },
+    {
+      "args": {
+        "description": "Elasticity of nodes",
+        "name": "elasticity"
+      },
+      "description": "Elasticity of nodes",
+      "name": [
+        "-e",
+        "--elasticity"
+      ]
+    },
+    {
+      "args": {
+        "name": "colour"
+      },
+      "description": "Background colour in hex",
+      "name": [
+        "-b",
+        "--background-colour"
+      ]
+    },
+    {
+      "args": {
+        "name": "image file",
+        "template": "filepaths"
+      },
+      "description": "Set a background image",
+      "name": [
+        "--background-image"
+      ]
+    },
+    {
+      "args": {
+        "name": "title"
+      },
+      "description": "Set a title",
+      "name": [
+        "--title"
+      ]
+    },
+    {
+      "args": {
+        "name": "font file",
+        "template": "filepaths"
+      },
+      "description": "Specify the font. Should work with most font file formats supported by FreeType, such as TTF and OTF, among others",
+      "name": [
+        "--font-file"
+      ]
+    },
+    {
+      "args": {
+        "description": "Font scale",
+        "name": "scale"
+      },
+      "description": "Scale the size of all fonts",
+      "name": [
+        "--font-scale"
+      ]
+    },
+    {
+      "args": {
+        "description": "Font size",
+        "name": "size"
+      },
+      "description": "Font size used by the date and title",
+      "name": [
+        "--font-size"
+      ]
+    },
+    {
+      "args": {
+        "description": "Font size",
+        "name": "size"
+      },
+      "description": "Font size of filenames",
+      "name": [
+        "--file-font-size"
+      ]
+    },
+    {
+      "args": {
+        "description": "Font size",
+        "name": "size"
+      },
+      "description": "Font size of directory names",
+      "name": [
+        "--dir-font-size"
+      ]
+    },
+    {
+      "args": {
+        "description": "Font size",
+        "name": "size"
+      },
+      "description": "Font size of user names",
+      "name": [
+        "--user-font-size"
+      ]
+    },
+    {
+      "args": {
+        "description": "Font colour",
+        "name": "colour"
+      },
+      "description": "Font colour used by the date and title in hex",
+      "name": [
+        "--font-colour"
+      ]
+    },
+    {
+      "description": "Show file extension key",
+      "name": [
+        "--key"
+      ]
+    },
+    {
+      "args": {
+        "name": "image file",
+        "template": "filepaths"
+      },
+      "description": "Logo to display in the foreground",
+      "name": [
+        "--logo"
+      ]
+    },
+    {
+      "args": {
+        "description": "Logo offset",
+        "name": "offset"
+      },
+      "description": "Offset position of the logo",
+      "name": [
+        "--logo-offset"
+      ]
+    },
+    {
+      "args": {
+        "description": "Date format",
+        "name": "format"
+      },
+      "description": "Specify display date string (strftime format)",
+      "name": [
+        "--date-format"
+      ]
+    },
+    {
+      "args": {
+        "description": "Log command",
+        "name": "command",
+        "suggestions": [
+          {
+            "name": "git"
+          },
+          {
+            "name": "svn"
+          },
+          {
+            "name": "hg"
+          },
+          {
+            "name": "bzr"
+          },
+          {
+            "name": "cvs2cl"
+          }
+        ]
+      },
+      "description": "Show the log command used by gource (git,svn,hg,bzr,cvs2cl)",
+      "name": [
+        "--log-command"
+      ]
+    },
+    {
+      "args": {
+        "description": "Log format",
+        "name": "format",
+        "suggestions": [
+          {
+            "name": "git"
+          },
+          {
+            "name": "svn"
+          },
+          {
+            "name": "hg"
+          },
+          {
+            "name": "bzr"
+          },
+          {
+            "name": "cvs2cl"
+          },
+          {
+            "name": "custom"
+          }
+        ]
+      },
+      "description": "Specify format of the log being read (git,svn,hg,bzr,cvs2cl,custom). Required when reading from STDIN",
+      "name": [
+        "--log-format"
+      ]
+    },
+    {
+      "args": {
+        "name": "branch"
+      },
+      "description": "Get the git log of a branch other than the current one",
+      "name": [
+        "--git-branch"
+      ]
+    },
+    {
+      "args": {
+        "description": "Name of user to follow",
+        "name": "username"
+      },
+      "description": "Have the camera automatically follow a particular user",
+      "name": [
+        "--follow-user"
+      ]
+    },
+    {
+      "description": "Highlight the names of all directories",
+      "name": [
+        "--highlight-dirs"
+      ]
+    },
+    {
+      "args": {
+        "description": "Name of user to highlight",
+        "name": "username"
+      },
+      "description": "Highlight the names of a particular user",
+      "name": [
+        "--highlight-user"
+      ]
+    },
+    {
+      "description": "Highlight the names of all users",
+      "name": [
+        "--highlight-users"
+      ]
+    },
+    {
+      "args": {
+        "description": "Font colour (HEX)",
+        "name": "colour"
+      },
+      "description": "Font colour for highlighted users in hex",
+      "name": [
+        "--highlight-colour"
+      ]
+    },
+    {
+      "args": {
+        "description": "Font colour (HEX)",
+        "name": "colour"
+      },
+      "description": "Font colour for selected users and files",
+      "name": [
+        "--selection-colour"
+      ]
+    },
+    {
+      "args": {
+        "description": "Font colour (HEX)",
+        "name": "colour"
+      },
+      "description": "Font colour for filenames",
+      "name": [
+        "--filename-colour"
+      ]
+    },
+    {
+      "args": {
+        "description": "Dir colour (HEX)",
+        "name": "color"
+      },
+      "description": "Font colour for directories",
+      "name": [
+        "--dir-colour"
+      ]
+    },
+    {
+      "args": {
+        "name": "depth"
+      },
+      "description": "Draw names of directories down to a specific depth in the tree",
+      "name": [
+        "--dir-name-depth"
+      ]
+    },
+    {
+      "args": {
+        "name": "position",
+        "suggestions": [
+          {
+            "name": "0.1"
+          },
+          {
+            "name": "0.2"
+          },
+          {
+            "name": "0.3"
+          },
+          {
+            "name": "0.4"
+          },
+          {
+            "name": "0.5"
+          },
+          {
+            "name": "0.6"
+          },
+          {
+            "name": "0.7"
+          },
+          {
+            "name": "0.8"
+          },
+          {
+            "name": "0.9"
+          },
+          {
+            "name": "1.0"
+          }
+        ]
+      },
+      "description": "Position along edge of the directory name (between 0.1 and 1.0, default is 0.5)",
+      "name": [
+        "--dir-name-position"
+      ]
+    },
+    {
+      "args": {
+        "name": "time"
+      },
+      "description": "Duration to keep filenames on screen (>= 2.0)",
+      "name": [
+        "--filename-time"
+      ]
+    },
+    {
+      "description": "Show filename extensions only",
+      "name": [
+        "--file-extensions"
+      ]
+    },
+    {
+      "description": "Use filename as extension if the extension is missing or empty",
+      "name": [
+        "--file-extension-fallback"
+      ]
+    },
+    {
+      "args": {
+        "name": "regex"
+      },
+      "description": "Filter out file paths matching the specified regular expression",
+      "name": [
+        "--file-filter"
+      ]
+    },
+    {
+      "args": {
+        "name": "regex"
+      },
+      "description": "Show only file paths matching the specified regular expression",
+      "name": [
+        "--file-show-filter"
+      ]
+    },
+    {
+      "args": {
+        "name": "regex"
+      },
+      "description": "Filter usernames matching the specified regular expression",
+      "name": [
+        "--user-filter"
+      ]
+    },
+    {
+      "args": {
+        "name": "regex"
+      },
+      "description": "Show only usernames matching the specified regular expression",
+      "name": [
+        "--user-show-filter"
+      ]
+    },
+    {
+      "args": {
+        "name": "directory",
+        "template": "folders"
+      },
+      "description": "Directory containing .jpg or .png images of users (eg 'Full Name.png') to use as avatars",
+      "name": [
+        "--user-image-dir"
+      ]
+    },
+    {
+      "args": {
+        "name": "User image",
+        "template": "filepaths"
+      },
+      "description": "Path of .jpg to use as the default user image",
+      "name": [
+        "--default-user-image"
+      ]
+    },
+    {
+      "description": "Forces the size of the user image to remain fixed throughout",
+      "name": [
+        "--fixed-user-size"
+      ]
+    },
+    {
+      "description": "Colourize user images",
+      "name": [
+        "--colour-images"
+      ]
+    },
+    {
+      "args": {
+        "name": "axis"
+      },
+      "description": "Crop view on an axis (vertical,horizontal)",
+      "name": [
+        "--crop"
+      ]
+    },
+    {
+      "args": {
+        "name": "padding"
+      },
+      "description": "Camera view padding",
+      "name": [
+        "--padding"
+      ]
+    },
+    {
+      "description": "Enable multi-sampling",
+      "name": [
+        "--multi-sampling"
+      ]
+    },
+    {
+      "description": "Disable vsync",
+      "name": [
+        "--no-vsync"
+      ]
+    },
+    {
+      "args": {
+        "name": "multiplier"
+      },
+      "description": "Adjust the amount of bloom",
+      "name": [
+        "--bloom-multiplier"
+      ]
+    },
+    {
+      "args": {
+        "name": "intensity"
+      },
+      "description": "Adjust the intensity of the bloom",
+      "name": [
+        "--bloom-intensity"
+      ]
+    },
+    {
+      "args": {
+        "name": "number"
+      },
+      "description": "Set the maximum number of files or 0 for no limit. Excess files will be discarded",
+      "name": [
+        "--max-files"
+      ]
+    },
+    {
+      "args": {
+        "name": "seconds"
+      },
+      "description": "Max time files of a commit can take to appear. Use -1 for no limit",
+      "name": [
+        "--max-file-lag"
+      ]
+    },
+    {
+      "args": {
+        "name": "units"
+      },
+      "description": "Max speed users can travel per second",
+      "name": [
+        "--max-user-speed"
+      ]
+    },
+    {
+      "args": {
+        "name": "seconds"
+      },
+      "description": "Time users take to come to a halt",
+      "name": [
+        "--user-friction"
+      ]
+    },
+    {
+      "args": {
+        "name": "scale"
+      },
+      "description": "Change scale of user avatars",
+      "name": [
+        "--user-scale"
+      ]
+    },
+    {
+      "args": {
+        "name": "mode",
+        "suggestions": [
+          {
+            "name": "overview"
+          },
+          {
+            "name": "track"
+          }
+        ]
+      },
+      "description": "Camera mode (overview,track)",
+      "name": [
+        "--camera-mode"
+      ]
+    },
+    {
+      "description": "Disable automatic camera rotation",
+      "name": [
+        "--disable-auto-rotate"
+      ]
+    },
+    {
+      "description": "Disable keyboard and mouse input",
+      "name": [
+        "--disable-input"
+      ]
+    },
+    {
+      "args": {
+        "description": "Element to hide (Separate multiple elements with commas (eg \"mouse,progress\"))",
+        "isVariadic": true,
+        "name": "element",
+        "suggestions": [
+          {
+            "name": "bloom"
+          },
+          {
+            "name": "date"
+          },
+          {
+            "name": "dirnames"
+          },
+          {
+            "name": "files"
+          },
+          {
+            "name": "filenames"
+          },
+          {
+            "name": "mouse"
+          },
+          {
+            "name": "progress"
+          },
+          {
+            "name": "root"
+          },
+          {
+            "name": "tree"
+          },
+          {
+            "name": "users"
+          },
+          {
+            "name": "usernames"
+          }
+        ]
+      },
+      "description": "Hide one or more display elements from the list below: bloom - bloom effect date - current date dirnames - names of directories files - file icons filenames - names of files mouse - mouse cursor progress - progress bar widget root - root directory of the tree tree - animated tree structure users - user avatars usernames - names of users",
+      "name": [
+        "--hide"
+      ]
+    },
+    {
+      "args": {
+        "name": "seed"
+      },
+      "description": "Change the seed of hash function",
+      "name": [
+        "--hash-seed"
+      ]
+    },
+    {
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      },
+      "description": "Caption file (see Caption Log Format)",
+      "name": [
+        "--caption-file"
+      ]
+    },
+    {
+      "args": {
+        "name": "size"
+      },
+      "description": "Caption size",
+      "name": [
+        "--caption-size"
+      ]
+    },
+    {
+      "args": {
+        "description": "Colour in hex (eg #ff0000)",
+        "name": "colour"
+      },
+      "description": "Caption colour in hex",
+      "name": [
+        "--caption-colour"
+      ]
+    },
+    {
+      "args": {
+        "name": "seconds"
+      },
+      "description": "Caption duration",
+      "name": [
+        "--caption-duration"
+      ]
+    },
+    {
+      "args": {
+        "name": "offset"
+      },
+      "description": "Caption horizontal offset (0 to centre captions)",
+      "name": [
+        "--caption-offset"
+      ]
+    },
+    {
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      },
+      "description": "Output a PPM image stream to a file ('-' for STDOUT). This will automatically hide the progress bar initially and enable 'stop-at-end' unless other behaviour is specified",
+      "name": [
+        "-o",
+        "--output-ppm-stream"
+      ]
+    },
+    {
+      "args": {
+        "name": "fps",
+        "suggestions": [
+          {
+            "name": "25"
+          },
+          {
+            "name": "30"
+          },
+          {
+            "name": "60"
+          },
+          {
+            "name": "120"
+          }
+        ]
+      },
+      "description": "Framerate of output (25,30,60). Used with --output-ppm-stream",
+      "name": [
+        "-r",
+        "--output-framerate"
+      ]
+    },
+    {
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      },
+      "description": "Output a custom format log file ('-' for STDOUT)",
+      "name": [
+        "--output-custom-log"
+      ]
+    },
+    {
+      "args": {
+        "name": "config file",
+        "template": "filepaths"
+      },
+      "description": "Load a config file",
+      "name": [
+        "--load-config"
+      ]
+    },
+    {
+      "args": {
+        "name": "config file",
+        "template": "filepaths"
+      },
+      "description": "Save a config file with the current options",
+      "name": [
+        "--save-config"
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "filepaths"
+      },
+      "description": "Either a supported version control directory, a pre-generated log file (see log commands or the custom log format), a Gource conf file or '-' to read STDIN",
+      "name": [
+        "--path"
+      ]
+    }
+  ]
+}

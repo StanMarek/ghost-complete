@@ -1,0 +1,275 @@
+{
+  "description": "Coda Local development CLI tool. It comes bundled with the Pack SDK and makes it easy to build and manage Packs from the CLI",
+  "name": "coda",
+  "options": [
+    {
+      "description": "Show version number",
+      "name": [
+        "--version"
+      ]
+    },
+    {
+      "description": "Show help",
+      "name": [
+        "--help"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Initialize an empty project with the recommended settings and dependencies",
+      "name": "init"
+    },
+    {
+      "args": [
+        {
+          "description": "The path to the pack.ts file. E.g. src/pack.ts",
+          "generators": [
+            {
+              "js_source": "(p,m,_)=>de(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:O,searchTerm:h}=_,k=(f=(0,y.getCurrentInsertedDirectory)(l??O,h,_))!==null&&f!==void 0?f:\"/\";try{let R=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:k}),Z=W(R.stdout.split(`\n`),[\".DS_Store\"]),q=[];for(let j of Z)if(j){let L=j.endsWith(\"/\")?\"folders\":\"filepaths\";(L===\"filepaths\"&&u!==\"only\"||L===\"folders\"&&u!==\"never\")&&q.push({type:L===\"filepaths\"?\"file\":\"folder\",name:j,insertValue:j,isDangerous:b,context:{templateType:L}})}return S(g(q))}catch{return[]}})",
+              "requires_js": true
+            }
+          ],
+          "name": "path/to/pack.ts"
+        },
+        {
+          "description": "Formula name to execute",
+          "generators": [
+            {
+              "script": [
+                "bash",
+                "-c",
+                "grep -A5 --include=*.ts --exclude-dir=node_modules -r 'addFormula\\|addSyncTable\\|makeFormula\\|makeSyncTable' . | grep -A3 -i formula | grep name: | grep -oE \"['\\\"]\\w*['\\\"]\""
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty",
+                "trim"
+              ]
+            }
+          ],
+          "name": "formula"
+        },
+        {
+          "description": "Arguments to pass to the formula",
+          "isOptional": true,
+          "isVariadic": true,
+          "name": "params"
+        }
+      ],
+      "description": "Execute the formula and print the output to the terminal",
+      "name": "execute",
+      "options": [
+        {
+          "args": {
+            "description": "The URL to sync from",
+            "name": "url"
+          },
+          "description": "To run a sync for a dynamic sync table, use this parameter to specify which URL to sync from",
+          "name": [
+            "--dynamicUrl"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The path to the pack.ts file. E.g. src/pack.ts",
+        "generators": [
+          {
+            "js_source": "(p,m,_)=>de(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:O,searchTerm:h}=_,k=(f=(0,y.getCurrentInsertedDirectory)(l??O,h,_))!==null&&f!==void 0?f:\"/\";try{let R=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:k}),Z=W(R.stdout.split(`\n`),[\".DS_Store\"]),q=[];for(let j of Z)if(j){let L=j.endsWith(\"/\")?\"folders\":\"filepaths\";(L===\"filepaths\"&&u!==\"only\"||L===\"folders\"&&u!==\"never\")&&q.push({type:L===\"filepaths\"?\"file\":\"folder\",name:j,insertValue:j,isDangerous:b,context:{templateType:L}})}return S(g(q))}catch{return[]}})",
+            "requires_js": true
+          }
+        ],
+        "name": "path/to/pack.ts"
+      },
+      "description": "Set up authentication in your development environment so that you can execute Pack formulas with authentication applied to them",
+      "name": "auth"
+    },
+    {
+      "args": {
+        "description": "The API token to register",
+        "isOptional": true,
+        "name": "apiToken"
+      },
+      "description": "Create a new API token or register an existing one to be used with future commands",
+      "name": "register"
+    },
+    {
+      "args": {
+        "description": "The path to the pack.ts file. E.g. src/pack.ts",
+        "generators": [
+          {
+            "js_source": "(p,m,_)=>de(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:O,searchTerm:h}=_,k=(f=(0,y.getCurrentInsertedDirectory)(l??O,h,_))!==null&&f!==void 0?f:\"/\";try{let R=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:k}),Z=W(R.stdout.split(`\n`),[\".DS_Store\"]),q=[];for(let j of Z)if(j){let L=j.endsWith(\"/\")?\"folders\":\"filepaths\";(L===\"filepaths\"&&u!==\"only\"||L===\"folders\"&&u!==\"never\")&&q.push({type:L===\"filepaths\"?\"file\":\"folder\",name:j,insertValue:j,isDangerous:b,context:{templateType:L}})}return S(g(q))}catch{return[]}})",
+            "requires_js": true
+          }
+        ],
+        "name": "path/to/pack.ts"
+      },
+      "description": "Create a new Pack on Coda’s servers and get assigned a Pack ID. Run this command just once for each Pack you create",
+      "name": "create",
+      "options": [
+        {
+          "args": {
+            "description": "The desired Pack name",
+            "name": "name"
+          },
+          "description": "Specify a name for the Pack. You can always set or update the name in the Pack management UI later",
+          "name": [
+            "--name"
+          ]
+        },
+        {
+          "args": {
+            "description": "The Pack description",
+            "name": "description"
+          },
+          "description": "Specify a description for the Pack. You can always set or update the description in the Pack management UI later",
+          "name": [
+            "--description"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The path to the pack.ts file. E.g. src/pack.ts",
+        "generators": [
+          {
+            "js_source": "(p,m,_)=>de(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:O,searchTerm:h}=_,k=(f=(0,y.getCurrentInsertedDirectory)(l??O,h,_))!==null&&f!==void 0?f:\"/\";try{let R=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:k}),Z=W(R.stdout.split(`\n`),[\".DS_Store\"]),q=[];for(let j of Z)if(j){let L=j.endsWith(\"/\")?\"folders\":\"filepaths\";(L===\"filepaths\"&&u!==\"only\"||L===\"folders\"&&u!==\"never\")&&q.push({type:L===\"filepaths\"?\"file\":\"folder\",name:j,insertValue:j,isDangerous:b,context:{templateType:L}})}return S(g(q))}catch{return[]}})",
+            "requires_js": true
+          }
+        ],
+        "name": "path/to/pack.ts"
+      },
+      "description": "Use this command to upload a new version of your Pack based on your latest code",
+      "name": "upload"
+    },
+    {
+      "args": [
+        {
+          "description": "The path to the pack.ts file. E.g. src/pack.ts",
+          "generators": [
+            {
+              "js_source": "(p,m,_)=>de(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:O,searchTerm:h}=_,k=(f=(0,y.getCurrentInsertedDirectory)(l??O,h,_))!==null&&f!==void 0?f:\"/\";try{let R=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:k}),Z=W(R.stdout.split(`\n`),[\".DS_Store\"]),q=[];for(let j of Z)if(j){let L=j.endsWith(\"/\")?\"folders\":\"filepaths\";(L===\"filepaths\"&&u!==\"only\"||L===\"folders\"&&u!==\"never\")&&q.push({type:L===\"filepaths\"?\"file\":\"folder\",name:j,insertValue:j,isDangerous:b,context:{templateType:L}})}return S(g(q))}catch{return[]}})",
+              "requires_js": true
+            }
+          ],
+          "name": "path/to/pack.ts"
+        },
+        {
+          "description": "The release version. Must always be greater than that of any of your previous releases",
+          "isOptional": true,
+          "name": "version"
+        }
+      ],
+      "description": "Release a Pack version and make it live for your users",
+      "name": "release"
+    },
+    {
+      "args": {
+        "description": "The URL or ID of the Pack. E.g. https://coda.io/p/123456 or 123456",
+        "name": "urlOrPackId"
+      },
+      "description": "Migrate the development of a Pack from the Pack Studio to a new local CLI Pack development",
+      "name": "clone"
+    },
+    {
+      "args": [
+        {
+          "description": "The path to the pack.ts file. E.g. src/pack.ts",
+          "generators": [
+            {
+              "js_source": "(p,m,_)=>de(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:O,searchTerm:h}=_,k=(f=(0,y.getCurrentInsertedDirectory)(l??O,h,_))!==null&&f!==void 0?f:\"/\";try{let R=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:k}),Z=W(R.stdout.split(`\n`),[\".DS_Store\"]),q=[];for(let j of Z)if(j){let L=j.endsWith(\"/\")?\"folders\":\"filepaths\";(L===\"filepaths\"&&u!==\"only\"||L===\"folders\"&&u!==\"never\")&&q.push({type:L===\"filepaths\"?\"file\":\"folder\",name:j,insertValue:j,isDangerous:b,context:{templateType:L}})}return S(g(q))}catch{return[]}})",
+              "requires_js": true
+            }
+          ],
+          "name": "path/to/pack.ts"
+        },
+        {
+          "description": "The URL or ID of the Pack. E.g. https://coda.io/p/123456 or 123456",
+          "name": "urlOrPackId"
+        }
+      ],
+      "description": "Link the development of a Pack from the Pack studio to an existing local CLI Pack development",
+      "name": "link"
+    },
+    {
+      "args": {
+        "description": "The API token to look up",
+        "isOptional": true,
+        "name": "apiToken"
+      },
+      "description": "Looks up information about the API token that is registered in this environment",
+      "name": "whoami"
+    },
+    {
+      "args": {
+        "description": "The path to the pack.ts file. E.g. src/pack.ts",
+        "generators": [
+          {
+            "js_source": "(p,m,_)=>de(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:O,searchTerm:h}=_,k=(f=(0,y.getCurrentInsertedDirectory)(l??O,h,_))!==null&&f!==void 0?f:\"/\";try{let R=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:k}),Z=W(R.stdout.split(`\n`),[\".DS_Store\"]),q=[];for(let j of Z)if(j){let L=j.endsWith(\"/\")?\"folders\":\"filepaths\";(L===\"filepaths\"&&u!==\"only\"||L===\"folders\"&&u!==\"never\")&&q.push({type:L===\"filepaths\"?\"file\":\"folder\",name:j,insertValue:j,isDangerous:b,context:{templateType:L}})}return S(g(q))}catch{return[]}})",
+            "requires_js": true
+          }
+        ],
+        "name": "path/to/pack.ts"
+      },
+      "description": "Generate a bundle for your Pack",
+      "name": "build"
+    },
+    {
+      "args": {
+        "description": "The path to the pack.ts file. E.g. src/pack.ts",
+        "generators": [
+          {
+            "js_source": "(p,m,_)=>de(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:O,searchTerm:h}=_,k=(f=(0,y.getCurrentInsertedDirectory)(l??O,h,_))!==null&&f!==void 0?f:\"/\";try{let R=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:k}),Z=W(R.stdout.split(`\n`),[\".DS_Store\"]),q=[];for(let j of Z)if(j){let L=j.endsWith(\"/\")?\"folders\":\"filepaths\";(L===\"filepaths\"&&u!==\"only\"||L===\"folders\"&&u!==\"never\")&&q.push({type:L===\"filepaths\"?\"file\":\"folder\",name:j,insertValue:j,isDangerous:b,context:{templateType:L}})}return S(g(q))}catch{return[]}})",
+            "requires_js": true
+          }
+        ],
+        "name": "path/to/pack.ts"
+      },
+      "description": "Validate your Pack definition",
+      "name": "validate"
+    },
+    {
+      "args": [
+        {
+          "description": "The path to the pack.ts file. E.g. src/pack.ts",
+          "generators": [
+            {
+              "js_source": "(p,m,_)=>de(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:O,searchTerm:h}=_,k=(f=(0,y.getCurrentInsertedDirectory)(l??O,h,_))!==null&&f!==void 0?f:\"/\";try{let R=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:k}),Z=W(R.stdout.split(`\n`),[\".DS_Store\"]),q=[];for(let j of Z)if(j){let L=j.endsWith(\"/\")?\"folders\":\"filepaths\";(L===\"filepaths\"&&u!==\"only\"||L===\"folders\"&&u!==\"never\")&&q.push({type:L===\"filepaths\"?\"file\":\"folder\",name:j,insertValue:j,isDangerous:b,context:{templateType:L}})}return S(g(q))}catch{return[]}})",
+              "requires_js": true
+            }
+          ],
+          "name": "path/to/pack.ts"
+        },
+        {
+          "description": "Currently the only supported option is 'timerStrategy'",
+          "name": "option",
+          "suggestions": [
+            {
+              "name": "timerStrategy"
+            }
+          ]
+        },
+        {
+          "description": "Value to set for the option",
+          "name": "value",
+          "suggestions": [
+            {
+              "name": "none"
+            },
+            {
+              "name": "error"
+            },
+            {
+              "name": "fake"
+            }
+          ]
+        }
+      ],
+      "description": "Set a persistent build option for the Pack. This will be used for all builds of the Pack",
+      "name": "setOption"
+    }
+  ]
+}

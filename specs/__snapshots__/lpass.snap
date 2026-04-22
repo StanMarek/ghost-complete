@@ -1,0 +1,1151 @@
+{
+  "description": "Command line interface for LastPass",
+  "name": "lpass",
+  "options": [
+    {
+      "description": "Display the help for lpass",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "description": "Display the version of lpass",
+      "name": [
+        "--version"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "description": "LastPass account username (email address)",
+        "name": "USERNAME"
+      },
+      "description": "Log in to LastPass",
+      "name": "login",
+      "options": [
+        {
+          "description": "Subsequent logins will not require multifactor authentication",
+          "name": [
+            "--trust"
+          ]
+        },
+        {
+          "args": {
+            "description": "Skip user confirmation",
+            "isOptional": true,
+            "name": "--force"
+          },
+          "description": "Save decryption key to the hard disk in plaintext",
+          "name": [
+            "--plaintext-key"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "color",
+            "suggestions": [
+              {
+                "name": "auto"
+              },
+              {
+                "name": "never"
+              },
+              {
+                "name": "always"
+              }
+            ]
+          },
+          "description": "Control colored output to the terminal",
+          "name": [
+            "--color"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Log out of LastPass",
+      "name": "logout",
+      "options": [
+        {
+          "description": "Skip user confirmation",
+          "name": [
+            "--force"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Group of entries to list",
+        "isOptional": true,
+        "name": "GROUP"
+      },
+      "description": "List names in groups in a tree structure",
+      "name": "ls",
+      "options": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "color",
+            "suggestions": [
+              {
+                "name": "auto"
+              },
+              {
+                "name": "never"
+              },
+              {
+                "name": "always"
+              }
+            ]
+          },
+          "description": "Control colored output to the terminal",
+          "name": [
+            "--color"
+          ]
+        },
+        {
+          "description": "Show the last modification time",
+          "name": [
+            "--long",
+            "-l"
+          ]
+        },
+        {
+          "description": "Show the last modified time",
+          "name": [
+            "-m"
+          ]
+        },
+        {
+          "description": "Show the last used time",
+          "name": [
+            "-u"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Change LastPass password and reencrypt all entries",
+      "name": "passwd"
+    },
+    {
+      "args": {
+        "description": "Shows entry with this unique name or ID",
+        "name": "UNIQENAME|UNIQUEID"
+      },
+      "description": "Show password or selected field",
+      "name": "show",
+      "options": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "sync",
+            "suggestions": [
+              {
+                "name": "auto"
+              },
+              {
+                "name": "now"
+              },
+              {
+                "name": "no"
+              }
+            ]
+          },
+          "description": "When the current operation syncs to server",
+          "name": [
+            "--sync"
+          ]
+        },
+        {
+          "description": "Copy to the clipboard",
+          "name": [
+            "--clip",
+            "-c"
+          ]
+        },
+        {
+          "description": "Display no output and only sets return code",
+          "name": [
+            "--quiet",
+            "-q"
+          ]
+        },
+        {
+          "description": "Show information from all matching sites",
+          "name": [
+            "--expand-multi",
+            "-x"
+          ]
+        },
+        {
+          "description": "Generate json output instead of human-readable text",
+          "name": [
+            "--json",
+            "-j"
+          ]
+        },
+        {
+          "description": "Show all fields",
+          "name": [
+            "--all"
+          ]
+        },
+        {
+          "description": "Show only the username",
+          "name": [
+            "--username"
+          ]
+        },
+        {
+          "description": "Show only the password",
+          "name": [
+            "--password"
+          ]
+        },
+        {
+          "description": "Show only the URL",
+          "name": [
+            "--url"
+          ]
+        },
+        {
+          "description": "Show only the notes",
+          "name": [
+            "--notes"
+          ]
+        },
+        {
+          "args": {
+            "description": "Show only this field",
+            "name": "FIELD"
+          },
+          "description": "Show only the field",
+          "name": [
+            "--field"
+          ]
+        },
+        {
+          "description": "Show only the ID",
+          "name": [
+            "--id"
+          ]
+        },
+        {
+          "description": "Show only the name",
+          "name": [
+            "--name"
+          ]
+        },
+        {
+          "args": {
+            "description": "Attachment ID",
+            "name": "ATTACHID"
+          },
+          "description": "Show only the attachment",
+          "name": [
+            "--attach"
+          ]
+        },
+        {
+          "description": "Show sites matching case-insensitive regular expression",
+          "name": [
+            "--basic-regexp",
+            "-G"
+          ]
+        },
+        {
+          "description": "Show sites matching this exact substring",
+          "name": [
+            "--fixed-strings",
+            "-F"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "color",
+            "suggestions": [
+              {
+                "name": "auto"
+              },
+              {
+                "name": "never"
+              },
+              {
+                "name": "always"
+              }
+            ]
+          },
+          "description": "Control colored output to the terminal",
+          "name": [
+            "--color"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Unique name or ID to move",
+          "name": "UNIQUENAME|UNIQUEID"
+        },
+        {
+          "description": "Destination group",
+          "name": "GROUP"
+        }
+      ],
+      "description": "Move LastPass entry to a different group",
+      "name": "mv",
+      "options": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "color",
+            "suggestions": [
+              {
+                "name": "auto"
+              },
+              {
+                "name": "never"
+              },
+              {
+                "name": "always"
+              }
+            ]
+          },
+          "description": "Control colored output to the terminal",
+          "name": [
+            "--color"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Name or unique ID of the entry to add",
+        "name": "NAME|UNIQUEID"
+      },
+      "description": "Add a new entry",
+      "name": "add",
+      "options": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "sync",
+            "suggestions": [
+              {
+                "name": "auto"
+              },
+              {
+                "name": "now"
+              },
+              {
+                "name": "no"
+              }
+            ]
+          },
+          "description": "When the current operation syncs to server",
+          "name": [
+            "--sync"
+          ]
+        },
+        {
+          "description": "Accept data until EOF or, unless the notes field is being edited, the first new line",
+          "name": [
+            "--non-interactive"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "color",
+            "suggestions": [
+              {
+                "name": "auto"
+              },
+              {
+                "name": "never"
+              },
+              {
+                "name": "always"
+              }
+            ]
+          },
+          "description": "Control colored output to the terminal",
+          "name": [
+            "--color"
+          ]
+        },
+        {
+          "description": "Add only the username",
+          "name": [
+            "--username"
+          ]
+        },
+        {
+          "description": "Add only the password",
+          "name": [
+            "--password"
+          ]
+        },
+        {
+          "description": "Add only the URL",
+          "name": [
+            "--url"
+          ]
+        },
+        {
+          "description": "Add only the notes",
+          "name": [
+            "--notes"
+          ]
+        },
+        {
+          "args": {
+            "description": "Add only this field",
+            "name": "FIELD"
+          },
+          "description": "Add only the field",
+          "name": [
+            "--field"
+          ]
+        },
+        {
+          "args": {
+            "description": "Type of note to add",
+            "name": "NOTETYPE",
+            "suggestions": [
+              {
+                "name": "amex"
+              },
+              {
+                "name": "bank"
+              },
+              {
+                "name": "credit"
+              },
+              {
+                "name": "database"
+              },
+              {
+                "name": "drivers_license"
+              },
+              {
+                "name": "email"
+              },
+              {
+                "name": "health_insurance"
+              },
+              {
+                "name": "im"
+              },
+              {
+                "name": "mastercard"
+              },
+              {
+                "name": "membership"
+              },
+              {
+                "name": "passport"
+              },
+              {
+                "name": "server"
+              },
+              {
+                "name": "software_license"
+              },
+              {
+                "name": "ssh_key"
+              },
+              {
+                "name": "ssn"
+              },
+              {
+                "name": "visa"
+              },
+              {
+                "name": "wifi"
+              }
+            ]
+          },
+          "description": "Add only the note",
+          "name": [
+            "--note-type"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Name or unique ID of the entry to edit",
+        "name": "NAME|UNIQUEID"
+      },
+      "description": "Edit existing entry",
+      "name": "edit",
+      "options": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "sync",
+            "suggestions": [
+              {
+                "name": "auto"
+              },
+              {
+                "name": "now"
+              },
+              {
+                "name": "no"
+              }
+            ]
+          },
+          "description": "When the current operation syncs to server",
+          "name": [
+            "--sync"
+          ]
+        },
+        {
+          "description": "Accept data until EOF or, unless the notes field is being edited, the first new line",
+          "name": [
+            "--non-interactive"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "color",
+            "suggestions": [
+              {
+                "name": "auto"
+              },
+              {
+                "name": "never"
+              },
+              {
+                "name": "always"
+              }
+            ]
+          },
+          "description": "Control colored output to the terminal",
+          "name": [
+            "--color"
+          ]
+        },
+        {
+          "description": "Edit only the name (or username)",
+          "name": [
+            "--name",
+            "--username"
+          ]
+        },
+        {
+          "description": "Edit only the password",
+          "name": [
+            "--password"
+          ]
+        },
+        {
+          "description": "Edit only the URL",
+          "name": [
+            "--url"
+          ]
+        },
+        {
+          "description": "Edit only the notes",
+          "name": [
+            "--notes"
+          ]
+        },
+        {
+          "args": {
+            "description": "Edit just this field",
+            "name": "FIELD"
+          },
+          "description": "Edit only the field",
+          "name": [
+            "--field"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Name or unique ID of the entry to generate the password for",
+          "name": "NAME|UNIQUEID"
+        },
+        {
+          "description": "Length of the password to create",
+          "name": "LENGTH"
+        }
+      ],
+      "description": "Create randomly generated password",
+      "name": "generate",
+      "options": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "sync",
+            "suggestions": [
+              {
+                "name": "auto"
+              },
+              {
+                "name": "now"
+              },
+              {
+                "name": "no"
+              }
+            ]
+          },
+          "description": "When the current operation syncs to server",
+          "name": [
+            "--sync"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "color",
+            "suggestions": [
+              {
+                "name": "auto"
+              },
+              {
+                "name": "never"
+              },
+              {
+                "name": "always"
+              }
+            ]
+          },
+          "description": "Control colored output to the terminal",
+          "name": [
+            "--color"
+          ]
+        },
+        {
+          "description": "Copy the text to the clipboard",
+          "name": [
+            "--clip",
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "description": "Username to generate the password for",
+            "name": "USERNAME"
+          },
+          "description": "Generate password for this username",
+          "name": [
+            "--username"
+          ]
+        },
+        {
+          "args": {
+            "description": "URL to generate the password for",
+            "name": "URL"
+          },
+          "description": "Generate password for this URL",
+          "name": [
+            "--url"
+          ]
+        },
+        {
+          "description": "Generate password without symbols",
+          "name": [
+            "--no-symbols"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Unique name or unique ID of the entry to duplicate",
+        "name": "UNIQUENAME|UNIQUEID"
+      },
+      "description": "Duplicate existing entry",
+      "name": "duplicate",
+      "options": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "sync",
+            "suggestions": [
+              {
+                "name": "auto"
+              },
+              {
+                "name": "now"
+              },
+              {
+                "name": "no"
+              }
+            ]
+          },
+          "description": "When the current operation syncs to server",
+          "name": [
+            "--sync"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "color",
+            "suggestions": [
+              {
+                "name": "auto"
+              },
+              {
+                "name": "never"
+              },
+              {
+                "name": "always"
+              }
+            ]
+          },
+          "description": "Control colored output to the terminal",
+          "name": [
+            "--color"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Unique name or unique ID of the entry to remove",
+        "name": "UNIQUENAME|UNIQUEID"
+      },
+      "description": "Removes existing entry",
+      "name": "rm",
+      "options": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "sync",
+            "suggestions": [
+              {
+                "name": "auto"
+              },
+              {
+                "name": "now"
+              },
+              {
+                "name": "no"
+              }
+            ]
+          },
+          "description": "When the current operation syncs to server",
+          "name": [
+            "--sync"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "color",
+            "suggestions": [
+              {
+                "name": "auto"
+              },
+              {
+                "name": "never"
+              },
+              {
+                "name": "always"
+              }
+            ]
+          },
+          "description": "Control colored output to the terminal",
+          "name": [
+            "--color"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Show the LastPass login status",
+      "name": "status",
+      "options": [
+        {
+          "description": "Display no output and only sets return code",
+          "name": [
+            "--quiet",
+            "-q"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "color",
+            "suggestions": [
+              {
+                "name": "auto"
+              },
+              {
+                "name": "never"
+              },
+              {
+                "name": "always"
+              }
+            ]
+          },
+          "description": "Control colored output to the terminal",
+          "name": [
+            "--color"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Sync the local cache against the LastPass server",
+      "name": "sync",
+      "options": [
+        {
+          "description": "Syncronization occurs in a daemonized process",
+          "name": [
+            "--background",
+            "-b"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "color",
+            "suggestions": [
+              {
+                "name": "auto"
+              },
+              {
+                "name": "never"
+              },
+              {
+                "name": "always"
+              }
+            ]
+          },
+          "description": "Control colored output to the terminal",
+          "name": [
+            "--color"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "CSV filename to import from",
+        "name": "FILENAME"
+      },
+      "description": "Import account information from an unencrypted CSV",
+      "name": "import",
+      "options": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "sync",
+            "suggestions": [
+              {
+                "name": "auto"
+              },
+              {
+                "name": "now"
+              },
+              {
+                "name": "no"
+              }
+            ]
+          },
+          "description": "When the current operation syncs to server",
+          "name": [
+            "--sync"
+          ]
+        },
+        {
+          "description": "Keeps any duplicate entries",
+          "name": [
+            "--keep-dupes"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "CSV filename to export to",
+        "name": "FILENAME"
+      },
+      "description": "Export account information to an unencrypted CSV",
+      "name": "export",
+      "options": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "sync",
+            "suggestions": [
+              {
+                "name": "auto"
+              },
+              {
+                "name": "now"
+              },
+              {
+                "name": "no"
+              }
+            ]
+          },
+          "description": "When the current operation syncs to server",
+          "name": [
+            "--sync"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "color",
+            "suggestions": [
+              {
+                "name": "auto"
+              },
+              {
+                "name": "never"
+              },
+              {
+                "name": "always"
+              }
+            ]
+          },
+          "description": "Control colored output to the terminal",
+          "name": [
+            "--color"
+          ]
+        },
+        {
+          "args": {
+            "name": "FIELDLIST",
+            "suggestions": [
+              {
+                "name": "id,url,username,password,extra,name,fav,id,grouping,group,fullname,last_touch,last_modified_gmt,attachpresent"
+              }
+            ]
+          },
+          "description": "Comma-separated subset of: id, url, username, password, extra, name, fav, id, grouping, group, fullname, last_touch, last_modified_gmt, attachpresent",
+          "name": [
+            "--fields"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "LastPass Shared folder to query",
+        "name": "SHARE"
+      },
+      "description": "LastPass Sharing Center functionality",
+      "name": "share",
+      "subcommands": [
+        {
+          "description": "List the LastPass users which have access to the Shared Folders",
+          "name": "userls"
+        },
+        {
+          "args": [
+            {
+              "description": "Entry to share",
+              "name": "SHARE"
+            },
+            {
+              "description": "User to share entry with",
+              "name": "USERNAME"
+            }
+          ],
+          "description": "Add user to Shared Folders",
+          "name": "useradd",
+          "options": [
+            {
+              "args": [
+                {
+                  "description": "Grant read only access",
+                  "name": "true"
+                },
+                {
+                  "description": "Grant write access",
+                  "name": "false"
+                }
+              ],
+              "description": "Control read or write access",
+              "name": [
+                "--read-only"
+              ]
+            },
+            {
+              "args": [
+                {
+                  "description": "User can only view entry",
+                  "name": "true"
+                },
+                {
+                  "description": "User can view entry and secrets",
+                  "name": "false"
+                }
+              ],
+              "description": "Share user view permission",
+              "name": [
+                "--hidden"
+              ]
+            },
+            {
+              "args": [
+                {
+                  "description": "User can administer entry",
+                  "name": "true"
+                },
+                {
+                  "description": "User cannot administer entry",
+                  "name": "false"
+                }
+              ],
+              "description": "Share user administer permission",
+              "name": [
+                "--admin"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "description": "Entry to modify",
+              "name": "SHARE"
+            },
+            {
+              "description": "User access to modify",
+              "name": "USERNAME"
+            }
+          ],
+          "description": "Modify user on Shared Folders",
+          "name": "usermod",
+          "options": [
+            {
+              "args": [
+                {
+                  "description": "Grant read only access",
+                  "name": "true"
+                },
+                {
+                  "description": "Grant write access",
+                  "name": "false"
+                }
+              ],
+              "description": "Control read or write access",
+              "name": [
+                "--read-only"
+              ]
+            },
+            {
+              "args": [
+                {
+                  "description": "User can only view entry",
+                  "name": "true"
+                },
+                {
+                  "description": "User can view entry and secrets",
+                  "name": "false"
+                }
+              ],
+              "description": "Share user view permission",
+              "name": [
+                "--hidden"
+              ]
+            },
+            {
+              "args": [
+                {
+                  "description": "User can administer entry",
+                  "name": "true"
+                },
+                {
+                  "description": "User cannot administer entry",
+                  "name": "false"
+                }
+              ],
+              "description": "Share user administer permission",
+              "name": [
+                "--admin"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "description": "LastPass entry to remove user from",
+              "name": "SHARE"
+            },
+            {
+              "description": "LastPass user to remove",
+              "name": "USERNAME"
+            }
+          ],
+          "description": "Remove user from Shared Folders",
+          "name": "userdel"
+        },
+        {
+          "args": {
+            "description": "LastPass Shared Folder to create",
+            "name": "SHARE"
+          },
+          "description": "Create new LastPass Shared Folder",
+          "name": "create"
+        },
+        {
+          "args": {
+            "description": "LastPass Shared Folder to remove",
+            "name": "SHARE"
+          },
+          "description": "LastPass Shared Folder to remove",
+          "name": "rm"
+        },
+        {
+          "args": [
+            {
+              "description": "Shared Folder to remove",
+              "name": "SHARE"
+            },
+            {
+              "description": "User access to manipulate",
+              "name": "USERNAME"
+            },
+            {
+              "description": "LastPass sites to manipulate",
+              "isOptional": true,
+              "name": "sites"
+            }
+          ],
+          "description": "Manipulate LastPass Shared Folder access",
+          "name": "limit",
+          "options": [
+            {
+              "description": "Deny or allow access",
+              "name": [
+                "--deny",
+                "--allow"
+              ]
+            },
+            {
+              "description": "Add, remove, or clear acces",
+              "name": [
+                "--add",
+                "--rm",
+                "--clear"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,382 @@
+{
+  "description": "Communicate over websocket",
+  "name": "wscat",
+  "options": [
+    {
+      "args": {
+        "name": "url",
+        "template": "history"
+      },
+      "description": "Connect to a WebSocket server",
+      "name": [
+        "-c",
+        "--connect"
+      ]
+    },
+    {
+      "description": "Output the version number",
+      "name": [
+        "-V",
+        "--version"
+      ]
+    },
+    {
+      "args": {
+        "name": "username:password"
+      },
+      "description": "Add basic HTTP authentication header (--connect only)",
+      "name": [
+        "--auth"
+      ]
+    },
+    {
+      "args": {
+        "name": "ca"
+      },
+      "description": "Specify a Certificate Authority (--connect only)",
+      "name": [
+        "--ca"
+      ]
+    },
+    {
+      "args": {
+        "name": "cert"
+      },
+      "description": "Specify a Client SSL Certificate (--connect only)",
+      "name": [
+        "--cert"
+      ]
+    },
+    {
+      "args": {
+        "name": "host"
+      },
+      "description": "Optional host",
+      "name": [
+        "--host"
+      ]
+    },
+    {
+      "args": {
+        "name": "key"
+      },
+      "description": "Specify a Client SSL Certificate's key (--connect only)",
+      "name": [
+        "--key"
+      ]
+    },
+    {
+      "args": {
+        "name": "num"
+      },
+      "description": "Maximum number of redirects allowed (--connect only) (default: 10)",
+      "name": [
+        "--max-redirects"
+      ]
+    },
+    {
+      "description": "Run without color",
+      "name": [
+        "--no-color"
+      ]
+    },
+    {
+      "args": {
+        "name": "passphrase"
+      },
+      "description": "Specify a Client SSL Certificate Key's passphrase (--connect only). If you don't provide a value, it will be prompted for",
+      "name": [
+        "--passphrase"
+      ]
+    },
+    {
+      "args": {
+        "name": "[protocol://]host[:port]"
+      },
+      "description": "Connect via a proxy. Proxy must support CONNECT method",
+      "name": [
+        "--proxy"
+      ]
+    },
+    {
+      "description": "Enable slash commands for control frames (/ping, /pong, /close [code [, reason]])",
+      "name": [
+        "--slash"
+      ]
+    },
+    {
+      "args": {
+        "name": "header:value"
+      },
+      "description": "Set an HTTP header. Repeat to set multiple (--connect only) (default: [])",
+      "name": [
+        "-H",
+        "--header"
+      ]
+    },
+    {
+      "description": "Follow redirects (--connect only)",
+      "name": [
+        "-L",
+        "--location"
+      ]
+    },
+    {
+      "args": {
+        "name": "port"
+      },
+      "description": "Listen on port",
+      "name": [
+        "-l",
+        "--listen"
+      ]
+    },
+    {
+      "description": "Do not check for unauthorized certificates",
+      "name": [
+        "-n",
+        "--no-check"
+      ]
+    },
+    {
+      "args": {
+        "name": "origin"
+      },
+      "description": "Optional origin",
+      "name": [
+        "-o",
+        "--origin"
+      ]
+    },
+    {
+      "args": {
+        "name": "protocol"
+      },
+      "description": "Optional protocol version",
+      "name": [
+        "-p",
+        "--protocol"
+      ]
+    },
+    {
+      "description": "Print a notification when a ping or pong is received",
+      "name": [
+        "-P",
+        "--show-ping-pong"
+      ]
+    },
+    {
+      "args": {
+        "name": "protocol",
+        "suggestions": [
+          {
+            "name": "MBWS.huawei.com"
+          },
+          {
+            "name": "MBLWS.huawei.com"
+          },
+          {
+            "name": "soap"
+          },
+          {
+            "name": "wamp"
+          },
+          {
+            "name": "v10.stomp"
+          },
+          {
+            "name": "v11.stomp"
+          },
+          {
+            "name": "v12.stomp"
+          },
+          {
+            "name": "ocpp1.2"
+          },
+          {
+            "name": "ocpp1.5"
+          },
+          {
+            "name": "ocpp1.6"
+          },
+          {
+            "name": "ocpp2.0"
+          },
+          {
+            "name": "ocpp2.0.1"
+          },
+          {
+            "name": "rfb"
+          },
+          {
+            "name": "sip"
+          },
+          {
+            "name": "notificationchannel-netapi-rest.openmobilealliance.org"
+          },
+          {
+            "name": "wpcp"
+          },
+          {
+            "name": "amqp\t"
+          },
+          {
+            "name": "mqtt"
+          },
+          {
+            "name": "jsflow"
+          },
+          {
+            "name": "rwpcp"
+          },
+          {
+            "name": "xmpp"
+          },
+          {
+            "name": "ship"
+          },
+          {
+            "name": "mielecloudconnect"
+          },
+          {
+            "name": "v10.pcp.sap.com"
+          },
+          {
+            "name": "msrp"
+          },
+          {
+            "name": "v1.saltyrtc.org"
+          },
+          {
+            "name": "TLCP-2.0.0.lightstreamer.com"
+          },
+          {
+            "name": "bfcp"
+          },
+          {
+            "name": "sldp.softvelum.com"
+          },
+          {
+            "name": "opcua+uacp"
+          },
+          {
+            "name": "opcua+uajson"
+          },
+          {
+            "name": "v1.swindon-lattice+json"
+          },
+          {
+            "name": "v1.usp"
+          },
+          {
+            "name": "mles-websocket"
+          },
+          {
+            "name": "coap"
+          },
+          {
+            "name": "TLCP-2.1.0.lightstreamer.com"
+          },
+          {
+            "name": "sqlnet.oracle.com"
+          },
+          {
+            "name": "oneM2M.R2.0.json"
+          },
+          {
+            "name": "oneM2M.R2.0.xml"
+          },
+          {
+            "name": "oneM2M.R2.0.cbor"
+          },
+          {
+            "name": "transit"
+          },
+          {
+            "name": "2016.serverpush.dash.mpeg.org"
+          },
+          {
+            "name": "2018.mmt.mpeg.org"
+          },
+          {
+            "name": "clue"
+          },
+          {
+            "name": "webrtc.softvelum.com"
+          },
+          {
+            "name": "cobra.v2.json"
+          },
+          {
+            "name": "drp"
+          },
+          {
+            "name": "hub.bsc.bacnet.org"
+          },
+          {
+            "name": "dc.bsc.bacnet.org"
+          },
+          {
+            "name": "jmap"
+          },
+          {
+            "name": "t140"
+          },
+          {
+            "name": "done"
+          },
+          {
+            "name": "TLCP-2.2.0.lightstreamer.com"
+          },
+          {
+            "name": "collection-update"
+          },
+          {
+            "name": "TLCP-2.3.0.lightstreamer.com"
+          },
+          {
+            "name": "text.ircv3.net"
+          },
+          {
+            "name": "binary.ircv3.net"
+          },
+          {
+            "name": "v3.penguin-stats.live+proto"
+          }
+        ]
+      },
+      "description": "Optional subprotocol (default: [])",
+      "name": [
+        "-s",
+        "--subprotocol"
+      ]
+    },
+    {
+      "args": {
+        "name": "seconds"
+      },
+      "description": "Wait given seconds after executing command",
+      "name": [
+        "-w",
+        "--wait"
+      ]
+    },
+    {
+      "args": {
+        "name": "command"
+      },
+      "description": "Execute command after connecting",
+      "name": [
+        "-x",
+        "--execute"
+      ]
+    },
+    {
+      "description": "Display help for command",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    }
+  ]
+}

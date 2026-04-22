@@ -1,0 +1,2015 @@
+{
+  "description": "Key and Certificate Management Tool",
+  "name": "keytool",
+  "options": [
+    {
+      "description": "Show help message",
+      "name": [
+        "-h",
+        "-?",
+        "--help",
+        "-help"
+      ]
+    },
+    {
+      "args": {
+        "name": "url"
+      },
+      "description": "Specify pre-configured options file",
+      "name": [
+        "-conf"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Generates a certificate request",
+      "name": "-certreq",
+      "options": [
+        {
+          "description": "Show help message",
+          "name": [
+            "-h",
+            "-?",
+            "--help",
+            "-help"
+          ]
+        },
+        {
+          "description": "Verbose output",
+          "name": [
+            "-v"
+          ]
+        },
+        {
+          "args": {
+            "name": "alias"
+          },
+          "description": "Alias name of the entry to process",
+          "name": [
+            "-alias"
+          ]
+        },
+        {
+          "args": {
+            "name": "keystore"
+          },
+          "description": "Keystore name",
+          "name": [
+            "-keystore"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Keystore password",
+          "name": [
+            "-storepass"
+          ]
+        },
+        {
+          "args": {
+            "name": "type"
+          },
+          "description": "Keystore type",
+          "name": [
+            "-storetype"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Provider name",
+          "name": [
+            "-providername"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Add security provider by name (e.g. SunPKCS11)",
+          "name": [
+            "-addprovider"
+          ]
+        },
+        {
+          "args": {
+            "name": "class"
+          },
+          "description": "Add security provider by fully-qualified class name",
+          "name": [
+            "-providerclass"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Configure argument for -addprovider or -providerclass",
+          "name": [
+            "-providerarg"
+          ]
+        },
+        {
+          "args": {
+            "name": "list"
+          },
+          "description": "Provider classpath",
+          "name": [
+            "-providerpath"
+          ]
+        },
+        {
+          "description": "Password through protected mechanism",
+          "name": [
+            "-protected"
+          ]
+        },
+        {
+          "args": {
+            "name": "alg"
+          },
+          "description": "Signature algorithm name",
+          "name": [
+            "-sigalg"
+          ]
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Output file name",
+          "name": [
+            "-file"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Key password",
+          "name": [
+            "-keypass"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Distinguished name",
+          "name": [
+            "-dname"
+          ]
+        },
+        {
+          "args": {
+            "name": "value"
+          },
+          "description": "X.509 extension",
+          "name": [
+            "-ext"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Changes an entry's alias",
+      "name": "-changealias",
+      "options": [
+        {
+          "description": "Show help message",
+          "name": [
+            "-h",
+            "-?",
+            "--help",
+            "-help"
+          ]
+        },
+        {
+          "description": "Verbose output",
+          "name": [
+            "-v"
+          ]
+        },
+        {
+          "args": {
+            "name": "alias"
+          },
+          "description": "Alias name of the entry to process",
+          "name": [
+            "-alias"
+          ]
+        },
+        {
+          "args": {
+            "name": "keystore"
+          },
+          "description": "Keystore name",
+          "name": [
+            "-keystore"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Keystore password",
+          "name": [
+            "-storepass"
+          ]
+        },
+        {
+          "args": {
+            "name": "type"
+          },
+          "description": "Keystore type",
+          "name": [
+            "-storetype"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Provider name",
+          "name": [
+            "-providername"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Add security provider by name (e.g. SunPKCS11)",
+          "name": [
+            "-addprovider"
+          ]
+        },
+        {
+          "args": {
+            "name": "class"
+          },
+          "description": "Add security provider by fully-qualified class name",
+          "name": [
+            "-providerclass"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Configure argument for -addprovider or -providerclass",
+          "name": [
+            "-providerarg"
+          ]
+        },
+        {
+          "args": {
+            "name": "list"
+          },
+          "description": "Provider classpath",
+          "name": [
+            "-providerpath"
+          ]
+        },
+        {
+          "description": "Password through protected mechanism",
+          "name": [
+            "-protected"
+          ]
+        },
+        {
+          "args": {
+            "name": "alias"
+          },
+          "description": "Destination alias",
+          "name": [
+            "-destalias"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Key password",
+          "name": [
+            "-keypass"
+          ]
+        },
+        {
+          "description": "Access the cacerts keystore",
+          "name": [
+            "-cacerts"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Deletes an entry",
+      "name": "-delete",
+      "options": [
+        {
+          "description": "Show help message",
+          "name": [
+            "-h",
+            "-?",
+            "--help",
+            "-help"
+          ]
+        },
+        {
+          "description": "Verbose output",
+          "name": [
+            "-v"
+          ]
+        },
+        {
+          "args": {
+            "name": "alias"
+          },
+          "description": "Alias name of the entry to process",
+          "name": [
+            "-alias"
+          ]
+        },
+        {
+          "args": {
+            "name": "keystore"
+          },
+          "description": "Keystore name",
+          "name": [
+            "-keystore"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Keystore password",
+          "name": [
+            "-storepass"
+          ]
+        },
+        {
+          "args": {
+            "name": "type"
+          },
+          "description": "Keystore type",
+          "name": [
+            "-storetype"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Provider name",
+          "name": [
+            "-providername"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Add security provider by name (e.g. SunPKCS11)",
+          "name": [
+            "-addprovider"
+          ]
+        },
+        {
+          "args": {
+            "name": "class"
+          },
+          "description": "Add security provider by fully-qualified class name",
+          "name": [
+            "-providerclass"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Configure argument for -addprovider or -providerclass",
+          "name": [
+            "-providerarg"
+          ]
+        },
+        {
+          "args": {
+            "name": "list"
+          },
+          "description": "Provider classpath",
+          "name": [
+            "-providerpath"
+          ]
+        },
+        {
+          "description": "Password through protected mechanism",
+          "name": [
+            "-protected"
+          ]
+        },
+        {
+          "description": "Access the cacerts keystore",
+          "name": [
+            "-cacerts"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Exports certificate",
+      "name": "-exportcert",
+      "options": [
+        {
+          "description": "Show help message",
+          "name": [
+            "-h",
+            "-?",
+            "--help",
+            "-help"
+          ]
+        },
+        {
+          "description": "Verbose output",
+          "name": [
+            "-v"
+          ]
+        },
+        {
+          "args": {
+            "name": "alias"
+          },
+          "description": "Alias name of the entry to process",
+          "name": [
+            "-alias"
+          ]
+        },
+        {
+          "args": {
+            "name": "keystore"
+          },
+          "description": "Keystore name",
+          "name": [
+            "-keystore"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Keystore password",
+          "name": [
+            "-storepass"
+          ]
+        },
+        {
+          "args": {
+            "name": "type"
+          },
+          "description": "Keystore type",
+          "name": [
+            "-storetype"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Provider name",
+          "name": [
+            "-providername"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Add security provider by name (e.g. SunPKCS11)",
+          "name": [
+            "-addprovider"
+          ]
+        },
+        {
+          "args": {
+            "name": "class"
+          },
+          "description": "Add security provider by fully-qualified class name",
+          "name": [
+            "-providerclass"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Configure argument for -addprovider or -providerclass",
+          "name": [
+            "-providerarg"
+          ]
+        },
+        {
+          "args": {
+            "name": "list"
+          },
+          "description": "Provider classpath",
+          "name": [
+            "-providerpath"
+          ]
+        },
+        {
+          "description": "Password through protected mechanism",
+          "name": [
+            "-protected"
+          ]
+        },
+        {
+          "description": "Output in RFC style",
+          "name": [
+            "-rfc"
+          ]
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Output file name",
+          "name": [
+            "-file"
+          ]
+        },
+        {
+          "description": "Access the cacerts keystore",
+          "name": [
+            "-cacerts"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generate a key pair",
+      "name": "-genkeypair",
+      "options": [
+        {
+          "description": "Show help message",
+          "name": [
+            "-h",
+            "-?",
+            "--help",
+            "-help"
+          ]
+        },
+        {
+          "description": "Verbose output",
+          "name": [
+            "-v"
+          ]
+        },
+        {
+          "args": {
+            "name": "alias"
+          },
+          "description": "Alias name of the entry to process",
+          "name": [
+            "-alias"
+          ]
+        },
+        {
+          "args": {
+            "name": "keystore"
+          },
+          "description": "Keystore name",
+          "name": [
+            "-keystore"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Keystore password",
+          "name": [
+            "-storepass"
+          ]
+        },
+        {
+          "args": {
+            "name": "type"
+          },
+          "description": "Keystore type",
+          "name": [
+            "-storetype"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Provider name",
+          "name": [
+            "-providername"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Add security provider by name (e.g. SunPKCS11)",
+          "name": [
+            "-addprovider"
+          ]
+        },
+        {
+          "args": {
+            "name": "class"
+          },
+          "description": "Add security provider by fully-qualified class name",
+          "name": [
+            "-providerclass"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Configure argument for -addprovider or -providerclass",
+          "name": [
+            "-providerarg"
+          ]
+        },
+        {
+          "args": {
+            "name": "list"
+          },
+          "description": "Provider classpath",
+          "name": [
+            "-providerpath"
+          ]
+        },
+        {
+          "description": "Password through protected mechanism",
+          "name": [
+            "-protected"
+          ]
+        },
+        {
+          "args": {
+            "name": "alg"
+          },
+          "description": "Key algorithm name",
+          "name": [
+            "-keyalg"
+          ]
+        },
+        {
+          "args": {
+            "name": "size"
+          },
+          "description": "Key bit size",
+          "name": [
+            "-keysize"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Group name. For example, an Elliptic Curve name",
+          "name": [
+            "-groupname"
+          ]
+        },
+        {
+          "args": {
+            "name": "alg"
+          },
+          "description": "Signature algorithm name",
+          "name": [
+            "-sigalg"
+          ]
+        },
+        {
+          "args": {
+            "name": "alias"
+          },
+          "description": "Destination alias",
+          "name": [
+            "-destalias"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Distinguished name",
+          "name": [
+            "-dname"
+          ]
+        },
+        {
+          "args": {
+            "name": "date"
+          },
+          "description": "Certificate validity start date/time",
+          "name": [
+            "-startdate"
+          ]
+        },
+        {
+          "args": {
+            "name": "value"
+          },
+          "description": "X.509 extension name",
+          "name": [
+            "-ext"
+          ]
+        },
+        {
+          "args": {
+            "name": "days"
+          },
+          "description": "Validity number of days",
+          "name": [
+            "-validity"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Key password",
+          "name": [
+            "-keypass"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generates a secret key",
+      "name": "-genseckey",
+      "options": [
+        {
+          "description": "Show help message",
+          "name": [
+            "-h",
+            "-?",
+            "--help",
+            "-help"
+          ]
+        },
+        {
+          "description": "Verbose output",
+          "name": [
+            "-v"
+          ]
+        },
+        {
+          "args": {
+            "name": "alias"
+          },
+          "description": "Alias name of the entry to process",
+          "name": [
+            "-alias"
+          ]
+        },
+        {
+          "args": {
+            "name": "keystore"
+          },
+          "description": "Keystore name",
+          "name": [
+            "-keystore"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Keystore password",
+          "name": [
+            "-storepass"
+          ]
+        },
+        {
+          "args": {
+            "name": "type"
+          },
+          "description": "Keystore type",
+          "name": [
+            "-storetype"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Provider name",
+          "name": [
+            "-providername"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Add security provider by name (e.g. SunPKCS11)",
+          "name": [
+            "-addprovider"
+          ]
+        },
+        {
+          "args": {
+            "name": "class"
+          },
+          "description": "Add security provider by fully-qualified class name",
+          "name": [
+            "-providerclass"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Configure argument for -addprovider or -providerclass",
+          "name": [
+            "-providerarg"
+          ]
+        },
+        {
+          "args": {
+            "name": "list"
+          },
+          "description": "Provider classpath",
+          "name": [
+            "-providerpath"
+          ]
+        },
+        {
+          "description": "Password through protected mechanism",
+          "name": [
+            "-protected"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Key password",
+          "name": [
+            "-keypass"
+          ]
+        },
+        {
+          "args": {
+            "name": "alg"
+          },
+          "description": "Key algorithm name",
+          "name": [
+            "-keyalg"
+          ]
+        },
+        {
+          "args": {
+            "name": "size"
+          },
+          "description": "Key bit size",
+          "name": [
+            "-keysize"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generates certificate from a certificate request",
+      "name": "-gencert",
+      "options": [
+        {
+          "description": "Show help message",
+          "name": [
+            "-h",
+            "-?",
+            "--help",
+            "-help"
+          ]
+        },
+        {
+          "description": "Verbose output",
+          "name": [
+            "-v"
+          ]
+        },
+        {
+          "args": {
+            "name": "alias"
+          },
+          "description": "Alias name of the entry to process",
+          "name": [
+            "-alias"
+          ]
+        },
+        {
+          "args": {
+            "name": "keystore"
+          },
+          "description": "Keystore name",
+          "name": [
+            "-keystore"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Keystore password",
+          "name": [
+            "-storepass"
+          ]
+        },
+        {
+          "args": {
+            "name": "type"
+          },
+          "description": "Keystore type",
+          "name": [
+            "-storetype"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Provider name",
+          "name": [
+            "-providername"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Add security provider by name (e.g. SunPKCS11)",
+          "name": [
+            "-addprovider"
+          ]
+        },
+        {
+          "args": {
+            "name": "class"
+          },
+          "description": "Add security provider by fully-qualified class name",
+          "name": [
+            "-providerclass"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Configure argument for -addprovider or -providerclass",
+          "name": [
+            "-providerarg"
+          ]
+        },
+        {
+          "args": {
+            "name": "list"
+          },
+          "description": "Provider classpath",
+          "name": [
+            "-providerpath"
+          ]
+        },
+        {
+          "description": "Password through protected mechanism",
+          "name": [
+            "-protected"
+          ]
+        },
+        {
+          "description": "Output in RFC style",
+          "name": [
+            "-rfc"
+          ]
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Input file name",
+          "name": [
+            "-infile"
+          ]
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Output file name",
+          "name": [
+            "-outfile"
+          ]
+        },
+        {
+          "args": {
+            "name": "alg"
+          },
+          "description": "Signature algorithm name",
+          "name": [
+            "-sigalg"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Distinguished name",
+          "name": [
+            "-dname"
+          ]
+        },
+        {
+          "args": {
+            "name": "date"
+          },
+          "description": "Certificate validity start date/time",
+          "name": [
+            "-startdate"
+          ]
+        },
+        {
+          "args": {
+            "name": "value"
+          },
+          "description": "X.509 extension name",
+          "name": [
+            "-ext"
+          ]
+        },
+        {
+          "args": {
+            "name": "days"
+          },
+          "description": "Validity number of days",
+          "name": [
+            "-validity"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Key password",
+          "name": [
+            "-keypass"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Imports a certificate or a certificate chain",
+      "name": "-importcert",
+      "options": [
+        {
+          "description": "Show help message",
+          "name": [
+            "-h",
+            "-?",
+            "--help",
+            "-help"
+          ]
+        },
+        {
+          "description": "Verbose output",
+          "name": [
+            "-v"
+          ]
+        },
+        {
+          "args": {
+            "name": "alias"
+          },
+          "description": "Alias name of the entry to process",
+          "name": [
+            "-alias"
+          ]
+        },
+        {
+          "args": {
+            "name": "keystore"
+          },
+          "description": "Keystore name",
+          "name": [
+            "-keystore"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Keystore password",
+          "name": [
+            "-storepass"
+          ]
+        },
+        {
+          "args": {
+            "name": "type"
+          },
+          "description": "Keystore type",
+          "name": [
+            "-storetype"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Provider name",
+          "name": [
+            "-providername"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Add security provider by name (e.g. SunPKCS11)",
+          "name": [
+            "-addprovider"
+          ]
+        },
+        {
+          "args": {
+            "name": "class"
+          },
+          "description": "Add security provider by fully-qualified class name",
+          "name": [
+            "-providerclass"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Configure argument for -addprovider or -providerclass",
+          "name": [
+            "-providerarg"
+          ]
+        },
+        {
+          "args": {
+            "name": "list"
+          },
+          "description": "Provider classpath",
+          "name": [
+            "-providerpath"
+          ]
+        },
+        {
+          "description": "Password through protected mechanism",
+          "name": [
+            "-protected"
+          ]
+        },
+        {
+          "description": "Do not prompt",
+          "name": [
+            "-noprompt"
+          ]
+        },
+        {
+          "description": "Trust certificates from cacerts",
+          "name": [
+            "-trustcacerts"
+          ]
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Output file name",
+          "name": [
+            "-file"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Key password",
+          "name": [
+            "-keypass"
+          ]
+        },
+        {
+          "description": "Access the cacerts keystore",
+          "name": [
+            "-cacerts"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Imports a password",
+      "name": "-importpass",
+      "options": [
+        {
+          "description": "Show help message",
+          "name": [
+            "-h",
+            "-?",
+            "--help",
+            "-help"
+          ]
+        },
+        {
+          "description": "Verbose output",
+          "name": [
+            "-v"
+          ]
+        },
+        {
+          "args": {
+            "name": "alias"
+          },
+          "description": "Alias name of the entry to process",
+          "name": [
+            "-alias"
+          ]
+        },
+        {
+          "args": {
+            "name": "keystore"
+          },
+          "description": "Keystore name",
+          "name": [
+            "-keystore"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Keystore password",
+          "name": [
+            "-storepass"
+          ]
+        },
+        {
+          "args": {
+            "name": "type"
+          },
+          "description": "Keystore type",
+          "name": [
+            "-storetype"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Provider name",
+          "name": [
+            "-providername"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Add security provider by name (e.g. SunPKCS11)",
+          "name": [
+            "-addprovider"
+          ]
+        },
+        {
+          "args": {
+            "name": "class"
+          },
+          "description": "Add security provider by fully-qualified class name",
+          "name": [
+            "-providerclass"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Configure argument for -addprovider or -providerclass",
+          "name": [
+            "-providerarg"
+          ]
+        },
+        {
+          "args": {
+            "name": "list"
+          },
+          "description": "Provider classpath",
+          "name": [
+            "-providerpath"
+          ]
+        },
+        {
+          "description": "Password through protected mechanism",
+          "name": [
+            "-protected"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Key password",
+          "name": [
+            "-keypass"
+          ]
+        },
+        {
+          "args": {
+            "name": "alg"
+          },
+          "description": "Key algorithm name",
+          "name": [
+            "-keyalg"
+          ]
+        },
+        {
+          "args": {
+            "name": "size"
+          },
+          "description": "Key bit size",
+          "name": [
+            "-keysize"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Imports one or all entries from another keystore",
+      "name": "-importkeystore",
+      "options": [
+        {
+          "description": "Show help message",
+          "name": [
+            "-h",
+            "-?",
+            "--help",
+            "-help"
+          ]
+        },
+        {
+          "description": "Verbose output",
+          "name": [
+            "-v"
+          ]
+        },
+        {
+          "args": {
+            "name": "keystore"
+          },
+          "description": "Source keystore name",
+          "name": [
+            "-srckeystore"
+          ]
+        },
+        {
+          "args": {
+            "name": "keystore"
+          },
+          "description": "Destination keystore name",
+          "name": [
+            "-destkeystore"
+          ]
+        },
+        {
+          "args": {
+            "name": "type"
+          },
+          "description": "Source keystore type",
+          "name": [
+            "-srcstoretype"
+          ]
+        },
+        {
+          "args": {
+            "name": "type"
+          },
+          "description": "Destination keystore type",
+          "name": [
+            "-deststoretype"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Source keystore password",
+          "name": [
+            "-srcstorepass"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Destination keystore password",
+          "name": [
+            "-deststorepass"
+          ]
+        },
+        {
+          "description": "Source keystore password protected",
+          "name": [
+            "-srcprotected"
+          ]
+        },
+        {
+          "description": "Destination keystore password protected",
+          "name": [
+            "-destprotected"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Source keystore provider name",
+          "name": [
+            "-srcprovidername"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Destination keystore provider name",
+          "name": [
+            "-destprovidername"
+          ]
+        },
+        {
+          "args": {
+            "name": "alias"
+          },
+          "description": "Source alias",
+          "name": [
+            "-srcalias"
+          ]
+        },
+        {
+          "args": {
+            "name": "alias"
+          },
+          "description": "Destination alias",
+          "name": [
+            "-destalias"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Source key password",
+          "name": [
+            "-srckeypass"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Destination key password",
+          "name": [
+            "-destkeypass"
+          ]
+        },
+        {
+          "description": "Do not prompt",
+          "name": [
+            "-noprompt"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Add security provider by name (e.g. SunPKCS11)",
+          "name": [
+            "-addprovider"
+          ]
+        },
+        {
+          "args": {
+            "name": "class"
+          },
+          "description": "Add security provider by fully-qualified class name",
+          "name": [
+            "-providerclass"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Configure argument for -addprovider or -providerclass",
+          "name": [
+            "-providerarg"
+          ]
+        },
+        {
+          "args": {
+            "name": "list"
+          },
+          "description": "Provider classpath",
+          "name": [
+            "-providerpath"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Changes the key password of an entry",
+      "name": "-keypasswd",
+      "options": [
+        {
+          "description": "Show help message",
+          "name": [
+            "-h",
+            "-?",
+            "--help",
+            "-help"
+          ]
+        },
+        {
+          "description": "Verbose output",
+          "name": [
+            "-v"
+          ]
+        },
+        {
+          "args": {
+            "name": "alias"
+          },
+          "description": "Alias name of the entry to process",
+          "name": [
+            "-alias"
+          ]
+        },
+        {
+          "args": {
+            "name": "keystore"
+          },
+          "description": "Keystore name",
+          "name": [
+            "-keystore"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Keystore password",
+          "name": [
+            "-storepass"
+          ]
+        },
+        {
+          "args": {
+            "name": "type"
+          },
+          "description": "Keystore type",
+          "name": [
+            "-storetype"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Provider name",
+          "name": [
+            "-providername"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Add security provider by name (e.g. SunPKCS11)",
+          "name": [
+            "-addprovider"
+          ]
+        },
+        {
+          "args": {
+            "name": "class"
+          },
+          "description": "Add security provider by fully-qualified class name",
+          "name": [
+            "-providerclass"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Configure argument for -addprovider or -providerclass",
+          "name": [
+            "-providerarg"
+          ]
+        },
+        {
+          "args": {
+            "name": "list"
+          },
+          "description": "Provider classpath",
+          "name": [
+            "-providerpath"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Key password",
+          "name": [
+            "-keypass"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "New password",
+          "name": [
+            "-new"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Lists entries in a keystore",
+      "name": "-list",
+      "options": [
+        {
+          "description": "Show help message",
+          "name": [
+            "-h",
+            "-?",
+            "--help",
+            "-help"
+          ]
+        },
+        {
+          "description": "Verbose output",
+          "name": [
+            "-v"
+          ]
+        },
+        {
+          "args": {
+            "name": "alias"
+          },
+          "description": "Alias name of the entry to process",
+          "name": [
+            "-alias"
+          ]
+        },
+        {
+          "args": {
+            "name": "keystore"
+          },
+          "description": "Keystore name",
+          "name": [
+            "-keystore"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Keystore password",
+          "name": [
+            "-storepass"
+          ]
+        },
+        {
+          "args": {
+            "name": "type"
+          },
+          "description": "Keystore type",
+          "name": [
+            "-storetype"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Provider name",
+          "name": [
+            "-providername"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Add security provider by name (e.g. SunPKCS11)",
+          "name": [
+            "-addprovider"
+          ]
+        },
+        {
+          "args": {
+            "name": "class"
+          },
+          "description": "Add security provider by fully-qualified class name",
+          "name": [
+            "-providerclass"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Configure argument for -addprovider or -providerclass",
+          "name": [
+            "-providerarg"
+          ]
+        },
+        {
+          "args": {
+            "name": "list"
+          },
+          "description": "Provider classpath",
+          "name": [
+            "-providerpath"
+          ]
+        },
+        {
+          "description": "Password through protected mechanism",
+          "name": [
+            "-protected"
+          ]
+        },
+        {
+          "description": "Output in RFC style",
+          "name": [
+            "-rfc"
+          ]
+        },
+        {
+          "description": "Access the cacerts keystore",
+          "name": [
+            "-cacerts"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Prints the content of a certificate",
+      "name": "-printcert",
+      "options": [
+        {
+          "description": "Show help message",
+          "name": [
+            "-h",
+            "-?",
+            "--help",
+            "-help"
+          ]
+        },
+        {
+          "description": "Verbose output",
+          "name": [
+            "-v"
+          ]
+        },
+        {
+          "description": "Output in RFC style",
+          "name": [
+            "-rfc"
+          ]
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Input file name",
+          "name": [
+            "-file"
+          ]
+        },
+        {
+          "args": {
+            "name": "server:[port]"
+          },
+          "description": "SSL server host and port",
+          "name": [
+            "-sslserver"
+          ]
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Signed jar file",
+          "name": [
+            "-jarfile"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Prints the content of a certificate request",
+      "name": "-printcertreq",
+      "options": [
+        {
+          "description": "Show help message",
+          "name": [
+            "-h",
+            "-?",
+            "--help",
+            "-help"
+          ]
+        },
+        {
+          "description": "Verbose output",
+          "name": [
+            "-v"
+          ]
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Input file name",
+          "name": [
+            "-file"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Prints the content of a CRL file",
+      "name": "-printcrl",
+      "options": [
+        {
+          "description": "Show help message",
+          "name": [
+            "-h",
+            "-?",
+            "--help",
+            "-help"
+          ]
+        },
+        {
+          "description": "Verbose output",
+          "name": [
+            "-v"
+          ]
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Input file name",
+          "name": [
+            "-file"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Changes the store password of a keystore",
+      "name": "-storepasswd",
+      "options": [
+        {
+          "description": "Show help message",
+          "name": [
+            "-h",
+            "-?",
+            "--help",
+            "-help"
+          ]
+        },
+        {
+          "description": "Verbose output",
+          "name": [
+            "-v"
+          ]
+        },
+        {
+          "args": {
+            "name": "alias"
+          },
+          "description": "Alias name of the entry to process",
+          "name": [
+            "-alias"
+          ]
+        },
+        {
+          "args": {
+            "name": "keystore"
+          },
+          "description": "Keystore name",
+          "name": [
+            "-keystore"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Keystore password",
+          "name": [
+            "-storepass"
+          ]
+        },
+        {
+          "args": {
+            "name": "type"
+          },
+          "description": "Keystore type",
+          "name": [
+            "-storetype"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Provider name",
+          "name": [
+            "-providername"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Add security provider by name (e.g. SunPKCS11)",
+          "name": [
+            "-addprovider"
+          ]
+        },
+        {
+          "args": {
+            "name": "class"
+          },
+          "description": "Add security provider by fully-qualified class name",
+          "name": [
+            "-providerclass"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "Configure argument for -addprovider or -providerclass",
+          "name": [
+            "-providerarg"
+          ]
+        },
+        {
+          "args": {
+            "name": "list"
+          },
+          "description": "Provider classpath",
+          "name": [
+            "-providerpath"
+          ]
+        },
+        {
+          "args": {
+            "name": "arg"
+          },
+          "description": "New password",
+          "name": [
+            "-new"
+          ]
+        },
+        {
+          "description": "Access the cacerts keystore",
+          "name": [
+            "-cacerts"
+          ]
+        }
+      ]
+    }
+  ]
+}

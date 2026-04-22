@@ -1,0 +1,549 @@
+{
+  "description": "Deliver Go binaries as fast and easily as possible",
+  "name": "goreleaser",
+  "options": [
+    {
+      "description": "Enable verbose mode",
+      "name": [
+        "--debug"
+      ]
+    },
+    {
+      "description": "Enable verbose mode",
+      "name": [
+        "--verbose"
+      ]
+    },
+    {
+      "description": "Display help",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Builds the current project",
+      "name": "b",
+      "options": [
+        {
+          "description": "Remove the dist folder before building",
+          "name": [
+            "--clean"
+          ]
+        },
+        {
+          "args": {
+            "name": "config",
+            "template": [
+              "filepaths"
+            ]
+          },
+          "description": "Load configuration from file",
+          "name": [
+            "--config",
+            "-f"
+          ]
+        },
+        {
+          "description": "Force print the deprecation message - tests only",
+          "name": [
+            "--deprecated"
+          ]
+        },
+        {
+          "args": {
+            "name": "id"
+          },
+          "description": "Builds only the specified build ids",
+          "name": [
+            "--id"
+          ]
+        },
+        {
+          "args": {
+            "name": "output",
+            "template": [
+              "filepaths"
+            ]
+          },
+          "description": "Copy the binary to the path after the build. Only taken into account when using --single-target and a single id (either with --id or if configuration only has one build)",
+          "name": [
+            "--output",
+            "-o"
+          ]
+        },
+        {
+          "args": {
+            "name": "parallelism"
+          },
+          "description": "Amount tasks to run concurrently (default: number of CPUs)",
+          "name": [
+            "--parallelism",
+            "-p"
+          ]
+        },
+        {
+          "description": "Remove the dist folder before building",
+          "name": [
+            "--rm-dist"
+          ]
+        },
+        {
+          "description": "Builds only for current GOOS and GOARCH, regardless of what's set in the configuration file",
+          "name": [
+            "--single-target"
+          ]
+        },
+        {
+          "args": {
+            "name": "skip"
+          },
+          "description": "Skip the given options (valid options are: before, post-hooks, pre-hooks, validate)",
+          "name": [
+            "--skip"
+          ]
+        },
+        {
+          "description": "Skips global before hooks",
+          "name": [
+            "--skip-before"
+          ]
+        },
+        {
+          "description": "Skips all post-build hooks",
+          "name": [
+            "--skip-post-hooks"
+          ]
+        },
+        {
+          "description": "Skips several sanity checks",
+          "name": [
+            "--skip-validate"
+          ]
+        },
+        {
+          "description": "Generate an unversioned snapshot build, skipping all validations",
+          "name": [
+            "--snapshot"
+          ]
+        },
+        {
+          "args": {
+            "name": "timeout"
+          },
+          "description": "Timeout to the entire build process",
+          "name": [
+            "--timeout"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Checks if configuration is valid",
+      "name": "c",
+      "options": [
+        {
+          "args": {
+            "name": "config",
+            "template": [
+              "filepaths"
+            ]
+          },
+          "description": "Configuration file(s) to check",
+          "name": [
+            "--config",
+            "-f"
+          ]
+        },
+        {
+          "description": "Force print the deprecation message - tests only",
+          "name": [
+            "--deprecated"
+          ]
+        },
+        {
+          "description": "Quiet mode: no output",
+          "name": [
+            "--quiet",
+            "-q"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generate the autocompletion script for the specified shell",
+      "name": "completion",
+      "subcommands": [
+        {
+          "description": "Generate the autocompletion script for bash",
+          "name": "bash",
+          "options": [
+            {
+              "description": "Disable completion descriptions",
+              "name": [
+                "--no-descriptions"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Generate the autocompletion script for fish",
+          "name": "fish",
+          "options": [
+            {
+              "description": "Disable completion descriptions",
+              "name": [
+                "--no-descriptions"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Generate the autocompletion script for powershell",
+          "name": "powershell",
+          "options": [
+            {
+              "description": "Disable completion descriptions",
+              "name": [
+                "--no-descriptions"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Generate the autocompletion script for zsh",
+          "name": "zsh",
+          "options": [
+            {
+              "description": "Disable completion descriptions",
+              "name": [
+                "--no-descriptions"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Checks if needed tools are installed",
+      "name": "hc",
+      "options": [
+        {
+          "args": {
+            "name": "config",
+            "template": [
+              "filepaths"
+            ]
+          },
+          "description": "Configuration file",
+          "name": [
+            "--config",
+            "-f"
+          ]
+        },
+        {
+          "description": "Quiet mode: no output",
+          "name": [
+            "--quiet",
+            "-q"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generates a .goreleaser.yaml file",
+      "name": "i",
+      "options": [
+        {
+          "args": {
+            "name": "config",
+            "template": [
+              "filepaths"
+            ]
+          },
+          "description": "Load configuration from file",
+          "name": [
+            "--config",
+            "-f"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Outputs goreleaser's JSON schema",
+      "name": "schema",
+      "options": [
+        {
+          "args": {
+            "name": "output",
+            "template": [
+              "filepaths"
+            ]
+          },
+          "description": "Where to save the JSONSchema file",
+          "name": [
+            "--output",
+            "-o"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Releases the current project",
+      "name": "r",
+      "options": [
+        {
+          "description": "Automatically sets --snapshot if the repository is dirty",
+          "name": [
+            "--auto-snapshot"
+          ]
+        },
+        {
+          "description": "Removes the dist folder",
+          "name": [
+            "--clean"
+          ]
+        },
+        {
+          "args": {
+            "name": "config",
+            "template": [
+              "filepaths"
+            ]
+          },
+          "description": "Load configuration from file",
+          "name": [
+            "--config",
+            "-f"
+          ]
+        },
+        {
+          "description": "Force print the deprecation message - tests only",
+          "name": [
+            "--deprecated"
+          ]
+        },
+        {
+          "description": "Whether to abort the release publishing on the first error",
+          "name": [
+            "--fail-fast"
+          ]
+        },
+        {
+          "args": {
+            "name": "parallelism"
+          },
+          "description": "Amount tasks to run concurrently (default: number of CPUs)",
+          "name": [
+            "--parallelism",
+            "-p"
+          ]
+        },
+        {
+          "args": {
+            "name": "release-footer",
+            "template": [
+              "filepaths"
+            ]
+          },
+          "description": "Load custom release notes footer from a markdown file",
+          "name": [
+            "--release-footer"
+          ]
+        },
+        {
+          "args": {
+            "name": "release-footer-tmpl",
+            "template": [
+              "filepaths"
+            ]
+          },
+          "description": "Load custom release notes footer from a templated markdown file (overrides --release-footer)",
+          "name": [
+            "--release-footer-tmpl"
+          ]
+        },
+        {
+          "args": {
+            "name": "release-header",
+            "template": [
+              "filepaths"
+            ]
+          },
+          "description": "Load custom release notes header from a markdown file",
+          "name": [
+            "--release-header"
+          ]
+        },
+        {
+          "args": {
+            "name": "release-header-tmpl",
+            "template": [
+              "filepaths"
+            ]
+          },
+          "description": "Load custom release notes header from a templated markdown file (overrides --release-header)",
+          "name": [
+            "--release-header-tmpl"
+          ]
+        },
+        {
+          "args": {
+            "name": "release-notes",
+            "template": [
+              "filepaths"
+            ]
+          },
+          "description": "Load custom release notes from a markdown file (will skip GoReleaser changelog generation)",
+          "name": [
+            "--release-notes"
+          ]
+        },
+        {
+          "args": {
+            "name": "release-notes-tmpl",
+            "template": [
+              "filepaths"
+            ]
+          },
+          "description": "Load custom release notes from a templated markdown file (overrides --release-notes)",
+          "name": [
+            "--release-notes-tmpl"
+          ]
+        },
+        {
+          "description": "Removes the dist folder",
+          "name": [
+            "--rm-dist"
+          ]
+        },
+        {
+          "args": {
+            "name": "skip"
+          },
+          "description": "Skip the given options (valid options are announce, aur, before, chocolatey, docker, homebrew, ko, nfpm, nix, publish, sbom, scoop, sign, snapcraft, validate, winget)",
+          "name": [
+            "--skip"
+          ]
+        },
+        {
+          "description": "Skips announcing releases (implies --skip=validate)",
+          "name": [
+            "--skip-announce"
+          ]
+        },
+        {
+          "description": "Skips global before hooks",
+          "name": [
+            "--skip-before"
+          ]
+        },
+        {
+          "description": "Skips Docker Images/Manifests builds",
+          "name": [
+            "--skip-docker"
+          ]
+        },
+        {
+          "description": "Skips Ko builds",
+          "name": [
+            "--skip-ko"
+          ]
+        },
+        {
+          "description": "Skips publishing artifacts (implies --skip=announce)",
+          "name": [
+            "--skip-publish"
+          ]
+        },
+        {
+          "description": "Skips cataloging artifacts",
+          "name": [
+            "--skip-sbom"
+          ]
+        },
+        {
+          "description": "Skips signing artifacts",
+          "name": [
+            "--skip-sign"
+          ]
+        },
+        {
+          "description": "Skips git checks",
+          "name": [
+            "--skip-validate"
+          ]
+        },
+        {
+          "description": "Generate an unversioned snapshot release, skipping all validations and without publishing any artifacts (implies --skip=announce,publish,validate)",
+          "name": [
+            "--snapshot"
+          ]
+        },
+        {
+          "args": {
+            "name": "timeout"
+          },
+          "description": "Timeout to the entire release process",
+          "name": [
+            "--timeout"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Help about any command",
+      "name": "help",
+      "subcommands": [
+        {
+          "description": "Builds the current project",
+          "name": "b"
+        },
+        {
+          "description": "Checks if configuration is valid",
+          "name": "c"
+        },
+        {
+          "description": "Generate the autocompletion script for the specified shell",
+          "name": "completion",
+          "subcommands": [
+            {
+              "description": "Generate the autocompletion script for bash",
+              "name": "bash"
+            },
+            {
+              "description": "Generate the autocompletion script for fish",
+              "name": "fish"
+            },
+            {
+              "description": "Generate the autocompletion script for powershell",
+              "name": "powershell"
+            },
+            {
+              "description": "Generate the autocompletion script for zsh",
+              "name": "zsh"
+            }
+          ]
+        },
+        {
+          "description": "Checks if needed tools are installed",
+          "name": "hc"
+        },
+        {
+          "description": "Generates a .goreleaser.yaml file",
+          "name": "i"
+        },
+        {
+          "description": "Outputs goreleaser's JSON schema",
+          "name": "schema"
+        },
+        {
+          "description": "Releases the current project",
+          "name": "r"
+        }
+      ]
+    }
+  ]
+}

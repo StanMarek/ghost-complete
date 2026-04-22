@@ -1,0 +1,3211 @@
+{
+  "description": "The Helm package manager for Kubernetes",
+  "name": "helm",
+  "options": [
+    {
+      "description": "If true, adds the file directory to the header of the log messages",
+      "name": [
+        "--add-dir-header"
+      ]
+    },
+    {
+      "description": "Log to standard error as well as files",
+      "name": [
+        "--alsologtostderr"
+      ]
+    },
+    {
+      "args": {
+        "name": "burst-limit"
+      },
+      "description": "Client-side default throttling limit",
+      "name": [
+        "--burst-limit"
+      ]
+    },
+    {
+      "description": "Enable verbose output",
+      "name": [
+        "--debug"
+      ]
+    },
+    {
+      "args": {
+        "name": "kube-apiserver"
+      },
+      "description": "The address and the port for the Kubernetes API server",
+      "name": [
+        "--kube-apiserver"
+      ]
+    },
+    {
+      "args": {
+        "name": "kube-as-group"
+      },
+      "description": "Group to impersonate for the operation, this flag can be repeated to specify multiple groups",
+      "name": [
+        "--kube-as-group"
+      ]
+    },
+    {
+      "args": {
+        "name": "kube-as-user"
+      },
+      "description": "Username to impersonate for the operation",
+      "name": [
+        "--kube-as-user"
+      ]
+    },
+    {
+      "args": {
+        "name": "kube-ca-file",
+        "template": "filepaths"
+      },
+      "description": "The certificate authority file for the Kubernetes API server connection",
+      "name": [
+        "--kube-ca-file"
+      ]
+    },
+    {
+      "args": {
+        "name": "kube-context"
+      },
+      "description": "Name of the kubeconfig context to use",
+      "name": [
+        "--kube-context"
+      ]
+    },
+    {
+      "description": "If true, the Kubernetes API server's certificate will not be checked for validity. This will make your HTTPS connections insecure",
+      "name": [
+        "--kube-insecure-skip-tls-verify"
+      ]
+    },
+    {
+      "args": {
+        "name": "kube-tls-server-name"
+      },
+      "description": "Server name to use for Kubernetes API server certificate validation. If it is not provided, the hostname used to contact the server is used",
+      "name": [
+        "--kube-tls-server-name"
+      ]
+    },
+    {
+      "args": {
+        "name": "kube-token"
+      },
+      "description": "Bearer token used for authentication",
+      "name": [
+        "--kube-token"
+      ]
+    },
+    {
+      "args": {
+        "name": "kubeconfig",
+        "template": "filepaths"
+      },
+      "description": "Path to the kubeconfig file",
+      "name": [
+        "--kubeconfig"
+      ]
+    },
+    {
+      "args": {
+        "name": "log-backtrace-at"
+      },
+      "description": "When logging hits line file:N, emit a stack trace",
+      "name": [
+        "--log-backtrace-at"
+      ]
+    },
+    {
+      "args": {
+        "name": "log-dir",
+        "template": "filepaths"
+      },
+      "description": "If non-empty, write log files in this directory",
+      "name": [
+        "--log-dir"
+      ]
+    },
+    {
+      "args": {
+        "name": "log-file",
+        "template": "filepaths"
+      },
+      "description": "If non-empty, use this log file",
+      "name": [
+        "--log-file"
+      ]
+    },
+    {
+      "args": {
+        "name": "log-file-max-size"
+      },
+      "description": "Defines the maximum size a log file can grow to. Unit is megabytes. If the value is 0, the maximum file size is unlimited",
+      "name": [
+        "--log-file-max-size"
+      ]
+    },
+    {
+      "description": "Log to standard error instead of files",
+      "name": [
+        "--logtostderr"
+      ]
+    },
+    {
+      "args": {
+        "name": "namespace"
+      },
+      "description": "Namespace scope for this request",
+      "name": [
+        "--namespace",
+        "-n"
+      ]
+    },
+    {
+      "description": "If true, only write logs to their native severity level (vs also writing to each lower severity level)",
+      "name": [
+        "--one-output"
+      ]
+    },
+    {
+      "args": {
+        "name": "registry-config",
+        "template": "filepaths"
+      },
+      "description": "Path to the registry config file",
+      "name": [
+        "--registry-config"
+      ]
+    },
+    {
+      "args": {
+        "name": "repository-cache",
+        "template": "filepaths"
+      },
+      "description": "Path to the file containing cached repository indexes",
+      "name": [
+        "--repository-cache"
+      ]
+    },
+    {
+      "args": {
+        "name": "repository-config",
+        "template": "filepaths"
+      },
+      "description": "Path to the file containing repository names and URLs",
+      "name": [
+        "--repository-config"
+      ]
+    },
+    {
+      "description": "If true, avoid header prefixes in the log messages",
+      "name": [
+        "--skip-headers"
+      ]
+    },
+    {
+      "description": "If true, avoid headers when opening log files",
+      "name": [
+        "--skip-log-headers"
+      ]
+    },
+    {
+      "args": {
+        "name": "stderrthreshold"
+      },
+      "description": "Logs at or above this threshold go to stderr",
+      "name": [
+        "--stderrthreshold"
+      ]
+    },
+    {
+      "args": {
+        "name": "v"
+      },
+      "description": "Number for the log level verbosity",
+      "name": [
+        "--v",
+        "-v"
+      ]
+    },
+    {
+      "args": {
+        "name": "vmodule"
+      },
+      "description": "Comma-separated list of pattern=N settings for file-filtered logging",
+      "name": [
+        "--vmodule"
+      ]
+    },
+    {
+      "description": "Display help",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Generate autocompletion scripts for the specified shell",
+      "name": "completion",
+      "subcommands": [
+        {
+          "description": "Generate autocompletion script for bash",
+          "name": "bash",
+          "options": [
+            {
+              "description": "Disable completion descriptions",
+              "name": [
+                "--no-descriptions"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Generate autocompletion script for fish",
+          "name": "fish",
+          "options": [
+            {
+              "description": "Disable completion descriptions",
+              "name": [
+                "--no-descriptions"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Generate autocompletion script for powershell",
+          "name": "powershell",
+          "options": [
+            {
+              "description": "Disable completion descriptions",
+              "name": [
+                "--no-descriptions"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Generate autocompletion script for zsh",
+          "name": "zsh",
+          "options": [
+            {
+              "description": "Disable completion descriptions",
+              "name": [
+                "--no-descriptions"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Create a new chart with the given name",
+      "name": "create",
+      "options": [
+        {
+          "args": {
+            "name": "starter"
+          },
+          "description": "The name or absolute path to Helm starter scaffold",
+          "name": [
+            "--starter",
+            "-p"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage a chart's dependencies",
+      "name": "dep",
+      "subcommands": [
+        {
+          "description": "Rebuild the charts/ directory based on the Chart.lock file",
+          "name": "build",
+          "options": [
+            {
+              "args": {
+                "name": "keyring",
+                "template": "filepaths"
+              },
+              "description": "Keyring containing public keys",
+              "name": [
+                "--keyring"
+              ]
+            },
+            {
+              "description": "Do not refresh the local repository cache",
+              "name": [
+                "--skip-refresh"
+              ]
+            },
+            {
+              "description": "Verify the packages against signatures",
+              "name": [
+                "--verify"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List the dependencies for the given chart",
+          "name": "ls",
+          "options": [
+            {
+              "args": {
+                "name": "max-col-width"
+              },
+              "description": "Maximum column width for output table",
+              "name": [
+                "--max-col-width"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Update charts/ based on the contents of Chart.yaml",
+          "name": "up",
+          "options": [
+            {
+              "args": {
+                "name": "keyring",
+                "template": "filepaths"
+              },
+              "description": "Keyring containing public keys",
+              "name": [
+                "--keyring"
+              ]
+            },
+            {
+              "description": "Do not refresh the local repository cache",
+              "name": [
+                "--skip-refresh"
+              ]
+            },
+            {
+              "description": "Verify the packages against signatures",
+              "name": [
+                "--verify"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Helm client environment information",
+      "name": "env"
+    },
+    {
+      "description": "Download extended information of a named release",
+      "name": "get",
+      "subcommands": [
+        {
+          "description": "Download all information for a named release",
+          "name": "all",
+          "options": [
+            {
+              "args": {
+                "name": "revision"
+              },
+              "description": "Get the named release with revision",
+              "name": [
+                "--revision"
+              ]
+            },
+            {
+              "args": {
+                "name": "template"
+              },
+              "description": "Go template for formatting the output, eg: {{.Release.Name}}",
+              "name": [
+                "--template"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Download all hooks for a named release",
+          "name": "hooks",
+          "options": [
+            {
+              "args": {
+                "name": "revision"
+              },
+              "description": "Get the named release with revision",
+              "name": [
+                "--revision"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Download the manifest for a named release",
+          "name": "manifest",
+          "options": [
+            {
+              "args": {
+                "name": "revision"
+              },
+              "description": "Get the named release with revision",
+              "name": [
+                "--revision"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Download the notes for a named release",
+          "name": "notes",
+          "options": [
+            {
+              "args": {
+                "name": "revision"
+              },
+              "description": "Get the named release with revision",
+              "name": [
+                "--revision"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Download the values file for a named release",
+          "name": "values",
+          "options": [
+            {
+              "description": "Dump all (computed) values",
+              "name": [
+                "--all",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Prints the output in the specified format. Allowed values: table, json, yaml",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "args": {
+                "name": "revision"
+              },
+              "description": "Get the named release with revision",
+              "name": [
+                "--revision"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Fetch release history",
+      "name": "hist",
+      "options": [
+        {
+          "args": {
+            "name": "max"
+          },
+          "description": "Maximum number of revision to include in history",
+          "name": [
+            "--max"
+          ]
+        },
+        {
+          "args": {
+            "name": "output"
+          },
+          "description": "Prints the output in the specified format. Allowed values: table, json, yaml",
+          "name": [
+            "--output",
+            "-o"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Install a chart",
+      "name": "install",
+      "options": [
+        {
+          "description": "If set, the installation process deletes the installation on failure. The --wait flag will be set automatically if --atomic is used",
+          "name": [
+            "--atomic"
+          ]
+        },
+        {
+          "args": {
+            "name": "ca-file",
+            "template": "filepaths"
+          },
+          "description": "Verify certificates of HTTPS-enabled servers using this CA bundle",
+          "name": [
+            "--ca-file"
+          ]
+        },
+        {
+          "args": {
+            "name": "cert-file",
+            "template": "filepaths"
+          },
+          "description": "Identify HTTPS client using this SSL certificate file",
+          "name": [
+            "--cert-file"
+          ]
+        },
+        {
+          "description": "Create the release namespace if not present",
+          "name": [
+            "--create-namespace"
+          ]
+        },
+        {
+          "description": "Update dependencies if they are missing before installing the chart",
+          "name": [
+            "--dependency-update"
+          ]
+        },
+        {
+          "args": {
+            "name": "description"
+          },
+          "description": "Add a custom description",
+          "name": [
+            "--description"
+          ]
+        },
+        {
+          "description": "Use development versions, too. Equivalent to version '>0.0.0-0'. If --version is set, this is ignored",
+          "name": [
+            "--devel"
+          ]
+        },
+        {
+          "description": "If set, the installation process will not validate rendered templates against the Kubernetes OpenAPI Schema",
+          "name": [
+            "--disable-openapi-validation"
+          ]
+        },
+        {
+          "description": "Simulate an install",
+          "name": [
+            "--dry-run"
+          ]
+        },
+        {
+          "description": "Generate the name (and omit the NAME parameter)",
+          "name": [
+            "--generate-name",
+            "-g"
+          ]
+        },
+        {
+          "description": "Skip tls certificate checks for the chart download",
+          "name": [
+            "--insecure-skip-tls-verify"
+          ]
+        },
+        {
+          "args": {
+            "name": "key-file",
+            "template": "filepaths"
+          },
+          "description": "Identify HTTPS client using this SSL key file",
+          "name": [
+            "--key-file"
+          ]
+        },
+        {
+          "args": {
+            "name": "keyring",
+            "template": "filepaths"
+          },
+          "description": "Location of public keys used for verification",
+          "name": [
+            "--keyring"
+          ]
+        },
+        {
+          "args": {
+            "name": "name-template"
+          },
+          "description": "Specify template used to name the release",
+          "name": [
+            "--name-template"
+          ]
+        },
+        {
+          "description": "Prevent hooks from running during install",
+          "name": [
+            "--no-hooks"
+          ]
+        },
+        {
+          "args": {
+            "name": "output"
+          },
+          "description": "Prints the output in the specified format. Allowed values: table, json, yaml",
+          "name": [
+            "--output",
+            "-o"
+          ]
+        },
+        {
+          "description": "Pass credentials to all domains",
+          "name": [
+            "--pass-credentials"
+          ]
+        },
+        {
+          "args": {
+            "name": "password"
+          },
+          "description": "Chart repository password where to locate the requested chart",
+          "name": [
+            "--password"
+          ]
+        },
+        {
+          "args": {
+            "name": "post-renderer"
+          },
+          "description": "The path to an executable to be used for post rendering. If it exists in $PATH, the binary will be used, otherwise it will try to look for the executable at the given path",
+          "name": [
+            "--post-renderer"
+          ]
+        },
+        {
+          "args": {
+            "name": "post-renderer-args"
+          },
+          "description": "An argument to the post-renderer (can specify multiple)",
+          "name": [
+            "--post-renderer-args"
+          ]
+        },
+        {
+          "description": "If set, render subchart notes along with the parent",
+          "name": [
+            "--render-subchart-notes"
+          ]
+        },
+        {
+          "description": "Re-use the given name, only if that name is a deleted release which remains in the history. This is unsafe in production",
+          "name": [
+            "--replace"
+          ]
+        },
+        {
+          "args": {
+            "name": "repo"
+          },
+          "description": "Chart repository url where to locate the requested chart",
+          "name": [
+            "--repo"
+          ]
+        },
+        {
+          "args": {
+            "name": "set"
+          },
+          "description": "Set values on the command line (can specify multiple or separate values with commas: key1=val1,key2=val2)",
+          "name": [
+            "--set"
+          ]
+        },
+        {
+          "args": {
+            "name": "set-file",
+            "template": "filepaths"
+          },
+          "description": "Set values from respective files specified via the command line (can specify multiple or separate values with commas: key1=path1,key2=path2)",
+          "name": [
+            "--set-file"
+          ]
+        },
+        {
+          "args": {
+            "name": "set-string"
+          },
+          "description": "Set STRING values on the command line (can specify multiple or separate values with commas: key1=val1,key2=val2)",
+          "name": [
+            "--set-string"
+          ]
+        },
+        {
+          "description": "If set, no CRDs will be installed. By default, CRDs are installed if not already present",
+          "name": [
+            "--skip-crds"
+          ]
+        },
+        {
+          "args": {
+            "name": "timeout"
+          },
+          "description": "Time to wait for any individual Kubernetes operation (like Jobs for hooks)",
+          "name": [
+            "--timeout"
+          ]
+        },
+        {
+          "args": {
+            "name": "username"
+          },
+          "description": "Chart repository username where to locate the requested chart",
+          "name": [
+            "--username"
+          ]
+        },
+        {
+          "args": {
+            "name": "values",
+            "template": "filepaths"
+          },
+          "description": "Specify values in a YAML file or a URL (can specify multiple)",
+          "name": [
+            "--values",
+            "-f"
+          ]
+        },
+        {
+          "description": "Verify the package before using it",
+          "name": [
+            "--verify"
+          ]
+        },
+        {
+          "args": {
+            "name": "version"
+          },
+          "description": "Specify a version constraint for the chart version to use. This constraint can be a specific tag (e.g. 1.1.1) or it may reference a valid range (e.g. ^2.0.0). If this is not specified, the latest version is used",
+          "name": [
+            "--version"
+          ]
+        },
+        {
+          "description": "If set, will wait until all Pods, PVCs, Services, and minimum number of Pods of a Deployment, StatefulSet, or ReplicaSet are in a ready state before marking the release as successful. It will wait for as long as --timeout",
+          "name": [
+            "--wait"
+          ]
+        },
+        {
+          "description": "If set and --wait enabled, will wait until all Jobs have been completed before marking the release as successful. It will wait for as long as --timeout",
+          "name": [
+            "--wait-for-jobs"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Examine a chart for possible issues",
+      "name": "lint",
+      "options": [
+        {
+          "description": "Print only warnings and errors",
+          "name": [
+            "--quiet"
+          ]
+        },
+        {
+          "args": {
+            "name": "set"
+          },
+          "description": "Set values on the command line (can specify multiple or separate values with commas: key1=val1,key2=val2)",
+          "name": [
+            "--set"
+          ]
+        },
+        {
+          "args": {
+            "name": "set-file",
+            "template": "filepaths"
+          },
+          "description": "Set values from respective files specified via the command line (can specify multiple or separate values with commas: key1=path1,key2=path2)",
+          "name": [
+            "--set-file"
+          ]
+        },
+        {
+          "args": {
+            "name": "set-string"
+          },
+          "description": "Set STRING values on the command line (can specify multiple or separate values with commas: key1=val1,key2=val2)",
+          "name": [
+            "--set-string"
+          ]
+        },
+        {
+          "description": "Fail on lint warnings",
+          "name": [
+            "--strict"
+          ]
+        },
+        {
+          "args": {
+            "name": "values",
+            "template": "filepaths"
+          },
+          "description": "Specify values in a YAML file or a URL (can specify multiple)",
+          "name": [
+            "--values",
+            "-f"
+          ]
+        },
+        {
+          "description": "Lint dependent charts",
+          "name": [
+            "--with-subcharts"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "List releases",
+      "name": "ls",
+      "options": [
+        {
+          "description": "Show all releases without any filter applied",
+          "name": [
+            "--all",
+            "-a"
+          ]
+        },
+        {
+          "description": "List releases across all namespaces",
+          "name": [
+            "--all-namespaces",
+            "-A"
+          ]
+        },
+        {
+          "description": "Sort by release date",
+          "name": [
+            "--date",
+            "-d"
+          ]
+        },
+        {
+          "description": "Show deployed releases. If no other is specified, this will be automatically enabled",
+          "name": [
+            "--deployed"
+          ]
+        },
+        {
+          "description": "Show failed releases",
+          "name": [
+            "--failed"
+          ]
+        },
+        {
+          "args": {
+            "name": "filter"
+          },
+          "description": "A regular expression (Perl compatible). Any releases that match the expression will be included in the results",
+          "name": [
+            "--filter",
+            "-f"
+          ]
+        },
+        {
+          "args": {
+            "name": "max"
+          },
+          "description": "Maximum number of releases to fetch",
+          "name": [
+            "--max",
+            "-m"
+          ]
+        },
+        {
+          "description": "Don't print headers when using the default output format",
+          "name": [
+            "--no-headers"
+          ]
+        },
+        {
+          "args": {
+            "name": "offset"
+          },
+          "description": "Next release index in the list, used to offset from start value",
+          "name": [
+            "--offset"
+          ]
+        },
+        {
+          "args": {
+            "name": "output"
+          },
+          "description": "Prints the output in the specified format. Allowed values: table, json, yaml",
+          "name": [
+            "--output",
+            "-o"
+          ]
+        },
+        {
+          "description": "Show pending releases",
+          "name": [
+            "--pending"
+          ]
+        },
+        {
+          "description": "Reverse the sort order",
+          "name": [
+            "--reverse",
+            "-r"
+          ]
+        },
+        {
+          "args": {
+            "name": "selector"
+          },
+          "description": "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2). Works only for secret(default) and configmap storage backends",
+          "name": [
+            "--selector",
+            "-l"
+          ]
+        },
+        {
+          "description": "Output short (quiet) listing format",
+          "name": [
+            "--short",
+            "-q"
+          ]
+        },
+        {
+          "description": "Show superseded releases",
+          "name": [
+            "--superseded"
+          ]
+        },
+        {
+          "args": {
+            "name": "time-format"
+          },
+          "description": "Format time using golang time formatter. Example: --time-format \"2006-01-02 15:04:05Z0700\"",
+          "name": [
+            "--time-format"
+          ]
+        },
+        {
+          "description": "Show uninstalled releases (if 'helm uninstall --keep-history' was used)",
+          "name": [
+            "--uninstalled"
+          ]
+        },
+        {
+          "description": "Show releases that are currently being uninstalled",
+          "name": [
+            "--uninstalling"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Package a chart directory into a chart archive",
+      "name": "package",
+      "options": [
+        {
+          "args": {
+            "name": "app-version"
+          },
+          "description": "Set the appVersion on the chart to this version",
+          "name": [
+            "--app-version"
+          ]
+        },
+        {
+          "description": "Update dependencies from \"Chart.yaml\" to dir \"charts/\" before packaging",
+          "name": [
+            "--dependency-update",
+            "-u"
+          ]
+        },
+        {
+          "args": {
+            "name": "destination"
+          },
+          "description": "Location to write the chart",
+          "name": [
+            "--destination",
+            "-d"
+          ]
+        },
+        {
+          "args": {
+            "name": "key"
+          },
+          "description": "Name of the key to use when signing. Used if --sign is true",
+          "name": [
+            "--key"
+          ]
+        },
+        {
+          "args": {
+            "name": "keyring",
+            "template": "filepaths"
+          },
+          "description": "Location of a public keyring",
+          "name": [
+            "--keyring"
+          ]
+        },
+        {
+          "args": {
+            "name": "passphrase-file",
+            "template": "filepaths"
+          },
+          "description": "Location of a file which contains the passphrase for the signing key. Use \"-\" in order to read from stdin",
+          "name": [
+            "--passphrase-file"
+          ]
+        },
+        {
+          "description": "Use a PGP private key to sign this package",
+          "name": [
+            "--sign"
+          ]
+        },
+        {
+          "args": {
+            "name": "version"
+          },
+          "description": "Set the version on the chart to this semver version",
+          "name": [
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Install, list, or uninstall Helm plugins",
+      "name": "plugin",
+      "subcommands": [
+        {
+          "description": "Install one or more Helm plugins",
+          "name": "add",
+          "options": [
+            {
+              "args": {
+                "name": "version"
+              },
+              "description": "Specify a version constraint. If this is not specified, the latest version is installed",
+              "name": [
+                "--version"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List installed Helm plugins",
+          "name": "ls"
+        },
+        {
+          "description": "Uninstall one or more Helm plugins",
+          "name": "rm"
+        },
+        {
+          "description": "Update one or more Helm plugins",
+          "name": "up"
+        }
+      ]
+    },
+    {
+      "description": "Download a chart from a repository and (optionally) unpack it in local directory",
+      "name": "fetch",
+      "options": [
+        {
+          "args": {
+            "name": "ca-file",
+            "template": "filepaths"
+          },
+          "description": "Verify certificates of HTTPS-enabled servers using this CA bundle",
+          "name": [
+            "--ca-file"
+          ]
+        },
+        {
+          "args": {
+            "name": "cert-file",
+            "template": "filepaths"
+          },
+          "description": "Identify HTTPS client using this SSL certificate file",
+          "name": [
+            "--cert-file"
+          ]
+        },
+        {
+          "args": {
+            "name": "destination"
+          },
+          "description": "Location to write the chart. If this and untardir are specified, untardir is appended to this",
+          "name": [
+            "--destination",
+            "-d"
+          ]
+        },
+        {
+          "description": "Use development versions, too. Equivalent to version '>0.0.0-0'. If --version is set, this is ignored",
+          "name": [
+            "--devel"
+          ]
+        },
+        {
+          "description": "Skip tls certificate checks for the chart download",
+          "name": [
+            "--insecure-skip-tls-verify"
+          ]
+        },
+        {
+          "args": {
+            "name": "key-file",
+            "template": "filepaths"
+          },
+          "description": "Identify HTTPS client using this SSL key file",
+          "name": [
+            "--key-file"
+          ]
+        },
+        {
+          "args": {
+            "name": "keyring",
+            "template": "filepaths"
+          },
+          "description": "Location of public keys used for verification",
+          "name": [
+            "--keyring"
+          ]
+        },
+        {
+          "description": "Pass credentials to all domains",
+          "name": [
+            "--pass-credentials"
+          ]
+        },
+        {
+          "args": {
+            "name": "password"
+          },
+          "description": "Chart repository password where to locate the requested chart",
+          "name": [
+            "--password"
+          ]
+        },
+        {
+          "description": "Fetch the provenance file, but don't perform verification",
+          "name": [
+            "--prov"
+          ]
+        },
+        {
+          "args": {
+            "name": "repo"
+          },
+          "description": "Chart repository url where to locate the requested chart",
+          "name": [
+            "--repo"
+          ]
+        },
+        {
+          "description": "If set to true, will untar the chart after downloading it",
+          "name": [
+            "--untar"
+          ]
+        },
+        {
+          "args": {
+            "name": "untardir",
+            "template": "filepaths"
+          },
+          "description": "If untar is specified, this flag specifies the name of the directory into which the chart is expanded",
+          "name": [
+            "--untardir"
+          ]
+        },
+        {
+          "args": {
+            "name": "username"
+          },
+          "description": "Chart repository username where to locate the requested chart",
+          "name": [
+            "--username"
+          ]
+        },
+        {
+          "description": "Verify the package before using it",
+          "name": [
+            "--verify"
+          ]
+        },
+        {
+          "args": {
+            "name": "version"
+          },
+          "description": "Specify a version constraint for the chart version to use. This constraint can be a specific tag (e.g. 1.1.1) or it may reference a valid range (e.g. ^2.0.0). If this is not specified, the latest version is used",
+          "name": [
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Push a chart to remote",
+      "name": "push"
+    },
+    {
+      "description": "Login to or logout from a registry",
+      "name": "registry",
+      "subcommands": [
+        {
+          "description": "Login to a registry",
+          "name": "login",
+          "options": [
+            {
+              "description": "Allow connections to TLS registry without certs",
+              "name": [
+                "--insecure"
+              ]
+            },
+            {
+              "args": {
+                "name": "password"
+              },
+              "description": "Registry password or identity token",
+              "name": [
+                "--password",
+                "-p"
+              ]
+            },
+            {
+              "description": "Read password or identity token from stdin",
+              "name": [
+                "--password-stdin"
+              ]
+            },
+            {
+              "args": {
+                "name": "username"
+              },
+              "description": "Registry username",
+              "name": [
+                "--username",
+                "-u"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Logout from a registry",
+          "name": "logout"
+        }
+      ]
+    },
+    {
+      "description": "Add, list, remove, update, and index chart repositories",
+      "name": "repo",
+      "subcommands": [
+        {
+          "description": "Add a chart repository",
+          "name": "add",
+          "options": [
+            {
+              "description": "By default, this command will not allow adding official repos that have been permanently deleted. This disables that behavior",
+              "name": [
+                "--allow-deprecated-repos"
+              ]
+            },
+            {
+              "args": {
+                "name": "ca-file",
+                "template": "filepaths"
+              },
+              "description": "Verify certificates of HTTPS-enabled servers using this CA bundle",
+              "name": [
+                "--ca-file"
+              ]
+            },
+            {
+              "args": {
+                "name": "cert-file",
+                "template": "filepaths"
+              },
+              "description": "Identify HTTPS client using this SSL certificate file",
+              "name": [
+                "--cert-file"
+              ]
+            },
+            {
+              "description": "Replace (overwrite) the repo if it already exists",
+              "name": [
+                "--force-update"
+              ]
+            },
+            {
+              "description": "Skip tls certificate checks for the repository",
+              "name": [
+                "--insecure-skip-tls-verify"
+              ]
+            },
+            {
+              "args": {
+                "name": "key-file",
+                "template": "filepaths"
+              },
+              "description": "Identify HTTPS client using this SSL key file",
+              "name": [
+                "--key-file"
+              ]
+            },
+            {
+              "description": "Ignored. Formerly, it would disabled forced updates. It is deprecated by force-update",
+              "name": [
+                "--no-update"
+              ]
+            },
+            {
+              "description": "Pass credentials to all domains",
+              "name": [
+                "--pass-credentials"
+              ]
+            },
+            {
+              "args": {
+                "name": "password"
+              },
+              "description": "Chart repository password",
+              "name": [
+                "--password"
+              ]
+            },
+            {
+              "description": "Read chart repository password from stdin",
+              "name": [
+                "--password-stdin"
+              ]
+            },
+            {
+              "args": {
+                "name": "username"
+              },
+              "description": "Chart repository username",
+              "name": [
+                "--username"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Generate an index file given a directory containing packaged charts",
+          "name": "index",
+          "options": [
+            {
+              "args": {
+                "name": "merge"
+              },
+              "description": "Merge the generated index into the given index",
+              "name": [
+                "--merge"
+              ]
+            },
+            {
+              "args": {
+                "name": "url"
+              },
+              "description": "Url of chart repository",
+              "name": [
+                "--url"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List chart repositories",
+          "name": "ls",
+          "options": [
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Prints the output in the specified format. Allowed values: table, json, yaml",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Remove one or more chart repositories",
+          "name": "rm"
+        },
+        {
+          "description": "Update information of available charts locally from chart repositories",
+          "name": "up",
+          "options": [
+            {
+              "description": "Update fails if any of the repository updates fail",
+              "name": [
+                "--fail-on-repo-update-fail"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Roll back a release to a previous revision",
+      "name": "rollback",
+      "options": [
+        {
+          "description": "Allow deletion of new resources created in this rollback when rollback fails",
+          "name": [
+            "--cleanup-on-fail"
+          ]
+        },
+        {
+          "description": "Simulate a rollback",
+          "name": [
+            "--dry-run"
+          ]
+        },
+        {
+          "description": "Force resource update through delete/recreate if needed",
+          "name": [
+            "--force"
+          ]
+        },
+        {
+          "args": {
+            "name": "history-max"
+          },
+          "description": "Limit the maximum number of revisions saved per release. Use 0 for no limit",
+          "name": [
+            "--history-max"
+          ]
+        },
+        {
+          "description": "Prevent hooks from running during rollback",
+          "name": [
+            "--no-hooks"
+          ]
+        },
+        {
+          "description": "Performs pods restart for the resource if applicable",
+          "name": [
+            "--recreate-pods"
+          ]
+        },
+        {
+          "args": {
+            "name": "timeout"
+          },
+          "description": "Time to wait for any individual Kubernetes operation (like Jobs for hooks)",
+          "name": [
+            "--timeout"
+          ]
+        },
+        {
+          "description": "If set, will wait until all Pods, PVCs, Services, and minimum number of Pods of a Deployment, StatefulSet, or ReplicaSet are in a ready state before marking the release as successful. It will wait for as long as --timeout",
+          "name": [
+            "--wait"
+          ]
+        },
+        {
+          "description": "If set and --wait enabled, will wait until all Jobs have been completed before marking the release as successful. It will wait for as long as --timeout",
+          "name": [
+            "--wait-for-jobs"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage chart repositories on Amazon S3",
+      "name": "s3"
+    },
+    {
+      "description": "Search for a keyword in charts",
+      "name": "search",
+      "subcommands": [
+        {
+          "description": "Search for charts in the Artifact Hub or your own hub instance",
+          "name": "hub",
+          "options": [
+            {
+              "args": {
+                "name": "endpoint"
+              },
+              "description": "Hub instance to query for charts",
+              "name": [
+                "--endpoint"
+              ]
+            },
+            {
+              "description": "Print charts repository URL",
+              "name": [
+                "--list-repo-url"
+              ]
+            },
+            {
+              "args": {
+                "name": "max-col-width"
+              },
+              "description": "Maximum column width for output table",
+              "name": [
+                "--max-col-width"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Prints the output in the specified format. Allowed values: table, json, yaml",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Search repositories for a keyword in charts",
+          "name": "repo",
+          "options": [
+            {
+              "description": "Use development versions (alpha, beta, and release candidate releases), too. Equivalent to version '>0.0.0-0'. If --version is set, this is ignored",
+              "name": [
+                "--devel"
+              ]
+            },
+            {
+              "args": {
+                "name": "max-col-width"
+              },
+              "description": "Maximum column width for output table",
+              "name": [
+                "--max-col-width"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Prints the output in the specified format. Allowed values: table, json, yaml",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Use regular expressions for searching repositories you have added",
+              "name": [
+                "--regexp",
+                "-r"
+              ]
+            },
+            {
+              "args": {
+                "name": "version"
+              },
+              "description": "Search using semantic versioning constraints on repositories you have added",
+              "name": [
+                "--version"
+              ]
+            },
+            {
+              "description": "Show the long listing, with each version of each chart on its own line, for repositories you have added",
+              "name": [
+                "--versions",
+                "-l"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Show information of a chart",
+      "name": "inspect",
+      "subcommands": [
+        {
+          "description": "Show all information of the chart",
+          "name": "all",
+          "options": [
+            {
+              "args": {
+                "name": "ca-file",
+                "template": "filepaths"
+              },
+              "description": "Verify certificates of HTTPS-enabled servers using this CA bundle",
+              "name": [
+                "--ca-file"
+              ]
+            },
+            {
+              "args": {
+                "name": "cert-file",
+                "template": "filepaths"
+              },
+              "description": "Identify HTTPS client using this SSL certificate file",
+              "name": [
+                "--cert-file"
+              ]
+            },
+            {
+              "description": "Use development versions, too. Equivalent to version '>0.0.0-0'. If --version is set, this is ignored",
+              "name": [
+                "--devel"
+              ]
+            },
+            {
+              "description": "Skip tls certificate checks for the chart download",
+              "name": [
+                "--insecure-skip-tls-verify"
+              ]
+            },
+            {
+              "args": {
+                "name": "key-file",
+                "template": "filepaths"
+              },
+              "description": "Identify HTTPS client using this SSL key file",
+              "name": [
+                "--key-file"
+              ]
+            },
+            {
+              "args": {
+                "name": "keyring",
+                "template": "filepaths"
+              },
+              "description": "Location of public keys used for verification",
+              "name": [
+                "--keyring"
+              ]
+            },
+            {
+              "description": "Pass credentials to all domains",
+              "name": [
+                "--pass-credentials"
+              ]
+            },
+            {
+              "args": {
+                "name": "password"
+              },
+              "description": "Chart repository password where to locate the requested chart",
+              "name": [
+                "--password"
+              ]
+            },
+            {
+              "args": {
+                "name": "repo"
+              },
+              "description": "Chart repository url where to locate the requested chart",
+              "name": [
+                "--repo"
+              ]
+            },
+            {
+              "args": {
+                "name": "username"
+              },
+              "description": "Chart repository username where to locate the requested chart",
+              "name": [
+                "--username"
+              ]
+            },
+            {
+              "description": "Verify the package before using it",
+              "name": [
+                "--verify"
+              ]
+            },
+            {
+              "args": {
+                "name": "version"
+              },
+              "description": "Specify a version constraint for the chart version to use. This constraint can be a specific tag (e.g. 1.1.1) or it may reference a valid range (e.g. ^2.0.0). If this is not specified, the latest version is used",
+              "name": [
+                "--version"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Show the chart's definition",
+          "name": "chart",
+          "options": [
+            {
+              "args": {
+                "name": "ca-file",
+                "template": "filepaths"
+              },
+              "description": "Verify certificates of HTTPS-enabled servers using this CA bundle",
+              "name": [
+                "--ca-file"
+              ]
+            },
+            {
+              "args": {
+                "name": "cert-file",
+                "template": "filepaths"
+              },
+              "description": "Identify HTTPS client using this SSL certificate file",
+              "name": [
+                "--cert-file"
+              ]
+            },
+            {
+              "description": "Use development versions, too. Equivalent to version '>0.0.0-0'. If --version is set, this is ignored",
+              "name": [
+                "--devel"
+              ]
+            },
+            {
+              "description": "Skip tls certificate checks for the chart download",
+              "name": [
+                "--insecure-skip-tls-verify"
+              ]
+            },
+            {
+              "args": {
+                "name": "key-file"
+              },
+              "description": "Identify HTTPS client using this SSL key file",
+              "name": [
+                "--key-file"
+              ]
+            },
+            {
+              "args": {
+                "name": "keyring",
+                "template": "filepaths"
+              },
+              "description": "Location of public keys used for verification",
+              "name": [
+                "--keyring"
+              ]
+            },
+            {
+              "description": "Pass credentials to all domains",
+              "name": [
+                "--pass-credentials"
+              ]
+            },
+            {
+              "args": {
+                "name": "password"
+              },
+              "description": "Chart repository password where to locate the requested chart",
+              "name": [
+                "--password"
+              ]
+            },
+            {
+              "args": {
+                "name": "repo"
+              },
+              "description": "Chart repository url where to locate the requested chart",
+              "name": [
+                "--repo"
+              ]
+            },
+            {
+              "args": {
+                "name": "username"
+              },
+              "description": "Chart repository username where to locate the requested chart",
+              "name": [
+                "--username"
+              ]
+            },
+            {
+              "description": "Verify the package before using it",
+              "name": [
+                "--verify"
+              ]
+            },
+            {
+              "args": {
+                "name": "version"
+              },
+              "description": "Specify a version constraint for the chart version to use. This constraint can be a specific tag (e.g. 1.1.1) or it may reference a valid range (e.g. ^2.0.0). If this is not specified, the latest version is used",
+              "name": [
+                "--version"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Show the chart's CRDs",
+          "name": "crds",
+          "options": [
+            {
+              "args": {
+                "name": "ca-file",
+                "template": "filepaths"
+              },
+              "description": "Verify certificates of HTTPS-enabled servers using this CA bundle",
+              "name": [
+                "--ca-file"
+              ]
+            },
+            {
+              "args": {
+                "name": "cert-file",
+                "template": "filepaths"
+              },
+              "description": "Identify HTTPS client using this SSL certificate file",
+              "name": [
+                "--cert-file"
+              ]
+            },
+            {
+              "description": "Use development versions, too. Equivalent to version '>0.0.0-0'. If --version is set, this is ignored",
+              "name": [
+                "--devel"
+              ]
+            },
+            {
+              "description": "Skip tls certificate checks for the chart download",
+              "name": [
+                "--insecure-skip-tls-verify"
+              ]
+            },
+            {
+              "args": {
+                "name": "key-file",
+                "template": "filepaths"
+              },
+              "description": "Identify HTTPS client using this SSL key file",
+              "name": [
+                "--key-file"
+              ]
+            },
+            {
+              "args": {
+                "name": "keyring",
+                "template": "filepaths"
+              },
+              "description": "Location of public keys used for verification",
+              "name": [
+                "--keyring"
+              ]
+            },
+            {
+              "description": "Pass credentials to all domains",
+              "name": [
+                "--pass-credentials"
+              ]
+            },
+            {
+              "args": {
+                "name": "password"
+              },
+              "description": "Chart repository password where to locate the requested chart",
+              "name": [
+                "--password"
+              ]
+            },
+            {
+              "args": {
+                "name": "repo"
+              },
+              "description": "Chart repository url where to locate the requested chart",
+              "name": [
+                "--repo"
+              ]
+            },
+            {
+              "args": {
+                "name": "username"
+              },
+              "description": "Chart repository username where to locate the requested chart",
+              "name": [
+                "--username"
+              ]
+            },
+            {
+              "description": "Verify the package before using it",
+              "name": [
+                "--verify"
+              ]
+            },
+            {
+              "args": {
+                "name": "version"
+              },
+              "description": "Specify a version constraint for the chart version to use. This constraint can be a specific tag (e.g. 1.1.1) or it may reference a valid range (e.g. ^2.0.0). If this is not specified, the latest version is used",
+              "name": [
+                "--version"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Show the chart's README",
+          "name": "readme",
+          "options": [
+            {
+              "args": {
+                "name": "ca-file",
+                "template": "filepaths"
+              },
+              "description": "Verify certificates of HTTPS-enabled servers using this CA bundle",
+              "name": [
+                "--ca-file"
+              ]
+            },
+            {
+              "args": {
+                "name": "cert-file",
+                "template": "filepaths"
+              },
+              "description": "Identify HTTPS client using this SSL certificate file",
+              "name": [
+                "--cert-file"
+              ]
+            },
+            {
+              "description": "Use development versions, too. Equivalent to version '>0.0.0-0'. If --version is set, this is ignored",
+              "name": [
+                "--devel"
+              ]
+            },
+            {
+              "description": "Skip tls certificate checks for the chart download",
+              "name": [
+                "--insecure-skip-tls-verify"
+              ]
+            },
+            {
+              "args": {
+                "name": "key-file"
+              },
+              "description": "Identify HTTPS client using this SSL key file",
+              "name": [
+                "--key-file"
+              ]
+            },
+            {
+              "args": {
+                "name": "keyring"
+              },
+              "description": "Location of public keys used for verification",
+              "name": [
+                "--keyring"
+              ]
+            },
+            {
+              "description": "Pass credentials to all domains",
+              "name": [
+                "--pass-credentials"
+              ]
+            },
+            {
+              "args": {
+                "name": "password"
+              },
+              "description": "Chart repository password where to locate the requested chart",
+              "name": [
+                "--password"
+              ]
+            },
+            {
+              "args": {
+                "name": "repo"
+              },
+              "description": "Chart repository url where to locate the requested chart",
+              "name": [
+                "--repo"
+              ]
+            },
+            {
+              "args": {
+                "name": "username"
+              },
+              "description": "Chart repository username where to locate the requested chart",
+              "name": [
+                "--username"
+              ]
+            },
+            {
+              "description": "Verify the package before using it",
+              "name": [
+                "--verify"
+              ]
+            },
+            {
+              "args": {
+                "name": "version"
+              },
+              "description": "Specify a version constraint for the chart version to use. This constraint can be a specific tag (e.g. 1.1.1) or it may reference a valid range (e.g. ^2.0.0). If this is not specified, the latest version is used",
+              "name": [
+                "--version"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Show the chart's values",
+          "name": "values",
+          "options": [
+            {
+              "args": {
+                "name": "ca-file",
+                "template": "filepaths"
+              },
+              "description": "Verify certificates of HTTPS-enabled servers using this CA bundle",
+              "name": [
+                "--ca-file"
+              ]
+            },
+            {
+              "args": {
+                "name": "cert-file",
+                "template": "filepaths"
+              },
+              "description": "Identify HTTPS client using this SSL certificate file",
+              "name": [
+                "--cert-file"
+              ]
+            },
+            {
+              "description": "Use development versions, too. Equivalent to version '>0.0.0-0'. If --version is set, this is ignored",
+              "name": [
+                "--devel"
+              ]
+            },
+            {
+              "description": "Skip tls certificate checks for the chart download",
+              "name": [
+                "--insecure-skip-tls-verify"
+              ]
+            },
+            {
+              "args": {
+                "name": "jsonpath"
+              },
+              "description": "Supply a JSONPath expression to filter the output",
+              "name": [
+                "--jsonpath"
+              ]
+            },
+            {
+              "args": {
+                "name": "key-file",
+                "template": "filepaths"
+              },
+              "description": "Identify HTTPS client using this SSL key file",
+              "name": [
+                "--key-file"
+              ]
+            },
+            {
+              "args": {
+                "name": "keyring",
+                "template": "filepaths"
+              },
+              "description": "Location of public keys used for verification",
+              "name": [
+                "--keyring"
+              ]
+            },
+            {
+              "description": "Pass credentials to all domains",
+              "name": [
+                "--pass-credentials"
+              ]
+            },
+            {
+              "args": {
+                "name": "password"
+              },
+              "description": "Chart repository password where to locate the requested chart",
+              "name": [
+                "--password"
+              ]
+            },
+            {
+              "args": {
+                "name": "repo"
+              },
+              "description": "Chart repository url where to locate the requested chart",
+              "name": [
+                "--repo"
+              ]
+            },
+            {
+              "args": {
+                "name": "username"
+              },
+              "description": "Chart repository username where to locate the requested chart",
+              "name": [
+                "--username"
+              ]
+            },
+            {
+              "description": "Verify the package before using it",
+              "name": [
+                "--verify"
+              ]
+            },
+            {
+              "args": {
+                "name": "version"
+              },
+              "description": "Specify a version constraint for the chart version to use. This constraint can be a specific tag (e.g. 1.1.1) or it may reference a valid range (e.g. ^2.0.0). If this is not specified, the latest version is used",
+              "name": [
+                "--version"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Display the status of the named release",
+      "name": "status",
+      "options": [
+        {
+          "args": {
+            "name": "output"
+          },
+          "description": "Prints the output in the specified format. Allowed values: table, json, yaml",
+          "name": [
+            "--output",
+            "-o"
+          ]
+        },
+        {
+          "args": {
+            "name": "revision"
+          },
+          "description": "If set, display the status of the named release with revision",
+          "name": [
+            "--revision"
+          ]
+        },
+        {
+          "description": "If set, display the description message of the named release",
+          "name": [
+            "--show-desc"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Locally render templates",
+      "name": "template",
+      "options": [
+        {
+          "args": {
+            "name": "api-versions"
+          },
+          "description": "Kubernetes api versions used for Capabilities.APIVersions",
+          "name": [
+            "--api-versions",
+            "-a"
+          ]
+        },
+        {
+          "description": "If set, the installation process deletes the installation on failure. The --wait flag will be set automatically if --atomic is used",
+          "name": [
+            "--atomic"
+          ]
+        },
+        {
+          "args": {
+            "name": "ca-file",
+            "template": "filepaths"
+          },
+          "description": "Verify certificates of HTTPS-enabled servers using this CA bundle",
+          "name": [
+            "--ca-file"
+          ]
+        },
+        {
+          "args": {
+            "name": "cert-file",
+            "template": "filepaths"
+          },
+          "description": "Identify HTTPS client using this SSL certificate file",
+          "name": [
+            "--cert-file"
+          ]
+        },
+        {
+          "description": "Create the release namespace if not present",
+          "name": [
+            "--create-namespace"
+          ]
+        },
+        {
+          "description": "Update dependencies if they are missing before installing the chart",
+          "name": [
+            "--dependency-update"
+          ]
+        },
+        {
+          "args": {
+            "name": "description"
+          },
+          "description": "Add a custom description",
+          "name": [
+            "--description"
+          ]
+        },
+        {
+          "description": "Use development versions, too. Equivalent to version '>0.0.0-0'. If --version is set, this is ignored",
+          "name": [
+            "--devel"
+          ]
+        },
+        {
+          "description": "If set, the installation process will not validate rendered templates against the Kubernetes OpenAPI Schema",
+          "name": [
+            "--disable-openapi-validation"
+          ]
+        },
+        {
+          "description": "Simulate an install",
+          "name": [
+            "--dry-run"
+          ]
+        },
+        {
+          "description": "Generate the name (and omit the NAME parameter)",
+          "name": [
+            "--generate-name",
+            "-g"
+          ]
+        },
+        {
+          "description": "Include CRDs in the templated output",
+          "name": [
+            "--include-crds"
+          ]
+        },
+        {
+          "description": "Skip tls certificate checks for the chart download",
+          "name": [
+            "--insecure-skip-tls-verify"
+          ]
+        },
+        {
+          "description": "Set .Release.IsUpgrade instead of .Release.IsInstall",
+          "name": [
+            "--is-upgrade"
+          ]
+        },
+        {
+          "args": {
+            "name": "key-file",
+            "template": "filepaths"
+          },
+          "description": "Identify HTTPS client using this SSL key file",
+          "name": [
+            "--key-file"
+          ]
+        },
+        {
+          "args": {
+            "name": "keyring",
+            "template": "filepaths"
+          },
+          "description": "Location of public keys used for verification",
+          "name": [
+            "--keyring"
+          ]
+        },
+        {
+          "args": {
+            "name": "kube-version"
+          },
+          "description": "Kubernetes version used for Capabilities.KubeVersion",
+          "name": [
+            "--kube-version"
+          ]
+        },
+        {
+          "args": {
+            "name": "name-template"
+          },
+          "description": "Specify template used to name the release",
+          "name": [
+            "--name-template"
+          ]
+        },
+        {
+          "description": "Prevent hooks from running during install",
+          "name": [
+            "--no-hooks"
+          ]
+        },
+        {
+          "args": {
+            "name": "output-dir",
+            "template": "filepaths"
+          },
+          "description": "Writes the executed templates to files in output-dir instead of stdout",
+          "name": [
+            "--output-dir"
+          ]
+        },
+        {
+          "description": "Pass credentials to all domains",
+          "name": [
+            "--pass-credentials"
+          ]
+        },
+        {
+          "args": {
+            "name": "password"
+          },
+          "description": "Chart repository password where to locate the requested chart",
+          "name": [
+            "--password"
+          ]
+        },
+        {
+          "args": {
+            "name": "post-renderer"
+          },
+          "description": "The path to an executable to be used for post rendering. If it exists in $PATH, the binary will be used, otherwise it will try to look for the executable at the given path",
+          "name": [
+            "--post-renderer"
+          ]
+        },
+        {
+          "args": {
+            "name": "post-renderer-args"
+          },
+          "description": "An argument to the post-renderer (can specify multiple)",
+          "name": [
+            "--post-renderer-args"
+          ]
+        },
+        {
+          "description": "Use release name in the output-dir path",
+          "name": [
+            "--release-name"
+          ]
+        },
+        {
+          "description": "If set, render subchart notes along with the parent",
+          "name": [
+            "--render-subchart-notes"
+          ]
+        },
+        {
+          "description": "Re-use the given name, only if that name is a deleted release which remains in the history. This is unsafe in production",
+          "name": [
+            "--replace"
+          ]
+        },
+        {
+          "args": {
+            "name": "repo"
+          },
+          "description": "Chart repository url where to locate the requested chart",
+          "name": [
+            "--repo"
+          ]
+        },
+        {
+          "args": {
+            "name": "set"
+          },
+          "description": "Set values on the command line (can specify multiple or separate values with commas: key1=val1,key2=val2)",
+          "name": [
+            "--set"
+          ]
+        },
+        {
+          "args": {
+            "name": "set-file",
+            "template": "filepaths"
+          },
+          "description": "Set values from respective files specified via the command line (can specify multiple or separate values with commas: key1=path1,key2=path2)",
+          "name": [
+            "--set-file"
+          ]
+        },
+        {
+          "args": {
+            "name": "set-string"
+          },
+          "description": "Set STRING values on the command line (can specify multiple or separate values with commas: key1=val1,key2=val2)",
+          "name": [
+            "--set-string"
+          ]
+        },
+        {
+          "args": {
+            "name": "show-only"
+          },
+          "description": "Only show manifests rendered from the given templates",
+          "name": [
+            "--show-only",
+            "-s"
+          ]
+        },
+        {
+          "description": "If set, no CRDs will be installed. By default, CRDs are installed if not already present",
+          "name": [
+            "--skip-crds"
+          ]
+        },
+        {
+          "description": "Skip tests from templated output",
+          "name": [
+            "--skip-tests"
+          ]
+        },
+        {
+          "args": {
+            "name": "timeout"
+          },
+          "description": "Time to wait for any individual Kubernetes operation (like Jobs for hooks)",
+          "name": [
+            "--timeout"
+          ]
+        },
+        {
+          "args": {
+            "name": "username"
+          },
+          "description": "Chart repository username where to locate the requested chart",
+          "name": [
+            "--username"
+          ]
+        },
+        {
+          "description": "Validate your manifests against the Kubernetes cluster you are currently pointing at. This is the same validation performed on an install",
+          "name": [
+            "--validate"
+          ]
+        },
+        {
+          "args": {
+            "name": "values",
+            "template": "filepaths"
+          },
+          "description": "Specify values in a YAML file or a URL (can specify multiple)",
+          "name": [
+            "--values",
+            "-f"
+          ]
+        },
+        {
+          "description": "Verify the package before using it",
+          "name": [
+            "--verify"
+          ]
+        },
+        {
+          "args": {
+            "name": "version"
+          },
+          "description": "Specify a version constraint for the chart version to use. This constraint can be a specific tag (e.g. 1.1.1) or it may reference a valid range (e.g. ^2.0.0). If this is not specified, the latest version is used",
+          "name": [
+            "--version"
+          ]
+        },
+        {
+          "description": "If set, will wait until all Pods, PVCs, Services, and minimum number of Pods of a Deployment, StatefulSet, or ReplicaSet are in a ready state before marking the release as successful. It will wait for as long as --timeout",
+          "name": [
+            "--wait"
+          ]
+        },
+        {
+          "description": "If set and --wait enabled, will wait until all Jobs have been completed before marking the release as successful. It will wait for as long as --timeout",
+          "name": [
+            "--wait-for-jobs"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Run tests for a release",
+      "name": "test",
+      "options": [
+        {
+          "args": {
+            "name": "filter"
+          },
+          "description": "Specify tests by attribute (currently \"name\") using attribute=value syntax or '!attribute=value' to exclude a test (can specify multiple or separate values with commas: name=test1,name=test2)",
+          "name": [
+            "--filter"
+          ]
+        },
+        {
+          "description": "Dump the logs from test pods (this runs after all tests are complete, but before any cleanup)",
+          "name": [
+            "--logs"
+          ]
+        },
+        {
+          "args": {
+            "name": "timeout"
+          },
+          "description": "Time to wait for any individual Kubernetes operation (like Jobs for hooks)",
+          "name": [
+            "--timeout"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Uninstall a release",
+      "name": "del",
+      "options": [
+        {
+          "args": {
+            "name": "description"
+          },
+          "description": "Add a custom description",
+          "name": [
+            "--description"
+          ]
+        },
+        {
+          "description": "Simulate a uninstall",
+          "name": [
+            "--dry-run"
+          ]
+        },
+        {
+          "description": "Remove all associated resources and mark the release as deleted, but retain the release history",
+          "name": [
+            "--keep-history"
+          ]
+        },
+        {
+          "description": "Prevent hooks from running during uninstallation",
+          "name": [
+            "--no-hooks"
+          ]
+        },
+        {
+          "args": {
+            "name": "timeout"
+          },
+          "description": "Time to wait for any individual Kubernetes operation (like Jobs for hooks)",
+          "name": [
+            "--timeout"
+          ]
+        },
+        {
+          "description": "If set, will wait until all the resources are deleted before returning. It will wait for as long as --timeout",
+          "name": [
+            "--wait"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Unittest for helm charts",
+      "name": "unittest"
+    },
+    {
+      "description": "Upgrade a release",
+      "name": "upgrade",
+      "options": [
+        {
+          "description": "If set, upgrade process rolls back changes made in case of failed upgrade. The --wait flag will be set automatically if --atomic is used",
+          "name": [
+            "--atomic"
+          ]
+        },
+        {
+          "args": {
+            "name": "ca-file",
+            "template": "filepaths"
+          },
+          "description": "Verify certificates of HTTPS-enabled servers using this CA bundle",
+          "name": [
+            "--ca-file"
+          ]
+        },
+        {
+          "args": {
+            "name": "cert-file",
+            "template": "filepaths"
+          },
+          "description": "Identify HTTPS client using this SSL certificate file",
+          "name": [
+            "--cert-file"
+          ]
+        },
+        {
+          "description": "Allow deletion of new resources created in this upgrade when upgrade fails",
+          "name": [
+            "--cleanup-on-fail"
+          ]
+        },
+        {
+          "description": "If --install is set, create the release namespace if not present",
+          "name": [
+            "--create-namespace"
+          ]
+        },
+        {
+          "description": "Update dependencies if they are missing before installing the chart",
+          "name": [
+            "--dependency-update"
+          ]
+        },
+        {
+          "args": {
+            "name": "description"
+          },
+          "description": "Add a custom description",
+          "name": [
+            "--description"
+          ]
+        },
+        {
+          "description": "Use development versions, too. Equivalent to version '>0.0.0-0'. If --version is set, this is ignored",
+          "name": [
+            "--devel"
+          ]
+        },
+        {
+          "description": "If set, the upgrade process will not validate rendered templates against the Kubernetes OpenAPI Schema",
+          "name": [
+            "--disable-openapi-validation"
+          ]
+        },
+        {
+          "description": "Simulate an upgrade",
+          "name": [
+            "--dry-run"
+          ]
+        },
+        {
+          "description": "Force resource updates through a replacement strategy",
+          "name": [
+            "--force"
+          ]
+        },
+        {
+          "args": {
+            "name": "history-max"
+          },
+          "description": "Limit the maximum number of revisions saved per release. Use 0 for no limit",
+          "name": [
+            "--history-max"
+          ]
+        },
+        {
+          "description": "Skip tls certificate checks for the chart download",
+          "name": [
+            "--insecure-skip-tls-verify"
+          ]
+        },
+        {
+          "description": "If a release by this name doesn't already exist, run an install",
+          "name": [
+            "--install",
+            "-i"
+          ]
+        },
+        {
+          "args": {
+            "name": "key-file",
+            "template": "filepaths"
+          },
+          "description": "Identify HTTPS client using this SSL key file",
+          "name": [
+            "--key-file"
+          ]
+        },
+        {
+          "args": {
+            "name": "keyring",
+            "template": "filepaths"
+          },
+          "description": "Location of public keys used for verification",
+          "name": [
+            "--keyring"
+          ]
+        },
+        {
+          "description": "Disable pre/post upgrade hooks",
+          "name": [
+            "--no-hooks"
+          ]
+        },
+        {
+          "args": {
+            "name": "output"
+          },
+          "description": "Prints the output in the specified format. Allowed values: table, json, yaml",
+          "name": [
+            "--output",
+            "-o"
+          ]
+        },
+        {
+          "description": "Pass credentials to all domains",
+          "name": [
+            "--pass-credentials"
+          ]
+        },
+        {
+          "args": {
+            "name": "password"
+          },
+          "description": "Chart repository password where to locate the requested chart",
+          "name": [
+            "--password"
+          ]
+        },
+        {
+          "args": {
+            "name": "post-renderer"
+          },
+          "description": "The path to an executable to be used for post rendering. If it exists in $PATH, the binary will be used, otherwise it will try to look for the executable at the given path",
+          "name": [
+            "--post-renderer"
+          ]
+        },
+        {
+          "args": {
+            "name": "post-renderer-args"
+          },
+          "description": "An argument to the post-renderer (can specify multiple)",
+          "name": [
+            "--post-renderer-args"
+          ]
+        },
+        {
+          "description": "Performs pods restart for the resource if applicable",
+          "name": [
+            "--recreate-pods"
+          ]
+        },
+        {
+          "description": "If set, render subchart notes along with the parent",
+          "name": [
+            "--render-subchart-notes"
+          ]
+        },
+        {
+          "args": {
+            "name": "repo"
+          },
+          "description": "Chart repository url where to locate the requested chart",
+          "name": [
+            "--repo"
+          ]
+        },
+        {
+          "description": "When upgrading, reset the values to the ones built into the chart",
+          "name": [
+            "--reset-values"
+          ]
+        },
+        {
+          "description": "When upgrading, reuse the last release's values and merge in any overrides from the command line via --set and -f. If '--reset-values' is specified, this is ignored",
+          "name": [
+            "--reuse-values"
+          ]
+        },
+        {
+          "args": {
+            "name": "set"
+          },
+          "description": "Set values on the command line (can specify multiple or separate values with commas: key1=val1,key2=val2)",
+          "name": [
+            "--set"
+          ]
+        },
+        {
+          "args": {
+            "name": "set-file",
+            "template": "filepaths"
+          },
+          "description": "Set values from respective files specified via the command line (can specify multiple or separate values with commas: key1=path1,key2=path2)",
+          "name": [
+            "--set-file"
+          ]
+        },
+        {
+          "args": {
+            "name": "set-string"
+          },
+          "description": "Set STRING values on the command line (can specify multiple or separate values with commas: key1=val1,key2=val2)",
+          "name": [
+            "--set-string"
+          ]
+        },
+        {
+          "description": "If set, no CRDs will be installed when an upgrade is performed with install flag enabled. By default, CRDs are installed if not already present, when an upgrade is performed with install flag enabled",
+          "name": [
+            "--skip-crds"
+          ]
+        },
+        {
+          "args": {
+            "name": "timeout"
+          },
+          "description": "Time to wait for any individual Kubernetes operation (like Jobs for hooks)",
+          "name": [
+            "--timeout"
+          ]
+        },
+        {
+          "args": {
+            "name": "username"
+          },
+          "description": "Chart repository username where to locate the requested chart",
+          "name": [
+            "--username"
+          ]
+        },
+        {
+          "args": {
+            "name": "values",
+            "template": "filepaths"
+          },
+          "description": "Specify values in a YAML file or a URL (can specify multiple)",
+          "name": [
+            "--values",
+            "-f"
+          ]
+        },
+        {
+          "description": "Verify the package before using it",
+          "name": [
+            "--verify"
+          ]
+        },
+        {
+          "args": {
+            "name": "version"
+          },
+          "description": "Specify a version constraint for the chart version to use. This constraint can be a specific tag (e.g. 1.1.1) or it may reference a valid range (e.g. ^2.0.0). If this is not specified, the latest version is used",
+          "name": [
+            "--version"
+          ]
+        },
+        {
+          "description": "If set, will wait until all Pods, PVCs, Services, and minimum number of Pods of a Deployment, StatefulSet, or ReplicaSet are in a ready state before marking the release as successful. It will wait for as long as --timeout",
+          "name": [
+            "--wait"
+          ]
+        },
+        {
+          "description": "If set and --wait enabled, will wait until all Jobs have been completed before marking the release as successful. It will wait for as long as --timeout",
+          "name": [
+            "--wait-for-jobs"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Verify that a chart at the given path has been signed and is valid",
+      "name": "verify",
+      "options": [
+        {
+          "args": {
+            "name": "keyring",
+            "template": "filepaths"
+          },
+          "description": "Keyring containing public keys",
+          "name": [
+            "--keyring"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Print the client version information",
+      "name": "version",
+      "options": [
+        {
+          "description": "Display client version information",
+          "name": [
+            "--client",
+            "-c"
+          ]
+        },
+        {
+          "description": "Print the version number",
+          "name": [
+            "--short"
+          ]
+        },
+        {
+          "args": {
+            "name": "template"
+          },
+          "description": "Template for version string format",
+          "name": [
+            "--template"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Help about any command",
+      "name": "help",
+      "subcommands": [
+        {
+          "description": "Generate autocompletion scripts for the specified shell",
+          "name": "completion",
+          "subcommands": [
+            {
+              "description": "Generate autocompletion script for bash",
+              "name": "bash"
+            },
+            {
+              "description": "Generate autocompletion script for fish",
+              "name": "fish"
+            },
+            {
+              "description": "Generate autocompletion script for powershell",
+              "name": "powershell"
+            },
+            {
+              "description": "Generate autocompletion script for zsh",
+              "name": "zsh"
+            }
+          ]
+        },
+        {
+          "description": "Create a new chart with the given name",
+          "name": "create"
+        },
+        {
+          "description": "Manage a chart's dependencies",
+          "name": "dep",
+          "subcommands": [
+            {
+              "description": "Rebuild the charts/ directory based on the Chart.lock file",
+              "name": "build"
+            },
+            {
+              "description": "List the dependencies for the given chart",
+              "name": "ls"
+            },
+            {
+              "description": "Update charts/ based on the contents of Chart.yaml",
+              "name": "up"
+            }
+          ]
+        },
+        {
+          "description": "Helm client environment information",
+          "name": "env"
+        },
+        {
+          "description": "Download extended information of a named release",
+          "name": "get",
+          "subcommands": [
+            {
+              "description": "Download all information for a named release",
+              "name": "all"
+            },
+            {
+              "description": "Download all hooks for a named release",
+              "name": "hooks"
+            },
+            {
+              "description": "Download the manifest for a named release",
+              "name": "manifest"
+            },
+            {
+              "description": "Download the notes for a named release",
+              "name": "notes"
+            },
+            {
+              "description": "Download the values file for a named release",
+              "name": "values"
+            }
+          ]
+        },
+        {
+          "description": "Fetch release history",
+          "name": "hist"
+        },
+        {
+          "description": "Install a chart",
+          "name": "install"
+        },
+        {
+          "description": "Examine a chart for possible issues",
+          "name": "lint"
+        },
+        {
+          "description": "List releases",
+          "name": "ls"
+        },
+        {
+          "description": "Package a chart directory into a chart archive",
+          "name": "package"
+        },
+        {
+          "description": "Install, list, or uninstall Helm plugins",
+          "name": "plugin",
+          "subcommands": [
+            {
+              "description": "Install one or more Helm plugins",
+              "name": "add"
+            },
+            {
+              "description": "List installed Helm plugins",
+              "name": "ls"
+            },
+            {
+              "description": "Uninstall one or more Helm plugins",
+              "name": "rm"
+            },
+            {
+              "description": "Update one or more Helm plugins",
+              "name": "up"
+            }
+          ]
+        },
+        {
+          "description": "Download a chart from a repository and (optionally) unpack it in local directory",
+          "name": "fetch"
+        },
+        {
+          "description": "Push a chart to remote",
+          "name": "push"
+        },
+        {
+          "description": "Login to or logout from a registry",
+          "name": "registry",
+          "subcommands": [
+            {
+              "description": "Login to a registry",
+              "name": "login"
+            },
+            {
+              "description": "Logout from a registry",
+              "name": "logout"
+            }
+          ]
+        },
+        {
+          "description": "Add, list, remove, update, and index chart repositories",
+          "name": "repo",
+          "subcommands": [
+            {
+              "description": "Add a chart repository",
+              "name": "add"
+            },
+            {
+              "description": "Generate an index file given a directory containing packaged charts",
+              "name": "index"
+            },
+            {
+              "description": "List chart repositories",
+              "name": "ls"
+            },
+            {
+              "description": "Remove one or more chart repositories",
+              "name": "rm"
+            },
+            {
+              "description": "Update information of available charts locally from chart repositories",
+              "name": "up"
+            }
+          ]
+        },
+        {
+          "description": "Roll back a release to a previous revision",
+          "name": "rollback"
+        },
+        {
+          "description": "Manage chart repositories on Amazon S3",
+          "name": "s3"
+        },
+        {
+          "description": "Search for a keyword in charts",
+          "name": "search",
+          "subcommands": [
+            {
+              "description": "Search for charts in the Artifact Hub or your own hub instance",
+              "name": "hub"
+            },
+            {
+              "description": "Search repositories for a keyword in charts",
+              "name": "repo"
+            }
+          ]
+        },
+        {
+          "description": "Show information of a chart",
+          "name": "inspect",
+          "subcommands": [
+            {
+              "description": "Show all information of the chart",
+              "name": "all"
+            },
+            {
+              "description": "Show the chart's definition",
+              "name": "chart"
+            },
+            {
+              "description": "Show the chart's CRDs",
+              "name": "crds"
+            },
+            {
+              "description": "Show the chart's README",
+              "name": "readme"
+            },
+            {
+              "description": "Show the chart's values",
+              "name": "values"
+            }
+          ]
+        },
+        {
+          "description": "Display the status of the named release",
+          "name": "status"
+        },
+        {
+          "description": "Locally render templates",
+          "name": "template"
+        },
+        {
+          "description": "Run tests for a release",
+          "name": "test"
+        },
+        {
+          "description": "Uninstall a release",
+          "name": "del"
+        },
+        {
+          "description": "Unittest for helm charts",
+          "name": "unittest"
+        },
+        {
+          "description": "Upgrade a release",
+          "name": "upgrade"
+        },
+        {
+          "description": "Verify that a chart at the given path has been signed and is valid",
+          "name": "verify"
+        },
+        {
+          "description": "Print the client version information",
+          "name": "version"
+        }
+      ]
+    }
+  ]
+}

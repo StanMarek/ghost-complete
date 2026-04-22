@@ -1,0 +1,880 @@
+{
+  "description": "Wez's Terminal Emulator",
+  "name": "wezterm",
+  "options": [
+    {
+      "args": {
+        "isOptional": true,
+        "name": "config-file",
+        "template": "filepaths"
+      },
+      "description": "Specify the configuration file to use, overrides the normal configuration file resolution",
+      "name": [
+        "--config-file"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "name=value"
+      },
+      "description": "Override specific configuration values",
+      "name": [
+        "--config"
+      ]
+    },
+    {
+      "description": "Print help information",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Print version information",
+      "name": [
+        "-V",
+        "--version"
+      ]
+    },
+    {
+      "description": "Skip loading wezterm.lua",
+      "name": [
+        "-n"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "prog"
+      },
+      "description": "Start the GUI, optionally running an alternative program",
+      "name": "start",
+      "options": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "cwd",
+            "template": "folders"
+          },
+          "description": "Specify the current working directory for the initially spawned program",
+          "name": [
+            "--cwd"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "class"
+          },
+          "description": "Override the default windowing system class. The default is \"org.wezfurlong.wezterm\". Under X11 and Windows this changes the window class. Under Wayland this changes the app_id. This changes the class for all windows spawned by this instance of wezterm, including error, update and ssh authentication dialogs",
+          "name": [
+            "--class"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "workspace"
+          },
+          "description": "Override the default workspace with the provided name. The default is \"default\"",
+          "name": [
+            "--workspace"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "position"
+          },
+          "description": "Override the position for the initial window launched by this process",
+          "name": [
+            "--position"
+          ]
+        },
+        {
+          "description": "If true, do not connect to domains marked as connect_automatically in your wezterm configuration file",
+          "name": [
+            "--no-auto-connect"
+          ]
+        },
+        {
+          "description": "If enabled, don't try to ask an existing wezterm GUI instance to start the command.  Instead, always start the GUI in this invocation of wezterm so that you can wait for the command to complete by waiting for this wezterm process to finish",
+          "name": [
+            "--always-new-process"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "user-at-host-and-port"
+        },
+        {
+          "isOptional": true,
+          "isVariadic": true,
+          "name": "prog"
+        }
+      ],
+      "description": "Establish an ssh session",
+      "name": "ssh",
+      "options": [
+        {
+          "args": {
+            "isOptional": true,
+            "isVariadic": true,
+            "name": "name=value"
+          },
+          "description": "Override specific SSH configuration options. `wezterm ssh` is able to parse some (but not all!) options from your `~/.ssh/config` and `/etc/ssh/ssh_config` files. This command line switch allows you to override or otherwise specify ssh_config style options",
+          "name": [
+            "-o",
+            "--ssh-option"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "class"
+          },
+          "description": "Override the default windowing system class. The default is \"org.wezfurlong.wezterm\". Under X11 and Windows this changes the window class. Under Wayland this changes the app_id. This changes the class for all windows spawned by this instance of wezterm, including error, update and ssh authentication dialogs",
+          "name": [
+            "--class"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "position"
+          },
+          "description": "Override the position for the initial window launched by this process",
+          "name": [
+            "--position"
+          ]
+        },
+        {
+          "description": "Enable verbose ssh protocol tracing. The trace information is printed to the stderr stream of the process",
+          "name": [
+            "-v"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "port"
+      },
+      "description": "Open a serial port",
+      "name": "serial",
+      "options": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "baud"
+          },
+          "description": "Set the baud rate.  The default is 9600 baud",
+          "name": [
+            "--baud"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "class"
+          },
+          "description": "Override the default windowing system class. The default is \"org.wezfurlong.wezterm\". Under X11 and Windows this changes the window class. Under Wayland this changes the app_id. This changes the class for all windows spawned by this instance of wezterm, including error, update and ssh authentication dialogs",
+          "name": [
+            "--class"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "position"
+          },
+          "description": "Override the position for the initial window launched by this process",
+          "name": [
+            "--position"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "domain-name"
+        },
+        {
+          "isOptional": true,
+          "isVariadic": true,
+          "name": "prog"
+        }
+      ],
+      "description": "Connect to wezterm multiplexer",
+      "name": "connect",
+      "options": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "class"
+          },
+          "description": "Override the default windowing system class. The default is \"org.wezfurlong.wezterm\". Under X11 and Windows this changes the window class. Under Wayland this changes the app_id. This changes the class for all windows spawned by this instance of wezterm, including error, update and ssh authentication dialogs",
+          "name": [
+            "--class"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "workspace"
+          },
+          "description": "Override the default workspace with the provided name. The default is \"default\"",
+          "name": [
+            "--workspace"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "position"
+          },
+          "description": "Override the position for the initial window launched by this process",
+          "name": [
+            "--position"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Display information about fonts",
+      "name": "ls-fonts",
+      "options": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "text"
+          },
+          "description": "Explain which fonts are used to render the supplied text string",
+          "name": [
+            "--text"
+          ]
+        },
+        {
+          "description": "Whether to list all fonts available to the system",
+          "name": [
+            "--list-system"
+          ]
+        },
+        {
+          "description": "Show rasterized glyphs for the text in --text using ascii blocks",
+          "name": [
+            "--rasterize-ascii"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Show key assignments",
+      "name": "show-keys",
+      "options": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "key-table"
+          },
+          "description": "In lua mode, show only the named key table",
+          "name": [
+            "--key-table"
+          ]
+        },
+        {
+          "description": "Show the keys as lua config statements",
+          "name": [
+            "--lua"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Interact with experimental mux server",
+      "name": "cli",
+      "options": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "class"
+          },
+          "description": "When connecting to a gui instance, if you started the gui with `--class SOMETHING`, you should also pass that same value here in order for the client to find the correct gui instance",
+          "name": [
+            "--class"
+          ]
+        },
+        {
+          "description": "Don't automatically start the server",
+          "name": [
+            "--no-auto-start"
+          ]
+        },
+        {
+          "description": "Prefer connecting to a background mux server. The default is to prefer connecting to a running wezterm gui instance",
+          "name": [
+            "--prefer-mux"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "List windows, tabs and panes",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "isOptional": true,
+                "name": "format"
+              },
+              "description": "Controls the output format. \"table\" and \"json\" are possible formats",
+              "name": [
+                "--format"
+              ]
+            },
+            {
+              "description": "Print help information",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List clients",
+          "name": "list-clients",
+          "options": [
+            {
+              "args": {
+                "isOptional": true,
+                "name": "format"
+              },
+              "description": "Controls the output format. \"table\" and \"json\" are possible formats",
+              "name": [
+                "--format"
+              ]
+            },
+            {
+              "description": "Print help information",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Start rpc proxy pipe",
+          "name": "proxy",
+          "options": [
+            {
+              "description": "Print help information",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Obtain tls credentials",
+          "name": "tlscreds",
+          "options": [
+            {
+              "description": "Print help information",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Move a pane into a new tab",
+          "name": "move-pane-to-new-tab",
+          "options": [
+            {
+              "args": {
+                "isOptional": true,
+                "name": "pane-id"
+              },
+              "description": "Specify the pane that should be moved. The default is to use the current pane based on the environment variable WEZTERM_PANE",
+              "name": [
+                "--pane-id"
+              ]
+            },
+            {
+              "args": {
+                "isOptional": true,
+                "name": "window-id"
+              },
+              "description": "Specify the window into which the new tab will be created. If omitted, the window associated with the current pane is used",
+              "name": [
+                "--window-id"
+              ]
+            },
+            {
+              "args": {
+                "isOptional": true,
+                "name": "workspace"
+              },
+              "description": "If creating a new window, override the default workspace name with the provided name.  The default name is \"default\"",
+              "name": [
+                "--workspace"
+              ]
+            },
+            {
+              "description": "Create tab in a new window, rather than the window currently containing the pane",
+              "name": [
+                "--new-window"
+              ]
+            },
+            {
+              "description": "Print help information",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "isVariadic": true,
+            "name": "prog"
+          },
+          "description": "Split the current pane. Outputs the pane-id for the newly created pane on success",
+          "name": "split-pane",
+          "options": [
+            {
+              "args": {
+                "isOptional": true,
+                "name": "pane-id"
+              },
+              "description": "Specify the pane that should be split. The default is to use the current pane based on the environment variable WEZTERM_PANE",
+              "name": [
+                "--pane-id"
+              ]
+            },
+            {
+              "args": {
+                "isOptional": true,
+                "name": "cells"
+              },
+              "description": "The number of cells that the new split should have. If omitted, 50% of the available space is used",
+              "name": [
+                "--cells"
+              ]
+            },
+            {
+              "args": {
+                "isOptional": true,
+                "name": "percent"
+              },
+              "description": "Specify the number of cells that the new split should have, expressed as a percentage of the available space",
+              "name": [
+                "--percent"
+              ]
+            },
+            {
+              "args": {
+                "isOptional": true,
+                "name": "cwd",
+                "template": "folders"
+              },
+              "description": "Specify the current working directory for the initially spawned program",
+              "name": [
+                "--cwd"
+              ]
+            },
+            {
+              "args": {
+                "isOptional": true,
+                "name": "move-pane-id"
+              },
+              "description": "Instead of spawning a new command, move the specified pane into the newly created split",
+              "name": [
+                "--move-pane-id"
+              ]
+            },
+            {
+              "description": "Equivalent to `--right`. If neither this nor any other direction is specified, the default is equivalent to `--bottom`",
+              "name": [
+                "--horizontal"
+              ]
+            },
+            {
+              "description": "Split horizontally, with the new pane on the left",
+              "name": [
+                "--left"
+              ]
+            },
+            {
+              "description": "Split horizontally, with the new pane on the right",
+              "name": [
+                "--right"
+              ]
+            },
+            {
+              "description": "Split vertically, with the new pane on the top",
+              "name": [
+                "--top"
+              ]
+            },
+            {
+              "description": "Split vertically, with the new pane on the bottom",
+              "name": [
+                "--bottom"
+              ]
+            },
+            {
+              "description": "Rather than splitting the active pane, split the entire window",
+              "name": [
+                "--top-level"
+              ]
+            },
+            {
+              "description": "Print help information",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "isVariadic": true,
+            "name": "prog"
+          },
+          "description": "Spawn a command into a new window or tab. Outputs the pane-id for the newly created pane on success",
+          "name": "spawn",
+          "options": [
+            {
+              "args": {
+                "isOptional": true,
+                "name": "pane-id"
+              },
+              "description": "Specify the current pane. The default is to use the current pane based on the environment variable WEZTERM_PANE. The pane is used to determine the current domain and window",
+              "name": [
+                "--pane-id"
+              ]
+            },
+            {
+              "args": {
+                "isOptional": true,
+                "name": "domain-name"
+              },
+              "name": [
+                "--domain-name"
+              ]
+            },
+            {
+              "args": {
+                "isOptional": true,
+                "name": "window-id"
+              },
+              "description": "Specify the window into which to spawn a tab. If omitted, the window associated with the current pane is used. Cannot be used with `--workspace` or `--new-window`",
+              "name": [
+                "--window-id"
+              ]
+            },
+            {
+              "args": {
+                "isOptional": true,
+                "name": "cwd",
+                "template": "folders"
+              },
+              "description": "Specify the current working directory for the initially spawned program",
+              "name": [
+                "--cwd"
+              ]
+            },
+            {
+              "args": {
+                "isOptional": true,
+                "name": "workspace"
+              },
+              "description": "When creating a new window, override the default workspace name with the provided name.  The default name is \"default\"",
+              "name": [
+                "--workspace"
+              ]
+            },
+            {
+              "description": "Spawn into a new window, rather than a new tab",
+              "name": [
+                "--new-window"
+              ]
+            },
+            {
+              "description": "Print help information",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "text"
+          },
+          "description": "Send text to a pane as though it were pasted. If bracketed paste mode is enabled in the pane, then the text will be sent as a bracketed paste",
+          "name": "send-text",
+          "options": [
+            {
+              "args": {
+                "isOptional": true,
+                "name": "pane-id"
+              },
+              "description": "Specify the target pane. The default is to use the current pane based on the environment variable WEZTERM_PANE",
+              "name": [
+                "--pane-id"
+              ]
+            },
+            {
+              "description": "Send the text directly, rather than as a bracketed paste",
+              "name": [
+                "--no-paste"
+              ]
+            },
+            {
+              "description": "Print help information",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "subcommand"
+          },
+          "description": "Print this message or the help of the given subcommand(s)",
+          "name": "help"
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "file-name",
+        "template": "filepaths"
+      },
+      "description": "Output an image to the terminal",
+      "name": "imgcat",
+      "options": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "width"
+          },
+          "description": "Specify the display width; defaults to \"auto\" which automatically selects an appropriate size.  You may also use an integer value `N` to specify the number of cells, or `Npx` to specify the number of pixels, or `N%` to size relative to the terminal width",
+          "name": [
+            "--width"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "height"
+          },
+          "description": "Specify the display height; defaults to \"auto\" which automatically selects an appropriate size.  You may also use an integer value `N` to specify the number of cells, or `Npx` to specify the number of pixels, or `N%` to size relative to the terminal height",
+          "name": [
+            "--height"
+          ]
+        },
+        {
+          "description": "Do not respect the aspect ratio.  The default is to respect the aspect ratio",
+          "name": [
+            "--no-preserve-aspect-ratio"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "isOptional": true,
+          "name": "cwd",
+          "template": "folders"
+        },
+        {
+          "isOptional": true,
+          "name": "host"
+        }
+      ],
+      "description": "Advise the terminal of the current working directory by emitting an OSC 7 escape sequence",
+      "name": "set-working-directory",
+      "options": [
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "prog"
+      },
+      "description": "Record a terminal session as an asciicast",
+      "name": "record",
+      "options": [
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "cast-file"
+      },
+      "description": "Replay an asciicast terminal session",
+      "name": "replay",
+      "options": [
+        {
+          "description": "Explain what is being sent/received",
+          "name": [
+            "--explain"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generate shell completion information",
+      "name": "shell-completion",
+      "options": [
+        {
+          "args": {
+            "name": "shell",
+            "suggestions": [
+              {
+                "name": "bash"
+              },
+              {
+                "name": "elvish"
+              },
+              {
+                "name": "fish"
+              },
+              {
+                "name": "power-shell"
+              },
+              {
+                "name": "zsh"
+              },
+              {
+                "name": "fig"
+              }
+            ]
+          },
+          "description": "Which shell to generate for",
+          "name": [
+            "--shell"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "subcommand"
+      },
+      "description": "Print this message or the help of the given subcommand(s)",
+      "name": "help"
+    }
+  ]
+}

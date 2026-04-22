@@ -1,0 +1,235 @@
+{
+  "description": "Quickmail is a terminal-based solution to send mails",
+  "name": "quickmail",
+  "options": [
+    {
+      "description": "Output cli version",
+      "name": [
+        "-v",
+        "--version"
+      ]
+    },
+    {
+      "description": "Output cli help",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "isOptional": true,
+        "template": [
+          "filepaths"
+        ]
+      },
+      "description": "Initialise cli",
+      "name": "init",
+      "options": [
+        {
+          "description": "Get help regarding init command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Clear the files stored locally",
+      "name": "clear",
+      "options": [
+        {
+          "description": "Get help regarding clear command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Clear entire cli storage including token",
+          "name": [
+            "-j",
+            "--justdoit"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Send mail",
+      "name": "send",
+      "options": [
+        {
+          "description": "Get help regarding send command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "receiver"
+          },
+          "description": "Receiver's email address",
+          "name": [
+            "-r",
+            "--receiver"
+          ]
+        },
+        {
+          "args": {
+            "name": "Subject"
+          },
+          "description": "Subject of mail",
+          "name": [
+            "-sub",
+            "--subject"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "quickmail",
+                  "template",
+                  "listall"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "isOptional": true,
+            "name": "Template"
+          },
+          "description": "Templates for mail body",
+          "name": [
+            "-t",
+            "--template"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "Body"
+          },
+          "description": "Body of the mail",
+          "name": [
+            "-b",
+            "--body"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "Attachment file",
+            "template": [
+              "filepaths"
+            ]
+          },
+          "description": "Path to attachment file",
+          "name": [
+            "-a",
+            "--attachment"
+          ]
+        },
+        {
+          "description": "Skip confirmation, and send mail",
+          "name": [
+            "-l",
+            "--lessgo"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage templates",
+      "name": "template",
+      "options": [
+        {
+          "description": "Get help regarding template command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Add a new template",
+          "name": "add",
+          "options": [
+            {
+              "description": "Get help regarding template add subcommand",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "name": "Template id"
+              },
+              "description": "Set template id",
+              "name": [
+                "-n"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List all templates stored",
+          "name": "listall",
+          "options": [
+            {
+              "description": "Get help regarding template listall subcommand",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Edit any particular template",
+          "name": "edit",
+          "options": [
+            {
+              "description": "Get help regarding template edit subcommand",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "generators": [
+                  {
+                    "script": [
+                      "quickmail",
+                      "template",
+                      "listall"
+                    ],
+                    "transforms": [
+                      "split_lines",
+                      "filter_empty"
+                    ]
+                  }
+                ],
+                "name": "Template id"
+              },
+              "description": "Edit template by id",
+              "name": [
+                "-n"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

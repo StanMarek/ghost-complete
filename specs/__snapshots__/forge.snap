@@ -1,0 +1,849 @@
+{
+  "description": "A command line interface for managing Atlassian-hosted apps",
+  "name": "@forge/cli",
+  "options": [
+    {
+      "description": "Output the version number",
+      "name": [
+        "-V",
+        "--version"
+      ]
+    },
+    {
+      "description": "Enable verbose mode",
+      "name": [
+        "--verbose"
+      ]
+    },
+    {
+      "description": "Display help for command",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "name": "install|uninstall",
+        "suggestions": [
+          {
+            "name": "install"
+          },
+          {
+            "name": "uninstall"
+          }
+        ]
+      },
+      "description": "Configures autocomplete for the Forge CLI",
+      "name": "autocomplete",
+      "options": [
+        {
+          "description": "Enable verbose mode",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Display help for command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "name"
+      },
+      "description": "Create an app",
+      "name": "create",
+      "options": [
+        {
+          "description": "Enable verbose mode",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "args": {
+            "name": "template name"
+          },
+          "description": "Specify the template to use",
+          "name": [
+            "-t",
+            "--template"
+          ]
+        },
+        {
+          "args": {
+            "name": "directory name"
+          },
+          "description": "Specify the directory to create (uses the template name by default)",
+          "name": [
+            "-d",
+            "--directory"
+          ]
+        },
+        {
+          "description": "Display help for command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Deploy your app to an environment",
+      "name": "deploy",
+      "options": [
+        {
+          "description": "Enable verbose mode",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Disable pre-deployment checks",
+          "name": [
+            "-f",
+            "--no-verify"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "environment"
+          },
+          "description": "Specify the environment from options: development, staging, production (default: development)",
+          "name": [
+            "-e",
+            "--environment"
+          ]
+        },
+        {
+          "description": "Run the command without input prompts",
+          "name": [
+            "--non-interactive"
+          ]
+        },
+        {
+          "description": "Display help for command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Let us know what you think about Forge",
+      "name": "feedback",
+      "options": [
+        {
+          "description": "Enable verbose mode",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Display help for command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage app installations",
+      "name": "install",
+      "options": [
+        {
+          "description": "Enable verbose mode",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "environment"
+          },
+          "description": "Specify the environment from options: development, staging, production (default: development)",
+          "name": [
+            "-e",
+            "--environment"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "site"
+          },
+          "description": "Site URL (example.atlassian.net)",
+          "name": [
+            "-s",
+            "--site"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "product"
+          },
+          "description": "Product (Jira, Confluence, Compass)",
+          "name": [
+            "-p",
+            "--product"
+          ]
+        },
+        {
+          "description": "Upgrade an existing installation",
+          "name": [
+            "--upgrade"
+          ]
+        },
+        {
+          "description": "Skip confirmation of scopes for the app before installing or upgrading the app",
+          "name": [
+            "--confirm-scopes"
+          ]
+        },
+        {
+          "description": "Run the command without input prompts",
+          "name": [
+            "--non-interactive"
+          ]
+        },
+        {
+          "description": "Display help for command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "List app installations",
+          "name": "list",
+          "options": [
+            {
+              "description": "Enable verbose mode",
+              "name": [
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Display help for command",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "command"
+          },
+          "description": "Display help for command",
+          "name": "help"
+        }
+      ]
+    },
+    {
+      "description": "Check the source files for common errors",
+      "name": "lint",
+      "options": [
+        {
+          "description": "Enable verbose mode",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Attempt to automatically fix any issues encountered",
+          "name": [
+            "--fix"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "environment"
+          },
+          "description": "Specify the environment from options: development, staging, production (default: development)",
+          "name": [
+            "-e",
+            "--environment"
+          ]
+        },
+        {
+          "description": "Display help for command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Log in to your Atlassian account",
+      "name": "login",
+      "options": [
+        {
+          "description": "Enable verbose mode",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "args": {
+            "name": "user email"
+          },
+          "description": "Specify the email to use",
+          "name": [
+            "-u",
+            "--email"
+          ]
+        },
+        {
+          "args": {
+            "name": "api token"
+          },
+          "description": "Specify the API token to use",
+          "name": [
+            "-t",
+            "--token"
+          ]
+        },
+        {
+          "description": "Run the command without input prompts",
+          "name": [
+            "--non-interactive"
+          ]
+        },
+        {
+          "description": "Display help for command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Log out of your Atlassian account",
+      "name": "logout",
+      "options": [
+        {
+          "description": "Enable verbose mode",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Display help for command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "View app logs",
+      "name": "logs",
+      "options": [
+        {
+          "description": "Enable verbose mode",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "environment"
+          },
+          "description": "Specify the environment from options: development, staging, production (default: development)",
+          "name": [
+            "-e",
+            "--environment"
+          ]
+        },
+        {
+          "args": {
+            "name": "invocation"
+          },
+          "description": "View logs for a given invocation ID",
+          "name": [
+            "-i",
+            "--invocation"
+          ]
+        },
+        {
+          "args": {
+            "name": "limit"
+          },
+          "description": "Number of invocations to return",
+          "name": [
+            "-n",
+            "--limit"
+          ]
+        },
+        {
+          "args": {
+            "name": "since"
+          },
+          "description": "View logs since the specified time. valid formats: YYYY-MM-DD, ISO 8061 timestamp or a relative time (e.g: 5m, 10h, 2d)",
+          "name": [
+            "-s",
+            "--since"
+          ]
+        },
+        {
+          "description": "Group logs by invocation ID",
+          "name": [
+            "-g",
+            "--grouped"
+          ]
+        },
+        {
+          "description": "Display help for command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage external providers",
+      "name": "providers",
+      "options": [
+        {
+          "description": "Enable verbose mode",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Display help for command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "providerKey"
+          },
+          "description": "Configure provider credentials",
+          "name": "configure",
+          "options": [
+            {
+              "description": "Enable verbose mode",
+              "name": [
+                "--verbose"
+              ]
+            },
+            {
+              "args": {
+                "isOptional": true,
+                "name": "oauthClientSecret"
+              },
+              "description": "Client secret",
+              "name": [
+                "-s",
+                "--oauth-client-secret"
+              ]
+            },
+            {
+              "args": {
+                "isOptional": true,
+                "name": "environment"
+              },
+              "description": "Specify the environment from options: development, staging, production (default: development)",
+              "name": [
+                "-e",
+                "--environment"
+              ]
+            },
+            {
+              "description": "Display help for command",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "command"
+          },
+          "description": "Display help for command",
+          "name": "help"
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "name"
+      },
+      "description": "Register an app you didn't create so you can run commands for it",
+      "name": "register",
+      "options": [
+        {
+          "description": "Enable verbose mode",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Display help for command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage Forge CLI settings",
+      "name": "settings",
+      "options": [
+        {
+          "description": "Enable verbose mode",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Display help for command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "List Forge CLI settings",
+          "name": "list",
+          "options": [
+            {
+              "description": "Enable verbose mode",
+              "name": [
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Display help for command",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "name": "setting"
+            },
+            {
+              "name": "boolean"
+            }
+          ],
+          "description": "Update Forge CLI setting (choices: usage-analytics)",
+          "name": "set",
+          "options": [
+            {
+              "description": "Enable verbose mode",
+              "name": [
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Display help for command",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "command"
+          },
+          "description": "Display help for command",
+          "name": "help"
+        }
+      ]
+    },
+    {
+      "description": "Start a tunnel to connect your local code with the app running in the development environment",
+      "name": "tunnel",
+      "options": [
+        {
+          "description": "Enable verbose mode",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Enable debugger mode",
+          "name": [
+            "-d",
+            "--debug"
+          ]
+        },
+        {
+          "description": "Display help for command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "installationId"
+      },
+      "description": "Uninstall the app from an Atlassian site",
+      "name": "uninstall",
+      "options": [
+        {
+          "description": "Enable verbose mode",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Display help for command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage app environment variables",
+      "name": "variables",
+      "options": [
+        {
+          "description": "Enable verbose mode",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Display help for command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": [
+            {
+              "isOptional": true,
+              "name": "key"
+            },
+            {
+              "isOptional": true,
+              "name": "value"
+            }
+          ],
+          "description": "Set an environment variable",
+          "name": "set",
+          "options": [
+            {
+              "description": "Enable verbose mode",
+              "name": [
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Encrypt variable",
+              "name": [
+                "--encrypt"
+              ]
+            },
+            {
+              "args": {
+                "isOptional": true,
+                "name": "environment"
+              },
+              "description": "Specify the environment from options: development, staging, production (default: development)",
+              "name": [
+                "-e",
+                "--environment"
+              ]
+            },
+            {
+              "description": "Display help for command",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "key"
+          },
+          "description": "Remove an environment variable",
+          "name": "unset",
+          "options": [
+            {
+              "description": "Enable verbose mode",
+              "name": [
+                "--verbose"
+              ]
+            },
+            {
+              "args": {
+                "isOptional": true,
+                "name": "environment"
+              },
+              "description": "Specify the environment from options: development, staging, production (default: development)",
+              "name": [
+                "-e",
+                "--environment"
+              ]
+            },
+            {
+              "description": "Display help for command",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List the environment variables",
+          "name": "list",
+          "options": [
+            {
+              "description": "Enable verbose mode",
+              "name": [
+                "--verbose"
+              ]
+            },
+            {
+              "args": {
+                "isOptional": true,
+                "name": "environment"
+              },
+              "description": "Specify the environment from options: development, staging, production (default: development)",
+              "name": [
+                "-e",
+                "--environment"
+              ]
+            },
+            {
+              "description": "Display help for command",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "command"
+          },
+          "description": "Display help for command",
+          "name": "help"
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "installationId"
+      },
+      "description": "Get a web trigger URL",
+      "name": "webtrigger",
+      "options": [
+        {
+          "description": "Enable verbose mode",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "function"
+          },
+          "description": "Web trigger key from the manifest.yml file",
+          "name": [
+            "-f",
+            "--functionKey"
+          ]
+        },
+        {
+          "description": "Display help for command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Display the account information of the logged in user",
+      "name": "whoami",
+      "options": [
+        {
+          "description": "Enable verbose mode",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Display help for command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "command"
+      },
+      "description": "Display help for command",
+      "name": "help"
+    }
+  ]
+}

@@ -1,0 +1,402 @@
+{
+  "description": "The JavaScript Launcher",
+  "name": "volta",
+  "options": [
+    {
+      "description": "Enables verbose diagnostics",
+      "name": [
+        "--verbose"
+      ]
+    },
+    {
+      "description": "Prevents unnecessary output",
+      "name": [
+        "--quiet"
+      ]
+    },
+    {
+      "description": "Prints help information",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Prints the current version of Volta",
+      "name": [
+        "-v",
+        "--version"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "tool | tool@version"
+      },
+      "description": "Fetches a tool to the local machine",
+      "name": "fetch",
+      "options": [
+        {
+          "description": "Enables verbose diagnostics",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Prevents unnecessary output",
+          "name": [
+            "--quiet"
+          ]
+        },
+        {
+          "description": "Prints help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "tool@version"
+      },
+      "description": "Installs a tool in your toolchain",
+      "name": "install",
+      "options": [
+        {
+          "description": "Enables verbose diagnostics",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Prevents unnecessary output",
+          "name": [
+            "--quiet"
+          ]
+        },
+        {
+          "description": "Prints help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "tool"
+      },
+      "description": "Uninstalls a tool from your toolchain",
+      "name": "uninstall",
+      "options": [
+        {
+          "description": "Enables verbose diagnostics",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Prevents unnecessary output",
+          "name": [
+            "--quiet"
+          ]
+        },
+        {
+          "description": "Prints help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "tool@version"
+      },
+      "description": "Pins your project's runtime or package manager",
+      "name": "pin",
+      "options": [
+        {
+          "description": "Enables verbose diagnostics",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Prevents unnecessary output",
+          "name": [
+            "--quiet"
+          ]
+        },
+        {
+          "description": "Prints help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "tool"
+      },
+      "description": "Displays the current toolchain",
+      "name": "list",
+      "options": [
+        {
+          "description": "Show the currently-active tool(s)",
+          "name": [
+            "-c",
+            "--current"
+          ]
+        },
+        {
+          "description": "Show your default tool(s)",
+          "name": [
+            "-d",
+            "--default"
+          ]
+        },
+        {
+          "description": "Enables verbose diagnostics",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Prevents unnecessary output",
+          "name": [
+            "--quiet"
+          ]
+        },
+        {
+          "description": "Prints help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "output format",
+            "suggestions": [
+              {
+                "name": "human"
+              },
+              {
+                "name": "plain"
+              }
+            ]
+          },
+          "description": "Specify output format",
+          "name": [
+            "--format"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Shell to generate completions for",
+        "name": "shell",
+        "suggestions": [
+          {
+            "name": "zsh"
+          },
+          {
+            "name": "bash"
+          },
+          {
+            "name": "fish"
+          },
+          {
+            "name": "powershell"
+          },
+          {
+            "name": "elivsh"
+          }
+        ]
+      },
+      "description": "Generates Volta completions",
+      "name": "completions",
+      "options": [
+        {
+          "description": "Write over an existing file, if any",
+          "name": [
+            "-f",
+            "--force"
+          ]
+        },
+        {
+          "description": "Enables verbose diagnostics",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Prevents unnecessary output",
+          "name": [
+            "--quiet"
+          ]
+        },
+        {
+          "description": "Prints help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "file"
+          },
+          "description": "File to write generated completions to",
+          "name": [
+            "-o",
+            "--output"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "binary",
+        "template": "filepaths"
+      },
+      "description": "Locates the actual binary that will be called by Volta",
+      "name": "which",
+      "options": [
+        {
+          "description": "Enables verbose diagnostics",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Prevents unnecessary output",
+          "name": [
+            "--quiet"
+          ]
+        },
+        {
+          "description": "Prints help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Enables Volta for the current user",
+      "name": "setup",
+      "options": [
+        {
+          "description": "Enables verbose diagnostics",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Prevents unnecessary output",
+          "name": [
+            "--quiet"
+          ]
+        },
+        {
+          "description": "Prints help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "command"
+      },
+      "description": "Run a command with custom Node, npm, and/or Yarn versions",
+      "name": "run",
+      "options": [
+        {
+          "description": "Forces npm to be the version bundled with Node",
+          "name": [
+            "--bundle"
+          ]
+        },
+        {
+          "description": "Disables Yarn",
+          "name": [
+            "--no-yarn"
+          ]
+        },
+        {
+          "description": "Enables verbose diagnostics",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Prevents unnecessary output",
+          "name": [
+            "--quiet"
+          ]
+        },
+        {
+          "args": {
+            "name": "version"
+          },
+          "description": "Set the custom Node version",
+          "name": [
+            "--node"
+          ]
+        },
+        {
+          "args": {
+            "name": "version"
+          },
+          "description": "Set the custom npm version",
+          "name": [
+            "--npm"
+          ]
+        },
+        {
+          "args": {
+            "name": "version"
+          },
+          "description": "Set the custom Yarn version",
+          "name": [
+            "--yarn"
+          ]
+        },
+        {
+          "args": {
+            "name": "NAME=value"
+          },
+          "description": "Set an environment variable (can be used multiple times)",
+          "name": [
+            "--env"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "subcommand"
+      },
+      "description": "Prints this message or the help of the given subcommand(s)",
+      "name": "help"
+    }
+  ]
+}

@@ -1,0 +1,184 @@
+{
+  "description": "Solve coding exercises in your chosen programming languages",
+  "name": "exercism",
+  "options": [
+    {
+      "description": "Help for this command",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Override the default HTTP timeout",
+      "name": [
+        "--timeout"
+      ]
+    },
+    {
+      "description": "Will unmask the API during a request/response dump",
+      "name": [
+        "--unmask-token"
+      ]
+    },
+    {
+      "description": "Verbose output",
+      "name": [
+        "--verbose",
+        "-v"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Configure the command-line client",
+      "name": "configure",
+      "options": [
+        {
+          "args": {
+            "name": "url"
+          },
+          "description": "API base url",
+          "name": [
+            "-a",
+            "--api"
+          ]
+        },
+        {
+          "description": "Skip online token authorization check",
+          "name": [
+            "--no-verify"
+          ]
+        },
+        {
+          "description": "Show the current configuration",
+          "name": [
+            "-s",
+            "--show"
+          ]
+        },
+        {
+          "args": {
+            "name": "token"
+          },
+          "description": "Auth token used to connect to the site",
+          "name": [
+            "-t",
+            "--token"
+          ]
+        },
+        {
+          "args": {
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "Directory for exercism exercises",
+          "name": [
+            "-w",
+            "--workspace"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Download an exercise",
+      "name": "download",
+      "options": [
+        {
+          "args": {
+            "name": "exercise"
+          },
+          "description": "The exercise slug",
+          "name": [
+            "-e",
+            "--exercise"
+          ]
+        },
+        {
+          "args": {
+            "name": "team"
+          },
+          "description": "The team slug",
+          "name": [
+            "-T",
+            "--team"
+          ]
+        },
+        {
+          "args": {
+            "name": "track"
+          },
+          "description": "The track ID",
+          "name": [
+            "-t",
+            "--track"
+          ]
+        },
+        {
+          "args": {
+            "name": "uuid"
+          },
+          "description": "The solution UUID",
+          "name": [
+            "-u",
+            "--uuid"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Help about any command",
+      "name": "help"
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "folders"
+      },
+      "description": "Open an exercise on the website",
+      "name": "open"
+    },
+    {
+      "description": "Prepare does setup for Exercism and its tracks",
+      "name": "prepare"
+    },
+    {
+      "args": {
+        "description": "The files you want to submit",
+        "isVariadic": true,
+        "name": "file",
+        "template": "filepaths"
+      },
+      "description": "Submit your solution to an exercise",
+      "name": "submit"
+    },
+    {
+      "description": "Troubleshoot does a diagnostic self-check",
+      "name": "troubleshoot",
+      "options": [
+        {
+          "description": "Display the user's full API key",
+          "name": [
+            "-f",
+            "--full-api-key"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Upgrade to the latest version of the CLI",
+      "name": "upgrade"
+    },
+    {
+      "description": "Version outputs the version of CLI",
+      "name": "version"
+    },
+    {
+      "description": "Print out the path to your Exercism workspace",
+      "name": "workspace"
+    }
+  ]
+}

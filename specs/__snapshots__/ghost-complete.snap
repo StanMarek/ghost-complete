@@ -1,0 +1,105 @@
+{
+  "description": "Terminal-native autocomplete engine",
+  "name": "ghost-complete",
+  "options": [
+    {
+      "args": {
+        "name": "path",
+        "template": "filepaths"
+      },
+      "description": "Path to config file",
+      "name": [
+        "--config"
+      ]
+    },
+    {
+      "args": {
+        "name": "level",
+        "suggestions": [
+          {
+            "name": "trace"
+          },
+          {
+            "name": "debug"
+          },
+          {
+            "name": "info"
+          },
+          {
+            "name": "warn"
+          },
+          {
+            "name": "error"
+          }
+        ]
+      },
+      "description": "Log level",
+      "name": [
+        "--log-level"
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "filepaths"
+      },
+      "description": "Log to file instead of stderr",
+      "name": [
+        "--log-file"
+      ]
+    },
+    {
+      "description": "Print version",
+      "name": [
+        "--version"
+      ]
+    },
+    {
+      "description": "Print help",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Install shell integration (zsh)",
+      "name": "install",
+      "options": [
+        {
+          "description": "Show what would be installed without writing any files",
+          "name": [
+            "--dry-run"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Remove shell integration (zsh)",
+      "name": "uninstall"
+    },
+    {
+      "description": "Validate completion spec files",
+      "name": "validate-specs"
+    },
+    {
+      "description": "Show loaded specs and JS compatibility",
+      "name": "status"
+    },
+    {
+      "description": "Show resolved configuration",
+      "name": "config",
+      "subcommands": [
+        {
+          "description": "Open interactive config editor",
+          "name": "edit"
+        }
+      ]
+    },
+    {
+      "description": "Run health checks",
+      "name": "doctor"
+    }
+  ]
+}
