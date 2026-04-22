@@ -752,7 +752,36 @@ function fingerprintCallChain(node) {
 
 /** Summarise a call's argument list as a comma-separated placeholder list. */
 function argsToken(args) {
-  return args.map(leafToken).join(',');
+  return args.map(argToken).join(',');
+}
+
+/**
+ * Map a single call-argument node to its fingerprint token.
+ *
+ * Arrow/function callbacks (e.g. `.map(x => JSON.parse(x).foo.bar)`) used to
+ * collapse to the opaque `FN` token, which hid dotted-path patterns inside
+ * higher-order function bodies (Phase 1 spike finding 3: the
+ * `needs_dotted_path_json_extract` count was a lower bound). We now descend
+ * into the callback body via `fingerprintExpression` and emit
+ * `.map(<inner>)`, where <inner> is the body's fingerprint.
+ *
+ * Trivial bodies are pinned deterministically:
+ *   - empty body (e.g. `() => {}`) → `<>`
+ *   - identity body (e.g. `x => x`) → `<...>`
+ *
+ * Plain identifier callbacks like `.filter(Boolean)` continue to fingerprint
+ * exactly as before — they stay in `leafToken` and never descend.
+ */
+function argToken(node) {
+  if (
+    node &&
+    (node.type === 'ArrowFunctionExpression' ||
+      node.type === 'FunctionExpression')
+  ) {
+    const inner = fingerprintExpression(node);
+    return '<' + inner + '>';
+  }
+  return leafToken(node);
 }
 
 /** Map a leaf node to its placeholder token. */

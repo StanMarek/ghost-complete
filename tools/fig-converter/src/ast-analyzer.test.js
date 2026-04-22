@@ -197,8 +197,10 @@ describe('analyzeGenerator — shape fingerprint', () => {
     assert.equal(a.parse_error, null);
     assert.equal(b.parse_error, null);
     assert.equal(a.shape.fingerprint, b.shape.fingerprint);
-    // And it should be the canonical form.
-    assert.equal(a.shape.fingerprint, '.split(STR).filter(FN).map(FN)');
+    // And it should be the canonical form. Phase-2 recount: arrow callbacks
+    // now descend into their body — `e => ({name: e})` has an ObjectExpression
+    // body, so `.map(<OBJ>)` replaces the old `.map(FN)` shape.
+    assert.equal(a.shape.fingerprint, '.split(STR).filter(FN).map(<OBJ>)');
   });
 
   it('case 12: JSON.parse with property chain produces a documented fingerprint', () => {
@@ -277,5 +279,65 @@ describe('analyzeGenerator — shape fingerprint', () => {
     const result = analyzeGenerator(`(out) => out.split("\\n")`);
     assert.equal(result.parse_error, null);
     assert.equal(result.shape.has_json_parse, false);
+  });
+});
+
+describe('analyzeGenerator — callback-body fingerprint descent (Phase 2 recount)', () => {
+  // Phase 1 spike finding 3: `.map(FN)` hid dotted-path patterns inside
+  // higher-order-function callbacks, so `needs_dotted_path_json_extract`
+  // was undercounted. Arrow / function callbacks now descend into their
+  // body and emit `.map(<inner>)`.
+
+  it('descends into .map callback body and surfaces dotted JSON.parse path', () => {
+    const src = `(out) => out.split("\\n").map(line => JSON.parse(line).metadata.id)`;
+    const result = analyzeGenerator(src);
+    assert.equal(result.parse_error, null);
+    // Sanity: Pass-2 visitor still fires for symbols inside callbacks.
+    assert.equal(result.shape.has_json_parse, true);
+    // Pin exact fingerprint: dotted path nested inside .map(<...>).
+    assert.equal(
+      result.shape.fingerprint,
+      '.split(STR).map(<JSON.parse(...).PROP.PROP>)'
+    );
+  });
+
+  it('identity callback after .filter(Boolean) produces .map(<...>)', () => {
+    // identity callback descent yields <...>; doesn't add signal.
+    const src = `(out) => out.split("\\n").filter(Boolean).map(x => x)`;
+    const result = analyzeGenerator(src);
+    assert.equal(result.parse_error, null);
+    assert.equal(
+      result.shape.fingerprint,
+      '.split(STR).filter(FN).map(<...>)'
+    );
+  });
+
+  it('async callback preserves has_await AND descends into the body', () => {
+    const src = `(out) => out.split("\\n").map(async x => await ctx.run(x))`;
+    const result = analyzeGenerator(src);
+    assert.equal(result.parse_error, null);
+    // Pass-2 has_await flag unchanged.
+    assert.equal(result.shape.has_await, true);
+    // Pin exact fingerprint: `await ...` visible inside .map(<...>).
+    assert.equal(
+      result.shape.fingerprint,
+      '.split(STR).map(<await .run(...)>)'
+    );
+  });
+
+  it('plain identifier callback .map(Boolean) still fingerprints as .map(FN)', () => {
+    // Regression guard: descent is gated on ArrowFunctionExpression /
+    // FunctionExpression. Plain Identifiers stay in `leafToken`.
+    const src = `(out) => out.split("\\n").map(Boolean)`;
+    const result = analyzeGenerator(src);
+    assert.equal(result.parse_error, null);
+    assert.equal(result.shape.fingerprint, '.split(STR).map(FN)');
+  });
+
+  it('fingerprint is deterministic across repeated analyses', () => {
+    const src = `(out) => out.split("\\n").map(line => JSON.parse(line).metadata.id)`;
+    const a = analyzeGenerator(src).shape.fingerprint;
+    const b = analyzeGenerator(src).shape.fingerprint;
+    assert.equal(a, b);
   });
 });
