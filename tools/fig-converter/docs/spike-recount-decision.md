@@ -101,3 +101,30 @@ Rationale:
 
 - `1d568d0` — feat(fig-converter): descend into .map/.filter callback bodies for fingerprinting
 - `07131c0` — chore: re-run Phase 1 spike with callback-body fingerprinting
+
+---
+
+## §9 Candidate-providers post-authKeywords update
+
+**Date:** 2026-04-22 (same-session follow-up to T4)
+
+After T4 extended `authKeywords` with 13 new brand keywords (flyctl, firebase, tsh, pulumi, amplify, stepzen, deployctl, bosh, and related terms), the Phase 1 spike driver was re-run to propagate the heuristic into `candidate-providers.json`. The Phase 2 rubric count for `needs_dotted_path_json_extract` remains **unchanged at 14** (see §5) — T4 did not touch fingerprinting and `shape-inventory.json` was byte-identical to the T2 artifact (sha256 `5326b8ce…53af40`). The qualifying-candidates change affects **Phase 3A only** — it drops 8 auth-required false positives from the provider candidate list. The Phase 3A gate (≥4 viable candidates) is still met with ample margin.
+
+**Qualifying-candidate count:** 36 → **28** (−8).
+
+**Newly disqualified** (all dropped for matching extended `authKeywords`, so `needs_auth` now flips to `true`):
+
+1. `amplify` — AWS Amplify CLI (cloud auth)
+2. `bosh` — Cloud Foundry BOSH director (director auth)
+3. `deployctl` — Deno Deploy CLI (account auth)
+4. `firebase` — Firebase CLI (Google account auth)
+5. `flyctl` — Fly.io CLI (account auth)
+6. `pulumi` — Pulumi state backend (account/backend auth)
+7. `stepzen` — StepZen GraphQL CLI (account auth)
+8. `tsh` — Teleport `tsh` (cluster auth)
+
+Drop list matches T4's pre-run prediction exactly — no unexpected additions. Final qualifying list of 28 commands is captured in `candidate-providers.json` at HEAD.
+
+**Commit:**
+
+- `<T5 sha>` — chore: re-run Phase 1 spike to apply authKeywords heuristic to candidate-providers
