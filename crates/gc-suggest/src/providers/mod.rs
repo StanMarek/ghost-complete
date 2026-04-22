@@ -94,6 +94,9 @@ pub enum ProviderKind {
     /// `arduino-cli board list --format json`, projecting the first
     /// matching board's FQBN out of each detected port entry.
     ArduinoCliBoards,
+    /// `arduino-cli board list --format json`, projecting `port.address`
+    /// out of each entry that has at least one matching board.
+    ArduinoCliPorts,
 }
 
 /// Map a spec's `"type"` string to a `ProviderKind`, or `None` if the
@@ -107,6 +110,7 @@ pub enum ProviderKind {
 pub fn kind_from_type_str(type_str: &str) -> Option<ProviderKind> {
     match type_str {
         "arduino_cli_boards" => Some(ProviderKind::ArduinoCliBoards),
+        "arduino_cli_ports" => Some(ProviderKind::ArduinoCliPorts),
         _ => None,
     }
 }
@@ -116,6 +120,7 @@ pub fn kind_from_type_str(type_str: &str) -> Option<ProviderKind> {
 pub async fn resolve(kind: ProviderKind, ctx: &ProviderCtx) -> Result<Vec<Suggestion>> {
     match kind {
         ProviderKind::ArduinoCliBoards => arduino_cli::ArduinoCliBoards.generate(ctx).await,
+        ProviderKind::ArduinoCliPorts => arduino_cli::ArduinoCliPorts.generate(ctx).await,
     }
 }
 
@@ -144,6 +149,10 @@ mod tests {
         assert_eq!(
             kind_from_type_str("arduino_cli_boards"),
             Some(ProviderKind::ArduinoCliBoards)
+        );
+        assert_eq!(
+            kind_from_type_str("arduino_cli_ports"),
+            Some(ProviderKind::ArduinoCliPorts)
         );
     }
 
