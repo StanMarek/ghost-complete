@@ -1,0 +1,140 @@
+//! Preprocess embedded completion specs at build time.
+//!
+//! Reads every `../../specs/*.json`, drops the runtime-unused `js_source`
+//! field from generators, serialises the result compactly (no
+//! pretty-print whitespace) into `$OUT_DIR/specs-min/`, and writes an
+//! `embedded_specs.rs` include that the `embedded` module `include!`s.
+//!
+//! The on-disk `specs/` directory stays unchanged — tests, fixtures,
+//! and the converter keep reading the human-readable pretty-printed
+//! copies. Only the binary-embedded copies are shrunk.
+//!
+//! ## Why this exists
+//!
+//! Phase 4 T8 (binary size investigation). The original embedded pattern
+//! baked 21 MB of pretty-printed JSON directly via `include_str!`, which
+//! landed as ~42 MB of `__const` data in the release binary (each
+//! whitespace byte round-trips verbatim through rustc). Minifying drops
+//! that to ~11 MB of source bytes, and stripping `js_source` (a
+//! diagnostic-only field on `requires_js: true` generators) trims another
+//! ~435 KB. The runtime loader does not care about whitespace or
+//! `js_source`, so this is a pure size win with no behavior change.
+//!
+//! ## Invariants
+//!
+//! - The emitted `EMBEDDED_SPECS` list preserves the exact filename keys
+//!   from `specs/` (so `write_embedded_specs` still materialises a
+//!   directory that the on-disk spec loader can re-read).
+//! - `_corrected_in` is intentionally NOT stripped — it is consumed at
+//!   runtime by `ghost-complete doctor` to surface generators that
+//!   previously mis-converted.
+//! - If a spec is not valid JSON, we bail loudly rather than silently
+//!   emit the broken source — a malformed spec in the binary would
+//!   manifest as a load-time parse error with no hint why.
+//! - `rerun-if-changed` is emitted for the specs directory so cargo
+//!   reruns this script whenever any spec is added/removed/edited.
+
+use std::env;
+use std::fs;
+use std::io::Write;
+use std::path::PathBuf;
+
+fn main() {
+    let manifest_dir = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").unwrap());
+    let specs_dir = manifest_dir.join("../../specs").canonicalize().expect(
+        "specs/ directory must exist relative to crates/gc-suggest/ \
+         (check the workspace layout)",
+    );
+    let out_dir = PathBuf::from(env::var_os("OUT_DIR").unwrap());
+    let out_specs = out_dir.join("specs-min");
+    fs::create_dir_all(&out_specs).expect("create OUT_DIR/specs-min");
+
+    // Tell cargo to rerun whenever the source specs change. Watching
+    // the directory alone would miss modifications to individual files
+    // that don't change the dir's mtime on some filesystems, so emit a
+    // per-file watch too.
+    println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-changed={}", specs_dir.display());
+
+    let mut specs: Vec<(String, PathBuf)> = Vec::new();
+    for entry in fs::read_dir(&specs_dir).expect("read_dir specs/") {
+        let entry = entry.expect("read_dir entry");
+        let path = entry.path();
+        // Skip non-JSON and the `__snapshots__/` subdirectory (insta
+        // golden snapshots — not specs).
+        if !path.is_file() {
+            continue;
+        }
+        if path.extension().and_then(|e| e.to_str()) != Some("json") {
+            continue;
+        }
+        let name = path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .expect("spec file has valid UTF-8 name")
+            .to_string();
+        println!("cargo:rerun-if-changed={}", path.display());
+        specs.push((name, path));
+    }
+    // Sort for deterministic output (otherwise the order depends on
+    // read_dir's filesystem-specific enumeration).
+    specs.sort_by(|a, b| a.0.cmp(&b.0));
+
+    // Process each spec: parse, strip js_source, re-serialise compactly.
+    let mut entries: Vec<(String, PathBuf)> = Vec::with_capacity(specs.len());
+    for (name, src_path) in &specs {
+        let src = fs::read_to_string(src_path)
+            .unwrap_or_else(|e| panic!("read {}: {e}", src_path.display()));
+        let mut value: serde_json::Value = serde_json::from_str(&src)
+            .unwrap_or_else(|e| panic!("parse {}: {e}", src_path.display()));
+        strip_js_source(&mut value);
+        let minified = serde_json::to_string(&value)
+            .unwrap_or_else(|e| panic!("serialize {}: {e}", src_path.display()));
+
+        let dest = out_specs.join(name);
+        fs::write(&dest, minified.as_bytes())
+            .unwrap_or_else(|e| panic!("write {}: {e}", dest.display()));
+        entries.push((name.clone(), dest));
+    }
+
+    // Emit the generated `embedded_specs.rs` with the EMBEDDED_SPECS
+    // const. The `embedded` module picks this file up via
+    // `include!(concat!(env!("OUT_DIR"), "/embedded_specs.rs"))`.
+    let embed_rs = out_dir.join("embedded_specs.rs");
+    let mut f = fs::File::create(&embed_rs).expect("create embedded_specs.rs");
+    writeln!(f, "// @generated by build.rs — do not edit").unwrap();
+    writeln!(f, "pub const EMBEDDED_SPECS: &[(&str, &str)] = &[").unwrap();
+    for (name, path) in &entries {
+        // Escape both the name and the path as Rust string literals.
+        // `name` comes from filesystem filenames we already validated
+        // as UTF-8; paths come from OUT_DIR which the Rust toolchain
+        // produces. Using debug formatting for the path guarantees
+        // correct escaping on platforms with unusual characters (though
+        // we only target macOS, this keeps the output robust).
+        writeln!(
+            f,
+            "    ({:?}, include_str!({:?})),",
+            name,
+            path.display().to_string()
+        )
+        .unwrap();
+    }
+    writeln!(f, "];").unwrap();
+}
+
+fn strip_js_source(v: &mut serde_json::Value) {
+    match v {
+        serde_json::Value::Object(map) => {
+            map.remove("js_source");
+            for (_, child) in map.iter_mut() {
+                strip_js_source(child);
+            }
+        }
+        serde_json::Value::Array(arr) => {
+            for child in arr.iter_mut() {
+                strip_js_source(child);
+            }
+        }
+        _ => {}
+    }
+}
