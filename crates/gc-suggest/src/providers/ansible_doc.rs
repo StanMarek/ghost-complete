@@ -298,6 +298,6 @@ mod tests {
             current_token: String::new(),
         };
         let result = AnsibleDocModules.generate(&ctx).await;
-        assert!(matches!(result, Ok(_)));
+        assert!(result.is_ok());
     }
 }

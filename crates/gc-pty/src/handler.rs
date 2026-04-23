@@ -1233,6 +1233,18 @@ pub const DEFAULT_GENERATOR_TIMEOUT_MS: u64 = 5000;
 /// Compute a lightweight fingerprint of the current command-line buffer for
 /// the trigger-idempotency guard on `InputHandler::last_trigger_fingerprint`.
 /// Collision resistance doesn't need to be cryptographic — a same-content
+/// match just short-circuits `trigger()` (saving work and avoiding the
+/// stale-dismiss bug); a false collision would at worst miss one re-render,
+/// which the next real buffer edit fixes. `DefaultHasher` on the raw bytes
+/// of the buffer is sufficient.
+fn buffer_fingerprint(buffer: &str, cursor: usize) -> (u64, usize) {
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+    let mut hasher = DefaultHasher::new();
+    buffer.hash(&mut hasher);
+    (hasher.finish(), cursor)
+}
+
 /// Build the env-var snapshot handed to providers as `ProviderCtx.env`.
 ///
 /// Extracted as a pure helper so the `!provider_generators.is_empty()`
@@ -1254,18 +1266,6 @@ fn build_env_snapshot(has_providers: bool) -> std::collections::HashMap<String, 
     } else {
         std::collections::HashMap::new()
     }
-}
-
-/// match just short-circuits `trigger()` (saving work and avoiding the
-/// stale-dismiss bug); a false collision would at worst miss one re-render,
-/// which the next real buffer edit fixes. `DefaultHasher` on the raw bytes
-/// of the buffer is sufficient.
-fn buffer_fingerprint(buffer: &str, cursor: usize) -> (u64, usize) {
-    use std::collections::hash_map::DefaultHasher;
-    use std::hash::{Hash, Hasher};
-    let mut hasher = DefaultHasher::new();
-    buffer.hash(&mut hasher);
-    (hasher.finish(), cursor)
 }
 
 #[cfg(test)]

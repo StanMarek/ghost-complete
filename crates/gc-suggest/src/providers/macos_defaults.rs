@@ -253,6 +253,6 @@ mod tests {
             current_token: String::new(),
         };
         let result = DefaultsDomains.generate(&ctx).await;
-        assert!(matches!(result, Ok(_)));
+        assert!(result.is_ok());
     }
 }

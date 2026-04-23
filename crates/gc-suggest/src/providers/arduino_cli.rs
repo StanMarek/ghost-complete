@@ -529,7 +529,7 @@ mod tests {
         let tmp = tempfile::TempDir::new().unwrap();
         let ctx = ctx_for(tmp.path().to_path_buf());
         let result = ArduinoCliBoards.generate(&ctx).await;
-        assert!(matches!(result, Ok(_)));
+        assert!(result.is_ok());
     }
 
     #[tokio::test]
@@ -543,6 +543,6 @@ mod tests {
         let tmp = tempfile::TempDir::new().unwrap();
         let ctx = ctx_for(tmp.path().to_path_buf());
         let result = ArduinoCliPorts.generate(&ctx).await;
-        assert!(matches!(result, Ok(_)));
+        assert!(result.is_ok());
     }
 }

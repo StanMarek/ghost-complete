@@ -254,6 +254,6 @@ py311                    /opt/conda/envs/py311
             current_token: String::new(),
         };
         let result = MambaEnvs.generate(&ctx).await;
-        assert!(matches!(result, Ok(_)));
+        assert!(result.is_ok());
     }
 }

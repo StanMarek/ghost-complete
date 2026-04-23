@@ -11,7 +11,7 @@
 //!
 //! ## Why this exists
 //!
-//! Phase 4 T8 (binary size investigation). The original embedded pattern
+//! Binary-size intervention. The original embedded pattern
 //! baked 21 MB of pretty-printed JSON directly via `include_str!`, which
 //! landed as ~42 MB of `__const` data in the release binary (each
 //! whitespace byte round-trips verbatim through rustc). Minifying drops
