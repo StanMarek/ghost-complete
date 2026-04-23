@@ -1382,12 +1382,16 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "e=>JSON.parse(e).project.configurations.map(t=>({name:t}))",
-                    "requires_js": true,
                     "script": [
                       "bash",
                       "-c",
                       "xcodebuild -project ios/*.xcodeproj  -list -json"
+                    ],
+                    "transforms": [
+                      {
+                        "path": "project.configurations",
+                        "type": "json_extract_array"
+                      }
                     ]
                   }
                 ],
@@ -1402,12 +1406,16 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "e=>JSON.parse(e).project.schemes.map(t=>({name:t}))",
-                    "requires_js": true,
                     "script": [
                       "bash",
                       "-c",
                       "xcodebuild -project ios/*.xcodeproj  -list -json"
+                    ],
+                    "transforms": [
+                      {
+                        "path": "project.schemes",
+                        "type": "json_extract_array"
+                      }
                     ]
                   }
                 ],
