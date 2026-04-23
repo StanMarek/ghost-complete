@@ -1,0 +1,12 @@
+{
+  "shape_id": "arr-3",
+  "rationale": "Heterogeneous bucket. Most common pattern `function(n,[s]){if(n.trim()==\"\")return[];try{...}}` destructures its 2nd arg — in our single-arg VM wrapper, destructuring undefined throws. Those 11 variants will remain js_exception. The 5 variants without the destructured parameter (trex `e.scripts`, deno `e.imports`) early-return `[]` on truthy-check or trim-empty-check when input is `\"\"`. Rust `split_lines+filter_empty+json_extract(sentinel)` on `\"\"` yields `[]`. Converts ~5/16 generators; remaining 11 are shape-too-loose w.r.t. our sandboxed single-arg calling convention.",
+  "expected_transforms": [
+    "split_lines",
+    "filter_empty",
+    { "type": "json_extract", "name": "__sentinel_no_field__" }
+  ],
+  "inputs": [
+    ""
+  ]
+}

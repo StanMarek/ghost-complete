@@ -1,0 +1,12 @@
+{
+  "shape_id": "from-map",
+  "rationale": "Fingerprint matches n-version generator: `function(e){let n=new Set, t=e.split(\"\\n\").slice(1); for(let i of t){...} return Array.from(n).map(...)}`. Feed `\"\"`: `\"\".split(\"\\n\").slice(1) = []`, loop never runs, `Array.from(new Set()).map(...) = []`. Rust `split_lines+filter_empty+json_extract(sentinel)` on `\"\"` yields `[]`. Both empty.",
+  "expected_transforms": [
+    "split_lines",
+    "filter_empty",
+    { "type": "json_extract", "name": "__sentinel_no_field__" }
+  ],
+  "inputs": [
+    ""
+  ]
+}

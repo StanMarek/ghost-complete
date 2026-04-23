@@ -1,0 +1,12 @@
+{
+  "shape_id": "split-map-parse",
+  "rationale": "Fingerprint `.split(STR).map(<JSON.parse(...)>).map(<OBJ>)` — JS splits on `\\n`, parses each line as JSON, then maps each object into a suggestion reading SOME field. The 63-generator bucket spans different field-readers (ID / Name / Repository / Id). Reuse the `split-map` fixture strategy: feed ONE JSON line whose object has every plausible field set to the same string, so every JS variant's `n.FIELD` read yields that same string, matching Rust's `json_extract(\"ID\")` output. Expected outliers: any variant that reads via template-literal concatenation (e.g. ``${n.Name}=``) will append characters and `fail`; that's a legitimate shape-too-loose signal, not a fixture bug.",
+  "expected_transforms": [
+    "split_lines",
+    "filter_empty",
+    { "type": "json_extract", "name": "ID" }
+  ],
+  "inputs": [
+    "{\"ID\":\"item1\",\"Id\":\"item1\",\"Name\":\"item1\",\"Repository\":\"item1\",\"Image\":\"img\",\"repository\":\"item1\",\"Tag\":\"<none>\",\"tag\":\"<none>\"}"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "shape_id": "from",
+  "rationale": "Fingerprint matches `Array.from({length: Number(t)}, ...)` generators (expo-cli). Feed `\"\"`: `Number(\"\") = 0`, `Array.from({length: 0}, ...) = []`. Feed `\"0\"`: same result. Rust `split_lines+filter_empty+json_extract(sentinel)` on `\"\"` yields `[]` (filter_empty removes empty input). Rust on `\"0\"` yields `[]` (no object has the sentinel key). Both empty — contract holds. Happy-path fixtures await a `sequence_range` transform.",
+  "expected_transforms": [
+    "split_lines",
+    "filter_empty",
+    { "type": "json_extract", "name": "__sentinel_no_field__" }
+  ],
+  "inputs": [
+    "",
+    "0"
+  ]
+}

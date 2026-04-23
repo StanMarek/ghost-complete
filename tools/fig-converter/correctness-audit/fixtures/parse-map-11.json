@@ -1,0 +1,12 @@
+{
+  "shape_id": "parse-map-11",
+  "rationale": "Fingerprint `JSON.parse(e).versions.map(...)`. Feed `'{\"versions\":[]}'`: `.versions.map(...) = []`. Rust `split_lines+filter_empty+json_extract(sentinel)` on this yields `[]`. Both empty.",
+  "expected_transforms": [
+    "split_lines",
+    "filter_empty",
+    { "type": "json_extract", "name": "__sentinel_no_field__" }
+  ],
+  "inputs": [
+    "{\"versions\":[]}"
+  ]
+}

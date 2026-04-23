@@ -1,0 +1,12 @@
+{
+  "shape_id": "keys-reduce",
+  "rationale": "Fingerprint matches `s => { let t = JSON.parse(s); return Object.keys(t.groups).reduce(...) }`. Feed `'{\"groups\":{}}'`: `Object.keys({}) = []`, `.reduce(..., [])` yields `[]`. Rust `split_lines+filter_empty+json_extract(sentinel)` yields `[]`. Both empty.",
+  "expected_transforms": [
+    "split_lines",
+    "filter_empty",
+    { "type": "json_extract", "name": "__sentinel_no_field__" }
+  ],
+  "inputs": [
+    "{\"groups\":{}}"
+  ]
+}

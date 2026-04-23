@@ -1,0 +1,14 @@
+{
+  "shape_id": "arr",
+  "rationale": "Fingerprint `ARR` — this 44-gen bucket is dominated by `tsh` with `t => [JSON.parse(t).active.username]` (42 gens) which returns `[\"string\"]`, i.e. an array of raw strings. The oracle's `compareResults` rejects non-object items (`js[i] is not an object`), so those 42 will remain `fail`/`oracle_error` regardless of input. Only the 2 `ng` generators have a try/catch returning `[]` on any parse failure. Feeding `\"[]\"`, `\"\"`, garbage routes `ng` through its try/catch (or through `Object.entries([])` = `[]`), yielding `[]`. Rust `split_lines+filter_empty+json_extract(sentinel)` on these inputs also yields `[]` (no object has the sentinel key). Expected: 2 `ng` generators pass, 42 `tsh` generators get `js_exception` / `fail` — shape-too-loose.",
+  "expected_transforms": [
+    "split_lines",
+    "filter_empty",
+    { "type": "json_extract", "name": "__sentinel_no_field__" }
+  ],
+  "inputs": [
+    "[]",
+    "",
+    "not valid json"
+  ]
+}
