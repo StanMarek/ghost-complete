@@ -350,6 +350,11 @@ function matchJsonExtractArray(body) {
 
   // Require at least TWO path segments after JSON.parse(...). and a `.map(`
   // somewhere after. Capture group 1 = the dotted path.
+  //
+  // Limitation: inner [^)]* does not tolerate a nested call inside
+  // JSON.parse(). The 14 target generators all pass a single identifier or
+  // a .trim() chain, neither of which contains (). If that changes, widen
+  // the matcher.
   const m = body.match(
     /JSON\.parse\s*\([^)]*\)\s*((?:\.[A-Za-z_$][\w$]*){2,})\s*\.map\s*\(/
   );

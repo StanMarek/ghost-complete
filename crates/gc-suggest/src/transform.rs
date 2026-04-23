@@ -202,6 +202,12 @@ impl TryFrom<ParameterizedHelper> for ParameterizedTransform {
                         "json_extract_array: split_index requires split_on to be set".to_string(),
                     );
                 }
+                // `str::split("")` has surprising Unicode-boundary semantics
+                // (emits a token between every char cluster) and will never
+                // do what a spec author intended. Reject at load time.
+                if matches!(split_on.as_deref(), Some("")) {
+                    return Err("json_extract_array: split_on must not be empty".to_string());
+                }
                 ParameterizedTransform::JsonExtractArray {
                     path,
                     item_name,
@@ -283,6 +289,7 @@ pub fn validate_pipeline(transforms: &[Transform]) -> Result<(), String> {
 
     let mut seen_split = false;
     let mut split_count = 0;
+    let mut json_array_count = 0;
 
     for (i, t) in transforms.iter().enumerate() {
         let name = transform_name(t);
@@ -290,7 +297,8 @@ pub fn validate_pipeline(transforms: &[Transform]) -> Result<(), String> {
         // json_extract_array is a standalone terminal transform that operates
         // on the raw output — it must not be combined with split_lines/split_on
         // (those would pre-split the JSON into unparseable fragments) and
-        // must appear at most once.
+        // must appear at most once (a second entry would silently overwrite
+        // the first's suggestions at runtime).
         let is_json_array = matches!(
             t,
             Transform::Parameterized(ParameterizedTransform::JsonExtractArray { .. })
@@ -301,6 +309,14 @@ pub fn validate_pipeline(transforms: &[Transform]) -> Result<(), String> {
                     "json_extract_array at position {i} appears after a split transform; \
                      json_extract_array consumes the raw output directly and cannot follow split_lines/split_on"
                 ));
+            }
+            json_array_count += 1;
+            if json_array_count > 1 {
+                return Err(
+                    "transform pipeline has multiple json_extract_array transforms; \
+                     only one is allowed"
+                        .to_string(),
+                );
             }
             continue;
         }
@@ -603,7 +619,10 @@ pub fn execute_pipeline(output: &str, transforms: &[Transform]) -> Result<Vec<Su
         if lines.is_none() {
             *lines = Some(vec![std::mem::take(current_output)]);
         }
-        lines.as_mut().unwrap()
+        // Invariant: the branch above guarantees `Some`. Use `.expect` with a
+        // descriptive message so a future refactor that breaks the invariant
+        // produces an actionable panic instead of a bare unwrap.
+        lines.as_mut().expect("lines just initialized above")
     }
 
     for transform in transforms {
@@ -968,6 +987,23 @@ mod tests {
         )
         .unwrap_err();
         assert!(err.to_string().contains("split_on"));
+    }
+
+    #[test]
+    fn test_json_extract_array_empty_split_on_rejected() {
+        // `str::split("")` has surprising Unicode-boundary semantics. A spec
+        // author writing `"split_on": ""` is ~always wrong — reject at load
+        // time with an actionable message rather than producing weird
+        // completions at runtime.
+        let err = serde_json::from_str::<Transform>(
+            r#"{"type": "json_extract_array", "path": "a.b", "split_on": ""}"#,
+        )
+        .unwrap_err();
+        let msg = err.to_string();
+        assert!(
+            msg.contains("split_on must not be empty"),
+            "error should mention the empty split_on: {msg}"
+        );
     }
 
     #[test]
@@ -1451,6 +1487,21 @@ mod tests {
         assert!(
             err.contains("json_extract_array"),
             "error must mention the offending transform: {err}"
+        );
+    }
+
+    #[test]
+    fn test_multiple_json_extract_array_invalid() {
+        // Two json_extract_array transforms in one pipeline would silently
+        // overwrite the first's suggestions at runtime. Reject at load time.
+        let pipeline: Vec<Transform> = serde_json::from_str(
+            r#"[{"type": "json_extract_array", "path": "a.b"}, {"type": "json_extract_array", "path": "c.d"}]"#,
+        )
+        .unwrap();
+        let err = validate_pipeline(&pipeline).unwrap_err();
+        assert!(
+            err.contains("multiple json_extract_array"),
+            "error should mention multiple json_extract_array: {err}"
         );
     }
 
