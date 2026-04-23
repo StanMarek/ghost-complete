@@ -4,6 +4,7 @@ use regex::Regex;
 use serde::de::{self, MapAccess, Visitor};
 use serde::Deserialize;
 
+use crate::json_path::JsonPath;
 use crate::types::{Suggestion, SuggestionSource};
 
 /// A single transform step in a pipeline that processes raw generator output
@@ -51,8 +52,22 @@ pub enum ParameterizedTransform {
         description: Option<usize>,
     },
     JsonExtract {
-        name: String,
-        description: Option<String>,
+        name: JsonPath,
+        description: Option<JsonPath>,
+    },
+    /// Terminal transform: parse the ENTIRE raw output as JSON, walk `path`
+    /// to an array, then emit one suggestion per array element.
+    ///
+    /// Each element is treated as a string unless `item_name` is supplied,
+    /// in which case it's looked up inside the element. An optional
+    /// `split_on` + `split_index` applies a final per-element split/pick
+    /// (covers the scarb `n.split(" ")[0]` pattern from `@withfig` specs).
+    JsonExtractArray {
+        path: JsonPath,
+        item_name: Option<JsonPath>,
+        item_description: Option<JsonPath>,
+        split_on: Option<String>,
+        split_index: Option<usize>,
     },
     ColumnExtract {
         column: usize,
@@ -77,6 +92,7 @@ pub fn transform_name(t: &Transform) -> &'static str {
             ParameterizedTransform::ErrorGuard { .. } => "error_guard",
             ParameterizedTransform::RegexExtract { .. } => "regex_extract",
             ParameterizedTransform::JsonExtract { .. } => "json_extract",
+            ParameterizedTransform::JsonExtractArray { .. } => "json_extract_array",
             ParameterizedTransform::ColumnExtract { .. } => "column_extract",
         },
     }
@@ -119,8 +135,16 @@ enum ParameterizedHelper {
     },
     #[serde(rename = "json_extract")]
     JsonExtract {
-        name: String,
-        description: Option<String>,
+        name: JsonPath,
+        description: Option<JsonPath>,
+    },
+    #[serde(rename = "json_extract_array")]
+    JsonExtractArray {
+        path: JsonPath,
+        item_name: Option<JsonPath>,
+        item_description: Option<JsonPath>,
+        split_on: Option<String>,
+        split_index: Option<usize>,
     },
     #[serde(rename = "column_extract")]
     ColumnExtract {
@@ -165,6 +189,26 @@ impl TryFrom<ParameterizedHelper> for ParameterizedTransform {
             }
             ParameterizedHelper::JsonExtract { name, description } => {
                 ParameterizedTransform::JsonExtract { name, description }
+            }
+            ParameterizedHelper::JsonExtractArray {
+                path,
+                item_name,
+                item_description,
+                split_on,
+                split_index,
+            } => {
+                if split_index.is_some() && split_on.is_none() {
+                    return Err(
+                        "json_extract_array: split_index requires split_on to be set".to_string(),
+                    );
+                }
+                ParameterizedTransform::JsonExtractArray {
+                    path,
+                    item_name,
+                    item_description,
+                    split_on,
+                    split_index,
+                }
             }
             ParameterizedHelper::ColumnExtract {
                 column,
@@ -242,6 +286,24 @@ pub fn validate_pipeline(transforms: &[Transform]) -> Result<(), String> {
 
     for (i, t) in transforms.iter().enumerate() {
         let name = transform_name(t);
+
+        // json_extract_array is a standalone terminal transform that operates
+        // on the raw output — it must not be combined with split_lines/split_on
+        // (those would pre-split the JSON into unparseable fragments) and
+        // must appear at most once.
+        let is_json_array = matches!(
+            t,
+            Transform::Parameterized(ParameterizedTransform::JsonExtractArray { .. })
+        );
+        if is_json_array {
+            if seen_split {
+                return Err(format!(
+                    "json_extract_array at position {i} appears after a split transform; \
+                     json_extract_array consumes the raw output directly and cannot follow split_lines/split_on"
+                ));
+            }
+            continue;
+        }
 
         // Check split transforms
         let is_split = matches!(
@@ -410,23 +472,23 @@ pub fn apply_regex_extract(
         .collect()
 }
 
-/// Parse each line as JSON and extract fields by top-level key name.
-/// Strips `$.` prefix from paths if present (simplified JSONPath).
+/// Parse each line as JSON and extract fields by dotted path.
+///
+/// A flat single-segment path (e.g. `"Name"`) is equivalent to a top-level
+/// `obj.get("Name")` and preserves back-compat with the prior flat-field
+/// behaviour. Nested paths like `foo.bar.baz` walk into the object.
 pub fn apply_json_extract(
     lines: &[String],
-    name_path: &str,
-    desc_path: Option<&str>,
+    name_path: &JsonPath,
+    desc_path: Option<&JsonPath>,
 ) -> Vec<Suggestion> {
-    let name_key = name_path.strip_prefix("$.").unwrap_or(name_path);
-    let desc_key = desc_path.map(|p| p.strip_prefix("$.").unwrap_or(p));
-
     lines
         .iter()
         .filter_map(|line| {
             let obj: serde_json::Value = serde_json::from_str(line).ok()?;
-            let text = obj.get(name_key)?.as_str()?.to_string();
+            let text = name_path.lookup(&obj)?.as_str()?.to_string();
             let description =
-                desc_key.and_then(|dk| obj.get(dk).and_then(|v| v.as_str()).map(String::from));
+                desc_path.and_then(|dp| dp.lookup(&obj).and_then(|v| v.as_str()).map(String::from));
             Some(Suggestion {
                 text,
                 description,
@@ -435,6 +497,67 @@ pub fn apply_json_extract(
             })
         })
         .collect()
+}
+
+/// Parse the ENTIRE raw output as a single JSON blob, walk `path` to an array,
+/// and emit one suggestion per element. Used for Fig patterns like
+/// `JSON.parse(out).foo.bar.map(e => ({name: e}))` where the data hangs off a
+/// dotted path and is NOT newline-delimited.
+///
+/// Element-to-text rules:
+/// - If `item_name` is `Some`, look it up on each element (object shape).
+/// - Else, treat the element itself as the value:
+///     * string elements → use as-is
+///     * primitive elements (number/bool) → stringified
+/// - If `split_on` is set, apply `split(split_on)[split_index]` to the text
+///   (default index = 0). Mirrors the `.split(" ")[0]` pattern common in
+///   `@withfig/autocomplete` generators.
+pub fn apply_json_extract_array(
+    raw_output: &str,
+    path: &JsonPath,
+    item_name: Option<&JsonPath>,
+    item_description: Option<&JsonPath>,
+    split_on: Option<&str>,
+    split_index: Option<usize>,
+) -> Vec<Suggestion> {
+    let root: serde_json::Value = match serde_json::from_str(raw_output) {
+        Ok(v) => v,
+        Err(_) => return Vec::new(),
+    };
+    let Some(arr) = path.lookup(&root).and_then(|v| v.as_array()) else {
+        return Vec::new();
+    };
+    let idx = split_index.unwrap_or(0);
+
+    arr.iter()
+        .filter_map(|el| {
+            let raw_text = match item_name {
+                Some(p) => p.lookup(el).and_then(value_to_text)?,
+                None => value_to_text(el)?,
+            };
+            let text = match split_on {
+                Some(sep) => raw_text.split(sep).nth(idx)?.to_string(),
+                None => raw_text,
+            };
+            let description = item_description
+                .and_then(|p| p.lookup(el).and_then(|v| v.as_str()).map(String::from));
+            Some(Suggestion {
+                text,
+                description,
+                source: SuggestionSource::Script,
+                ..Default::default()
+            })
+        })
+        .collect()
+}
+
+fn value_to_text(v: &serde_json::Value) -> Option<String> {
+    match v {
+        serde_json::Value::String(s) => Some(s.clone()),
+        serde_json::Value::Number(n) => Some(n.to_string()),
+        serde_json::Value::Bool(b) => Some(b.to_string()),
+        _ => None,
+    }
 }
 
 /// Split each line by whitespace and extract columns by index.
@@ -559,7 +682,26 @@ pub fn execute_pipeline(output: &str, transforms: &[Transform]) -> Result<Vec<Su
             }
             Transform::Parameterized(ParameterizedTransform::JsonExtract { name, description }) => {
                 let l = ensure_lines(&mut lines, &mut current_output);
-                suggestions = Some(apply_json_extract(l, name, description.as_deref()));
+                suggestions = Some(apply_json_extract(l, name, description.as_ref()));
+            }
+            Transform::Parameterized(ParameterizedTransform::JsonExtractArray {
+                path,
+                item_name,
+                item_description,
+                split_on,
+                split_index,
+            }) => {
+                // Terminal transform on the raw output. `validate_pipeline`
+                // rejects any prior split, so `current_output` still holds
+                // the full blob here.
+                suggestions = Some(apply_json_extract_array(
+                    &current_output,
+                    path,
+                    item_name.as_ref(),
+                    item_description.as_ref(),
+                    split_on.as_deref(),
+                    *split_index,
+                ));
             }
             Transform::Parameterized(ParameterizedTransform::ColumnExtract {
                 column,
@@ -742,11 +884,90 @@ mod tests {
         .unwrap();
         match t {
             Transform::Parameterized(ParameterizedTransform::JsonExtract { name, description }) => {
-                assert_eq!(name, "name");
-                assert_eq!(description.as_deref(), Some("desc"));
+                assert!(name.is_flat());
+                assert!(description.is_some());
             }
             other => panic!("expected JsonExtract, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn test_deserialize_json_extract_dotted_path() {
+        // Nested dotted paths must round-trip through the Deserialize impl
+        // so spec authors can describe data structures like {"foo": {"bar": "x"}}.
+        let t: Transform =
+            serde_json::from_str(r#"{"type": "json_extract", "name": "foo.bar"}"#).unwrap();
+        match t {
+            Transform::Parameterized(ParameterizedTransform::JsonExtract { name, .. }) => {
+                assert!(!name.is_flat());
+            }
+            other => panic!("expected JsonExtract, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_deserialize_json_extract_invalid_path_fails() {
+        // A malformed path (trailing dot) must surface as a spec-load error,
+        // not as silent runtime no-op behaviour.
+        let err = serde_json::from_str::<Transform>(r#"{"type": "json_extract", "name": "foo."}"#)
+            .unwrap_err();
+        let msg = err.to_string();
+        assert!(
+            msg.contains("trailing"),
+            "error should mention trailing dot: {msg}"
+        );
+    }
+
+    #[test]
+    fn test_deserialize_json_extract_array() {
+        let t: Transform =
+            serde_json::from_str(r#"{"type": "json_extract_array", "path": "project.schemes"}"#)
+                .unwrap();
+        match t {
+            Transform::Parameterized(ParameterizedTransform::JsonExtractArray {
+                path,
+                item_name,
+                split_on,
+                split_index,
+                ..
+            }) => {
+                assert!(!path.is_flat());
+                assert!(item_name.is_none());
+                assert!(split_on.is_none());
+                assert!(split_index.is_none());
+            }
+            other => panic!("expected JsonExtractArray, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_deserialize_json_extract_array_with_split() {
+        let t: Transform = serde_json::from_str(
+            r#"{"type": "json_extract_array", "path": "workspace.members", "split_on": " ", "split_index": 0}"#,
+        )
+        .unwrap();
+        match t {
+            Transform::Parameterized(ParameterizedTransform::JsonExtractArray {
+                split_on,
+                split_index,
+                ..
+            }) => {
+                assert_eq!(split_on.as_deref(), Some(" "));
+                assert_eq!(split_index, Some(0));
+            }
+            other => panic!("expected JsonExtractArray, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_deserialize_json_extract_array_split_index_without_split_on_fails() {
+        // Config error: split_index is meaningless without split_on. Reject
+        // at spec-load rather than silently ignoring.
+        let err = serde_json::from_str::<Transform>(
+            r#"{"type": "json_extract_array", "path": "a.b", "split_index": 2}"#,
+        )
+        .unwrap_err();
+        assert!(err.to_string().contains("split_on"));
     }
 
     #[test]
@@ -1038,7 +1259,9 @@ mod tests {
             r#"{"Name":"nginx","Status":"running"}"#.into(),
             r#"{"Name":"redis","Status":"stopped"}"#.into(),
         ];
-        let result = apply_json_extract(&lines, "Name", Some("Status"));
+        let name = JsonPath::parse("Name").unwrap();
+        let desc = JsonPath::parse("Status").unwrap();
+        let result = apply_json_extract(&lines, &name, Some(&desc));
         assert_eq!(result.len(), 2);
         assert_eq!(result[0].text, "nginx");
         assert_eq!(result[0].description.as_deref(), Some("running"));
@@ -1047,9 +1270,76 @@ mod tests {
     #[test]
     fn test_json_extract_with_dollar_prefix() {
         let lines = vec![r#"{"Name":"test"}"#.into()];
-        let result = apply_json_extract(&lines, "$.Name", None);
+        let name = JsonPath::parse("$.Name").unwrap();
+        let result = apply_json_extract(&lines, &name, None);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].text, "test");
+    }
+
+    #[test]
+    fn test_json_extract_nested_path() {
+        // Dotted path should walk into nested objects on a per-line basis.
+        let lines = vec![
+            r#"{"meta":{"name":"nginx","status":"running"}}"#.into(),
+            r#"{"meta":{"name":"redis","status":"stopped"}}"#.into(),
+        ];
+        let name = JsonPath::parse("meta.name").unwrap();
+        let desc = JsonPath::parse("meta.status").unwrap();
+        let result = apply_json_extract(&lines, &name, Some(&desc));
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].text, "nginx");
+        assert_eq!(result[0].description.as_deref(), Some("running"));
+    }
+
+    #[test]
+    fn test_json_extract_array_strings() {
+        // parse-map-6 shape: dotted path lands on an array of strings
+        // and each element becomes a suggestion text.
+        let raw = r#"{"project":{"schemes":["Debug","Release","Staging"]}}"#;
+        let path = JsonPath::parse("project.schemes").unwrap();
+        let result = apply_json_extract_array(raw, &path, None, None, None, None);
+        assert_eq!(result.len(), 3);
+        assert_eq!(result[0].text, "Debug");
+        assert_eq!(result[2].text, "Staging");
+    }
+
+    #[test]
+    fn test_json_extract_array_with_item_name() {
+        // If elements are objects, item_name picks the field to emit.
+        let raw = r#"{"items":[{"id":"a","label":"Alpha"},{"id":"b","label":"Beta"}]}"#;
+        let path = JsonPath::parse("items").unwrap();
+        let item_name = JsonPath::parse("label").unwrap();
+        let result = apply_json_extract_array(raw, &path, Some(&item_name), None, None, None);
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].text, "Alpha");
+        assert_eq!(result[1].text, "Beta");
+    }
+
+    #[test]
+    fn test_json_extract_array_with_split() {
+        // parse-map-split shape: string element needs `.split(" ")[0]` to
+        // trim off the version suffix.
+        let raw = r#"{"workspace":{"members":["pkg_a 0.1.0","pkg_b 2.3.4"]}}"#;
+        let path = JsonPath::parse("workspace.members").unwrap();
+        let result = apply_json_extract_array(raw, &path, None, None, Some(" "), Some(0));
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].text, "pkg_a");
+        assert_eq!(result[1].text, "pkg_b");
+    }
+
+    #[test]
+    fn test_json_extract_array_missing_path_returns_empty() {
+        let raw = r#"{"other":{"members":[]}}"#;
+        let path = JsonPath::parse("workspace.members").unwrap();
+        let result = apply_json_extract_array(raw, &path, None, None, None, None);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_json_extract_array_invalid_json_returns_empty() {
+        let path = JsonPath::parse("foo").unwrap();
+        let result = apply_json_extract_array("not json at all", &path, None, None, None, None);
+        assert!(result.is_empty());
     }
 
     #[test]
@@ -1124,6 +1414,44 @@ mod tests {
         let result = execute_pipeline(output, &transforms).unwrap();
         assert_eq!(result.len(), 2);
         assert_eq!(result[0].text, "nginx");
+    }
+
+    #[test]
+    fn test_execute_pipeline_json_extract_array() {
+        let transforms: Vec<Transform> =
+            serde_json::from_str(r#"[{"type": "json_extract_array", "path": "project.schemes"}]"#)
+                .unwrap();
+        let output = r#"{"project":{"schemes":["Debug","Release"]}}"#;
+        let result = execute_pipeline(output, &transforms).unwrap();
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].text, "Debug");
+        assert_eq!(result[1].text, "Release");
+    }
+
+    #[test]
+    fn test_execute_pipeline_json_extract_array_with_split() {
+        let transforms: Vec<Transform> = serde_json::from_str(
+            r#"[{"type": "json_extract_array", "path": "workspace.members", "split_on": " ", "split_index": 0}]"#,
+        )
+        .unwrap();
+        let output = r#"{"workspace":{"members":["alpha 1.0.0","beta 2.0.0"]}}"#;
+        let result = execute_pipeline(output, &transforms).unwrap();
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].text, "alpha");
+        assert_eq!(result[1].text, "beta");
+    }
+
+    #[test]
+    fn test_validate_pipeline_rejects_json_extract_array_after_split() {
+        let pipeline: Vec<Transform> = serde_json::from_str(
+            r#"["split_lines", {"type": "json_extract_array", "path": "a.b"}]"#,
+        )
+        .unwrap();
+        let err = validate_pipeline(&pipeline).unwrap_err();
+        assert!(
+            err.contains("json_extract_array"),
+            "error must mention the offending transform: {err}"
+        );
     }
 
     #[test]
