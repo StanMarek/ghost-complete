@@ -27,6 +27,49 @@ silently changed behaviour.
 `git.json` and `cd.json` have related deferred work tracked in
 `docs/phase-minus-1-followups.md`.
 
+### Added
+
+- **`ghost-complete status --json`** — emits a structured JSON report with
+  `schema_version`, `spec_counts`, and `coverage_trend` (nullable). Suppresses
+  the human-readable output when present. Adds `--baseline <path>` for
+  overriding the default `docs/coverage-baseline.json` lookup.
+- **Coverage baseline (`docs/coverage-baseline.json`)** — committed JSON file
+  tracking per-release coverage numbers. Populated at each release per the
+  process documented in `docs/SPECS.md`. `ghost-complete status` now prints
+  a "Coverage trend" section sourced from this file.
+- **`ghost-complete validate-specs --json`** — newline-delimited JSON output
+  with one object per spec plus a trailing `{"summary":{...}}` row. Designed
+  for `jq 'select(.ok == false)'` filtering.
+- **Dotted-path `json_extract` / `json_extract_array` transform** — the spec
+  converter now recognises `JSON.parse(x).foo.bar.map(...)` patterns and emits
+  declarative `json_extract_array` transforms with dotted-path lookups, nested
+  indices, and bracketed-key syntax (`foo['bar'].baz`). 14 generators across
+  `expo`, `expo-cli`, `pnpx`, `react-native`, and `scarb` converted from
+  `requires_js` to native transforms.
+- **`suffix` transform** — appends a fixed literal to each suggestion's text.
+  Modelled on Fig's `{name: \`${x}=\`}` template-literal pattern. Used to
+  hand-port `docker service scale` from `requires_js` to a declarative
+  pipeline.
+- **`docs/SPECS.md`** — conversion pipeline reference, hand-port vs converter
+  extension guide, and the `_corrected_in` lifecycle doc.
+
+### Changed
+
+- **`ghost-complete status`** output now includes a "Coverage trend (vs
+  previous release)" section at the end. Renders `(baseline)` for single-row
+  bootstrap, `(unchanged)` when a metric matches the previous release
+  exactly, and signed `(+N)` / `(-N)` deltas otherwise. When the positive
+  delta on `native_providers` equals 8 exactly, the `fully_functional` line
+  gains a `(+8 from Phase 3A)` annotation so readers can tie the jump back
+  to its source.
+
+### Fixed
+
+- **`docker service scale` completions** — hand-ported to a declarative
+  pipeline; the trailing `=` (required by `docker service scale SERVICE=N`
+  syntax) is now produced by the `suffix` transform. Previously surfaced as
+  `requires_js` and did not complete.
+
 ## [0.9.1] - 2026-04-20
 
 ### Fixed
