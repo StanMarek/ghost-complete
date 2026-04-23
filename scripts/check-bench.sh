@@ -107,6 +107,15 @@ if [[ ! -f "$BASELINE_FILE" ]]; then
 fi
 
 if [[ ! -d "$CRITERION_DIR" ]]; then
+    if [[ "${CI:-}" == "true" ]]; then
+        # Hard-fail in CI: if this gate runs without criterion output, the
+        # workflow forgot to run `cargo bench` (or to install a toolchain)
+        # before invoking this script. Silently exiting 0 here would make the
+        # gate unconditionally green.
+        printf 'error: no benchmark data found (%s) and $CI=true — did the workflow run `cargo bench` before invoking check-bench.sh?\n' \
+            "$CRITERION_DIR" >&2
+        exit 2
+    fi
     printf 'warning: no benchmark data found (%s) — run `cargo bench` first\n' \
         "$CRITERION_DIR" >&2
     exit 0
