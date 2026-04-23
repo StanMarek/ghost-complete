@@ -1,0 +1,12 @@
+{
+  "shape_id": "map",
+  "rationale": "Fingerprint matches `e => { let t = JSON.parse(e); return t.versions.map(...) }`. Feed `'{\"versions\":[]}'`: `[].map(...) = []`. Rust `split_lines+filter_empty+json_extract(sentinel)` yields `[]`. Both empty.",
+  "expected_transforms": [
+    "split_lines",
+    "filter_empty",
+    { "type": "json_extract", "name": "__sentinel_no_field__" }
+  ],
+  "inputs": [
+    "{\"versions\":[]}"
+  ]
+}

@@ -30,14 +30,20 @@
             "description": "Packages to run this command on, can be a concrete package name (`foobar`) or a prefix glob (`foo*`) [default: *]",
             "generators": [
               {
-                "js_source": "function(e){return JSON.parse(e).workspace.members.map(n=>n.split(\" \")[0])}",
-                "requires_js": true,
                 "script": [
                   "scarb",
                   "metadata",
                   "--format-version",
                   "1",
                   "--no-deps"
+                ],
+                "transforms": [
+                  {
+                    "path": "workspace.members",
+                    "split_index": 0,
+                    "split_on": " ",
+                    "type": "json_extract_array"
+                  }
                 ]
               }
             ],
@@ -137,14 +143,20 @@
             "description": "Packages to run this command on, can be a concrete package name (`foobar`) or a prefix glob (`foo*`) [default: *]",
             "generators": [
               {
-                "js_source": "function(e){return JSON.parse(e).workspace.members.map(n=>n.split(\" \")[0])}",
-                "requires_js": true,
                 "script": [
                   "scarb",
                   "metadata",
                   "--format-version",
                   "1",
                   "--no-deps"
+                ],
+                "transforms": [
+                  {
+                    "path": "workspace.members",
+                    "split_index": 0,
+                    "split_on": " ",
+                    "type": "json_extract_array"
+                  }
                 ]
               }
             ],
@@ -195,14 +207,20 @@
             "description": "Packages to run this command on, can be a concrete package name (`foobar`) or a prefix glob (`foo*`) [default: *]",
             "generators": [
               {
-                "js_source": "function(e){return JSON.parse(e).workspace.members.map(n=>n.split(\" \")[0])}",
-                "requires_js": true,
                 "script": [
                   "scarb",
                   "metadata",
                   "--format-version",
                   "1",
                   "--no-deps"
+                ],
+                "transforms": [
+                  {
+                    "path": "workspace.members",
+                    "split_index": 0,
+                    "split_on": " ",
+                    "type": "json_extract_array"
+                  }
                 ]
               }
             ],
@@ -441,14 +459,20 @@
             "description": "Packages to run this command on, can be a concrete package name (`foobar`) or a prefix glob (`foo*`) [default: *]",
             "generators": [
               {
-                "js_source": "function(e){return JSON.parse(e).workspace.members.map(n=>n.split(\" \")[0])}",
-                "requires_js": true,
                 "script": [
                   "scarb",
                   "metadata",
                   "--format-version",
                   "1",
                   "--no-deps"
+                ],
+                "transforms": [
+                  {
+                    "path": "workspace.members",
+                    "split_index": 0,
+                    "split_on": " ",
+                    "type": "json_extract_array"
+                  }
                 ]
               }
             ],
@@ -662,14 +686,20 @@
             "description": "Packages to run this command on, can be a concrete package name (`foobar`) or a prefix glob (`foo*`) [default: *]",
             "generators": [
               {
-                "js_source": "function(e){return JSON.parse(e).workspace.members.map(n=>n.split(\" \")[0])}",
-                "requires_js": true,
                 "script": [
                   "scarb",
                   "metadata",
                   "--format-version",
                   "1",
                   "--no-deps"
+                ],
+                "transforms": [
+                  {
+                    "path": "workspace.members",
+                    "split_index": 0,
+                    "split_on": " ",
+                    "type": "json_extract_array"
+                  }
                 ]
               }
             ],
@@ -771,14 +801,20 @@
             "description": "Packages to run this command on, can be a concrete package name (`foobar`) or a prefix glob (`foo*`) [default: *]",
             "generators": [
               {
-                "js_source": "function(e){return JSON.parse(e).workspace.members.map(n=>n.split(\" \")[0])}",
-                "requires_js": true,
                 "script": [
                   "scarb",
                   "metadata",
                   "--format-version",
                   "1",
                   "--no-deps"
+                ],
+                "transforms": [
+                  {
+                    "path": "workspace.members",
+                    "split_index": 0,
+                    "split_on": " ",
+                    "type": "json_extract_array"
+                  }
                 ]
               }
             ],

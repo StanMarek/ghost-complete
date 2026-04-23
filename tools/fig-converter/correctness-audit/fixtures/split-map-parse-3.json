@@ -1,0 +1,12 @@
+{
+  "shape_id": "split-map-parse-3",
+  "rationale": "Same strategy as `split-map-parse`: both docker image generators pick name from `i.ID`. Feed one line with every plausible field set to the same string; Rust `json_extract(\"ID\")` matches.",
+  "expected_transforms": [
+    "split_lines",
+    "filter_empty",
+    { "type": "json_extract", "name": "ID" }
+  ],
+  "inputs": [
+    "{\"ID\":\"item1\",\"Id\":\"item1\",\"id\":\"item1\",\"Name\":\"item1\",\"name\":\"item1\",\"Repository\":\"item1\",\"repository\":\"item1\",\"Image\":\"img\",\"Tag\":\"<none>\",\"tag\":\"<none>\"}"
+  ]
+}

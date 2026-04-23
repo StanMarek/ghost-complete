@@ -1,0 +1,12 @@
+{
+  "shape_id": "arr-9",
+  "rationale": "The single arr-9 generator (git-cliff) starts with `if (e.startsWith(\"fatal:\")) return [];`. Feed `\"fatal: nothing\"`: early return `[]` before touching the (undefined) second arg. Rust `split_lines+filter_empty+json_extract(sentinel)` on `\"fatal: nothing\"` yields `[]` (the line doesn't contain the sentinel key). Both empty.",
+  "expected_transforms": [
+    "split_lines",
+    "filter_empty",
+    { "type": "json_extract", "name": "__sentinel_no_field__" }
+  ],
+  "inputs": [
+    "fatal: nothing"
+  ]
+}

@@ -1,8 +1,8 @@
-# CI Gates — Phase 0.5
+# CI Gates
 
 ## Overview
 
-Phase 0.5 introduces four CI gates to prevent regressions during the requires-js-specs work. The gates enforce binary size budgets, spec snapshot consistency, fig-converter correctness, and benchmark performance. They are wired into `.github/workflows/ci.yml` via `needs:` dependencies, which controls **ordering within a workflow run** — i.e. a gate waits for its prerequisite jobs before it starts. That is a separate concern from **branch protection**, which is what blocks the GitHub merge button on a PR. A repo admin must explicitly configure the four status checks as required in GitHub's branch-protection settings (see [Branch-protection configuration](#branch-protection-configuration) below). Without that step, the gates run and report results but cannot block a merge.
+Five CI gates live in `.github/workflows/ci.yml`. Four were introduced in Phase 0.5 (binary size, snapshot diff, fig-converter oracle, bench regression); a fifth (coverage baseline drift) was added in Phase 4. The gates are wired via `needs:` dependencies, which controls **ordering within a workflow run** — i.e. a gate waits for its prerequisite jobs before it starts. That is a separate concern from **branch protection**, which is what blocks the GitHub merge button on a PR. A repo admin must explicitly configure each status check as required in GitHub's branch-protection settings (see [Branch-protection configuration](#branch-protection-configuration) below). Without that step, the gates run and report results but cannot block a merge.
 
 ---
 
@@ -21,8 +21,10 @@ Phase 0.5 introduces four CI gates to prevent regressions during the requires-js
 
 **Failure modes:**
 
-- Absolute ceiling failure: binary size exceeds 30 MB. CI shows red. This is intentional — the gate is meant to stay red until the binary is actually shrunk to the target, so the goal is not quietly forgotten.
+- Absolute ceiling failure: binary size exceeds 30 MB.
 - Delta budget failure: binary grew by more than `PHASE_BUDGET` since the baseline was recorded.
+
+**Status today:** production-live. Currently **FAILS** on the absolute-ceiling check (binary ~47 MB, target 30 MB). This is intentional per the plan — the gate stays red until Phase 4 (G.8) brings the binary under budget. Admin decision pending: add to branch protection AFTER the binary reaches ≤30 MB.
 
 **How to debug locally:**
 
@@ -50,7 +52,7 @@ du -b target/release/ghost-complete > benchmarks/binary-size-baseline.txt
 
 **Failure modes:** diff found between a spec file and its snapshot.
 
-**Status today:** `specs/__snapshots__/` does not exist yet — it lands in session D of Phase 0. Until then, `scripts/check-snapshots.sh` detects the missing directory, emits a warning, and exits 0. The gate does not block anything.
+**Status today:** production-live. `specs/__snapshots__/` is populated (709 snapshots). `scripts/check-snapshots.sh` runs on every CI build.
 
 **How to debug locally:**
 
@@ -70,7 +72,7 @@ scripts/check-snapshots.sh
 
 **Failure modes:** oracle reports a mismatch between JS and Rust outputs for any changed converter path.
 
-**Status today:** the `oracle:changed` npm script in `tools/fig-converter/package.json` is a stub that exits 0 with "not yet implemented". Real oracle output lands in Phase 0 (Session A downstream).
+**Status today:** production-live. Runs on PRs that change `tools/fig-converter/` files. Pass rate: see [`tools/fig-converter/docs/oracle-results.md`](../tools/fig-converter/docs/oracle-results.md).
 
 **How to debug locally:**
 
@@ -90,7 +92,7 @@ cd tools/fig-converter && npm run oracle:changed
 
 **Failure modes:** a benchmark's mean is more than 10% slower than its recorded baseline value.
 
-**Status today:** `scripts/check-bench.sh` is a stub. The baseline file (`benchmarks/baseline-pre-js-port.md`) does not exist yet — it lands in Phase 0.4. Until then the script exits 0 with a warning. The gate does not block anything.
+**Status today:** production-live. Compares against [`benchmarks/baseline-pre-js-port.json`](../benchmarks/baseline-pre-js-port.json). Fails if any group regresses >10%.
 
 **How to debug locally:**
 
@@ -101,6 +103,30 @@ scripts/check-bench.sh --threshold 10
 
 ---
 
+### Coverage baseline drift
+
+**Job name in CI:** `Coverage baseline drift`
+**YAML key:** `coverage-baseline-drift`
+**Trigger:** runs on pushes to `master` and on PRs whose base branch is `master` or `main`. Feature-branch pushes are skipped entirely — the gate only cares about what's landing on trunk. No `needs:` dependency; runs in parallel with other gates.
+
+**Purpose:** reminds maintainers to refresh `docs/coverage-baseline.json` when it goes stale. The baseline powers the spec-coverage numbers reported in `ghost-complete status --json` and the `docs/SPECS.md` rollup. Release cadence is roughly monthly; "two releases old" is ~60–90 days; 120 days gives a comfortable buffer before the gate nags.
+
+**Failure modes:** this gate is **NON-FAILING by design**. It always exits 0. When the latest `docs/coverage-baseline.json` release row's `timestamp` is more than 120 days in the past, the job emits a GitHub Actions `::warning::` annotation in the job log (visible in the PR checks panel). The annotation is the only signal — the check itself reports green.
+
+Because it never fails, this job **must not** be added to branch protection. Its purpose is informational drift detection, not gatekeeping.
+
+**How to debug locally:**
+
+```bash
+scripts/check-coverage-baseline-drift.sh              # prints "ok: ... days old" or a ::warning:: line
+scripts/check-coverage-baseline-drift.sh --quiet      # suppresses the "ok" line
+scripts/check-coverage-baseline-drift.sh --threshold 30  # tighten the threshold to simulate drift
+```
+
+To refresh the baseline: run `ghost-complete status --json` and follow the process in [`docs/SPECS.md`](./SPECS.md).
+
+---
+
 ## Branch-protection configuration
 
 These steps require repo admin access. Without them the gates run but **do not block merge**.
@@ -108,30 +134,22 @@ These steps require repo admin access. Without them the gates run but **do not b
 1. Go to <https://github.com/StanMarek/ghost-complete/settings/branches>.
 2. Edit the branch protection rule for `master`, or create one if none exists.
 3. Enable **"Require status checks to pass before merging"**.
-4. In the status check search box, add the following checks by their **exact names** (these are the human-readable `name:` values from the CI YAML, not the YAML job keys):
-   - `Snapshot diff gate`
-   - `Oracle gate (fig-converter)`
-   - `Bench regression gate`
-   - `Binary size gate` — **DELAY adding this one.** The absolute-ceiling check currently fails red (binary is ~47 MB, ceiling is 30 MB). Requiring this check today blocks every PR. Add it only after the requires-js-specs work shrinks the binary below 30 MB. In the meantime the gate still runs and reports red, keeping the goal visible.
+4. In the status check search box, add the checks listed as "Ready to add" in the table below by their **exact display names** (the human-readable `name:` values from the CI YAML, not the YAML job keys).
 5. Save the rule.
 
-These four checks are added **alongside** any existing required checks (e.g. `Check`, `Test`, `Clippy`, `Format`, `MSRV (1.86)`, `Linux tripwire (compile-check only)`). They replace nothing.
+These checks are added **alongside** any existing required checks (e.g. `Check`, `Test`, `Clippy`, `Format`, `MSRV (1.86)`, `Linux tripwire (compile-check only)`). They replace nothing.
+
+### Readiness table
+
+| Gate | Branch protection status |
+|---|---|
+| `Snapshot diff gate` | Ready to add. |
+| `Oracle gate (fig-converter)` | Ready to add. |
+| `Bench regression gate` | Ready to add. |
+| `Binary size gate` | **NOT READY.** Do not add until Phase 4 G.8 gets the binary ≤30 MB. Adding now would block every PR. |
+| `Coverage baseline drift` | Informational only (non-blocking warning). Do not add to branch protection. |
 
 > **Note on job names vs. YAML keys:** GitHub branch protection displays the `name:` field of each job, not the YAML key. `Binary size gate` (the name) corresponds to `binary-size-gate` (the key). Using the YAML key in the search box will not match.
-
----
-
-## When gates turn into real enforcement
-
-Three of the four gates are currently stubs that exit 0 when their prerequisite artifacts are absent:
-
-| Gate | Activates when | Lands in |
-|------|---------------|----------|
-| `Snapshot diff gate` | `specs/__snapshots__/` directory is created | Phase 0, session D |
-| `Oracle gate (fig-converter)` | Real `oracle:changed` npm script replaces the stub | Phase 0, session A |
-| `Bench regression gate` | `benchmarks/baseline-pre-js-port.md` is committed | Phase 0.4 |
-
-Once all three artifacts exist, the gates enforce for real. The `Binary size gate` is already enforcing the delta budget now (as long as `benchmarks/binary-size-baseline.txt` exists).
 
 ---
 
@@ -150,3 +168,7 @@ No. Required status checks are all-or-nothing. For a legitimate one-off exceptio
 3. Re-add the status check immediately after.
 
 This is an emergency procedure. Document the exception in the PR description and in the relevant plan file.
+
+**"Why is coverage baseline drift non-failing?"**
+
+A stale baseline is a documentation-freshness signal, not a correctness problem. Blocking merges because `docs/coverage-baseline.json` is old would halt unrelated work whenever the maintainer forgets to refresh stats. The warning annotation surfaces the issue in the PR checks panel without stopping the line.

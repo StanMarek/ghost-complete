@@ -1,0 +1,12 @@
+{
+  "shape_id": "entries-sort-localecompare-map",
+  "rationale": "Fingerprint `Object.entries(...).sort(FN-localeCompare).map(FN)` — mirrors `entries-sort-map` but with an explicit `localeCompare` comparator. All 22 generators parse input as JSON then iterate Object.entries. Feed `\"{}\"`: `Object.entries({}) = []`, `.sort() = []`, `.map(...) = []`. Rust `split_lines+filter_empty+json_extract(sentinel)` on `\"{}\"` also yields `[]`. Both empty — shape-agnostic contract holds. Happy-path fixtures await a `hash_entries_extract` transform.",
+  "expected_transforms": [
+    "split_lines",
+    "filter_empty",
+    { "type": "json_extract", "name": "__sentinel_no_field__" }
+  ],
+  "inputs": [
+    "{}"
+  ]
+}

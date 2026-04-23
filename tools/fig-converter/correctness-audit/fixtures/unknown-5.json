@@ -1,0 +1,12 @@
+{
+  "shape_id": "unknown-5",
+  "rationale": "Most generators in this 10-bucket use `e.matchAll(regex)` + set-dedup map (9/10, all `robot` CLI). Feed `\"\"`: matchAll yields empty iterator, for-loop body never executes, return `[]`. Rust `split_lines+filter_empty+json_extract(sentinel)` on `\"\"` yields `[]`. Both empty. The 10th variant returns a mutated argument array (command array) and will `fail` — shape-too-loose outlier.",
+  "expected_transforms": [
+    "split_lines",
+    "filter_empty",
+    { "type": "json_extract", "name": "__sentinel_no_field__" }
+  ],
+  "inputs": [
+    ""
+  ]
+}

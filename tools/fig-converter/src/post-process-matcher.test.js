@@ -245,6 +245,83 @@ describe('matchPostProcess', () => {
     });
   });
 
+  describe('JSON.parse dotted-path array extraction (json_extract_array)', () => {
+    it('matches parse-map-6 shape: .project.schemes.map(e => ({name: e}))', () => {
+      const fn = `t=>JSON.parse(t).project.schemes.map(e=>({name:e}))`;
+      const result = matchPostProcess(fn);
+      assert.equal(result.requires_js, false);
+      assert.equal(result.transforms.length, 1);
+      assert.deepStrictEqual(result.transforms[0], {
+        type: 'json_extract_array',
+        path: 'project.schemes',
+      });
+    });
+
+    it('matches parse-map-6 with different callback param names', () => {
+      const fn = `e=>JSON.parse(e).project.configurations.map(t=>({name:t}))`;
+      const result = matchPostProcess(fn);
+      assert.equal(result.requires_js, false);
+      assert.deepStrictEqual(result.transforms, [
+        { type: 'json_extract_array', path: 'project.configurations' },
+      ]);
+    });
+
+    it('matches parse-map-split shape with split(" ")[0] in callback', () => {
+      const fn = `function(e){return JSON.parse(e).workspace.members.map(n=>n.split(" ")[0])}`;
+      const result = matchPostProcess(fn);
+      assert.equal(result.requires_js, false);
+      assert.deepStrictEqual(result.transforms, [
+        {
+          type: 'json_extract_array',
+          path: 'workspace.members',
+          split_on: ' ',
+          split_index: 0,
+        },
+      ]);
+    });
+
+    it('supports element-sub-field extraction: .map(e => ({name: e.label}))', () => {
+      const fn = `t=>JSON.parse(t).data.items.map(e=>({name:e.label}))`;
+      const result = matchPostProcess(fn);
+      assert.equal(result.requires_js, false);
+      assert.deepStrictEqual(result.transforms, [
+        {
+          type: 'json_extract_array',
+          path: 'data.items',
+          item_name: 'label',
+        },
+      ]);
+    });
+
+    it('emits a terminal pipeline (no split_lines / filter_empty)', () => {
+      // json_extract_array consumes raw output, so it must NOT be
+      // accompanied by split_lines in the pipeline — that would shred the
+      // JSON blob into unparseable fragments.
+      const fn = `t=>JSON.parse(t).project.schemes.map(e=>({name:e}))`;
+      const result = matchPostProcess(fn);
+      assert.ok(!result.transforms.includes('split_lines'));
+      assert.ok(!result.transforms.includes('filter_empty'));
+    });
+
+    it('does NOT match single-segment dotted paths', () => {
+      // Only 2+ segment paths go through json_extract_array. Single-segment
+      // shapes (`.items.map(...)`) either hit other matchers or fall through
+      // to requires_js — we don't want to steal them here.
+      const fn = `t=>JSON.parse(t).items.map(e=>({name:e}))`;
+      const result = matchPostProcess(fn);
+      // No split pattern either → falls through to requires_js.
+      assert.equal(result.requires_js, true);
+    });
+
+    it('does NOT match unknown callback shapes', () => {
+      // `.map(e => complicated_expression)` — we don't know how to extract
+      // from this, must defer.
+      const fn = `t=>JSON.parse(t).a.b.map(e=>doSomething(e))`;
+      const result = matchPostProcess(fn);
+      assert.equal(result.requires_js, true);
+    });
+  });
+
   describe('real-world Fig postProcess functions', () => {
     it('matches typical brew formula list', () => {
       const fn = 'function(a){return a.split(`\n`).map(e=>({name:e,icon:"\\u{1F37A}",description:"Formula",priority:51}))}';

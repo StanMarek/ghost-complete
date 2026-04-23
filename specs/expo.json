@@ -2649,8 +2649,12 @@
                   "-list",
                   "-json"
                 ],
-                "requires_js": true,
-                "js_source": "t=>JSON.parse(t).project.schemes.map(e=>({name:e}))"
+                "transforms": [
+                  {
+                    "type": "json_extract_array",
+                    "path": "project.schemes"
+                  }
+                ]
               }
             ]
           }
@@ -2671,8 +2675,12 @@
                   "-list",
                   "-json"
                 ],
-                "requires_js": true,
-                "js_source": "t=>JSON.parse(t).project.configurations.map(e=>({name:e}))"
+                "transforms": [
+                  {
+                    "type": "json_extract_array",
+                    "path": "project.configurations"
+                  }
+                ]
               }
             ]
           }
