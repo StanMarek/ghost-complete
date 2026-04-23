@@ -10928,14 +10928,25 @@
             "generators": [
               {
                 "_corrected_in": "v0.10.0",
-                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.Name}=`,description:n.Image,icon:\"fig://icon?type=docker\"}))}",
-                "requires_js": true,
                 "script": [
                   "docker",
                   "service",
                   "list",
                   "--format",
                   "{{ json . }}"
+                ],
+                "transform": [
+                  "split_lines",
+                  "filter_empty",
+                  {
+                    "description": "Image",
+                    "name": "Name",
+                    "type": "json_extract"
+                  },
+                  {
+                    "type": "suffix",
+                    "value": "="
+                  }
                 ]
               }
             ],

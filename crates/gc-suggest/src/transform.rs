@@ -73,6 +73,10 @@ pub enum ParameterizedTransform {
         column: usize,
         description_column: Option<usize>,
     },
+    /// Append a fixed literal to each suggestion's text (post-split/post-extract).
+    Suffix {
+        value: String,
+    },
 }
 
 /// Returns the display name of a transform for use in error messages.
@@ -94,6 +98,7 @@ pub fn transform_name(t: &Transform) -> &'static str {
             ParameterizedTransform::JsonExtract { .. } => "json_extract",
             ParameterizedTransform::JsonExtractArray { .. } => "json_extract_array",
             ParameterizedTransform::ColumnExtract { .. } => "column_extract",
+            ParameterizedTransform::Suffix { .. } => "suffix",
         },
     }
 }
@@ -151,6 +156,8 @@ enum ParameterizedHelper {
         column: usize,
         description_column: Option<usize>,
     },
+    #[serde(rename = "suffix")]
+    Suffix { value: String },
 }
 
 impl TryFrom<ParameterizedHelper> for ParameterizedTransform {
@@ -223,6 +230,7 @@ impl TryFrom<ParameterizedHelper> for ParameterizedTransform {
                 column,
                 description_column,
             },
+            ParameterizedHelper::Suffix { value } => ParameterizedTransform::Suffix { value },
         })
     }
 }
@@ -288,6 +296,7 @@ pub fn validate_pipeline(transforms: &[Transform]) -> Result<(), String> {
     }
 
     let mut seen_split = false;
+    let mut seen_json_array = false;
     let mut split_count = 0;
     let mut json_array_count = 0;
 
@@ -318,6 +327,7 @@ pub fn validate_pipeline(transforms: &[Transform]) -> Result<(), String> {
                         .to_string(),
                 );
             }
+            seen_json_array = true;
             continue;
         }
 
@@ -366,9 +376,10 @@ pub fn validate_pipeline(transforms: &[Transform]) -> Result<(), String> {
                 | Transform::Parameterized(ParameterizedTransform::ColumnExtract { .. })
                 | Transform::Parameterized(ParameterizedTransform::Skip { .. })
                 | Transform::Parameterized(ParameterizedTransform::Take { .. })
+                | Transform::Parameterized(ParameterizedTransform::Suffix { .. })
         );
 
-        if is_post_split && !seen_split {
+        if is_post_split && !seen_split && !seen_json_array {
             return Err(format!(
                 "transform \"{name}\" at position {i} appears before any split transform; \
                  post-split transforms must appear after split_lines/split_on"
@@ -576,6 +587,13 @@ fn value_to_text(v: &serde_json::Value) -> Option<String> {
     }
 }
 
+/// Append a fixed literal to each suggestion's text.
+pub fn apply_suffix(suggestions: &mut [Suggestion], value: &str) {
+    for s in suggestions.iter_mut() {
+        s.text.push_str(value);
+    }
+}
+
 /// Split each line by whitespace and extract columns by index.
 pub fn apply_column_extract(
     lines: &[String],
@@ -728,6 +746,16 @@ pub fn execute_pipeline(output: &str, transforms: &[Transform]) -> Result<Vec<Su
             }) => {
                 let l = ensure_lines(&mut lines, &mut current_output);
                 suggestions = Some(apply_column_extract(l, *column, *description_column));
+            }
+            Transform::Parameterized(ParameterizedTransform::Suffix { value }) => {
+                if let Some(s) = suggestions.as_mut() {
+                    apply_suffix(s, value);
+                } else {
+                    let l = ensure_lines(&mut lines, &mut current_output);
+                    for line in l.iter_mut() {
+                        line.push_str(value);
+                    }
+                }
             }
         }
     }
@@ -1503,6 +1531,71 @@ mod tests {
             err.contains("multiple json_extract_array"),
             "error should mention multiple json_extract_array: {err}"
         );
+    }
+
+    // -- Suffix transform --
+
+    #[test]
+    fn test_deserialize_suffix() {
+        let t: Transform = serde_json::from_str(r#"{"type":"suffix","value":"="}"#).unwrap();
+        match t {
+            Transform::Parameterized(ParameterizedTransform::Suffix { value }) => {
+                assert_eq!(value, "=");
+            }
+            other => panic!("expected Suffix, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_apply_suffix_basic() {
+        let mut suggestions = vec![
+            Suggestion {
+                text: "foo".into(),
+                ..Default::default()
+            },
+            Suggestion {
+                text: "bar".into(),
+                ..Default::default()
+            },
+        ];
+        apply_suffix(&mut suggestions, "=");
+        assert_eq!(suggestions[0].text, "foo=");
+        assert_eq!(suggestions[1].text, "bar=");
+    }
+
+    #[test]
+    fn test_execute_pipeline_suffix_after_json_extract() {
+        let transforms: Vec<Transform> = serde_json::from_str(
+            r#"["split_lines","filter_empty",{"type":"json_extract","name":"Name","description":"Image"},{"type":"suffix","value":"="}]"#,
+        )
+        .unwrap();
+        let output =
+            "{\"Name\":\"web\",\"Image\":\"nginx\"}\n{\"Name\":\"db\",\"Image\":\"redis\"}";
+        let result = execute_pipeline(output, &transforms).unwrap();
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].text, "web=");
+        assert_eq!(result[0].description.as_deref(), Some("nginx"));
+        assert_eq!(result[1].text, "db=");
+    }
+
+    #[test]
+    fn test_execute_pipeline_suffix_on_plain_lines() {
+        let transforms: Vec<Transform> =
+            serde_json::from_str(r#"["split_lines","filter_empty",{"type":"suffix","value":"!"}]"#)
+                .unwrap();
+        let output = "alpha\nbeta\n";
+        let result = execute_pipeline(output, &transforms).unwrap();
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].text, "alpha!");
+        assert_eq!(result[1].text, "beta!");
+    }
+
+    #[test]
+    fn test_validate_pipeline_suffix_after_split_ok() {
+        let pipeline: Vec<Transform> =
+            serde_json::from_str(r#"["split_lines","filter_empty",{"type":"suffix","value":"="}]"#)
+                .unwrap();
+        assert!(validate_pipeline(&pipeline).is_ok());
     }
 
     #[test]
