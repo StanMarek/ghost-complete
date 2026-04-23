@@ -229,16 +229,23 @@ mod tests {
 
     #[tokio::test]
     async fn generate_production_wrapper_returns_ok_without_binary_installed() {
-        // Covers the production `Provider::generate` entry point that
-        // `providers::resolve` actually calls — the
-        // `generate_with_binary` seam above does NOT exercise the
-        // hardcoded `"defaults"` literal. If that literal were ever
-        // typo'd, every other test would still pass; only a call
-        // through `.generate(&ctx)` would catch it. Assertion is
-        // `Ok(_)` (not `Ok(vec![])`) because on macOS hosts
-        // `defaults` DOES exist and will enumerate real preference
-        // domains — we only pin the "never Err" contract, which is
-        // the actual regression guard.
+        // Pins the "never Err" contract of `Provider::generate` — a
+        // spawn failure (tool missing, PATH empty, exec permission
+        // denied) must become `Ok(vec![])`, never propagated as `Err`.
+        // Critical on Linux, where `defaults` genuinely does not exist
+        // and this path runs on every invocation.
+        //
+        // Does NOT catch a typo'd binary literal (e.g. `"default"` vs
+        // `"defaults"`), because a typo produces the same spawn
+        // failure → `Ok(vec![])` path as a genuinely-absent tool:
+        // every subprocess error maps to `tracing::warn!` + `None` in
+        // `run_defaults_domains_with_binary`, and `generate_with_binary`
+        // maps `None` to `Ok(Vec::new())`. We have no test seam that
+        // distinguishes a typo from "tool genuinely absent".
+        //
+        // Assertion is `Ok(_)` (not `Ok(vec![])`) because on macOS
+        // hosts `defaults` DOES exist and will enumerate real
+        // preference domains.
         let tmp = tempfile::TempDir::new().unwrap();
         let ctx = ProviderCtx {
             cwd: tmp.path().to_path_buf(),

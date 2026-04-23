@@ -775,11 +775,7 @@ impl InputHandler {
             // scheduled this pass: script-only specs hit this branch on
             // every keystroke, and no current provider reads `ctx.env`,
             // so the collected map would be dead weight on the hot path.
-            let env = if !provider_generators.is_empty() {
-                Arc::new(std::env::vars().collect())
-            } else {
-                Arc::new(std::collections::HashMap::new())
-            };
+            let env = Arc::new(build_env_snapshot(!provider_generators.is_empty()));
             let provider_ctx = gc_suggest::providers::ProviderCtx {
                 cwd: cwd.clone(),
                 env,
@@ -1237,6 +1233,29 @@ pub const DEFAULT_GENERATOR_TIMEOUT_MS: u64 = 5000;
 /// Compute a lightweight fingerprint of the current command-line buffer for
 /// the trigger-idempotency guard on `InputHandler::last_trigger_fingerprint`.
 /// Collision resistance doesn't need to be cryptographic — a same-content
+/// Build the env-var snapshot handed to providers as `ProviderCtx.env`.
+///
+/// Extracted as a pure helper so the `!provider_generators.is_empty()`
+/// branching logic inside `spawn_generators`'s `tokio::spawn` block is
+/// testable without standing up a full PTY event loop. The snapshot is
+/// produced once per resolution pass (not per-provider) and handed
+/// through as an `Arc`, which the caller wraps — this helper only owns
+/// the "scan env or skip" decision.
+///
+/// When `has_providers` is false, returns an empty map: skips the
+/// `std::env::vars().collect()` walk on the keystroke hot path for
+/// script-only specs (no current provider reads `ctx.env`, so the
+/// collected map would be dead weight). When true, snapshots the full
+/// process env so providers observe a consistent view even if the
+/// shell mutates `$PATH` between their spawns.
+fn build_env_snapshot(has_providers: bool) -> std::collections::HashMap<String, String> {
+    if has_providers {
+        std::env::vars().collect()
+    } else {
+        std::collections::HashMap::new()
+    }
+}
+
 /// match just short-circuits `trigger()` (saving work and avoiding the
 /// stale-dismiss bug); a false collision would at worst miss one re-render,
 /// which the next real buffer edit fixes. `DefaultHasher` on the raw bytes
@@ -2579,5 +2598,37 @@ mod tests {
                 "trigger() must clear or replace stale dynamic_ctx"
             );
         }
+    }
+
+    #[test]
+    fn build_env_snapshot_empty_when_no_providers() {
+        // When no provider is scheduled this pass, the caller pays
+        // zero cost for an env walk we don't need — pins the hot-path
+        // optimization. A future refactor that collapsed the branch to
+        // `std::env::vars().collect()` would flip this to non-empty on
+        // every CI host (PATH is always set).
+        let snapshot = build_env_snapshot(false);
+        assert!(
+            snapshot.is_empty(),
+            "expected empty map when has_providers=false, got {} entries",
+            snapshot.len()
+        );
+    }
+
+    #[test]
+    fn build_env_snapshot_populated_when_providers_present() {
+        // When at least one provider is scheduled, the snapshot must
+        // carry the real process env. PATH is the sentinel key — it is
+        // set on every CI host we target (macOS and Linux runners
+        // both) and is part of the default shell environment. A future
+        // refactor that collapsed the branch to always-empty would
+        // break every provider that reads `ctx.env`.
+        let snapshot = build_env_snapshot(true);
+        assert!(
+            snapshot.contains_key("PATH"),
+            "expected PATH in env snapshot when has_providers=true; \
+             snapshot had {} entries",
+            snapshot.len()
+        );
     }
 }

@@ -300,15 +300,21 @@ mod tests {
 
     #[tokio::test]
     async fn input_generate_production_wrapper_returns_ok_without_binary_installed() {
-        // Covers the production `Provider::generate` entry point that
-        // `providers::resolve` actually calls — the
-        // `generate_with_binary` seam above does NOT exercise the
-        // hardcoded `"pandoc"` literal. If that literal were ever
-        // typo'd, every other test would still pass; only a call
-        // through `.generate(&ctx)` would catch it. Assertion is
-        // `Ok(_)` (not `Ok(vec![])`) because a developer machine could
-        // have pandoc installed — we only pin the "never Err"
-        // contract.
+        // Pins the "never Err" contract of `Provider::generate` for
+        // `PandocInputFormats` — a spawn failure (tool missing, PATH
+        // empty, exec permission denied) must become `Ok(vec![])`,
+        // never propagated as `Err`.
+        //
+        // Does NOT catch a typo'd binary literal (e.g. `"pandocc"` vs
+        // `"pandoc"`), because a typo produces the same spawn failure
+        // → `Ok(vec![])` path as a genuinely-absent tool: every
+        // subprocess error maps to `tracing::warn!` + `None` in
+        // `run_pandoc_formats_with_binary`, and `generate_with_binary`
+        // maps `None` to `Ok(Vec::new())`. The test cannot distinguish
+        // a typo from "tool genuinely absent".
+        //
+        // Assertion is `Ok(_)` (not `Ok(vec![])`) because a developer
+        // machine could have pandoc installed.
         let tmp = tempfile::TempDir::new().unwrap();
         let ctx = ctx_for(tmp.path().to_path_buf());
         let result = PandocInputFormats.generate(&ctx).await;
@@ -317,9 +323,12 @@ mod tests {
 
     #[tokio::test]
     async fn output_generate_production_wrapper_returns_ok_without_binary_installed() {
-        // Sibling of the input-formats test above — covers the
-        // production `Provider::generate` path for `PandocOutputFormats`
-        // so a typo'd `"pandoc"` literal would be caught here too.
+        // Sibling of the input-formats test above — pins the "never
+        // Err" contract of `Provider::generate` for
+        // `PandocOutputFormats`. Does NOT catch a typo'd `"pandoc"`
+        // literal, because a typo produces the same spawn failure →
+        // `Ok(vec![])` path as a genuinely-absent tool (see the
+        // input-formats test's docstring for the full rationale).
         let tmp = tempfile::TempDir::new().unwrap();
         let ctx = ctx_for(tmp.path().to_path_buf());
         let result = PandocOutputFormats.generate(&ctx).await;

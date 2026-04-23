@@ -134,11 +134,21 @@ assert_stdout_contains "--help prints usage" "Usage:" bash "$SCRIPT" --help
 
 assert_exit_code "unknown flag → exit 2" 2  bash "$SCRIPT" --bogus
 
-# Missing __snapshots__ dir → exit 0 with warning
+# Missing __snapshots__ dir (CI unset) → exit 0 with warning (local-dev path).
+# Explicitly unset CI so this test is stable on hosts that already have CI=true
+# set in the environment (e.g. when developers run this on a CI-like machine).
 mkdir -p "$SCRATCH/specs"
 # (no __snapshots__ dir)
-assert_exit_code "missing snapshots dir → exit 0" 0 run_patched
-assert_stderr_contains "missing snapshots dir → stderr warning" "warning" run_patched
+run_patched_no_ci() { env -u CI bash "$PATCHED" "$@"; }
+assert_exit_code "missing snapshots dir (CI unset) → exit 0" 0 run_patched_no_ci
+assert_stderr_contains "missing snapshots dir (CI unset) → stderr warning" "warning" run_patched_no_ci
+
+# Same input under CI=true → hard fail (exit 2). Guards against a checkout
+# failure; ~700 .snap files are committed and load-bearing, so silent exit 0
+# would make the gate unconditionally green.
+run_patched_ci() { CI=true bash "$PATCHED" "$@"; }
+assert_exit_code "missing snapshots dir (CI=true) → exit 2" 2 run_patched_ci
+assert_stderr_contains "missing snapshots dir (CI=true) → stderr error" "error" run_patched_ci
 
 # --dry-run → exit 0 (even with specs present)
 mkdir -p "$SCRATCH/specs/__snapshots__"

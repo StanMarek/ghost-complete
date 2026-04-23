@@ -12,7 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Substring/slice misconversion.** The spec converter previously emitted
   `column_extract` for `.substring(0, N)` and `.slice(0, N)` patterns, which are
   byte-offset operations, not whitespace-delimited columns. Affected generators
-  now correctly report as requires-JS until a proper fix lands in Phase 2/3A.
+  now correctly report as requires-JS until the converter gains a substring/slice
+  lowering (tracked in `docs/phase-minus-1-followups.md`).
   Affected specs: chezmoi, git, pass, pre-commit.
 - **JSON.parse silent fallback.** When `JSON.parse` appeared without a resolvable
   field access, the converter silently emitted `{type: "json_extract", name: "name"}`,

@@ -1387,6 +1387,11 @@ mod tests {
         assert_eq!(result.len(), 2);
         assert_eq!(result[0].text, "nginx");
         assert_eq!(result[0].description.as_deref(), Some("running"));
+        // Pin kind/source so removing the explicit Command/Script assignment
+        // (and thereby falling back to `Suggestion::default()`'s ProviderValue)
+        // is caught.
+        assert_eq!(result[0].kind, SuggestionKind::Command);
+        assert_eq!(result[0].source, SuggestionSource::Script);
     }
 
     #[test]
@@ -1423,6 +1428,10 @@ mod tests {
         assert_eq!(result.len(), 2);
         assert_eq!(result[0].text, "nginx");
         assert_eq!(result[0].description.as_deref(), Some("running"));
+        // Guard against silent regressions where removing the explicit
+        // Command/Script assignment lets `Suggestion::default()` take over.
+        assert_eq!(result[0].kind, SuggestionKind::Command);
+        assert_eq!(result[0].source, SuggestionSource::Script);
     }
 
     #[test]
@@ -1479,6 +1488,10 @@ mod tests {
         assert_eq!(result.len(), 3);
         assert_eq!(result[0].text, "Debug");
         assert_eq!(result[2].text, "Staging");
+        // Pin kind/source — same silent-regression guard as the other
+        // extract-path tests.
+        assert_eq!(result[0].kind, SuggestionKind::Command);
+        assert_eq!(result[0].source, SuggestionSource::Script);
     }
 
     #[test]
@@ -1530,6 +1543,10 @@ mod tests {
         assert_eq!(result.len(), 2);
         assert_eq!(result[0].text, "abc123");
         assert!(result[0].description.is_some());
+        // Pin kind/source to catch silent Command/Script -> default()
+        // regressions.
+        assert_eq!(result[0].kind, SuggestionKind::Command);
+        assert_eq!(result[0].source, SuggestionSource::Script);
     }
 
     // -- Pipeline executor --
@@ -1774,5 +1791,12 @@ mod tests {
         let result = execute_pipeline(output, &transforms).unwrap();
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].text, "single_item");
+        // This is the fallthrough branch at the bottom of `execute_pipeline`
+        // (the "Otherwise, convert remaining lines to plain suggestions"
+        // block). It's the only path for a transforms-present-but-no-extract
+        // pipeline and MUST stamp kind=Command/source=Script rather than
+        // defaulting to ProviderValue.
+        assert_eq!(result[0].kind, SuggestionKind::Command);
+        assert_eq!(result[0].source, SuggestionSource::Script);
     }
 }

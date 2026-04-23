@@ -270,16 +270,27 @@ mod tests {
 
     #[tokio::test]
     async fn generate_production_wrapper_returns_ok_without_binary_installed() {
-        // Covers the production `Provider::generate` entry point that
-        // `providers::resolve` actually calls — the
-        // `generate_with_binary` seam above does NOT exercise the
-        // hardcoded `"ansible-doc"` literal. If that literal were ever
-        // typo'd (e.g. `"ansible_doc"`), every other test here would
-        // still pass; only a call through `.generate(&ctx)` would catch
-        // it. Assertion is `Ok(_)` (not `Ok(vec![])`) because a
-        // developer machine could have ansible-doc installed — we
-        // only pin the "never Err" contract, which is the actual
-        // regression guard.
+        // Pins the "never Err" contract of `Provider::generate` — a
+        // spawn failure (for any reason: tool missing, PATH empty, exec
+        // permission denied) must become `Ok(vec![])`, never propagated
+        // as `Err`. The engine wraps provider errors in a warn-then-
+        // empty-vec adapter, but a silent shift from `Ok` to `Err` here
+        // would still stall the completion pipeline for one keystroke
+        // before the adapter ran, and would fill logs with a cascading
+        // error whenever ansible-doc was missing — both worth pinning.
+        //
+        // Does NOT catch a typo'd binary literal (e.g. `"ansible_doc"`
+        // vs `"ansible-doc"`), because a typo produces the same
+        // spawn failure → `Ok(vec![])` path: every subprocess error
+        // (file-not-found, permission denied, missing arg) maps to
+        // `tracing::warn!` + `None` in `run_ansible_doc_list_with_binary`,
+        // and `generate_with_binary` maps `None` to `Ok(Vec::new())`.
+        // We have no test seam that would let us distinguish "typo'd
+        // literal" from "tool genuinely absent" — the spawn-level
+        // error kinds are identical on every Unix libc.
+        //
+        // Assertion is `Ok(_)` (not `Ok(vec![])`) because a developer
+        // machine could have ansible-doc installed.
         let tmp = tempfile::TempDir::new().unwrap();
         let ctx = ProviderCtx {
             cwd: tmp.path().to_path_buf(),

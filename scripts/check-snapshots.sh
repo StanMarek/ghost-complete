@@ -68,6 +68,14 @@ fi
 # ---- guard: snapshots dir must exist ------------------------------------------
 
 if [[ ! -d "$SNAPSHOTS_DIR" ]]; then
+    if [[ "${CI:-}" == "true" ]]; then
+        # Hard-fail in CI: ~700 .snap files are committed and load-bearing.
+        # A missing snapshots dir under $CI=true indicates a checkout failure;
+        # silently exiting 0 would make the gate unconditionally green.
+        printf 'error: %s does not exist and $CI=true — snapshots are committed, this indicates a checkout failure\n' \
+            "$SNAPSHOTS_DIR" >&2
+        exit 2
+    fi
     printf 'warning: %s does not exist — skipping snapshot check\n' "$SNAPSHOTS_DIR" >&2
     exit 0
 fi

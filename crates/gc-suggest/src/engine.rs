@@ -1543,6 +1543,56 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_suggest_dynamic_script_generator_without_transforms() {
+        // Covers the `if transforms.is_empty()` branch in
+        // SuggestionEngine::suggest_dynamic (~engine.rs:284-295) — the only
+        // path where a spec generator without a `transforms` field flows
+        // through. The branch explicitly sets kind=Command + source=Script;
+        // without this test, refactors that drop the filtering or change
+        // the kind/source pair would ship silently. Note the spec has NO
+        // "transforms" field, unlike test_suggest_dynamic_with_script_generator.
+        let spec_json = r#"{
+            "name": "test-dynamic-no-transforms",
+            "args": [{
+                "generators": [{
+                    "script": ["printf", "alpha\nbeta\n\n"]
+                }]
+            }]
+        }"#;
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("test-dynamic-no-transforms.json"),
+            spec_json,
+        )
+        .unwrap();
+
+        let dirs = vec![dir.path().to_path_buf()];
+        let engine = SuggestionEngine::new(&dirs).unwrap();
+        let ctx = make_ctx(Some("test-dynamic-no-transforms"), vec![], "", 1);
+        let results = engine
+            .suggest_dynamic(&ctx, Path::new("/tmp"), 5000)
+            .await
+            .unwrap();
+        // Default branch filters empty lines, so the trailing blank line
+        // from "alpha\nbeta\n\n" must be dropped.
+        assert_eq!(
+            results.len(),
+            2,
+            "empty line should be filtered: {results:?}"
+        );
+        assert_eq!(results[0].text, "alpha");
+        assert_eq!(results[1].text, "beta");
+        // Pin kind/source on the default branch so refactors can't silently
+        // flip to Suggestion::default() (ProviderValue).
+        assert!(
+            results
+                .iter()
+                .all(|s| s.kind == SuggestionKind::Command && s.source == SuggestionSource::Script),
+            "all results must be kind=Command, source=Script: {results:?}"
+        );
+    }
+
+    #[tokio::test]
     async fn test_suggest_dynamic_no_script_generators() {
         // A spec with only native generators should return empty from suggest_dynamic
         let spec_json = r#"{

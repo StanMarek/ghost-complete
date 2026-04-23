@@ -389,4 +389,55 @@ mod tests {
         let err = serde_json::from_str::<JsonPath>(r#""foo.""#).unwrap_err();
         assert!(err.to_string().contains("trailing"));
     }
+
+    #[test]
+    fn rejects_escape_in_quoted_key() {
+        // The parser has NO escape syntax for quoted keys: a backslash
+        // is a literal byte inside the key string, NOT an escape for
+        // the following character. Pinning this contract blocks a
+        // future parser refactor from silently adding escape support
+        // (e.g. treating `\"` as a literal `"` inside the key or `\\`
+        // as a literal `\`), which would be a breaking change for any
+        // spec that relied on the current literal-byte semantics.
+        //
+        // Case 1: `foo["a\b"]` — the `\` is kept verbatim; key is the
+        // three-byte string `a\b`, not the two-byte C-style `\b`
+        // escape.
+        let p = JsonPath::parse(r#"foo["a\b"]"#).expect("literal backslash is a valid key byte");
+        assert_eq!(
+            p.segments(),
+            &[
+                JsonPathSegment::Key("foo".into()),
+                JsonPathSegment::Key(r"a\b".into()),
+            ],
+            "backslash must be treated as a literal byte, not an escape introducer"
+        );
+        match &p.segments()[1] {
+            // Three bytes: `a`, `\`, `b` — if escape support snuck in,
+            // the compiler would collapse this to two bytes.
+            JsonPathSegment::Key(k) => assert_eq!(k.as_bytes(), b"a\\b"),
+            other => panic!("expected Key segment, got {other:?}"),
+        }
+
+        // Case 2: `foo["a\"b"]` — `\"` does NOT escape the close-quote.
+        // The parser finds the first literal `"` at offset 7 and closes
+        // the segment there; the "inner" is the 6-byte slice `"a\"b"`
+        // (with the outer quotes included), which the quoted-key arm
+        // strips to the 4-byte key `a\"b`. If a future refactor adds
+        // escape support, `\"` would be treated as a literal `"` and
+        // the key would shrink to the 3-byte `a"b` — this assertion
+        // catches that drift.
+        let p =
+            JsonPath::parse(r#"foo["a\"b"]"#).expect("current parser accepts literal backslash");
+        match &p.segments()[1] {
+            JsonPathSegment::Key(k) => assert_eq!(
+                k.as_bytes(),
+                br#"a\"b"#,
+                "contract: `\\\"` is literal 4 bytes, not an escaped \
+                 3-byte `a\"b`. If this ever equals `a\"b` as 3 bytes, \
+                 escape support was added — update spec docs."
+            ),
+            other => panic!("expected Key segment, got {other:?}"),
+        }
+    }
 }

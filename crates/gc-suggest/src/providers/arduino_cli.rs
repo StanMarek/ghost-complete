@@ -512,15 +512,20 @@ mod tests {
 
     #[tokio::test]
     async fn boards_generate_production_wrapper_returns_ok_without_binary_installed() {
-        // Covers the production `Provider::generate` entry point that
-        // `providers::resolve` actually calls — the
-        // `generate_with_binary` seam above does NOT exercise the
-        // hardcoded `"arduino-cli"` literal. If that literal were ever
-        // typo'd, every other test would still pass; only a call
-        // through `.generate(&ctx)` would catch it. Assertion is
-        // `Ok(_)` (not `Ok(vec![])`) because a developer machine could
-        // have arduino-cli installed — we only pin the "never Err"
-        // contract.
+        // Pins the "never Err" contract of `Provider::generate` for
+        // `ArduinoCliBoards` — a spawn failure (tool missing, PATH
+        // empty, exec permission denied, bad argv) must become
+        // `Ok(vec![])`, never propagated as `Err`.
+        //
+        // Does NOT catch a typo'd binary literal (e.g. `"arduino_cli"`
+        // vs `"arduino-cli"`), because a typo produces the same spawn
+        // failure → `Ok(vec![])` path: `run_board_list_with_binary`
+        // maps every subprocess error to `tracing::warn!` + `None`, and
+        // `generate_with_binary` maps `None` to `Ok(Vec::new())`. The
+        // test cannot distinguish a typo from "tool genuinely absent".
+        //
+        // Assertion is `Ok(_)` (not `Ok(vec![])`) because a developer
+        // machine could have arduino-cli installed.
         let tmp = tempfile::TempDir::new().unwrap();
         let ctx = ctx_for(tmp.path().to_path_buf());
         let result = ArduinoCliBoards.generate(&ctx).await;
@@ -529,9 +534,12 @@ mod tests {
 
     #[tokio::test]
     async fn ports_generate_production_wrapper_returns_ok_without_binary_installed() {
-        // Sibling of the boards test above — covers the production
-        // `Provider::generate` path for `ArduinoCliPorts` so a typo'd
-        // `"arduino-cli"` literal would be caught here too.
+        // Sibling of the boards test above — pins the "never Err"
+        // contract of `Provider::generate` for `ArduinoCliPorts`. Does
+        // NOT catch a typo'd `"arduino-cli"` literal, because a typo
+        // produces the same spawn failure → `Ok(vec![])` path as a
+        // genuinely-absent tool (see the boards test's docstring for
+        // the full rationale).
         let tmp = tempfile::TempDir::new().unwrap();
         let ctx = ctx_for(tmp.path().to_path_buf());
         let result = ArduinoCliPorts.generate(&ctx).await;

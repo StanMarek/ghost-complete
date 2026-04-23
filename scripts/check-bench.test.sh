@@ -113,22 +113,28 @@ assert_exit_code "--threshold missing value → exit 2" 2  bash "$SCRIPT" --thre
 # ---- missing-baseline + missing-data defaults ---------------------------------
 
 reset_scratch
-# Missing baseline file → exit 0 with warning
-assert_exit_code "missing baseline → exit 0" 0 run_patched
-assert_stderr_contains "missing baseline → stderr warning" "warning" run_patched
-
-# Baseline present but no target/criterion → exit 0 with warning (local-dev path).
 # Explicitly unset CI so this test is stable on hosts that already have CI=true
 # set in the environment (e.g. when developers run this on a CI-like machine).
-write_baseline '{"schema_version":"1.0","groups":{"g":{"b":{"median_ns":1000}}}}'
 run_patched_no_ci() { env -u CI bash "$PATCHED" "$@"; }
+# Missing baseline file (CI unset) → exit 0 with warning (local-dev path).
+assert_exit_code "missing baseline (CI unset) → exit 0" 0 run_patched_no_ci
+assert_stderr_contains "missing baseline (CI unset) → stderr warning" "warning" run_patched_no_ci
+
+# Same input under CI=true → hard fail (exit 2). Baseline JSON is committed, so
+# a missing file under CI indicates a checkout/rename/delete regression; silent
+# exit 0 would make the gate unconditionally green.
+run_patched_ci() { CI=true bash "$PATCHED" "$@"; }
+assert_exit_code "missing baseline (CI=true) → exit 2" 2 run_patched_ci
+assert_stderr_contains "missing baseline (CI=true) → stderr error" "error" run_patched_ci
+
+# Baseline present but no target/criterion → exit 0 with warning (local-dev path).
+write_baseline '{"schema_version":"1.0","groups":{"g":{"b":{"median_ns":1000}}}}'
 assert_exit_code "no criterion dir (CI unset) → exit 0" 0 run_patched_no_ci
 assert_stderr_contains "no criterion dir (CI unset) → stderr warning" "warning" run_patched_no_ci
 
 # Same input under CI=true → hard fail (exit 2). Guards against a misconfigured
 # workflow that forgets to run `cargo bench` before invoking this script; silent
 # exit 0 would make the gate unconditionally green.
-run_patched_ci() { CI=true bash "$PATCHED" "$@"; }
 assert_exit_code "no criterion dir (CI=true) → exit 2" 2 run_patched_ci
 assert_stderr_contains "no criterion dir (CI=true) → stderr error" "error" run_patched_ci
 

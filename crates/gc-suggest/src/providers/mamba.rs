@@ -233,14 +233,20 @@ py311                    /opt/conda/envs/py311
 
     #[tokio::test]
     async fn generate_production_wrapper_returns_ok_without_binary_installed() {
-        // Covers the production `Provider::generate` entry point that
-        // `providers::resolve` actually calls — the
-        // `generate_with_binary` seam above does NOT exercise the
-        // hardcoded `"conda"` literal. If that literal were ever
-        // typo'd, every other test would still pass; only a call
-        // through `.generate(&ctx)` would catch it. Assertion is
-        // `Ok(_)` (not `Ok(vec![])`) because a developer machine could
-        // have conda installed — we only pin the "never Err" contract.
+        // Pins the "never Err" contract of `Provider::generate` — a
+        // spawn failure (tool missing, PATH empty, exec permission
+        // denied) must become `Ok(vec![])`, never propagated as `Err`.
+        //
+        // Does NOT catch a typo'd binary literal (e.g. `"condaa"` vs
+        // `"conda"`), because a typo produces the same spawn failure
+        // → `Ok(vec![])` path as a genuinely-absent tool: every
+        // subprocess error maps to `tracing::warn!` + `None` in
+        // `run_env_list_with_binary`, and `generate_with_binary` maps
+        // `None` to `Ok(Vec::new())`. The test cannot distinguish a
+        // typo from "tool genuinely absent".
+        //
+        // Assertion is `Ok(_)` (not `Ok(vec![])`) because a developer
+        // machine could have conda installed.
         let tmp = tempfile::TempDir::new().unwrap();
         let ctx = ProviderCtx {
             cwd: tmp.path().to_path_buf(),

@@ -101,6 +101,14 @@ fi
 command -v jq >/dev/null 2>&1 || die "jq is required but not on PATH"
 
 if [[ ! -f "$BASELINE_FILE" ]]; then
+    if [[ "${CI:-}" == "true" ]]; then
+        # Hard-fail in CI: the baseline JSON is committed to the repo, so a
+        # missing file here means a checkout/rename/delete slipped through
+        # review. Silently exiting 0 would make the gate unconditionally green.
+        printf 'error: baseline file not found (%s) and $CI=true — baseline is committed to the repo, this should never happen in CI\n' \
+            "$BASELINE_FILE" >&2
+        exit 2
+    fi
     printf 'warning: baseline file not found (%s) — skipping benchmark regression check\n' \
         "$BASELINE_FILE" >&2
     exit 0

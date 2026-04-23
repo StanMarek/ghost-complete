@@ -146,6 +146,16 @@ mod tests {
         let ctx = cmd_position_ctx("gi");
         let results = provider.provide(&ctx, Path::new("/tmp")).unwrap();
         assert_eq!(results.len(), 3);
+        // Pin the kind/source pair so that deleting the explicit `kind: Command`
+        // assignment in `provide()` (which would silently flip every PATH binary
+        // to `ProviderValue` via `Suggestion::default()`) is caught by tests.
+        assert!(
+            results
+                .iter()
+                .all(|s| s.kind == crate::types::SuggestionKind::Command
+                    && s.source == crate::types::SuggestionSource::Commands),
+            "every result must be kind=Command, source=Commands: {results:?}"
+        );
     }
 
     #[test]

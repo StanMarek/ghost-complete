@@ -296,8 +296,10 @@ fn count_corrected_generators_in_spec(spec: &gc_suggest::CompletionSpec) -> usiz
 
 /// Check 7: Corrected generators. Walks the loaded SpecStore and counts
 /// generators whose prior conversion was mis-lowered and has since been
-/// corrected (see plan §-1.4). If any are found, emits a Warn result so
-/// users who upgrade see _why_ some completions changed behaviour.
+/// corrected (see CHANGELOG.md's "Corrected" sections and the
+/// `_corrected_in` lifecycle in docs/SPECS.md). If any are found, emits a
+/// Warn result so users who upgrade see _why_ some completions changed
+/// behaviour.
 ///
 /// Re-loads specs with the same resolver `check_specs` uses — cheaper than
 /// plumbing the store out of Check 6, and keeps the two checks independent
