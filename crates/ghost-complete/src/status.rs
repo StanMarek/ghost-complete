@@ -153,13 +153,22 @@ fn load_baseline(explicit: Option<&Path>) -> Result<Option<CoverageBaseline>> {
         }
     }
 
-    // (2) env override.
+    // (2) env override. Like the explicit flag, a non-existent path is an
+    // error — the user deliberately pointed us at a file, so silent
+    // fall-through would mask typos. `/dev/null` is a deliberate
+    // suppression knob: it exists, so this branch accepts it and the
+    // parse-as-empty downstream yields a clean "malformed" error.
     if let Some(p) = std::env::var_os("GHOST_COMPLETE_BASELINE") {
         let p = PathBuf::from(p);
         if p.exists() {
             let body = std::fs::read_to_string(&p)
                 .with_context(|| format!("failed to read baseline {}", p.display()))?;
             return Ok(Some(CoverageBaseline::from_str(&body)?));
+        } else {
+            anyhow::bail!(
+                "baseline file does not exist (from GHOST_COMPLETE_BASELINE): {}",
+                p.display()
+            );
         }
     }
 
@@ -193,9 +202,10 @@ fn load_baseline(explicit: Option<&Path>) -> Result<Option<CoverageBaseline>> {
 ///   - `(+N)` / `(-N)` — signed delta when the metric actually moved.
 ///
 /// When the positive delta on `native_providers` equals 8 exactly we tack
-/// on the literal `(+8 from Phase 3A)` annotation on the `fully_functional`
+/// on the literal `(+8 from Phase 3A)` annotation on the `native_providers`
 /// line — a heuristic hint that the Phase-3A provider batch landed in
-/// this release.
+/// this release. Pinning it to the sibling metric keeps the attribution
+/// factual even when `fully_functional` moves by a different amount.
 fn render_coverage_trend(out: &mut dyn Write, baseline: Option<&CoverageBaseline>) -> Result<()> {
     writeln!(out)?;
     let baseline = match baseline {
@@ -234,10 +244,9 @@ fn render_coverage_trend(out: &mut dyn Write, baseline: Option<&CoverageBaseline
     )?;
     writeln!(
         out,
-        "  Fully functional: {} {}{}",
+        "  Fully functional: {} {}",
         curr.fully_functional,
         delta_annotation(prev.fully_functional, curr.fully_functional, is_bootstrap),
-        phase_3a_annotation
     )?;
     writeln!(
         out,
@@ -251,9 +260,10 @@ fn render_coverage_trend(out: &mut dyn Write, baseline: Option<&CoverageBaseline
     )?;
     writeln!(
         out,
-        "  Native providers: {} {}",
+        "  Native providers: {} {}{}",
         pair_with_arrow(prev.native_providers, curr.native_providers),
         delta_annotation(prev.native_providers, curr.native_providers, is_bootstrap),
+        phase_3a_annotation
     )?;
     writeln!(
         out,
@@ -483,6 +493,10 @@ fn run_status_json(
     // `total` reports the canonical shipped-spec count (embedded count) —
     // filesystem specs may be overrides or additions; we do not attempt
     // to deduplicate here. Schema example in the task brief agrees.
+    //
+    // `parse_errors` stays as a scalar count for backwards compat;
+    // `parse_error_details` mirrors the per-line sanitized messages the
+    // text path emits so JSON consumers can surface them too.
     let payload = serde_json::json!({
         "schema_version": "1.0",
         "spec_counts": {
@@ -492,6 +506,7 @@ fn run_status_json(
             "embedded": outcome.embedded_count,
             "filesystem_overrides": outcome.fs_specs,
             "parse_errors": outcome.total_parse_errors,
+            "parse_error_details": outcome.parse_error_lines,
         },
         "coverage_trend": coverage_trend,
     });
@@ -736,21 +751,28 @@ mod tests {
             txt.contains("Total specs: 709 (unchanged)"),
             "Total specs identical-across-rows should show (unchanged), got:\n{txt}"
         );
-        // fully_functional: 526 → 534 (+8), with Phase 3A annotation
-        // because native_providers delta == 8.
+        // fully_functional: 526 → 534 (+8). Phase 3A hint no longer rides
+        // on this line — it is pinned to `native_providers` where the
+        // delta actually lives.
         assert!(
-            txt.contains("Fully functional: 534 (+8) (+8 from Phase 3A)"),
-            "Fully functional line missing signed delta + Phase 3A hint, got:\n{txt}"
+            txt.contains("Fully functional: 534 (+8)"),
+            "Fully functional line missing signed delta, got:\n{txt}"
+        );
+        assert!(
+            !txt.lines()
+                .any(|l| l.contains("Fully functional:") && l.contains("Phase 3A")),
+            "Phase 3A annotation must not appear on the Fully functional line, got:\n{txt}"
         );
         // requires_js_generators: 1889 → 1721 (-168)
         assert!(
             txt.contains("Requires-JS generators: 1889 \u{2192} 1721 (-168)"),
             "Requires-JS signed delta wrong, got:\n{txt}"
         );
-        // native_providers: 12 → 20 (+8)
+        // native_providers: 12 → 20 (+8), carries the Phase 3A annotation
+        // because the native-provider delta equals 8.
         assert!(
-            txt.contains("Native providers: 12 \u{2192} 20 (+8)"),
-            "Native providers signed delta wrong, got:\n{txt}"
+            txt.contains("Native providers: 12 \u{2192} 20 (+8) (+8 from Phase 3A)"),
+            "Native providers line missing signed delta + Phase 3A hint, got:\n{txt}"
         );
         // Corrected identical between rows — renders (unchanged).
         assert!(
@@ -976,6 +998,18 @@ mod tests {
         assert!(parsed["spec_counts"]["embedded"].is_number());
         assert!(parsed["spec_counts"]["filesystem_overrides"].is_number());
         assert!(parsed["spec_counts"]["parse_errors"].is_number());
+        assert!(
+            parsed["spec_counts"]["parse_error_details"].is_array(),
+            "parse_error_details must be an array (empty when no errors)"
+        );
+        assert_eq!(
+            parsed["spec_counts"]["parse_error_details"]
+                .as_array()
+                .unwrap()
+                .len(),
+            0,
+            "no-error fixture should produce an empty parse_error_details array"
+        );
 
         let trend = &parsed["coverage_trend"];
         assert!(trend.is_object(), "coverage_trend should be populated");
@@ -1009,6 +1043,20 @@ mod tests {
             parsed["coverage_trend"].is_null(),
             "empty-releases baseline should yield null trend, got: {}",
             parsed
+        );
+        // `parse_error_details` is present even when there are no errors:
+        // empty array, not missing-key.
+        assert!(
+            parsed["spec_counts"]["parse_error_details"].is_array(),
+            "parse_error_details must be an array in the no-baseline path too"
+        );
+        assert_eq!(
+            parsed["spec_counts"]["parse_error_details"]
+                .as_array()
+                .unwrap()
+                .len(),
+            0,
+            "no-error fixture should produce an empty parse_error_details array"
         );
     }
 

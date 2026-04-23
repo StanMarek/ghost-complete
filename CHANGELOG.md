@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `column_extract` for `.substring(0, N)` and `.slice(0, N)` patterns, which are
   byte-offset operations, not whitespace-delimited columns. Affected generators
   now correctly report as requires-JS until a proper fix lands in Phase 2/3A.
-  Affected specs: chezmoi, pass, pre-commit.
+  Affected specs: chezmoi, git, pass, pre-commit.
 - **JSON.parse silent fallback.** When `JSON.parse` appeared without a resolvable
   field access, the converter silently emitted `{type: "json_extract", name: "name"}`,
   producing wrong completions. These generators now report as requires-JS.

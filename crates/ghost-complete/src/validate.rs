@@ -64,6 +64,20 @@ fn validate_dir(dir: &Path, json: bool, out: &mut dyn std::io::Write) -> Result<
             Err(e) => {
                 unreadable += 1;
                 tracing::warn!("failed to read directory entry in {}: {e}", dir.display());
+                // In JSON mode emit one synthetic row per unreadable entry so
+                // the schema contract (`summary.failed == count(ok:false
+                // rows)`) holds. The iterator `Err` variant does not carry the
+                // file name, so we synthesize `<unreadable-{i}>` using the
+                // running counter.
+                if json {
+                    emit_json_spec(
+                        out,
+                        &format!("<unreadable-{unreadable}>"),
+                        false,
+                        vec!["unreadable directory entry".to_string()],
+                        vec![],
+                    )?;
+                }
             }
         }
     }
@@ -602,6 +616,72 @@ mod tests {
         assert_eq!(s["failed"], 1);
         assert_eq!(s["with_warnings"], 1);
         assert_eq!(s["dirs_scanned"], 1);
+    }
+
+    /// Verifies the synthetic-row shape emitted for unreadable directory
+    /// entries in JSON mode. Arranging an actual `read_dir` iterator `Err`
+    /// portably is flaky (it depends on kernel/FS behavior — EACCES from
+    /// `readdir` vs from `stat` varies by platform), so we instead exercise
+    /// `emit_json_spec` with the exact arguments `validate_dir` uses and
+    /// assert the row satisfies the schema contract on `<unreadable-{i}>` /
+    /// `ok:false` / non-empty divergences.
+    #[test]
+    fn test_emit_json_spec_unreadable_row_shape() {
+        let mut buf: Vec<u8> = Vec::new();
+        emit_json_spec(
+            &mut buf,
+            "<unreadable-1>",
+            false,
+            vec!["unreadable directory entry".to_string()],
+            vec![],
+        )
+        .unwrap();
+        let rows = parse_ndjson(&buf);
+        assert_eq!(rows.len(), 1);
+        let row = &rows[0];
+        assert_eq!(row["spec_name"], "<unreadable-1>");
+        assert_eq!(row["ok"], serde_json::Value::Bool(false));
+        let divs = row["divergences"].as_array().unwrap();
+        assert_eq!(divs.len(), 1);
+        assert_eq!(divs[0], "unreadable directory entry");
+        assert!(row["warnings"].as_array().unwrap().is_empty());
+    }
+
+    /// End-to-end assertion of the JSON schema invariant that motivated the
+    /// fix: `summary.failed == count(ok:false rows)`. Uses only readable
+    /// entries (since portably provoking a `read_dir` `Err` variant is
+    /// flaky in CI), but seeds one corrupt spec so at least one `ok:false`
+    /// row is produced via the already-tested branch. The key regression
+    /// guarded here is that every contributor to `counts.failed` also emits
+    /// a row — the unreadable branch is the only place this used to be
+    /// violated.
+    #[test]
+    fn test_json_mode_failed_count_matches_ok_false_rows() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let spec_dir = tmp.path().join("specs");
+        std::fs::create_dir_all(&spec_dir).unwrap();
+        write_spec(&spec_dir, "good.json", r#"{"name":"good"}"#);
+        write_spec(&spec_dir, "broken.json", "{not valid json");
+        let cfg = write_config_for(&spec_dir, &tmp);
+
+        let mut out = Vec::new();
+        run_validate_specs_inner(Some(cfg.to_str().unwrap()), false, true, &mut out).unwrap();
+        let rows = parse_ndjson(&out);
+
+        let summary = rows
+            .iter()
+            .find(|r| r.get("summary").is_some())
+            .expect("expected a summary row");
+        let failed = summary["summary"]["failed"].as_u64().unwrap();
+        let ok_false_rows = rows
+            .iter()
+            .filter(|r| r.get("spec_name").is_some())
+            .filter(|r| r["ok"] == serde_json::Value::Bool(false))
+            .count() as u64;
+        assert_eq!(
+            failed, ok_false_rows,
+            "summary.failed must equal count of spec rows with ok=false"
+        );
     }
 
     #[test]

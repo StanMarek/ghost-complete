@@ -303,6 +303,32 @@ pub fn validate_pipeline(transforms: &[Transform]) -> Result<(), String> {
     for (i, t) in transforms.iter().enumerate() {
         let name = transform_name(t);
 
+        // Once json_extract_array has fired it has set `suggestions = Some(_)`
+        // and any subsequent line-mutating transform is silently discarded
+        // (or, in the case of a second json_extract, silently overwrites the
+        // first's results). The only legitimately valid post-extract
+        // transform is `suffix`, whose executor arm operates on the
+        // `suggestions` slot. Reject everything else at load time.
+        //
+        // A second `json_extract_array` is left to fall through to the
+        // dedicated duplicate check below (which produces a more specific
+        // error message and is already covered by
+        // `test_multiple_json_extract_array_invalid`).
+        let is_suffix = matches!(
+            t,
+            Transform::Parameterized(ParameterizedTransform::Suffix { .. })
+        );
+        let is_json_array_candidate = matches!(
+            t,
+            Transform::Parameterized(ParameterizedTransform::JsonExtractArray { .. })
+        );
+        if seen_json_array && !is_suffix && !is_json_array_candidate {
+            return Err(format!(
+                "transform \"{name}\" at position {i} appears after json_extract_array; \
+                 json_extract_array is terminal and only suffix is allowed after it"
+            ));
+        }
+
         // json_extract_array is a standalone terminal transform that operates
         // on the raw output — it must not be combined with split_lines/split_on
         // (those would pre-split the JSON into unparseable fragments) and
@@ -1516,6 +1542,61 @@ mod tests {
             err.contains("json_extract_array"),
             "error must mention the offending transform: {err}"
         );
+    }
+
+    #[test]
+    fn test_validate_pipeline_rejects_split_lines_after_json_extract_array() {
+        // json_extract_array is terminal — any line-mutating transform that
+        // follows it runs against the (now-stale) `lines` slot and its effect
+        // is silently discarded when the executor returns `suggestions`.
+        let pipeline: Vec<Transform> = serde_json::from_str(
+            r#"[{"type": "json_extract_array", "path": "a.b"}, "split_lines"]"#,
+        )
+        .unwrap();
+        let err = validate_pipeline(&pipeline).unwrap_err();
+        assert!(
+            err.contains("split_lines") && err.contains("json_extract_array"),
+            "error must name the offending transform and the terminal transform: {err}"
+        );
+    }
+
+    #[test]
+    fn test_validate_pipeline_rejects_filter_empty_after_json_extract_array() {
+        let pipeline: Vec<Transform> = serde_json::from_str(
+            r#"[{"type": "json_extract_array", "path": "a.b"}, "filter_empty"]"#,
+        )
+        .unwrap();
+        let err = validate_pipeline(&pipeline).unwrap_err();
+        assert!(
+            err.contains("filter_empty") && err.contains("json_extract_array"),
+            "error must name the offending transform and the terminal transform: {err}"
+        );
+    }
+
+    #[test]
+    fn test_validate_pipeline_rejects_json_extract_after_json_extract_array() {
+        // A follow-up `json_extract` would silently overwrite the suggestions
+        // produced by `json_extract_array` at runtime — reject at load time.
+        let pipeline: Vec<Transform> = serde_json::from_str(
+            r#"[{"type": "json_extract_array", "path": "a.b"}, {"type": "json_extract", "name": "x"}]"#,
+        )
+        .unwrap();
+        let err = validate_pipeline(&pipeline).unwrap_err();
+        assert!(
+            err.contains("json_extract") && err.contains("json_extract_array"),
+            "error must name the offending transform and the terminal transform: {err}"
+        );
+    }
+
+    #[test]
+    fn test_validate_pipeline_suffix_after_json_extract_array_ok() {
+        // `suffix` is the one exception — its executor arm explicitly mutates
+        // the `suggestions` slot when present, so it composes legitimately.
+        let pipeline: Vec<Transform> = serde_json::from_str(
+            r#"[{"type": "json_extract_array", "path": "a.b"}, {"type": "suffix", "value": "="}]"#,
+        )
+        .unwrap();
+        assert!(validate_pipeline(&pipeline).is_ok());
     }
 
     #[test]
