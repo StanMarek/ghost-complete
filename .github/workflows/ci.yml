@@ -133,3 +133,15 @@ jobs:
       - uses: actions/checkout@v6
       - name: Bench regression check (threshold 10%)
         run: scripts/check-bench.sh --threshold 10
+
+  coverage-baseline-drift:
+    name: Coverage baseline drift
+    # Informational, non-blocking gate. Only runs on main/master branches
+    # (pushes to master, or PRs targeting master/main) — feature branches
+    # are skipped to keep the signal tied to what's landing on trunk.
+    if: github.ref == 'refs/heads/master' || github.base_ref == 'master' || github.ref == 'refs/heads/main' || github.base_ref == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check coverage baseline drift
+        run: scripts/check-coverage-baseline-drift.sh
