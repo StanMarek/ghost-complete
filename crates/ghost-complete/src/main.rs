@@ -89,6 +89,40 @@ where
         .unwrap_or_else(|| DEFAULT_FALLBACK_SHELL.to_string())
 }
 
+/// Parse `--baseline <path>` (or `--baseline=PATH`) out of the trailing
+/// arg list `shell_args`. Accepts the GNU-style `--baseline=` form as a
+/// convenience alias.
+///
+/// A bare `--baseline` with no following value — or a `--baseline` whose
+/// next token starts with `-` (another flag) — is a user error, not a
+/// silent fallback to the embedded baseline. The latter behaviour would
+/// mask typos like `ghost-complete status --baseline --json`.
+fn parse_baseline_flag(shell_args: &[String]) -> Result<Option<std::path::PathBuf>> {
+    let mut out: Option<std::path::PathBuf> = None;
+    let mut i = 0;
+    while i < shell_args.len() {
+        let a = &shell_args[i];
+        if a == "--baseline" {
+            let next = shell_args.get(i + 1);
+            match next {
+                Some(v) if !v.starts_with('-') => {
+                    out = Some(std::path::PathBuf::from(v));
+                    i += 2;
+                    continue;
+                }
+                _ => anyhow::bail!("--baseline requires a path argument"),
+            }
+        } else if let Some(rest) = a.strip_prefix("--baseline=") {
+            if rest.is_empty() {
+                anyhow::bail!("--baseline requires a path argument");
+            }
+            out = Some(std::path::PathBuf::from(rest));
+        }
+        i += 1;
+    }
+    Ok(out)
+}
+
 fn init_tracing(level: &str, log_file: Option<&str>) -> Result<()> {
     // Prefer `RUST_LOG` (standard ecosystem env var) when set; fall back to
     // the `--log-level` flag value otherwise. This matches how every other
@@ -143,21 +177,7 @@ fn main() -> Result<()> {
             // scan it ourselves for the status-specific flags.
             let strict = cli.shell_args.iter().any(|s| s == "--strict");
             let json = cli.shell_args.iter().any(|s| s == "--json");
-            // `--baseline <path>` — scan for the flag-value pair the same
-            // way. Accept `--baseline=PATH` as a convenience alias.
-            let mut baseline_path: Option<std::path::PathBuf> = None;
-            let mut i = 0;
-            while i < cli.shell_args.len() {
-                let a = &cli.shell_args[i];
-                if a == "--baseline" {
-                    if let Some(next) = cli.shell_args.get(i + 1) {
-                        baseline_path = Some(std::path::PathBuf::from(next));
-                    }
-                } else if let Some(rest) = a.strip_prefix("--baseline=") {
-                    baseline_path = Some(std::path::PathBuf::from(rest));
-                }
-                i += 1;
-            }
+            let baseline_path = parse_baseline_flag(&cli.shell_args)?;
             return status::run_status_with_opts(
                 cli.config.as_deref(),
                 strict,
@@ -207,7 +227,11 @@ fn main() -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::{resolve_default_shell_from, DEFAULT_FALLBACK_SHELL};
+    use super::{parse_baseline_flag, resolve_default_shell_from, DEFAULT_FALLBACK_SHELL};
+
+    fn argv(parts: &[&str]) -> Vec<String> {
+        parts.iter().map(|s| s.to_string()).collect()
+    }
 
     #[test]
     fn resolve_default_shell_uses_env_when_set() {
@@ -231,5 +255,50 @@ mod tests {
         // cryptic ENOENT instead of using the fallback.
         let shell = resolve_default_shell_from(|_| Some(String::new()));
         assert_eq!(shell, DEFAULT_FALLBACK_SHELL);
+    }
+
+    #[test]
+    fn status_baseline_flag_with_value_parses() {
+        let args = argv(&["status", "--baseline", "/tmp/b.json"]);
+        let parsed = parse_baseline_flag(&args).unwrap();
+        assert_eq!(parsed, Some(std::path::PathBuf::from("/tmp/b.json")));
+    }
+
+    #[test]
+    fn status_baseline_equals_form_parses() {
+        let args = argv(&["status", "--baseline=/tmp/b.json"]);
+        let parsed = parse_baseline_flag(&args).unwrap();
+        assert_eq!(parsed, Some(std::path::PathBuf::from("/tmp/b.json")));
+    }
+
+    #[test]
+    fn status_baseline_flag_without_value_errors() {
+        // Bare `--baseline` (no trailing value) — must produce a clear
+        // error rather than silently falling back to the embedded
+        // baseline, so typos like `ghost-complete status --baseline
+        // --json` are caught at the flag boundary.
+        let args = argv(&["status", "--baseline"]);
+        let err = parse_baseline_flag(&args).unwrap_err();
+        assert!(
+            err.to_string()
+                .contains("--baseline requires a path argument"),
+            "expected clear error message, got: {err}"
+        );
+
+        // `--baseline` followed by another flag is equivalently bad:
+        // the next token is consumed as a value today, which eats the
+        // real flag. Forbid it.
+        let args = argv(&["status", "--baseline", "--json"]);
+        let err = parse_baseline_flag(&args).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("--baseline requires a path argument"));
+
+        // Empty `--baseline=` form — same contract.
+        let args = argv(&["status", "--baseline="]);
+        let err = parse_baseline_flag(&args).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("--baseline requires a path argument"));
     }
 }

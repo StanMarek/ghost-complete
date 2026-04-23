@@ -13,6 +13,13 @@ use crate::sanitize::sanitize_for_terminal;
 /// not available). Keeps the "Coverage trend" section working out of the box.
 const EMBEDDED_BASELINE: &str = include_str!("../../../docs/coverage-baseline.json");
 
+/// Size of the Phase-3A native-provider batch. When a release bumps
+/// `native_providers` by exactly this number, the trend section annotates
+/// the `fully_functional` line so readers can tie the jump back to the
+/// specific work that produced it.
+const PHASE_3A_PROVIDER_COUNT: i64 = 8;
+const PHASE_3A_LABEL: &str = " (+8 from Phase 3A)";
+
 /// Check if a spec tree contains any generators with `requires_js: true`.
 fn has_requires_js(spec: &CompletionSpec) -> bool {
     check_args_for_js(&spec.args)
@@ -45,10 +52,6 @@ fn check_subcommands_for_js(subcommands: &[SubcommandSpec]) -> bool {
             || check_subcommands_for_js(&s.subcommands)
     })
 }
-
-// -----------------------------------------------------------------------------
-// Coverage baseline (G.2)
-// -----------------------------------------------------------------------------
 
 /// A single release row inside `docs/coverage-baseline.json`.
 #[derive(Debug, Clone)]
@@ -108,9 +111,6 @@ impl CoverageBaseline {
                 .unwrap_or("")
                 .to_string();
 
-            // u64 counters. Missing or non-integer values are treated as 0
-            // — a permissive stance because the schema may grow and old
-            // baseline files should still load.
             let u = |key: &str| -> u64 { ro.get(key).and_then(|x| x.as_u64()).unwrap_or(0) };
 
             releases.push(BaselineRelease {
@@ -219,8 +219,8 @@ fn render_coverage_trend(out: &mut dyn Write, baseline: Option<&CoverageBaseline
     };
 
     let native_delta_i64 = curr.native_providers as i64 - prev.native_providers as i64;
-    let phase_3a_annotation = if native_delta_i64 == 8 {
-        " (+8 from Phase 3A)"
+    let phase_3a_annotation = if native_delta_i64 == PHASE_3A_PROVIDER_COUNT {
+        PHASE_3A_LABEL
     } else {
         ""
     };
@@ -230,20 +230,20 @@ fn render_coverage_trend(out: &mut dyn Write, baseline: Option<&CoverageBaseline
         out,
         "  Total specs: {} {}",
         curr.total_specs,
-        format_delta(prev.total_specs, curr.total_specs, is_bootstrap)
+        delta_annotation(prev.total_specs, curr.total_specs, is_bootstrap)
     )?;
     writeln!(
         out,
         "  Fully functional: {} {}{}",
         curr.fully_functional,
-        format_delta(prev.fully_functional, curr.fully_functional, is_bootstrap),
+        delta_annotation(prev.fully_functional, curr.fully_functional, is_bootstrap),
         phase_3a_annotation
     )?;
     writeln!(
         out,
         "  Requires-JS generators: {} {}",
         pair_with_arrow(prev.requires_js_generators, curr.requires_js_generators),
-        signed_delta(
+        delta_annotation(
             prev.requires_js_generators,
             curr.requires_js_generators,
             is_bootstrap
@@ -253,13 +253,13 @@ fn render_coverage_trend(out: &mut dyn Write, baseline: Option<&CoverageBaseline
         out,
         "  Native providers: {} {}",
         pair_with_arrow(prev.native_providers, curr.native_providers),
-        signed_delta(prev.native_providers, curr.native_providers, is_bootstrap),
+        delta_annotation(prev.native_providers, curr.native_providers, is_bootstrap),
     )?;
     writeln!(
         out,
         "  Corrected generators: {} {}",
         curr.corrected_generators,
-        format_delta(
+        delta_annotation(
             prev.corrected_generators,
             curr.corrected_generators,
             is_bootstrap
@@ -276,7 +276,7 @@ fn render_coverage_trend(out: &mut dyn Write, baseline: Option<&CoverageBaseline
 /// - `is_bootstrap = true` (single-row baseline) → `(baseline)`.
 /// - Two-or-more-row baseline: `(unchanged)` when prev == curr, otherwise
 ///   a signed `(+N)` / `(-N)` delta.
-fn format_delta(prev: u64, curr: u64, is_bootstrap: bool) -> String {
+fn delta_annotation(prev: u64, curr: u64, is_bootstrap: bool) -> String {
     if is_bootstrap {
         "(baseline)".to_string()
     } else if prev == curr {
@@ -292,24 +292,6 @@ fn format_delta(prev: u64, curr: u64, is_bootstrap: bool) -> String {
 fn pair_with_arrow(prev: u64, curr: u64) -> String {
     format!("{} \u{2192} {}", prev, curr)
 }
-
-/// Signed delta in parens for the prev→curr lines. Same bootstrap-vs-
-/// unchanged semantics as `format_delta`.
-fn signed_delta(prev: u64, curr: u64, is_bootstrap: bool) -> String {
-    if is_bootstrap {
-        "(baseline)".to_string()
-    } else if prev == curr {
-        "(unchanged)".to_string()
-    } else if curr > prev {
-        format!("(+{})", curr - prev)
-    } else {
-        format!("(-{})", prev - curr)
-    }
-}
-
-// -----------------------------------------------------------------------------
-// Status outcome + inner scan
-// -----------------------------------------------------------------------------
 
 /// Outcome of a `status` run — surfaces the numbers the CLI entry point
 /// uses to decide the process exit code in strict mode, plus the data
@@ -518,10 +500,6 @@ fn run_status_json(
     writeln!(out, "{}", s)?;
     Ok(outcome)
 }
-
-// -----------------------------------------------------------------------------
-// Public entry point
-// -----------------------------------------------------------------------------
 
 /// Render the status report. When `strict` is `true`, prints the full report
 /// first and then exits with code 1 if spec health is degraded — meaning any
