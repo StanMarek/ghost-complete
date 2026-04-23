@@ -184,11 +184,18 @@ fn load_baseline(explicit: Option<&Path>) -> Result<Option<CoverageBaseline>> {
 
 /// Render the human-readable "Coverage trend" section.
 ///
-/// `(baseline)` is used when `prev == curr` for a metric. Signed deltas
-/// are rendered as `+N` / `-N` / `unchanged`. When the positive delta on
-/// `native_providers` equals 8 exactly we tack on the literal
-/// `(+N from Phase 3A)` annotation on the `fully_functional` line, a
-/// heuristic hint the Phase-3A provider batch landed in this release.
+/// Annotation semantics:
+///   - `(baseline)` — only emitted in the single-row bootstrap case
+///     (exactly one release in the baseline file, so there is nothing to
+///     compare against yet).
+///   - `(unchanged)` — emitted when there are two or more releases and
+///     a specific metric is identical between prev and curr.
+///   - `(+N)` / `(-N)` — signed delta when the metric actually moved.
+///
+/// When the positive delta on `native_providers` equals 8 exactly we tack
+/// on the literal `(+8 from Phase 3A)` annotation on the `fully_functional`
+/// line — a heuristic hint that the Phase-3A provider batch landed in
+/// this release.
 fn render_coverage_trend(out: &mut dyn Write, baseline: Option<&CoverageBaseline>) -> Result<()> {
     writeln!(out)?;
     let baseline = match baseline {
@@ -199,8 +206,10 @@ fn render_coverage_trend(out: &mut dyn Write, baseline: Option<&CoverageBaseline
         }
     };
 
-    // Determine prev/curr — when there's one row, both point to it so
-    // the (baseline) annotation fires on every metric.
+    // Determine prev/curr. When there's exactly one row this is the
+    // bootstrap case — `is_bootstrap` switches the delta helpers from
+    // `(unchanged)` to `(baseline)`.
+    let is_bootstrap = baseline.releases.len() < 2;
     let (prev, curr) = if baseline.releases.len() >= 2 {
         let n = baseline.releases.len();
         (&baseline.releases[n - 2], &baseline.releases[n - 1])
@@ -221,32 +230,40 @@ fn render_coverage_trend(out: &mut dyn Write, baseline: Option<&CoverageBaseline
         out,
         "  Total specs: {} {}",
         curr.total_specs,
-        format_delta(prev.total_specs, curr.total_specs)
+        format_delta(prev.total_specs, curr.total_specs, is_bootstrap)
     )?;
     writeln!(
         out,
         "  Fully functional: {} {}{}",
         curr.fully_functional,
-        format_delta(prev.fully_functional, curr.fully_functional),
+        format_delta(prev.fully_functional, curr.fully_functional, is_bootstrap),
         phase_3a_annotation
     )?;
     writeln!(
         out,
         "  Requires-JS generators: {} {}",
         pair_with_arrow(prev.requires_js_generators, curr.requires_js_generators),
-        signed_delta(prev.requires_js_generators, curr.requires_js_generators),
+        signed_delta(
+            prev.requires_js_generators,
+            curr.requires_js_generators,
+            is_bootstrap
+        ),
     )?;
     writeln!(
         out,
         "  Native providers: {} {}",
         pair_with_arrow(prev.native_providers, curr.native_providers),
-        signed_delta(prev.native_providers, curr.native_providers),
+        signed_delta(prev.native_providers, curr.native_providers, is_bootstrap),
     )?;
     writeln!(
         out,
         "  Corrected generators: {} {}",
         curr.corrected_generators,
-        format_delta(prev.corrected_generators, curr.corrected_generators)
+        format_delta(
+            prev.corrected_generators,
+            curr.corrected_generators,
+            is_bootstrap
+        )
     )?;
     // Keep the user aware of which release row we're comparing against —
     // helps when someone runs this months after the last release.
@@ -254,15 +271,16 @@ fn render_coverage_trend(out: &mut dyn Write, baseline: Option<&CoverageBaseline
     Ok(())
 }
 
-/// Render `(baseline)` when prev == curr, otherwise the signed delta in
-/// parens, or `(unchanged)` for deltas of zero between different rows.
-fn format_delta(prev: u64, curr: u64) -> String {
-    if prev == curr {
-        // Could be "same row" (baseline) or "two different rows that happen
-        // to match". We cannot distinguish from the numbers alone, but the
-        // caller ensures both point to the same row when baseline has one
-        // release; the spec treats those cases identically.
+/// Render the delta annotation for a metric.
+///
+/// - `is_bootstrap = true` (single-row baseline) → `(baseline)`.
+/// - Two-or-more-row baseline: `(unchanged)` when prev == curr, otherwise
+///   a signed `(+N)` / `(-N)` delta.
+fn format_delta(prev: u64, curr: u64, is_bootstrap: bool) -> String {
+    if is_bootstrap {
         "(baseline)".to_string()
+    } else if prev == curr {
+        "(unchanged)".to_string()
     } else if curr > prev {
         format!("(+{})", curr - prev)
     } else {
@@ -275,12 +293,13 @@ fn pair_with_arrow(prev: u64, curr: u64) -> String {
     format!("{} \u{2192} {}", prev, curr)
 }
 
-/// Signed delta in parens for the prev→curr lines.
-fn signed_delta(prev: u64, curr: u64) -> String {
-    if prev == curr {
-        // Same-row path or genuine-unchanged — both read (baseline) when
-        // we cannot tell. Use (baseline) to match the rest of the section.
+/// Signed delta in parens for the prev→curr lines. Same bootstrap-vs-
+/// unchanged semantics as `format_delta`.
+fn signed_delta(prev: u64, curr: u64, is_bootstrap: bool) -> String {
+    if is_bootstrap {
         "(baseline)".to_string()
+    } else if prev == curr {
+        "(unchanged)".to_string()
     } else if curr > prev {
         format!("(+{})", curr - prev)
     } else {
@@ -732,10 +751,12 @@ mod tests {
         render_coverage_trend(&mut out, Some(&baseline)).unwrap();
         let txt = String::from_utf8_lossy(&out);
 
-        // total_specs unchanged between rows — renders (baseline).
+        // total_specs unchanged between two distinct rows — renders
+        // (unchanged), not (baseline). (baseline) is reserved for the
+        // single-row bootstrap case.
         assert!(
-            txt.contains("Total specs: 709 (baseline)"),
-            "Total specs unchanged should show (baseline), got:\n{txt}"
+            txt.contains("Total specs: 709 (unchanged)"),
+            "Total specs identical-across-rows should show (unchanged), got:\n{txt}"
         );
         // fully_functional: 526 → 534 (+8), with Phase 3A annotation
         // because native_providers delta == 8.
@@ -753,11 +774,30 @@ mod tests {
             txt.contains("Native providers: 12 \u{2192} 20 (+8)"),
             "Native providers signed delta wrong, got:\n{txt}"
         );
-        // Corrected unchanged.
+        // Corrected identical between rows — renders (unchanged).
         assert!(
-            txt.contains("Corrected generators: 139 (baseline)"),
-            "Corrected generators should show (baseline) when unchanged, got:\n{txt}"
+            txt.contains("Corrected generators: 139 (unchanged)"),
+            "Corrected generators identical-across-rows should show (unchanged), got:\n{txt}"
         );
+        // Guard: (baseline) must NOT appear anywhere in the per-metric
+        // lines for a multi-row baseline (only the trailing `(baseline:
+        // v…→v…)` disambiguation line is allowed to contain the word).
+        let metric_lines: Vec<&str> = txt
+            .lines()
+            .filter(|l| {
+                l.contains("Total specs:")
+                    || l.contains("Fully functional:")
+                    || l.contains("Requires-JS generators:")
+                    || l.contains("Native providers:")
+                    || l.contains("Corrected generators:")
+            })
+            .collect();
+        for line in &metric_lines {
+            assert!(
+                !line.contains("(baseline)"),
+                "(baseline) annotation leaked into multi-row metric line: {line}"
+            );
+        }
     }
 
     #[test]
@@ -804,6 +844,67 @@ mod tests {
             txt.contains("Fully functional: 540 (+14)"),
             "Fully functional signed delta wrong, got:\n{txt}"
         );
+    }
+
+    #[test]
+    fn baseline_two_rows_identical_metric_prints_unchanged() {
+        // Two distinct releases where one metric is numerically identical
+        // across both rows must render `(unchanged)` — never `(baseline)`,
+        // which is reserved for the single-row bootstrap case.
+        let body = r#"{
+  "schema_version": "1.0",
+  "releases": [
+    {
+      "version": "0.9.1",
+      "timestamp": "2026-04-20T00:00:00Z",
+      "total_specs": 709,
+      "fully_functional": 526,
+      "requires_js_generators": 1889,
+      "native_providers": 12,
+      "corrected_generators": 139,
+      "hand_audit_required": 866
+    },
+    {
+      "version": "0.10.0",
+      "timestamp": "2026-05-10T00:00:00Z",
+      "total_specs": 709,
+      "fully_functional": 530,
+      "requires_js_generators": 1800,
+      "native_providers": 15,
+      "corrected_generators": 139,
+      "hand_audit_required": 860
+    }
+  ]
+}"#;
+        let tmp = tempfile::TempDir::new().unwrap();
+        let p = write_baseline(&tmp, body);
+        let baseline = load_baseline(Some(&p)).unwrap().unwrap();
+
+        let mut out = Vec::new();
+        render_coverage_trend(&mut out, Some(&baseline)).unwrap();
+        let txt = String::from_utf8_lossy(&out);
+
+        // total_specs is 709 in both rows — must read (unchanged).
+        assert!(
+            txt.contains("Total specs: 709 (unchanged)"),
+            "Total specs identical across two rows must say (unchanged), got:\n{txt}"
+        );
+        // corrected_generators is 139 in both rows — same.
+        assert!(
+            txt.contains("Corrected generators: 139 (unchanged)"),
+            "Corrected generators identical across two rows must say (unchanged), got:\n{txt}"
+        );
+        // (baseline) must appear ONLY on the trailing disambiguation
+        // line — never on a per-metric line.
+        for line in txt.lines() {
+            if line.starts_with("  (baseline: v") {
+                continue;
+            }
+            assert!(
+                !line.contains("(baseline)"),
+                "(baseline) must not appear on any metric line in the two-row case: {line}"
+            );
+        }
     }
 
     #[test]
