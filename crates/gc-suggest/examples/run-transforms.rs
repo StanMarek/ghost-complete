@@ -1,4 +1,4 @@
-//! Phase 0 oracle helper: apply a transform pipeline and emit suggestions as JSON.
+//! Oracle helper for the fig-converter: apply a transform pipeline and emit suggestions as JSON.
 //!
 //! Reads `{ "transforms": [...], "input": "..." }` from stdin, runs the
 //! pipeline, and writes `{ "output": [...] }` to stdout on success or

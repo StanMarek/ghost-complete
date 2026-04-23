@@ -85,9 +85,9 @@ pub enum SuggestionSource {
     Script,
     Env,
     SshConfig,
-    /// Phase 3A native providers (e.g. `arduino_cli_boards`). Distinct
-    /// from `Spec`/`Script` so providers are identifiable in telemetry
-    /// and downstream filtering without overlapping the legacy paths.
+    /// Native providers (e.g. `arduino_cli_boards`). Distinct from
+    /// `Spec`/`Script` so providers are identifiable in telemetry and
+    /// downstream filtering without overlapping the legacy paths.
     Provider,
 }
 
@@ -110,7 +110,7 @@ impl Default for Suggestion {
         // sets `kind` and `source` explicitly; this default is only
         // observable when a caller forgets to, and picking a neutral
         // "dynamic arg-value" bucket is strictly better than defaulting
-        // to Command (which would misclassify silently — see TDA-1/TDA-4).
+        // to Command (which would misclassify silently).
         Self {
             text: String::new(),
             description: None,
@@ -119,5 +119,23 @@ impl Default for Suggestion {
             score: 0,
             match_indices: Vec::new(),
         }
+    }
+}
+
+#[cfg(test)]
+mod kind_invariants {
+    use super::*;
+
+    // Pin the behavioral contracts for `ProviderValue` + the neutral
+    // `Suggestion::default()`. Silent drift in any of these values would
+    // cross-pollute frecency buckets (key_tag) or mis-rank the popup
+    // (sort_priority) without being caught by the relative-ordering tests
+    // in `engine.rs`.
+    #[test]
+    fn provider_value_contract() {
+        assert_eq!(SuggestionKind::ProviderValue.key_tag(), "provider");
+        assert_eq!(SuggestionKind::ProviderValue.sort_priority(), 6);
+        assert_eq!(Suggestion::default().kind, SuggestionKind::ProviderValue);
+        assert_eq!(Suggestion::default().source, SuggestionSource::Provider);
     }
 }

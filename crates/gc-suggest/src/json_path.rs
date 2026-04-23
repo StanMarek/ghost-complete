@@ -48,10 +48,33 @@ impl JsonPath {
         while i < bytes.len() {
             if bytes[i] == b'[' {
                 // Bracket segment: [0] or ['key'] or ["key"]
-                let end = s[i + 1..]
-                    .find(']')
-                    .map(|p| i + 1 + p)
-                    .ok_or_else(|| format!("unclosed '[' at offset {i} in {s:?}"))?;
+                //
+                // When the inner payload is quoted (`['k']` / `["k"]`) the
+                // key itself may contain a `]` — e.g. `foo["a]b"]`. Walk
+                // past the matching close-quote first so we don't
+                // prematurely close on a `]` embedded in the key. For the
+                // unquoted numeric-index form we fall back to the plain
+                // "first `]`" search.
+                let inner_start = i + 1;
+                let end = if inner_start < bytes.len()
+                    && (bytes[inner_start] == b'\'' || bytes[inner_start] == b'"')
+                {
+                    let quote = bytes[inner_start];
+                    let after_open = inner_start + 1;
+                    let close_quote = (after_open..bytes.len())
+                        .find(|&j| bytes[j] == quote)
+                        .ok_or_else(|| format!("unclosed quote at offset {i} in {s:?}"))?;
+                    // The `]` must come immediately after the close-quote.
+                    s[close_quote + 1..]
+                        .find(']')
+                        .map(|p| close_quote + 1 + p)
+                        .ok_or_else(|| format!("unclosed '[' at offset {i} in {s:?}"))?
+                } else {
+                    s[inner_start..]
+                        .find(']')
+                        .map(|p| inner_start + p)
+                        .ok_or_else(|| format!("unclosed '[' at offset {i} in {s:?}"))?
+                };
                 let inner = &s[i + 1..end];
                 if inner.is_empty() {
                     return Err(format!("empty bracket segment at offset {i} in {s:?}"));
@@ -230,6 +253,38 @@ mod tests {
                 JsonPathSegment::Key("bar baz".into()),
             ]
         );
+    }
+
+    #[test]
+    fn test_quoted_bracket_key_containing_bracket() {
+        // A quoted key is allowed to contain `]` — the bracket parser
+        // must walk past the matching close-quote before searching for
+        // the closing `]`. Previously `foo["a]b"]` closed prematurely at
+        // the inner `]` and rejected the path.
+        let p = JsonPath::parse("foo[\"a]b\"]").unwrap();
+        assert_eq!(
+            p.segments(),
+            &[
+                JsonPathSegment::Key("foo".into()),
+                JsonPathSegment::Key("a]b".into()),
+            ]
+        );
+
+        // Same behavior for single quotes.
+        let p = JsonPath::parse("foo['a]b'].c").unwrap();
+        assert_eq!(
+            p.segments(),
+            &[
+                JsonPathSegment::Key("foo".into()),
+                JsonPathSegment::Key("a]b".into()),
+                JsonPathSegment::Key("c".into()),
+            ]
+        );
+
+        // Looks up against a JSON value with a literal `]` in the key.
+        let obj = serde_json::json!({"foo": {"a]b": 42}});
+        let p = JsonPath::parse("foo[\"a]b\"]").unwrap();
+        assert_eq!(p.lookup(&obj).and_then(|v| v.as_i64()), Some(42));
     }
 
     #[test]

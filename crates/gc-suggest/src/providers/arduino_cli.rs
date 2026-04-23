@@ -21,9 +21,9 @@ use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 
 /// Arduino's USB enumeration can be slow on the first scan after a cold
 /// boot (the CLI walks every serial port and probes them in series).
-/// 2 seconds is the Phase 3A plan's default for external-tool providers
-/// and is tight enough to keep completions responsive while tolerating
-/// the one-shot enumeration cost on a fresh shell.
+/// 2s is the convention for external-tool providers — tight enough to
+/// stay responsive, loose enough to tolerate the one-shot enumeration
+/// cost on a fresh shell.
 const ARDUINO_CLI_TIMEOUT_MS: u64 = 2_000;
 
 /// Top-level shape returned by `arduino-cli board list --format json`.
@@ -508,5 +508,33 @@ mod tests {
             .generate_with_binary(&ctx, "/nonexistent/arduino-cli-for-test")
             .await;
         assert!(matches!(result, Ok(ref v) if v.is_empty()));
+    }
+
+    #[tokio::test]
+    async fn boards_generate_production_wrapper_returns_ok_without_binary_installed() {
+        // Covers the production `Provider::generate` entry point that
+        // `providers::resolve` actually calls — the
+        // `generate_with_binary` seam above does NOT exercise the
+        // hardcoded `"arduino-cli"` literal. If that literal were ever
+        // typo'd, every other test would still pass; only a call
+        // through `.generate(&ctx)` would catch it. Assertion is
+        // `Ok(_)` (not `Ok(vec![])`) because a developer machine could
+        // have arduino-cli installed — we only pin the "never Err"
+        // contract.
+        let tmp = tempfile::TempDir::new().unwrap();
+        let ctx = ctx_for(tmp.path().to_path_buf());
+        let result = ArduinoCliBoards.generate(&ctx).await;
+        assert!(matches!(result, Ok(_)));
+    }
+
+    #[tokio::test]
+    async fn ports_generate_production_wrapper_returns_ok_without_binary_installed() {
+        // Sibling of the boards test above — covers the production
+        // `Provider::generate` path for `ArduinoCliPorts` so a typo'd
+        // `"arduino-cli"` literal would be caught here too.
+        let tmp = tempfile::TempDir::new().unwrap();
+        let ctx = ctx_for(tmp.path().to_path_buf());
+        let result = ArduinoCliPorts.generate(&ctx).await;
+        assert!(matches!(result, Ok(_)));
     }
 }

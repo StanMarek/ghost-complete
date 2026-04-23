@@ -56,12 +56,10 @@ silently changed behaviour.
 ### Changed
 
 - **`ghost-complete status`** output now includes a "Coverage trend (vs
-  previous release)" section at the end. Renders `(baseline)` for single-row
-  bootstrap, `(unchanged)` when a metric matches the previous release
-  exactly, and signed `(+N)` / `(-N)` deltas otherwise. When the positive
-  delta on `native_providers` equals 8 exactly, the `fully_functional` line
-  gains a `(+8 from Phase 3A)` annotation so readers can tie the jump back
-  to its source.
+  previous release)" section at the end. The delta renderer has three
+  cases: `(baseline)` for single-row bootstrap (no prior release to
+  compare against), `(unchanged)` when a metric matches the previous
+  release exactly, and signed `(+N)` / `(-N)` deltas otherwise.
 
 ### Fixed
 

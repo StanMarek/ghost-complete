@@ -21,8 +21,8 @@ use tokio::process::Command;
 use super::{Provider, ProviderCtx};
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 
-/// Timeout for `conda env list`. 2s matches the Phase 3A default for
-/// external-tool subprocesses — generous for a local filesystem read
+/// Timeout for `conda env list`. 2s is the convention for
+/// external-tool providers — generous for a local filesystem read
 /// but tight enough that a borked conda installation can't stall
 /// completion.
 const CONDA_ENV_LIST_TIMEOUT_MS: u64 = 2_000;
@@ -229,5 +229,25 @@ py311                    /opt/conda/envs/py311
             .generate_with_binary(&ctx, "/nonexistent/conda-for-test")
             .await;
         assert!(matches!(result, Ok(ref v) if v.is_empty()));
+    }
+
+    #[tokio::test]
+    async fn generate_production_wrapper_returns_ok_without_binary_installed() {
+        // Covers the production `Provider::generate` entry point that
+        // `providers::resolve` actually calls — the
+        // `generate_with_binary` seam above does NOT exercise the
+        // hardcoded `"conda"` literal. If that literal were ever
+        // typo'd, every other test would still pass; only a call
+        // through `.generate(&ctx)` would catch it. Assertion is
+        // `Ok(_)` (not `Ok(vec![])`) because a developer machine could
+        // have conda installed — we only pin the "never Err" contract.
+        let tmp = tempfile::TempDir::new().unwrap();
+        let ctx = ProviderCtx {
+            cwd: tmp.path().to_path_buf(),
+            env: std::sync::Arc::new(std::collections::HashMap::new()),
+            current_token: String::new(),
+        };
+        let result = MambaEnvs.generate(&ctx).await;
+        assert!(matches!(result, Ok(_)));
     }
 }

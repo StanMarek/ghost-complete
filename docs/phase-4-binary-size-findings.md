@@ -235,6 +235,9 @@ opportunities" below.
   hand-maintained `include_str!` tuples with a single `include!` of
   the generated file; updated the module doc.
 - `benchmarks/binary-size-baseline.txt` — updated from
-  49,385,984 → 29,798,512 so future `check-binary-size.sh
-  --delta-max` runs catch regressions against the new floor.
+  49,385,984 → 29,798,512 (the baseline file had been captured on an
+  earlier commit than the 49,923,744-byte `wc -c` measurement; the two
+  pre-intervention numbers differ by ~538 KB of intervening changes, not
+  by measurement error) so future `check-binary-size.sh --delta-max`
+  runs catch regressions against the new floor.
 - `docs/phase-4-binary-size-findings.md` — this document.

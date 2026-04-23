@@ -447,7 +447,7 @@ pub struct SpecResolution {
     pub subcommands: Vec<Suggestion>,
     pub options: Vec<Suggestion>,
     pub native_generators: Vec<String>,
-    /// Phase 3A native providers resolved from the spec (e.g.
+    /// Native providers resolved from the spec (e.g.
     /// `arduino_cli_boards`). The engine dispatches these asynchronously
     /// via `resolve_providers`. Parallel to `native_generators` — we
     /// translate the `"type"` string into `ProviderKind` at spec
@@ -648,11 +648,11 @@ fn collect_generators(
         // a generator names a native/provider type alongside a script.
         let handled_by_type = if let Some(ref gen_type) = gen.generator_type {
             if let Some(kind) = providers::kind_from_type_str(gen_type) {
-                // Phase 3A native provider — routed to the async
-                // provider pipeline instead of the legacy native/script
-                // paths. The provider IS the implementation; do not
-                // also push onto `native` or fall through to the script
-                // branch below.
+                // Native provider — routed to the async provider
+                // pipeline instead of the legacy native/script paths.
+                // The provider IS the implementation; do not also push
+                // onto `native` or fall through to the script branch
+                // below.
                 provider.push(kind);
                 true
             } else if KNOWN_NATIVE_GENERATOR_TYPES.contains(&gen_type.as_str()) {
@@ -666,7 +666,7 @@ fn collect_generators(
                 // DO fall through to the script branch: a spec that
                 // pairs an unrecognized type string with a real
                 // `script` block should still run the script, matching
-                // pre-Phase-3A behavior.
+                // the behavior that predates native provider dispatch.
                 //
                 // Only warn when there is no fallback script/script_template:
                 // the message previously claimed "no completions will be
@@ -1835,9 +1835,10 @@ mod tests {
     fn test_resolve_spec_unknown_type_plus_script_still_dispatches_script() {
         // Complement to the double-dispatch test above: when `type` is
         // an unrecognized string (unknown-type warn path), the script
-        // block MUST still dispatch. This preserves pre-Phase-3A
-        // behavior — specs that paired a junk type string with a real
-        // script were relying on the script to run.
+        // block MUST still dispatch. This preserves the behavior that
+        // predates native provider dispatch — specs that paired a junk
+        // type string with a real script were relying on the script to
+        // run.
         let spec: CompletionSpec = serde_json::from_str(
             r#"{
                 "name": "test-unknown-plus-script",

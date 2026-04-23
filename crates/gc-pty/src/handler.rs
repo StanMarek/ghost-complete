@@ -770,13 +770,19 @@ impl InputHandler {
             let mut all_results = Vec::new();
 
             // Build ProviderCtx once — the env snapshot is shared across
-            // every provider in this resolution pass. At T1 this is
-            // cheap (always an empty kinds slice) but the construction
-            // is kept here so T2–T9 add real providers without touching
-            // the handler.
+            // every provider in this resolution pass. Skip the
+            // `std::env::vars().collect()` walk when no provider is
+            // scheduled this pass: script-only specs hit this branch on
+            // every keystroke, and no current provider reads `ctx.env`,
+            // so the collected map would be dead weight on the hot path.
+            let env = if !provider_generators.is_empty() {
+                Arc::new(std::env::vars().collect())
+            } else {
+                Arc::new(std::collections::HashMap::new())
+            };
             let provider_ctx = gc_suggest::providers::ProviderCtx {
                 cwd: cwd.clone(),
-                env: Arc::new(std::env::vars().collect()),
+                env,
                 current_token: ctx.current_word.clone(),
             };
 

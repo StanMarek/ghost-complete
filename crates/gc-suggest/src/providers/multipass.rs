@@ -20,10 +20,10 @@ use tokio::process::Command;
 use super::{Provider, ProviderCtx};
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 
-/// Timeout for `multipass list --format=json`. 2s matches the Phase 3A
-/// default for external-tool subprocesses — comfortably above the local
-/// daemon round-trip while tight enough that a stalled `multipassd`
-/// can't block completion.
+/// Timeout for `multipass list --format=json`. 2s is the convention for
+/// external-tool providers — comfortably above the local daemon
+/// round-trip while tight enough that a stalled `multipassd` can't
+/// block completion.
 const MULTIPASS_LIST_TIMEOUT_MS: u64 = 2_000;
 
 /// Top-level shape returned by `multipass list --format=json`.
@@ -288,5 +288,26 @@ mod tests {
             .generate_with_binary(&ctx, "/nonexistent/multipass-for-test")
             .await;
         assert!(matches!(result, Ok(ref v) if v.is_empty()));
+    }
+
+    #[tokio::test]
+    async fn generate_production_wrapper_returns_ok_without_binary_installed() {
+        // Covers the production `Provider::generate` entry point that
+        // `providers::resolve` actually calls — the
+        // `generate_with_binary` seam above does NOT exercise the
+        // hardcoded `"multipass"` literal. If that literal were ever
+        // typo'd (e.g. `"multipas"`), every other test would still
+        // pass; only a call through `.generate(&ctx)` would catch it.
+        // Assertion is `Ok(_)` (not `Ok(vec![])`) because a developer
+        // machine could have multipass installed — we only pin the
+        // "never Err" contract, which is the actual regression guard.
+        let tmp = tempfile::TempDir::new().unwrap();
+        let ctx = ProviderCtx {
+            cwd: tmp.path().to_path_buf(),
+            env: std::sync::Arc::new(std::collections::HashMap::new()),
+            current_token: String::new(),
+        };
+        let result = MultipassList.generate(&ctx).await;
+        assert!(matches!(result, Ok(_)));
     }
 }

@@ -3,8 +3,8 @@
 //! and `pandoc --list-output-formats` and emit one format identifier
 //! per line.
 //!
-//! Both providers live here: `PandocInputFormats` (T7) runs the
-//! `--list-input-formats` variant; `PandocOutputFormats` (T8) runs the
+//! Both providers live here: `PandocInputFormats` runs the
+//! `--list-input-formats` variant; `PandocOutputFormats` runs the
 //! `--list-output-formats` variant. They share the
 //! `run_pandoc_formats` subprocess helper — the only delta between the
 //! two subprocess calls is which flag is passed to pandoc, so the
@@ -23,14 +23,14 @@ use tokio::process::Command;
 use super::{Provider, ProviderCtx};
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 
-/// Timeout for `pandoc --list-*-formats`. Matches the Phase 3A default
-/// for external-tool subprocesses: generous for what is effectively a
+/// Timeout for `pandoc --list-*-formats`. 2s is the convention for
+/// external-tool providers — generous for what is effectively a
 /// constant-time list print, but tight enough that a stalled pandoc
 /// installation cannot block completion.
 const PANDOC_LIST_TIMEOUT_MS: u64 = 2_000;
 
 /// Shared runner for `pandoc --list-<direction>-formats`. The
-/// direction argument distinguishes the two Phase 3A providers
+/// direction argument distinguishes the two providers
 /// (`pandoc_input_formats`, `pandoc_output_formats`) without
 /// duplicating the tokio::process::Command monomorphization.
 ///
@@ -296,5 +296,33 @@ mod tests {
             .generate_with_binary(&ctx, "/nonexistent/pandoc-for-test")
             .await;
         assert!(matches!(result, Ok(ref v) if v.is_empty()));
+    }
+
+    #[tokio::test]
+    async fn input_generate_production_wrapper_returns_ok_without_binary_installed() {
+        // Covers the production `Provider::generate` entry point that
+        // `providers::resolve` actually calls — the
+        // `generate_with_binary` seam above does NOT exercise the
+        // hardcoded `"pandoc"` literal. If that literal were ever
+        // typo'd, every other test would still pass; only a call
+        // through `.generate(&ctx)` would catch it. Assertion is
+        // `Ok(_)` (not `Ok(vec![])`) because a developer machine could
+        // have pandoc installed — we only pin the "never Err"
+        // contract.
+        let tmp = tempfile::TempDir::new().unwrap();
+        let ctx = ctx_for(tmp.path().to_path_buf());
+        let result = PandocInputFormats.generate(&ctx).await;
+        assert!(matches!(result, Ok(_)));
+    }
+
+    #[tokio::test]
+    async fn output_generate_production_wrapper_returns_ok_without_binary_installed() {
+        // Sibling of the input-formats test above — covers the
+        // production `Provider::generate` path for `PandocOutputFormats`
+        // so a typo'd `"pandoc"` literal would be caught here too.
+        let tmp = tempfile::TempDir::new().unwrap();
+        let ctx = ctx_for(tmp.path().to_path_buf());
+        let result = PandocOutputFormats.generate(&ctx).await;
+        assert!(matches!(result, Ok(_)));
     }
 }

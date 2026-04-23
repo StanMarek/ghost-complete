@@ -75,11 +75,10 @@ pub struct SyncResult {
     /// Native git generators resolved from the spec. The caller dispatches
     /// these asynchronously via `resolve_git` to avoid blocking the runtime.
     pub git_generators: Vec<git::GitQueryKind>,
-    /// Phase 3A native providers resolved from the spec (e.g.
-    /// `arduino_cli_boards`). The caller dispatches these asynchronously via
-    /// `resolve_providers`. Carries pre-resolved `ProviderKind`s so the
-    /// engine can dispatch without re-parsing the `"type"` string on
-    /// the keystroke hot path.
+    /// Native providers resolved from the spec (e.g. `arduino_cli_boards`).
+    /// The caller dispatches these asynchronously via `resolve_providers`.
+    /// Carries pre-resolved `ProviderKind`s so the engine can dispatch
+    /// without re-parsing the `"type"` string on the keystroke hot path.
     pub provider_generators: Vec<ProviderKind>,
 }
 
@@ -289,6 +288,7 @@ impl SuggestionEngine {
                         .filter(|l| !l.trim().is_empty())
                         .map(|l| Suggestion {
                             text: l.to_string(),
+                            kind: SuggestionKind::Command,
                             source: SuggestionSource::Script,
                             ..Default::default()
                         })
@@ -417,12 +417,12 @@ impl SuggestionEngine {
         Ok(fuzzy::rank(query, all, MAX_DYNAMIC_CANDIDATES))
     }
 
-    /// Resolve Phase 3A native providers asynchronously. Mirrors
-    /// `resolve_git`: per-kind failures are downgraded to
-    /// `tracing::warn!` + empty vec so a single slow or broken
-    /// provider cannot block the rest of the pool. Empty-query case
-    /// skips `fuzzy::rank` to preserve the raw kind-ordering for the
-    /// handler's eventual re-rank (same rationale as `resolve_git`).
+    /// Resolve native providers asynchronously. Mirrors `resolve_git`:
+    /// per-kind failures are downgraded to `tracing::warn!` + empty vec
+    /// so a single slow or broken provider cannot block the rest of the
+    /// pool. Empty-query case skips `fuzzy::rank` to preserve the raw
+    /// kind-ordering for the handler's eventual re-rank (same rationale
+    /// as `resolve_git`).
     pub async fn resolve_providers(
         &self,
         kinds: &[ProviderKind],

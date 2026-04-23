@@ -1,5 +1,5 @@
-//! Phase 3A native providers — async, context-aware suggestion sources
-//! that replace JavaScript-backed Fig generators for a curated set of
+//! Native providers — async, context-aware suggestion sources that
+//! replace JavaScript-backed Fig generators for a curated set of
 //! commands.
 //!
 //! This module is the scaffolding counterpart to `crate::git`:
@@ -25,7 +25,7 @@
 //! ### Async trait encoding
 //!
 //! We cannot use native `async fn` in traits with `dyn Provider` on
-//! stable Rust, and the Phase 3A plan forbids adding the `async-trait`
+//! stable Rust, and we deliberately avoid adding the `async-trait`
 //! crate as a new dependency. Instead, `generate` returns an explicit
 //! `impl Future<Output = Result<Vec<Suggestion>>> + Send` — each
 //! implementer writes `async fn generate(...)` which desugars to the

@@ -5,7 +5,7 @@ use serde::de::{self, MapAccess, Visitor};
 use serde::Deserialize;
 
 use crate::json_path::JsonPath;
-use crate::types::{Suggestion, SuggestionSource};
+use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 
 /// A single transform step in a pipeline that processes raw generator output
 /// into completion suggestions.
@@ -525,6 +525,7 @@ pub fn apply_regex_extract(
             Some(Suggestion {
                 text,
                 description,
+                kind: SuggestionKind::Command,
                 source: SuggestionSource::Script,
                 ..Default::default()
             })
@@ -552,6 +553,7 @@ pub fn apply_json_extract(
             Some(Suggestion {
                 text,
                 description,
+                kind: SuggestionKind::Command,
                 source: SuggestionSource::Script,
                 ..Default::default()
             })
@@ -604,6 +606,7 @@ pub fn apply_json_extract_array(
             Some(Suggestion {
                 text,
                 description,
+                kind: SuggestionKind::Command,
                 source: SuggestionSource::Script,
                 ..Default::default()
             })
@@ -643,6 +646,7 @@ pub fn apply_column_extract(
             Some(Suggestion {
                 text,
                 description,
+                kind: SuggestionKind::Command,
                 source: SuggestionSource::Script,
                 ..Default::default()
             })
@@ -819,6 +823,7 @@ pub fn execute_pipeline(output: &str, transforms: &[Transform]) -> Result<Vec<Su
         .into_iter()
         .map(|text| Suggestion {
             text,
+            kind: SuggestionKind::Command,
             source: SuggestionSource::Script,
             ..Default::default()
         })

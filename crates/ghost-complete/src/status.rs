@@ -126,7 +126,7 @@ impl CoverageBaseline {
     }
 }
 
-/// Resolve a baseline file per task policy.
+/// Resolve a baseline file, honouring the documented priority order.
 ///
 /// Priority order:
 ///   1. explicit `--baseline <path>` flag

@@ -7,7 +7,7 @@ use anyhow::Result;
 use gc_buffer::CommandContext;
 
 use crate::provider::Provider;
-use crate::types::{Suggestion, SuggestionSource};
+use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 
 pub struct CommandsProvider {
     // Arc<str>: per-keystroke iteration bumps a refcount instead of re-allocating
@@ -93,6 +93,7 @@ impl Provider for CommandsProvider {
             .iter()
             .map(|cmd| Suggestion {
                 text: cmd.as_ref().to_string(),
+                kind: SuggestionKind::Command,
                 source: SuggestionSource::Commands,
                 ..Default::default()
             })

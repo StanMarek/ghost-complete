@@ -7,7 +7,7 @@
 //! has no Linux counterpart. On Linux the subprocess fails at spawn
 //! time, which is indistinguishable from "tool not installed" and flows
 //! through the standard `None` → empty-Vec path used by every other
-//! Phase 3A provider.
+//! native provider.
 //!
 //! Filename is `macos_defaults.rs` rather than `defaults.rs` so the
 //! module name does not collide visually with Rust's ubiquitous
@@ -22,8 +22,8 @@ use tokio::process::Command;
 use super::{Provider, ProviderCtx};
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 
-/// Timeout for `defaults domains`. 2s matches the Phase 3A default for
-/// external-tool subprocesses — generous for an on-device preference
+/// Timeout for `defaults domains`. 2s is the convention for
+/// external-tool providers — generous for an on-device preference
 /// read but tight enough that a stuck `cfprefsd` can't stall completion.
 const DEFAULTS_DOMAINS_TIMEOUT_MS: u64 = 2_000;
 
@@ -225,5 +225,27 @@ mod tests {
             .generate_with_binary(&ctx, "/nonexistent/defaults-for-test")
             .await;
         assert!(matches!(result, Ok(ref v) if v.is_empty()));
+    }
+
+    #[tokio::test]
+    async fn generate_production_wrapper_returns_ok_without_binary_installed() {
+        // Covers the production `Provider::generate` entry point that
+        // `providers::resolve` actually calls — the
+        // `generate_with_binary` seam above does NOT exercise the
+        // hardcoded `"defaults"` literal. If that literal were ever
+        // typo'd, every other test would still pass; only a call
+        // through `.generate(&ctx)` would catch it. Assertion is
+        // `Ok(_)` (not `Ok(vec![])`) because on macOS hosts
+        // `defaults` DOES exist and will enumerate real preference
+        // domains — we only pin the "never Err" contract, which is
+        // the actual regression guard.
+        let tmp = tempfile::TempDir::new().unwrap();
+        let ctx = ProviderCtx {
+            cwd: tmp.path().to_path_buf(),
+            env: std::sync::Arc::new(std::collections::HashMap::new()),
+            current_token: String::new(),
+        };
+        let result = DefaultsDomains.generate(&ctx).await;
+        assert!(matches!(result, Ok(_)));
     }
 }

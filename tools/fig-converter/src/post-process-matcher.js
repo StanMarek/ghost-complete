@@ -14,7 +14,7 @@
 
 /**
  * Version tag stamped on generators whose prior conversion produced incorrect
- * completions and has now been fixed (see plan §-1.4 "Spec format extension").
+ * completions and has now been fixed.
  * Only applied to the specific bug-class paths — substring/slice short-circuit
  * and the JSON.parse unresolvable-field sentinel. Generic "can't match"
  * requires_js returns are NOT tagged, because those were never mis-converted

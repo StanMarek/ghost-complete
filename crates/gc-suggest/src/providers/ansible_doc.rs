@@ -9,7 +9,7 @@
 //! in ansible-core >= 2.10. Older versions emit a namespace-grouped
 //! envelope; we deliberately do not attempt to handle those — if parse
 //! fails the provider returns empty, matching the pattern used by every
-//! other Phase 3A provider when the external tool misbehaves.
+//! other native provider when the external tool misbehaves.
 //!
 //! The payload maps cleanly onto `BTreeMap<String, String>` via serde's
 //! built-in map support, so no explicit `#[derive(Deserialize)]` type
@@ -28,10 +28,10 @@ use tokio::process::Command;
 use super::{Provider, ProviderCtx};
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 
-/// Timeout for `ansible-doc --list --json`. 2s matches the Phase 3A
-/// default for external-tool subprocesses — comfortably above the
-/// module-index scan time on a typical ansible install while tight
-/// enough that a misconfigured collection path cannot block completion.
+/// Timeout for `ansible-doc --list --json`. 2s is the convention for
+/// external-tool providers — comfortably above the module-index scan
+/// time on a typical ansible install while tight enough that a
+/// misconfigured collection path cannot block completion.
 const ANSIBLE_DOC_LIST_TIMEOUT_MS: u64 = 2_000;
 
 /// The wire shape of `ansible-doc --list --json`: a flat map of
@@ -266,5 +266,27 @@ mod tests {
             .generate_with_binary(&ctx, "/nonexistent/ansible-doc-for-test")
             .await;
         assert!(matches!(result, Ok(ref v) if v.is_empty()));
+    }
+
+    #[tokio::test]
+    async fn generate_production_wrapper_returns_ok_without_binary_installed() {
+        // Covers the production `Provider::generate` entry point that
+        // `providers::resolve` actually calls — the
+        // `generate_with_binary` seam above does NOT exercise the
+        // hardcoded `"ansible-doc"` literal. If that literal were ever
+        // typo'd (e.g. `"ansible_doc"`), every other test here would
+        // still pass; only a call through `.generate(&ctx)` would catch
+        // it. Assertion is `Ok(_)` (not `Ok(vec![])`) because a
+        // developer machine could have ansible-doc installed — we
+        // only pin the "never Err" contract, which is the actual
+        // regression guard.
+        let tmp = tempfile::TempDir::new().unwrap();
+        let ctx = ProviderCtx {
+            cwd: tmp.path().to_path_buf(),
+            env: std::sync::Arc::new(std::collections::HashMap::new()),
+            current_token: String::new(),
+        };
+        let result = AnsibleDocModules.generate(&ctx).await;
+        assert!(matches!(result, Ok(_)));
     }
 }
