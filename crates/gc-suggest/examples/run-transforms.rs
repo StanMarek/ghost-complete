@@ -4,8 +4,8 @@
 //! pipeline, and writes `{ "output": [...] }` to stdout on success or
 //! `{ "error": "..." }` on failure. Exits 0 on success, 1 on any error.
 //!
-//! Invoked by the Node-side oracle (`tools/requires-js-oracle`) via
-//! `spawnSync`. Kept intentionally minimal — the real logic lives in
+//! Invoked by the fig-converter oracle (`tools/fig-converter/src/oracle.js`)
+//! via `spawnSync`. Kept intentionally minimal — the real logic lives in
 //! `gc_suggest::pipeline`.
 //!
 //! Run manually:

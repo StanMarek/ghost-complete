@@ -166,6 +166,13 @@ impl TryFrom<ParameterizedHelper> for ParameterizedTransform {
     fn try_from(h: ParameterizedHelper) -> Result<Self, Self::Error> {
         Ok(match h {
             ParameterizedHelper::SplitOn { delimiter } => {
+                // `str::split("")` has surprising Unicode-boundary semantics
+                // (emits a token between every char cluster) and will never
+                // do what a spec author intended. Reject at load time, matching
+                // the sibling check inside `json_extract_array` below.
+                if delimiter.is_empty() {
+                    return Err("split_on: delimiter must not be empty".to_string());
+                }
                 ParameterizedTransform::SplitOn { delimiter }
             }
             ParameterizedHelper::Skip { n } => ParameterizedTransform::Skip { n },
@@ -757,6 +764,21 @@ pub fn execute_pipeline(output: &str, transforms: &[Transform]) -> Result<Vec<Su
                 // Terminal transform on the raw output. `validate_pipeline`
                 // rejects any prior split, so `current_output` still holds
                 // the full blob here.
+                //
+                // Cross-field invariants on `JsonExtractArray` are enforced
+                // at deserialize time by `TryFrom<ParameterizedHelper>`, but
+                // the struct's fields are `pub` and direct construction
+                // bypasses that check. Catch bad direct-construction in
+                // debug builds so a future caller cannot silently produce
+                // garbage completions.
+                debug_assert!(
+                    !(split_index.is_some() && split_on.is_none()),
+                    "JsonExtractArray: split_index requires split_on",
+                );
+                debug_assert!(
+                    split_on.as_deref() != Some(""),
+                    "JsonExtractArray: split_on must not be empty",
+                );
                 suggestions = Some(apply_json_extract_array(
                     &current_output,
                     path,
@@ -1044,6 +1066,20 @@ mod tests {
     }
 
     #[test]
+    fn test_split_on_empty_delimiter_rejected() {
+        // `str::split("")` has surprising Unicode-boundary semantics that
+        // never match spec-author intent — mirror the sibling check on
+        // `json_extract_array.split_on` and reject at load time.
+        let err = serde_json::from_str::<Transform>(r#"{"type": "split_on", "delimiter": ""}"#)
+            .unwrap_err();
+        let msg = err.to_string();
+        assert!(
+            msg.contains("split_on") && msg.contains("must not be empty"),
+            "error should name split_on and explain empty delimiter: {msg}"
+        );
+    }
+
+    #[test]
     fn test_json_extract_array_empty_split_on_rejected() {
         // `str::split("")` has surprising Unicode-boundary semantics. A spec
         // author writing `"split_on": ""` is ~always wrong — reject at load
@@ -1312,6 +1348,33 @@ mod tests {
     }
 
     #[test]
+    fn test_error_guard_both_match_returns_none() {
+        // Both `starts_with` and `contains` set, both match the input —
+        // either is sufficient to block. Pin the "both match → block"
+        // path alongside the single-predicate tests above.
+        let result = apply_error_guard("Err: boom", Some("Err"), Some("boom"));
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_error_guard_only_contains_matches_returns_none() {
+        // `starts_with` set but does NOT match; `contains` set and DOES
+        // match. The contains arm alone must be enough to block — this
+        // was previously untested.
+        let result = apply_error_guard("it will fail", Some("ZZZ"), Some("fail"));
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_error_guard_both_none_passes_through() {
+        // Both predicates unset: the guard is a pure pass-through. Pin
+        // this explicitly so a refactor that inverts the predicate
+        // polarity cannot silently turn no-op guards into hard blocks.
+        let result = apply_error_guard("anything", None, None);
+        assert_eq!(result.as_deref(), Some("anything"));
+    }
+
+    #[test]
     fn test_regex_extract() {
         let lines = vec!["nginx   running".into(), "redis   stopped".into()];
         let re = Regex::new(r"^(\S+)\s+(\S+)").unwrap();
@@ -1364,6 +1427,26 @@ mod tests {
         let result = apply_json_extract(&lines, &name, None);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].text, "test");
+    }
+
+    #[test]
+    fn test_json_extract_non_string_description_becomes_none() {
+        // `as_str()` on a non-string JSON value returns None. The line
+        // must still emit a suggestion — the text field is a string so
+        // the row survives — but the description must be None rather
+        // than a stringified number. Pins the silent-drop-on-non-string
+        // desc behaviour.
+        let lines = vec![r#"{"name":"x","count":42}"#.into()];
+        let name = JsonPath::parse("name").unwrap();
+        let desc = JsonPath::parse("count").unwrap();
+        let result = apply_json_extract(&lines, &name, Some(&desc));
+        assert_eq!(result.len(), 1, "row must emit, not filter");
+        assert_eq!(result[0].text, "x");
+        assert!(
+            result[0].description.is_none(),
+            "non-string desc value must become None, got: {:?}",
+            result[0].description
+        );
     }
 
     #[test]

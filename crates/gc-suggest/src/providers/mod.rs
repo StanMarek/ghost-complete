@@ -6,9 +6,9 @@
 //! - `Provider` is the async trait every native provider implements.
 //! - `ProviderCtx` is the context handed to each `generate` call (cwd,
 //!   environment, current token).
-//! - `ProviderKind` is a closed enum listing every registered provider.
-//!   Concrete variants are added by T2–T9 as each lands; the first
-//!   variant (T2's `ArduinoCliBoards`) is in place.
+//! - `ProviderKind` is a closed-for-this-crate enum listing every
+//!   registered provider. Adding a new provider means adding one
+//!   variant + one `kind_from_type_str` arm + one `resolve` arm.
 //! - `kind_from_type_str` is the string→kind dispatcher wired up from
 //!   spec loading. Specs reference providers via `{"type": "<name>"}`
 //!   exactly like the existing `git_branches` / `filepaths` native
@@ -92,9 +92,14 @@ pub trait Provider: Send + Sync {
     ) -> impl std::future::Future<Output = Result<Vec<Suggestion>>> + Send;
 }
 
-/// Registered native providers. Variants are added by T2–T9 as each
-/// concrete provider lands.
+/// Registered native providers. Closed inside this crate — every
+/// production variant is listed below — but marked `#[non_exhaustive]`
+/// so downstream crates cannot rely on exhaustive matches and we can
+/// add a provider without breaking them on a patch release. Adding a
+/// variant requires matching arms in `kind_from_type_str` and
+/// `resolve`; both are dispatched from `SuggestionEngine`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ProviderKind {
     /// `ansible-doc --list --json`, projecting each key (fully
     /// qualified module name) of the top-level JSON object with its
@@ -130,8 +135,8 @@ pub enum ProviderKind {
 /// This is the single source of truth wired into
 /// `specs::collect_generators`: when a `GeneratorSpec.generator_type`
 /// returns `Some(kind)` here, the spec resolution routes it into
-/// `provider_generators` instead of the script path. New providers
-/// (T2–T9) add one arm each.
+/// `provider_generators` instead of the script path. Each registered
+/// provider adds one arm here.
 pub fn kind_from_type_str(type_str: &str) -> Option<ProviderKind> {
     match type_str {
         "ansible_doc_modules" => Some(ProviderKind::AnsibleDocModules),
@@ -220,7 +225,7 @@ mod tests {
     #[test]
     fn test_provider_ctx_is_constructible() {
         // Sanity: ProviderCtx fields are public and the struct is usable
-        // from downstream call sites (engine + tests in T2–T9). This is
+        // from downstream call sites (engine + provider tests). This is
         // the minimum contract the scaffolding owes its consumers.
         let ctx = ProviderCtx {
             cwd: PathBuf::from("/tmp"),

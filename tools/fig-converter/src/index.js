@@ -50,18 +50,33 @@ const BUILD_DIR = join(
 );
 
 /**
- * Load a Fig spec by name.
+ * Load a Fig spec by name, returning both the spec and any load error.
+ * Never throws — a failed dynamic import becomes `{ spec: null, error }`.
+ *
+ * @param {string} specName - e.g., 'git', 'aws/s3'
+ * @returns {{ spec: object|null, error: string|null }}
+ */
+async function loadFigSpecWithError(specName) {
+  const specPath = join(BUILD_DIR, `${specName}.js`);
+  try {
+    const mod = await import(specPath);
+    return { spec: mod.default ?? null, error: null };
+  } catch (err) {
+    return { spec: null, error: err && err.message ? err.message : String(err) };
+  }
+}
+
+/**
+ * Thin wrapper preserving the legacy null-on-failure contract used by the
+ * `resolveLoadSpecs` loader injection point. Callers that need the error
+ * detail should use `loadFigSpecWithError` directly.
+ *
  * @param {string} specName - e.g., 'git', 'aws/s3'
  * @returns {object|null} The spec's default export, or null if not found
  */
 async function loadFigSpec(specName) {
-  const specPath = join(BUILD_DIR, `${specName}.js`);
-  try {
-    const mod = await import(specPath);
-    return mod.default;
-  } catch {
-    return null;
-  }
+  const { spec } = await loadFigSpecWithError(specName);
+  return spec;
 }
 
 /**
@@ -347,6 +362,10 @@ function cleanSpec(spec) {
 /**
  * Convert a single Fig spec to Ghost Complete JSON.
  *
+ * Returns null on load failure to preserve the legacy contract used by the
+ * test suite and by the `runConversionBatch` caller (which probes
+ * `loadFigSpecWithError` separately to recover the underlying error detail).
+ *
  * @param {string} specName - The spec name (filename without .js)
  * @returns {{ spec: object, stats: object } | null}
  */
@@ -471,8 +490,29 @@ export async function runConversionBatch({ specNames, outputDir, dryRun = false 
 
   for (const specName of specNames) {
     try {
+      // Probe the load path first so we can surface the underlying import
+      // error to the caller. `convertSingleSpec` itself still returns null
+      // on a missing default export (legacy contract the test suite relies
+      // on), so we keep that as a distinct fallback.
+      const { spec: figSpec, error: loadError } = await loadFigSpecWithError(specName);
+      if (loadError) {
+        errors.push({ spec: specName, error: `failed to load spec: ${loadError}` });
+        totals.failed++;
+        continue;
+      }
+      if (!figSpec || typeof figSpec !== 'object') {
+        errors.push({
+          spec: specName,
+          error: 'spec module had no usable default export',
+        });
+        totals.failed++;
+        continue;
+      }
+
       const result = await convertSingleSpec(specName);
       if (!result) {
+        // Defensive: load probe succeeded but convertSingleSpec still nulled.
+        // Preserve the legacy message so behaviour is unchanged.
         errors.push({ spec: specName, error: 'Failed to load spec' });
         totals.failed++;
         continue;

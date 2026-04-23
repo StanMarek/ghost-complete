@@ -1,7 +1,7 @@
 # Phase 4 T8 — Binary Size Investigation
 
 **Date:** 2026-04-23
-**Branch:** `feature/phase-4-surface`
+**Branch:** `integration/requires-js-specs` (PR #75)
 **Author:** Stanislaw Marek
 **Status:** DONE — intervention landed; binary is 29,798,512 bytes
 (28.42 MB), well under the 30 MB ceiling.

@@ -28,13 +28,11 @@ use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 const DEFAULTS_DOMAINS_TIMEOUT_MS: u64 = 2_000;
 
 /// Run `defaults domains` against the user's real `defaults` binary.
-pub(crate) async fn run_defaults_domains(cwd: &Path) -> Option<String> {
-    run_defaults_domains_with_binary(cwd, "defaults").await
-}
-
-// Parametric binary name lets subprocess-failure tests inject a
-// nonexistent path without mutating $PATH. Production callers go
-// through `run_defaults_domains`.
+///
+/// The `binary` argument is always `"defaults"` in production and
+/// exists as a test seam: subprocess-failure tests inject a
+/// nonexistent path so the spawn-time "file not found" path is
+/// exercised without mutating `$PATH`.
 pub(crate) async fn run_defaults_domains_with_binary(cwd: &Path, binary: &str) -> Option<String> {
     let output = match tokio::time::timeout(
         Duration::from_millis(DEFAULTS_DOMAINS_TIMEOUT_MS),
@@ -85,7 +83,7 @@ fn parse_domains(text: &str) -> Vec<Suggestion> {
         .map(|domain| Suggestion {
             text: domain.to_string(),
             description: Some("defaults domain".to_string()),
-            kind: SuggestionKind::Command,
+            kind: SuggestionKind::ProviderValue,
             source: SuggestionSource::Provider,
             ..Default::default()
         })
@@ -104,7 +102,21 @@ impl Provider for DefaultsDomains {
     }
 
     async fn generate(&self, ctx: &ProviderCtx) -> Result<Vec<Suggestion>> {
-        let Some(output) = run_defaults_domains(&ctx.cwd).await else {
+        self.generate_with_binary(ctx, "defaults").await
+    }
+}
+
+impl DefaultsDomains {
+    /// Test seam — `generate` calls this with `"defaults"`; tests call
+    /// it with a nonexistent path to exercise the
+    /// spawn-failure → `Ok(vec![])` fallback contract without mutating
+    /// `$PATH`.
+    pub(crate) async fn generate_with_binary(
+        &self,
+        ctx: &ProviderCtx,
+        binary: &str,
+    ) -> Result<Vec<Suggestion>> {
+        let Some(output) = run_defaults_domains_with_binary(&ctx.cwd, binary).await else {
             return Ok(Vec::new());
         };
         Ok(parse_domains(&output))
@@ -129,7 +141,7 @@ mod tests {
         assert_eq!(suggestions[3].text, "com.googlecode.iterm2");
         for s in &suggestions {
             assert_eq!(s.description.as_deref(), Some("defaults domain"));
-            assert_eq!(s.kind, SuggestionKind::Command);
+            assert_eq!(s.kind, SuggestionKind::ProviderValue);
             assert_eq!(s.source, SuggestionSource::Provider);
         }
     }
@@ -195,5 +207,23 @@ mod tests {
             result.is_none(),
             "expected None when the defaults binary does not exist"
         );
+    }
+
+    #[tokio::test]
+    async fn generate_returns_ok_empty_when_binary_missing() {
+        // End-to-end: `DefaultsDomains::generate` MUST translate a
+        // spawn-time failure into `Ok(vec![])`. Critical on Linux,
+        // where `defaults` doesn't exist at all — the provider must
+        // degrade silently rather than error.
+        let tmp = tempfile::TempDir::new().unwrap();
+        let ctx = ProviderCtx {
+            cwd: tmp.path().to_path_buf(),
+            env: std::sync::Arc::new(std::collections::HashMap::new()),
+            current_token: String::new(),
+        };
+        let result = DefaultsDomains
+            .generate_with_binary(&ctx, "/nonexistent/defaults-for-test")
+            .await;
+        assert!(matches!(result, Ok(ref v) if v.is_empty()));
     }
 }

@@ -10,6 +10,13 @@ pub enum SuggestionKind {
     GitRemote,
     History,
     EnvVar,
+    /// Dynamic, spec-driven argument value produced by a native provider
+    /// (e.g. arduino-cli FQBNs, pandoc format names, conda env names,
+    /// multipass VM names, macOS `defaults` domains). Grouped with other
+    /// arg-position values for sort order, and given its own frecency
+    /// bucket so accepting one provider's value does not boost unrelated
+    /// values with the same text from a different provider.
+    ProviderValue,
 }
 
 impl SuggestionKind {
@@ -29,6 +36,7 @@ impl SuggestionKind {
             Self::GitRemote => "remote",
             Self::History => "hist",
             Self::EnvVar => "env",
+            Self::ProviderValue => "provider",
         }
     }
 
@@ -53,6 +61,13 @@ impl SuggestionKind {
             // code-quality fix.
             Self::EnvVar => 5,
             Self::Command => 5,
+            // ProviderValue sits with Directory at priority 6: it is an
+            // arg-position value (FQBN, port address, env name, …) that
+            // belongs just below Commands/EnvVar but above plain files.
+            // Grouping with Directory is deliberate — both surface
+            // semantically meaningful arg-position tokens rather than
+            // leaf filenames.
+            Self::ProviderValue => 6,
             Self::Directory => 6,
             Self::FilePath => 7,
             Self::History => 8,
@@ -88,11 +103,19 @@ pub struct Suggestion {
 
 impl Default for Suggestion {
     fn default() -> Self {
+        // Neutral default: `ProviderValue` + `Provider` is a kind/source
+        // pair with no legacy overlap, so the default does not pretend to
+        // be a shell command or a Commands-source entry. Every production
+        // call site that builds a `Suggestion` via `..Default::default()`
+        // sets `kind` and `source` explicitly; this default is only
+        // observable when a caller forgets to, and picking a neutral
+        // "dynamic arg-value" bucket is strictly better than defaulting
+        // to Command (which would misclassify silently — see TDA-1/TDA-4).
         Self {
             text: String::new(),
             description: None,
-            kind: SuggestionKind::Command,
-            source: SuggestionSource::Commands,
+            kind: SuggestionKind::ProviderValue,
+            source: SuggestionSource::Provider,
             score: 0,
             match_indices: Vec::new(),
         }

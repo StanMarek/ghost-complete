@@ -293,6 +293,7 @@ pub struct CacheConfig {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct GeneratorSpec {
     #[serde(rename = "type")]
     pub generator_type: Option<String>,
@@ -447,7 +448,7 @@ pub struct SpecResolution {
     pub options: Vec<Suggestion>,
     pub native_generators: Vec<String>,
     /// Phase 3A native providers resolved from the spec (e.g.
-    /// `cargo_targets`). The engine dispatches these asynchronously
+    /// `arduino_cli_boards`). The engine dispatches these asynchronously
     /// via `resolve_providers`. Parallel to `native_generators` — we
     /// translate the `"type"` string into `ProviderKind` at spec
     /// resolution time so the engine does not re-parse strings on the
@@ -643,9 +644,8 @@ fn collect_generators(
         // provider or a known native type wins outright — the script block
         // is intentionally skipped so a spec with both `type` and `script`
         // does not double-dispatch (native/provider result set + script
-        // result set merged together). Our converter never emits both, but
-        // Phase 3A T2-T9 provider tests need to assert "provider path wins"
-        // cleanly, which requires exactly this guard.
+        // result set merged together). Specs must not double-dispatch when
+        // a generator names a native/provider type alongside a script.
         let handled_by_type = if let Some(ref gen_type) = gen.generator_type {
             if let Some(kind) = providers::kind_from_type_str(gen_type) {
                 // Phase 3A native provider — routed to the async
@@ -667,10 +667,22 @@ fn collect_generators(
                 // pairs an unrecognized type string with a real
                 // `script` block should still run the script, matching
                 // pre-Phase-3A behavior.
-                tracing::warn!(
-                    generator_type = %gen_type,
-                    "unknown generator type — no completions will be produced"
-                );
+                //
+                // Only warn when there is no fallback script/script_template:
+                // the message previously claimed "no completions will be
+                // produced", which is false whenever a script IS present
+                // (we fall through and run it below).
+                if gen.script.is_none() && gen.script_template.is_none() {
+                    tracing::warn!(
+                        generator_type = %gen_type,
+                        "unknown generator type and no script fallback — no completions will be produced"
+                    );
+                } else {
+                    tracing::warn!(
+                        generator_type = %gen_type,
+                        "unknown generator type — falling through to script"
+                    );
+                }
                 native.push(gen_type.clone());
                 false
             }
@@ -1735,7 +1747,7 @@ mod tests {
         // Specs that use only git/filepath generators must leave
         // `provider_generators` empty. Locks in that the scaffolding
         // does not accidentally route existing native types into the
-        // Phase 3A pipeline.
+        // native-provider path.
         let spec: CompletionSpec = serde_json::from_str(
             r#"{
                 "name": "test-no-providers",
@@ -1773,13 +1785,15 @@ mod tests {
         // A GeneratorSpec with BOTH a recognized `type` and a `script`
         // must dispatch ONLY to the native/provider path, never also to
         // the script pipeline. Otherwise a spec carrying a type string
-        // alongside a script body (today hypothetical for the git types,
-        // tomorrow a real concern for Phase 3A providers) would merge
-        // two result sets into the same popup.
+        // alongside a script body would merge two result sets into the
+        // same popup.
         //
-        // Uses `git_branches` — the empty `ProviderKind` at T1 means we
-        // cannot exercise the provider arm here; the native arm exercises
-        // the same `handled_by_type` guard, so the invariant is covered.
+        // This fixture targets the native `git_branches` arm because
+        // `find_option`/`resolve_spec` test fixtures already exercise
+        // the native git path; the provider arm shares the same
+        // `handled_by_type` guard, so the invariant is covered by
+        // `test_resolve_spec_routes_known_provider_to_provider_generators`
+        // alongside this test.
         let spec: CompletionSpec = serde_json::from_str(
             r#"{
                 "name": "test-dual-dispatch",
@@ -1866,8 +1880,8 @@ mod tests {
         // A spec that names a `type` we have not registered (and which
         // is not in `KNOWN_NATIVE_GENERATOR_TYPES`) must NOT end up in
         // `provider_generators`. The existing unknown-type warn path
-        // still owns that string — falls through to `native_generators`
-        // so downstream behavior is unchanged at T1.
+        // still owns that string — falls through to `native_generators`.
+        // Unknown types do not route to providers.
         let spec: CompletionSpec = serde_json::from_str(
             r#"{
                 "name": "test-unknown-provider",
@@ -1901,5 +1915,116 @@ mod tests {
                 .contains(&"nonexistent_provider".to_string()),
             "unknown generator_type should still land in native_generators (preserves unknown-type warn path)"
         );
+    }
+
+    #[test]
+    fn test_resolve_spec_routes_known_provider_to_provider_generators() {
+        // Every registered provider `"type"` string must land in
+        // `res.provider_generators` and NOT in `native_generators` or
+        // `script_generators`. If `kind_from_type_str` silently stops
+        // mapping one of these (e.g. a typo in a future refactor), the
+        // generator would fall through to the unknown-type warn path
+        // and silently produce zero completions — no user-visible
+        // error, just a broken provider. This test is the regression
+        // guard for that class of drop.
+        let provider_types: &[&str] = &[
+            "ansible_doc_modules",
+            "arduino_cli_boards",
+            "arduino_cli_ports",
+            "defaults_domains",
+            "mamba_envs",
+            "multipass_list",
+            "pandoc_input_formats",
+            "pandoc_output_formats",
+        ];
+        for type_str in provider_types {
+            let spec_json = format!(
+                r#"{{
+                    "name": "test-provider-{type_str}",
+                    "args": [{{
+                        "name": "target",
+                        "generators": [{{"type": "{type_str}"}}]
+                    }}]
+                }}"#
+            );
+            let spec: CompletionSpec = serde_json::from_str(&spec_json).unwrap();
+            let ctx = CommandContext {
+                command: Some(format!("test-provider-{type_str}")),
+                args: vec![],
+                current_word: String::new(),
+                word_index: 1,
+                is_flag: false,
+                is_long_flag: false,
+                preceding_flag: None,
+                in_pipe: false,
+                in_redirect: false,
+                quote_state: gc_buffer::QuoteState::None,
+                is_first_segment: true,
+            };
+            let res = resolve_spec(&spec, &ctx);
+            assert_eq!(
+                res.provider_generators.len(),
+                1,
+                "provider type {type_str:?} must route to provider_generators"
+            );
+            assert!(
+                res.native_generators.is_empty(),
+                "provider type {type_str:?} must NOT also appear in native_generators: {:?}",
+                res.native_generators
+            );
+            assert!(
+                res.script_generators.is_empty(),
+                "provider type {type_str:?} must NOT also dispatch a script: {:?}",
+                res.script_generators
+            );
+            let expected_kind = providers::kind_from_type_str(type_str)
+                .unwrap_or_else(|| panic!("kind_from_type_str({type_str:?}) returned None"));
+            assert_eq!(
+                res.provider_generators[0], expected_kind,
+                "wrong ProviderKind variant for {type_str:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_generator_spec_rejects_unknown_fields() {
+        // Silent-drop class of bug: a spec that uses a singular "transform"
+        // key (rather than the correct "transforms") previously parsed
+        // cleanly and silently dropped the transform pipeline, because
+        // `GeneratorSpec` had no `deny_unknown_fields`. `#[serde(deny_unknown_fields)]`
+        // on the struct turns that into a hard parse error — this test
+        // pins the invariant so a future refactor cannot quietly remove
+        // the attribute.
+        let bad = r#"{"script": ["echo"], "transform": ["split_lines"]}"#;
+        let err = serde_json::from_str::<GeneratorSpec>(bad).unwrap_err();
+        let msg = err.to_string();
+        assert!(
+            msg.contains("transform") || msg.contains("unknown field"),
+            "error should identify the offending unknown field: {msg}"
+        );
+    }
+
+    #[test]
+    fn test_generator_spec_accepts_all_declared_fields() {
+        // Companion to the deny_unknown_fields test above: ensure every
+        // field currently on `GeneratorSpec` still deserializes cleanly
+        // when set together. If someone removes a field without updating
+        // the corpus, this catches it before the full spec corpus would.
+        let ok = r#"{
+            "type": "git_branches",
+            "script": ["echo"],
+            "script_template": ["echo", "{current_token}"],
+            "transforms": ["split_lines"],
+            "cache": {"ttl_seconds": 60, "cache_by_directory": true},
+            "requires_js": false,
+            "js_source": "module.exports = {}",
+            "_corrected_in": "v0.10.0",
+            "template": "filepaths"
+        }"#;
+        let gen: GeneratorSpec = serde_json::from_str(ok).unwrap();
+        assert_eq!(gen.generator_type.as_deref(), Some("git_branches"));
+        assert_eq!(gen.transforms.len(), 1);
+        assert_eq!(gen.corrected_in.as_deref(), Some("v0.10.0"));
+        assert_eq!(gen.template.as_deref(), Some("filepaths"));
     }
 }

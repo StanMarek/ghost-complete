@@ -24,7 +24,7 @@ Five CI gates live in `.github/workflows/ci.yml`. Four were introduced in Phase 
 - Absolute ceiling failure: binary size exceeds 30 MB.
 - Delta budget failure: binary grew by more than `PHASE_BUDGET` since the baseline was recorded.
 
-**Status today:** production-live. Currently **FAILS** on the absolute-ceiling check (binary ~47 MB, target 30 MB). This is intentional per the plan — the gate stays red until Phase 4 (G.8) brings the binary under budget. Admin decision pending: add to branch protection AFTER the binary reaches ≤30 MB.
+**Status today:** production-live and **passing**. Phase 4 T8 landed the binary-size intervention (minified embedded specs + stripped `js_source`); the release binary is ~28.4 MB, under the 30 MB absolute ceiling. See [`docs/phase-4-binary-size-findings.md`](./phase-4-binary-size-findings.md) for the attribution breakdown. Ready to add to branch protection.
 
 **How to debug locally:**
 
@@ -146,7 +146,7 @@ These checks are added **alongside** any existing required checks (e.g. `Check`,
 | `Snapshot diff gate` | Ready to add. |
 | `Oracle gate (fig-converter)` | Ready to add. |
 | `Bench regression gate` | Ready to add. |
-| `Binary size gate` | **NOT READY.** Do not add until Phase 4 G.8 gets the binary ≤30 MB. Adding now would block every PR. |
+| `Binary size gate` | Ready to add. |
 | `Coverage baseline drift` | Informational only (non-blocking warning). Do not add to branch protection. |
 
 > **Note on job names vs. YAML keys:** GitHub branch protection displays the `name:` field of each job, not the YAML key. `Binary size gate` (the name) corresponds to `binary-size-gate` (the key). Using the YAML key in the search box will not match.
@@ -155,9 +155,9 @@ These checks are added **alongside** any existing required checks (e.g. `Check`,
 
 ## FAQ
 
-**"Why is the 30 MB ceiling lower than the current binary (~47 MB)?"**
+**"Why is the ceiling 30 MB?"**
 
-The 30 MB target is where the requires-js-specs work is expected to land after specs are removed from the embedded binary. The ceiling is set now to make the goal explicit: the gate intentionally fails red until the binary is shrunk. The delta budget (`PHASE_BUDGET=2MB`) handles the near-term constraint — "don't grow from the current baseline". These are two independent checks; both must pass.
+The 30 MB ceiling was set during the requires-js-specs initiative as the target the binary needed to reach after specs were trimmed. Phase 4 T8 landed the intervention (minified embedded specs + stripped `js_source`) and the release binary now sits at ~28.4 MB, under budget. The delta budget (`PHASE_BUDGET=2MB`) handles the near-term constraint — "don't grow from the current baseline". These are two independent checks; both must pass.
 
 **"Can I skip a gate on a specific PR?"**
 

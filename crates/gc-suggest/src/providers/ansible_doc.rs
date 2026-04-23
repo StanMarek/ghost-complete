@@ -40,13 +40,11 @@ pub(crate) type AnsibleDocModuleMap = BTreeMap<String, String>;
 
 /// Run `ansible-doc --list --json` against the user's real
 /// `ansible-doc` binary.
-pub(crate) async fn run_ansible_doc_list(cwd: &Path) -> Option<AnsibleDocModuleMap> {
-    run_ansible_doc_list_with_binary(cwd, "ansible-doc").await
-}
-
-// Parametric binary name lets subprocess-failure tests inject a
-// nonexistent path without mutating $PATH. Production callers go
-// through `run_ansible_doc_list`.
+///
+/// The `binary` argument is always `"ansible-doc"` in production and
+/// exists as a test seam: subprocess-failure tests inject a
+/// nonexistent path so the spawn-time "file not found" path is
+/// exercised without mutating `$PATH`.
 pub(crate) async fn run_ansible_doc_list_with_binary(
     cwd: &Path,
     binary: &str,
@@ -110,7 +108,7 @@ fn modules_to_suggestions(modules: AnsibleDocModuleMap) -> Vec<Suggestion> {
         .map(|(name, description)| Suggestion {
             text: name,
             description: Some(description),
-            kind: SuggestionKind::Command,
+            kind: SuggestionKind::ProviderValue,
             source: SuggestionSource::Provider,
             ..Default::default()
         })
@@ -129,7 +127,21 @@ impl Provider for AnsibleDocModules {
     }
 
     async fn generate(&self, ctx: &ProviderCtx) -> Result<Vec<Suggestion>> {
-        let Some(modules) = run_ansible_doc_list(&ctx.cwd).await else {
+        self.generate_with_binary(ctx, "ansible-doc").await
+    }
+}
+
+impl AnsibleDocModules {
+    /// Test seam — `generate` calls this with `"ansible-doc"`; tests
+    /// call it with a nonexistent path to exercise the
+    /// spawn-failure → `Ok(vec![])` fallback contract without mutating
+    /// `$PATH`.
+    pub(crate) async fn generate_with_binary(
+        &self,
+        ctx: &ProviderCtx,
+        binary: &str,
+    ) -> Result<Vec<Suggestion>> {
+        let Some(modules) = run_ansible_doc_list_with_binary(&ctx.cwd, binary).await else {
             return Ok(Vec::new());
         };
         Ok(modules_to_suggestions(modules))
@@ -169,7 +181,7 @@ mod tests {
             Some("Package manager for Homebrew")
         );
         for s in &suggestions {
-            assert_eq!(s.kind, SuggestionKind::Command);
+            assert_eq!(s.kind, SuggestionKind::ProviderValue);
             assert_eq!(s.source, SuggestionSource::Provider);
         }
     }
@@ -235,5 +247,24 @@ mod tests {
             result.is_none(),
             "expected None when the ansible-doc binary does not exist"
         );
+    }
+
+    #[tokio::test]
+    async fn generate_returns_ok_empty_when_binary_missing() {
+        // End-to-end: `AnsibleDocModules::generate` MUST translate a
+        // spawn-time failure into `Ok(vec![])`. A silent shift from
+        // `Ok` to `Err` would stall the completion pipeline — the
+        // engine's warn+empty-vec wrapper would log the error but the
+        // bug would survive until someone reads the logs.
+        let tmp = tempfile::TempDir::new().unwrap();
+        let ctx = ProviderCtx {
+            cwd: tmp.path().to_path_buf(),
+            env: std::sync::Arc::new(std::collections::HashMap::new()),
+            current_token: String::new(),
+        };
+        let result = AnsibleDocModules
+            .generate_with_binary(&ctx, "/nonexistent/ansible-doc-for-test")
+            .await;
+        assert!(matches!(result, Ok(ref v) if v.is_empty()));
     }
 }

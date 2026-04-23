@@ -33,13 +33,11 @@ const PANDOC_LIST_TIMEOUT_MS: u64 = 2_000;
 /// direction argument distinguishes the two Phase 3A providers
 /// (`pandoc_input_formats`, `pandoc_output_formats`) without
 /// duplicating the tokio::process::Command monomorphization.
-pub(crate) async fn run_pandoc_formats(cwd: &Path, flag: &str) -> Option<String> {
-    run_pandoc_formats_with_binary(cwd, "pandoc", flag).await
-}
-
-// Parametric binary name lets subprocess-failure tests inject a
-// nonexistent path without mutating $PATH. Production callers go
-// through `run_pandoc_formats`.
+///
+/// The `binary` argument is always `"pandoc"` in production and
+/// exists as a test seam: subprocess-failure tests inject a
+/// nonexistent path so the spawn-time "file not found" path is
+/// exercised without mutating `$PATH`.
 pub(crate) async fn run_pandoc_formats_with_binary(
     cwd: &Path,
     binary: &str,
@@ -93,7 +91,7 @@ fn parse_formats(text: &str, description: &'static str) -> Vec<Suggestion> {
         .map(|fmt| Suggestion {
             text: fmt.to_string(),
             description: Some(description.to_string()),
-            kind: SuggestionKind::Command,
+            kind: SuggestionKind::ProviderValue,
             source: SuggestionSource::Provider,
             ..Default::default()
         })
@@ -112,7 +110,23 @@ impl Provider for PandocInputFormats {
     }
 
     async fn generate(&self, ctx: &ProviderCtx) -> Result<Vec<Suggestion>> {
-        let Some(text) = run_pandoc_formats(&ctx.cwd, "--list-input-formats").await else {
+        self.generate_with_binary(ctx, "pandoc").await
+    }
+}
+
+impl PandocInputFormats {
+    /// Test seam — `generate` calls this with `"pandoc"`; tests call
+    /// it with a nonexistent path to exercise the
+    /// spawn-failure → `Ok(vec![])` fallback contract without mutating
+    /// `$PATH`.
+    pub(crate) async fn generate_with_binary(
+        &self,
+        ctx: &ProviderCtx,
+        binary: &str,
+    ) -> Result<Vec<Suggestion>> {
+        let Some(text) =
+            run_pandoc_formats_with_binary(&ctx.cwd, binary, "--list-input-formats").await
+        else {
             return Ok(Vec::new());
         };
         Ok(parse_formats(&text, "pandoc input format"))
@@ -131,7 +145,20 @@ impl Provider for PandocOutputFormats {
     }
 
     async fn generate(&self, ctx: &ProviderCtx) -> Result<Vec<Suggestion>> {
-        let Some(text) = run_pandoc_formats(&ctx.cwd, "--list-output-formats").await else {
+        self.generate_with_binary(ctx, "pandoc").await
+    }
+}
+
+impl PandocOutputFormats {
+    /// Test seam — see `PandocInputFormats::generate_with_binary`.
+    pub(crate) async fn generate_with_binary(
+        &self,
+        ctx: &ProviderCtx,
+        binary: &str,
+    ) -> Result<Vec<Suggestion>> {
+        let Some(text) =
+            run_pandoc_formats_with_binary(&ctx.cwd, binary, "--list-output-formats").await
+        else {
             return Ok(Vec::new());
         };
         Ok(parse_formats(&text, "pandoc output format"))
@@ -154,7 +181,7 @@ mod tests {
         assert_eq!(suggestions[4].text, "rst");
         for s in &suggestions {
             assert_eq!(s.description.as_deref(), Some("pandoc input format"));
-            assert_eq!(s.kind, SuggestionKind::Command);
+            assert_eq!(s.kind, SuggestionKind::ProviderValue);
             assert_eq!(s.source, SuggestionSource::Provider);
         }
     }
@@ -238,5 +265,36 @@ mod tests {
             result.is_none(),
             "expected None when the pandoc binary does not exist"
         );
+    }
+
+    fn ctx_for(cwd: std::path::PathBuf) -> ProviderCtx {
+        ProviderCtx {
+            cwd,
+            env: std::sync::Arc::new(std::collections::HashMap::new()),
+            current_token: String::new(),
+        }
+    }
+
+    #[tokio::test]
+    async fn input_generate_returns_ok_empty_when_binary_missing() {
+        // End-to-end: `PandocInputFormats::generate` MUST translate a
+        // spawn-time failure into `Ok(vec![])`. A silent shift to
+        // `Err` would stall the completion pipeline.
+        let tmp = tempfile::TempDir::new().unwrap();
+        let ctx = ctx_for(tmp.path().to_path_buf());
+        let result = PandocInputFormats
+            .generate_with_binary(&ctx, "/nonexistent/pandoc-for-test")
+            .await;
+        assert!(matches!(result, Ok(ref v) if v.is_empty()));
+    }
+
+    #[tokio::test]
+    async fn output_generate_returns_ok_empty_when_binary_missing() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let ctx = ctx_for(tmp.path().to_path_buf());
+        let result = PandocOutputFormats
+            .generate_with_binary(&ctx, "/nonexistent/pandoc-for-test")
+            .await;
+        assert!(matches!(result, Ok(ref v) if v.is_empty()));
     }
 }

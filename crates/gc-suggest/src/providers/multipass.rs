@@ -47,13 +47,11 @@ struct MultipassInstance {
 
 /// Run `multipass list --format=json` against the user's real
 /// `multipass` binary.
-pub(crate) async fn run_multipass_list(cwd: &Path) -> Option<MultipassListOutput> {
-    run_multipass_list_with_binary(cwd, "multipass").await
-}
-
-// Parametric binary name lets subprocess-failure tests inject a
-// nonexistent path without mutating $PATH. Production callers go
-// through `run_multipass_list`.
+///
+/// The `binary` argument is always `"multipass"` in production and
+/// exists as a test seam: subprocess-failure tests inject a
+/// nonexistent path so the spawn-time "file not found" path is
+/// exercised without mutating `$PATH`.
 pub(crate) async fn run_multipass_list_with_binary(
     cwd: &Path,
     binary: &str,
@@ -125,7 +123,7 @@ fn instances_to_suggestions(output: MultipassListOutput) -> Vec<Suggestion> {
             Some(Suggestion {
                 text: name,
                 description,
-                kind: SuggestionKind::Command,
+                kind: SuggestionKind::ProviderValue,
                 source: SuggestionSource::Provider,
                 ..Default::default()
             })
@@ -145,7 +143,21 @@ impl Provider for MultipassList {
     }
 
     async fn generate(&self, ctx: &ProviderCtx) -> Result<Vec<Suggestion>> {
-        let Some(output) = run_multipass_list(&ctx.cwd).await else {
+        self.generate_with_binary(ctx, "multipass").await
+    }
+}
+
+impl MultipassList {
+    /// Test seam — `generate` calls this with `"multipass"`; tests
+    /// call it with a nonexistent path to exercise the
+    /// spawn-failure → `Ok(vec![])` fallback contract without mutating
+    /// `$PATH`.
+    pub(crate) async fn generate_with_binary(
+        &self,
+        ctx: &ProviderCtx,
+        binary: &str,
+    ) -> Result<Vec<Suggestion>> {
+        let Some(output) = run_multipass_list_with_binary(&ctx.cwd, binary).await else {
             return Ok(Vec::new());
         };
         Ok(instances_to_suggestions(output))
@@ -172,7 +184,7 @@ mod tests {
             suggestions[0].description.as_deref(),
             Some("22.04 LTS (Running)")
         );
-        assert_eq!(suggestions[0].kind, SuggestionKind::Command);
+        assert_eq!(suggestions[0].kind, SuggestionKind::ProviderValue);
         assert_eq!(suggestions[0].source, SuggestionSource::Provider);
         assert_eq!(suggestions[1].text, "dev-box");
         assert_eq!(
@@ -259,5 +271,22 @@ mod tests {
             result.is_none(),
             "expected None when the multipass binary does not exist"
         );
+    }
+
+    #[tokio::test]
+    async fn generate_returns_ok_empty_when_binary_missing() {
+        // End-to-end: `MultipassList::generate` MUST translate a
+        // spawn-time failure into `Ok(vec![])`. A silent shift to
+        // `Err` would stall the completion pipeline.
+        let tmp = tempfile::TempDir::new().unwrap();
+        let ctx = ProviderCtx {
+            cwd: tmp.path().to_path_buf(),
+            env: std::sync::Arc::new(std::collections::HashMap::new()),
+            current_token: String::new(),
+        };
+        let result = MultipassList
+            .generate_with_binary(&ctx, "/nonexistent/multipass-for-test")
+            .await;
+        assert!(matches!(result, Ok(ref v) if v.is_empty()));
     }
 }

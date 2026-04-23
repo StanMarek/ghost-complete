@@ -76,11 +76,10 @@ pub struct SyncResult {
     /// these asynchronously via `resolve_git` to avoid blocking the runtime.
     pub git_generators: Vec<git::GitQueryKind>,
     /// Phase 3A native providers resolved from the spec (e.g.
-    /// `cargo_targets`). The caller dispatches these asynchronously via
-    /// `resolve_providers`. Empty at T1 because no concrete providers
-    /// are registered yet, but the plumbing is in place so T2–T9 only
-    /// have to add enum variants + dispatch arms — not thread new
-    /// fields through every `SyncResult` constructor.
+    /// `arduino_cli_boards`). The caller dispatches these asynchronously via
+    /// `resolve_providers`. Carries pre-resolved `ProviderKind`s so the
+    /// engine can dispatch without re-parsing the `"type"` string on
+    /// the keystroke hot path.
     pub provider_generators: Vec<ProviderKind>,
 }
 
@@ -424,11 +423,6 @@ impl SuggestionEngine {
     /// provider cannot block the rest of the pool. Empty-query case
     /// skips `fuzzy::rank` to preserve the raw kind-ordering for the
     /// handler's eventual re-rank (same rationale as `resolve_git`).
-    ///
-    /// At T1 `kinds` is always empty (no providers registered), but the
-    /// method is wired into the handler via `SyncResult.provider_generators`
-    /// so T2–T9 only need to add enum variants + dispatch arms, not new
-    /// plumbing through the engine.
     pub async fn resolve_providers(
         &self,
         kinds: &[ProviderKind],
@@ -1664,11 +1658,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_resolve_providers_empty_slice() {
-        // At T1 no concrete providers are registered, so `resolve_providers`
-        // is always called with an empty slice. The method must no-op
-        // cleanly (empty Vec, no panic) for both the empty-query and
-        // non-empty-query paths. Once T2–T9 land, this test still
-        // doubles as a regression guard for the empty-kinds shortcut.
+        // An empty `kinds` slice must no-op cleanly — empty Vec and no
+        // panic — for both the empty-query and non-empty-query paths.
+        // Guards the empty-kinds shortcut at the top of
+        // `resolve_providers` against accidental removal, which would
+        // otherwise make the method pay a `fuzzy::rank` roundtrip on
+        // every call-site that passes an empty slice (a common case
+        // when a resolved spec has no provider generators).
         let engine = make_engine();
         let ctx = crate::providers::ProviderCtx {
             cwd: Path::new("/tmp").to_path_buf(),

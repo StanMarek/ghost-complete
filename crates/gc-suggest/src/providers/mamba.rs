@@ -28,13 +28,11 @@ use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 const CONDA_ENV_LIST_TIMEOUT_MS: u64 = 2_000;
 
 /// Run `conda env list` against the user's real `conda` binary.
-pub(crate) async fn run_env_list(cwd: &Path) -> Option<String> {
-    run_env_list_with_binary(cwd, "conda").await
-}
-
-// Parametric binary name lets subprocess-failure tests inject a
-// nonexistent path without mutating $PATH. Production callers go
-// through `run_env_list`.
+///
+/// The `binary` argument is always `"conda"` in production and exists
+/// as a test seam: subprocess-failure tests inject a nonexistent path
+/// so the spawn-time "file not found" path is exercised without
+/// mutating `$PATH`.
 pub(crate) async fn run_env_list_with_binary(cwd: &Path, binary: &str) -> Option<String> {
     let output = match tokio::time::timeout(
         Duration::from_millis(CONDA_ENV_LIST_TIMEOUT_MS),
@@ -86,7 +84,7 @@ fn parse_env_list(text: &str) -> Vec<Suggestion> {
             Some(Suggestion {
                 text: name.to_string(),
                 description: Some("conda environment".to_string()),
-                kind: SuggestionKind::Command,
+                kind: SuggestionKind::ProviderValue,
                 source: SuggestionSource::Provider,
                 ..Default::default()
             })
@@ -106,7 +104,21 @@ impl Provider for MambaEnvs {
     }
 
     async fn generate(&self, ctx: &ProviderCtx) -> Result<Vec<Suggestion>> {
-        let Some(output) = run_env_list(&ctx.cwd).await else {
+        self.generate_with_binary(ctx, "conda").await
+    }
+}
+
+impl MambaEnvs {
+    /// Test seam — `generate` calls this with `"conda"`; tests call
+    /// it with a nonexistent path to exercise the
+    /// spawn-failure → `Ok(vec![])` fallback contract without mutating
+    /// `$PATH`.
+    pub(crate) async fn generate_with_binary(
+        &self,
+        ctx: &ProviderCtx,
+        binary: &str,
+    ) -> Result<Vec<Suggestion>> {
+        let Some(output) = run_env_list_with_binary(&ctx.cwd, binary).await else {
             return Ok(Vec::new());
         };
         Ok(parse_env_list(&output))
@@ -133,7 +145,7 @@ myproject                /Users/me/envs/myproject
         assert_eq!(suggestions[2].text, "myproject");
         for s in &suggestions {
             assert_eq!(s.description.as_deref(), Some("conda environment"));
-            assert_eq!(s.kind, SuggestionKind::Command);
+            assert_eq!(s.kind, SuggestionKind::ProviderValue);
             assert_eq!(s.source, SuggestionSource::Provider);
         }
     }
@@ -200,5 +212,22 @@ py311                    /opt/conda/envs/py311
             result.is_none(),
             "expected None when the conda binary does not exist"
         );
+    }
+
+    #[tokio::test]
+    async fn generate_returns_ok_empty_when_binary_missing() {
+        // End-to-end: `MambaEnvs::generate` MUST translate a spawn-time
+        // failure into `Ok(vec![])`. A silent shift to `Err` would
+        // stall the completion pipeline.
+        let tmp = tempfile::TempDir::new().unwrap();
+        let ctx = ProviderCtx {
+            cwd: tmp.path().to_path_buf(),
+            env: std::sync::Arc::new(std::collections::HashMap::new()),
+            current_token: String::new(),
+        };
+        let result = MambaEnvs
+            .generate_with_binary(&ctx, "/nonexistent/conda-for-test")
+            .await;
+        assert!(matches!(result, Ok(ref v) if v.is_empty()));
     }
 }

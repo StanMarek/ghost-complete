@@ -134,7 +134,7 @@ All six §1.6 exit criteria were met within the hard 2-week timebox.
 2. [x] Every generator has a verdict from the closed enum — confirmed by spec compliance review; 0 unknown verdicts across all 151 shapes.
 3. [x] `js-builtin-allowlist.json` finalized — no additions surfaced by the corpus run; stays at schema_version 1.0.
 4. [x] Corrected coverage numbers documented — §2 and §3 above.
-5. [x] `candidate-providers.json` generated for Phase 3A — 184 entries, 36 qualifying.
+5. [x] `candidate-providers.json` generated for Phase 3A — 184 entries, 36 qualifying. [Updated post-T4: see `spike-recount-decision.md` §9 — final qualifying count is 28.]
 6. [x] Go/no-go decision written — §6 above.
 
 ---

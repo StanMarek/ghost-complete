@@ -13,13 +13,6 @@ use crate::sanitize::sanitize_for_terminal;
 /// not available). Keeps the "Coverage trend" section working out of the box.
 const EMBEDDED_BASELINE: &str = include_str!("../../../docs/coverage-baseline.json");
 
-/// Size of the Phase-3A native-provider batch. When a release bumps
-/// `native_providers` by exactly this number, the trend section annotates
-/// the `fully_functional` line so readers can tie the jump back to the
-/// specific work that produced it.
-const PHASE_3A_PROVIDER_COUNT: i64 = 8;
-const PHASE_3A_LABEL: &str = " (+8 from Phase 3A)";
-
 /// Check if a spec tree contains any generators with `requires_js: true`.
 fn has_requires_js(spec: &CompletionSpec) -> bool {
     check_args_for_js(&spec.args)
@@ -200,12 +193,6 @@ fn load_baseline(explicit: Option<&Path>) -> Result<Option<CoverageBaseline>> {
 ///   - `(unchanged)` — emitted when there are two or more releases and
 ///     a specific metric is identical between prev and curr.
 ///   - `(+N)` / `(-N)` — signed delta when the metric actually moved.
-///
-/// When the positive delta on `native_providers` equals 8 exactly we tack
-/// on the literal `(+8 from Phase 3A)` annotation on the `native_providers`
-/// line — a heuristic hint that the Phase-3A provider batch landed in
-/// this release. Pinning it to the sibling metric keeps the attribution
-/// factual even when `fully_functional` moves by a different amount.
 fn render_coverage_trend(out: &mut dyn Write, baseline: Option<&CoverageBaseline>) -> Result<()> {
     writeln!(out)?;
     let baseline = match baseline {
@@ -226,13 +213,6 @@ fn render_coverage_trend(out: &mut dyn Write, baseline: Option<&CoverageBaseline
     } else {
         let only = &baseline.releases[0];
         (only, only)
-    };
-
-    let native_delta_i64 = curr.native_providers as i64 - prev.native_providers as i64;
-    let phase_3a_annotation = if native_delta_i64 == PHASE_3A_PROVIDER_COUNT {
-        PHASE_3A_LABEL
-    } else {
-        ""
     };
 
     writeln!(out, "Coverage trend (vs previous release):")?;
@@ -260,10 +240,9 @@ fn render_coverage_trend(out: &mut dyn Write, baseline: Option<&CoverageBaseline
     )?;
     writeln!(
         out,
-        "  Native providers: {} {}{}",
+        "  Native providers: {} {}",
         pair_with_arrow(prev.native_providers, curr.native_providers),
         delta_annotation(prev.native_providers, curr.native_providers, is_bootstrap),
-        phase_3a_annotation
     )?;
     writeln!(
         out,
@@ -642,12 +621,12 @@ mod tests {
 
     #[test]
     fn baseline_absent_prints_not_recorded() {
-        // Point the baseline lookup at a directory with no file. We bypass
-        // the CWD fallback by overriding GHOST_COMPLETE_BASELINE to a
-        // non-existent path — but priority (2) silently skips missing
-        // files. Easier path: call render_coverage_trend directly with
-        // None, which is what load_baseline returns for the
-        // baseline-missing case.
+        // Cover the `load_baseline → None` codepath by exercising the
+        // renderer directly. (We can't easily drive load_baseline into
+        // returning Ok(None) in a test: GHOST_COMPLETE_BASELINE pointing
+        // at a missing path now *errors* rather than silently falling
+        // through — see `missing_env_baseline_errors` — and the embedded
+        // fallback is always populated when the binary is compiled.)
         let mut out = Vec::new();
         render_coverage_trend(&mut out, None).unwrap();
         let txt = String::from_utf8_lossy(&out);
@@ -751,28 +730,26 @@ mod tests {
             txt.contains("Total specs: 709 (unchanged)"),
             "Total specs identical-across-rows should show (unchanged), got:\n{txt}"
         );
-        // fully_functional: 526 → 534 (+8). Phase 3A hint no longer rides
-        // on this line — it is pinned to `native_providers` where the
-        // delta actually lives.
+        // fully_functional: 526 → 534 (+8). Signed delta conveys the
+        // change on its own — no narrative annotation.
         assert!(
             txt.contains("Fully functional: 534 (+8)"),
             "Fully functional line missing signed delta, got:\n{txt}"
         );
         assert!(
-            !txt.lines()
-                .any(|l| l.contains("Fully functional:") && l.contains("Phase 3A")),
-            "Phase 3A annotation must not appear on the Fully functional line, got:\n{txt}"
+            !txt.contains("Phase 3A"),
+            "Phase 3A annotation must not appear anywhere — it was removed \
+             in favour of the plain signed delta, got:\n{txt}"
         );
         // requires_js_generators: 1889 → 1721 (-168)
         assert!(
             txt.contains("Requires-JS generators: 1889 \u{2192} 1721 (-168)"),
             "Requires-JS signed delta wrong, got:\n{txt}"
         );
-        // native_providers: 12 → 20 (+8), carries the Phase 3A annotation
-        // because the native-provider delta equals 8.
+        // native_providers: 12 → 20 (+8) — plain signed delta only.
         assert!(
-            txt.contains("Native providers: 12 \u{2192} 20 (+8) (+8 from Phase 3A)"),
-            "Native providers line missing signed delta + Phase 3A hint, got:\n{txt}"
+            txt.contains("Native providers: 12 \u{2192} 20 (+8)"),
+            "Native providers line missing signed delta, got:\n{txt}"
         );
         // Corrected identical between rows — renders (unchanged).
         assert!(
@@ -801,8 +778,10 @@ mod tests {
     }
 
     #[test]
-    fn baseline_two_rows_without_phase_3a_delta_omits_annotation() {
-        // When native_providers delta != 8, we skip the Phase-3A hint.
+    fn baseline_two_rows_never_emits_phase_3a_annotation() {
+        // The Phase-3A narrative annotation has been removed; the signed
+        // delta is the canonical signal. Guard against a regression that
+        // would re-introduce the brittle value-based heuristic.
         let body = r#"{
   "schema_version": "1.0",
   "releases": [
@@ -838,7 +817,8 @@ mod tests {
 
         assert!(
             !txt.contains("Phase 3A"),
-            "Phase 3A annotation should only appear when native delta is 8, got:\n{txt}"
+            "Phase 3A annotation must never appear — it was removed in \
+             favour of the plain signed delta, got:\n{txt}"
         );
         assert!(
             txt.contains("Fully functional: 540 (+14)"),
@@ -1083,5 +1063,86 @@ mod tests {
         let p = tmp.path().join("does-not-exist.json");
         let result = load_baseline(Some(&p));
         assert!(result.is_err());
+    }
+
+    // -------------------------------------------------------------------------
+    // GHOST_COMPLETE_BASELINE env-var tests
+    //
+    // These tests mutate a process-wide env var. Rust's default test harness
+    // runs tests concurrently within a crate, so we serialise access via a
+    // crate-local mutex. `set_var` / `remove_var` are not thread-safe in the
+    // presence of readers in other threads — within this small cfg(test) block
+    // we ensure all touches go through `with_env_baseline`.
+    // -------------------------------------------------------------------------
+
+    static ENV_BASELINE_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+    /// Run `body` with `GHOST_COMPLETE_BASELINE` set to `val` (or unset if
+    /// `None`), restoring the previous state on return even if `body`
+    /// panics. Holds the crate-local mutex so concurrent tests don't race.
+    fn with_env_baseline<R>(val: Option<&std::ffi::OsStr>, body: impl FnOnce() -> R) -> R {
+        let _guard = ENV_BASELINE_LOCK.lock().unwrap_or_else(|p| p.into_inner());
+        let prev = std::env::var_os("GHOST_COMPLETE_BASELINE");
+        match val {
+            Some(v) => std::env::set_var("GHOST_COMPLETE_BASELINE", v),
+            None => std::env::remove_var("GHOST_COMPLETE_BASELINE"),
+        }
+        // Defuse Drop-based restore: use an inner closure + catch_unwind to
+        // guarantee restoration even on panic.
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(body));
+        match prev {
+            Some(p) => std::env::set_var("GHOST_COMPLETE_BASELINE", p),
+            None => std::env::remove_var("GHOST_COMPLETE_BASELINE"),
+        }
+        match result {
+            Ok(r) => r,
+            Err(e) => std::panic::resume_unwind(e),
+        }
+    }
+
+    #[test]
+    fn missing_env_baseline_errors() {
+        // GHOST_COMPLETE_BASELINE pointing at a non-existent path must bail
+        // loudly — a silent fall-through to the embedded default would mask
+        // the user's typo. Guards against a refactor that reverts the
+        // env-var branch to the old silent-drop behaviour.
+        let tmp = tempfile::TempDir::new().unwrap();
+        let missing = tmp.path().join("does-not-exist.json");
+
+        let err = with_env_baseline(Some(missing.as_os_str()), || {
+            load_baseline(None).expect_err("missing env baseline must error")
+        });
+        let msg = format!("{err:#}");
+        assert!(
+            msg.contains("GHOST_COMPLETE_BASELINE"),
+            "error message should name the env var that triggered the bail, got:\n{msg}"
+        );
+    }
+
+    #[test]
+    fn existing_env_baseline_suppresses() {
+        // An EXISTING path via GHOST_COMPLETE_BASELINE does NOT trigger the
+        // missing-file bail — it is read and parsed. Documents the
+        // /dev/null suppression knob the source comment promises: a file
+        // that exists but parses as empty yields a clean malformed error
+        // rather than a missing-file error, confirming the branch took
+        // the "exists" path.
+        let tmp = tempfile::TempDir::new().unwrap();
+        let empty = tmp.path().join("empty.json");
+        std::fs::write(&empty, "").unwrap();
+
+        let err = with_env_baseline(Some(empty.as_os_str()), || {
+            load_baseline(None).expect_err("empty JSON must parse-error")
+        });
+        let msg = format!("{err:#}");
+        assert!(
+            !msg.contains("does not exist"),
+            "an existing env-var baseline must not trip the missing-file \
+             bail — parse error expected instead, got:\n{msg}"
+        );
+        assert!(
+            msg.contains("malformed") || msg.contains("baseline"),
+            "expected a parse-side error mentioning the baseline, got:\n{msg}"
+        );
     }
 }

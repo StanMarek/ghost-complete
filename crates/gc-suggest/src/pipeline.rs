@@ -1,6 +1,6 @@
 //! Thin wrapper around [`crate::transform::execute_pipeline`] with the
-//! argument order and return type preferred by the Phase 0 Node-side oracle
-//! (`tools/requires-js-oracle`).
+//! argument order and return type preferred by the fig-converter oracle
+//! (`tools/fig-converter/src/oracle.js`).
 //!
 //! The oracle compares Rust transform-pipeline output against a `node:vm`
 //! execution of the original JS generator source. It spawns

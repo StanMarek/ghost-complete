@@ -2,11 +2,12 @@
 //! `specs/arduino-cli.json` that shell out to `arduino-cli board list
 //! --format json` and extract either FQBNs or port addresses.
 //!
-//! Both providers live here: `ArduinoCliBoards` (T2) projects FQBNs for
-//! `--fqbn`-style arguments; `ArduinoCliPorts` (T3) projects port
-//! addresses for `--port`-style arguments. They share the
-//! `run_board_list` subprocess helper and the `ArduinoBoardListOutput`
-//! types — two thin extractors over one subprocess call.
+//! Both providers live here: `ArduinoCliBoards` projects FQBNs for
+//! `--fqbn`-style arguments; `ArduinoCliPorts` projects port addresses
+//! for `--port`-style arguments. They share the
+//! `run_board_list_with_binary` subprocess helper and the
+//! `ArduinoBoardListOutput` types — two thin extractors over one
+//! subprocess call.
 
 use std::path::Path;
 use std::time::Duration;
@@ -72,14 +73,13 @@ pub(crate) struct MatchingBoard {
 /// Run `arduino-cli board list --format json` and parse the result.
 /// Returns `None` on any failure (IO error, timeout, non-zero exit,
 /// malformed JSON), always logged via `tracing::warn!` with structured
-/// context. T3's port provider will reuse this helper unchanged.
-pub(crate) async fn run_board_list(cwd: &Path) -> Option<ArduinoBoardListOutput> {
-    run_board_list_with_binary(cwd, "arduino-cli").await
-}
-
-// Parametric binary name lets T3–T9 subprocess-failure tests inject a
-// nonexistent path without mutating $PATH. Production callers go through
-// `run_board_list` which hardcodes the real binary.
+/// context.
+///
+/// The `binary` argument is always `"arduino-cli"` in production and
+/// exists as a test seam: subprocess-failure tests inject a
+/// deliberately nonexistent path so the spawn-time "file not found"
+/// path is exercised without mutating `$PATH`. Both `ArduinoCliBoards`
+/// and `ArduinoCliPorts` share this helper unchanged.
 pub(crate) async fn run_board_list_with_binary(
     cwd: &Path,
     binary: &str,
@@ -152,7 +152,7 @@ fn suggestions_from_output(output: ArduinoBoardListOutput) -> Vec<Suggestion> {
             Some(Suggestion {
                 text: fqbn,
                 description: Some(format!("{board_name} on port {port_address}")),
-                kind: SuggestionKind::Command,
+                kind: SuggestionKind::ProviderValue,
                 source: SuggestionSource::Provider,
                 ..Default::default()
             })
@@ -180,7 +180,22 @@ impl Provider for ArduinoCliBoards {
     }
 
     async fn generate(&self, ctx: &ProviderCtx) -> Result<Vec<Suggestion>> {
-        let Some(output) = run_board_list(&ctx.cwd).await else {
+        self.generate_with_binary(ctx, "arduino-cli").await
+    }
+}
+
+impl ArduinoCliBoards {
+    /// Test seam mirroring the production `generate` path but with an
+    /// injectable binary name. `generate` calls this with the real
+    /// `arduino-cli`; tests call it with a deliberately nonexistent path
+    /// to exercise the spawn-failure → `Ok(vec![])` fallback contract
+    /// without mutating `$PATH`.
+    pub(crate) async fn generate_with_binary(
+        &self,
+        ctx: &ProviderCtx,
+        binary: &str,
+    ) -> Result<Vec<Suggestion>> {
+        let Some(output) = run_board_list_with_binary(&ctx.cwd, binary).await else {
             return Ok(Vec::new());
         };
         Ok(suggestions_from_output(output))
@@ -205,7 +220,7 @@ fn ports_from_output(output: ArduinoBoardListOutput) -> Vec<Suggestion> {
             Some(Suggestion {
                 text: address,
                 description: Some(format!("{board_name} port connection")),
-                kind: SuggestionKind::Command,
+                kind: SuggestionKind::ProviderValue,
                 source: SuggestionSource::Provider,
                 ..Default::default()
             })
@@ -233,7 +248,19 @@ impl Provider for ArduinoCliPorts {
     }
 
     async fn generate(&self, ctx: &ProviderCtx) -> Result<Vec<Suggestion>> {
-        let Some(output) = run_board_list(&ctx.cwd).await else {
+        self.generate_with_binary(ctx, "arduino-cli").await
+    }
+}
+
+impl ArduinoCliPorts {
+    /// Test seam — see `ArduinoCliBoards::generate_with_binary` for the
+    /// rationale.
+    pub(crate) async fn generate_with_binary(
+        &self,
+        ctx: &ProviderCtx,
+        binary: &str,
+    ) -> Result<Vec<Suggestion>> {
+        let Some(output) = run_board_list_with_binary(&ctx.cwd, binary).await else {
             return Ok(Vec::new());
         };
         Ok(ports_from_output(output))
@@ -263,7 +290,7 @@ mod tests {
             suggestions[0].description.as_deref(),
             Some("Arduino Uno on port /dev/ttyACM0")
         );
-        assert_eq!(suggestions[0].kind, SuggestionKind::Command);
+        assert_eq!(suggestions[0].kind, SuggestionKind::ProviderValue);
         assert_eq!(suggestions[0].source, SuggestionSource::Provider);
     }
 
@@ -342,7 +369,7 @@ mod tests {
             suggestions[0].description,
             Some("Arduino Uno on port /dev/ttyACM0".to_string())
         );
-        assert_eq!(suggestions[0].kind, SuggestionKind::Command);
+        assert_eq!(suggestions[0].kind, SuggestionKind::ProviderValue);
         assert_eq!(suggestions[0].source, SuggestionSource::Provider);
     }
 
@@ -352,7 +379,7 @@ mod tests {
         // binary name that cannot resolve anywhere on disk. No global
         // state is mutated, so this test is safe to run in parallel
         // alongside any other test in the workspace — and the same
-        // pattern will serve T3–T9 without duplication.
+        // pattern is used by every provider's failure test.
         let tmp = tempfile::TempDir::new().unwrap();
         let result =
             run_board_list_with_binary(tmp.path(), "/nonexistent/arduino-cli-definitely-not-real")
@@ -363,7 +390,7 @@ mod tests {
         );
     }
 
-    // --- T3: arduino_cli_ports tests -----------------------------------
+    // --- arduino_cli_ports tests ---------------------------------------
 
     #[test]
     fn extract_ports_happy_path() {
@@ -390,7 +417,7 @@ mod tests {
             suggestions[0].description.as_deref(),
             Some("Arduino Uno port connection")
         );
-        assert_eq!(suggestions[0].kind, SuggestionKind::Command);
+        assert_eq!(suggestions[0].kind, SuggestionKind::ProviderValue);
         assert_eq!(suggestions[0].source, SuggestionSource::Provider);
         assert_eq!(suggestions[1].text, "/dev/ttyUSB0");
         assert_eq!(
@@ -436,17 +463,50 @@ mod tests {
     #[tokio::test]
     async fn ports_provider_subprocess_failure_returns_empty() {
         // End-to-end coverage through the `Provider::generate` trait
-        // method for `ArduinoCliPorts`. T2 already validates the shared
-        // `run_board_list` helper's None path; this test confirms that
+        // method for `ArduinoCliPorts`. The boards-provider test above
+        // validates the shared `run_board_list_with_binary` helper's
+        // None path; this test confirms that
         // `ArduinoCliPorts::generate` translates None into `Ok(vec![])`
         // rather than bubbling an error.
         //
-        // We can't inject a custom binary here without refactoring
-        // `generate`, so we exercise the pure extractor with an empty
-        // parsed payload — the same code path `generate` hits when
-        // `run_board_list` returns `None` and we fall through the
-        // `let else` to `Ok(Vec::new())`.
+        // We exercise the pure extractor with an empty parsed payload —
+        // the same code path `generate` hits when
+        // `run_board_list_with_binary` returns `None` and we fall
+        // through the `let else` to `Ok(Vec::new())`.
         let empty = ArduinoBoardListOutput::Flat(Vec::new());
         assert!(ports_from_output(empty).is_empty());
+    }
+
+    fn ctx_for(cwd: std::path::PathBuf) -> ProviderCtx {
+        ProviderCtx {
+            cwd,
+            env: std::sync::Arc::new(std::collections::HashMap::new()),
+            current_token: String::new(),
+        }
+    }
+
+    #[tokio::test]
+    async fn boards_generate_returns_ok_empty_when_binary_missing() {
+        // End-to-end: `ArduinoCliBoards::generate` MUST translate a
+        // spawn-time failure into `Ok(vec![])`. A silent shift from
+        // `Ok` to `Err` would stall the completion pipeline — the
+        // engine's warn+empty-vec wrapper would log the error but the
+        // bug would survive until someone reads the logs.
+        let tmp = tempfile::TempDir::new().unwrap();
+        let ctx = ctx_for(tmp.path().to_path_buf());
+        let result = ArduinoCliBoards
+            .generate_with_binary(&ctx, "/nonexistent/arduino-cli-for-test")
+            .await;
+        assert!(matches!(result, Ok(ref v) if v.is_empty()));
+    }
+
+    #[tokio::test]
+    async fn ports_generate_returns_ok_empty_when_binary_missing() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let ctx = ctx_for(tmp.path().to_path_buf());
+        let result = ArduinoCliPorts
+            .generate_with_binary(&ctx, "/nonexistent/arduino-cli-for-test")
+            .await;
+        assert!(matches!(result, Ok(ref v) if v.is_empty()));
     }
 }
