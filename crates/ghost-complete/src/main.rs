@@ -140,9 +140,30 @@ fn main() -> Result<()> {
             init_tracing(&cli.log_level, cli.log_file.as_deref())?;
             // Mirror `validate-specs --strict` / `install --dry-run`: the
             // top-level clap parser just collects a trailing arg list, so we
-            // scan it ourselves for `--strict`.
+            // scan it ourselves for the status-specific flags.
             let strict = cli.shell_args.iter().any(|s| s == "--strict");
-            return status::run_status_with_opts(cli.config.as_deref(), strict);
+            let json = cli.shell_args.iter().any(|s| s == "--json");
+            // `--baseline <path>` — scan for the flag-value pair the same
+            // way. Accept `--baseline=PATH` as a convenience alias.
+            let mut baseline_path: Option<std::path::PathBuf> = None;
+            let mut i = 0;
+            while i < cli.shell_args.len() {
+                let a = &cli.shell_args[i];
+                if a == "--baseline" {
+                    if let Some(next) = cli.shell_args.get(i + 1) {
+                        baseline_path = Some(std::path::PathBuf::from(next));
+                    }
+                } else if let Some(rest) = a.strip_prefix("--baseline=") {
+                    baseline_path = Some(std::path::PathBuf::from(rest));
+                }
+                i += 1;
+            }
+            return status::run_status_with_opts(
+                cli.config.as_deref(),
+                strict,
+                json,
+                baseline_path.as_deref(),
+            );
         }
         Some("config") => {
             if cli.shell_args.get(1).map(|s| s.as_str()) == Some("edit") {
