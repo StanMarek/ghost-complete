@@ -44,6 +44,18 @@ export function matchPostProcess(fnSource) {
     transforms.push(errorGuard);
   }
 
+  // Phase 1b: Detect `JSON.parse(x).<dotted.path>.map(...)` which consumes
+  // the raw output directly as a single JSON blob (NOT newline-delimited).
+  // These shapes don't go through `.split("\n")` at all — lift them into a
+  // terminal `json_extract_array` transform. Must run BEFORE Phase 2's
+  // `hasSplitPattern` bail-out, since these generators have no newline split.
+  const jsonExtractArray = matchJsonExtractArray(body);
+  if (jsonExtractArray) {
+    // json_extract_array is a terminal, raw-output transform — it replaces
+    // the split/filter/map pipeline rather than appending to it.
+    return { transforms: [jsonExtractArray], requires_js: false };
+  }
+
   // Phase 2: Look for the split pattern (required for most transforms)
   if (!hasSplitPattern(body)) {
     // No split found — this is likely a complex function we can't match
@@ -314,6 +326,79 @@ function isSimpleSplitMap(body) {
   // Check for .map that produces {name: <var>} objects
   // This is intentionally loose — if we see split + map + name:, it's probably simple
   return /\.split\b/.test(body) && /\.map\b/.test(body) && /name\s*:/.test(body);
+}
+
+/**
+ * Match `JSON.parse(x).<dotted.path>.map(...)` — the two shapes covered are:
+ *
+ *   parse-map-6:     JSON.parse(t).project.schemes.map(e => ({name: e}))
+ *   parse-map-split: JSON.parse(e).workspace.members.map(n => n.split(" ")[0])
+ *
+ * Both consume the entire raw output as one JSON blob, walk a 2+ segment
+ * dotted path to reach an array, and emit one suggestion per element.
+ *
+ * Returns one of:
+ *   - a `{type:'json_extract_array', ...}` transform object on match
+ *   - `null` on no match (caller continues to other matchers)
+ *
+ * A single-segment path (e.g. `JSON.parse(x).items.map(...)`) is intentionally
+ * NOT matched here — those may use newline-delimited input elsewhere and are
+ * better handled by other phases or deferred to JS.
+ */
+function matchJsonExtractArray(body) {
+  if (!body.includes('JSON.parse')) return null;
+
+  // Require at least TWO path segments after JSON.parse(...). and a `.map(`
+  // somewhere after. Capture group 1 = the dotted path.
+  const m = body.match(
+    /JSON\.parse\s*\([^)]*\)\s*((?:\.[A-Za-z_$][\w$]*){2,})\s*\.map\s*\(/
+  );
+  if (!m) return null;
+
+  // m[1] looks like ".project.schemes" — strip the leading dot and keep only
+  // alphanumeric dotted segments. This intentionally rejects paths with
+  // brackets, numeric indices, or anything unusual; we only want the narrow
+  // 2-property dotted case the 14 target generators share.
+  const path = m[1].replace(/^\./, '');
+  if (!/^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)+$/.test(path)) return null;
+
+  const result = { type: 'json_extract_array', path };
+
+  // Detect the scarb parse-map-split variant inside the map callback:
+  //   .map(n => n.split(" ")[0])
+  // Keep it narrow: single-char string delimiter, numeric index, applied to
+  // the callback parameter.
+  const splitMatch = body.match(
+    /\.map\s*\(\s*(?:\w+|\(\s*\w+\s*\))\s*=>\s*\w+\.split\s*\(\s*["'`]([^"'`]+)["'`]\s*\)\s*\[\s*(\d+)\s*\]/
+  );
+  if (splitMatch) {
+    result.split_on = splitMatch[1];
+    result.split_index = parseInt(splitMatch[2], 10);
+    return result;
+  }
+
+  // Detect the parse-map-6 variant where the callback emits `{name: <param>}`.
+  // The element is used as-is → no item_name needed.
+  const nameIsParam = body.match(
+    /\.map\s*\(\s*(\w+)\s*=>\s*\(\s*\{\s*name\s*:\s*\1\s*[,}]/
+  );
+  if (nameIsParam) {
+    return result; // element-as-string shape, no sub-field
+  }
+
+  // Detect `.map(e => ({name: e.someField}))` — element object with sub-field.
+  const nameIsField = body.match(
+    /\.map\s*\(\s*(\w+)\s*=>\s*\(\s*\{\s*name\s*:\s*\1\.(\w+)/
+  );
+  if (nameIsField) {
+    result.item_name = nameIsField[2];
+    return result;
+  }
+
+  // Unknown map shape — bail so we don't emit a wrong transform. The caller
+  // will continue to the (null) Phase 2 split check, which hard-fails to
+  // requires_js.
+  return null;
 }
 
 /**
