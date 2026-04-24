@@ -1,25 +1,27 @@
 # Phase 0 Baseline — Pre-JS-Port Criterion Numbers
 
-**Purpose:** Phase 4 regression detection. Any benchmark regressing >10% vs
-these numbers fails the CI `bench-regression` gate
-(`scripts/check-bench.sh`). The machine-readable sibling
-`benchmarks/baseline-pre-js-port.json` is the ground truth the script reads;
-this Markdown file is the human-friendly view of the same data.
+> **Archival.** These numbers are a historical snapshot captured for
+> Phase 4 regression detection. As of the Option-B restructure of the
+> `bench-regression` gate (`scripts/check-bench.sh` + `ci.yml`), the
+> gate no longer reads `benchmarks/baseline-pre-js-port.json`; it
+> benches the PR's base ref and HEAD ref back-to-back on the same
+> runner and gates on Criterion's own change record. This file is
+> retained as a reference for what performance looked like at the
+> pre-JS-port capture point.
 
-**Captured at:** commit `dde88eac8de097745e9a56ede023afdb2a6ee705` on
-2026-04-24.
-**Hardware:** GitHub Actions `macos-latest` runner (same environment the
-`bench-regression` gate in `ci.yml` executes in), stable Rust via
-`rust-toolchain.toml`. Previously captured locally on an Apple M2 Pro,
-but the gate runs on hosted CI hardware which is materially slower, so
-the baseline was recaptured on that environment to eliminate a uniform
-hardware-delta false-positive across every bench.
-**Raw Criterion report:** `target/criterion/report/index.html` (produced
-by the `Benchmarks` workflow in `.github/workflows/bench.yml`, uploaded
-as the `criterion-reports` artifact).
-**Wall time:** `cargo bench --workspace` takes ~5 minutes end-to-end on
-the CI runner (15 benchmarks across 6 groups, 100 samples each plus 3 s
-warm-up).
+**Purpose:** Historical reference — performance snapshot captured
+before the requires-js-specs port work. The machine-readable sibling
+`benchmarks/baseline-pre-js-port.json` carries the same numbers in
+structured form.
+
+**Captured at:** commit `0e62bcbf68970657eedf6b5940854f1ab80b2792` on
+2026-04-22.
+**Hardware:** Apple M2 Pro, 12 cores, 16 GB RAM, macOS 26.4.1 (Darwin
+25.4.0 arm64), stable Rust via `rust-toolchain.toml`.
+**Raw Criterion report:** `target/criterion/report/index.html`.
+**Raw log:** `/tmp/cargo-bench-phase0.log` (retained locally; not checked in).
+**Wall time:** `cargo bench` took ~3 minutes end-to-end (15 benchmarks
+across 6 groups, 100 samples each plus 3 s warm-up).
 
 Each row below shows the **median** and the 95 % confidence interval on
 the median (the `median.point_estimate` and
@@ -34,38 +36,38 @@ the authoritative copy in the sibling JSON and is what
 
 | Bench       | Median       | Lower (95 %) | Upper (95 %) | Raw median (ns) |
 |-------------|--------------|--------------|--------------|-----------------|
-| 1k_3char    | 115.72 µs    | 114.31 µs    | 116.71 µs    | 115717          |
-| 10k_3char   | 1.150 ms     | 1.131 ms     | 1.176 ms     | 1150470         |
-| 10k_empty   | 371.14 µs    | 366.93 µs    | 377.93 µs    | 371138          |
+| 1k_3char    | 104.03 µs    | 103.73 µs    | 104.32 µs    | 104031          |
+| 10k_3char   | 1.082 ms     | 1.060 ms     | 1.091 ms     | 1081973         |
+| 10k_empty   | 340.47 µs    | 340.16 µs    | 340.96 µs    | 340475          |
 
 ### Group: `spec_loading`
 
 | Bench            | Median     | Lower (95 %) | Upper (95 %) | Raw median (ns) |
 |------------------|------------|--------------|--------------|-----------------|
-| load_717_specs   | 114.99 ms  | 114.47 ms    | 115.66 ms    | 114994542       |
+| load_717_specs   | 97.49 ms   | 96.73 ms     | 98.39 ms     | 97490813        |
 
 ### Group: `spec_resolution`
 
 | Bench     | Median    | Lower (95 %) | Upper (95 %) | Raw median (ns) |
 |-----------|-----------|--------------|--------------|-----------------|
-| shallow   | 2.930 µs  | 2.918 µs     | 2.947 µs     | 2930            |
-| deep      | 1.518 µs  | 1.494 µs     | 1.544 µs     | 1518            |
+| shallow   | 2.463 µs  | 2.461 µs     | 2.468 µs     | 2463            |
+| deep      | 1.278 µs  | 1.277 µs     | 1.280 µs     | 1278            |
 
 ### Group: `transform_pipeline`
 
 | Bench    | Median      | Lower (95 %) | Upper (95 %) | Raw median (ns) |
 |----------|-------------|--------------|--------------|-----------------|
-| simple   | 29.58 µs    | 29.42 µs     | 29.76 µs     | 29576           |
-| regex    | 121.37 µs   | 121.02 µs    | 121.97 µs    | 121371          |
-| json     | 31.86 µs    | 31.65 µs     | 32.12 µs     | 31858           |
+| simple   | 26.43 µs    | 26.38 µs     | 26.48 µs     | 26427           |
+| regex    | 112.88 µs   | 112.58 µs    | 113.33 µs    | 112879          |
+| json     | 27.94 µs    | 27.89 µs     | 27.99 µs     | 27937           |
 
 ### Group: `engine_suggest_sync`
 
 | Bench                 | Median      | Lower (95 %) | Upper (95 %) | Raw median (ns) |
 |-----------------------|-------------|--------------|--------------|-----------------|
-| command_position      | 19.48 µs    | 18.95 µs     | 20.08 µs     | 19477           |
-| subcommand_with_spec  | 18.13 µs    | 17.66 µs     | 18.39 µs     | 18127           |
-| filesystem_fallback   | 1.272 ms    | 1.264 ms     | 1.289 ms     | 1271829         |
+| command_position      | 17.63 µs    | 17.59 µs     | 17.72 µs     | 17634           |
+| subcommand_with_spec  | 16.35 µs    | 16.00 µs     | 16.54 µs     | 16345           |
+| filesystem_fallback   | 1.060 ms    | 1.059 ms     | 1.066 ms     | 1060472         |
 
 ### Group: `vt_parse_throughput`
 
@@ -76,9 +78,9 @@ HTML report; timings below are per 64 KiB buffer.
 
 | Bench          | Median      | Lower (95 %) | Upper (95 %) | Raw median (ns) |
 |----------------|-------------|--------------|--------------|-----------------|
-| plain_text     | 204.41 µs   | 202.87 µs    | 207.17 µs    | 204414          |
-| ansi_colored   | 246.99 µs   | 246.83 µs    | 247.38 µs    | 246985          |
-| cursor_heavy   | 303.10 µs   | 302.45 µs    | 304.20 µs    | 303098          |
+| plain_text     | 178.87 µs   | 178.70 µs    | 179.13 µs    | 178868          |
+| ansi_colored   | 224.05 µs   | 223.54 µs    | 224.54 µs    | 224052          |
+| cursor_heavy   | 277.88 µs   | 276.65 µs    | 279.74 µs    | 277885          |
 
 ## Spec corpus snapshot
 
@@ -183,13 +185,8 @@ This recipe is self-sufficient — running it from a clean
 `target/criterion/` tree (i.e. right after `cargo bench`) reproduces
 the committed `benchmarks/baseline-pre-js-port.json` value-for-value.
 
-1. Run the full benchmark suite. The committed numbers come from the
-   GitHub Actions `macos-latest` runner (see `.github/workflows/bench.yml`
-   — trigger via `gh workflow run bench.yml --ref master` and download
-   the `criterion-reports` artifact). Expect **~5 minutes** of wall time
-   on that runner; local M-series laptops will be ~10–20 % faster, so
-   regenerating locally will produce values that, by design, trip the
-   10 % gate — always regenerate on CI:
+1. Run the full benchmark suite. Expect **~3 minutes** of wall time on
+   the reference hardware documented above (Apple M2 Pro, 12 cores):
 
     ```bash
     cargo bench 2>&1 | tee /tmp/cargo-bench-phase0.log

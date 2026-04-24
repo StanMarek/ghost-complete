@@ -1,37 +1,38 @@
 #!/usr/bin/env bash
-# scripts/check-bench.sh — CI gate: benchmark regression check
+# scripts/check-bench.sh — CI gate: benchmark regression check (base↔HEAD)
 #
-# Compares Criterion median timings against the pre-JS-port baseline in
-# benchmarks/baseline-pre-js-port.json.  Any benchmark whose current median
-# exceeds `baseline_median * (1 + threshold/100)` counts as a regression
-# and fails the gate.
+# Reads Criterion's per-bench change/estimates.json files, which are
+# produced when `cargo bench -- --baseline <name>` is run against a
+# previously saved baseline on the same machine. Fails if any bench's
+# median change exceeds `threshold` percent.
+#
+# This design deliberately avoids a stored JSON baseline compared
+# across separate CI runs: shared hosted runners vary materially
+# between invocations (measured inter-run variance on macos-latest is
+# routinely ±15-20% on single-threaded latency benches), so a
+# stored-baseline gate is noise-dominated and cannot reliably
+# distinguish real regressions from runner variance.
+#
+# Instead, the CI job benches the base tree AND the HEAD tree on the
+# SAME runner back-to-back: `cargo bench -- --save-baseline base`
+# against the base tree, then `cargo bench -- --baseline base` against
+# HEAD. Criterion writes the comparison deltas to
+# `target/criterion/<group>/<bench>/change/estimates.json`, and this
+# script reads that field directly.
 #
 # EXIT CODES
-#   0 — pass (no regressions, or baseline / data missing, or dry-run)
+#   0 — pass (no regressions, or data missing, or dry-run)
 #   1 — regression detected (gate violation)
 #   2 — script/usage error
 #
 # DRY-RUN
-#   Pass --dry-run or set CI_DRY_RUN=1.  Argument validation still runs;
-#   the actual regression check is skipped and the script exits 0.
+#   Pass --dry-run or set CI_DRY_RUN=1. Argument validation still
+#   runs; the actual regression check is skipped and the script exits 0.
 #
-# DATA SOURCES
-#   Baseline:        benchmarks/baseline-pre-js-port.json (machine-readable
-#                    sibling of baseline-pre-js-port.md; written by T4a).
-#   Current run:     target/criterion/<group>/<bench>/new/estimates.json
-#                    (falling back to .../base/estimates.json when a fresh
-#                    run hasn't been recorded yet).
-#
-# METHODOLOGY
-#   For each (group, bench) that appears in BOTH baseline and current data:
-#     pct_change = (current_median_ns - baseline_median_ns)
-#                  / baseline_median_ns * 100
-#   Regression iff pct_change > threshold (default: 10%, rounded to integer
-#   percent — see `--threshold`).
-#
-#   Benchmarks present in only one side are reported to stderr but do not
-#   fail the gate; CI treats spec additions/removals as deliberate changes
-#   to be re-baselined in a separate PR.
+# DATA SOURCE
+#   target/criterion/<group>/<bench>/change/estimates.json
+#   Specifically `.median.point_estimate`, which Criterion emits as a
+#   fraction (e.g. 0.13 = +13%).
 
 set -euo pipefail
 
@@ -40,7 +41,6 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # shellcheck source=lib/common.sh
 source "$SCRIPT_DIR/lib/common.sh"
 
-BASELINE_FILE="$REPO_ROOT/benchmarks/baseline-pre-js-port.json"
 CRITERION_DIR="$REPO_ROOT/target/criterion"
 DEFAULT_THRESHOLD=10
 
@@ -49,15 +49,16 @@ usage() {
 Usage:
   check-bench.sh [--threshold <percent>] [--dry-run] [--help]
 
-Checks for benchmark regressions against
-benchmarks/baseline-pre-js-port.json.  If the baseline file or Criterion
-data directory is absent, exits 0 with a warning (local-dev friendly).
+Checks Criterion change/estimates.json files for regressions >threshold%
+relative to the last `--save-baseline`-captured run on the same machine.
+If the criterion data directory or change records are absent, exits 0
+with a warning (local-dev friendly; hard-fails in CI).
 
 Options:
   --threshold <pct>   Regression threshold in percent (default: 10).
                       Must be a non-negative integer.
-  --dry-run           Skip regression check; print what would be checked;
-                      exit 0.
+  --dry-run           Skip regression check; print what would be
+                      checked; exit 0.
   --help              Print this help and exit 0.
 
 Environment:
@@ -92,35 +93,17 @@ done
 # ---- dry-run early exit -------------------------------------------------------
 
 if [[ "$dry_run" -eq 1 ]]; then
-    log "[dry-run] would check benchmark regressions with --threshold ${threshold}%"
+    log "[dry-run] would check benchmark change records with --threshold ${threshold}%"
     exit 0
 fi
 
-# ---- guards: tooling + inputs -------------------------------------------------
+# ---- guards -------------------------------------------------------------------
 
 command -v jq >/dev/null 2>&1 || die "jq is required but not on PATH"
 
-if [[ ! -f "$BASELINE_FILE" ]]; then
-    if [[ "${CI:-}" == "true" ]]; then
-        # Hard-fail in CI: the baseline JSON is committed to the repo, so a
-        # missing file here means a checkout/rename/delete slipped through
-        # review. Silently exiting 0 would make the gate unconditionally green.
-        printf 'error: baseline file not found (%s) and $CI=true — baseline is committed to the repo, this should never happen in CI\n' \
-            "$BASELINE_FILE" >&2
-        exit 2
-    fi
-    printf 'warning: baseline file not found (%s) — skipping benchmark regression check\n' \
-        "$BASELINE_FILE" >&2
-    exit 0
-fi
-
 if [[ ! -d "$CRITERION_DIR" ]]; then
     if [[ "${CI:-}" == "true" ]]; then
-        # Hard-fail in CI: if this gate runs without criterion output, the
-        # workflow forgot to run `cargo bench` (or to install a toolchain)
-        # before invoking this script. Silently exiting 0 here would make the
-        # gate unconditionally green.
-        printf 'error: no benchmark data found (%s) and $CI=true — did the workflow run `cargo bench` before invoking check-bench.sh?\n' \
+        printf 'error: no benchmark data found (%s) and $CI=true — did the workflow run `cargo bench --save-baseline base` and `cargo bench --baseline base`?\n' \
             "$CRITERION_DIR" >&2
         exit 2
     fi
@@ -129,20 +112,9 @@ if [[ ! -d "$CRITERION_DIR" ]]; then
     exit 0
 fi
 
-# ---- scratch dir (used for safe_jq err capture + the TSV join later) ----------
-# Created early so safe_jq has a stable place to drop stderr buffers.
-
 work_dir="$(mktemp -d)"
 trap 'rm -rf "$work_dir"' EXIT
 
-# safe_jq <file> <jq-args...>
-#
-# Runs `jq <args> <file>` and prints stdout on success.  On jq parse/runtime
-# failure, captures stderr and invokes `die` with a message that NAMES the
-# offending file — exits 2 (the script's documented "script/usage error"
-# code, which also covers malformed input data).  Without this wrapper, a
-# corrupt JSON file would surface in CI logs as the bare `jq: parse error`
-# line with exit 5 and no context about which file failed.
 safe_jq() {
     local file="$1"; shift
     local err_file="$work_dir/jq-err.$$"
@@ -156,148 +128,81 @@ safe_jq() {
     printf '%s' "$out"
 }
 
-# ---- collect baseline entries -------------------------------------------------
-# Emits TSV: group<TAB>bench<TAB>median_ns
+# ---- collect change records ---------------------------------------------------
+# For each bench dir, read change/estimates.json if present. Emit TSV:
+# group<TAB>bench<TAB>median_pct<TAB>lower_pct<TAB>upper_pct
 
-baseline_tsv="$(safe_jq "$BASELINE_FILE" -r '
-      .groups
-      | to_entries[]
-      | .key as $group
-      | .value
-      | to_entries[]
-      | [$group, .key, (.value.median_ns|tostring)]
-      | @tsv
-    ')"
-
-if [[ -z "$baseline_tsv" ]]; then
-    printf 'warning: baseline file has no benchmark entries — skipping check\n' >&2
-    exit 0
-fi
-
-# ---- collect current entries --------------------------------------------------
-# For each group dir in target/criterion, for each bench subdir, read
-# new/estimates.json (fallback: base/estimates.json) and emit TSV.
-
-current_tsv=""
-# shellcheck disable=SC2044  # group/bench names shouldn't contain whitespace
+change_tsv=""
 for group_dir in "$CRITERION_DIR"/*/; do
     [[ -d "$group_dir" ]] || continue
     group="$(basename "$group_dir")"
-    # skip criterion's own 'report' aggregate dir
     [[ "$group" == "report" ]] && continue
 
     for bench_dir in "$group_dir"*/; do
         [[ -d "$bench_dir" ]] || continue
         bench="$(basename "$bench_dir")"
-        # skip aggregate/report subdirs
         [[ "$bench" == "report" ]] && continue
 
-        est="$bench_dir/new/estimates.json"
-        [[ -f "$est" ]] || est="$bench_dir/base/estimates.json"
+        est="$bench_dir/change/estimates.json"
         [[ -f "$est" ]] || continue
 
-        median_ns="$(safe_jq "$est" -r '.median.point_estimate')"
-        # skip null/NaN
-        [[ -z "$median_ns" || "$median_ns" == "null" ]] && continue
-
-        current_tsv+="${group}"$'\t'"${bench}"$'\t'"${median_ns}"$'\n'
+        # .median.point_estimate is a fraction; convert to percent.
+        row="$(safe_jq "$est" -r '
+            [
+              (.median.point_estimate * 100),
+              (.median.confidence_interval.lower_bound * 100),
+              (.median.confidence_interval.upper_bound * 100)
+            ]
+            | @tsv
+        ')"
+        [[ -z "$row" ]] && continue
+        change_tsv+="${group}"$'\t'"${bench}"$'\t'"${row}"$'\n'
     done
 done
 
-if [[ -z "$current_tsv" ]]; then
-    printf 'warning: no criterion estimates found under %s — skipping check\n' \
+if [[ -z "$change_tsv" ]]; then
+    if [[ "${CI:-}" == "true" ]]; then
+        printf 'error: no change/estimates.json files under %s and $CI=true — did the bench step pass both --save-baseline on the base tree AND --baseline on the HEAD tree?\n' \
+            "$CRITERION_DIR" >&2
+        exit 2
+    fi
+    printf 'warning: no change/estimates.json files under %s — skipping check (did you run `cargo bench -- --baseline <name>` on the current tree after saving a baseline on the base tree?)\n' \
         "$CRITERION_DIR" >&2
     exit 0
 fi
 
 # ---- diff ---------------------------------------------------------------------
-#
-# No associative arrays (must work on macOS's bundled bash 3.2).
-# Strategy: build temp files of "key<TAB>value" rows, then use `join` on
-# sorted copies to find matched / baseline-only / current-only benches.
 
 regressions=0
 checked=0
-baseline_only=0
-current_only=0
-
-baseline_keyed="$work_dir/baseline.keyed"
-current_keyed="$work_dir/current.keyed"
-
-# "<group>/<bench>\t<median_ns>"
-printf '%s' "$baseline_tsv" | awk -F'\t' 'NF>=3 {printf "%s/%s\t%s\n", $1, $2, $3}' \
-    | sort > "$baseline_keyed"
-printf '%s' "$current_tsv"  | awk -F'\t' 'NF>=3 {printf "%s/%s\t%s\n", $1, $2, $3}' \
-    | sort > "$current_keyed"
-
-# Matched rows (inner join on the first field).
-matched="$work_dir/matched"
-join -t $'\t' -j 1 "$baseline_keyed" "$current_keyed" > "$matched"
-
-# Benches present only in baseline (-v 1), only in current (-v 2).
-join -t $'\t' -j 1 -v 1 "$baseline_keyed" "$current_keyed" > "$work_dir/baseline_only"
-join -t $'\t' -j 1 -v 2 "$baseline_keyed" "$current_keyed" > "$work_dir/current_only"
-
-# Report orphans on stderr (non-fatal).
-while IFS=$'\t' read -r key _; do
-    [[ -z "$key" ]] && continue
-    printf 'note: baseline has %s but current run is missing it\n' "$key" >&2
-    baseline_only=$(( baseline_only + 1 ))
-done < "$work_dir/baseline_only"
-
-while IFS=$'\t' read -r key _; do
-    [[ -z "$key" ]] && continue
-    printf 'note: current run has %s but baseline has no entry for it\n' "$key" >&2
-    current_only=$(( current_only + 1 ))
-done < "$work_dir/current_only"
-
-# Regression rows formatted as a single column string; build up lazily.
 regression_rows=""
 
-while IFS=$'\t' read -r key baseline_ns cur_ns; do
-    [[ -z "$key" ]] && continue
+while IFS=$'\t' read -r group bench median_pct lower_pct upper_pct; do
+    [[ -z "$group" ]] && continue
     checked=$(( checked + 1 ))
 
-    # pct_change = (cur - baseline) / baseline * 100
-    read -r is_regression pct <<EOF
-$(awk -v cur="$cur_ns" -v base="$baseline_ns" -v thr="$threshold" '
-    BEGIN {
-        if (base <= 0) { print "0 0.00"; exit }
-        pct = (cur - base) / base * 100.0
-        reg = (pct > thr) ? 1 : 0
-        printf "%d %.2f\n", reg, pct
-    }
-')
-EOF
+    is_regression="$(awk -v pct="$median_pct" -v thr="$threshold" \
+        'BEGIN { print (pct > thr) ? 1 : 0 }')"
 
     if [[ "$is_regression" == "1" ]]; then
         regressions=$(( regressions + 1 ))
-        g="${key%%/*}"
-        b="${key#*/}"
-        row="$(printf '  %-24s %-28s %12.3f ms -> %12.3f ms  (%+7s %%)' \
-            "$g" "$b" \
-            "$(awk -v n="$baseline_ns" 'BEGIN{printf "%.3f", n/1e6}')" \
-            "$(awk -v n="$cur_ns"      'BEGIN{printf "%.3f", n/1e6}')" \
-            "$pct")"
+        row="$(printf '  %-24s %-28s  %+7.2f %%  (95%% CI: %+6.2f %% .. %+6.2f %%)' \
+            "$group" "$bench" "$median_pct" "$lower_pct" "$upper_pct")"
         regression_rows+="${row}"$'\n'
     fi
-done < "$matched"
+done <<< "$change_tsv"
 
 # ---- report -------------------------------------------------------------------
 
 if (( regressions > 0 )); then
-    printf '\nFAIL: %d benchmark(s) regressed by more than %d%%:\n' \
+    printf '\nFAIL: %d benchmark(s) regressed by more than %d%% (median of change vs base tree):\n' \
         "$regressions" "$threshold" >&2
-    printf '  %-24s %-28s %14s    %14s       %s\n' \
-        "group" "bench" "baseline" "current" "change" >&2
+    printf '  %-24s %-28s  %9s  %s\n' \
+        "group" "bench" "change" "confidence" >&2
     printf '%s' "$regression_rows" >&2
-    printf '\n(checked %d, baseline-only %d, current-only %d)\n' \
-        "$checked" "$baseline_only" "$current_only" >&2
+    printf '\n(checked %d benchmark(s))\n' "$checked" >&2
     exit 1
 fi
 
-log "PASS: checked ${checked} benchmark(s); no regressions > ${threshold}%."
-if (( baseline_only > 0 || current_only > 0 )); then
-    log "note: ${baseline_only} baseline-only, ${current_only} current-only (not a failure)."
-fi
+log "PASS: checked ${checked} benchmark(s); no median regressions > ${threshold}%."
 exit 0
