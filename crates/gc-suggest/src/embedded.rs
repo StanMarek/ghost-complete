@@ -382,9 +382,7 @@ mod tests {
     #[test]
     fn embedded_specs_preserve_corrected_in_markers() {
         // `build.rs::strip_js_source` must NOT strip `_corrected_in`.
-        // That marker is consumed at runtime by `ghost-complete doctor`
-        // (crates/ghost-complete/src/doctor.rs::count_corrected_generators_in_spec)
-        // to surface generators that were previously mis-converted.
+        // That marker surfaces generators that were previously mis-converted.
         //
         // WHY this test pins a total: a build-time regression that
         // incidentally dropped `_corrected_in` at any nesting depth would

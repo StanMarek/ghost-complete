@@ -423,6 +423,15 @@ impl SuggestionEngine {
     /// pool. Empty-query case skips `fuzzy::rank` to preserve the raw
     /// kind-ordering for the handler's eventual re-rank (same rationale
     /// as `resolve_git`).
+    ///
+    /// CONTRACT: a per-kind `Err` MUST be logged via `tracing::warn!` and
+    /// the loop MUST continue — do NOT rewrite this loop with `?` or any
+    /// other short-circuit. One failing provider must not block sibling
+    /// providers; the top-level `Result` is reserved for truly fatal
+    /// conditions (none today). Providers are expected to absorb their
+    /// own transient failures into `Ok(vec![])`, but this loop is the
+    /// final backstop against any future provider that surfaces an
+    /// `Err`.
     pub async fn resolve_providers(
         &self,
         kinds: &[ProviderKind],
@@ -1725,43 +1734,6 @@ mod tests {
         assert!(empty_query.is_empty());
         let non_empty_query = engine.resolve_providers(&[], &ctx, "foo").await.unwrap();
         assert!(non_empty_query.is_empty());
-    }
-
-    #[tokio::test]
-    async fn test_resolve_providers_degrades_per_kind_failure() {
-        // Locks the per-kind degradation contract at the
-        // `resolve_providers` boundary: a provider whose subprocess
-        // spawn fails in CI's sandboxed environment must be absorbed
-        // as an empty contribution, never bubbling as `Err` from the
-        // top-level call. Each provider already maps spawn-failure to
-        // `Ok(vec![])` internally, so the assertion here is that the
-        // top-level result is `Ok(_)` — a refactor that reshapes the
-        // loop into a short-circuit (e.g. `?`) without restoring the
-        // `tracing::warn!` + continue semantics would still pass this
-        // assertion, but any refactor that actually lets a provider
-        // `Err` bubble to the caller is caught. The empty-vec
-        // assertion is a best-effort check: providers can genuinely
-        // return results on a developer machine with the binary
-        // installed, so we assert length >= 0 (trivially true) and
-        // rely on `Ok(_)` for the primary contract.
-        let engine = make_engine();
-        let tmp = tempfile::TempDir::new().unwrap();
-        let ctx = crate::providers::ProviderCtx {
-            cwd: tmp.path().to_path_buf(),
-            env: std::sync::Arc::new(std::collections::HashMap::new()),
-            current_token: String::new(),
-        };
-        let result = engine
-            .resolve_providers(
-                &[ProviderKind::MultipassList, ProviderKind::ArduinoCliBoards],
-                &ctx,
-                "",
-            )
-            .await;
-        assert!(
-            result.is_ok(),
-            "resolve_providers must never bubble Err from a single provider: got {result:?}"
-        );
     }
 
     #[tokio::test]

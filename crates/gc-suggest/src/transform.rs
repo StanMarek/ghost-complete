@@ -62,6 +62,11 @@ pub enum ParameterizedTransform {
     /// in which case it's looked up inside the element. An optional
     /// `split_on` + `split_index` applies a final per-element split/pick
     /// (covers the scarb `n.split(" ")[0]` pattern from `@withfig` specs).
+    ///
+    /// INVARIANT: if `split_index` is `Some`, `split_on` must be `Some`;
+    /// and `split_on` must be non-empty if `Some`. Enforced at construction
+    /// via `TryFrom<ParameterizedHelper>` and backstopped by `assert!` at
+    /// apply time.
     JsonExtractArray {
         path: JsonPath,
         item_name: Option<JsonPath>,

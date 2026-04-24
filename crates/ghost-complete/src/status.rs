@@ -1166,6 +1166,79 @@ mod tests {
     }
 
     #[test]
+    fn unsupported_schema_version_errors() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let body = r#"{"schema_version":"2.0","releases":[]}"#;
+        let p = write_baseline(&tmp, body);
+
+        let err = load_baseline(Some(&p)).expect_err("unsupported schema_version must error");
+        let msg = format!("{err:#}");
+        assert!(
+            msg.contains("schema_version"),
+            "error must name schema_version, got:\n{msg}"
+        );
+        assert!(
+            msg.contains("1.0"),
+            "error must name the expected version 1.0, got:\n{msg}"
+        );
+    }
+
+    #[test]
+    fn unknown_top_level_field_errors() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let body = r#"{"schema_version":"1.0","releases":[],"surprise":1}"#;
+        let p = write_baseline(&tmp, body);
+
+        let result = load_baseline(Some(&p));
+        assert!(
+            result.is_err(),
+            "unknown top-level field must error (deny_unknown_fields), got: {:?}",
+            result
+        );
+    }
+
+    #[test]
+    fn malformed_timestamp_errors() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let body = r#"{
+  "schema_version": "1.0",
+  "releases": [
+    {
+      "version": "0.9.1",
+      "timestamp": "not-a-date",
+      "total_specs": 709,
+      "fully_functional": 526,
+      "requires_js_generators": 1889,
+      "native_providers": 12,
+      "corrected_generators": 139,
+      "hand_audit_required": 866
+    }
+  ]
+}"#;
+        let p = write_baseline(&tmp, body);
+
+        let err = load_baseline(Some(&p)).expect_err("garbage timestamp must error");
+        let msg = format!("{err:#}");
+        assert!(
+            msg.contains("RFC 3339"),
+            "error must mention RFC 3339, got:\n{msg}"
+        );
+    }
+
+    #[test]
+    fn looks_like_rfc3339_branch_coverage() {
+        assert!(looks_like_rfc3339("2026-04-24T00:00:00Z"));
+        assert!(looks_like_rfc3339("2026-04-24T00:00:00.123+02:00"));
+        assert!(looks_like_rfc3339("2026-04-24T00:00:00-04:00"));
+
+        assert!(!looks_like_rfc3339(""));
+        assert!(!looks_like_rfc3339("2026-04-24"));
+        assert!(!looks_like_rfc3339("2026/04/24T00:00:00Z"));
+        assert!(!looks_like_rfc3339("2026-04-24T00:00:00"));
+        assert!(!looks_like_rfc3339("XXXX-04-24T00:00:00Z"));
+    }
+
+    #[test]
     fn missing_explicit_baseline_errors() {
         // The user explicitly requested a baseline file — a missing file
         // is their mistake, not an invitation to fall through to the
