@@ -45,6 +45,33 @@ struct MultipassInstance {
     state: Option<String>,
 }
 
+/// State filter used by the command-specific multipass provider aliases.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum MultipassInstanceFilter {
+    All,
+    NotDeleted,
+    Deleted,
+    Running,
+    Stopped,
+}
+
+impl MultipassInstanceFilter {
+    fn matches(self, state: Option<&str>) -> bool {
+        let normalized = state.map(str::trim);
+        match self {
+            Self::All => true,
+            Self::NotDeleted => !state_is(normalized, "Deleted"),
+            Self::Deleted => state_is(normalized, "Deleted"),
+            Self::Running => state_is(normalized, "Running"),
+            Self::Stopped => state_is(normalized, "Stopped"),
+        }
+    }
+}
+
+fn state_is(state: Option<&str>, expected: &str) -> bool {
+    state.is_some_and(|s| s.eq_ignore_ascii_case(expected))
+}
+
 /// Run `multipass list --format=json` against the user's real
 /// `multipass` binary.
 ///
@@ -106,10 +133,14 @@ fn parse_multipass_list_raw(json: &str) -> Option<MultipassListOutput> {
 /// Project instance rows into suggestions. Pure so tests can cover
 /// every degradation path (missing name, missing release, missing
 /// state) without a subprocess.
-fn instances_to_suggestions(output: MultipassListOutput) -> Vec<Suggestion> {
+fn instances_to_suggestions(
+    output: MultipassListOutput,
+    filter: MultipassInstanceFilter,
+) -> Vec<Suggestion> {
     output
         .list
         .into_iter()
+        .filter(|inst| filter.matches(inst.state.as_deref()))
         .filter_map(|inst| {
             let name = inst.name?;
             let release = inst.release.as_deref().unwrap_or("");
@@ -143,24 +174,44 @@ impl Provider for MultipassList {
     }
 
     async fn generate(&self, ctx: &ProviderCtx) -> Result<Vec<Suggestion>> {
-        self.generate_with_binary(ctx, "multipass").await
+        self.generate_with_filter(ctx, MultipassInstanceFilter::All)
+            .await
     }
 }
 
 impl MultipassList {
-    /// Test seam — `generate` calls this with `"multipass"`; tests
-    /// call it with a nonexistent path to exercise the
-    /// spawn-failure → `Ok(vec![])` fallback contract without mutating
+    pub(crate) async fn generate_with_filter(
+        &self,
+        ctx: &ProviderCtx,
+        filter: MultipassInstanceFilter,
+    ) -> Result<Vec<Suggestion>> {
+        self.generate_with_binary_and_filter(ctx, "multipass", filter)
+            .await
+    }
+
+    /// Test seam: tests call it with a nonexistent path to exercise the
+    /// spawn-failure -> `Ok(vec![])` fallback contract without mutating
     /// `$PATH`.
+    #[cfg(test)]
     pub(crate) async fn generate_with_binary(
         &self,
         ctx: &ProviderCtx,
         binary: &str,
     ) -> Result<Vec<Suggestion>> {
+        self.generate_with_binary_and_filter(ctx, binary, MultipassInstanceFilter::All)
+            .await
+    }
+
+    pub(crate) async fn generate_with_binary_and_filter(
+        &self,
+        ctx: &ProviderCtx,
+        binary: &str,
+        filter: MultipassInstanceFilter,
+    ) -> Result<Vec<Suggestion>> {
         let Some(output) = run_multipass_list_with_binary(&ctx.cwd, binary).await else {
             return Ok(Vec::new());
         };
-        Ok(instances_to_suggestions(output))
+        Ok(instances_to_suggestions(output, filter))
     }
 }
 
@@ -177,7 +228,7 @@ mod tests {
             ]
         }"#;
         let output = parse_multipass_list_raw(json).expect("parse should succeed");
-        let suggestions = instances_to_suggestions(output);
+        let suggestions = instances_to_suggestions(output, MultipassInstanceFilter::All);
         assert_eq!(suggestions.len(), 2);
         assert_eq!(suggestions[0].text, "primary");
         assert_eq!(
@@ -196,7 +247,7 @@ mod tests {
     #[test]
     fn parse_empty_list() {
         let output = parse_multipass_list_raw(r#"{"list": []}"#).expect("parse should succeed");
-        assert!(instances_to_suggestions(output).is_empty());
+        assert!(instances_to_suggestions(output, MultipassInstanceFilter::All).is_empty());
     }
 
     #[test]
@@ -212,7 +263,7 @@ mod tests {
             ]
         }"#;
         let output = parse_multipass_list_raw(json).expect("parse should succeed");
-        let suggestions = instances_to_suggestions(output);
+        let suggestions = instances_to_suggestions(output, MultipassInstanceFilter::All);
         assert_eq!(suggestions.len(), 1);
         assert_eq!(suggestions[0].text, "keeper");
     }
@@ -231,7 +282,7 @@ mod tests {
             ]
         }"#;
         let output = parse_multipass_list_raw(json).expect("parse should succeed");
-        let suggestions = instances_to_suggestions(output);
+        let suggestions = instances_to_suggestions(output, MultipassInstanceFilter::All);
         assert_eq!(suggestions.len(), 3);
         assert_eq!(suggestions[0].text, "no-release");
         assert_eq!(suggestions[0].description.as_deref(), Some("(Running)"));
@@ -254,6 +305,61 @@ mod tests {
         assert!(parse_multipass_list_raw("not json").is_none());
         assert!(parse_multipass_list_raw("").is_none());
         assert!(parse_multipass_list_raw("{").is_none());
+    }
+
+    #[test]
+    fn active_command_targets_exclude_deleted_instances() {
+        let json = r#"{
+            "list": [
+                {"name": "active", "release": "22.04 LTS", "state": "Running"},
+                {"name": "deleted", "release": "22.04 LTS", "state": "Deleted"}
+            ]
+        }"#;
+        let output = parse_multipass_list_raw(json).expect("parse should succeed");
+        let suggestions = instances_to_suggestions(output, MultipassInstanceFilter::NotDeleted);
+        let names: Vec<&str> = suggestions.iter().map(|s| s.text.as_str()).collect();
+        assert_eq!(names, vec!["active"]);
+    }
+
+    #[test]
+    fn recover_targets_only_deleted_instances() {
+        let json = r#"{
+            "list": [
+                {"name": "running", "release": "22.04 LTS", "state": "Running"},
+                {"name": "deleted", "release": "22.04 LTS", "state": "Deleted"}
+            ]
+        }"#;
+        let output = parse_multipass_list_raw(json).expect("parse should succeed");
+        let suggestions = instances_to_suggestions(output, MultipassInstanceFilter::Deleted);
+        let names: Vec<&str> = suggestions.iter().map(|s| s.text.as_str()).collect();
+        assert_eq!(names, vec!["deleted"]);
+    }
+
+    #[test]
+    fn lifecycle_targets_filter_by_required_state() {
+        let json = r#"{
+            "list": [
+                {"name": "running", "release": "22.04 LTS", "state": "Running"},
+                {"name": "stopped", "release": "22.04 LTS", "state": "Stopped"},
+                {"name": "deleted", "release": "22.04 LTS", "state": "Deleted"}
+            ]
+        }"#;
+
+        let running = parse_multipass_list_raw(json).expect("parse should succeed");
+        let running_names: Vec<String> =
+            instances_to_suggestions(running, MultipassInstanceFilter::Running)
+                .into_iter()
+                .map(|s| s.text)
+                .collect();
+        assert_eq!(running_names, vec!["running"]);
+
+        let stopped = parse_multipass_list_raw(json).expect("parse should succeed");
+        let stopped_names: Vec<String> =
+            instances_to_suggestions(stopped, MultipassInstanceFilter::Stopped)
+                .into_iter()
+                .map(|s| s.text)
+                .collect();
+        assert_eq!(stopped_names, vec!["stopped"]);
     }
 
     #[tokio::test]

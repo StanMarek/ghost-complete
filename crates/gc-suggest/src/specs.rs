@@ -1935,6 +1935,10 @@ mod tests {
             "defaults_domains",
             "mamba_envs",
             "multipass_list",
+            "multipass_list_not_deleted",
+            "multipass_list_deleted",
+            "multipass_list_running",
+            "multipass_list_stopped",
             "pandoc_input_formats",
             "pandoc_output_formats",
         ];

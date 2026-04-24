@@ -309,31 +309,25 @@ fn scan_specs(config_path: Option<&str>) -> Result<StatusOutcome> {
     let mut fully_functional = 0usize;
     let mut partially_functional = 0usize;
     let mut js_commands: Vec<String> = Vec::new();
-    let mut total_parse_errors = 0usize;
     let mut parse_error_lines: Vec<String> = Vec::new();
 
-    for dir in &dirs {
-        let result = SpecStore::load_from_dir(dir)?;
-        let store = result.store;
+    let result = SpecStore::load_from_dirs(&dirs)?;
+    let store = result.store;
+    let total_parse_errors = result.errors.len();
+    for err in &result.errors {
+        parse_error_lines.push(sanitize_for_terminal(err));
+    }
 
-        let mut specs: Vec<(&str, &CompletionSpec)> = store.iter().collect();
-        specs.sort_by_key(|(name, _)| *name);
+    let mut specs: Vec<(&str, &CompletionSpec)> = store.iter().collect();
+    specs.sort_by_key(|(name, _)| *name);
 
-        for (name, spec) in &specs {
-            fs_specs += 1;
-            if has_requires_js(spec) {
-                partially_functional += 1;
-                js_commands.push((*name).to_string());
-            } else {
-                fully_functional += 1;
-            }
-        }
-
-        if !result.errors.is_empty() {
-            total_parse_errors += result.errors.len();
-            for err in &result.errors {
-                parse_error_lines.push(sanitize_for_terminal(err));
-            }
+    for (name, spec) in &specs {
+        fs_specs += 1;
+        if has_requires_js(spec) {
+            partially_functional += 1;
+            js_commands.push((*name).to_string());
+        } else {
+            fully_functional += 1;
         }
     }
 
@@ -557,11 +551,22 @@ mod tests {
     /// Build a config TOML pointing at a single spec dir, write it to
     /// `tmp/config.toml`, and return its path.
     fn write_config_for(spec_dir: &std::path::Path, tmp: &tempfile::TempDir) -> std::path::PathBuf {
+        write_config_for_dirs(&[spec_dir], tmp)
+    }
+
+    /// Build a config TOML pointing at multiple spec dirs in order, write it to
+    /// `tmp/config.toml`, and return its path.
+    fn write_config_for_dirs(
+        spec_dirs: &[&std::path::Path],
+        tmp: &tempfile::TempDir,
+    ) -> std::path::PathBuf {
         let cfg_path = tmp.path().join("config.toml");
-        let body = format!(
-            "[paths]\nspec_dirs = [\"{}\"]\n",
-            spec_dir.display().to_string().replace('\\', "\\\\")
-        );
+        let dirs = spec_dirs
+            .iter()
+            .map(|dir| format!("\"{}\"", dir.display().to_string().replace('\\', "\\\\")))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let body = format!("[paths]\nspec_dirs = [{}]\n", dirs);
         std::fs::write(&cfg_path, body).unwrap();
         cfg_path
     }
@@ -613,6 +618,54 @@ mod tests {
             "sanitized filename (ESC stripped, CSI params retained as literal text) \
              should appear in output:\n{inner}"
         );
+    }
+
+    #[test]
+    fn status_counts_first_match_wins_store_across_resolved_dirs() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let primary_dir = tmp.path().join("primary-specs");
+        let fallback_dir = tmp.path().join("fallback-specs");
+        std::fs::create_dir_all(&primary_dir).unwrap();
+        std::fs::create_dir_all(&fallback_dir).unwrap();
+
+        std::fs::write(
+            primary_dir.join("dup.json"),
+            r#"{
+                "name": "dup",
+                "args": [{"name": "target"}]
+            }"#,
+        )
+        .unwrap();
+        std::fs::write(
+            fallback_dir.join("dup.json"),
+            r#"{
+                "name": "dup",
+                "args": [{
+                    "name": "target",
+                    "generators": [{"script": ["echo", "x"], "requires_js": true}]
+                }]
+            }"#,
+        )
+        .unwrap();
+        std::fs::write(
+            fallback_dir.join("only-fallback.json"),
+            r#"{
+                "name": "only-fallback",
+                "args": [{
+                    "name": "target",
+                    "generators": [{"script": ["echo", "x"], "requires_js": true}]
+                }]
+            }"#,
+        )
+        .unwrap();
+
+        let cfg = write_config_for_dirs(&[&primary_dir, &fallback_dir], &tmp);
+        let outcome = scan_specs(Some(cfg.to_str().unwrap())).unwrap();
+
+        assert_eq!(outcome.fs_specs, 2);
+        assert_eq!(outcome.fully_functional, 1);
+        assert_eq!(outcome.partially_functional, 1);
+        assert_eq!(outcome.js_commands, vec!["only-fallback"]);
     }
 
     // -------------------------------------------------------------------------

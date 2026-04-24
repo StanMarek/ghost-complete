@@ -121,6 +121,14 @@ pub enum ProviderKind {
     /// `multipass list --format=json`, projecting the `name` field of
     /// each entry in the top-level `list` array.
     MultipassList,
+    /// Multipass instances excluding rows in the `Deleted` state.
+    MultipassListNotDeleted,
+    /// Multipass instances only in the `Deleted` state.
+    MultipassListDeleted,
+    /// Multipass instances only in the `Running` state.
+    MultipassListRunning,
+    /// Multipass instances only in the `Stopped` state.
+    MultipassListStopped,
     /// `pandoc --list-input-formats`, emitting one format identifier
     /// per non-empty line.
     PandocInputFormats,
@@ -145,6 +153,10 @@ pub fn kind_from_type_str(type_str: &str) -> Option<ProviderKind> {
         "defaults_domains" => Some(ProviderKind::DefaultsDomains),
         "mamba_envs" => Some(ProviderKind::MambaEnvs),
         "multipass_list" => Some(ProviderKind::MultipassList),
+        "multipass_list_not_deleted" => Some(ProviderKind::MultipassListNotDeleted),
+        "multipass_list_deleted" => Some(ProviderKind::MultipassListDeleted),
+        "multipass_list_running" => Some(ProviderKind::MultipassListRunning),
+        "multipass_list_stopped" => Some(ProviderKind::MultipassListStopped),
         "pandoc_input_formats" => Some(ProviderKind::PandocInputFormats),
         "pandoc_output_formats" => Some(ProviderKind::PandocOutputFormats),
         _ => None,
@@ -161,6 +173,26 @@ pub async fn resolve(kind: ProviderKind, ctx: &ProviderCtx) -> Result<Vec<Sugges
         ProviderKind::DefaultsDomains => macos_defaults::DefaultsDomains.generate(ctx).await,
         ProviderKind::MambaEnvs => mamba::MambaEnvs.generate(ctx).await,
         ProviderKind::MultipassList => multipass::MultipassList.generate(ctx).await,
+        ProviderKind::MultipassListNotDeleted => {
+            multipass::MultipassList
+                .generate_with_filter(ctx, multipass::MultipassInstanceFilter::NotDeleted)
+                .await
+        }
+        ProviderKind::MultipassListDeleted => {
+            multipass::MultipassList
+                .generate_with_filter(ctx, multipass::MultipassInstanceFilter::Deleted)
+                .await
+        }
+        ProviderKind::MultipassListRunning => {
+            multipass::MultipassList
+                .generate_with_filter(ctx, multipass::MultipassInstanceFilter::Running)
+                .await
+        }
+        ProviderKind::MultipassListStopped => {
+            multipass::MultipassList
+                .generate_with_filter(ctx, multipass::MultipassInstanceFilter::Stopped)
+                .await
+        }
         ProviderKind::PandocInputFormats => pandoc::PandocInputFormats.generate(ctx).await,
         ProviderKind::PandocOutputFormats => pandoc::PandocOutputFormats.generate(ctx).await,
     }
@@ -211,6 +243,22 @@ mod tests {
         assert_eq!(
             kind_from_type_str("multipass_list"),
             Some(ProviderKind::MultipassList)
+        );
+        assert_eq!(
+            kind_from_type_str("multipass_list_not_deleted"),
+            Some(ProviderKind::MultipassListNotDeleted)
+        );
+        assert_eq!(
+            kind_from_type_str("multipass_list_deleted"),
+            Some(ProviderKind::MultipassListDeleted)
+        );
+        assert_eq!(
+            kind_from_type_str("multipass_list_running"),
+            Some(ProviderKind::MultipassListRunning)
+        );
+        assert_eq!(
+            kind_from_type_str("multipass_list_stopped"),
+            Some(ProviderKind::MultipassListStopped)
         );
         assert_eq!(
             kind_from_type_str("pandoc_input_formats"),
