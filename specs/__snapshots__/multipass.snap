@@ -77,7 +77,7 @@
         "description": "Name of instances to delete",
         "generators": [
           {
-            "type": "multipass_list"
+            "type": "multipass_list_not_deleted"
           }
         ],
         "isVariadic": true,
@@ -107,7 +107,7 @@
           "description": "Name of the instance to run the command on",
           "generators": [
             {
-              "type": "multipass_list"
+              "type": "multipass_list_not_deleted"
             }
           ],
           "name": "name"
@@ -210,7 +210,7 @@
         "description": "Names of instances to display information about",
         "generators": [
           {
-            "type": "multipass_list"
+            "type": "multipass_list_not_deleted"
           }
         ],
         "isVariadic": true,
@@ -450,7 +450,7 @@
         "description": "Names of instances to recover",
         "generators": [
           {
-            "type": "multipass_list"
+            "type": "multipass_list_deleted"
           }
         ],
         "isVariadic": true,
@@ -472,7 +472,7 @@
         "description": "Names of instances to restart. If omitted, and without the --all option, 'primary' will be assumed",
         "generators": [
           {
-            "type": "multipass_list"
+            "type": "multipass_list_not_deleted"
           }
         ],
         "isOptional": true,
@@ -532,7 +532,7 @@
         "description": "Name of the instance to open a shell on. If omitted, 'primary' (the configured primary instance name) will be assumed. If the instance is not running, an attempt is made to start it (see `start` for more info)",
         "generators": [
           {
-            "type": "multipass_list"
+            "type": "multipass_list_not_deleted"
           }
         ],
         "isOptional": true,
@@ -558,7 +558,7 @@
         "description": "Names of instances to start. If omitted, and without the --all option, 'primary' (the configured primary instance name) will be assumed. If 'primary' does not exist but is included in a successful start command either implicitly or explicitly), it is launched automatically (see`launch` for more info).",
         "generators": [
           {
-            "type": "multipass_list"
+            "type": "multipass_list_stopped"
           }
         ],
         "isOptional": true,
@@ -590,7 +590,7 @@
         "description": "Names of instances to stop. If omitted, and without the --all option, 'primary' will be assumed.",
         "generators": [
           {
-            "type": "multipass_list"
+            "type": "multipass_list_running"
           }
         ],
         "isOptional": true,
@@ -630,7 +630,7 @@
         "description": "Names of instances to suspend. If omitted, and without the --all option, 'primary' will be assumed.",
         "generators": [
           {
-            "type": "multipass_list"
+            "type": "multipass_list_running"
           }
         ],
         "isOptional": true,
