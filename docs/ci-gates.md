@@ -2,7 +2,7 @@
 
 ## Overview
 
-Five CI gates live in `.github/workflows/ci.yml`. Four were introduced in Phase 0.5 (binary size, snapshot diff, fig-converter oracle, bench regression); a fifth (coverage baseline drift) was added in Phase 4. The gates are wired via `needs:` dependencies, which controls **ordering within a workflow run** — i.e. a gate waits for its prerequisite jobs before it starts. That is a separate concern from **branch protection**, which is what blocks the GitHub merge button on a PR. A repo admin must explicitly configure each status check as required in GitHub's branch-protection settings (see [Branch-protection configuration](#branch-protection-configuration) below). Without that step, the gates run and report results but cannot block a merge.
+Four CI gates live in `.github/workflows/ci.yml`. Three were introduced in Phase 0.5 (binary size, snapshot diff, fig-converter oracle); a fourth (coverage baseline drift) was added in Phase 4. Benchmark-regression checking is intentionally **not** a CI gate — it is run manually at release time (see [Release-time benchmark checking](#release-time-benchmark-checking) below). The gates are wired via `needs:` dependencies, which controls **ordering within a workflow run** — i.e. a gate waits for its prerequisite jobs before it starts. That is a separate concern from **branch protection**, which is what blocks the GitHub merge button on a PR. A repo admin must explicitly configure each status check as required in GitHub's branch-protection settings (see [Branch-protection configuration](#branch-protection-configuration) below). Without that step, the gates run and report results but cannot block a merge.
 
 ---
 
@@ -82,27 +82,6 @@ cd tools/fig-converter && npm run oracle:changed
 
 ---
 
-### Bench regression gate
-
-**Job name in CI:** `Bench regression gate`
-**YAML key:** `bench-regression`
-**Trigger:** `needs: [check]`
-
-**Purpose:** fails if any Criterion benchmark group regresses more than 10% relative to the saved baseline.
-
-**Failure modes:** a benchmark's mean is more than 10% slower than its recorded baseline value.
-
-**Status today:** production-live. Compares against [`benchmarks/baseline-pre-js-port.json`](../benchmarks/baseline-pre-js-port.json). Fails if any group regresses >10%.
-
-**How to debug locally:**
-
-```bash
-cargo bench
-scripts/check-bench.sh --threshold 10
-```
-
----
-
 ### Coverage baseline drift
 
 **Job name in CI:** `Coverage baseline drift`
@@ -127,6 +106,28 @@ To refresh the baseline: run `ghost-complete status --json` and follow the proce
 
 ---
 
+## Release-time benchmark checking
+
+Benchmark regression is **not** enforced on every PR. Hosted runner variance (±15–20% on single-threaded latency benches) makes CI-gated benchmarking noisy enough that the signal-to-noise ratio doesn't justify the minutes spent. Instead, the release process runs benchmarks locally on a quiet machine and records the numbers in the release PR.
+
+The tooling is preserved:
+
+- [`.github/workflows/bench.yml`](../.github/workflows/bench.yml) — manual `workflow_dispatch` job that runs `cargo bench --workspace` and uploads Criterion reports as an artifact.
+- [`scripts/check-bench.sh`](../scripts/check-bench.sh) — threshold-based comparator against a saved Criterion baseline.
+- [`benchmarks/`](../benchmarks/) — per-release report files (`v<version>.md`) plus `baseline-pre-js-port.json` for historical diffs.
+
+**Release workflow:**
+
+```bash
+cargo bench --workspace -- --save-baseline release-<prev>    # one-time, on the prior release tag
+cargo bench --workspace -- --baseline release-<prev>         # on the release candidate
+scripts/check-bench.sh --threshold 10                         # optional gate for the release author
+```
+
+Include the Criterion summary and any regression >10% in `benchmarks/v<version>.md` as part of the release PR per the process in [`CLAUDE.md`](../CLAUDE.md#benchmarking).
+
+---
+
 ## Branch-protection configuration
 
 These steps require repo admin access. Without them the gates run but **do not block merge**.
@@ -145,7 +146,6 @@ These checks are added **alongside** any existing required checks (e.g. `Check`,
 |---|---|
 | `Snapshot diff gate` | Ready to add. |
 | `Oracle gate (fig-converter)` | Ready to add. |
-| `Bench regression gate` | Ready to add. |
 | `Binary size gate` | Ready to add. |
 | `Coverage baseline drift` | Informational only (non-blocking warning). Do not add to branch protection. |
 

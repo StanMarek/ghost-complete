@@ -125,54 +125,6 @@ jobs:
         run: npm run oracle:changed
         working-directory: tools/fig-converter
 
-  bench-regression:
-    # Benches the base tree AND the HEAD tree back-to-back on the SAME
-    # runner, then gates on Criterion's own base↔HEAD change record.
-    # Inter-run variance on hosted macos-latest runners is too large
-    # (routinely ±15-20 % on single-threaded latency benches) for a
-    # stored baseline compared across separate CI invocations to be
-    # statistically meaningful; running both halves on one runner
-    # eliminates that confound.
-    name: Bench regression gate
-    needs: [check]
-    runs-on: macos-latest
-    # PR-only: on push-to-master there's no "base" to diff against.
-    if: github.event_name == 'pull_request'
-    env:
-      BASE_REF: ${{ github.base_ref }}
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          # Need history for a checkout of the base ref — the default
-          # shallow clone doesn't include it.
-          fetch-depth: 0
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - name: Record HEAD sha
-        id: head
-        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-      - name: Check out base ref
-        env:
-          HEAD_SHA: ${{ steps.head.outputs.sha }}
-        run: |
-          echo "Head sha: $HEAD_SHA"
-          echo "Base ref: $BASE_REF"
-          git checkout "origin/$BASE_REF"
-      - name: Bench base tree (save baseline `base`)
-        run: |
-          cargo bench --bench suggest_bench -- --save-baseline base
-          cargo bench --bench parser_bench  -- --save-baseline base
-      - name: Return to HEAD
-        env:
-          HEAD_SHA: ${{ steps.head.outputs.sha }}
-        run: git checkout "$HEAD_SHA"
-      - name: Bench HEAD tree (compare against `base`)
-        run: |
-          cargo bench --bench suggest_bench -- --baseline base
-          cargo bench --bench parser_bench  -- --baseline base
-      - name: Bench regression check (threshold 10%)
-        run: scripts/check-bench.sh --threshold 10
-
   coverage-baseline-drift:
     name: Coverage baseline drift
     # Informational, non-blocking gate. Only runs on main/master branches

@@ -184,7 +184,8 @@ belong in the changelog.
 - [`docs/COMPLETION_SPEC.md`](./COMPLETION_SPEC.md) — the Fig-compatible spec
   format reference.
 - [`docs/ci-gates.md`](./ci-gates.md) — CI gate catalogue (binary-size,
-  snapshot-diff, oracle, bench-regression, baseline-drift).
+  snapshot-diff, oracle, baseline-drift). Benchmark-regression checking is
+  run manually at release time, not on every PR.
 - [PR #75 — requires-JS specs multi-phase initiative (umbrella)](https://github.com/StanMarek/ghost-complete/pull/75) —
   the long-lived tracking PR; plan lives there since the planning doc is
   intentionally gitignored.
