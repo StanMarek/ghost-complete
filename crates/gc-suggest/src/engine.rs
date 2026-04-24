@@ -1728,6 +1728,43 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_resolve_providers_degrades_per_kind_failure() {
+        // Locks the per-kind degradation contract at the
+        // `resolve_providers` boundary: a provider whose subprocess
+        // spawn fails in CI's sandboxed environment must be absorbed
+        // as an empty contribution, never bubbling as `Err` from the
+        // top-level call. Each provider already maps spawn-failure to
+        // `Ok(vec![])` internally, so the assertion here is that the
+        // top-level result is `Ok(_)` — a refactor that reshapes the
+        // loop into a short-circuit (e.g. `?`) without restoring the
+        // `tracing::warn!` + continue semantics would still pass this
+        // assertion, but any refactor that actually lets a provider
+        // `Err` bubble to the caller is caught. The empty-vec
+        // assertion is a best-effort check: providers can genuinely
+        // return results on a developer machine with the binary
+        // installed, so we assert length >= 0 (trivially true) and
+        // rely on `Ok(_)` for the primary contract.
+        let engine = make_engine();
+        let tmp = tempfile::TempDir::new().unwrap();
+        let ctx = crate::providers::ProviderCtx {
+            cwd: tmp.path().to_path_buf(),
+            env: std::sync::Arc::new(std::collections::HashMap::new()),
+            current_token: String::new(),
+        };
+        let result = engine
+            .resolve_providers(
+                &[ProviderKind::MultipassList, ProviderKind::ArduinoCliBoards],
+                &ctx,
+                "",
+            )
+            .await;
+        assert!(
+            result.is_ok(),
+            "resolve_providers must never bubble Err from a single provider: got {result:?}"
+        );
+    }
+
+    #[tokio::test]
     async fn test_resolve_git_returns_branches() {
         // resolve_git must work asynchronously.
         let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");

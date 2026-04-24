@@ -10,10 +10,11 @@ Reference implementation: [`crates/gc-suggest/src/providers/arduino_cli.rs`](../
 
 2. **Create the provider file.** Add `crates/gc-suggest/src/providers/<name>.rs`. Follow `arduino_cli.rs`'s shape:
    - `const X_TIMEOUT_MS: u64 = 2_000;` — all provider subprocesses share the 2s default.
-   - `pub(crate) async fn run_x(cwd: &Path) -> Option<T>` — thin wrapper that hardcodes the real binary name.
-   - `pub(crate) async fn run_x_with_binary(cwd: &Path, binary: &str) -> Option<T>` — parametric binary name for subprocess-failure tests (no `unsafe { set_var }`).
+   - `pub(crate) async fn run_x_with_binary(cwd: &Path, binary: &str) -> Option<T>` — the subprocess runner. The production binary literal (e.g., `"arduino-cli"`) is passed at the `generate()` call site; tests pass a deliberately nonexistent path to exercise the spawn-failure path without mutating `$PATH`. No plain `run_x` wrapper is needed.
    - `fn x_from_output(parsed: T) -> Vec<Suggestion>` — pure extractor, testable without spawning.
-   - `pub struct XProvider;` + `impl Provider for XProvider` with `name()` and `async fn generate(ctx)`.
+   - `pub struct X;` — unsuffixed, one per user-visible completion source (e.g., `ArduinoCliBoards`, `ArduinoCliPorts`, `DefaultsDomains`, `MambaEnvs`, `PandocInputFormats`). When one subprocess feeds multiple providers (arduino-cli's `board list` drives both boards and ports), each provider is a separate struct that shares the runner and extracts its own projection.
+   - `impl Provider for X` with `name()` and `async fn generate(ctx)` that delegates to the `generate_with_binary` test seam.
+   - `impl X { pub(crate) async fn generate_with_binary(&self, ctx: &ProviderCtx, binary: &str) -> Result<Vec<Suggestion>> { ... } }` — the shared test seam. `generate` calls it with the real binary, tests call it with an injected path. Keeps the spawn-failure contract (`Ok(Vec::new())` on `None` from the runner) in one place.
 
 3. **Register.** In `crates/gc-suggest/src/providers/mod.rs`:
    - `pub mod x;`

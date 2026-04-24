@@ -305,9 +305,9 @@ pub struct GeneratorSpec {
     #[serde(default)]
     pub requires_js: bool,
     pub js_source: Option<String>,
-    /// Set by the converter when a generator was previously mis-converted and has been
-    /// corrected in the named release. Used by `ghost-complete doctor` to surface
-    /// generators that silently changed behaviour.
+    /// Release tag recording when a silently-mis-converted generator was corrected.
+    /// Persists in the spec across regenerations so downstream consumers can
+    /// enumerate and surface the affected specs on upgrade.
     #[serde(default, rename = "_corrected_in")]
     pub corrected_in: Option<String>,
     /// Fig-compatible template field on generators (e.g., "filepaths", "folders",

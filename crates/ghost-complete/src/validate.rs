@@ -4,8 +4,40 @@ use anyhow::{Context, Result};
 use gc_suggest::parse_spec_checked_and_sanitized;
 use gc_suggest::spec_dirs::resolve_spec_dirs;
 use gc_suggest::specs::{validate_spec_generators, CompletionSpec, SubcommandSpec};
+use serde::Serialize;
 
 use crate::sanitize::sanitize_for_terminal;
+
+/// One NDJSON row describing a single spec. The `ok` field is `true` only
+/// when parsing succeeded AND the spec surfaced zero generator warnings —
+/// `jq 'select(.ok == false)'` thus matches both parse failures and
+/// warn'd specs. Schema owned by `run_validate_specs_inner`'s doc comment.
+#[derive(Debug, Serialize)]
+struct ValidateSpecRow<'a> {
+    spec_name: &'a str,
+    ok: bool,
+    divergences: Vec<String>,
+    warnings: Vec<String>,
+}
+
+/// Trailing NDJSON summary row. Uses a nested `summary` object so readers
+/// can disambiguate per-spec rows from the summary row via the top-level
+/// key (`spec_name` vs `summary`).
+#[derive(Debug, Serialize)]
+struct ValidateSummaryRow {
+    summary: ValidateSummary,
+}
+
+#[derive(Debug, Serialize)]
+struct ValidateSummary {
+    total: usize,
+    valid: usize,
+    failed: usize,
+    with_warnings: usize,
+    warnings_total: usize,
+    dirs_scanned: usize,
+    strict_failed: bool,
+}
 
 /// Counts emitted by [`validate_dir`] / [`run_validate_specs_inner`].
 #[derive(Debug, Default, Clone, Copy)]
@@ -181,12 +213,12 @@ fn emit_json_spec(
     divergences: Vec<String>,
     warnings: Vec<String>,
 ) -> Result<()> {
-    let row = serde_json::json!({
-        "spec_name": spec_name,
-        "ok": ok,
-        "divergences": divergences,
-        "warnings": warnings,
-    });
+    let row = ValidateSpecRow {
+        spec_name,
+        ok,
+        divergences,
+        warnings,
+    };
     writeln!(out, "{}", serde_json::to_string(&row)?)?;
     Ok(())
 }
@@ -293,18 +325,18 @@ fn emit_json_summary(
     strict_failed: bool,
 ) -> Result<()> {
     let total = counts.valid + counts.failed;
-    let summary = serde_json::json!({
-        "summary": {
-            "total": total,
-            "valid": counts.valid,
-            "failed": counts.failed,
-            "with_warnings": counts.with_warnings,
-            "warnings_total": counts.warnings,
-            "dirs_scanned": dirs_scanned,
-            "strict_failed": strict_failed,
-        }
-    });
-    writeln!(out, "{}", serde_json::to_string(&summary)?)?;
+    let row = ValidateSummaryRow {
+        summary: ValidateSummary {
+            total,
+            valid: counts.valid,
+            failed: counts.failed,
+            with_warnings: counts.with_warnings,
+            warnings_total: counts.warnings,
+            dirs_scanned,
+            strict_failed,
+        },
+    };
+    writeln!(out, "{}", serde_json::to_string(&row)?)?;
     Ok(())
 }
 

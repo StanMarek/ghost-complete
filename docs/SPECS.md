@@ -5,7 +5,13 @@ Ghost Complete ships 709 Fig-compatible JSON completion specs sourced from
 offline. The converted JSON lives under [`specs/`](../specs/) (~20 MB on disk)
 and is embedded into the binary at build time via `include_str!`, so the
 shipped `ghost-complete` has zero runtime spec-fetch cost and no network
-dependency.
+dependency. The embed is produced by
+[`crates/gc-suggest/build.rs`](../crates/gc-suggest/build.rs), which strips the
+runtime-unused `js_source` field and minifies each spec before `include_str!`
+bakes it into the binary — shrinks the release binary from ~47 MB to ~28 MB
+(under the 30 MB CI ceiling enforced by
+[`docs/ci-gates.md`](./ci-gates.md#binary-size-gate)). On-disk `specs/*.json`
+remain pretty-printed; only the binary-embedded copies are minified.
 
 **Non-goal:** embedding a JavaScript runtime. Upstream specs sometimes include
 inline JS generators (`postProcess`, `custom`, `trigger`); we either rewrite
@@ -17,12 +23,12 @@ below.
 ## Conversion pipeline
 
 ```
-┌─────────────────┐   npm run convert    ┌──────────────┐   include_str!   ┌───────────┐
-│ @withfig/...    │ ────────────────────▶│ specs/*.json │ ───────────────▶ │ Rust bin  │
-│ (TS + JS AST)   │                      │ (committed)  │                  │ (runtime) │
-└─────────────────┘                      └──────────────┘                  └───────────┘
-       ▲                                        ▲
-       │                                        │
+┌─────────────────┐   npm run convert    ┌──────────────┐   build.rs     ┌─────────────┐   include_str!   ┌───────────┐
+│ @withfig/...    │ ────────────────────▶│ specs/*.json │ ─────────────▶ │ OUT_DIR/    │ ───────────────▶ │ Rust bin  │
+│ (TS + JS AST)   │                      │ (committed,  │                │ *.json      │                  │ (runtime) │
+└─────────────────┘                      │  pretty)     │                │ (minified,  │                  └───────────┘
+       ▲                                 └──────────────┘                │  no js_src) │
+       │                                        ▲                        └─────────────┘
  upstream updates                    post-process-matcher.js
  (manual pull-through)               + native-map.js rules
 ```
@@ -39,9 +45,13 @@ Stages:
    [`native-map.js`](../tools/fig-converter/src/native-map.js) (script →
    native provider lookup). Run `npm --prefix tools/fig-converter test` when
    touching converter logic — the Rust `cargo test` suite does not cover it.
-3. **`specs/*.json`** — committed output. Snapshot-diff CI gate guards against
-   silent large-scale regeneration drift.
-4. **Rust binary** — `crates/gc-suggest/src/specs.rs` deserializes via serde
+3. **`specs/*.json`** — committed, pretty-printed output. Snapshot-diff CI gate
+   guards against silent large-scale regeneration drift.
+4. **`crates/gc-suggest/build.rs`** — strips the runtime-unused `js_source`
+   field from every generator and minifies the JSON into `OUT_DIR` so
+   `include_str!` bakes a compact copy into the binary. Hand-editing the
+   embed list (or bypassing `build.rs`) would break the binary-size gate.
+5. **Rust binary** — `crates/gc-suggest/src/specs.rs` deserializes via serde
    at load time. Unknown generator types log a `warn!` and are skipped.
 
 Upstream pull-through is a manual operation: bump the `@withfig/autocomplete`

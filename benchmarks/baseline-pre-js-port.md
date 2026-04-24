@@ -1,13 +1,12 @@
 # Phase 0 Baseline — Pre-JS-Port Criterion Numbers
 
 > **Archival.** These numbers are a historical snapshot captured for
-> Phase 4 regression detection. As of the Option-B restructure of the
-> `bench-regression` gate (`scripts/check-bench.sh` + `ci.yml`), the
-> gate no longer reads `benchmarks/baseline-pre-js-port.json`; it
-> benches the PR's base ref and HEAD ref back-to-back on the same
-> runner and gates on Criterion's own change record. This file is
-> retained as a reference for what performance looked like at the
-> pre-JS-port capture point.
+> Phase 4 regression detection. Ghost Complete no longer enforces
+> benchmark regression in CI — the bench-regression gate was removed in
+> favour of a release-time manual check (see
+> [`docs/ci-gates.md` — Release-time benchmark checking](../docs/ci-gates.md#release-time-benchmark-checking)).
+> This file is retained as a reference for what performance looked like
+> at the pre-JS-port capture point.
 
 **Purpose:** Historical reference — performance snapshot captured
 before the requires-js-specs port work. The machine-readable sibling

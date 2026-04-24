@@ -584,9 +584,16 @@ pub fn apply_json_extract_array(
 ) -> Vec<Suggestion> {
     let root: serde_json::Value = match serde_json::from_str(raw_output) {
         Ok(v) => v,
-        Err(_) => return Vec::new(),
+        Err(e) => {
+            tracing::warn!("json_extract_array: failed to parse subprocess output as JSON: {e}");
+            return Vec::new();
+        }
     };
     let Some(arr) = path.lookup(&root).and_then(|v| v.as_array()) else {
+        tracing::debug!(
+            ?path,
+            "json_extract_array: path did not resolve to a JSON array in parsed output"
+        );
         return Vec::new();
     };
     let idx = split_index.unwrap_or(0);
@@ -772,14 +779,14 @@ pub fn execute_pipeline(output: &str, transforms: &[Transform]) -> Result<Vec<Su
                 // Cross-field invariants on `JsonExtractArray` are enforced
                 // at deserialize time by `TryFrom<ParameterizedHelper>`, but
                 // the struct's fields are `pub` and direct construction
-                // bypasses that check. Catch bad direct-construction in
-                // debug builds so a future caller cannot silently produce
+                // bypasses that check. Panic loudly on misuse in both debug
+                // and release so a future caller cannot silently produce
                 // garbage completions.
-                debug_assert!(
+                assert!(
                     !(split_index.is_some() && split_on.is_none()),
                     "JsonExtractArray: split_index requires split_on",
                 );
-                debug_assert!(
+                assert!(
                     split_on.as_deref() != Some(""),
                     "JsonExtractArray: split_on must not be empty",
                 );
@@ -1035,6 +1042,30 @@ mod tests {
                 assert!(item_name.is_none());
                 assert!(split_on.is_none());
                 assert!(split_index.is_none());
+            }
+            other => panic!("expected JsonExtractArray, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_deserialize_json_extract_array_with_item_description() {
+        // Pin the Deserialize round-trip for `item_description`: a refactor
+        // that accidentally drops the field from the helper enum would
+        // silently lose every spec-author's description config, and the
+        // existing `..` destructures elsewhere would not catch it.
+        let t: Transform = serde_json::from_str(
+            r#"{"type": "json_extract_array", "path": "items", "item_description": "label"}"#,
+        )
+        .unwrap();
+        match t {
+            Transform::Parameterized(ParameterizedTransform::JsonExtractArray {
+                item_description,
+                ..
+            }) => {
+                assert!(
+                    item_description.is_some(),
+                    "item_description must round-trip through Deserialize"
+                );
             }
             other => panic!("expected JsonExtractArray, got {other:?}"),
         }
@@ -1507,6 +1538,32 @@ mod tests {
     }
 
     #[test]
+    fn test_json_extract_array_with_item_description() {
+        // `item_description` must thread into the emitted Suggestion's
+        // `description`. A refactor that dropped the executor pass-through
+        // would produce completions with text but no description — this
+        // asserts per-element description ends up where spec authors
+        // expect it.
+        let raw = r#"{"items":[{"id":"a","label":"Alpha"},{"id":"b","label":"Beta"}]}"#;
+        let path = JsonPath::parse("items").unwrap();
+        let item_name = JsonPath::parse("id").unwrap();
+        let item_description = JsonPath::parse("label").unwrap();
+        let result = apply_json_extract_array(
+            raw,
+            &path,
+            Some(&item_name),
+            Some(&item_description),
+            None,
+            None,
+        );
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].text, "a");
+        assert_eq!(result[0].description.as_deref(), Some("Alpha"));
+        assert_eq!(result[1].text, "b");
+        assert_eq!(result[1].description.as_deref(), Some("Beta"));
+    }
+
+    #[test]
     fn test_json_extract_array_with_split() {
         // parse-map-split shape: string element needs `.split(" ")[0]` to
         // trim off the version suffix.
@@ -1547,6 +1604,33 @@ mod tests {
         // regressions.
         assert_eq!(result[0].kind, SuggestionKind::Command);
         assert_eq!(result[0].source, SuggestionSource::Script);
+    }
+
+    #[test]
+    fn test_column_extract_short_line_filtered() {
+        // A line with fewer whitespace-separated parts than `column`
+        // must be silently dropped (the `parts.get(column)?` short-circuits
+        // the filter_map closure). Pin this drop-on-underflow behaviour so
+        // a future refactor that promoted the `?` to `unwrap_or` would
+        // fail the test instead of producing empty-text suggestions.
+        let lines = vec!["abc".into(), "def ghi".into()];
+        let result = apply_column_extract(&lines, 1, None);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].text, "ghi");
+    }
+
+    #[test]
+    fn test_column_extract_missing_description_column_keeps_row() {
+        // A line that has enough parts for `column` but not for
+        // `description_column` must still emit the row, with
+        // `description: None`. Pins the split asymmetry between the
+        // required text column (drops row) and the optional description
+        // column (emits row with None).
+        let lines = vec!["a b".into()];
+        let result = apply_column_extract(&lines, 0, Some(5));
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].text, "a");
+        assert!(result[0].description.is_none());
     }
 
     // -- Pipeline executor --

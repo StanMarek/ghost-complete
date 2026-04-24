@@ -462,12 +462,9 @@ mod tests {
 
     #[tokio::test]
     async fn ports_provider_subprocess_failure_returns_empty() {
-        // End-to-end coverage through the `Provider::generate` trait
-        // method for `ArduinoCliPorts`. The boards-provider test above
-        // validates the shared `run_board_list_with_binary` helper's
-        // None path; this test confirms that
-        // `ArduinoCliPorts::generate` translates None into `Ok(vec![])`
-        // rather than bubbling an error.
+        // Confirms that `ArduinoCliPorts::generate` translates `None`
+        // from the subprocess helper into `Ok(vec![])` rather than
+        // bubbling an error.
         //
         // We exercise the pure extractor with an empty parsed payload —
         // the same code path `generate` hits when
@@ -534,12 +531,10 @@ mod tests {
 
     #[tokio::test]
     async fn ports_generate_production_wrapper_returns_ok_without_binary_installed() {
-        // Sibling of the boards test above — pins the "never Err"
-        // contract of `Provider::generate` for `ArduinoCliPorts`. Does
-        // NOT catch a typo'd `"arduino-cli"` literal, because a typo
-        // produces the same spawn failure → `Ok(vec![])` path as a
-        // genuinely-absent tool (see the boards test's docstring for
-        // the full rationale).
+        // Pins the "never Err" contract of `Provider::generate` for
+        // `ArduinoCliPorts` — a spawn failure (tool missing, PATH
+        // empty, exec permission denied) must become `Ok(vec![])`,
+        // never propagated as `Err`.
         let tmp = tempfile::TempDir::new().unwrap();
         let ctx = ctx_for(tmp.path().to_path_buf());
         let result = ArduinoCliPorts.generate(&ctx).await;

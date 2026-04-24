@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
@@ -5,6 +6,7 @@ use anyhow::{Context, Result};
 use gc_suggest::spec_dirs::resolve_spec_dirs;
 use gc_suggest::specs::{ArgSpec, CompletionSpec, GeneratorSpec, OptionSpec, SubcommandSpec};
 use gc_suggest::SpecStore;
+use serde::{Deserialize, Serialize};
 
 use crate::sanitize::sanitize_for_terminal;
 
@@ -46,11 +48,50 @@ fn check_subcommands_for_js(subcommands: &[SubcommandSpec]) -> bool {
     })
 }
 
+/// Minimum sanity check that a baseline `timestamp` string resembles an RFC
+/// 3339 instant. Full parsing would require pulling in a datetime crate; the
+/// drift-check script (`scripts/check-coverage-baseline-drift.sh`) does the
+/// definitive parse with `date -u -d`, and we just reject the obviously
+/// malformed shapes here so Rust parsing doesn't silently accept gibberish.
+///
+/// Accepts: `YYYY-MM-DDThh:mm:ss` followed by either `Z` or `±hh:mm` / `±hhmm`,
+/// with optional fractional seconds.
+fn looks_like_rfc3339(s: &str) -> bool {
+    let bytes = s.as_bytes();
+    // Shortest valid RFC 3339 instant is 20 bytes: `YYYY-MM-DDThh:mm:ssZ`.
+    if bytes.len() < 20 {
+        return false;
+    }
+    // Positions of the fixed structural characters.
+    let fixed = [(4, b'-'), (7, b'-'), (10, b'T'), (13, b':'), (16, b':')];
+    for (idx, byte) in fixed {
+        if bytes[idx] != byte {
+            return false;
+        }
+    }
+    // Every other char up through second-of-minute must be a digit.
+    for &i in &[0, 1, 2, 3, 5, 6, 8, 9, 11, 12, 14, 15, 17, 18] {
+        if !bytes[i].is_ascii_digit() {
+            return false;
+        }
+    }
+    // Tail: `Z`, or `±hh:mm`, or `±hhmm`, possibly preceded by `.fraction`.
+    let last = bytes[bytes.len() - 1];
+    // Either it ends in `Z`, or it ends with a numeric offset (digit after
+    // `+`/`-` a few bytes earlier). We don't enforce exact offset layout —
+    // the script-level check does.
+    last == b'Z' || bytes.contains(&b'+') || bytes[19..].contains(&b'-')
+}
+
 /// A single release row inside `docs/coverage-baseline.json`.
-#[derive(Debug, Clone)]
+///
+/// `deny_unknown_fields` is intentionally omitted: baseline entries may carry
+/// additional metadata fields in future schema revisions (captured in
+/// `extra`) so that older ghost-complete binaries can still parse newer
+/// baselines. Required fields remain load-bearing (missing → parse error).
+#[derive(Debug, Clone, Deserialize, Serialize)]
 struct BaselineRelease {
     version: String,
-    #[allow(dead_code)]
     timestamp: String,
     total_specs: u64,
     fully_functional: u64,
@@ -58,71 +99,43 @@ struct BaselineRelease {
     native_providers: u64,
     corrected_generators: u64,
     hand_audit_required: u64,
-    /// The raw JSON object, preserved so we can echo the full record through
-    /// the `--json` output path without reshaping fields.
-    raw: serde_json::Value,
+    /// Catch-all for fields not named above. Preserves forward compatibility
+    /// with future schema additions and allows the `--json` output to echo
+    /// the full record through without data loss.
+    #[serde(flatten)]
+    extra: BTreeMap<String, serde_json::Value>,
 }
 
 /// Parsed contents of `coverage-baseline.json`.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct CoverageBaseline {
-    #[allow(dead_code)]
     schema_version: String,
     releases: Vec<BaselineRelease>,
 }
 
+/// Supported `schema_version` for `coverage-baseline.json`. Bumped when the
+/// field set changes in a way older binaries cannot understand.
+const BASELINE_SCHEMA_VERSION: &str = "1.0";
+
 impl CoverageBaseline {
     fn from_str(s: &str) -> Result<Self> {
-        let v: serde_json::Value =
+        let parsed: Self =
             serde_json::from_str(s).context("coverage baseline JSON is malformed")?;
-        let obj = v
-            .as_object()
-            .context("coverage baseline JSON root must be an object")?;
-        let schema_version = obj
-            .get("schema_version")
-            .and_then(|x| x.as_str())
-            .unwrap_or("1.0")
-            .to_string();
-        let releases_raw = obj
-            .get("releases")
-            .and_then(|x| x.as_array())
-            .context("coverage baseline: missing `releases` array")?;
-
-        let mut releases = Vec::with_capacity(releases_raw.len());
-        for r in releases_raw {
-            let ro = r
-                .as_object()
-                .context("coverage baseline: release must be an object")?;
-            let version = ro
-                .get("version")
-                .and_then(|x| x.as_str())
-                .context("coverage baseline: release.version is required")?
-                .to_string();
-            let timestamp = ro
-                .get("timestamp")
-                .and_then(|x| x.as_str())
-                .unwrap_or("")
-                .to_string();
-
-            let u = |key: &str| -> u64 { ro.get(key).and_then(|x| x.as_u64()).unwrap_or(0) };
-
-            releases.push(BaselineRelease {
-                version,
-                timestamp,
-                total_specs: u("total_specs"),
-                fully_functional: u("fully_functional"),
-                requires_js_generators: u("requires_js_generators"),
-                native_providers: u("native_providers"),
-                corrected_generators: u("corrected_generators"),
-                hand_audit_required: u("hand_audit_required"),
-                raw: r.clone(),
-            });
+        anyhow::ensure!(
+            parsed.schema_version == BASELINE_SCHEMA_VERSION,
+            "coverage baseline: unsupported schema_version {:?} (expected {:?})",
+            parsed.schema_version,
+            BASELINE_SCHEMA_VERSION,
+        );
+        for r in &parsed.releases {
+            anyhow::ensure!(
+                looks_like_rfc3339(&r.timestamp),
+                "coverage baseline: release.timestamp {:?} is not a valid RFC 3339 instant",
+                r.timestamp,
+            );
         }
-
-        Ok(Self {
-            schema_version,
-            releases,
-        })
+        Ok(parsed)
     }
 }
 
@@ -413,6 +426,55 @@ fn run_status_inner_with_trend(
     Ok(outcome)
 }
 
+/// Supported `schema_version` for the `ghost-complete status --json`
+/// output. Bumped when the output shape changes in a backward-incompatible
+/// way.
+const STATUS_SCHEMA_VERSION: &str = "1.0";
+
+/// The shape emitted by `ghost-complete status --json`. Defining this as a
+/// `#[derive(Serialize)]` struct rather than inline `json!` macros fails
+/// compile if any emission site drops a field, keeping the documented
+/// schema honest.
+///
+/// `coverage_trend` is serialized as `null` (not omitted) when there is no
+/// baseline — JSON consumers depend on the key being present.
+#[derive(Debug, Serialize)]
+struct StatusReport {
+    schema_version: &'static str,
+    spec_counts: SpecCounts,
+    coverage_trend: Option<CoverageTrend>,
+}
+
+#[derive(Debug, Serialize)]
+struct SpecCounts {
+    total: usize,
+    fully_functional: usize,
+    partially_functional: usize,
+    embedded: usize,
+    filesystem_overrides: usize,
+    parse_errors: usize,
+    parse_error_details: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
+struct CoverageTrend {
+    /// `null` on the bootstrap (single-row) case.
+    previous: Option<BaselineRelease>,
+    current: BaselineRelease,
+    /// `null` on the bootstrap (single-row) case.
+    delta: Option<CoverageDelta>,
+}
+
+#[derive(Debug, Serialize)]
+struct CoverageDelta {
+    total_specs: i64,
+    fully_functional: i64,
+    requires_js_generators: i64,
+    native_providers: i64,
+    corrected_generators: i64,
+    hand_audit_required: i64,
+}
+
 /// Emit the JSON status report to `out`.
 fn run_status_json(
     config_path: Option<&str>,
@@ -423,66 +485,62 @@ fn run_status_json(
     let baseline = load_baseline(baseline_path)?;
 
     let coverage_trend = match baseline.as_ref() {
-        None => serde_json::Value::Null,
-        Some(b) if b.releases.is_empty() => serde_json::Value::Null,
+        None => None,
+        Some(b) if b.releases.is_empty() => None,
         Some(b) => {
             let n = b.releases.len();
             if n == 1 {
                 let curr = &b.releases[0];
-                serde_json::json!({
-                    "previous": serde_json::Value::Null,
-                    "current": curr.raw,
-                    "delta": serde_json::Value::Null,
+                Some(CoverageTrend {
+                    previous: None,
+                    current: curr.clone(),
+                    delta: None,
                 })
             } else {
                 let prev = &b.releases[n - 2];
                 let curr = &b.releases[n - 1];
-                serde_json::json!({
-                    "previous": prev.raw,
-                    "current": curr.raw,
-                    "delta": {
-                        "total_specs":
-                            curr.total_specs as i64 - prev.total_specs as i64,
-                        "fully_functional":
-                            curr.fully_functional as i64 - prev.fully_functional as i64,
-                        "requires_js_generators":
-                            curr.requires_js_generators as i64
-                                - prev.requires_js_generators as i64,
-                        "native_providers":
-                            curr.native_providers as i64
-                                - prev.native_providers as i64,
-                        "corrected_generators":
-                            curr.corrected_generators as i64
-                                - prev.corrected_generators as i64,
-                        "hand_audit_required":
-                            curr.hand_audit_required as i64
-                                - prev.hand_audit_required as i64,
-                    },
+                Some(CoverageTrend {
+                    previous: Some(prev.clone()),
+                    current: curr.clone(),
+                    delta: Some(CoverageDelta {
+                        total_specs: curr.total_specs as i64 - prev.total_specs as i64,
+                        fully_functional: curr.fully_functional as i64
+                            - prev.fully_functional as i64,
+                        requires_js_generators: curr.requires_js_generators as i64
+                            - prev.requires_js_generators as i64,
+                        native_providers: curr.native_providers as i64
+                            - prev.native_providers as i64,
+                        corrected_generators: curr.corrected_generators as i64
+                            - prev.corrected_generators as i64,
+                        hand_audit_required: curr.hand_audit_required as i64
+                            - prev.hand_audit_required as i64,
+                    }),
                 })
             }
         }
     };
 
-    // `total` reports the canonical shipped-spec count (embedded count) —
-    // filesystem specs may be overrides or additions; we do not attempt
-    // to deduplicate here. Schema example in the task brief agrees.
+    // `total` reports the canonical shipped-spec count (embedded count).
+    // `filesystem_overrides` is the count of filesystem specs after
+    // first-match-wins deduplication across configured spec_dirs — earlier
+    // directories win over later ones (see SpecStore::load_from_dirs).
     //
     // `parse_errors` stays as a scalar count for backwards compat;
     // `parse_error_details` mirrors the per-line sanitized messages the
     // text path emits so JSON consumers can surface them too.
-    let payload = serde_json::json!({
-        "schema_version": "1.0",
-        "spec_counts": {
-            "total": outcome.embedded_count,
-            "fully_functional": outcome.fully_functional,
-            "partially_functional": outcome.partially_functional,
-            "embedded": outcome.embedded_count,
-            "filesystem_overrides": outcome.fs_specs,
-            "parse_errors": outcome.total_parse_errors,
-            "parse_error_details": outcome.parse_error_lines,
+    let payload = StatusReport {
+        schema_version: STATUS_SCHEMA_VERSION,
+        spec_counts: SpecCounts {
+            total: outcome.embedded_count,
+            fully_functional: outcome.fully_functional,
+            partially_functional: outcome.partially_functional,
+            embedded: outcome.embedded_count,
+            filesystem_overrides: outcome.fs_specs,
+            parse_errors: outcome.total_parse_errors,
+            parse_error_details: outcome.parse_error_lines.clone(),
         },
-        "coverage_trend": coverage_trend,
-    });
+        coverage_trend,
+    };
 
     let s = serde_json::to_string_pretty(&payload).context("failed to serialize status JSON")?;
     writeln!(out, "{}", s)?;

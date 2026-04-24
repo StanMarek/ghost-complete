@@ -46,8 +46,6 @@ mod tests {
 
     #[test]
     fn try_run_pipeline_empty_input_returns_empty() {
-        // With split_lines+filter_empty on an empty string we get
-        // an empty Vec — that's the interesting "nothing to do" case.
         let transforms = vec![
             Transform::Named(NamedTransform::SplitLines),
             Transform::Named(NamedTransform::FilterEmpty),

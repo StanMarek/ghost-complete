@@ -5,9 +5,10 @@
 //! `multipass list --format=json` emits a stable `{"list": [...]}`
 //! envelope across versions (unlike arduino-cli, which has two wire
 //! shapes). Each entry always carries `name`, `release`, `state`, and
-//! `ipv4`; we model only the three we surface. `ipv4` and any future
-//! top-level fields (`errors`, `status`, …) are ignored via serde's
-//! default unknown-field behavior — keeps the struct small and
+//! `ipv4`; we model only the three we surface. Per-entry fields we
+//! don't model (e.g. `ipv4`) and future top-level envelope fields (e.g.
+//! `errors`, `status`) are both ignored via serde's default
+//! unknown-field behavior — keeps the structs small and
 //! forward-compatible.
 
 use std::path::Path;

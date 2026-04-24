@@ -323,12 +323,10 @@ mod tests {
 
     #[tokio::test]
     async fn output_generate_production_wrapper_returns_ok_without_binary_installed() {
-        // Sibling of the input-formats test above — pins the "never
-        // Err" contract of `Provider::generate` for
-        // `PandocOutputFormats`. Does NOT catch a typo'd `"pandoc"`
-        // literal, because a typo produces the same spawn failure →
-        // `Ok(vec![])` path as a genuinely-absent tool (see the
-        // input-formats test's docstring for the full rationale).
+        // Pins the "never Err" contract of `Provider::generate` for
+        // `PandocOutputFormats` — a spawn failure (tool missing, PATH
+        // empty, exec permission denied) must become `Ok(vec![])`,
+        // never propagated as `Err`.
         let tmp = tempfile::TempDir::new().unwrap();
         let ctx = ctx_for(tmp.path().to_path_buf());
         let result = PandocOutputFormats.generate(&ctx).await;

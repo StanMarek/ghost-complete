@@ -2,7 +2,7 @@
 //!
 //! ## Why this exists
 //!
-//! `ghost-complete` ships with ~709 Fig-compatible completion specs baked
+//! `ghost-complete` ships with 709 Fig-compatible completion specs baked
 //! into the binary. The embedded payload is produced by the crate's
 //! `build.rs`, which reads every `specs/*.json`, strips the
 //! runtime-unused `js_source` field from generators, re-serialises each
@@ -377,6 +377,59 @@ mod tests {
                 "embedded spec {name} should be a .json file"
             );
         }
+    }
+
+    #[test]
+    fn embedded_specs_preserve_corrected_in_markers() {
+        // `build.rs::strip_js_source` must NOT strip `_corrected_in`.
+        // That marker is consumed at runtime by `ghost-complete doctor`
+        // (crates/ghost-complete/src/doctor.rs::count_corrected_generators_in_spec)
+        // to surface generators that were previously mis-converted.
+        //
+        // WHY this test pins a total: a build-time regression that
+        // incidentally dropped `_corrected_in` at any nesting depth would
+        // not fail any existing test — every spec would still parse, every
+        // generator would still load, but `ghost-complete doctor` would go
+        // silent. Walk every embedded spec, count markers, compare to the
+        // expected total.
+        //
+        // Expected count is hard-coded rather than derived from
+        // `docs/coverage-baseline.json` because (a) the baseline file is
+        // outside this crate and the test would then depend on the workspace
+        // layout, and (b) the baseline's `corrected_generators` field is a
+        // release-time snapshot that lags the live spec set. If you add or
+        // remove `_corrected_in` markers in `specs/`, update this constant
+        // and the baseline together in the same PR.
+        const EXPECTED_CORRECTED_IN: usize = 171;
+
+        fn count(v: &serde_json::Value) -> usize {
+            match v {
+                serde_json::Value::Object(map) => {
+                    let here = usize::from(map.contains_key("_corrected_in"));
+                    here + map.values().map(count).sum::<usize>()
+                }
+                serde_json::Value::Array(arr) => arr.iter().map(count).sum(),
+                _ => 0,
+            }
+        }
+
+        let total: usize = EMBEDDED_SPECS
+            .iter()
+            .map(|(name, body)| {
+                let v: serde_json::Value = serde_json::from_str(body)
+                    .unwrap_or_else(|e| panic!("embedded spec {name} is not valid JSON: {e}"));
+                count(&v)
+            })
+            .sum();
+
+        assert_eq!(
+            total, EXPECTED_CORRECTED_IN,
+            "embedded specs have {total} `_corrected_in` markers, expected {EXPECTED_CORRECTED_IN}. \
+             If you changed a corrected generator, update EXPECTED_CORRECTED_IN and \
+             docs/coverage-baseline.json together. If you did NOT intentionally change \
+             corrections, build.rs::strip_js_source likely dropped the marker — check its \
+             recursion."
+        );
     }
 
     #[test]

@@ -53,6 +53,25 @@ silently changed behaviour.
   pipeline.
 - **`docs/SPECS.md`** — conversion pipeline reference, hand-port vs converter
   extension guide, and the `_corrected_in` lifecycle doc.
+- **Native provider pipeline** — eight async Rust providers replace
+  JS-backed generators for the corresponding commands: `ansible-doc`
+  (module list), `arduino-cli` (FQBNs and port addresses via one shared
+  `arduino-cli board list --format json` call), macOS `defaults` (domain
+  list), `mamba` / `conda env list` (environment names), `multipass list`
+  (all instances, plus four state-filtered variants: running, stopped,
+  deleted, not-deleted), and `pandoc` (input and output formats). Every
+  provider subprocess enforces a 2-second timeout and returns an empty
+  `Vec` on spawn failure, timeout, non-zero exit, or parse error, so a
+  broken tool never stalls completion. Dispatch is wired through a
+  closed-for-the-crate `ProviderKind` enum with 12 variants.
+- **Build-time embedded-spec minification** — `crates/gc-suggest/build.rs`
+  (new) reads every `specs/*.json` at compile time, strips the
+  runtime-unused `js_source` field from each generator, minifies the
+  remaining JSON, and writes the compacted copy into `OUT_DIR` for
+  `include_str!` to bake into the binary. The release binary shrank from
+  ~47 MB to ~28.42 MB — no behaviour change, on-disk `specs/*.json`
+  remain pretty-printed; only the binary-embedded copies are minified.
+  Adds `serde_json` under `[build-dependencies]`.
 
 ### Changed
 
