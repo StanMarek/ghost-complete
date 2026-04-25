@@ -38,11 +38,24 @@ mod tests {
 
     #[test]
     fn base_priorities_are_in_documented_order() {
-        assert!(
-            base_for_kind(SuggestionKind::GitBranch) > base_for_kind(SuggestionKind::Subcommand)
+        // Full chain top-to-bottom plus the documented three-way tie.
+        assert!(base_for_kind(SuggestionKind::GitBranch) > base_for_kind(SuggestionKind::GitTag));
+        assert!(base_for_kind(SuggestionKind::GitTag) > base_for_kind(SuggestionKind::GitRemote));
+        assert_eq!(
+            base_for_kind(SuggestionKind::GitRemote),
+            base_for_kind(SuggestionKind::Subcommand)
         );
-        assert!(base_for_kind(SuggestionKind::Subcommand) > base_for_kind(SuggestionKind::Flag));
-        assert!(base_for_kind(SuggestionKind::Flag) > base_for_kind(SuggestionKind::FilePath));
+        assert_eq!(
+            base_for_kind(SuggestionKind::Subcommand),
+            base_for_kind(SuggestionKind::ProviderValue)
+        );
+        assert!(
+            base_for_kind(SuggestionKind::ProviderValue) > base_for_kind(SuggestionKind::EnvVar)
+        );
+        assert!(base_for_kind(SuggestionKind::EnvVar) > base_for_kind(SuggestionKind::Command));
+        assert!(base_for_kind(SuggestionKind::Command) > base_for_kind(SuggestionKind::Flag));
+        assert!(base_for_kind(SuggestionKind::Flag) > base_for_kind(SuggestionKind::Directory));
+        assert!(base_for_kind(SuggestionKind::Directory) > base_for_kind(SuggestionKind::FilePath));
         assert!(base_for_kind(SuggestionKind::FilePath) > base_for_kind(SuggestionKind::History));
     }
 
@@ -67,7 +80,7 @@ mod tests {
     }
 
     #[test]
-    fn priority_range_within_byte() {
+    fn base_priorities_are_within_fig_range() {
         for k in [
             SuggestionKind::GitBranch,
             SuggestionKind::GitTag,
