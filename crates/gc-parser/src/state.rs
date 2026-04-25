@@ -46,6 +46,12 @@ pub struct TerminalState {
     cwd_dirty: bool,
     cursor_sync_requested: bool,
     cpr_synced: bool,
+    /// Sentinel set on each detected new-prompt boundary (OSC 133;A or OSC
+    /// 7771;A). Drives synchronous per-prompt render-state reset (e.g.
+    /// scroll_deficit) — independent of cpr_synced, which depends on a
+    /// terminal CPR roundtrip and may land later or not at all on terminals
+    /// without robust CPR support.
+    prompt_started: bool,
     /// FIFO queue of pending CPR requests in send-order.
     ///
     /// Terminals respond to `CSI 6n` requests in the same order they
@@ -77,6 +83,7 @@ impl TerminalState {
             cwd_dirty: false,
             cursor_sync_requested: false,
             cpr_synced: false,
+            prompt_started: false,
             cpr_queue: VecDeque::new(),
             next_cpr_id: 0,
         }
@@ -169,6 +176,15 @@ impl TerminalState {
         let synced = self.cpr_synced;
         self.cpr_synced = false;
         synced
+    }
+
+    /// Returns true if a new prompt was detected since the last check, and
+    /// clears the flag atomically. Drives synchronous reset of per-prompt
+    /// render state in the handler — independent of the async CPR sync.
+    pub fn take_prompt_started(&mut self) -> bool {
+        let started = self.prompt_started;
+        self.prompt_started = false;
+        started
     }
 
     /// Push a CPR request onto the back of the queue. Returns a token
@@ -345,6 +361,10 @@ impl TerminalState {
 
     pub(crate) fn set_prompt_row(&mut self, row: u16) {
         self.prompt_row = Some(row);
+    }
+
+    pub(crate) fn mark_prompt_started(&mut self) {
+        self.prompt_started = true;
     }
 
     pub(crate) fn set_in_prompt(&mut self, in_prompt: bool) {
@@ -590,5 +610,19 @@ mod tests {
         assert_eq!(dropped, 1);
         assert_eq!(state.cpr_queue_len(), 1);
         assert_eq!(state.claim_next_cpr(), Some(CprOwner::Shell));
+    }
+
+    #[test]
+    fn prompt_started_flag_default_false() {
+        let mut state = TerminalState::new(24, 80);
+        assert!(!state.take_prompt_started());
+    }
+
+    #[test]
+    fn prompt_started_set_then_drained() {
+        let mut state = TerminalState::new(24, 80);
+        state.mark_prompt_started();
+        assert!(state.take_prompt_started());
+        assert!(!state.take_prompt_started(), "drain must clear");
     }
 }
