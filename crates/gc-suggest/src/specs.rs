@@ -234,7 +234,7 @@ pub struct SubcommandSpec {
     pub options: Vec<OptionSpec>,
     #[serde(default, deserialize_with = "deserialize_args_one_or_many")]
     pub args: Vec<ArgSpec>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
     pub priority: Option<u8>,
 }
 
@@ -244,7 +244,7 @@ pub struct OptionSpec {
     pub description: Option<String>,
     #[serde(default, deserialize_with = "deserialize_option_args")]
     pub args: Option<ArgSpec>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
     pub priority: Option<u8>,
 }
 
