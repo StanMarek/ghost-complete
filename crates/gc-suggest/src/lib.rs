@@ -6,6 +6,7 @@
 pub mod alias;
 pub mod cache;
 pub mod commands;
+pub mod context;
 pub mod embedded;
 mod engine;
 mod env;
