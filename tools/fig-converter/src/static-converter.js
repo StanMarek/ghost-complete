@@ -64,6 +64,10 @@ function convertSubcommand(figSub) {
     result.description = String(figSub.description);
   }
 
+  if (typeof figSub.priority === 'number') {
+    result.priority = figSub.priority;
+  }
+
   // Recurse into nested subcommands
   if (figSub.subcommands && Array.isArray(figSub.subcommands)) {
     result.subcommands = figSub.subcommands
@@ -103,6 +107,10 @@ function convertOption(figOpt) {
 
   if (figOpt.description) {
     result.description = String(figOpt.description);
+  }
+
+  if (typeof figOpt.priority === 'number') {
+    result.priority = figOpt.priority;
   }
 
   // Convert option args

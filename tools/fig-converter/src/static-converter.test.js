@@ -304,4 +304,28 @@ describe('convertSpec', () => {
     assert.deepStrictEqual(result.args.generators[0].script, ['brew', 'formulae']);
     assert.deepStrictEqual(result.args.generators[1].script, ['brew', 'casks']);
   });
+
+  it('copies subcommand priority through', () => {
+    const result = convertSpec({
+      name: 'git',
+      subcommands: [
+        { name: 'checkout', description: 'switch', priority: 90 },
+        { name: 'log', description: 'history' },
+      ],
+    });
+    assert.equal(result.subcommands[0].priority, 90);
+    assert.equal(result.subcommands[1].priority, undefined);
+  });
+
+  it('copies option priority through', () => {
+    const result = convertSpec({
+      name: 'git',
+      options: [
+        { name: '--force', description: 'force', priority: 5 },
+        { name: '--verbose', description: 'verbose' },
+      ],
+    });
+    assert.equal(result.options[0].priority, 5);
+    assert.equal(result.options[1].priority, undefined);
+  });
 });
