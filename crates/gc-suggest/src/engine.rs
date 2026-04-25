@@ -15,6 +15,7 @@ use crate::frecency::FrecencyDb;
 use crate::fuzzy;
 use crate::git;
 use crate::history::{HistoryProvider, DEFAULT_MAX_HISTORY_ENTRIES};
+use crate::priority;
 use crate::provider::Provider;
 use crate::providers::{self, ProviderCtx, ProviderKind};
 use crate::script::{run_script, substitute_template};
@@ -837,7 +838,7 @@ impl SuggestionEngine {
             a_hist
                 .cmp(&b_hist)
                 .then_with(|| b.score.cmp(&a.score))
-                .then_with(|| a.kind.sort_priority().cmp(&b.kind.sort_priority()))
+                .then_with(|| priority::effective(b).cmp(&priority::effective(a)))
                 .then_with(|| a.text.cmp(&b.text))
         });
 
@@ -2014,9 +2015,9 @@ mod tests {
     }
 
     #[test]
-    fn test_sort_priority_tiebreaker_with_equal_boosted_scores() {
+    fn test_priority_tiebreaker_with_equal_boosted_scores() {
         // When two suggestions have the same score after frecency boost,
-        // sort_priority should break the tie (GitBranch < Subcommand < Flag).
+        // effective priority should break the tie (GitBranch > Subcommand > Flag).
         let engine = make_engine();
         let ctx = make_ctx(Some("git"), vec![], "ch", 1);
         let results = engine
@@ -2028,14 +2029,16 @@ mod tests {
             .filter(|s| s.source != SuggestionSource::History)
             .collect();
 
-        // For any adjacent pair with equal scores, verify sort_priority ordering
+        // For any adjacent pair with equal scores, verify priority ordering (descending)
         for pair in non_hist.windows(2) {
             if pair[0].score == pair[1].score {
                 assert!(
-                    pair[0].kind.sort_priority() <= pair[1].kind.sort_priority(),
-                    "equal-score items should be ordered by sort_priority: {:?} (pri={}) before {:?} (pri={})",
-                    pair[0].text, pair[0].kind.sort_priority(),
-                    pair[1].text, pair[1].kind.sort_priority()
+                    priority::effective(pair[0]) >= priority::effective(pair[1]),
+                    "equal-score items should be ordered by priority desc: {:?} (pri={}) before {:?} (pri={})",
+                    pair[0].text,
+                    priority::effective(pair[0]),
+                    pair[1].text,
+                    priority::effective(pair[1])
                 );
             }
         }

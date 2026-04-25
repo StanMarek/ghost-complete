@@ -20,8 +20,6 @@ pub enum SuggestionKind {
 }
 
 impl SuggestionKind {
-    /// Display priority for popup ordering (lower = shown first).
-    /// Branches/tags before subcommands/flags, flags before filesystem.
     /// Short tag used as a component in frecency keys so that different kinds
     /// under the same command don't share a score bucket.
     pub fn key_tag(self) -> &'static str {
@@ -37,40 +35,6 @@ impl SuggestionKind {
             Self::History => "hist",
             Self::EnvVar => "env",
             Self::ProviderValue => "provider",
-        }
-    }
-
-    /// Display priority for popup ordering (lower = shown first).
-    /// Branches/tags before subcommands/flags, flags before filesystem.
-    pub fn sort_priority(self) -> u8 {
-        match self {
-            Self::GitBranch => 0,
-            Self::GitTag => 1,
-            Self::GitRemote => 2,
-            Self::Subcommand => 3,
-            Self::Flag => 4,
-            // EnvVar and Command intentionally share priority 5 — they are
-            // peers in the hierarchy (both are "things the user can invoke or
-            // reference at arg position"), and neither should outrank the
-            // other by kind alone. Downstream in `rank_with_history`, the
-            // sort chain is: history-bucket → fuzzy score (desc) → this
-            // priority → text (alphabetic). By the time this tie is reached,
-            // fuzzy scores are already equal, so the final order falls out
-            // alphabetically by text — which is the intended behavior.
-            // Picking different numbers here is a behavior change, not a
-            // code-quality fix.
-            Self::EnvVar => 5,
-            Self::Command => 5,
-            // ProviderValue sits with Directory at priority 6: it is an
-            // arg-position value (FQBN, port address, env name, …) that
-            // belongs just below Commands/EnvVar but above plain files.
-            // Grouping with Directory is deliberate — both surface
-            // semantically meaningful arg-position tokens rather than
-            // leaf filenames.
-            Self::ProviderValue => 6,
-            Self::Directory => 6,
-            Self::FilePath => 7,
-            Self::History => 8,
         }
     }
 }
@@ -130,16 +94,17 @@ impl Default for Suggestion {
 #[cfg(test)]
 mod kind_invariants {
     use super::*;
+    use crate::priority::base_for_kind;
 
     // Pin the behavioral contracts for `ProviderValue` + the neutral
     // `Suggestion::default()`. Silent drift in any of these values would
     // cross-pollute frecency buckets (key_tag) or mis-rank the popup
-    // (sort_priority) without being caught by the relative-ordering tests
+    // (base priority) without being caught by the relative-ordering tests
     // in `engine.rs`.
     #[test]
     fn provider_value_contract() {
         assert_eq!(SuggestionKind::ProviderValue.key_tag(), "provider");
-        assert_eq!(SuggestionKind::ProviderValue.sort_priority(), 6);
+        assert_eq!(base_for_kind(SuggestionKind::ProviderValue), 70);
         assert_eq!(Suggestion::default().kind, SuggestionKind::ProviderValue);
         assert_eq!(Suggestion::default().source, SuggestionSource::Provider);
     }

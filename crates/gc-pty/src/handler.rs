@@ -969,15 +969,14 @@ impl InputHandler {
                 // real-world report of a >10k-item provider.
                 self.suggestions = if current_word.is_empty() {
                     // Sort by kind priority so dynamic arrivals (git branches,
-                    // tags, remotes — priorities 0/1/2) land above any sync
-                    // residuals (flags=4, files=7, history=8). Without this,
-                    // the extend above leaves branches glued to the tail of
-                    // the sync pool on `git checkout <TAB>`.
+                    // tags, remotes — effective priorities 80/75/70) land above
+                    // any sync residuals (flags=30, files=20, history=10).
+                    // Without this, the extend above leaves branches glued to
+                    // the tail of the sync pool on `git checkout <TAB>`.
                     let mut m = merged;
                     m.sort_by(|a, b| {
-                        a.kind
-                            .sort_priority()
-                            .cmp(&b.kind.sort_priority())
+                        gc_suggest::priority::effective(b)
+                            .cmp(&gc_suggest::priority::effective(a))
                             .then_with(|| a.text.cmp(&b.text))
                     });
                     m
@@ -1459,7 +1458,7 @@ mod tests {
 
     #[test]
     fn test_try_merge_dynamic_empty_query_stable_tiebreak_by_text() {
-        // When two dynamic arrivals share the same `sort_priority` (e.g. two
+        // When two dynamic arrivals share the same effective priority (e.g. two
         // `GitBranch` entries), the comparator falls through to
         // `then_with(|| a.text.cmp(&b.text))` so the popup order is
         // alphabetic rather than channel-arrival order. Locks in both tiers
