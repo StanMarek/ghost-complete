@@ -156,6 +156,7 @@ async fn fast_async_arrives_before_block_window() {
         24,
         80,
         (0, 0), // fingerprint
+        "",     // current_word: empty in this fixture
     );
 
     // After merge: suggestions should contain both sync and async items.
@@ -247,6 +248,7 @@ async fn slow_async_falls_through_then_merges_on_arrival() {
         24,
         80,
         (0, 0),
+        "", // current_word: empty in this fixture
     );
 
     // After timeout apply: rx should be restored in handler for dynamic_merge_loop.

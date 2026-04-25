@@ -183,6 +183,10 @@ pub enum TriggerPrepared {
         /// Fingerprint to stamp on `last_trigger_fingerprint` after a
         /// successful merge render.
         fingerprint: (u64, usize),
+        /// Current word at trigger time. Passed to `apply_block_result` so
+        /// the merge step filters/ranks the combined pool against the user's
+        /// query (mirrors the empty-vs-non-empty branch in `try_merge_dynamic`).
+        current_word: String,
     },
 }
 
@@ -958,6 +962,7 @@ impl InputHandler {
                     screen_rows,
                     screen_cols,
                     fingerprint,
+                    current_word: ctx.current_word.clone(),
                 };
             }
         }
@@ -995,6 +1000,7 @@ impl InputHandler {
         screen_rows: u16,
         screen_cols: u16,
         fingerprint: (u64, usize),
+        current_word: &str,
     ) {
         if let Some(rx) = rx_on_timeout {
             // Timeout fired: restore rx so dynamic_merge_loop can deliver results.
@@ -1017,7 +1023,22 @@ impl InputHandler {
                         .collect();
                     all.extend(new_items);
                 }
-                all = gc_suggest::fuzzy::rank("", all, self.max_visible * 5);
+                // Mirror try_merge_dynamic: when the user has typed nothing
+                // we keep the full pool sorted by priority (truncating with
+                // an empty query would alphabetically evict high-value
+                // candidates from large dynamic pools — see the long
+                // comment in try_merge_dynamic). When they have typed, fuzzy
+                // rank against the query and cap at max_visible * 5.
+                all = if current_word.is_empty() {
+                    all.sort_by(|a, b| {
+                        gc_suggest::priority::effective(b)
+                            .cmp(&gc_suggest::priority::effective(a))
+                            .then_with(|| a.text.cmp(&b.text))
+                    });
+                    all
+                } else {
+                    gc_suggest::fuzzy::rank(current_word, all, self.max_visible * 5)
+                };
 
                 self.suggestions = all;
                 self.overlay.reset();

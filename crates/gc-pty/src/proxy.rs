@@ -823,6 +823,7 @@ async fn debounce_loop(
             screen_rows,
             screen_cols,
             fingerprint,
+            current_word,
         } = prepared
         {
             let timeout_dur = Duration::from_millis(block_ms);
@@ -831,7 +832,8 @@ async fn debounce_loop(
             // 2. Timeout fires → restore rx, paint sync-only, dynamic_merge_loop
             //    delivers result when generator finishes later.
             // 3. New keystroke arrives (debounce notify) → abort the wait entirely.
-            //    The outer debounce loop will re-fire trigger for the new buffer.
+            //    The outer debounce loop will re-fire trigger for the new buffer
+            //    and overwrite `dynamic_rx` anyway, so we simply drop rx here.
             let (maybe_async, rx_on_timeout) = tokio::select! {
                 maybe_result = rx.recv() => {
                     // Generator completed within the window (or sent empty).
@@ -842,18 +844,9 @@ async fn debounce_loop(
                     (None, Some(rx))
                 }
                 _ = notify.notified() => {
-                    // New keystroke supersedes the wait. Restore rx so the next
-                    // trigger cycle can use or abort the still-running task.
-                    // The outer loop's debounce logic will fire a new trigger
-                    // for the updated buffer.
-                    {
-                        let mut h = match handler.lock() {
-                            Ok(h) => h,
-                            Err(_) => continue,
-                        };
-                        h.restore_dynamic_rx(rx);
-                    }
-                    // Skip apply_block_result — no paint needed for the old buffer.
+                    // Keystroke supersedes — drop rx and let the next
+                    // trigger cycle aborts the in-flight task and spawn fresh.
+                    drop(rx);
                     continue;
                 }
             };
@@ -880,6 +873,7 @@ async fn debounce_loop(
                     screen_rows,
                     screen_cols,
                     fingerprint,
+                    &current_word,
                 );
             }
             if !render_buf2.is_empty() {
