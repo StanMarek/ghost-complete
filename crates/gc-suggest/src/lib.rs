@@ -16,6 +16,7 @@ pub mod git;
 pub mod history;
 pub mod json_path;
 pub mod pipeline;
+pub mod priority;
 mod provider;
 pub mod providers;
 pub mod script;

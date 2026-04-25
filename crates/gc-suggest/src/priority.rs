@@ -1,0 +1,88 @@
+//! Kind-derived base priorities and per-suggestion effective priority.
+//!
+//! Spec authors override per-item via the Fig `priority` JSON field
+//! (range 0..=100, higher = better). When unset, the kind's base value
+//! is used so the default ordering still surfaces domain content above
+//! flags above filesystem.
+
+use crate::types::{Suggestion, SuggestionKind};
+
+/// Base priority for a `SuggestionKind` when the suggestion does not
+/// declare its own. Numbers chosen so that branches > generator output
+/// > flags > filesystem, with comfortable headroom for spec overrides.
+pub fn base_for_kind(kind: SuggestionKind) -> u8 {
+    match kind {
+        SuggestionKind::GitBranch => 80,
+        SuggestionKind::GitTag => 75,
+        SuggestionKind::GitRemote => 70,
+        SuggestionKind::Subcommand => 70,
+        SuggestionKind::ProviderValue => 70,
+        SuggestionKind::EnvVar => 50,
+        SuggestionKind::Command => 40,
+        SuggestionKind::Flag => 30,
+        SuggestionKind::Directory => 25,
+        SuggestionKind::FilePath => 20,
+        SuggestionKind::History => 10,
+    }
+}
+
+/// Effective priority for a suggestion: spec override if present, else
+/// the kind base.
+pub fn effective(s: &Suggestion) -> u8 {
+    s.priority.unwrap_or_else(|| base_for_kind(s.kind))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn base_priorities_are_in_documented_order() {
+        assert!(
+            base_for_kind(SuggestionKind::GitBranch) > base_for_kind(SuggestionKind::Subcommand)
+        );
+        assert!(base_for_kind(SuggestionKind::Subcommand) > base_for_kind(SuggestionKind::Flag));
+        assert!(base_for_kind(SuggestionKind::Flag) > base_for_kind(SuggestionKind::FilePath));
+        assert!(base_for_kind(SuggestionKind::FilePath) > base_for_kind(SuggestionKind::History));
+    }
+
+    #[test]
+    fn effective_uses_override_when_present() {
+        let s = Suggestion {
+            kind: SuggestionKind::Flag,
+            priority: Some(99),
+            ..Default::default()
+        };
+        assert_eq!(effective(&s), 99);
+    }
+
+    #[test]
+    fn effective_falls_back_to_base() {
+        let s = Suggestion {
+            kind: SuggestionKind::GitBranch,
+            priority: None,
+            ..Default::default()
+        };
+        assert_eq!(effective(&s), 80);
+    }
+
+    #[test]
+    fn priority_range_within_byte() {
+        for k in [
+            SuggestionKind::GitBranch,
+            SuggestionKind::GitTag,
+            SuggestionKind::GitRemote,
+            SuggestionKind::Subcommand,
+            SuggestionKind::ProviderValue,
+            SuggestionKind::EnvVar,
+            SuggestionKind::Command,
+            SuggestionKind::Flag,
+            SuggestionKind::Directory,
+            SuggestionKind::FilePath,
+            SuggestionKind::History,
+        ] {
+            let p = base_for_kind(k);
+            assert!(p <= 100, "{k:?} base priority {p} out of range");
+        }
+    }
+}
