@@ -198,22 +198,28 @@ mod tests {
 
     #[test]
     fn test_history_base_keeps_history_last_on_empty_query() {
+        // Texts chosen so alphabetical order CONTRADICTS priority order:
+        // if the priority sort were ever bypassed, "a-history" would land
+        // first via alphabetical fallback and this test would catch it.
         use crate::types::{SuggestionKind, SuggestionSource};
         let items = vec![
             Suggestion {
-                text: "from-history".to_string(),
+                text: "a-history".to_string(),
                 kind: SuggestionKind::History,
                 source: SuggestionSource::History,
                 ..Default::default()
             },
             Suggestion {
-                text: "a-flag".to_string(),
+                text: "z-flag".to_string(),
                 kind: SuggestionKind::Flag,
                 ..Default::default()
             },
         ];
         let result = rank("", items, DEFAULT_MAX_RESULTS);
-        assert_eq!(result[0].text, "a-flag");
-        assert_eq!(result[1].text, "from-history");
+        assert_eq!(
+            result[0].text, "z-flag",
+            "Flag base 30 should beat History base 10"
+        );
+        assert_eq!(result[1].text, "a-history");
     }
 }
