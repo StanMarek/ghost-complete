@@ -13,7 +13,7 @@ use gc_overlay::{parse_style, PopupTheme};
 use gc_suggest::spec_dirs::resolve_spec_dirs;
 
 use crate::config_watch::spawn_config_watcher;
-use crate::handler::{InputHandler, Keybindings};
+use crate::handler::{InputHandler, Keybindings, TriggerPrepared};
 use crate::input::parse_keys;
 use crate::resize::{get_terminal_size, resize_pty};
 use crate::spawn::{spawn_shell, SpawnedShell};
@@ -181,6 +181,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
             .with_popup_config(config.popup.max_visible)
             .with_trigger_chars(&config.trigger.auto_chars)
             .with_auto_trigger(config.trigger.auto_trigger)
+            .with_render_block_ms(config.popup.render_block_ms as u64)
             .with_suggest_config(
                 config.suggest.max_results,
                 config.suggest.providers.commands,
@@ -785,9 +786,14 @@ async fn debounce_loop(
             }
         }
 
-        // Timer expired — fire trigger
+        // Timer expired — fire trigger with bounded-block support.
+        //
+        // Phase 1: run suggest_sync under the handler lock and paint sync-only
+        // results. If a high-priority async generator is pending and
+        // render_block_ms > 0, we get back a `NeedsBlock` variant carrying
+        // the channel receiver and sync geometry.
         let mut render_buf = Vec::new();
-        {
+        let prepared = {
             let mut h = match handler.lock() {
                 Ok(h) => h,
                 Err(e) => {
@@ -798,12 +804,89 @@ async fn debounce_loop(
             if h.is_debounce_suppressed() || !h.auto_trigger_enabled() {
                 continue;
             }
-            h.trigger(&parser, &mut render_buf);
-        }
+            h.prepare_trigger_with_block(&parser, &mut render_buf)
+        };
         if !render_buf.is_empty() {
             let mut stdout = std::io::stdout().lock();
             let _ = stdout.write_all(&render_buf);
             let _ = stdout.flush();
+        }
+
+        // Phase 2 (only when blocking): await the generator outside the lock,
+        // then re-acquire the lock to merge and repaint.
+        if let TriggerPrepared::NeedsBlock {
+            mut rx,
+            sync_suggestions,
+            block_ms,
+            cursor_row,
+            cursor_col,
+            screen_rows,
+            screen_cols,
+            fingerprint,
+        } = prepared
+        {
+            let timeout_dur = Duration::from_millis(block_ms);
+            // Three-way race:
+            // 1. Generator completes within the block window → merge + single paint.
+            // 2. Timeout fires → restore rx, paint sync-only, dynamic_merge_loop
+            //    delivers result when generator finishes later.
+            // 3. New keystroke arrives (debounce notify) → abort the wait entirely.
+            //    The outer debounce loop will re-fire trigger for the new buffer.
+            let (maybe_async, rx_on_timeout) = tokio::select! {
+                maybe_result = rx.recv() => {
+                    // Generator completed within the window (or sent empty).
+                    (maybe_result, None)
+                }
+                _ = tokio::time::sleep(timeout_dur) => {
+                    // Timeout: restore rx so dynamic_merge_loop can merge later.
+                    (None, Some(rx))
+                }
+                _ = notify.notified() => {
+                    // New keystroke supersedes the wait. Restore rx so the next
+                    // trigger cycle can use or abort the still-running task.
+                    // The outer loop's debounce logic will fire a new trigger
+                    // for the updated buffer.
+                    {
+                        let mut h = match handler.lock() {
+                            Ok(h) => h,
+                            Err(_) => continue,
+                        };
+                        h.restore_dynamic_rx(rx);
+                    }
+                    // Skip apply_block_result — no paint needed for the old buffer.
+                    continue;
+                }
+            };
+
+            let mut render_buf2 = Vec::new();
+            {
+                let mut h = match handler.lock() {
+                    Ok(h) => h,
+                    Err(e) => {
+                        tracing::warn!(
+                            "debounce apply_block_result skipped (handler lock poisoned): {e}"
+                        );
+                        continue;
+                    }
+                };
+                h.apply_block_result(
+                    &parser,
+                    &mut render_buf2,
+                    maybe_async,
+                    rx_on_timeout,
+                    sync_suggestions,
+                    cursor_row,
+                    cursor_col,
+                    screen_rows,
+                    screen_cols,
+                    fingerprint,
+                );
+            }
+            if !render_buf2.is_empty() {
+                let mut stdout = std::io::stdout().lock();
+                let _ = stdout.write_all(&render_buf2);
+                let _ = stdout.flush();
+            }
         }
     }
 }

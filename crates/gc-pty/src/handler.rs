@@ -154,6 +154,38 @@ impl DynamicCtxSnapshot {
     }
 }
 
+/// Result of `InputHandler::prepare_trigger_with_block`.
+///
+/// When a high-priority async generator is pending and `render_block_ms > 0`,
+/// the debounce loop receives `NeedsBlock` and awaits the bounded window
+/// *outside* the `std::sync::Mutex` lock so Tokio can schedule other tasks
+/// during the wait. On timeout or fast-completion the loop re-acquires the
+/// lock to call `apply_block_result`.
+pub enum TriggerPrepared {
+    /// Sync-only suggestions were painted (or the trigger was a no-op). No
+    /// further action needed from the caller.
+    Painted,
+    /// Sync suggestions were painted and a high-priority async generator is
+    /// pending. The caller should await `rx` up to `block_ms`, then call
+    /// `apply_block_result` under the handler lock.
+    NeedsBlock {
+        /// Receiver to `await` for the async generator's results.
+        rx: mpsc::Receiver<Vec<Suggestion>>,
+        /// Sync-only suggestions already painted. Used for merging.
+        sync_suggestions: Vec<Suggestion>,
+        /// Maximum wait duration.
+        block_ms: u64,
+        /// Cursor geometry for the follow-up render.
+        cursor_row: u16,
+        cursor_col: u16,
+        screen_rows: u16,
+        screen_cols: u16,
+        /// Fingerprint to stamp on `last_trigger_fingerprint` after a
+        /// successful merge render.
+        fingerprint: (u64, usize),
+    },
+}
+
 pub struct InputHandler {
     engine: Arc<SuggestionEngine>,
     overlay: OverlayState,
@@ -200,6 +232,20 @@ pub struct InputHandler {
     /// See the bug-repro test `test_trigger_idempotent_when_buffer_unchanged`.
     /// Reset by `dismiss()` so ESC-then-retrigger on the same buffer still works.
     last_trigger_fingerprint: Option<(u64, usize)>,
+    /// Monotonic generation counter incremented on each successful `trigger()`.
+    /// Passed to async generator tasks so stale completions can be dropped when
+    /// the user has typed more characters by the time the task completes.
+    /// A completion message whose `generation` does not equal the current value
+    /// is silently discarded by `try_merge_dynamic`.
+    pub buffer_generation: u64,
+    /// Generation counter snapshotted at `spawn_generators` time.
+    /// `try_merge_dynamic` compares this against `buffer_generation` to drop
+    /// results from a task spawned for an earlier buffer state.
+    spawned_generation: u64,
+    /// Maximum time (ms) to wait for a high-priority async generator before
+    /// painting sync-only results. 0 disables bounded blocking (paint immediately).
+    /// Set from `config.popup.render_block_ms` during the builder phase.
+    render_block_ms: u64,
 }
 
 impl InputHandler {
@@ -225,6 +271,9 @@ impl InputHandler {
             terminal_profile,
             scroll_deficit: 0,
             last_trigger_fingerprint: None,
+            buffer_generation: 0,
+            spawned_generation: 0,
+            render_block_ms: 80,
         })
     }
 
@@ -234,6 +283,14 @@ impl InputHandler {
 
     pub fn with_popup_config(mut self, max_visible: usize) -> Self {
         self.max_visible = max_visible;
+        self
+    }
+
+    /// Set the maximum time (ms) to block waiting for a high-priority async
+    /// generator before painting sync-only results. 0 disables bounded
+    /// blocking. Corresponds to `config.popup.render_block_ms`.
+    pub fn with_render_block_ms(mut self, ms: u64) -> Self {
+        self.render_block_ms = ms;
         self
     }
 
@@ -373,6 +430,44 @@ impl InputHandler {
 
     pub fn auto_trigger_enabled(&self) -> bool {
         self.auto_trigger
+    }
+
+    /// Restore a channel receiver that was taken out for an awaited bounded-block
+    /// window but was not consumed (e.g. due to keystroke cancellation). This
+    /// allows `dynamic_merge_loop` to pick up the result when the generator
+    /// eventually completes.
+    pub fn restore_dynamic_rx(&mut self, rx: mpsc::Receiver<Vec<Suggestion>>) {
+        self.dynamic_rx = Some(rx);
+    }
+
+    /// Returns whether the `dynamic_rx` channel is set (a generator is pending).
+    pub fn has_dynamic_rx(&self) -> bool {
+        self.dynamic_rx.is_some()
+    }
+
+    /// Takes the `dynamic_rx` channel out of the handler, leaving `None`.
+    /// Used by the debounce loop to await outside the mutex lock, and by
+    /// tests to simulate the blocked state.
+    pub fn take_dynamic_rx(&mut self) -> Option<mpsc::Receiver<Vec<Suggestion>>> {
+        self.dynamic_rx.take()
+    }
+
+    /// Returns the current suggestions slice (read-only).
+    pub fn current_suggestions(&self) -> &[Suggestion] {
+        &self.suggestions
+    }
+
+    /// Set the `spawned_generation` field. Used in tests to simulate that
+    /// `spawn_generators` ran for the current `buffer_generation`.
+    pub fn set_spawned_generation(&mut self, gen: u64) {
+        self.spawned_generation = gen;
+    }
+
+    /// Prime `dynamic_ctx` to the "no context" state that matches an empty
+    /// buffer. Used in integration tests that bypass `spawn_generators`.
+    pub fn prime_dynamic_ctx_for_empty_buffer(&mut self) {
+        let base_ctx = gc_buffer::parse_command_context("", 0);
+        self.dynamic_ctx = Some(DynamicCtxSnapshot::capture(&base_ctx, false));
     }
 
     /// Process a single key event. Returns the raw bytes to forward to the PTY,
@@ -671,6 +766,10 @@ impl InputHandler {
         self.dynamic_rx = None;
         self.dynamic_ctx = None;
 
+        // Advance the generation counter so any in-flight async task's
+        // completion can be identified as stale and dropped.
+        self.buffer_generation = self.buffer_generation.wrapping_add(1);
+
         let sync_result = self.engine.suggest_sync(&ctx, &cwd, &buffer);
 
         match sync_result {
@@ -726,6 +825,445 @@ impl InputHandler {
         }
     }
 
+    /// Async variant of [`trigger`] that adds a bounded-block window before
+    /// the first paint when a high-priority async generator is pending.
+    ///
+    /// If `render_block_ms > 0` and the sync result has at least one pending
+    /// async generator whose kind base priority exceeds the current top sync
+    /// item, this method races a `tokio::time::sleep(render_block_ms)` against
+    /// the generator completing. Whichever fires first wins:
+    ///
+    /// - Generator completes within the window → suggestions are merged and
+    ///   painted together (single render, no flicker).
+    /// - Timeout fires → the `rx` is restored to `self.dynamic_rx` so the
+    ///   `dynamic_merge_loop` can deliver results later without waiting for a
+    ///   PTY read. Sync-only suggestions are painted immediately.
+    ///
+    /// If `render_block_ms == 0` (or no high-priority generators are pending),
+    /// this falls through to the same behaviour as the sync `trigger()`.
+    ///
+    /// # Ownership note
+    /// `stdout` is a `Vec<u8>` to which rendered bytes are appended. The
+    /// caller writes the vec to stdout after the lock is released (same
+    /// pattern as all other `&mut self` render paths in this handler).
+    pub async fn trigger_async(
+        &mut self,
+        parser: &Arc<Mutex<TerminalParser>>,
+        stdout: &mut Vec<u8>,
+    ) {
+        let block_ms = self.render_block_ms;
+
+        // If block_ms == 0, delegate directly to the sync trigger.
+        if block_ms == 0 {
+            self.trigger(parser, stdout);
+            return;
+        }
+
+        // Extract parser state under the lock — same as trigger().
+        let (buffer, cursor, cwd, cursor_row, cursor_col, screen_rows, screen_cols) =
+            match parser.lock() {
+                Ok(mut p) => {
+                    if p.state_mut().take_cpr_synced() {
+                        self.scroll_deficit = 0;
+                    }
+                    let state = p.state();
+                    let buffer = state.command_buffer().unwrap_or("").to_string();
+                    let cursor = state.buffer_cursor();
+                    let cwd = state.cwd().cloned().unwrap_or_else(|| PathBuf::from("."));
+                    let (cursor_row, cursor_col) = state.cursor_position();
+                    let (screen_rows, screen_cols) = state.screen_dimensions();
+                    (
+                        buffer,
+                        cursor,
+                        cwd,
+                        cursor_row,
+                        cursor_col,
+                        screen_rows,
+                        screen_cols,
+                    )
+                }
+                Err(e) => {
+                    tracing::warn!("parser mutex poisoned in trigger_async: {e} — falling back");
+                    self.trigger(parser, stdout);
+                    return;
+                }
+            };
+
+        if buffer.is_empty() {
+            if self.visible {
+                self.dismiss(stdout);
+            }
+            return;
+        }
+
+        // Idempotency guard (mirrors trigger()).
+        let fingerprint = buffer_fingerprint(&buffer, cursor);
+        if self.visible && self.last_trigger_fingerprint == Some(fingerprint) {
+            return;
+        }
+
+        let ctx = parse_command_context(&buffer, cursor);
+
+        // Abort any in-flight task.
+        if let Some(handle) = self.dynamic_task.take() {
+            handle.abort();
+        }
+        self.dynamic_rx = None;
+        self.dynamic_ctx = None;
+        self.buffer_generation = self.buffer_generation.wrapping_add(1);
+
+        let sync_result = self.engine.suggest_sync(&ctx, &cwd, &buffer);
+
+        let result = match sync_result {
+            Ok(r) => r,
+            Err(e) => {
+                tracing::debug!("suggest_sync failed in trigger_async: {e}");
+                if self.visible {
+                    self.dismiss(stdout);
+                }
+                return;
+            }
+        };
+
+        let has_async = !result.script_generators.is_empty()
+            || !result.git_generators.is_empty()
+            || !result.provider_generators.is_empty();
+
+        // Check whether we should block: only when there are pending
+        // high-priority generators AND sync results are not already at top priority.
+        let needs_block = has_async && result.has_pending_high_priority();
+
+        if !has_async {
+            // Pure sync path — no generators, paint and return.
+            if !result.suggestions.is_empty() {
+                self.suggestions = result.suggestions;
+                self.overlay.reset();
+                self.visible = true;
+                self.render_at(stdout, cursor_row, cursor_col, screen_rows, screen_cols);
+                self.last_trigger_fingerprint = Some(fingerprint);
+            } else if self.visible {
+                self.dismiss(stdout);
+            }
+            return;
+        }
+
+        // Save the sync suggestions before spawn_generators consumes the vecs.
+        let sync_suggestions = result.suggestions;
+        let needs_block_val = needs_block;
+
+        // Spawn generators (consumes script/git/provider vecs from result).
+        self.spawn_generators(
+            result.script_generators,
+            result.git_generators,
+            result.provider_generators,
+            &ctx,
+            &cwd,
+        );
+
+        if needs_block_val {
+            // Take the receiver out of self so we can await on it.
+            // On timeout we restore it so dynamic_merge_loop can use it.
+            if let Some(mut rx) = self.dynamic_rx.take() {
+                let timeout_dur = std::time::Duration::from_millis(block_ms);
+                tokio::select! {
+                    maybe_result = rx.recv() => {
+                        match maybe_result {
+                            Some(async_results) => {
+                                // Generator finished within the window.
+                                // Clear dynamic state — task completed inline.
+                                self.dynamic_task = None;
+                                self.dynamic_ctx = None;
+
+                                // Merge async results into sync suggestions.
+                                let mut all = sync_suggestions;
+                                {
+                                    use std::collections::HashSet;
+                                    let existing: HashSet<String> =
+                                        all.iter().map(|s| s.text.clone()).collect();
+                                    let new_items: Vec<_> = async_results
+                                        .into_iter()
+                                        .filter(|s| !existing.contains(&s.text))
+                                        .collect();
+                                    all.extend(new_items);
+                                }
+                                // Re-rank the combined pool.
+                                all = gc_suggest::fuzzy::rank("", all, self.max_visible * 5);
+
+                                self.suggestions = all;
+                                self.overlay.reset();
+                                self.visible = true;
+                                self.render_at(stdout, cursor_row, cursor_col, screen_rows, screen_cols);
+                                self.last_trigger_fingerprint = Some(fingerprint);
+                            }
+                            None => {
+                                // Generator completed with empty results (tx dropped without send).
+                                // Paint sync-only.
+                                self.dynamic_task = None;
+                                self.dynamic_ctx = None;
+                                if !sync_suggestions.is_empty() {
+                                    self.suggestions = sync_suggestions;
+                                    self.overlay.reset();
+                                    self.visible = true;
+                                    self.render_at(stdout, cursor_row, cursor_col, screen_rows, screen_cols);
+                                    self.last_trigger_fingerprint = Some(fingerprint);
+                                } else if self.visible {
+                                    self.dismiss(stdout);
+                                }
+                            }
+                        }
+                    }
+                    _ = tokio::time::sleep(timeout_dur) => {
+                        // Timeout: restore rx so dynamic_merge_loop can deliver
+                        // the result when the generator eventually completes.
+                        self.dynamic_rx = Some(rx);
+                        // Paint sync-only now.
+                        if !sync_suggestions.is_empty() {
+                            self.suggestions = sync_suggestions;
+                            self.overlay.reset();
+                            self.visible = true;
+                            self.render_at(stdout, cursor_row, cursor_col, screen_rows, screen_cols);
+                            self.last_trigger_fingerprint = Some(fingerprint);
+                        } else if self.visible {
+                            self.dismiss(stdout);
+                        }
+                    }
+                }
+            } else {
+                // spawn_generators returned early (all lists were empty), so
+                // no rx was created. Just paint sync.
+                if !sync_suggestions.is_empty() {
+                    self.suggestions = sync_suggestions;
+                    self.overlay.reset();
+                    self.visible = true;
+                    self.render_at(stdout, cursor_row, cursor_col, screen_rows, screen_cols);
+                    self.last_trigger_fingerprint = Some(fingerprint);
+                } else if self.visible {
+                    self.dismiss(stdout);
+                }
+            }
+        } else {
+            // Not blocking: paint sync immediately and let generators run normally
+            // via dynamic_merge_loop.
+            if !sync_suggestions.is_empty() {
+                self.suggestions = sync_suggestions;
+                self.overlay.reset();
+                self.visible = true;
+                self.render_at(stdout, cursor_row, cursor_col, screen_rows, screen_cols);
+                self.last_trigger_fingerprint = Some(fingerprint);
+            } else if self.visible {
+                // visible but no sync suggestions — generators are pending in
+                // dynamic_merge_loop path.
+                self.dismiss(stdout);
+            }
+        }
+    }
+
+    /// Synchronous phase of the bounded-block trigger for the debounce path.
+    ///
+    /// Runs `suggest_sync`, paints sync-only results, and spawns generators.
+    /// If `render_block_ms > 0` and a high-priority generator is pending,
+    /// returns `TriggerPrepared::NeedsBlock` with the channel receiver so the
+    /// debounce loop can `await` the bounded window **outside** the
+    /// `std::sync::Mutex` lock. Otherwise returns `TriggerPrepared::Painted`.
+    ///
+    /// Render bytes are appended to `stdout`. Caller writes them to stdout
+    /// after releasing the lock.
+    pub fn prepare_trigger_with_block(
+        &mut self,
+        parser: &Arc<Mutex<TerminalParser>>,
+        stdout: &mut Vec<u8>,
+    ) -> TriggerPrepared {
+        let block_ms = self.render_block_ms;
+
+        // Extract parser state.
+        let (buffer, cursor, cwd, cursor_row, cursor_col, screen_rows, screen_cols) =
+            match parser.lock() {
+                Ok(mut p) => {
+                    if p.state_mut().take_cpr_synced() {
+                        self.scroll_deficit = 0;
+                    }
+                    let state = p.state();
+                    let buffer = state.command_buffer().unwrap_or("").to_string();
+                    let cursor = state.buffer_cursor();
+                    let cwd = state.cwd().cloned().unwrap_or_else(|| PathBuf::from("."));
+                    let (cursor_row, cursor_col) = state.cursor_position();
+                    let (screen_rows, screen_cols) = state.screen_dimensions();
+                    (
+                        buffer,
+                        cursor,
+                        cwd,
+                        cursor_row,
+                        cursor_col,
+                        screen_rows,
+                        screen_cols,
+                    )
+                }
+                Err(e) => {
+                    tracing::warn!(
+                        "parser mutex poisoned in prepare_trigger_with_block: {e} — skipping"
+                    );
+                    return TriggerPrepared::Painted;
+                }
+            };
+
+        if buffer.is_empty() {
+            if self.visible {
+                self.dismiss(stdout);
+            }
+            return TriggerPrepared::Painted;
+        }
+
+        let fingerprint = buffer_fingerprint(&buffer, cursor);
+        if self.visible && self.last_trigger_fingerprint == Some(fingerprint) {
+            return TriggerPrepared::Painted;
+        }
+
+        let ctx = parse_command_context(&buffer, cursor);
+
+        if let Some(handle) = self.dynamic_task.take() {
+            handle.abort();
+        }
+        self.dynamic_rx = None;
+        self.dynamic_ctx = None;
+        self.buffer_generation = self.buffer_generation.wrapping_add(1);
+
+        let result = match self.engine.suggest_sync(&ctx, &cwd, &buffer) {
+            Ok(r) => r,
+            Err(e) => {
+                tracing::debug!("suggest_sync failed in prepare_trigger_with_block: {e}");
+                if self.visible {
+                    self.dismiss(stdout);
+                }
+                return TriggerPrepared::Painted;
+            }
+        };
+
+        let has_async = !result.script_generators.is_empty()
+            || !result.git_generators.is_empty()
+            || !result.provider_generators.is_empty();
+        let needs_block = block_ms > 0 && has_async && result.has_pending_high_priority();
+
+        let sync_suggestions = result.suggestions;
+
+        // Spawn generators (consumes script/git/provider vecs).
+        if has_async {
+            self.spawn_generators(
+                result.script_generators,
+                result.git_generators,
+                result.provider_generators,
+                &ctx,
+                &cwd,
+            );
+        }
+
+        if needs_block {
+            // Take the rx out of self. The caller awaits it outside the lock,
+            // then calls apply_block_result to merge and repaint.
+            if let Some(rx) = self.dynamic_rx.take() {
+                // Paint sync-only to give immediate feedback while waiting.
+                if !sync_suggestions.is_empty() {
+                    self.suggestions = sync_suggestions.clone();
+                    self.overlay.reset();
+                    self.visible = true;
+                    self.render_at(stdout, cursor_row, cursor_col, screen_rows, screen_cols);
+                } else if self.visible {
+                    self.dismiss(stdout);
+                }
+
+                return TriggerPrepared::NeedsBlock {
+                    rx,
+                    sync_suggestions,
+                    block_ms,
+                    cursor_row,
+                    cursor_col,
+                    screen_rows,
+                    screen_cols,
+                    fingerprint,
+                };
+            }
+        }
+
+        // No block needed — paint sync-only and let dynamic_merge_loop handle async.
+        if !sync_suggestions.is_empty() {
+            self.suggestions = sync_suggestions;
+            self.overlay.reset();
+            self.visible = true;
+            self.render_at(stdout, cursor_row, cursor_col, screen_rows, screen_cols);
+            self.last_trigger_fingerprint = Some(fingerprint);
+        } else if !has_async && self.visible {
+            self.dismiss(stdout);
+        }
+
+        TriggerPrepared::Painted
+    }
+
+    /// Apply the result of the bounded-block window after the debounce loop
+    /// awaited the async generator outside the mutex lock.
+    ///
+    /// `maybe_async` is `Some(Vec<Suggestion>)` if the generator completed
+    /// within the window, or `None` if the timeout fired (in which case the
+    /// caller should restore `rx` to `self.dynamic_rx` first).
+    #[allow(clippy::too_many_arguments)] // all args are genuinely independent
+    pub fn apply_block_result(
+        &mut self,
+        parser: &Arc<Mutex<TerminalParser>>,
+        stdout: &mut Vec<u8>,
+        maybe_async: Option<Vec<Suggestion>>,
+        rx_on_timeout: Option<mpsc::Receiver<Vec<Suggestion>>>,
+        sync_suggestions: Vec<Suggestion>,
+        cursor_row: u16,
+        cursor_col: u16,
+        screen_rows: u16,
+        screen_cols: u16,
+        fingerprint: (u64, usize),
+    ) {
+        if let Some(rx) = rx_on_timeout {
+            // Timeout fired: restore rx so dynamic_merge_loop can deliver results.
+            self.dynamic_rx = Some(rx);
+        }
+
+        match maybe_async {
+            Some(async_results) if !async_results.is_empty() => {
+                // Generator completed within the window.
+                self.dynamic_task = None;
+                self.dynamic_ctx = None;
+
+                let mut all = sync_suggestions;
+                {
+                    use std::collections::HashSet;
+                    let existing: HashSet<String> = all.iter().map(|s| s.text.clone()).collect();
+                    let new_items: Vec<_> = async_results
+                        .into_iter()
+                        .filter(|s| !existing.contains(&s.text))
+                        .collect();
+                    all.extend(new_items);
+                }
+                all = gc_suggest::fuzzy::rank("", all, self.max_visible * 5);
+
+                self.suggestions = all;
+                self.overlay.reset();
+                self.visible = true;
+                self.render_at(stdout, cursor_row, cursor_col, screen_rows, screen_cols);
+                self.last_trigger_fingerprint = Some(fingerprint);
+            }
+            Some(_) | None => {
+                // Generator returned empty (Some([])) or timeout (None with rx restored).
+                // Sync-only was already painted in prepare_trigger_with_block.
+                // If timeout: dynamic_merge_loop will merge later.
+                // If empty: clear loading indicator.
+                if maybe_async.is_some() {
+                    // Empty result: no more async incoming
+                    self.dynamic_task = None;
+                    self.dynamic_ctx = None;
+                    if self.visible {
+                        self.render(parser, stdout);
+                    }
+                }
+                self.last_trigger_fingerprint = Some(fingerprint);
+            }
+        }
+    }
+
     /// Spawn an async task to run pre-resolved generators (script + git).
     /// Results arrive via `dynamic_rx` and Task E renders them via `dynamic_notify`.
     ///
@@ -759,6 +1297,9 @@ impl InputHandler {
                 .is_some_and(|tpl| tpl.iter().any(|part| part.contains("{current_token}")))
         });
         self.dynamic_ctx = Some(DynamicCtxSnapshot::capture(ctx, uses_current_word));
+        // Snapshot the generation at spawn time so try_merge_dynamic can drop
+        // results from a task spawned for an earlier buffer state.
+        self.spawned_generation = self.buffer_generation;
         let (tx, rx) = mpsc::channel::<Vec<Suggestion>>(1);
         self.dynamic_rx = Some(rx);
         let engine = Arc::clone(&self.engine);
@@ -879,6 +1420,17 @@ impl InputHandler {
                     parse_command_context(buffer, cursor)
                 };
                 let current_word = current_ctx.current_word.clone();
+
+                // Generation staleness check: if the buffer_generation has
+                // advanced past the generation at spawn time, the user has
+                // typed more characters and this result is stale.
+                if self.spawned_generation != self.buffer_generation {
+                    self.dynamic_ctx = None;
+                    if self.visible {
+                        self.render(parser, stdout);
+                    }
+                    return false;
+                }
 
                 // Staleness check: snapshotted context must still match.
                 let stale = match &self.dynamic_ctx {
@@ -1788,6 +2340,9 @@ mod tests {
             terminal_profile: TerminalProfile::for_ghostty(),
             scroll_deficit: 0,
             last_trigger_fingerprint: None,
+            buffer_generation: 0,
+            spawned_generation: 0,
+            render_block_ms: 0,
         }
     }
 

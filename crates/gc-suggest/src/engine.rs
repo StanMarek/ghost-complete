@@ -94,6 +94,94 @@ impl SyncResult {
     pub fn has_suggestions(&self) -> bool {
         !self.suggestions.is_empty()
     }
+
+    /// True iff any pending async generator's kind base priority outranks
+    /// the highest-priority sync suggestion currently in `self.suggestions`.
+    ///
+    /// This is a conservative heuristic: git generators always conceptually
+    /// produce branches/tags (highest base priority 80), script and provider
+    /// generators produce ProviderValue (base 70). If the best sync item
+    /// already has priority ≥ the expected async priority, there is no point
+    /// waiting — the async results would not change the top of the list.
+    pub fn has_pending_high_priority(&self) -> bool {
+        let top_sync = self
+            .suggestions
+            .iter()
+            .map(crate::priority::effective)
+            .max()
+            .unwrap_or(0);
+
+        // Git generators produce GitBranch/GitTag — base priority 80.
+        let git_base = crate::priority::base_for_kind(crate::types::SuggestionKind::GitBranch);
+        // Script and provider generators produce ProviderValue — base priority 70.
+        let provider_base =
+            crate::priority::base_for_kind(crate::types::SuggestionKind::ProviderValue);
+
+        (!self.git_generators.is_empty() && git_base > top_sync)
+            || (!self.script_generators.is_empty() && provider_base > top_sync)
+            || (!self.provider_generators.is_empty() && provider_base > top_sync)
+    }
+}
+
+#[cfg(test)]
+mod sync_result_tests {
+    use super::*;
+    use crate::types::{Suggestion, SuggestionKind};
+
+    #[test]
+    fn has_pending_high_priority_false_when_no_generators() {
+        let result = SyncResult {
+            suggestions: vec![],
+            script_generators: vec![],
+            git_generators: vec![],
+            provider_generators: vec![],
+        };
+        assert!(!result.has_pending_high_priority());
+    }
+
+    #[test]
+    fn has_pending_high_priority_true_when_git_pending_and_no_sync() {
+        let result = SyncResult {
+            suggestions: vec![],
+            script_generators: vec![],
+            git_generators: vec![crate::git::GitQueryKind::Branches],
+            provider_generators: vec![],
+        };
+        // No sync suggestions → top_sync = 0 < 80 (GitBranch base)
+        assert!(result.has_pending_high_priority());
+    }
+
+    #[test]
+    fn has_pending_high_priority_false_when_sync_already_outranks_git() {
+        let result = SyncResult {
+            suggestions: vec![Suggestion {
+                kind: SuggestionKind::GitBranch,
+                priority: None,
+                ..Default::default()
+            }],
+            script_generators: vec![],
+            git_generators: vec![crate::git::GitQueryKind::Branches],
+            provider_generators: vec![],
+        };
+        // top_sync = 80, git_base = 80 → NOT strictly greater → false
+        assert!(!result.has_pending_high_priority());
+    }
+
+    #[test]
+    fn has_pending_high_priority_true_when_git_pending_and_flags_only_in_sync() {
+        let result = SyncResult {
+            suggestions: vec![Suggestion {
+                kind: SuggestionKind::Flag,
+                priority: None,
+                ..Default::default()
+            }],
+            script_generators: vec![],
+            git_generators: vec![crate::git::GitQueryKind::Branches],
+            provider_generators: vec![],
+        };
+        // top_sync = 30 (Flag), git_base = 80 → 80 > 30 → true
+        assert!(result.has_pending_high_priority());
+    }
 }
 
 pub struct SuggestionEngine {
