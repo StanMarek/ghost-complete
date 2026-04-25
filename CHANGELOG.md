@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0-beta.1] - 2026-04-25
+
 ### Corrected
 
 - **Substring/slice misconversion.** The spec converter previously emitted
@@ -461,6 +463,7 @@ silently changed behaviour.
 - **Shell integration** for zsh (full), bash (Ctrl+/), and fish (Ctrl+/)
 - **`validate-specs` subcommand** with colored output and item counts
 
+[0.10.0-beta.1]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.10.0-beta.1
 [0.9.1]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.9.1
 [0.9.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.9.0
 [0.8.2]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.8.2
