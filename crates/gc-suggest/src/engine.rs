@@ -525,10 +525,13 @@ impl SuggestionEngine {
                 self.extend_with_ssh_hosts(ctx, &mut candidates);
                 match self.try_suggest_from_spec(ctx, cwd, buffer, candidates) {
                     Ok(result) => Ok(result),
-                    // spec_for_ctx returned Some, so resolve_spec ran. If we still
-                    // got Err it means a guard inside fired (e.g. providers_specs
-                    // gate). Produce an empty result — DO NOT leak filesystem,
-                    // since the spec author opted into spec-driven completion.
+                    // Defensive arm: classify() saw spec_matched == true via
+                    // spec_for_ctx, and the spec store does not change after
+                    // construction, so this Err is unreachable in normal
+                    // operation. Retained as a guard against future refactors
+                    // that might break that invariant. Even if it fires, do
+                    // NOT leak filesystem — the spec author opted into
+                    // spec-driven completion.
                     Err(candidates) => Ok(SyncResult {
                         suggestions: self.rank_with_history(ctx, cwd, buffer, candidates, true),
                         script_generators: Vec::new(),
@@ -806,8 +809,11 @@ impl SuggestionEngine {
         if self.providers_filesystem {
             // When typing a `../`-prefixed word, offer one more level of parent
             // navigation (e.g. `../../`) so the user can chain upward without
-            // switching context. This mirrors the parent-nav logic in
-            // `extend_with_folders` but applies to all path-prefix contexts.
+            // switching context. This applies the trailing-`../` portion of
+            // the parent-nav logic from `extend_with_folders`. The empty-word
+            // case (`cd <TAB>` injecting `../`) is intentionally NOT mirrored
+            // here — that path goes through SpecArg context, never reaches
+            // this fallback.
             if ctx.current_word.ends_with("../") {
                 let parent_text = format!("{}../", &ctx.current_word);
                 let effective = cwd.join(&ctx.current_word);
@@ -844,9 +850,9 @@ impl SuggestionEngine {
     /// candidates with the full buffer, and append history results at the end.
     /// All suggestions receive a frecency bonus so frequently/recently accepted
     /// completions sort higher. When `include_history` is false, history is
-    /// skipped entirely — used for contexts where history entries would
-    /// outrank imminent async results (e.g. `git checkout <TAB>` waiting on
-    /// branch/tag generators).
+    /// skipped entirely — used by `suggest_flag_prefix`, where the user has
+    /// explicitly typed a flag dash and history entries (full command lines)
+    /// would create irrelevant noise.
     fn rank_with_history(
         &self,
         ctx: &CommandContext,
@@ -1041,6 +1047,10 @@ mod tests {
         // SpecArg context always includes history (rank_with_history true).
         // The old `defer_to_git_refs` suppression of history has been removed;
         // ordering is now handled by priority sort + Task 9 bounded wait.
+        // A discriminating current_word ("main") is used so the spec/fs
+        // candidates fuzzy-filter down and history can fit within
+        // max_results — an empty current_word floods the cap with flags
+        // and folders before the history append runs.
         let spec_store = SpecStore::load_from_dir(&spec_dir()).unwrap().store;
         let history = HistoryProvider::from_entries(vec![
             "git checkout main".into(),
@@ -1050,14 +1060,25 @@ mod tests {
         let commands = CommandsProvider::from_list(vec!["git".into()]);
         let engine = SuggestionEngine::with_providers(spec_store, history, commands);
 
-        let ctx = make_ctx(Some("git"), vec!["checkout"], "", 2);
+        let ctx = make_ctx(Some("git"), vec!["checkout"], "main", 2);
         let results = engine
-            .suggest_sync(&ctx, Path::new("/tmp"), "git checkout ")
+            .suggest_sync(&ctx, Path::new("/tmp"), "git checkout main")
             .unwrap();
 
-        // History IS included now — ordering is a concern for Task 9.
-        // We just verify the engine does not panic and returns a result.
-        let _ = results.suggestions;
+        // Presence is locked in here; ordering vs incoming async branches
+        // is Task 9's domain.
+        assert!(
+            results
+                .suggestions
+                .iter()
+                .any(|s| s.source == SuggestionSource::History),
+            "SpecArg must include history matches: {:?}",
+            results
+                .suggestions
+                .iter()
+                .map(|s| (&s.text, &s.source))
+                .collect::<Vec<_>>()
+        );
     }
 
     #[test]
@@ -2106,11 +2127,6 @@ mod tests {
 
     // ---- helpers for Context-dispatch tests ----
 
-    /// Build a full engine with real specs loaded from the workspace specs dir.
-    fn test_engine_with_specs() -> SuggestionEngine {
-        make_engine()
-    }
-
     /// Synthesise a `CommandContext` from a raw buffer string.
     ///
     /// Splits on spaces; trailing space means `current_word` is `""` at
@@ -2143,7 +2159,7 @@ mod tests {
 
     #[test]
     fn suggest_sync_path_prefix_returns_filesystem_only() {
-        let engine = test_engine_with_specs();
+        let engine = make_engine();
         let ctx = command_context_with("git checkout ./");
         let result = engine
             .suggest_sync(&ctx, std::path::Path::new("/tmp"), "git checkout ./")
@@ -2164,7 +2180,7 @@ mod tests {
 
     #[test]
     fn suggest_sync_flag_prefix_returns_flags_and_subcommands_only() {
-        let engine = test_engine_with_specs();
+        let engine = make_engine();
         let ctx = command_context_with("git checkout --");
         let result = engine
             .suggest_sync(&ctx, std::path::Path::new("/tmp"), "git checkout --")
@@ -2186,7 +2202,7 @@ mod tests {
     #[test]
     fn suggest_sync_spec_arg_does_not_inject_filesystem_when_spec_omits_template() {
         // Use a spec with NO template at the positional arg (e.g. cargo run).
-        let engine = test_engine_with_specs();
+        let engine = make_engine();
         let ctx = command_context_with("cargo run ");
         let result = engine
             .suggest_sync(&ctx, std::path::Path::new("/tmp"), "cargo run ")
