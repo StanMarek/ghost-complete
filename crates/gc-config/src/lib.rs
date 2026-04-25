@@ -395,6 +395,7 @@ const MAX_VISIBLE_DEFAULT: usize = 10;
 const MAX_VISIBLE_UPPER: usize = 50;
 const MAX_RESULTS_UPPER: usize = 10_000;
 const MAX_RESULTS_DEFAULT: usize = 50;
+const RENDER_BLOCK_MS_UPPER: u16 = 300;
 
 impl GhostConfig {
     /// Clamp config values to sane bounds, logging warnings when clamping.
@@ -435,12 +436,13 @@ impl GhostConfig {
             );
             self.suggest.max_results = MAX_RESULTS_DEFAULT;
         }
-        if self.popup.render_block_ms > 300 {
+        if self.popup.render_block_ms > RENDER_BLOCK_MS_UPPER {
             tracing::warn!(
-                "popup.render_block_ms = {} exceeds 300, clamping to 300",
-                self.popup.render_block_ms
+                "popup.render_block_ms={} exceeds maximum {}, clamping",
+                self.popup.render_block_ms,
+                RENDER_BLOCK_MS_UPPER,
             );
-            self.popup.render_block_ms = 300;
+            self.popup.render_block_ms = RENDER_BLOCK_MS_UPPER;
         }
     }
 
