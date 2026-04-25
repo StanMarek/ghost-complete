@@ -1,0 +1,1764 @@
+{
+  "description": "Tsuru is the command line utility used by application developers, that will allow users to create, list, bind and manage apps",
+  "name": "tsuru",
+  "options": [
+    {
+      "description": "Show help for tsuru",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "App commands",
+      "name": "app",
+      "subcommands": [
+        {
+          "description": "Builds a tsuru app image respecting",
+          "name": "build",
+          "options": [
+            {
+              "args": {
+                "description": "App name",
+                "generators": [
+                  {
+                    "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                    "requires_js": true,
+                    "script": [
+                      "tsuru",
+                      "app",
+                      "list"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name",
+              "name": [
+                "-a",
+                "--app"
+              ]
+            },
+            {
+              "args": {
+                "name": "file-or-dir-n",
+                "template": "filepaths"
+              },
+              "description": "Enables single file build into the root of the app's tree",
+              "name": [
+                "-f",
+                "--files-only"
+              ]
+            },
+            {
+              "description": "Help for build",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "description": "The image tag",
+              "name": [
+                "-t",
+                "--tag"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "description": "App name",
+              "generators": [
+                {
+                  "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                  "requires_js": true,
+                  "script": [
+                    "tsuru",
+                    "app",
+                    "list"
+                  ]
+                }
+              ],
+              "name": "app"
+            },
+            {
+              "description": "Platform of the app",
+              "generators": [
+                {
+                  "script": [
+                    "tsuru",
+                    "platform",
+                    "list"
+                  ],
+                  "transforms": [
+                    "split_lines",
+                    "filter_empty"
+                  ]
+                }
+              ],
+              "name": "platform"
+            }
+          ],
+          "description": "Creates a new app using the given name and platform",
+          "name": "create",
+          "options": [
+            {
+              "args": {
+                "description": "Poll name",
+                "generators": [
+                  {
+                    "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Pool\"}))}",
+                    "requires_js": true,
+                    "script": [
+                      "tsuru",
+                      "pool",
+                      "list"
+                    ]
+                  }
+                ],
+                "name": "pool"
+              },
+              "description": "Filter applications by pool",
+              "name": [
+                "-o",
+                "--pool"
+              ]
+            },
+            {
+              "args": {
+                "description": "Pool where the app will be created",
+                "generators": [
+                  {
+                    "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Team\"}))}",
+                    "requires_js": true,
+                    "script": [
+                      "tsuru",
+                      "team",
+                      "list"
+                    ]
+                  }
+                ],
+                "name": "team"
+              },
+              "description": "Team that will own the app",
+              "name": [
+                "-t",
+                "--team"
+              ]
+            },
+            {
+              "args": {
+                "description": "Plan to be used by the app",
+                "generators": [
+                  {
+                    "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Plan\"}))}",
+                    "requires_js": true,
+                    "script": [
+                      "tsuru",
+                      "plan",
+                      "list"
+                    ]
+                  }
+                ],
+                "name": "plan"
+              },
+              "description": "Plan to be used by the app",
+              "name": [
+                "-p",
+                "--plan"
+              ]
+            },
+            {
+              "description": "Description of the app",
+              "name": [
+                "-d",
+                "--description"
+              ]
+            },
+            {
+              "description": "Tag to be used by the app",
+              "name": [
+                "-g",
+                "--tag"
+              ]
+            },
+            {
+              "description": "Router options",
+              "name": [
+                "--router-opts"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "file-or-dir-n",
+            "template": "filepaths"
+          },
+          "description": "Deploys set of files and/or directories to tsuru server",
+          "name": "deploy",
+          "options": [
+            {
+              "args": {
+                "description": "App name",
+                "generators": [
+                  {
+                    "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                    "requires_js": true,
+                    "script": [
+                      "tsuru",
+                      "app",
+                      "list"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name",
+              "name": [
+                "-a",
+                "--app"
+              ]
+            },
+            {
+              "description": "Enables single file deployment into the root of the app's tree",
+              "name": [
+                "-f",
+                "--files-only"
+              ]
+            },
+            {
+              "description": "The image to deploy in app",
+              "name": [
+                "-i",
+                "--image"
+              ]
+            },
+            {
+              "description": "A message describing this deploy",
+              "name": [
+                "-m",
+                "--message"
+              ]
+            },
+            {
+              "description": "Creates a new version for the current deployment while preserving existing versions",
+              "name": [
+                "--new-version"
+              ]
+            },
+            {
+              "description": "Force replace all deployed versions by this new deploy",
+              "name": [
+                "--override-old-versions"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "description": "List information about deploys for an application",
+              "name": "list",
+              "options": [
+                {
+                  "args": {
+                    "description": "App name",
+                    "generators": [
+                      {
+                        "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                        "requires_js": true,
+                        "script": [
+                          "tsuru",
+                          "app",
+                          "list"
+                        ]
+                      }
+                    ],
+                    "name": "app"
+                  },
+                  "description": "App name",
+                  "name": [
+                    "-a",
+                    "--app"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Rebuild and deploy the last app image",
+              "name": "rebuild",
+              "options": [
+                {
+                  "args": {
+                    "description": "App name",
+                    "generators": [
+                      {
+                        "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                        "requires_js": true,
+                        "script": [
+                          "tsuru",
+                          "app",
+                          "list"
+                        ]
+                      }
+                    ],
+                    "name": "app"
+                  },
+                  "description": "App name",
+                  "name": [
+                    "-a",
+                    "--app"
+                  ]
+                },
+                {
+                  "description": "Creates a new version for the current deployment while preserving existing versions",
+                  "name": [
+                    "--new-version"
+                  ]
+                },
+                {
+                  "description": "Force replace all deployed versions by this new deploy",
+                  "name": [
+                    "--override-old-versions"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Deploys an existing image for an app",
+              "name": "rollback",
+              "options": [
+                {
+                  "args": {
+                    "description": "App name",
+                    "generators": [
+                      {
+                        "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                        "requires_js": true,
+                        "script": [
+                          "tsuru",
+                          "app",
+                          "list"
+                        ]
+                      }
+                    ],
+                    "name": "app"
+                  },
+                  "description": "App name",
+                  "name": [
+                    "-a",
+                    "--app"
+                  ]
+                },
+                {
+                  "description": "Creates a new version for the current deployment while preserving existing versions",
+                  "name": [
+                    "--new-version"
+                  ]
+                },
+                {
+                  "description": "Force replace all deployed versions by this new deploy",
+                  "name": [
+                    "--override-old-versions"
+                  ]
+                },
+                {
+                  "description": "Answer yes to all questions",
+                  "name": [
+                    "y",
+                    "--yes"
+                  ]
+                }
+              ],
+              "subcommands": [
+                {
+                  "description": "Locks an existing image of an app",
+                  "name": "update",
+                  "options": [
+                    {
+                      "args": {
+                        "description": "App name",
+                        "generators": [
+                          {
+                            "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                            "requires_js": true,
+                            "script": [
+                              "tsuru",
+                              "app",
+                              "list"
+                            ]
+                          }
+                        ],
+                        "name": "app"
+                      },
+                      "description": "App name",
+                      "name": [
+                        "-a",
+                        "--app"
+                      ]
+                    },
+                    {
+                      "description": "Enables or disables the rollback on a specific image version",
+                      "name": [
+                        "-d",
+                        "--disable"
+                      ]
+                    },
+                    {
+                      "description": "The image name for an app version",
+                      "name": [
+                        "-i",
+                        "--image"
+                      ]
+                    },
+                    {
+                      "description": "The reason why the rollback has to be disabled",
+                      "name": [
+                        "-r",
+                        "--reason"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Team name",
+            "generators": [
+              {
+                "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Team\"}))}",
+                "requires_js": true,
+                "script": [
+                  "tsuru",
+                  "team",
+                  "list"
+                ]
+              }
+            ],
+            "name": "team"
+          },
+          "description": "Allows a team to access an application",
+          "name": "grant",
+          "options": [
+            {
+              "args": {
+                "description": "App name",
+                "generators": [
+                  {
+                    "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                    "requires_js": true,
+                    "script": [
+                      "tsuru",
+                      "app",
+                      "list"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name",
+              "name": [
+                "-a",
+                "--app"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Shows information about an app",
+          "name": "info",
+          "options": [
+            {
+              "args": {
+                "description": "App name",
+                "generators": [
+                  {
+                    "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                    "requires_js": true,
+                    "script": [
+                      "tsuru",
+                      "app",
+                      "list"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name",
+              "name": [
+                "-a",
+                "--app"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List all apps",
+          "name": "list",
+          "options": [
+            {
+              "description": "Filter applications by name",
+              "name": [
+                "-n",
+                "--name"
+              ]
+            },
+            {
+              "args": {
+                "description": "Poll name",
+                "generators": [
+                  {
+                    "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Pool\"}))}",
+                    "requires_js": true,
+                    "script": [
+                      "tsuru",
+                      "pool",
+                      "list"
+                    ]
+                  }
+                ],
+                "name": "pool"
+              },
+              "description": "Filter applications by pool",
+              "name": [
+                "-o",
+                "--pool"
+              ]
+            },
+            {
+              "args": {
+                "description": "Platform",
+                "generators": [
+                  {
+                    "script": [
+                      "tsuru",
+                      "platform",
+                      "list"
+                    ],
+                    "transforms": [
+                      "split_lines",
+                      "filter_empty"
+                    ]
+                  }
+                ],
+                "name": "platform"
+              },
+              "description": "Filter applications by platform",
+              "name": [
+                "-p",
+                "--platform"
+              ]
+            },
+            {
+              "description": "Display only applications name",
+              "name": [
+                "-q"
+              ]
+            },
+            {
+              "description": "Filter applications by unit status. Accepts multiple values separated by commas. Possible values can be: building, created, starting, error, started, stopped, asleep",
+              "name": [
+                "-s",
+                "--status"
+              ]
+            },
+            {
+              "args": {
+                "description": "Pool where the app will be created",
+                "generators": [
+                  {
+                    "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Team\"}))}",
+                    "requires_js": true,
+                    "script": [
+                      "tsuru",
+                      "team",
+                      "list"
+                    ]
+                  }
+                ],
+                "name": "team"
+              },
+              "description": "Team that will own the app",
+              "name": [
+                "-t",
+                "--team"
+              ]
+            },
+            {
+              "description": "Filter applications by owner",
+              "name": [
+                "-u",
+                "--user"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Shows the logs of an app",
+          "name": "log",
+          "options": [
+            {
+              "args": {
+                "description": "App name",
+                "generators": [
+                  {
+                    "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                    "requires_js": true,
+                    "script": [
+                      "tsuru",
+                      "app",
+                      "list"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name",
+              "name": [
+                "-a",
+                "--app"
+              ]
+            },
+            {
+              "description": "Follow log output",
+              "name": [
+                "-f",
+                "--follow"
+              ]
+            },
+            {
+              "description": "Number of lines to show",
+              "name": [
+                "-l",
+                "--lines"
+              ]
+            },
+            {
+              "description": "No date information",
+              "name": [
+                "no-data"
+              ]
+            },
+            {
+              "description": "The log from the given source",
+              "name": [
+                "-s",
+                "--source"
+              ]
+            },
+            {
+              "description": "The log from the given unit",
+              "name": [
+                "-u",
+                "--unit"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Manage metadata for an app",
+          "name": "metadata",
+          "subcommands": [
+            {
+              "description": "Retrieves metadata for an application",
+              "name": "get",
+              "options": [
+                {
+                  "args": {
+                    "description": "App name",
+                    "generators": [
+                      {
+                        "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                        "requires_js": true,
+                        "script": [
+                          "tsuru",
+                          "app",
+                          "list"
+                        ]
+                      }
+                    ],
+                    "name": "app"
+                  },
+                  "description": "App name",
+                  "name": [
+                    "-a",
+                    "--app"
+                  ]
+                }
+              ]
+            },
+            {
+              "args": {
+                "description": "The metadata key",
+                "isVariadic": true,
+                "name": "<NAME=value>"
+              },
+              "description": "Sets metadata for an application",
+              "name": "set",
+              "options": [
+                {
+                  "args": {
+                    "description": "App name",
+                    "generators": [
+                      {
+                        "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                        "requires_js": true,
+                        "script": [
+                          "tsuru",
+                          "app",
+                          "list"
+                        ]
+                      }
+                    ],
+                    "name": "app"
+                  },
+                  "description": "App name",
+                  "name": [
+                    "-a",
+                    "--app"
+                  ]
+                },
+                {
+                  "description": "Do not restart the app after the metadata is set",
+                  "name": [
+                    "--no-restart"
+                  ]
+                },
+                {
+                  "description": "Metadata type: annotation or label",
+                  "name": [
+                    "-t",
+                    "--type"
+                  ]
+                }
+              ]
+            },
+            {
+              "args": {
+                "description": "The metadata key",
+                "isVariadic": true,
+                "name": "NAME"
+              },
+              "description": "Unsets metadata for an application",
+              "name": "unset",
+              "options": [
+                {
+                  "args": {
+                    "description": "App name",
+                    "generators": [
+                      {
+                        "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                        "requires_js": true,
+                        "script": [
+                          "tsuru",
+                          "app",
+                          "list"
+                        ]
+                      }
+                    ],
+                    "name": "app"
+                  },
+                  "description": "App name",
+                  "name": [
+                    "-a",
+                    "--app"
+                  ]
+                },
+                {
+                  "description": "Do not restart the app after the metadata is set",
+                  "name": [
+                    "--no-restart"
+                  ]
+                },
+                {
+                  "description": "Metadata type: annotation or label",
+                  "name": [
+                    "-t",
+                    "--type"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Shows the quota of an app",
+          "name": "quota",
+          "subcommands": [
+            {
+              "args": {
+                "description": "The new limit of units",
+                "name": "limit"
+              },
+              "description": "Changes the limit of units that an app can have",
+              "name": "change",
+              "options": [
+                {
+                  "args": {
+                    "description": "App name",
+                    "generators": [
+                      {
+                        "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                        "requires_js": true,
+                        "script": [
+                          "tsuru",
+                          "app",
+                          "list"
+                        ]
+                      }
+                    ],
+                    "name": "app"
+                  },
+                  "description": "App name",
+                  "name": [
+                    "-a",
+                    "--app"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Displays the current usage and limit of the given app",
+              "name": "view",
+              "options": [
+                {
+                  "args": {
+                    "description": "App name",
+                    "generators": [
+                      {
+                        "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                        "requires_js": true,
+                        "script": [
+                          "tsuru",
+                          "app",
+                          "list"
+                        ]
+                      }
+                    ],
+                    "name": "app"
+                  },
+                  "description": "App name",
+                  "name": [
+                    "-a",
+                    "--app"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Removes an app",
+          "name": "remove",
+          "options": [
+            {
+              "args": {
+                "description": "App name",
+                "generators": [
+                  {
+                    "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                    "requires_js": true,
+                    "script": [
+                      "tsuru",
+                      "app",
+                      "list"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name",
+              "name": [
+                "-a",
+                "--app"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Restarts an application, or one of the processes of the application",
+          "name": "restart",
+          "options": [
+            {
+              "args": {
+                "description": "App name",
+                "generators": [
+                  {
+                    "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                    "requires_js": true,
+                    "script": [
+                      "tsuru",
+                      "app",
+                      "list"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name",
+              "name": [
+                "-a",
+                "--app"
+              ]
+            },
+            {
+              "description": "Process name",
+              "name": [
+                "-p",
+                "--process"
+              ]
+            },
+            {
+              "name": [
+                "--version"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Team name",
+            "generators": [
+              {
+                "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Team\"}))}",
+                "requires_js": true,
+                "script": [
+                  "tsuru",
+                  "team",
+                  "list"
+                ]
+              }
+            ],
+            "name": "team"
+          },
+          "description": "Removes a team access to an application",
+          "name": "revoke",
+          "options": [
+            {
+              "args": {
+                "description": "App name",
+                "generators": [
+                  {
+                    "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                    "requires_js": true,
+                    "script": [
+                      "tsuru",
+                      "app",
+                      "list"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name",
+              "name": [
+                "-a",
+                "--app"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Manage routers for an app",
+          "name": "router",
+          "subcommands": [
+            {
+              "args": {
+                "description": "Router name",
+                "name": "router"
+              },
+              "description": "Adds a router to an app",
+              "name": "add",
+              "options": [
+                {
+                  "args": {
+                    "description": "App name",
+                    "generators": [
+                      {
+                        "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                        "requires_js": true,
+                        "script": [
+                          "tsuru",
+                          "app",
+                          "list"
+                        ]
+                      }
+                    ],
+                    "name": "app"
+                  },
+                  "description": "App name",
+                  "name": [
+                    "-a",
+                    "--app"
+                  ]
+                },
+                {
+                  "description": "Custom options sent directly to router implementation",
+                  "name": [
+                    "-o",
+                    "--opts"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "List routers for an app",
+              "name": "list",
+              "options": [
+                {
+                  "args": {
+                    "description": "App name",
+                    "generators": [
+                      {
+                        "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                        "requires_js": true,
+                        "script": [
+                          "tsuru",
+                          "app",
+                          "list"
+                        ]
+                      }
+                    ],
+                    "name": "app"
+                  },
+                  "description": "App name",
+                  "name": [
+                    "-a",
+                    "--app"
+                  ]
+                }
+              ]
+            },
+            {
+              "args": {
+                "description": "Router name",
+                "name": "router"
+              },
+              "description": "Removes a router from an app",
+              "name": "remove",
+              "options": [
+                {
+                  "args": {
+                    "description": "App name",
+                    "generators": [
+                      {
+                        "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                        "requires_js": true,
+                        "script": [
+                          "tsuru",
+                          "app",
+                          "list"
+                        ]
+                      }
+                    ],
+                    "name": "app"
+                  },
+                  "description": "App name",
+                  "name": [
+                    "-a",
+                    "--app"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Updates a router for an app",
+              "name": "update",
+              "options": [
+                {
+                  "args": {
+                    "description": "App name",
+                    "generators": [
+                      {
+                        "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                        "requires_js": true,
+                        "script": [
+                          "tsuru",
+                          "app",
+                          "list"
+                        ]
+                      }
+                    ],
+                    "name": "app"
+                  },
+                  "description": "App name",
+                  "name": [
+                    "-a",
+                    "--app"
+                  ]
+                },
+                {
+                  "description": "Custom options sent directly to router implementation",
+                  "name": [
+                    "-o",
+                    "--opts"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Manage router versions for an app",
+              "name": "version",
+              "subcommands": [
+                {
+                  "args": {
+                    "name": "version"
+                  },
+                  "description": "Adds a router version to an app",
+                  "name": "add",
+                  "options": [
+                    {
+                      "args": {
+                        "description": "App name",
+                        "generators": [
+                          {
+                            "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                            "requires_js": true,
+                            "script": [
+                              "tsuru",
+                              "app",
+                              "list"
+                            ]
+                          }
+                        ],
+                        "name": "app"
+                      },
+                      "description": "App name",
+                      "name": [
+                        "-a",
+                        "--app"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "version"
+                  },
+                  "description": "Removes a router version from an app",
+                  "name": "remove",
+                  "options": [
+                    {
+                      "args": {
+                        "description": "App name",
+                        "generators": [
+                          {
+                            "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                            "requires_js": true,
+                            "script": [
+                              "tsuru",
+                              "app",
+                              "list"
+                            ]
+                          }
+                        ],
+                        "name": "app"
+                      },
+                      "description": "App name",
+                      "name": [
+                        "-a",
+                        "--app"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List all routers",
+          "name": "routes",
+          "subcommands": [
+            {
+              "description": "Rebuild routes for an application",
+              "name": "rebuild",
+              "options": [
+                {
+                  "args": {
+                    "description": "App name",
+                    "generators": [
+                      {
+                        "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                        "requires_js": true,
+                        "script": [
+                          "tsuru",
+                          "app",
+                          "list"
+                        ]
+                      }
+                    ],
+                    "name": "app"
+                  },
+                  "description": "App name",
+                  "name": [
+                    "-a",
+                    "--app"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Runs a command inside an app",
+          "name": "run",
+          "options": [
+            {
+              "args": {
+                "description": "App name",
+                "generators": [
+                  {
+                    "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                    "requires_js": true,
+                    "script": [
+                      "tsuru",
+                      "app",
+                      "list"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name",
+              "name": [
+                "-a",
+                "--app"
+              ]
+            },
+            {
+              "description": "Running in ephemeral container",
+              "name": [
+                "-i",
+                "--isolated"
+              ]
+            },
+            {
+              "description": "Running only one unit",
+              "name": [
+                "-o",
+                "--once"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "App name",
+            "generators": [
+              {
+                "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                "requires_js": true,
+                "script": [
+                  "tsuru",
+                  "app",
+                  "list"
+                ]
+              }
+            ],
+            "name": "app"
+          },
+          "description": "Opens a remote shell inside unit, using the API server as a proxy",
+          "name": "shell"
+        },
+        {
+          "description": "Starts an app",
+          "name": "start",
+          "options": [
+            {
+              "args": {
+                "description": "App name",
+                "generators": [
+                  {
+                    "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                    "requires_js": true,
+                    "script": [
+                      "tsuru",
+                      "app",
+                      "list"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name",
+              "name": [
+                "-a",
+                "--app"
+              ]
+            },
+            {
+              "description": "Process name",
+              "name": [
+                "-p",
+                "--process"
+              ]
+            },
+            {
+              "description": "Version number",
+              "name": [
+                "--version"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Stops an application",
+          "name": "stop",
+          "options": [
+            {
+              "args": {
+                "description": "App name",
+                "generators": [
+                  {
+                    "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                    "requires_js": true,
+                    "script": [
+                      "tsuru",
+                      "app",
+                      "list"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name",
+              "name": [
+                "-a",
+                "--app"
+              ]
+            },
+            {
+              "description": "Process name",
+              "name": [
+                "-p",
+                "--process"
+              ]
+            },
+            {
+              "description": "Version number",
+              "name": [
+                "--version"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Swaps routing between two apps",
+          "name": "swap",
+          "options": [
+            {
+              "description": "Swap only the cname",
+              "name": [
+                "-c",
+                "--cname-only"
+              ]
+            },
+            {
+              "description": "Force Swap among apps with different number of units or different platform",
+              "name": [
+                "-f",
+                "--force"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Forces the removal of an application lock",
+          "name": "unlock",
+          "options": [
+            {
+              "args": {
+                "description": "App name",
+                "generators": [
+                  {
+                    "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                    "requires_js": true,
+                    "script": [
+                      "tsuru",
+                      "app",
+                      "list"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name",
+              "name": [
+                "-a",
+                "--app"
+              ]
+            },
+            {
+              "description": "Don't ask for confirmation",
+              "name": [
+                "-y",
+                "--assume-yes"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Updates an app",
+          "name": "update",
+          "options": [
+            {
+              "args": {
+                "description": "App name",
+                "generators": [
+                  {
+                    "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                    "requires_js": true,
+                    "script": [
+                      "tsuru",
+                      "app",
+                      "list"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name",
+              "name": [
+                "-a",
+                "--app"
+              ]
+            },
+            {
+              "description": "CPU limit for app, this will override the plan cpu value. One cpu is equivalent to 1 vCPU/Core, fractional requests are allowed and the expression 0.1 is equivalent to the expression 100m",
+              "name": [
+                "--cpu"
+              ]
+            },
+            {
+              "description": "Changes description for the app",
+              "name": [
+                "-d",
+                "--description"
+              ]
+            },
+            {
+              "description": "Add tags for the app",
+              "name": [
+                "-g",
+                "--tag"
+              ]
+            },
+            {
+              "description": "Forces next deploy to build app image from scratch",
+              "name": [
+                "-i",
+                "--image-reset"
+              ]
+            },
+            {
+              "args": {
+                "description": "Platform",
+                "generators": [
+                  {
+                    "script": [
+                      "tsuru",
+                      "platform",
+                      "list"
+                    ],
+                    "transforms": [
+                      "split_lines",
+                      "filter_empty"
+                    ]
+                  }
+                ],
+                "name": "platform"
+              },
+              "description": "Filter applications by platform",
+              "name": [
+                "-p",
+                "--platform"
+              ]
+            },
+            {
+              "description": "Memory limit for app, this will override the plan memory value. You can express memory as a bytes integer or using one of these suffixes: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki",
+              "name": [
+                "--memory"
+              ]
+            },
+            {
+              "description": "Prevent tsuru from restarting the application",
+              "name": [
+                "--no-restart"
+              ]
+            },
+            {
+              "args": {
+                "description": "Poll name",
+                "generators": [
+                  {
+                    "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Pool\"}))}",
+                    "requires_js": true,
+                    "script": [
+                      "tsuru",
+                      "pool",
+                      "list"
+                    ]
+                  }
+                ],
+                "name": "pool"
+              },
+              "description": "Filter applications by pool",
+              "name": [
+                "-o",
+                "--pool"
+              ]
+            },
+            {
+              "args": {
+                "description": "Plan to be used by the app",
+                "generators": [
+                  {
+                    "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Plan\"}))}",
+                    "requires_js": true,
+                    "script": [
+                      "tsuru",
+                      "plan",
+                      "list"
+                    ]
+                  }
+                ],
+                "name": "plan"
+              },
+              "description": "Plan to be used by the app",
+              "name": [
+                "-p",
+                "--plan"
+              ]
+            },
+            {
+              "args": {
+                "description": "Pool where the app will be created",
+                "generators": [
+                  {
+                    "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Team\"}))}",
+                    "requires_js": true,
+                    "script": [
+                      "tsuru",
+                      "team",
+                      "list"
+                    ]
+                  }
+                ],
+                "name": "team"
+              },
+              "description": "Team that will own the app",
+              "name": [
+                "-t",
+                "--team"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "App environment variables",
+      "name": "env",
+      "options": [
+        {
+          "args": {
+            "description": "App name",
+            "generators": [
+              {
+                "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                "requires_js": true,
+                "script": [
+                  "tsuru",
+                  "app",
+                  "list"
+                ]
+              }
+            ],
+            "name": "app"
+          },
+          "description": "App name",
+          "name": [
+            "-a",
+            "--app"
+          ]
+        },
+        {
+          "description": "Private environment variables",
+          "name": [
+            "-p",
+            "--private"
+          ]
+        },
+        {
+          "description": "Don't restart the app after setting the env vars",
+          "name": [
+            "--no-restart"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Get environment variables from an app",
+          "name": "get",
+          "options": [
+            {
+              "args": {
+                "description": "App name",
+                "generators": [
+                  {
+                    "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                    "requires_js": true,
+                    "script": [
+                      "tsuru",
+                      "app",
+                      "list"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name",
+              "name": [
+                "-a",
+                "--app"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Set environment variables to an app",
+          "name": "set",
+          "options": [
+            {
+              "args": {
+                "description": "App name",
+                "generators": [
+                  {
+                    "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                    "requires_js": true,
+                    "script": [
+                      "tsuru",
+                      "app",
+                      "list"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name",
+              "name": [
+                "-a",
+                "--app"
+              ]
+            },
+            {
+              "description": "Private environment variables",
+              "name": [
+                "-p",
+                "--private"
+              ]
+            },
+            {
+              "description": "Don't restart the app after setting the env vars",
+              "name": [
+                "--no-restart"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Unset environment variables from an app",
+          "name": "unset",
+          "options": [
+            {
+              "args": {
+                "description": "App name",
+                "generators": [
+                  {
+                    "js_source": "function(a){return o(a).map(i=>({name:i,description:\"Apps\"}))}",
+                    "requires_js": true,
+                    "script": [
+                      "tsuru",
+                      "app",
+                      "list"
+                    ]
+                  }
+                ],
+                "name": "app"
+              },
+              "description": "App name",
+              "name": [
+                "-a",
+                "--app"
+              ]
+            },
+            {
+              "description": "Don't restart the app after setting the env vars",
+              "name": [
+                "--no-restart"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Cluster commands",
+      "name": "cluster",
+      "subcommands": [
+        {
+          "description": "Add a new cluster",
+          "name": "add"
+        },
+        {
+          "description": "List all clusters",
+          "name": "list"
+        },
+        {
+          "description": "Remove a cluster",
+          "name": "remove"
+        },
+        {
+          "description": "Update a cluster",
+          "name": "update"
+        }
+      ]
+    },
+    {
+      "description": "Certificate commands",
+      "name": "certificate",
+      "subcommands": [
+        {
+          "description": "List App TLS certificates",
+          "name": "list"
+        },
+        {
+          "description": "Creates or update a TLS certificate into the specific app",
+          "name": "set"
+        },
+        {
+          "description": "Unset a TLS certificate from a specific app",
+          "name": "unset"
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "email"
+      },
+      "description": "Login to tsuru server",
+      "name": "login"
+    },
+    {
+      "description": "Logout from tsuru server",
+      "name": "logout"
+    }
+  ]
+}

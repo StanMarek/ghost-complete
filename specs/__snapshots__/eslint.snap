@@ -1,0 +1,381 @@
+{
+  "args": {
+    "description": "File(s) to lint",
+    "isVariadic": true,
+    "name": "file|dir|glob",
+    "template": [
+      "filepaths",
+      "folders"
+    ]
+  },
+  "description": "Pluggable JavaScript linter",
+  "name": "eslint",
+  "options": [
+    {
+      "description": "Disable use of configuration from .eslintrc.*",
+      "name": [
+        "--no-eslintrc"
+      ]
+    },
+    {
+      "args": {
+        "template": [
+          "filepaths"
+        ]
+      },
+      "description": "Use this configuration, overriding .eslintrc.* config options if present",
+      "name": [
+        "-c",
+        "--config"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "async i=>{let e=[\"browser\",\"node\",\"commonjs\",\"shared-node-browser\",\"es6\",\"ecmaVersion\",\"es2017\",\"es2020\",\"es2021\",\"worker\",\"amd\",\"mocha\",\"jasmine\",\"jest\",\"phantomjs\",\"protractor\",\"qunit\",\"jquery\",\"prototypejs\",\"shelljs\",\"meteor\",\"mongo\",\"applescript\",\"nashorn\",\"servicerworker\",\"atomtest\",\"embertest\",\"webextensions\",\"greasemonkey\"],n=[i[i.length-1]][0];return e.filter(t=>!n.split(\",\").includes(t)).map(t=>({name:t}))}",
+            "requires_js": true
+          }
+        ]
+      },
+      "description": "Specify environments",
+      "name": [
+        "--env"
+      ]
+    },
+    {
+      "args": {
+        "name": "Extension"
+      },
+      "description": "Specify JavaScript file extensions",
+      "name": [
+        "--ext"
+      ]
+    },
+    {
+      "args": {
+        "name": "Variables"
+      },
+      "description": "Define global variables",
+      "name": [
+        "--global"
+      ]
+    },
+    {
+      "args": {},
+      "description": "Specify the parser to be used",
+      "name": [
+        "--parser"
+      ]
+    },
+    {
+      "args": {},
+      "description": "Specify parser options",
+      "name": [
+        "--parser-options"
+      ]
+    },
+    {
+      "args": {
+        "template": [
+          "folders"
+        ]
+      },
+      "description": "A folder where plugins should be resolved from",
+      "name": [
+        "--resolve-plugins-relative-to"
+      ]
+    },
+    {
+      "args": {
+        "template": [
+          "folders"
+        ]
+      },
+      "description": "Use additional rules from this directory",
+      "name": [
+        "--rulesdir"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "bash",
+              "-c",
+              "{ ls node_modules ; ls $(npm root -g) ; ls $(yarn global dir)/node_modules/ ; } | cat"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "Plugin"
+      },
+      "description": "Specify plugins",
+      "name": [
+        "--plugin"
+      ]
+    },
+    {
+      "args": {},
+      "description": "Specify rules",
+      "name": [
+        "--rule"
+      ]
+    },
+    {
+      "description": "Automatically fix problems",
+      "name": [
+        "--fix"
+      ]
+    },
+    {
+      "description": "Automatically fix problems without saving the changes to the file system",
+      "name": [
+        "--fix-dry-run"
+      ]
+    },
+    {
+      "args": {
+        "suggestions": [
+          {
+            "name": "problem"
+          },
+          {
+            "name": "suggestion"
+          },
+          {
+            "name": "layout"
+          }
+        ]
+      },
+      "description": "Specify the types of fixes to apply",
+      "name": [
+        "--fix-type"
+      ]
+    },
+    {
+      "args": {
+        "template": [
+          "filepaths"
+        ]
+      },
+      "description": "Specify path of ignore file",
+      "name": [
+        "--ignore-path"
+      ]
+    },
+    {
+      "description": "Disable use of ignore files and patterns",
+      "name": [
+        "--no-ignore"
+      ]
+    },
+    {
+      "args": {},
+      "description": "Pattern of files to ignore (in addition to those in .eslintignore)",
+      "name": [
+        "--ignore-pattern"
+      ]
+    },
+    {
+      "description": "Lint code provided on <STDIN>",
+      "name": [
+        "--stdin"
+      ]
+    },
+    {
+      "args": {
+        "template": [
+          "filepaths"
+        ]
+      },
+      "description": "Specify filename to process STDIN as",
+      "name": [
+        "--stdin-filename"
+      ]
+    },
+    {
+      "description": "Report errors only",
+      "name": [
+        "--quiet"
+      ]
+    },
+    {
+      "args": {},
+      "description": "Number of warnings to trigger nonzero exit code",
+      "name": [
+        "--max-warnings"
+      ]
+    },
+    {
+      "args": {
+        "template": [
+          "filepaths"
+        ]
+      },
+      "description": "Specify file to write report to",
+      "name": [
+        "-o",
+        "--output-file"
+      ]
+    },
+    {
+      "args": {
+        "suggestions": [
+          {
+            "name": "checkstyle"
+          },
+          {
+            "name": "codeframe"
+          },
+          {
+            "name": "compact"
+          },
+          {
+            "name": "html"
+          },
+          {
+            "name": "jslint-xml"
+          },
+          {
+            "name": "json"
+          },
+          {
+            "name": "junit"
+          },
+          {
+            "name": "stylish"
+          },
+          {
+            "name": "table"
+          },
+          {
+            "name": "tap"
+          },
+          {
+            "name": "unix"
+          },
+          {
+            "name": "visualstudio"
+          }
+        ]
+      },
+      "description": "Use a specific output format",
+      "name": [
+        "-f",
+        "--format"
+      ]
+    },
+    {
+      "description": "Force enabling of color",
+      "name": [
+        "--color"
+      ]
+    },
+    {
+      "description": "Force disabling of color",
+      "name": [
+        "--no-color"
+      ]
+    },
+    {
+      "description": "Prevent comments from changing config or rules",
+      "name": [
+        "--no-inline-config"
+      ]
+    },
+    {
+      "description": "Adds reported errors for unused eslint-disable-directives",
+      "name": [
+        "--report-unused-disable-directives"
+      ]
+    },
+    {
+      "description": "Only check changed files",
+      "name": [
+        "--cache"
+      ]
+    },
+    {
+      "args": {
+        "template": [
+          "filepaths",
+          "folders"
+        ]
+      },
+      "description": "Path to the cache file or directory",
+      "name": [
+        "--cache-location"
+      ]
+    },
+    {
+      "args": {
+        "suggestions": [
+          {
+            "name": "metadata"
+          },
+          {
+            "name": "content"
+          }
+        ]
+      },
+      "description": "Strategy to use for detecting changed files",
+      "name": [
+        "--cache-strategy"
+      ]
+    },
+    {
+      "description": "Run config initialization wizard",
+      "name": [
+        "--init"
+      ]
+    },
+    {
+      "description": "Output execution environment information",
+      "name": [
+        "--env-info"
+      ]
+    },
+    {
+      "description": "Prevent errors when pattern is unmatched",
+      "name": [
+        "--no-error-on-unmatched-pattern"
+      ]
+    },
+    {
+      "description": "Output debugging information",
+      "name": [
+        "--debug"
+      ]
+    },
+    {
+      "description": "Show help",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Output the version number",
+      "name": [
+        "-v",
+        "--version"
+      ]
+    },
+    {
+      "args": {
+        "template": [
+          "filepaths"
+        ]
+      },
+      "description": "Print the configuration for the give file",
+      "name": [
+        "--print-config"
+      ]
+    }
+  ]
+}

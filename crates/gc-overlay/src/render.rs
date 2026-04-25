@@ -481,6 +481,7 @@ pub(crate) fn kind_icon(kind: SuggestionKind) -> char {
         SuggestionKind::GitRemote => '\u{F0C1}',  // nf-fa-link
         SuggestionKind::History => '\u{F1DA}',    // nf-fa-history
         SuggestionKind::EnvVar => '$',
+        SuggestionKind::ProviderValue => '\u{F0AD}', // nf-fa-wrench — dynamic arg value from a native provider
     }
 }
 

@@ -1,0 +1,855 @@
+{
+  "args": {},
+  "description": "Interfaces with launchd",
+  "name": "launchctl",
+  "subcommands": [
+    {
+      "args": [
+        {
+          "description": "Service or domain target",
+          "name": "service",
+          "template": "filepaths"
+        },
+        {
+          "description": "Service path(s)",
+          "isVariadic": true,
+          "name": "service-path",
+          "template": "filepaths"
+        }
+      ],
+      "description": "Bootstraps a domain or a service into a domain",
+      "name": "bootstrap"
+    },
+    {
+      "args": [
+        {
+          "description": "Service or domain target",
+          "name": "service",
+          "template": "filepaths"
+        },
+        {
+          "description": "Service path(s)",
+          "isVariadic": true,
+          "name": "service-path",
+          "template": "filepaths"
+        }
+      ],
+      "description": "Tears down a domain or removes a service from a domain",
+      "name": "bootout"
+    },
+    {
+      "args": {
+        "description": "Service or domain target",
+        "name": "service"
+      },
+      "description": "Enables an existing service",
+      "name": "enable"
+    },
+    {
+      "args": {
+        "description": "Service or domain target",
+        "name": "service"
+      },
+      "description": "Disables an existing service",
+      "name": "disable"
+    },
+    {
+      "args": {
+        "description": "Service or domain target",
+        "name": "service"
+      },
+      "description": "Forces an existing service to start",
+      "name": "kickstart",
+      "options": [
+        {
+          "description": "Kill instance before restarting",
+          "name": [
+            "-k"
+          ]
+        },
+        {
+          "description": "Print PID",
+          "name": [
+            "-p"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Service or domain target",
+        "name": "service"
+      },
+      "description": "Attach the system's debugger to a service",
+      "name": "attach",
+      "options": [
+        {
+          "description": "Kill instance",
+          "name": [
+            "-k"
+          ]
+        },
+        {
+          "description": "Force the service to start",
+          "name": [
+            "-s"
+          ]
+        },
+        {
+          "description": "Attach xpcproxy",
+          "name": [
+            "-x"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Variable args: argv0 argv1",
+        "isVariadic": true,
+        "name": "argv"
+      },
+      "description": "Configures the next invocation of a service for debugging",
+      "name": "debug",
+      "options": [
+        {
+          "args": {
+            "name": "program-path"
+          },
+          "description": "Use program path as executable",
+          "name": [
+            "--program"
+          ]
+        },
+        {
+          "description": "Turn on libgmalloc",
+          "name": [
+            "--guard-malloc"
+          ]
+        },
+        {
+          "description": "Turn on malloc(3) stack logging",
+          "name": [
+            "--malloc-stack-logging"
+          ]
+        },
+        {
+          "description": "Turn on malloc(3) nano allocator",
+          "name": [
+            "--malloc-nano-allocator"
+          ]
+        },
+        {
+          "description": "Set the DYLD_IMAGE_SUFFIX",
+          "name": [
+            "--debug-libraries"
+          ]
+        },
+        {
+          "description": "Add introspection libraries to the DYLD_IMAGE_PATH",
+          "name": [
+            "--introspection-libraries"
+          ]
+        },
+        {
+          "description": "Enables NSZombie",
+          "name": [
+            "--NSZombie"
+          ]
+        },
+        {
+          "description": "Runs service on appropriate 32-bit architecture",
+          "name": [
+            "--32"
+          ]
+        },
+        {
+          "args": {
+            "name": "stdin-path",
+            "template": "filepaths"
+          },
+          "description": "Sets the stdin path",
+          "name": [
+            "--stdin"
+          ]
+        },
+        {
+          "args": {
+            "name": "stdout-path",
+            "template": "filepaths"
+          },
+          "description": "Sets the stdout path",
+          "name": [
+            "--stdout"
+          ]
+        },
+        {
+          "args": {
+            "name": "stderr-path",
+            "template": "filepaths"
+          },
+          "description": "Sets the stderr path",
+          "name": [
+            "--stderr"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "environment-variables"
+          },
+          "description": "Sets environment variables",
+          "name": [
+            "--environment"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Specify signal-name or signal-number",
+          "name": "signal"
+        },
+        {
+          "description": "Service or domain target",
+          "name": "service"
+        }
+      ],
+      "description": "Sends a signal to the service instance",
+      "name": "kill"
+    },
+    {
+      "args": {
+        "description": "Service or domain target",
+        "name": "service"
+      },
+      "description": "Prints the reason a service is running",
+      "name": "blame"
+    },
+    {
+      "args": {
+        "description": "Service or domain target",
+        "name": "service",
+        "template": "filepaths"
+      },
+      "description": "Prints a description of a domain or service",
+      "name": "print"
+    },
+    {
+      "description": "Prints information about the service cache",
+      "name": "print-cache"
+    },
+    {
+      "args": {
+        "name": "domain-target"
+      },
+      "description": "Prints which services are disabled",
+      "name": "print-disabled"
+    },
+    {
+      "args": [
+        {
+          "description": "Segment or section",
+          "name": "segment"
+        },
+        {
+          "isOptional": true,
+          "name": "Mach-O",
+          "template": "filepaths"
+        }
+      ],
+      "description": "Prints a property list embedded in a binary (targets the Info.plist by default)",
+      "name": "plist"
+    },
+    {
+      "args": {
+        "name": "pid"
+      },
+      "description": "Prints port information about a process",
+      "name": "procinfo"
+    },
+    {
+      "description": "Prints port information about the host",
+      "name": "hostinfo"
+    },
+    {
+      "args": [
+        {
+          "name": "owner-pid"
+        },
+        {
+          "name": "port-name"
+        }
+      ],
+      "description": "Resolves a port name from a process to an endpoint in launchd",
+      "name": "resolveport"
+    },
+    {
+      "description": "Reads or modifies launchd's resource limits",
+      "name": "limit",
+      "options": [
+        {
+          "args": [
+            {
+              "description": "Specify a limit for both soft and hard",
+              "name": "[both]"
+            },
+            {
+              "description": "Specify a soft/hard limit pair",
+              "isOptional": true,
+              "name": "[soft | hard]"
+            }
+          ],
+          "name": [
+            "cpu"
+          ]
+        },
+        {
+          "args": [
+            {
+              "description": "Specify a limit for both soft and hard",
+              "name": "[both]"
+            },
+            {
+              "description": "Specify a soft/hard limit pair",
+              "isOptional": true,
+              "name": "[soft | hard]"
+            }
+          ],
+          "name": [
+            "filesize"
+          ]
+        },
+        {
+          "args": [
+            {
+              "description": "Specify a limit for both soft and hard",
+              "name": "[both]"
+            },
+            {
+              "description": "Specify a soft/hard limit pair",
+              "isOptional": true,
+              "name": "[soft | hard]"
+            }
+          ],
+          "name": [
+            "data"
+          ]
+        },
+        {
+          "args": [
+            {
+              "description": "Specify a limit for both soft and hard",
+              "name": "[both]"
+            },
+            {
+              "description": "Specify a soft/hard limit pair",
+              "isOptional": true,
+              "name": "[soft | hard]"
+            }
+          ],
+          "name": [
+            "stack"
+          ]
+        },
+        {
+          "args": [
+            {
+              "description": "Specify a limit for both soft and hard",
+              "name": "[both]"
+            },
+            {
+              "description": "Specify a soft/hard limit pair",
+              "isOptional": true,
+              "name": "[soft | hard]"
+            }
+          ],
+          "name": [
+            "core"
+          ]
+        },
+        {
+          "args": [
+            {
+              "description": "Specify a limit for both soft and hard",
+              "name": "[both]"
+            },
+            {
+              "description": "Specify a soft/hard limit pair",
+              "isOptional": true,
+              "name": "[soft | hard]"
+            }
+          ],
+          "name": [
+            "rss"
+          ]
+        },
+        {
+          "args": [
+            {
+              "description": "Specify a limit for both soft and hard",
+              "name": "[both]"
+            },
+            {
+              "description": "Specify a soft/hard limit pair",
+              "isOptional": true,
+              "name": "[soft | hard]"
+            }
+          ],
+          "name": [
+            "memlock"
+          ]
+        },
+        {
+          "args": [
+            {
+              "description": "Specify a limit for both soft and hard",
+              "name": "[both]"
+            },
+            {
+              "description": "Specify a soft/hard limit pair",
+              "isOptional": true,
+              "name": "[soft | hard]"
+            }
+          ],
+          "name": [
+            "maxproc"
+          ]
+        },
+        {
+          "args": [
+            {
+              "description": "Specify a limit for both soft and hard",
+              "name": "[both]"
+            },
+            {
+              "description": "Specify a soft/hard limit pair",
+              "isOptional": true,
+              "name": "[soft | hard]"
+            }
+          ],
+          "name": [
+            "maxfiles"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Service or domain target",
+        "name": "service"
+      },
+      "description": "Prints performance statistics for a service",
+      "name": "runstats"
+    },
+    {
+      "args": [
+        {
+          "name": "tool"
+        },
+        {
+          "isVariadic": true,
+          "name": "[args | @PID]"
+        }
+      ],
+      "description": "Runs the specified analysis tool against launchd in a non-re-entrant manner",
+      "name": "examine"
+    },
+    {
+      "args": [
+        {
+          "name": "[system | user]",
+          "suggestions": [
+            {
+              "name": "system"
+            }
+          ]
+        },
+        {
+          "description": "A key for a key/value pair",
+          "name": "param"
+        },
+        {
+          "description": "A value for a key/value pair",
+          "name": "value"
+        }
+      ],
+      "description": "Modifies persistent configuration parameters for launchd domains",
+      "name": "config"
+    },
+    {
+      "description": "Dumps launchd state to stdout",
+      "name": "dumpstate"
+    },
+    {
+      "description": "Dumps the jetsam properties category for all services",
+      "name": "dumpjpcategory"
+    },
+    {
+      "description": "Initiates a system reboot of the specified type",
+      "name": "reboot",
+      "options": [
+        {
+          "name": [
+            "system"
+          ]
+        },
+        {
+          "name": [
+            "userspace"
+          ]
+        },
+        {
+          "name": [
+            "halt"
+          ]
+        },
+        {
+          "name": [
+            "logout"
+          ]
+        },
+        {
+          "name": [
+            "apps"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "path",
+        "template": "filepaths"
+      },
+      "description": "Recommended alternatives: bootstrap | enable. Bootstraps a service or directory of services",
+      "name": "load",
+      "options": [
+        {
+          "description": "Enable if disabled",
+          "name": [
+            "-w"
+          ]
+        },
+        {
+          "description": "Force load",
+          "name": [
+            "-F"
+          ]
+        },
+        {
+          "args": {
+            "name": "session"
+          },
+          "description": "Session",
+          "name": [
+            "-S"
+          ]
+        },
+        {
+          "args": {
+            "name": "domain"
+          },
+          "description": "Load files from specified domain",
+          "name": [
+            "-D"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "path",
+        "template": "filepaths"
+      },
+      "description": "Recommended alternatives: bootout | disable. Unloads a service or directory of services",
+      "name": "unload",
+      "options": [
+        {
+          "description": "Enable if disabled",
+          "name": [
+            "-w"
+          ]
+        },
+        {
+          "description": "Force load",
+          "name": [
+            "-F"
+          ]
+        },
+        {
+          "args": {
+            "name": "session"
+          },
+          "description": "Session",
+          "name": [
+            "-S"
+          ]
+        },
+        {
+          "args": {
+            "name": "domain"
+          },
+          "description": "Load files from specified domain",
+          "name": [
+            "-D"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "launchctl",
+              "list"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "label"
+      },
+      "description": "Unloads the specified service name",
+      "name": "remove"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "launchctl",
+              "list"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "isOptional": true,
+        "name": "label"
+      },
+      "description": "Lists information about services",
+      "name": "list"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "launchctl",
+              "list"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "label"
+      },
+      "description": "Starts the specified service",
+      "name": "start"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "launchctl",
+              "list"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "label"
+      },
+      "description": "Stops the specified service if it is running",
+      "name": "stop"
+    },
+    {
+      "args": [
+        {
+          "name": "key"
+        },
+        {
+          "name": "value"
+        }
+      ],
+      "description": "Sets the specified environment variables for all services within the domain",
+      "name": "setenv"
+    },
+    {
+      "args": {
+        "name": "key"
+      },
+      "description": "Unsets the specified environment variables for all services within the domain",
+      "name": "unsetenv"
+    },
+    {
+      "args": {
+        "name": "key"
+      },
+      "description": "Gets the value of an environment variable from within launchd",
+      "name": "getenv"
+    },
+    {
+      "args": [
+        {
+          "name": "PID"
+        },
+        {
+          "name": "command"
+        },
+        {
+          "isOptional": true,
+          "isVariadic": true,
+          "name": "args"
+        }
+      ],
+      "description": "Execute a program in another process' bootstrap context",
+      "name": "bsexec"
+    },
+    {
+      "args": [
+        {
+          "name": "UID"
+        },
+        {
+          "name": "command"
+        },
+        {
+          "isOptional": true,
+          "isVariadic": true,
+          "name": "args"
+        }
+      ],
+      "description": "Execute a program in the bootstrap context of a given user",
+      "name": "asuser"
+    },
+    {
+      "args": [
+        {
+          "description": "Label flag",
+          "name": "-l"
+        },
+        {
+          "description": "Unique label to assign to launchd",
+          "generators": [
+            {
+              "script": [
+                "launchctl",
+                "list"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty"
+              ]
+            }
+          ],
+          "name": "label"
+        },
+        {
+          "description": "Command to run",
+          "name": "command"
+        },
+        {
+          "isOptional": true,
+          "isVariadic": true,
+          "name": "arg"
+        }
+      ],
+      "description": "Submit a basic job from the command line",
+      "name": "submit",
+      "options": [
+        {
+          "args": {
+            "name": "executable"
+          },
+          "description": "Program to execute",
+          "name": [
+            "-p"
+          ]
+        },
+        {
+          "args": {
+            "name": "stdout-path",
+            "template": "filepaths"
+          },
+          "description": "Std out path",
+          "name": [
+            "-o"
+          ]
+        },
+        {
+          "args": {
+            "name": "stderr-path",
+            "template": "filepaths"
+          },
+          "description": "Std err path",
+          "name": [
+            "-e"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Prints the PID of the launchd controlling the session",
+      "name": "managerpid"
+    },
+    {
+      "description": "Prints the UID of the current launchd session",
+      "name": "manageruid"
+    },
+    {
+      "description": "Prints the name of the current launchd session",
+      "name": "managername"
+    },
+    {
+      "args": [
+        {
+          "description": "Error domain type",
+          "name": "type",
+          "suggestions": [
+            {
+              "name": "posix"
+            },
+            {
+              "name": "mach"
+            },
+            {
+              "name": "bootstrap"
+            }
+          ]
+        },
+        {
+          "description": "Numeric code",
+          "name": "code"
+        }
+      ],
+      "description": "Prints a description of an error",
+      "name": "error"
+    },
+    {
+      "description": "Prints the launchd variant",
+      "name": "variant"
+    },
+    {
+      "description": "Prints the launchd version",
+      "name": "version"
+    },
+    {
+      "description": "Prints the usage for a given subcommand",
+      "name": "help"
+    }
+  ]
+}

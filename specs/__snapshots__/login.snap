@@ -1,0 +1,48 @@
+{
+  "args": {
+    "generators": [
+      {
+        "script": [
+          "cat",
+          "/etc/passwd"
+        ],
+        "transforms": [
+          "split_lines",
+          "filter_empty"
+        ]
+      }
+    ],
+    "name": "username"
+  },
+  "description": "Begin session on the system",
+  "name": "login",
+  "options": [
+    {
+      "description": "Preserve environment",
+      "name": [
+        "-p"
+      ]
+    },
+    {
+      "description": "Perform autologin protocol for rlogin",
+      "name": [
+        "-r"
+      ]
+    },
+    {
+      "args": {
+        "name": "host"
+      },
+      "description": "Specify host",
+      "name": [
+        "-h"
+      ]
+    },
+    {
+      "description": "Don't authenticate user, user is preauthenticated",
+      "name": [
+        "-f"
+      ]
+    }
+  ]
+}

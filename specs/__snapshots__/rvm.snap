@@ -1,0 +1,4209 @@
+{
+  "description": "Ruby version manager",
+  "name": "rvm",
+  "options": [
+    {
+      "description": "Show help for rvm",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Setup current shell to use a specific ruby version",
+      "name": "use",
+      "subcommands": [
+        {
+          "description": "Rubinius",
+          "name": "rbx",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "JRuby",
+          "name": "jruby",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "MRI/YARV Ruby (The Standard), defaults to 1.8.6",
+          "name": "ruby",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Ruby Enterprise Edition",
+          "name": "ree",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Use the system ruby (eg. pre-RVM state)",
+          "name": "system",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Use RVM set default ruby and system if it hasn't been set",
+          "name": "default",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Remove default and current settings, exit the shell",
+      "name": "reset",
+      "subcommands": [
+        {
+          "description": "Rubinius",
+          "name": "rbx",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "JRuby",
+          "name": "jruby",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "MRI/YARV Ruby (The Standard), defaults to 1.8.6",
+          "name": "ruby",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Ruby Enterprise Edition",
+          "name": "ree",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Use the system ruby (eg. pre-RVM state)",
+          "name": "system",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Use RVM set default ruby and system if it hasn't been set",
+          "name": "default",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Show information about the current ruby environment",
+      "name": "info",
+      "subcommands": [
+        {
+          "description": "Rubinius",
+          "name": "rbx",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "JRuby",
+          "name": "jruby",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "MRI/YARV Ruby (The Standard), defaults to 1.8.6",
+          "name": "ruby",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Ruby Enterprise Edition",
+          "name": "ree",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Use the system ruby (eg. pre-RVM state)",
+          "name": "system",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Use RVM set default ruby and system if it hasn't been set",
+          "name": "default",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "List currently installed version",
+      "name": "list",
+      "subcommands": [
+        {
+          "description": "Rubinius",
+          "name": "rbx",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "JRuby",
+          "name": "jruby",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "MRI/YARV Ruby (The Standard), defaults to 1.8.6",
+          "name": "ruby",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Ruby Enterprise Edition",
+          "name": "ree",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Use the system ruby (eg. pre-RVM state)",
+          "name": "system",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Use RVM set default ruby and system if it hasn't been set",
+          "name": "default",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Reload RVM source itself (useful after changing RVM source)",
+      "name": "reload",
+      "subcommands": [
+        {
+          "description": "Rubinius",
+          "name": "rbx",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "JRuby",
+          "name": "jruby",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "MRI/YARV Ruby (The Standard), defaults to 1.8.6",
+          "name": "ruby",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Ruby Enterprise Edition",
+          "name": "ree",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Use the system ruby (eg. pre-RVM state)",
+          "name": "system",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Use RVM set default ruby and system if it hasn't been set",
+          "name": "default",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Remove all ruby installations it manages",
+      "name": "implode",
+      "subcommands": [
+        {
+          "description": "Rubinius",
+          "name": "rbx",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "JRuby",
+          "name": "jruby",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "MRI/YARV Ruby (The Standard), defaults to 1.8.6",
+          "name": "ruby",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Ruby Enterprise Edition",
+          "name": "ree",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Use the system ruby (eg. pre-RVM state)",
+          "name": "system",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Use RVM set default ruby and system if it hasn't been set",
+          "name": "default",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Upgrades RVM to the stable or git head branches",
+      "name": "get",
+      "subcommands": [
+        {
+          "description": "Rubinius",
+          "name": "rbx",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "JRuby",
+          "name": "jruby",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "MRI/YARV Ruby (The Standard), defaults to 1.8.6",
+          "name": "ruby",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Ruby Enterprise Edition",
+          "name": "ree",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Use the system ruby (eg. pre-RVM state)",
+          "name": "system",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Use RVM set default ruby and system if it hasn't been set",
+          "name": "default",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Runs a named ruby file against specified and/or all rubies",
+      "name": "do",
+      "subcommands": [
+        {
+          "description": "Rubinius",
+          "name": "rbx",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "JRuby",
+          "name": "jruby",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "MRI/YARV Ruby (The Standard), defaults to 1.8.6",
+          "name": "ruby",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Ruby Enterprise Edition",
+          "name": "ree",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Use the system ruby (eg. pre-RVM state)",
+          "name": "system",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Use RVM set default ruby and system if it hasn't been set",
+          "name": "default",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Install one or many ruby versions",
+      "name": "install",
+      "subcommands": [
+        {
+          "description": "Rubinius",
+          "name": "rbx",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "JRuby",
+          "name": "jruby",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "MRI/YARV Ruby (The Standard), defaults to 1.8.6",
+          "name": "ruby",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Ruby Enterprise Edition",
+          "name": "ree",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Use the system ruby (eg. pre-RVM state)",
+          "name": "system",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Use RVM set default ruby and system if it hasn't been set",
+          "name": "default",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Install new ruby, copy gemsets, make gems pristine, remove old rubies",
+      "name": "upgrade",
+      "subcommands": [
+        {
+          "description": "Rubinius",
+          "name": "rbx",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "JRuby",
+          "name": "jruby",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "MRI/YARV Ruby (The Standard), defaults to 1.8.6",
+          "name": "ruby",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Ruby Enterprise Edition",
+          "name": "ree",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Use the system ruby (eg. pre-RVM state)",
+          "name": "system",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Use RVM set default ruby and system if it hasn't been set",
+          "name": "default",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Remove ruby, install it, make gems pristine",
+      "name": "reinstall",
+      "subcommands": [
+        {
+          "description": "Rubinius",
+          "name": "rbx",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "JRuby",
+          "name": "jruby",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "MRI/YARV Ruby (The Standard), defaults to 1.8.6",
+          "name": "ruby",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Ruby Enterprise Edition",
+          "name": "ree",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Use the system ruby (eg. pre-RVM state)",
+          "name": "system",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Use RVM set default ruby and system if it hasn't been set",
+          "name": "default",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Uninstall one or many ruby versions, leaves their sources",
+      "name": "uninstall",
+      "subcommands": [
+        {
+          "description": "Rubinius",
+          "name": "rbx",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "JRuby",
+          "name": "jruby",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "MRI/YARV Ruby (The Standard), defaults to 1.8.6",
+          "name": "ruby",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Ruby Enterprise Edition",
+          "name": "ree",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Use the system ruby (eg. pre-RVM state)",
+          "name": "system",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Use RVM set default ruby and system if it hasn't been set",
+          "name": "default",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Remove one or many ruby versions, including their sources",
+      "name": "remove",
+      "subcommands": [
+        {
+          "description": "Rubinius",
+          "name": "rbx",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "JRuby",
+          "name": "jruby",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "MRI/YARV Ruby (The Standard), defaults to 1.8.6",
+          "name": "ruby",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Ruby Enterprise Edition",
+          "name": "ree",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Use the system ruby (eg. pre-RVM state)",
+          "name": "system",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Use RVM set default ruby and system if it hasn't been set",
+          "name": "default",
+          "options": [
+            {
+              "description": "Show version of rvm",
+              "name": [
+                "--version",
+                "-v"
+              ]
+            },
+            {
+              "description": "When used with ruby selection, sets a default ruby for new shells",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Enable debug mode",
+              "name": [
+                "--debug"
+              ]
+            },
+            {
+              "description": "Force install, removes old install & source before install",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "description": "Used with 'rvm list' to display 'most' available versions",
+              "name": [
+                "--all"
+              ]
+            },
+            {
+              "description": "Used with 'do' to print out a summary of the commands run",
+              "name": [
+                "--summary"
+              ]
+            },
+            {
+              "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+              "name": [
+                "-C"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Rubinius",
+      "name": "rbx",
+      "options": [
+        {
+          "description": "Show version of rvm",
+          "name": [
+            "--version",
+            "-v"
+          ]
+        },
+        {
+          "description": "When used with ruby selection, sets a default ruby for new shells",
+          "name": [
+            "--default"
+          ]
+        },
+        {
+          "description": "Enable debug mode",
+          "name": [
+            "--debug"
+          ]
+        },
+        {
+          "description": "Force install, removes old install & source before install",
+          "name": [
+            "--force"
+          ]
+        },
+        {
+          "description": "Used with 'rvm list' to display 'most' available versions",
+          "name": [
+            "--all"
+          ]
+        },
+        {
+          "description": "Used with 'do' to print out a summary of the commands run",
+          "name": [
+            "--summary"
+          ]
+        },
+        {
+          "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+          "name": [
+            "-C"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "JRuby",
+      "name": "jruby",
+      "options": [
+        {
+          "description": "Show version of rvm",
+          "name": [
+            "--version",
+            "-v"
+          ]
+        },
+        {
+          "description": "When used with ruby selection, sets a default ruby for new shells",
+          "name": [
+            "--default"
+          ]
+        },
+        {
+          "description": "Enable debug mode",
+          "name": [
+            "--debug"
+          ]
+        },
+        {
+          "description": "Force install, removes old install & source before install",
+          "name": [
+            "--force"
+          ]
+        },
+        {
+          "description": "Used with 'rvm list' to display 'most' available versions",
+          "name": [
+            "--all"
+          ]
+        },
+        {
+          "description": "Used with 'do' to print out a summary of the commands run",
+          "name": [
+            "--summary"
+          ]
+        },
+        {
+          "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+          "name": [
+            "-C"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "MRI/YARV Ruby (The Standard), defaults to 1.8.6",
+      "name": "ruby",
+      "options": [
+        {
+          "description": "Show version of rvm",
+          "name": [
+            "--version",
+            "-v"
+          ]
+        },
+        {
+          "description": "When used with ruby selection, sets a default ruby for new shells",
+          "name": [
+            "--default"
+          ]
+        },
+        {
+          "description": "Enable debug mode",
+          "name": [
+            "--debug"
+          ]
+        },
+        {
+          "description": "Force install, removes old install & source before install",
+          "name": [
+            "--force"
+          ]
+        },
+        {
+          "description": "Used with 'rvm list' to display 'most' available versions",
+          "name": [
+            "--all"
+          ]
+        },
+        {
+          "description": "Used with 'do' to print out a summary of the commands run",
+          "name": [
+            "--summary"
+          ]
+        },
+        {
+          "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+          "name": [
+            "-C"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Ruby Enterprise Edition",
+      "name": "ree",
+      "options": [
+        {
+          "description": "Show version of rvm",
+          "name": [
+            "--version",
+            "-v"
+          ]
+        },
+        {
+          "description": "When used with ruby selection, sets a default ruby for new shells",
+          "name": [
+            "--default"
+          ]
+        },
+        {
+          "description": "Enable debug mode",
+          "name": [
+            "--debug"
+          ]
+        },
+        {
+          "description": "Force install, removes old install & source before install",
+          "name": [
+            "--force"
+          ]
+        },
+        {
+          "description": "Used with 'rvm list' to display 'most' available versions",
+          "name": [
+            "--all"
+          ]
+        },
+        {
+          "description": "Used with 'do' to print out a summary of the commands run",
+          "name": [
+            "--summary"
+          ]
+        },
+        {
+          "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+          "name": [
+            "-C"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Use the system ruby (eg. pre-RVM state)",
+      "name": "system",
+      "options": [
+        {
+          "description": "Show version of rvm",
+          "name": [
+            "--version",
+            "-v"
+          ]
+        },
+        {
+          "description": "When used with ruby selection, sets a default ruby for new shells",
+          "name": [
+            "--default"
+          ]
+        },
+        {
+          "description": "Enable debug mode",
+          "name": [
+            "--debug"
+          ]
+        },
+        {
+          "description": "Force install, removes old install & source before install",
+          "name": [
+            "--force"
+          ]
+        },
+        {
+          "description": "Used with 'rvm list' to display 'most' available versions",
+          "name": [
+            "--all"
+          ]
+        },
+        {
+          "description": "Used with 'do' to print out a summary of the commands run",
+          "name": [
+            "--summary"
+          ]
+        },
+        {
+          "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+          "name": [
+            "-C"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Use RVM set default ruby and system if it hasn't been set",
+      "name": "default",
+      "options": [
+        {
+          "description": "Show version of rvm",
+          "name": [
+            "--version",
+            "-v"
+          ]
+        },
+        {
+          "description": "When used with ruby selection, sets a default ruby for new shells",
+          "name": [
+            "--default"
+          ]
+        },
+        {
+          "description": "Enable debug mode",
+          "name": [
+            "--debug"
+          ]
+        },
+        {
+          "description": "Force install, removes old install & source before install",
+          "name": [
+            "--force"
+          ]
+        },
+        {
+          "description": "Used with 'rvm list' to display 'most' available versions",
+          "name": [
+            "--all"
+          ]
+        },
+        {
+          "description": "Used with 'do' to print out a summary of the commands run",
+          "name": [
+            "--summary"
+          ]
+        },
+        {
+          "description": "Custom configure options, comma separated, double quote args that need quoting, default",
+          "name": [
+            "-C"
+          ]
+        }
+      ]
+    }
+  ]
+}

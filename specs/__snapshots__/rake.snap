@@ -1,0 +1,132 @@
+{
+  "args": {
+    "generators": [
+      {
+        "cache": {
+          "cache_by_directory": true
+        },
+        "script": [
+          "rake",
+          "--tasks",
+          "--silent"
+        ],
+        "transforms": [
+          "split_lines",
+          "filter_empty",
+          "trim"
+        ]
+      }
+    ],
+    "isOptional": true,
+    "isVariadic": true,
+    "name": "targets"
+  },
+  "description": "A ruby build program with capabilities similar to make",
+  "name": "rake",
+  "options": [
+    {
+      "description": "Do a dry run without executing actions",
+      "name": [
+        "-n",
+        "--dry-run"
+      ]
+    },
+    {
+      "description": "Display this help message",
+      "name": [
+        "-h",
+        "-H",
+        "--help"
+      ]
+    },
+    {
+      "args": {
+        "name": "LIBDIR",
+        "template": "folders"
+      },
+      "description": "Include LIBDIR in the search path for required modules",
+      "name": [
+        "-I",
+        "--libdir"
+      ]
+    },
+    {
+      "description": "Display the tasks and dependencies, then exit",
+      "name": [
+        "-P",
+        "--prereqs"
+      ]
+    },
+    {
+      "description": "Do not log messages to standard output",
+      "name": [
+        "-q",
+        "--quiet"
+      ]
+    },
+    {
+      "args": {
+        "name": "FILE",
+        "template": "filepaths"
+      },
+      "description": "Use FILE as the rakefile",
+      "name": [
+        "-f",
+        "--rakefile"
+      ]
+    },
+    {
+      "args": {
+        "name": "MODULE"
+      },
+      "description": "Require MODULE before executing rakefile",
+      "name": [
+        "-r",
+        "--require"
+      ]
+    },
+    {
+      "description": "Like --quiet, but also suppresses the 'in directory' announcement",
+      "name": [
+        "-s",
+        "--silent"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "pattern"
+      },
+      "description": "Display the tasks and dependencies, then exit",
+      "name": [
+        "-T",
+        "--tasks"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "output"
+      },
+      "description": "Turn on invoke/execute tracing, enable full backtrace",
+      "name": [
+        "-t",
+        "--trace"
+      ]
+    },
+    {
+      "description": "Log message to standard output (default)",
+      "name": [
+        "-v",
+        "--verbose"
+      ]
+    },
+    {
+      "description": "Display the program version",
+      "name": [
+        "-V",
+        "--version"
+      ]
+    }
+  ]
+}

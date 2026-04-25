@@ -1,0 +1,293 @@
+{
+  "name": "homey",
+  "options": [
+    {
+      "name": [
+        "--help"
+      ]
+    },
+    {
+      "name": [
+        "--version"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "App related commands",
+      "name": "app",
+      "options": [
+        {
+          "args": {
+            "template": "folders"
+          },
+          "description": "Path to a Homey App directory",
+          "name": [
+            "-p",
+            "--path"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Install the Apps SDK TypeScript declarations",
+          "name": "add-types"
+        },
+        {
+          "description": "Build a Homey App for publishing",
+          "name": "build"
+        },
+        {
+          "description": "Migrate app to Homey compose",
+          "name": "compose"
+        },
+        {
+          "description": "Create a new Homey App",
+          "name": "create"
+        },
+        {
+          "description": "Discovery related commands",
+          "name": "discovery",
+          "subcommands": [
+            {
+              "description": "Create a new Discovery strategy",
+              "name": "create"
+            }
+          ]
+        },
+        {
+          "description": "Driver related commands",
+          "name": "driver",
+          "subcommands": [
+            {
+              "description": "Change the capabilities of a Driver",
+              "name": "capabilities"
+            },
+            {
+              "description": "Create a new Driver",
+              "name": "create"
+            },
+            {
+              "description": "Create a new Flow for a Driver",
+              "name": "flow"
+            }
+          ]
+        },
+        {
+          "description": "Flow related commands",
+          "name": "flow",
+          "subcommands": [
+            {
+              "description": "Create a new Flow",
+              "name": "create"
+            }
+          ]
+        },
+        {
+          "description": "Install a Homey App",
+          "name": "install",
+          "options": [
+            {
+              "args": {
+                "name": "clean",
+                "suggestions": [
+                  {
+                    "name": "false"
+                  },
+                  {
+                    "name": "true"
+                  }
+                ]
+              },
+              "name": [
+                "-c",
+                "--clean"
+              ]
+            },
+            {
+              "args": {
+                "name": "skip-build",
+                "suggestions": [
+                  {
+                    "name": "false"
+                  },
+                  {
+                    "name": "true"
+                  }
+                ]
+              },
+              "name": [
+                "-s",
+                "--skip-build"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "View your app in the Homey Developer Tools",
+          "name": "manage"
+        },
+        {
+          "description": "Publish a Homey App to the Homey Apps Store",
+          "name": "publish"
+        },
+        {
+          "description": "Run a Homey App in development mode",
+          "name": "run",
+          "options": [
+            {
+              "args": {
+                "name": "clean",
+                "suggestions": [
+                  {
+                    "name": "false"
+                  },
+                  {
+                    "name": "true"
+                  }
+                ]
+              },
+              "name": [
+                "-c",
+                "--clean"
+              ]
+            },
+            {
+              "args": {
+                "name": "skip-build",
+                "suggestions": [
+                  {
+                    "name": "false"
+                  },
+                  {
+                    "name": "true"
+                  }
+                ]
+              },
+              "name": [
+                "-s",
+                "--skip-build"
+              ]
+            },
+            {
+              "args": {
+                "name": "modules"
+              },
+              "description": "Provide a comma-separated path to local Node.js modules to link. Only works on Homey Cloud",
+              "name": [
+                "-l",
+                "--link-modules"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Validate a Homey App",
+          "name": "validate",
+          "options": [
+            {
+              "args": {
+                "name": "value",
+                "suggestions": [
+                  {
+                    "name": "debug"
+                  },
+                  {
+                    "name": "publish"
+                  },
+                  {
+                    "name": "verified"
+                  }
+                ]
+              },
+              "description": "Validation level",
+              "name": [
+                "-l",
+                "--level"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "next",
+            "suggestions": [
+              {
+                "name": "patch"
+              },
+              {
+                "name": "minor"
+              },
+              {
+                "name": "major"
+              },
+              {
+                "name": "semver"
+              }
+            ]
+          },
+          "description": "Update a Homey App's version",
+          "name": "version"
+        },
+        {
+          "description": "View your app in the Homey Apps Store",
+          "name": "view"
+        }
+      ]
+    },
+    {
+      "description": "Open Homey Developer Documentation",
+      "name": "docs"
+    },
+    {
+      "description": "List all Homeys",
+      "name": "list"
+    },
+    {
+      "description": "Log in with an Athom Account",
+      "name": "login"
+    },
+    {
+      "description": "Log out the current user",
+      "name": "logout"
+    },
+    {
+      "description": "Select a Homey as active",
+      "name": "select",
+      "options": [
+        {
+          "args": {
+            "name": "id"
+          },
+          "description": "ID of the Homey",
+          "name": [
+            "-i",
+            "--id"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Name of the Homey",
+          "name": [
+            "-n",
+            "--name"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Open Homey Developer Tools",
+      "name": "tools"
+    },
+    {
+      "description": "Unselect the active Homey",
+      "name": "unselect"
+    },
+    {
+      "description": "Show the current logged in user",
+      "name": "whoami"
+    }
+  ]
+}

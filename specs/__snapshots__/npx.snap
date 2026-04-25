@@ -1,0 +1,292 @@
+{
+  "args": {
+    "generators": [
+      {
+        "script": [
+          "bash",
+          "-c",
+          "until [[ -d node_modules/ ]] || [[ $PWD = '/' ]]; do cd ..; done; ls -1 node_modules/.bin/"
+        ],
+        "transforms": [
+          "split_lines",
+          "filter_empty"
+        ]
+      }
+    ],
+    "isOptional": true,
+    "name": "command",
+    "suggestions": [
+      {
+        "name": "autocannon"
+      },
+      {
+        "name": "vite"
+      },
+      {
+        "name": "babel"
+      },
+      {
+        "name": "create-react-native-app"
+      },
+      {
+        "name": "react-native"
+      },
+      {
+        "name": "tailwindcss"
+      },
+      {
+        "name": "next"
+      },
+      {
+        "name": "nuxi"
+      },
+      {
+        "name": "gltfjsx"
+      },
+      {
+        "name": "prisma"
+      },
+      {
+        "name": "eslint"
+      },
+      {
+        "name": "prettier"
+      },
+      {
+        "name": "tsc"
+      },
+      {
+        "name": "typeorm"
+      },
+      {
+        "name": "@withfig/autocomplete-tools"
+      },
+      {
+        "name": "create-completion-spec"
+      },
+      {
+        "name": "@fig/publish-spec-to-team"
+      },
+      {
+        "name": "fig-teams@latest"
+      },
+      {
+        "name": "create-next-app"
+      },
+      {
+        "name": "create-t3-app"
+      },
+      {
+        "name": "create-discord-bot"
+      },
+      {
+        "name": "create-video"
+      },
+      {
+        "name": "remotion"
+      },
+      {
+        "name": "create-remix"
+      },
+      {
+        "name": "remix"
+      },
+      {
+        "name": "playwright"
+      },
+      {
+        "name": "ignite-cli"
+      },
+      {
+        "name": "vsce"
+      },
+      {
+        "name": "degit"
+      },
+      {
+        "name": "@preset/cli"
+      },
+      {
+        "name": "mikro-orm"
+      },
+      {
+        "name": "pod-install"
+      },
+      {
+        "name": "capacitor"
+      },
+      {
+        "name": "cap"
+      },
+      {
+        "name": "@magnolia/cli"
+      },
+      {
+        "name": "stencil"
+      },
+      {
+        "name": "swagger-typescript-api"
+      },
+      {
+        "name": "sta"
+      },
+      {
+        "name": "@wordpress/create-block"
+      },
+      {
+        "name": "astro"
+      },
+      {
+        "name": "ampx"
+      }
+    ]
+  },
+  "description": "Execute binaries from npm packages",
+  "name": "npx",
+  "options": [
+    {
+      "args": {
+        "name": "package"
+      },
+      "description": "Package to be installed",
+      "name": [
+        "--package",
+        "-p"
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "filepaths"
+      },
+      "description": "Location of the npm cache",
+      "name": [
+        "--cache"
+      ]
+    },
+    {
+      "description": "Always spawn a child process to execute the command",
+      "name": [
+        "--always-spawn"
+      ]
+    },
+    {
+      "description": "Execute npx command without prompting for confirmation",
+      "name": [
+        "-y"
+      ]
+    },
+    {
+      "description": "Skip installation if a package is missing",
+      "name": [
+        "--no-install"
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "filepaths"
+      },
+      "description": "Path to user npmrc",
+      "name": [
+        "--userconfig"
+      ]
+    },
+    {
+      "args": {
+        "name": "script"
+      },
+      "description": "Execute string as if inside `npm run-script`",
+      "name": [
+        "--call",
+        "-c"
+      ]
+    },
+    {
+      "args": {
+        "name": "shell",
+        "suggestions": [
+          {
+            "name": "bash"
+          },
+          {
+            "name": "fish"
+          },
+          {
+            "name": "zsh"
+          }
+        ]
+      },
+      "description": "Shell to execute the command with, if any",
+      "name": [
+        "--shell",
+        "-s"
+      ]
+    },
+    {
+      "args": {
+        "name": "shell-fallback",
+        "suggestions": [
+          {
+            "name": "bash"
+          },
+          {
+            "name": "fish"
+          },
+          {
+            "name": "zsh"
+          }
+        ]
+      },
+      "description": "Generate shell code to use npx as the \"command not found\" fallback",
+      "name": [
+        "--shell-auto-fallback"
+      ]
+    },
+    {
+      "description": "Ignores existing binaries in $PATH, or in the localproject. This forces npx to do a temporary install and use the latest version",
+      "name": [
+        "--ignore-existing"
+      ]
+    },
+    {
+      "description": "Suppress output from npx itself. Subcommands will not be affected",
+      "name": [
+        "--quiet",
+        "-q"
+      ]
+    },
+    {
+      "args": {
+        "name": "path to binary",
+        "template": "filepaths"
+      },
+      "description": "Npm binary to use for internal operations",
+      "name": [
+        "--npm"
+      ]
+    },
+    {
+      "args": {},
+      "description": "Extra node argument when calling a node binary",
+      "name": [
+        "--node-arg",
+        "-n"
+      ]
+    },
+    {
+      "description": "Show version number",
+      "name": [
+        "--version",
+        "-v"
+      ]
+    },
+    {
+      "description": "Show help",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,174 @@
+{
+  "description": "Manage Ubuntu Pro services from Canonical",
+  "name": "ubuntu-advantage",
+  "subcommands": [
+    {
+      "args": {
+        "description": "Auth token. Not required if specified in --attach-config file",
+        "isOptional": true,
+        "name": "token"
+      },
+      "description": "Connect an Ubuntu Pro support contract to this machine",
+      "name": "attach",
+      "options": [
+        {
+          "description": "Disable  the  automatic enablement of recommended entitlements",
+          "name": [
+            "--no-auto-enable"
+          ]
+        },
+        {
+          "args": {
+            "name": "file path",
+            "template": "filepaths"
+          },
+          "description": "Provide a file with configuration options",
+          "name": [
+            "--attach-config"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Create a tarball with all relevant logs and debug data",
+      "name": "collect-logs",
+      "options": [
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Path for tarball. Uses ua_logs.tar.gz in current directory if not specified",
+          "name": [
+            "-o",
+            "--output"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Remove Ubuntu Pro from this machine",
+      "name": "detach"
+    },
+    {
+      "args": {
+        "name": "service",
+        "suggestions": [
+          {
+            "name": "cc-eal"
+          },
+          {
+            "name": "cis"
+          },
+          {
+            "name": "esm"
+          },
+          {
+            "name": "fips"
+          },
+          {
+            "name": "fips-updates"
+          },
+          {
+            "name": "livepatch"
+          },
+          {
+            "name": "ros"
+          },
+          {
+            "name": "ros-updates"
+          }
+        ]
+      },
+      "description": "Disable this machine's access to an Ubuntu Pro service",
+      "name": "disable"
+    },
+    {
+      "args": {
+        "name": "service",
+        "suggestions": [
+          {
+            "name": "cc-eal"
+          },
+          {
+            "name": "cis"
+          },
+          {
+            "name": "esm"
+          },
+          {
+            "name": "fips"
+          },
+          {
+            "name": "fips-updates"
+          },
+          {
+            "name": "livepatch"
+          },
+          {
+            "name": "ros"
+          },
+          {
+            "name": "ros-updates"
+          }
+        ]
+      },
+      "description": "Activate and configure this machine's access to an Ubuntu Pro service",
+      "name": "enable"
+    },
+    {
+      "args": {
+        "name": "security issue"
+      },
+      "description": "Fix a CVE or USN on the  system  by  upgrading  the  appropriate package(s)",
+      "name": "fix"
+    },
+    {
+      "description": "Refresh contract and service details from Canonical",
+      "name": "refresh"
+    },
+    {
+      "description": "Show  security updates for packages in the system, including all available ESM related content",
+      "name": "security-status"
+    },
+    {
+      "description": "Report current status of Ubuntu Pro services on system",
+      "name": "status",
+      "options": [
+        {
+          "args": {
+            "suggestions": [
+              {
+                "name": "tabular"
+              },
+              {
+                "name": "json"
+              },
+              {
+                "name": "yaml"
+              }
+            ]
+          },
+          "description": "Output format",
+          "name": [
+            "--format"
+          ]
+        },
+        {
+          "args": {
+            "name": "token"
+          },
+          "name": [
+            "--simulate-with-token"
+          ]
+        },
+        {
+          "description": "Include beta and unavailable services",
+          "name": [
+            "--all"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1117 @@
+{
+  "description": "Encryption and signing tool",
+  "name": "gpg",
+  "options": [
+    {
+      "args": {
+        "name": "directory",
+        "template": "folders"
+      },
+      "description": "Set the name of the home directory",
+      "name": [
+        "--homedir"
+      ]
+    },
+    {
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      },
+      "description": "Read options from file",
+      "name": [
+        "--options"
+      ]
+    },
+    {
+      "description": "Create ASCII armored output",
+      "name": [
+        "-a",
+        "--armour"
+      ]
+    },
+    {
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      },
+      "description": "Write output to file",
+      "name": [
+        "-o",
+        "--output"
+      ]
+    },
+    {
+      "args": {
+        "name": "name"
+      },
+      "description": "Use name as the user ID to sign",
+      "name": [
+        "-u",
+        "--local-user"
+      ]
+    },
+    {
+      "args": {
+        "name": "name"
+      },
+      "description": "Use name as default user ID for signatures",
+      "name": [
+        "--default-key"
+      ]
+    },
+    {
+      "args": {
+        "name": "name"
+      },
+      "description": "Encrypt for user id name",
+      "name": [
+        "-r",
+        "--recipient"
+      ]
+    },
+    {
+      "args": {
+        "name": "name"
+      },
+      "description": "Use name as default recipient",
+      "name": [
+        "--default-recipient"
+      ]
+    },
+    {
+      "description": "Use the default key as default recipient",
+      "name": [
+        "--default-recipient-self"
+      ]
+    },
+    {
+      "description": "Reset --default-recipient and --default-recipient-self",
+      "name": [
+        "--no-default-recipient"
+      ]
+    },
+    {
+      "args": {
+        "name": "name"
+      },
+      "description": "Same as --recipient but this one is intended for in the options file",
+      "name": [
+        "--encrypt-to"
+      ]
+    },
+    {
+      "description": "Disable the use of all --encrypt-to keys",
+      "name": [
+        "--no-encrypt-to"
+      ]
+    },
+    {
+      "description": "Give more information during processing",
+      "name": [
+        "-v",
+        "--verbose"
+      ]
+    },
+    {
+      "description": "Try to be as quiet as possible",
+      "name": [
+        "-q",
+        "--quiet"
+      ]
+    },
+    {
+      "args": {
+        "name": "n",
+        "suggestions": [
+          {
+            "name": "0"
+          },
+          {
+            "name": "1"
+          },
+          {
+            "name": "2"
+          },
+          {
+            "name": "3"
+          },
+          {
+            "name": "4"
+          },
+          {
+            "name": "5"
+          },
+          {
+            "name": "6"
+          }
+        ]
+      },
+      "description": "Set compression level to n",
+      "name": [
+        "-Z"
+      ]
+    },
+    {
+      "description": "Use canonical text mode",
+      "name": [
+        "-t",
+        "--textmode"
+      ]
+    },
+    {
+      "description": "Don't make any changes",
+      "name": [
+        "-n",
+        "--dry-run"
+      ]
+    },
+    {
+      "description": "Prompt before overwriting any files",
+      "name": [
+        "-i",
+        "--interactive"
+      ]
+    },
+    {
+      "description": "Use batch mode",
+      "name": [
+        "--batch"
+      ]
+    },
+    {
+      "description": "Make sure that the TTY is never used for any output",
+      "name": [
+        "--no-tty"
+      ]
+    },
+    {
+      "description": "Disable batch mode",
+      "name": [
+        "--no-batch"
+      ]
+    },
+    {
+      "description": "Assume \"yes\" on most questions",
+      "name": [
+        "--yes"
+      ]
+    },
+    {
+      "description": "Assume \"no\" on most questions",
+      "name": [
+        "--no"
+      ]
+    },
+    {
+      "description": "Skip key validation",
+      "name": [
+        "--always-trust"
+      ]
+    },
+    {
+      "args": {
+        "name": "name"
+      },
+      "description": "Use name to lookup keys which are not yet in your keyring",
+      "name": [
+        "--keyserver"
+      ]
+    },
+    {
+      "description": "Disables the automatic retrieving of keys",
+      "name": [
+        "--no-auto-key-retrieve"
+      ]
+    },
+    {
+      "description": "Try to access the keyserver over the proxy",
+      "name": [
+        "--honor-http-proxy"
+      ]
+    },
+    {
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      },
+      "description": "Add file to the list of keyrings",
+      "name": [
+        "--keyring"
+      ]
+    },
+    {
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      },
+      "description": "Same as --keyring but for the secret keyrings",
+      "name": [
+        "--secret-keyring"
+      ]
+    },
+    {
+      "args": {
+        "name": "name",
+        "suggestions": [
+          {
+            "description": "This is the default Latin 1 set",
+            "name": "iso-8859-1"
+          },
+          {
+            "description": "The Latin 2 set",
+            "name": "iso-8859-2"
+          },
+          {
+            "description": "The usual Russian set (rfc1489)",
+            "name": "koi8-r"
+          }
+        ]
+      },
+      "description": "Set the name of the native character set",
+      "name": [
+        "--charset"
+      ]
+    },
+    {
+      "description": "Assume that the arguments are already given as UTF8",
+      "name": [
+        "--utf8-strings"
+      ]
+    },
+    {
+      "name": [
+        "--no-utf8-strings"
+      ]
+    },
+    {
+      "description": "Shortcut for \"--options /dev/null\"",
+      "name": [
+        "--no-options"
+      ]
+    },
+    {
+      "args": {
+        "description": "If name does not contain a slash it is searched in \"/usr/local/lib/gnupg\"",
+        "name": "name"
+      },
+      "description": "Load an extension module",
+      "name": [
+        "--load-extension"
+      ]
+    },
+    {
+      "args": {
+        "name": "flags"
+      },
+      "description": "Set debugging flags",
+      "name": [
+        "--debug"
+      ]
+    },
+    {
+      "description": "Set all useful debugging flags",
+      "name": [
+        "--debug-all"
+      ]
+    },
+    {
+      "args": {
+        "name": "n"
+      },
+      "description": "Write special status strings to the file descriptor n",
+      "name": [
+        "--status-fd"
+      ]
+    },
+    {
+      "args": {
+        "name": "n"
+      },
+      "description": "Write log output to file descriptor n and not to stderr",
+      "name": [
+        "--logger-fd"
+      ]
+    },
+    {
+      "description": "Do not write comment packets",
+      "name": [
+        "--no-comment"
+      ]
+    },
+    {
+      "args": {
+        "name": "string"
+      },
+      "description": "Use string as comment string in clear text signatures",
+      "name": [
+        "--comment"
+      ]
+    },
+    {
+      "description": "Force to write the standard comment string",
+      "name": [
+        "--default-comment"
+      ]
+    },
+    {
+      "description": "Omit the version string in clear text signatures",
+      "name": [
+        "--no-version"
+      ]
+    },
+    {
+      "description": "Force to write the version string",
+      "name": [
+        "--emit-version"
+      ]
+    },
+    {
+      "args": {
+        "name": "name=value"
+      },
+      "description": "Put the name value pair into the signature as notation data",
+      "name": [
+        "-N",
+        "--notation-data"
+      ]
+    },
+    {
+      "args": {
+        "name": "string"
+      },
+      "description": "Use string as Policy URL for signatures (rfc2440:5.2.3.19)",
+      "name": [
+        "--set-policy-url"
+      ]
+    },
+    {
+      "args": {
+        "name": "string"
+      },
+      "description": "Use string as the name of file which is stored in messages",
+      "name": [
+        "--set-filename"
+      ]
+    },
+    {
+      "description": "Try to create a file with a name as embedded in the data",
+      "name": [
+        "--use-embedded-filename"
+      ]
+    },
+    {
+      "args": {
+        "name": "n"
+      },
+      "description": "Number of completely trusted users to introduce a new key signer",
+      "name": [
+        "--completes-needed"
+      ]
+    },
+    {
+      "args": {
+        "name": "n"
+      },
+      "description": "Number of marginally trusted users to introduce a new key signer",
+      "name": [
+        "--marginals-needed"
+      ]
+    },
+    {
+      "args": {
+        "name": "n"
+      },
+      "description": "Maximum depth of a certification chain",
+      "name": [
+        "--max-cert-depth"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "(e,a)=>{let i=e.substring(e.indexOf(\"Cypher: \")+8,e.indexOf(\"Hash: \"));return i=i.replace(/\\s+/g,\"\"),i.split(\",\").map(t=>({name:t}))}",
+            "requires_js": true,
+            "script": [
+              "gpg",
+              "--version"
+            ]
+          }
+        ],
+        "name": "name"
+      },
+      "description": "Use name as cipher algorithm",
+      "name": [
+        "--cipher-algo"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "(e,a)=>{let i=e.substring(e.indexOf(\"Hash: \")+8,e.indexOf(\"Compression: \"));return i=i.replace(/\\s+/g,\"\"),i.split(\",\").map(t=>({name:t}))}",
+            "requires_js": true,
+            "script": [
+              "gpg",
+              "--version"
+            ]
+          }
+        ],
+        "name": "name"
+      },
+      "description": "Use name as message digest algorithm",
+      "name": [
+        "--digest-algo"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "(e,a)=>{let i=e.substring(e.indexOf(\"Cypher: \")+8,e.indexOf(\"Hash: \"));return i=i.replace(/\\s+/g,\"\"),i.split(\",\").map(t=>({name:t}))}",
+            "requires_js": true,
+            "script": [
+              "gpg",
+              "--version"
+            ]
+          }
+        ],
+        "name": "name"
+      },
+      "description": "Use name as the cipher algorithm used to protect secret keys",
+      "name": [
+        "--s2k-cipher-algo"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "(e,a)=>{let i=e.substring(e.indexOf(\"Hash: \")+8,e.indexOf(\"Compression: \"));return i=i.replace(/\\s+/g,\"\"),i.split(\",\").map(t=>({name:t}))}",
+            "requires_js": true,
+            "script": [
+              "gpg",
+              "--version"
+            ]
+          }
+        ],
+        "name": "name"
+      },
+      "description": "Use name as the digest algorithm used to mangle the passphrases",
+      "name": [
+        "--s2k-digest-algo"
+      ]
+    },
+    {
+      "args": {
+        "name": "n",
+        "suggestions": [
+          {
+            "description": "A plain passphrase (which is not recommended) will be used",
+            "name": "0"
+          },
+          {
+            "description": "Adds a salt to the passphrase",
+            "name": "1"
+          },
+          {
+            "description": "Iterates the whole process a couple of times",
+            "name": "3"
+          }
+        ]
+      },
+      "description": "Selects how passphrases are mangled",
+      "name": [
+        "--s2k-mode"
+      ]
+    },
+    {
+      "args": {
+        "name": "n",
+        "suggestions": [
+          {
+            "description": "Use the old zlib version (RFC1951) which is used by PGP",
+            "name": "1"
+          },
+          {
+            "description": "RFC1950 compression",
+            "name": "2"
+          }
+        ]
+      },
+      "description": "Use compress algorithm n",
+      "name": [
+        "--compress-algo"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "(e,a)=>{let i=e.substring(e.indexOf(\"Cypher: \")+8,e.indexOf(\"Hash: \"));return i=i.replace(/\\s+/g,\"\"),i.split(\",\").map(t=>({name:t}))}",
+            "requires_js": true,
+            "script": [
+              "gpg",
+              "--version"
+            ]
+          }
+        ],
+        "name": "name"
+      },
+      "description": "Never allow the use of name as cipher algorithm",
+      "name": [
+        "--disable-cipher-algo"
+      ]
+    },
+    {
+      "args": {
+        "name": "name"
+      },
+      "description": "Never allow the use of name as public key algorithm",
+      "name": [
+        "--disable-pubkey-algo"
+      ]
+    },
+    {
+      "description": "Do not put the keyid into encrypted packets",
+      "name": [
+        "--throw-keyid"
+      ]
+    },
+    {
+      "description": "Makes signatures usable for patch files",
+      "name": [
+        "--not-dash-escaped"
+      ]
+    },
+    {
+      "description": "Handle \"<From\" in emails",
+      "name": [
+        "--escape-from-lines"
+      ]
+    },
+    {
+      "args": {
+        "name": "n"
+      },
+      "description": "Read the passphrase from file descriptor n",
+      "name": [
+        "--passphrase-fd"
+      ]
+    },
+    {
+      "args": {
+        "name": "n"
+      },
+      "description": "This is a replacement for the depreciated shared-memory IPC mode",
+      "name": [
+        "--command-fd"
+      ]
+    },
+    {
+      "description": "Try to be more RFC1991 (PGP 2.x) compliant",
+      "name": [
+        "--rfc1991"
+      ]
+    },
+    {
+      "description": "Reset all packet, cipher and digest options to OpenPGP",
+      "name": [
+        "--openpgp"
+      ]
+    },
+    {
+      "description": "Forces v3 signatures for signatures on data",
+      "name": [
+        "--force-v3-sigs"
+      ]
+    },
+    {
+      "description": "Force encryption with appended manipulation code",
+      "name": [
+        "--force-mdc"
+      ]
+    },
+    {
+      "description": "Allow non self-signed user IDs",
+      "name": [
+        "--allow-non-selfsigned-uid"
+      ]
+    },
+    {
+      "description": "Disable all checks on the form of the user ID",
+      "name": [
+        "--allow-freeform-uid"
+      ]
+    },
+    {
+      "description": "Makes time checks just a warning",
+      "name": [
+        "--ignore-time-conflict"
+      ]
+    },
+    {
+      "description": "Do not release the lock until the process terminates",
+      "name": [
+        "--lock-once"
+      ]
+    },
+    {
+      "description": "Release the locks every time one is no longer needed",
+      "name": [
+        "--lock-multiple"
+      ]
+    },
+    {
+      "description": "Disable locking entirely",
+      "name": [
+        "--lock-never"
+      ]
+    },
+    {
+      "description": "Disable random pool cache",
+      "name": [
+        "--no-random-seed-file"
+      ]
+    },
+    {
+      "description": "Reset verbose level to 0",
+      "name": [
+        "--no-verbose"
+      ]
+    },
+    {
+      "description": "Suppress the initial copyright message",
+      "name": [
+        "--no-greeting"
+      ]
+    },
+    {
+      "description": "Suppress the \"using insecure memory\" warning",
+      "name": [
+        "--no-secmem-warning"
+      ]
+    },
+    {
+      "description": "Assume the input data is not in ASCII armored format",
+      "name": [
+        "--no-armor"
+      ]
+    },
+    {
+      "description": "Do not add the keyrings to the list of keyrings",
+      "name": [
+        "--no-default-keyring"
+      ]
+    },
+    {
+      "description": "Skip the signature verification step",
+      "name": [
+        "--skip-verify"
+      ]
+    },
+    {
+      "description": "Print key listings delimited by colons",
+      "name": [
+        "--with-colons"
+      ]
+    },
+    {
+      "description": "--with-colons with the public key data",
+      "name": [
+        "--with-key-data"
+      ]
+    },
+    {
+      "description": "--fingerprint with a different format",
+      "name": [
+        "--with-fingerprint"
+      ]
+    },
+    {
+      "description": "Changes the list commands to work faster",
+      "name": [
+        "--fast-list-mode"
+      ]
+    },
+    {
+      "description": "Skip the decryption pass",
+      "name": [
+        "--list-only"
+      ]
+    },
+    {
+      "description": "This is not for normal use",
+      "name": [
+        "--no-literal"
+      ]
+    },
+    {
+      "description": "This is not for normal use",
+      "name": [
+        "--set-filesize"
+      ]
+    },
+    {
+      "description": "Enables workaround to check faulty signatures",
+      "name": [
+        "--emulate-md-encode-bug"
+      ]
+    },
+    {
+      "description": "Display the session key used for one message",
+      "name": [
+        "--show-session-key"
+      ]
+    },
+    {
+      "args": {
+        "name": "string"
+      },
+      "description": "Don't use the public key but the session key string",
+      "name": [
+        "--override-session-key"
+      ]
+    },
+    {
+      "description": "Don't insert new keys into the keyrings",
+      "name": [
+        "--merge-only"
+      ]
+    },
+    {
+      "description": "Try all secret keys in turn to find the right one",
+      "name": [
+        "--try-all-secrets"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Make a signature",
+      "name": "-s"
+    },
+    {
+      "description": "Make a clear text signature",
+      "name": "--clearsign"
+    },
+    {
+      "description": "Make a detached signature",
+      "name": "-b"
+    },
+    {
+      "description": "Encrypt data",
+      "name": "-e"
+    },
+    {
+      "description": "Encrypt with symmetric cipher only",
+      "name": "-c"
+    },
+    {
+      "description": "Store only (make a simple RFC1991 packet)",
+      "name": "--store"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "file",
+        "template": "filepaths"
+      },
+      "description": "Decrypt file (or stdin if no file is specified) and write it to stdout",
+      "name": "--decrypt"
+    },
+    {
+      "args": [
+        {
+          "isOptional": true,
+          "name": "sigfile",
+          "template": "filepaths"
+        },
+        {
+          "isOptional": true,
+          "isVariadic": true,
+          "name": "signed-files",
+          "template": "filepaths"
+        }
+      ],
+      "description": "Assume that sigfile is a signature and verify it without generating any output",
+      "name": "--verify"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "files",
+        "template": "filepaths"
+      },
+      "description": "Special version of --verify which does not work with detached signatures",
+      "name": "--verify-files"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "names"
+      },
+      "description": "List all keys from public keyrings, or just the ones given on the command line",
+      "name": "--list-keys"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "names"
+      },
+      "description": "List all keys from secret keyrings, or just the ones given on the command line",
+      "name": "--list-secret-keys"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "names"
+      },
+      "description": "Same as --list-keys, but the signatures are listed too",
+      "name": "--list-sigs"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "names"
+      },
+      "description": "Same as --list-sigs, but the signatures are verified",
+      "name": "--check-sigs"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "names"
+      },
+      "description": "List all keys with their fingerprints",
+      "name": "--fingerprint"
+    },
+    {
+      "description": "List only the sequence of packets",
+      "name": "--list-packets"
+    },
+    {
+      "description": "Generate a new key pair",
+      "name": "--gen-key"
+    },
+    {
+      "args": {
+        "name": "name"
+      },
+      "description": "Present a menu which enables you to do all key related tasks",
+      "name": "--edit-key"
+    },
+    {
+      "args": {
+        "name": "name"
+      },
+      "description": "Sign a public key with you secret key",
+      "name": "--sign-key"
+    },
+    {
+      "args": {
+        "name": "name"
+      },
+      "description": "Sign a public key with you secret key but mark it as non-exportable",
+      "name": "--lsign-key"
+    },
+    {
+      "args": {
+        "name": "long key ID"
+      },
+      "description": "Assume that the specified key is as trustworthy as one of your own secret keys",
+      "name": "--trusted-key"
+    },
+    {
+      "args": {
+        "name": "name"
+      },
+      "description": "Remove key from the public keyring",
+      "name": "--delete-key"
+    },
+    {
+      "args": {
+        "name": "name"
+      },
+      "description": "Remove key from the secret and public keyring",
+      "name": "--delete-secret-key"
+    },
+    {
+      "description": "Generate a revocation certificate for the complete key",
+      "name": "--gen-revoke"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "names"
+      },
+      "description": "Either export all keys from all keyrings or those of the given names",
+      "name": "--export"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "names"
+      },
+      "description": "Same as --export but sends the keys to a keyserver",
+      "name": "--send-keys"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "names"
+      },
+      "description": "Same as --export, but also exports keys which are not compatible to OpenPGP",
+      "name": "--export-all"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "names"
+      },
+      "description": "Same as --export, but exports the secret keys",
+      "name": "--export-secret-keys"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "names"
+      },
+      "description": "Same as --export, but exports the secret subkeys",
+      "name": "--export-secret-subkeys"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "files",
+        "template": "filepaths"
+      },
+      "description": "Import/merge keys. This adds the given keys to the keyring",
+      "name": "--import"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "files",
+        "template": "filepaths"
+      },
+      "description": "--import but does not build the trustdb",
+      "name": "--fast-import"
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "key IDs"
+      },
+      "description": "Import the keys with the given key IDs from a HKP keyserver",
+      "name": "--recv-keys"
+    },
+    {
+      "description": "List the ownertrust values in ASCII format",
+      "name": "--export-ownertrust"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "files",
+        "template": "filepaths"
+      },
+      "description": "Update the trustdb with the ownertrust values stored in files",
+      "name": "--import-ownertrust"
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_source": "(e,a)=>{let i=e.substring(e.indexOf(\"Hash: \")+8,e.indexOf(\"Compression: \"));return i=i.replace(/\\s+/g,\"\"),i.split(\",\").map(t=>({name:t}))}",
+              "requires_js": true,
+              "script": [
+                "gpg",
+                "--version"
+              ]
+            }
+          ],
+          "name": "algo"
+        },
+        {
+          "isOptional": true,
+          "isVariadic": true,
+          "name": "files",
+          "template": "filepaths"
+        }
+      ],
+      "description": "Print message digest of algorithm ALGO for all given files of stdin",
+      "name": "--print-md"
+    },
+    {
+      "args": [
+        {
+          "name": "0|1|2",
+          "suggestions": [
+            {
+              "name": "0"
+            },
+            {
+              "name": "1"
+            },
+            {
+              "name": "2"
+            }
+          ]
+        },
+        {
+          "isOptional": true,
+          "isVariadic": true,
+          "name": "files",
+          "template": "filepaths"
+        }
+      ],
+      "description": "Emit COUNT random bytes of the given quality level",
+      "name": "--gen-random"
+    },
+    {
+      "args": [
+        {
+          "name": "mode"
+        },
+        {
+          "name": "bits"
+        },
+        {
+          "isOptional": true,
+          "isVariadic": true,
+          "name": "qbits"
+        }
+      ],
+      "description": "Generate prime numbers",
+      "name": "--gen-prime"
+    },
+    {
+      "description": "Print version information",
+      "name": "--version"
+    },
+    {
+      "description": "Print warranty information",
+      "name": "--warranty"
+    },
+    {
+      "description": "Print usage information",
+      "name": "-h"
+    }
+  ]
+}

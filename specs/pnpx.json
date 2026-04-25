@@ -1231,8 +1231,12 @@
                       "-c",
                       "xcodebuild -project ios/*.xcodeproj  -list -json"
                     ],
-                    "requires_js": true,
-                    "js_source": "e=>JSON.parse(e).project.configurations.map(t=>({name:t}))"
+                    "transforms": [
+                      {
+                        "type": "json_extract_array",
+                        "path": "project.configurations"
+                      }
+                    ]
                   }
                 ]
               }
@@ -1251,8 +1255,12 @@
                       "-c",
                       "xcodebuild -project ios/*.xcodeproj  -list -json"
                     ],
-                    "requires_js": true,
-                    "js_source": "e=>JSON.parse(e).project.schemes.map(t=>({name:t}))"
+                    "transforms": [
+                      {
+                        "type": "json_extract_array",
+                        "path": "project.schemes"
+                      }
+                    ]
                   }
                 ]
               }

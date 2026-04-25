@@ -1,0 +1,1069 @@
+{
+  "description": "Sanity CLI tool for managing Sanity installations, managing plugins, schemas and datasets",
+  "name": "sanity",
+  "options": [
+    {
+      "description": "Show help for sanity",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "isOptional": true,
+        "name": "command",
+        "template": "help"
+      },
+      "description": "Displays help information about Sanity",
+      "name": "help"
+    },
+    {
+      "description": "Builds the current Sanity configuration to a static bundle",
+      "name": "build",
+      "options": [
+        {
+          "description": "Enable source maps for built bundles (increases size of bundle)",
+          "name": [
+            "--source-maps"
+          ]
+        },
+        {
+          "description": "Skip minifying built JavaScript (speeds up build, increases size of bundle)",
+          "name": [
+            "--no-minify"
+          ]
+        },
+        {
+          "description": "Use unattended mode, accepting defaults and using only flags for choices",
+          "name": [
+            "-y",
+            "--yes"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Runs a code modification script",
+      "name": "codemod",
+      "options": [
+        {
+          "description": "Dry run (no changes are made to files)",
+          "name": [
+            "--dry"
+          ]
+        },
+        {
+          "args": {
+            "name": "extensions"
+          },
+          "description": "Transform files with these file extensions (comma separated list) (default: js,ts,tsx)",
+          "name": [
+            "--extensions"
+          ]
+        },
+        {
+          "description": "Skip verification before running codemod",
+          "name": [
+            "--no-verify"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Checks if the required configuration files for plugins exists and are up to date",
+      "name": "configcheck"
+    },
+    {
+      "description": "Interact with CORS-entries for your project",
+      "name": "cors",
+      "subcommands": [
+        {
+          "args": {
+            "description": "The origin to allow",
+            "name": "origin"
+          },
+          "description": "Allow a new origin to use your project API through CORS",
+          "name": "add",
+          "options": [
+            {
+              "description": "Allow credentials (token/cookie) to be sent from this origin",
+              "name": [
+                "--credentials"
+              ]
+            },
+            {
+              "description": "Disallow credentials (token/cookie) to be sent from this origin",
+              "name": [
+                "--no-credentials"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "The origin to delete",
+            "name": "origin"
+          },
+          "description": "Delete an existing CORS-origin from your project",
+          "name": "delete"
+        },
+        {
+          "description": "List all origins allowed to access the API for this project",
+          "name": "list"
+        }
+      ]
+    },
+    {
+      "description": "Interact with datasets in your project",
+      "name": "dataset",
+      "subcommands": [
+        {
+          "description": "You can manage your dataset alias using this command",
+          "name": "alias",
+          "subcommands": [
+            {
+              "args": [
+                {
+                  "isOptional": true,
+                  "name": "alias-name"
+                },
+                {
+                  "isOptional": true,
+                  "name": "target-dataset"
+                }
+              ],
+              "name": "create"
+            },
+            {
+              "args": {
+                "name": "alias-name"
+              },
+              "name": "delete"
+            },
+            {
+              "args": [
+                {
+                  "isOptional": true,
+                  "name": "alias-name"
+                },
+                {
+                  "isOptional": true,
+                  "name": "target-dataset"
+                }
+              ],
+              "name": "link",
+              "options": [
+                {
+                  "description": "Skips security prompt and forces link command",
+                  "name": [
+                    "--force"
+                  ]
+                }
+              ]
+            },
+            {
+              "args": {
+                "isOptional": true,
+                "name": "alias-name"
+              },
+              "name": "unlink"
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "isOptional": true,
+              "name": "source-dataset"
+            },
+            {
+              "isOptional": true,
+              "name": "target-dataset"
+            }
+          ],
+          "description": "Manages dataset copying, including starting a new copy job, listing copy jobs and following the progress of a running copy job",
+          "name": "copy",
+          "options": [
+            {
+              "description": "Start the copy without waiting for it to finish",
+              "name": [
+                "--detach"
+              ]
+            },
+            {
+              "args": {
+                "name": "job-id"
+              },
+              "description": "Attach to the running copy process to show progress",
+              "name": [
+                "--attach"
+              ]
+            },
+            {
+              "description": "Don't preserve document history on copy",
+              "name": [
+                "--skip-history"
+              ]
+            },
+            {
+              "description": "Lists all dataset copy jobs corresponding to a certain criteria",
+              "name": [
+                "--list"
+              ]
+            },
+            {
+              "args": {
+                "name": "offset"
+              },
+              "description": "Start position in the list of jobs. Default 0. With --list",
+              "name": [
+                "--offset"
+              ]
+            },
+            {
+              "args": {
+                "name": "limit"
+              },
+              "description": "Maximum number of jobs returned. Default 10. Maximum 1000. With --list",
+              "name": [
+                "--limit"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Create a new dataset within your project",
+          "name": "create",
+          "options": [
+            {
+              "args": {
+                "name": "visibility",
+                "suggestions": [
+                  {
+                    "name": "public"
+                  },
+                  {
+                    "name": "private"
+                  }
+                ]
+              },
+              "description": "Set visibility for this dataset (public/private)",
+              "name": [
+                "--visibility"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "datasetName"
+          },
+          "description": "Delete a dataset within your project",
+          "name": "delete"
+        },
+        {
+          "args": [
+            {
+              "name": "name"
+            },
+            {
+              "name": "destination",
+              "template": "folders"
+            }
+          ],
+          "description": "Export dataset to local filesystem as a gzipped tarball",
+          "name": "export",
+          "options": [
+            {
+              "description": "Extract only documents, without rewriting asset references",
+              "name": [
+                "--raw"
+              ]
+            },
+            {
+              "description": "Export only non-asset documents and remove references to image assets",
+              "name": [
+                "--no-assets"
+              ]
+            },
+            {
+              "description": "Export only published versions of documents",
+              "name": [
+                "--no-drafts"
+              ]
+            },
+            {
+              "description": "Skips compressing tarball entries (still generates a gzip file)",
+              "name": [
+                "--no-compress"
+              ]
+            },
+            {
+              "args": {
+                "name": "types"
+              },
+              "description": "Defines which document types to export",
+              "name": [
+                "--types"
+              ]
+            },
+            {
+              "description": "Overwrite any file with the same name",
+              "name": [
+                "--overwrite"
+              ]
+            },
+            {
+              "args": {
+                "name": "num"
+              },
+              "description": "Concurrent number of asset downloads",
+              "name": [
+                "--asset-concurrency"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "name": "file",
+              "template": "filepaths"
+            },
+            {
+              "name": "target_dataset"
+            }
+          ],
+          "description": "Import documents to given dataset from ndjson file",
+          "name": "import",
+          "options": [
+            {
+              "description": "On duplicate document IDs, skip importing document in question",
+              "name": [
+                "--missing"
+              ]
+            },
+            {
+              "description": "On duplicate document IDs, replace existing document with imported document",
+              "name": [
+                "--replace"
+              ]
+            },
+            {
+              "description": "Skip assets that cannot be fetched/uploaded",
+              "name": [
+                "--allow-failing-assets"
+              ]
+            },
+            {
+              "description": "Skip reuse of existing assets",
+              "name": [
+                "--replace-assets"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List datasets of your project",
+          "name": "list"
+        },
+        {
+          "args": [
+            {
+              "name": "dataset"
+            },
+            {
+              "name": "mode",
+              "suggestions": [
+                {
+                  "name": "get"
+                },
+                {
+                  "name": "set"
+                }
+              ]
+            }
+          ],
+          "description": "Set visibility of a dataset",
+          "name": "visibility"
+        }
+      ]
+    },
+    {
+      "description": "Gathers information on Sanity environment",
+      "name": "debug",
+      "options": [
+        {
+          "description": "Include API keys in output",
+          "name": [
+            "--secrets"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "source_dir",
+        "template": "folders"
+      },
+      "description": "Deploys a statically built Sanity studio",
+      "name": "deploy",
+      "options": [
+        {
+          "description": "Enable source maps for built bundles (increases size of bundle)",
+          "name": [
+            "--source-maps"
+          ]
+        },
+        {
+          "description": "Skip minifying built JavaScript (speeds up build, increases size of bundle)",
+          "name": [
+            "--no-minify"
+          ]
+        },
+        {
+          "description": "Don't build the studio prior to deploy, instead deploying the version currently in `dist/`",
+          "name": [
+            "--no-build"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Opens the Sanity documentation",
+      "name": "docs"
+    },
+    {
+      "description": "Interact with documents in your project",
+      "name": "documents",
+      "subcommands": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Create one or more documents",
+          "name": "create",
+          "options": [
+            {
+              "description": "On duplicate document IDs, replace existing document with specified document(s)",
+              "name": [
+                "--replace"
+              ]
+            },
+            {
+              "description": "On duplicate document IDs, don't modify the target document(s)",
+              "name": [
+                "--missing"
+              ]
+            },
+            {
+              "description": "Write the documents whenever the target file or buffer changes",
+              "name": [
+                "--watch"
+              ]
+            },
+            {
+              "description": "Use JSON5 file type to allow a \"simplified\" version of JSON",
+              "name": [
+                "--json5"
+              ]
+            },
+            {
+              "args": {
+                "name": "id"
+              },
+              "description": "Specify a document ID to use. Will fetch remote document ID and populate editor",
+              "name": [
+                "--id"
+              ]
+            },
+            {
+              "args": {
+                "name": "dataset"
+              },
+              "description": "NAME to override dataset",
+              "name": [
+                "--dataset"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "id"
+          },
+          "description": "Delete a document by ID",
+          "name": "delete",
+          "options": [
+            {
+              "args": {
+                "name": "dataset"
+              },
+              "description": "NAME to override dataset",
+              "name": [
+                "--dataset"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "document_id"
+          },
+          "description": "Get and print a document by ID",
+          "name": "get",
+          "options": [
+            {
+              "description": "Colorized JSON output",
+              "name": [
+                "--pretty"
+              ]
+            },
+            {
+              "args": {
+                "name": "dataset"
+              },
+              "description": "NAME to override dataset",
+              "name": [
+                "--dataset"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "query"
+          },
+          "description": "Query for documents",
+          "name": "query",
+          "options": [
+            {
+              "description": "Colorized JSON output",
+              "name": [
+                "--pretty"
+              ]
+            },
+            {
+              "args": {
+                "name": "dataset"
+              },
+              "description": "NAME to override dataset",
+              "name": [
+                "--dataset"
+              ]
+            },
+            {
+              "args": {
+                "name": "version"
+              },
+              "description": "API version to use (defaults to `v1`)",
+              "name": [
+                "--api-version"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "script",
+        "template": "filepaths"
+      },
+      "description": "Runs a script in Sanity context",
+      "name": "exec",
+      "options": [
+        {
+          "description": "Preload access token from CLI config into 'part:@sanity/base/client' part",
+          "name": [
+            "--with-user-token"
+          ]
+        },
+        {
+          "description": "Mocks a browser-like environment using jsdom",
+          "name": [
+            "--mock-browser-env"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Interact with GraphQL APIs",
+      "name": "graphql",
+      "subcommands": [
+        {
+          "description": "Deploy a GraphQL API from the current Sanity schema",
+          "name": "deploy",
+          "options": [
+            {
+              "args": {
+                "name": "dataset"
+              },
+              "description": "Deploy API for the given dataset",
+              "name": [
+                "--dataset"
+              ]
+            },
+            {
+              "args": {
+                "name": "tag"
+              },
+              "description": "Deploy API to given tag (defaults to 'default')",
+              "name": [
+                "--tag"
+              ]
+            },
+            {
+              "args": {
+                "name": "generation"
+              },
+              "description": "API generation to deploy (defaults to 'gen3')",
+              "name": [
+                "--generation"
+              ]
+            },
+            {
+              "description": "Set document interface fields (_id, _type etc) as non-null",
+              "name": [
+                "--non-null-document-fields"
+              ]
+            },
+            {
+              "description": "Deploy a GraphQL playground for easily testing queries (public)",
+              "name": [
+                "--playground"
+              ]
+            },
+            {
+              "description": "Skip playground prompt (do not deploy a playground)",
+              "name": [
+                "--no-playground"
+              ]
+            },
+            {
+              "description": "Deploy API without confirming breaking changes",
+              "name": [
+                "--force"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Lists all the GraphQL endpoints deployed for this project",
+          "name": "list"
+        },
+        {
+          "description": "Remove a deployed GraphQL API",
+          "name": "undeploy",
+          "options": [
+            {
+              "args": {
+                "name": "dataset"
+              },
+              "description": "Delete GraphQL API for the given dataset",
+              "name": [
+                "--dataset"
+              ]
+            },
+            {
+              "args": {
+                "name": "tag"
+              },
+              "description": "Delete GraphQL API for the given tag (defaults to 'default')",
+              "name": [
+                "--tag"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Interact with hooks in your project",
+      "name": "hook",
+      "subcommands": [
+        {
+          "args": {
+            "name": "attempt_id"
+          },
+          "description": "Print details of a given webhook delivery attempt",
+          "name": "attempt"
+        },
+        {
+          "description": "Create a new hook for the given dataset",
+          "name": "create"
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Delete a hook within your project",
+          "name": "delete"
+        },
+        {
+          "description": "List hooks for a given project",
+          "name": "list"
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "List latest log entries for a given hook",
+          "name": "logs"
+        }
+      ]
+    },
+    {
+      "description": "Initialize a new Sanity project or plugin",
+      "name": "init",
+      "options": [
+        {
+          "description": "Use unattended mode, accepting defaults and using only flags for choices",
+          "name": [
+            "-y",
+            "--yes"
+          ]
+        },
+        {
+          "args": {
+            "name": "projectId"
+          },
+          "description": "Project ID to use for the studio",
+          "name": [
+            "--project"
+          ]
+        },
+        {
+          "args": {
+            "name": "organizationId"
+          },
+          "description": "Organization ID to use for the project",
+          "name": [
+            "--organization"
+          ]
+        },
+        {
+          "args": {
+            "name": "dataset"
+          },
+          "description": "Dataset name for the studio",
+          "name": [
+            "--dataset"
+          ]
+        },
+        {
+          "description": "Set up a project with a public dataset named \"production\"",
+          "name": [
+            "--dataset-default"
+          ]
+        },
+        {
+          "args": {
+            "name": "path"
+          },
+          "description": "Path to write studio project to",
+          "name": [
+            "--output-path"
+          ]
+        },
+        {
+          "args": {
+            "name": "template"
+          },
+          "description": "Project template to use [default: \"clean\"]",
+          "name": [
+            "--template"
+          ]
+        },
+        {
+          "args": {
+            "name": "provider"
+          },
+          "description": "Login provider to use",
+          "name": [
+            "--provider"
+          ]
+        },
+        {
+          "args": {
+            "name": "mode",
+            "suggestions": [
+              {
+                "name": "public"
+              },
+              {
+                "name": "private"
+              }
+            ]
+          },
+          "description": "Visibility mode for dataset (public/private)",
+          "name": [
+            "--visibility"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Create a new project with the given name",
+          "name": [
+            "--create-project"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Optionally select a plan for a new project",
+          "name": [
+            "--project-plan"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Optionally select a coupon for a new project (cannot be used with --project-plan)",
+          "name": [
+            "--coupon"
+          ]
+        },
+        {
+          "description": "Reconfigure Sanity studio in current folder with new project/dataset",
+          "name": [
+            "--reconfigure"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "plugin"
+      },
+      "description": "Installs a Sanity plugin to the current Sanity configuration",
+      "name": "install"
+    },
+    {
+      "description": "Authenticates against the Sanity.io API (no flag) or a third-party identity provider (with --sso flag)",
+      "name": "login",
+      "options": [
+        {
+          "args": {
+            "name": "slug"
+          },
+          "description": "Authenticate against a third-party identity provider",
+          "name": [
+            "--sso"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Logs out of the Sanity.io session",
+      "name": "logout"
+    },
+    {
+      "description": "Opens the Sanity project management UI",
+      "name": "manage"
+    },
+    {
+      "description": "Interact with projects connected to your logged in user",
+      "name": "projects",
+      "subcommands": [
+        {
+          "description": "Lists projects connected to your user",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "name": "field"
+              },
+              "description": "Sort output by specified column",
+              "name": [
+                "--sort"
+              ]
+            },
+            {
+              "args": {
+                "name": "order",
+                "suggestions": [
+                  {
+                    "name": "asc"
+                  },
+                  {
+                    "name": "desc"
+                  }
+                ]
+              },
+              "description": "Sort output ascending/descending",
+              "name": [
+                "--order"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Starts a web server for the Content Studio",
+      "name": "start",
+      "options": [
+        {
+          "args": {
+            "name": "port"
+          },
+          "description": "TCP port to start server on. [default: 3333]",
+          "name": [
+            "--port"
+          ]
+        },
+        {
+          "args": {
+            "name": "host"
+          },
+          "description": "The local network interface at which to listen. [default: \"127.0.0.1\"]",
+          "name": [
+            "--host"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Removes the deployed studio from <hostname>.sanity.studio",
+      "name": "undeploy"
+    },
+    {
+      "args": {
+        "name": "plugin"
+      },
+      "description": "Removes a Sanity plugin from the current Sanity configuration",
+      "name": "uninstall"
+    },
+    {
+      "description": "Upgrades all (or some) Sanity modules to their latest versions",
+      "name": "upgrade",
+      "options": [
+        {
+          "args": {
+            "name": "range"
+          },
+          "description": "Version range to upgrade to, eg '^2.2.7' or '2.1.x'",
+          "name": [
+            "--range"
+          ]
+        },
+        {
+          "args": {
+            "name": "tag"
+          },
+          "description": "Tagged release to upgrade to, eg 'canary' or 'some-feature'",
+          "name": [
+            "--tag"
+          ]
+        },
+        {
+          "description": "Pin the resolved version numbers in package.json (no ^ prefix)",
+          "name": [
+            "--save-exact"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage users of your project",
+      "name": "users",
+      "subcommands": [
+        {
+          "args": {
+            "name": "email"
+          },
+          "description": "Invite a new user to the project",
+          "name": "invite",
+          "options": [
+            {
+              "args": {
+                "name": "role"
+              },
+              "description": "Role to invite the user as",
+              "name": [
+                "--role"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List users of the project",
+          "name": "list",
+          "options": [
+            {
+              "description": "Don't include pending invitations",
+              "name": [
+                "--no-invitations"
+              ]
+            },
+            {
+              "description": "Don't include robots (token users)",
+              "name": [
+                "--no-robots"
+              ]
+            },
+            {
+              "args": {
+                "name": "field",
+                "suggestions": [
+                  {
+                    "name": "id"
+                  },
+                  {
+                    "name": "name"
+                  },
+                  {
+                    "name": "role"
+                  },
+                  {
+                    "name": "date"
+                  }
+                ]
+              },
+              "description": "Sort users by specified column: id, name, role, date",
+              "name": [
+                "--sort"
+              ]
+            },
+            {
+              "args": {
+                "name": "order",
+                "suggestions": [
+                  {
+                    "name": "asc"
+                  },
+                  {
+                    "name": "desc"
+                  }
+                ]
+              },
+              "description": "Sort output ascending/descending",
+              "name": [
+                "--order"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Shows the installed versions of Sanity CLI and core components",
+      "name": "versions"
+    }
+  ]
+}

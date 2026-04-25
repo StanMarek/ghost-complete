@@ -1,0 +1,1208 @@
+{
+  "description": "A cli for omg.lol",
+  "name": "clilol",
+  "options": [
+    {
+      "description": "Display help",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Create things",
+      "name": "create",
+      "subcommands": [
+        {
+          "args": [
+            {
+              "description": "Name of the DNS record",
+              "name": "name"
+            },
+            {
+              "description": "Type of the DNS record",
+              "name": "type"
+            },
+            {
+              "description": "Data of the DNS record",
+              "name": "data"
+            }
+          ],
+          "description": "Create a DNS record",
+          "name": "dns",
+          "options": [
+            {
+              "args": {
+                "name": "priority"
+              },
+              "description": "Priority of the DNS record",
+              "name": [
+                "--priority",
+                "-p"
+              ]
+            },
+            {
+              "args": {
+                "name": "ttl"
+              },
+              "description": "Time to live of the DNS record",
+              "name": [
+                "--ttl",
+                "-T"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Title of the paste",
+            "name": "title"
+          },
+          "description": "Create or update a paste",
+          "name": "paste",
+          "options": [
+            {
+              "args": {
+                "name": "filename",
+                "template": "filepaths"
+              },
+              "description": "File to read paste from (default stdin)",
+              "name": [
+                "--filename",
+                "-f"
+              ]
+            },
+            {
+              "description": "Create paste as listed (default false)",
+              "name": [
+                "--listed",
+                "-l"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Filename of the image file",
+            "name": "filename"
+          },
+          "description": "Upload a picture to some.pics",
+          "name": "picture",
+          "options": [
+            {
+              "description": "Description of the picture (default empty/unlisted)",
+              "name": [
+                "--description",
+                "-d"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "description": "Name of the PURL",
+              "name": "name"
+            },
+            {
+              "description": "URL that the PURL redirects to",
+              "name": "url"
+            }
+          ],
+          "description": "Create a PURL",
+          "name": "purl",
+          "options": [
+            {
+              "description": "Create as listed (default false)",
+              "name": [
+                "--listed",
+                "-l"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Text of the status",
+            "name": "text"
+          },
+          "description": "Create a status",
+          "name": "status",
+          "options": [
+            {
+              "args": {
+                "name": "emoji"
+              },
+              "description": "Emoji to add to status (default sparkles)",
+              "name": [
+                "--emoji",
+                "-e"
+              ]
+            },
+            {
+              "description": "Do not cross-post to Mastodon",
+              "name": [
+                "--skip-mastodon-post"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Create a weblog entry",
+          "name": "weblog",
+          "options": [
+            {
+              "args": {
+                "name": "filename",
+                "template": "filepaths"
+              },
+              "description": "File to read entry from (default stdin)",
+              "name": [
+                "--filename",
+                "-f"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Delete things",
+      "name": "delete",
+      "subcommands": [
+        {
+          "description": "Delete information about your account",
+          "name": "account",
+          "subcommands": [
+            {
+              "args": {
+                "description": "ID of the session to delete",
+                "name": "id"
+              },
+              "description": "Delete a session",
+              "name": "session"
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "ID of the record to delete",
+            "name": "id"
+          },
+          "description": "Delete a DNS record",
+          "name": "dns"
+        },
+        {
+          "args": {
+            "description": "ID of the paste to delete",
+            "name": "id"
+          },
+          "description": "Delete a paste",
+          "name": "paste"
+        },
+        {
+          "args": {
+            "description": "ID of the picture to delete",
+            "name": "id"
+          },
+          "description": "Delete a picture from some.pics",
+          "name": "picture"
+        },
+        {
+          "args": {
+            "description": "ID of the PURL to delete",
+            "name": "id"
+          },
+          "description": "Delete a PURL",
+          "name": "purl"
+        },
+        {
+          "args": {
+            "description": "ID of the status to delete",
+            "name": "id"
+          },
+          "description": "Delete a status",
+          "name": "status"
+        },
+        {
+          "args": {
+            "description": "ID of the weblog entry to delete",
+            "name": "id"
+          },
+          "description": "Delete a weblog entry",
+          "name": "weblog"
+        }
+      ]
+    },
+    {
+      "description": "Get things",
+      "name": "get",
+      "subcommands": [
+        {
+          "description": "Get information about your account",
+          "name": "account",
+          "subcommands": [
+            {
+              "description": "Get info about your account",
+              "name": "info"
+            },
+            {
+              "description": "Get your account name",
+              "name": "name"
+            },
+            {
+              "description": "Get your account settings",
+              "name": "settings"
+            }
+          ]
+        },
+        {
+          "description": "Get information about an address",
+          "name": "address",
+          "subcommands": [
+            {
+              "args": {
+                "description": "Address to get",
+                "name": "address"
+              },
+              "description": "Get address availability",
+              "name": "availability"
+            },
+            {
+              "args": {
+                "description": "Address to get",
+                "name": "address"
+              },
+              "description": "Get address expiration",
+              "name": "expiration"
+            },
+            {
+              "description": "Get information about an address",
+              "name": "info",
+              "subcommands": [
+                {
+                  "args": {
+                    "description": "Address to get",
+                    "name": "address"
+                  },
+                  "description": "Get private information about an address",
+                  "name": "private"
+                },
+                {
+                  "args": {
+                    "description": "Address to get",
+                    "name": "address"
+                  },
+                  "description": "Get public information about an address",
+                  "name": "public"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Get email forwarding address(es)",
+          "name": "email"
+        },
+        {
+          "description": "Get a Now page",
+          "name": "now",
+          "options": [
+            {
+              "args": {
+                "name": "address"
+              },
+              "description": "Address whose Now page to get",
+              "name": [
+                "--address",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "filename",
+                "template": "filepaths"
+              },
+              "description": "File to write Now page to (default stdout)",
+              "name": [
+                "--filename",
+                "-f"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Title of the paste",
+            "name": "title"
+          },
+          "description": "Get a paste",
+          "name": "paste",
+          "options": [
+            {
+              "args": {
+                "name": "address"
+              },
+              "description": "Address whose paste to get",
+              "name": [
+                "--address",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "filename",
+                "template": "filepaths"
+              },
+              "description": "File to write paste to (default stdout)",
+              "name": [
+                "--filename",
+                "-f"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Name of the PURL",
+            "name": "name"
+          },
+          "description": "Get a PURL",
+          "name": "purl",
+          "options": [
+            {
+              "args": {
+                "name": "address"
+              },
+              "description": "Address whose PURL to get",
+              "name": [
+                "--address",
+                "-a"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Get service stats",
+          "name": "service"
+        },
+        {
+          "args": {
+            "description": "ID of the status",
+            "name": "id"
+          },
+          "description": "Get status",
+          "name": "status",
+          "options": [
+            {
+              "args": {
+                "name": "address"
+              },
+              "description": "Address whose status to get",
+              "name": [
+                "--address",
+                "-a"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Get status bio",
+          "name": "status-bio",
+          "options": [
+            {
+              "args": {
+                "name": "address"
+              },
+              "description": "Address whose status bio to get",
+              "name": [
+                "--address",
+                "-a"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Name of the theme",
+            "name": "name"
+          },
+          "description": "Get theme information",
+          "name": "theme",
+          "subcommands": [
+            {
+              "args": {
+                "description": "Name of the theme",
+                "name": "name"
+              },
+              "description": "Get theme preview",
+              "name": "preview",
+              "options": [
+                {
+                  "args": {
+                    "name": "filename",
+                    "template": "filepaths"
+                  },
+                  "description": "File to write preview to (default stdout)",
+                  "name": [
+                    "--filename",
+                    "-f"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Get your webpage content",
+          "name": "web",
+          "options": [
+            {
+              "args": {
+                "name": "filename",
+                "template": "filepaths"
+              },
+              "description": "File to write webpage to (default stdout)",
+              "name": [
+                "--filename",
+                "-f"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "ID of the weblog entry",
+            "name": "id"
+          },
+          "description": "Get a weblog entry",
+          "name": "weblog",
+          "subcommands": [
+            {
+              "description": "Get your weblog config",
+              "name": "config",
+              "options": [
+                {
+                  "args": {
+                    "name": "filename",
+                    "template": "filepaths"
+                  },
+                  "description": "File to write configuration to (default stdout)",
+                  "name": [
+                    "--filename",
+                    "-f"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Get the latest weblog entry",
+              "name": "latest"
+            },
+            {
+              "description": "Get your weblog template",
+              "name": "template",
+              "options": [
+                {
+                  "args": {
+                    "name": "filename",
+                    "template": "filepaths"
+                  },
+                  "description": "File to write template to (default stdout)",
+                  "name": [
+                    "--filename",
+                    "-f"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "List things",
+      "name": "list",
+      "subcommands": [
+        {
+          "description": "List information about your account",
+          "name": "account",
+          "subcommands": [
+            {
+              "description": "List your addresses",
+              "name": "addresses"
+            },
+            {
+              "description": "List your sessions",
+              "name": "sessions"
+            }
+          ]
+        },
+        {
+          "description": "List the address directory",
+          "name": "directory"
+        },
+        {
+          "description": "List your dns records",
+          "name": "dns"
+        },
+        {
+          "description": "List Now pages",
+          "name": "now"
+        },
+        {
+          "description": "List pastes",
+          "name": "paste",
+          "options": [
+            {
+              "args": {
+                "name": "address"
+              },
+              "description": "Address whose pastes to list",
+              "name": [
+                "--address",
+                "-a"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List pictures",
+          "name": "picture"
+        },
+        {
+          "description": "List all PURLs",
+          "name": "purl",
+          "options": [
+            {
+              "args": {
+                "name": "address"
+              },
+              "description": "Address whose PURLs to get",
+              "name": [
+                "--address",
+                "-a"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List statuses",
+          "name": "status",
+          "options": [
+            {
+              "args": {
+                "name": "address"
+              },
+              "description": "Address whose status(es) to get",
+              "name": [
+                "--address",
+                "-a"
+              ]
+            },
+            {
+              "args": {
+                "name": "limit"
+              },
+              "description": "How many status(es) to get (default all)",
+              "name": [
+                "--limit",
+                "-l"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List the statuslog",
+          "name": "statuslog",
+          "options": [
+            {
+              "description": "Get the entire statuslog (default is latest statuses only)",
+              "name": [
+                "--all",
+                "-A"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List profile themes",
+          "name": "theme"
+        },
+        {
+          "description": "List all weblog entries",
+          "name": "weblog"
+        }
+      ]
+    },
+    {
+      "description": "Update things",
+      "name": "update",
+      "subcommands": [
+        {
+          "description": "Update information about your account",
+          "name": "account",
+          "subcommands": [
+            {
+              "description": "Set the name on your account",
+              "name": "name"
+            },
+            {
+              "description": "Set the settings on your account",
+              "name": "settings",
+              "options": [
+                {
+                  "args": {
+                    "name": "communication"
+                  },
+                  "description": "Communication preference",
+                  "name": [
+                    "--communication",
+                    "-c"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "date-format"
+                  },
+                  "description": "Date format preference",
+                  "name": [
+                    "--date-format",
+                    "-d"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "web-editor"
+                  },
+                  "description": "Web editor preference",
+                  "name": [
+                    "--web-editor",
+                    "-w"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Update a DNS record",
+          "name": "dns",
+          "options": [
+            {
+              "args": {
+                "name": "priority"
+              },
+              "description": "Updated priority",
+              "name": [
+                "--priority",
+                "-p"
+              ]
+            },
+            {
+              "args": {
+                "name": "ttl"
+              },
+              "description": "Updated TTL",
+              "name": [
+                "--ttl",
+                "-T"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Set email forwarding address(es)",
+          "name": "email",
+          "options": [
+            {
+              "args": {
+                "name": "destination"
+              },
+              "description": "Address(es) to forward to",
+              "name": [
+                "--destination",
+                "-d"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Set a preference",
+          "name": "preference"
+        },
+        {
+          "description": "Set Now page content",
+          "name": "set",
+          "options": [
+            {
+              "args": {
+                "name": "filename",
+                "template": "filepaths"
+              },
+              "description": "File to read Now page from (default stdin)",
+              "name": [
+                "--filename",
+                "-f"
+              ]
+            },
+            {
+              "description": "Create Now page as listed (default false)",
+              "name": [
+                "--listed",
+                "-l"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Update a status",
+          "name": "status",
+          "options": [
+            {
+              "args": {
+                "name": "emoji"
+              },
+              "description": "Emoji to add to status (default sparkles)",
+              "name": [
+                "--emoji",
+                "-e"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Update your status bio",
+          "name": "status-bio"
+        },
+        {
+          "description": "Set webpage content",
+          "name": "web",
+          "options": [
+            {
+              "args": {
+                "name": "filename",
+                "template": "filepaths"
+              },
+              "description": "File to read webpage from (default stdin)",
+              "name": [
+                "--filename",
+                "-f"
+              ]
+            },
+            {
+              "description": "Publish the updated page (default false)",
+              "name": [
+                "--publish",
+                "-p"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "description": "Set your profile picture",
+              "name": "pfp"
+            }
+          ]
+        },
+        {
+          "description": "Set your weblog config",
+          "name": "weblog",
+          "subcommands": [
+            {
+              "description": "Set your weblog config",
+              "name": "config",
+              "options": [
+                {
+                  "args": {
+                    "name": "filename",
+                    "template": "filepaths"
+                  },
+                  "description": "File to read config from (default stdin)",
+                  "name": [
+                    "--filename",
+                    "-f"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Set your weblog template",
+              "name": "template",
+              "options": [
+                {
+                  "args": {
+                    "name": "filename",
+                    "template": "filepaths"
+                  },
+                  "description": "File to read template from (default stdin)",
+                  "name": [
+                    "--filename",
+                    "-f"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Help about any command",
+      "name": "help",
+      "subcommands": [
+        {
+          "description": "Create things",
+          "name": "create",
+          "subcommands": [
+            {
+              "description": "Create a DNS record",
+              "name": "dns"
+            },
+            {
+              "description": "Create or update a paste",
+              "name": "paste"
+            },
+            {
+              "description": "Create a PURL",
+              "name": "purl"
+            },
+            {
+              "description": "Create a status",
+              "name": "status"
+            },
+            {
+              "description": "Create a weblog entry",
+              "name": "weblog"
+            }
+          ]
+        },
+        {
+          "description": "Delete things",
+          "name": "delete",
+          "subcommands": [
+            {
+              "description": "Delete information about your account",
+              "name": "account",
+              "subcommands": [
+                {
+                  "description": "Delete a session",
+                  "name": "session"
+                }
+              ]
+            },
+            {
+              "description": "Delete a DNS record",
+              "name": "dns"
+            },
+            {
+              "description": "Delete a paste",
+              "name": "paste"
+            },
+            {
+              "description": "Delete a PURL",
+              "name": "purl"
+            },
+            {
+              "description": "Delete a weblog entry",
+              "name": "weblog"
+            }
+          ]
+        },
+        {
+          "description": "Get things",
+          "name": "get",
+          "subcommands": [
+            {
+              "description": "Get information about your account",
+              "name": "account",
+              "subcommands": [
+                {
+                  "description": "Get info about your account",
+                  "name": "info"
+                },
+                {
+                  "description": "Get your account name",
+                  "name": "name"
+                },
+                {
+                  "description": "Get your account settings",
+                  "name": "settings"
+                }
+              ]
+            },
+            {
+              "description": "Get information about an address",
+              "name": "address",
+              "subcommands": [
+                {
+                  "description": "Get address availability",
+                  "name": "availability"
+                },
+                {
+                  "description": "Get address expiration",
+                  "name": "expiration"
+                },
+                {
+                  "description": "Get information about an address",
+                  "name": "info",
+                  "subcommands": [
+                    {
+                      "description": "Get private information about an address",
+                      "name": "private"
+                    },
+                    {
+                      "description": "Get public information about an address",
+                      "name": "public"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Get email forwarding address(es)",
+              "name": "email"
+            },
+            {
+              "description": "Get a Now page",
+              "name": "now"
+            },
+            {
+              "description": "Get a paste",
+              "name": "paste"
+            },
+            {
+              "description": "Get a PURL",
+              "name": "purl"
+            },
+            {
+              "description": "Get service stats",
+              "name": "service"
+            },
+            {
+              "description": "Get status",
+              "name": "status"
+            },
+            {
+              "description": "Get status bio",
+              "name": "status-bio"
+            },
+            {
+              "description": "Get theme information",
+              "name": "theme",
+              "subcommands": [
+                {
+                  "description": "Get theme preview",
+                  "name": "preview"
+                }
+              ]
+            },
+            {
+              "description": "Get your webpage content",
+              "name": "web"
+            },
+            {
+              "description": "Get a weblog entry",
+              "name": "weblog",
+              "subcommands": [
+                {
+                  "description": "Get your weblog config",
+                  "name": "config"
+                },
+                {
+                  "description": "Get the latest weblog entry",
+                  "name": "latest"
+                },
+                {
+                  "description": "Get your weblog template",
+                  "name": "template"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List things",
+          "name": "list",
+          "subcommands": [
+            {
+              "description": "List information about your account",
+              "name": "account",
+              "subcommands": [
+                {
+                  "description": "List your addresses",
+                  "name": "addresses"
+                },
+                {
+                  "description": "List your sessions",
+                  "name": "sessions"
+                }
+              ]
+            },
+            {
+              "description": "List the address directory",
+              "name": "directory"
+            },
+            {
+              "description": "List your dns records",
+              "name": "dns"
+            },
+            {
+              "description": "List Now pages",
+              "name": "now"
+            },
+            {
+              "description": "List pastes",
+              "name": "paste"
+            },
+            {
+              "description": "List all PURLs",
+              "name": "purl"
+            },
+            {
+              "description": "List statuses",
+              "name": "status"
+            },
+            {
+              "description": "List the statuslog",
+              "name": "statuslog"
+            },
+            {
+              "description": "List profile themes",
+              "name": "theme"
+            },
+            {
+              "description": "List all weblog entries",
+              "name": "weblog"
+            }
+          ]
+        },
+        {
+          "description": "Update things",
+          "name": "update",
+          "subcommands": [
+            {
+              "description": "Update information about your account",
+              "name": "account",
+              "subcommands": [
+                {
+                  "args": {
+                    "description": "The name to set",
+                    "name": "name"
+                  },
+                  "description": "Set the name on your account",
+                  "name": "name"
+                },
+                {
+                  "description": "Set the settings on your account",
+                  "name": "settings"
+                }
+              ]
+            },
+            {
+              "args": [
+                {
+                  "description": "The ID of the record to update",
+                  "name": "id"
+                },
+                {
+                  "description": "Updated name",
+                  "name": "name"
+                },
+                {
+                  "description": "Updated type",
+                  "name": "type"
+                },
+                {
+                  "description": "Updated data",
+                  "name": "data"
+                }
+              ],
+              "description": "Update a DNS record",
+              "name": "dns"
+            },
+            {
+              "args": {
+                "description": "Address(es) to forward to",
+                "name": "address"
+              },
+              "description": "Set email forwarding address(es)",
+              "name": "email"
+            },
+            {
+              "args": [
+                {
+                  "description": "Preferences item to set",
+                  "name": "item"
+                },
+                {
+                  "description": "Value to set",
+                  "name": "value"
+                }
+              ],
+              "description": "Set a preference",
+              "name": "preference"
+            },
+            {
+              "description": "Update Now page content",
+              "name": "now"
+            },
+            {
+              "args": [
+                {
+                  "description": "The ID of the status to update",
+                  "name": "id"
+                },
+                {
+                  "description": "New text for the status",
+                  "name": "text"
+                }
+              ],
+              "description": "Update a status",
+              "name": "status"
+            },
+            {
+              "args": {
+                "description": "New text for the status bio",
+                "name": "text"
+              },
+              "description": "Update your status bio",
+              "name": "status-bio"
+            },
+            {
+              "description": "Set webpage content",
+              "name": "web",
+              "subcommands": [
+                {
+                  "args": {
+                    "description": "The filename of the image to set",
+                    "name": "filename",
+                    "template": "filepaths"
+                  },
+                  "description": "Set your profile picture",
+                  "name": "pfp"
+                }
+              ]
+            },
+            {
+              "description": "Set your weblog config",
+              "name": "weblog",
+              "subcommands": [
+                {
+                  "description": "Set your weblog config",
+                  "name": "config"
+                },
+                {
+                  "description": "Set your weblog template",
+                  "name": "template"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

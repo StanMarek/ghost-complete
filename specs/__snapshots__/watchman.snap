@@ -1,0 +1,358 @@
+{
+  "description": "A file watching service",
+  "name": "watchman",
+  "options": [
+    {
+      "description": "Show help for watchman",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "description": "Spawning from an inetd style supervisor",
+      "name": [
+        "--inetd"
+      ]
+    },
+    {
+      "description": "Don't use the site or system spawner",
+      "name": [
+        "-S",
+        "--no-site-spawner"
+      ]
+    },
+    {
+      "description": "Show version number for watchman",
+      "name": [
+        "-v",
+        "--version"
+      ]
+    },
+    {
+      "args": {
+        "description": "The alternate named pipe path",
+        "name": "path"
+      },
+      "description": "Specify alternate named pipe path",
+      "name": [
+        "--named-pipe-path"
+      ]
+    },
+    {
+      "args": {
+        "description": "The alternate unix domain socket path",
+        "name": "path"
+      },
+      "description": "Specify alternate unix domain socket path",
+      "name": [
+        "-u"
+      ]
+    },
+    {
+      "args": {
+        "description": "The alernate unix domain socket path",
+        "name": "path"
+      },
+      "description": "Specify alternate unix domain socket path",
+      "name": [
+        "--unix-listener-path"
+      ]
+    },
+    {
+      "args": {
+        "description": "The path to logfile",
+        "name": "path"
+      },
+      "description": "Specify the path to logfile",
+      "name": [
+        "-o"
+      ]
+    },
+    {
+      "args": {
+        "description": "The path to logfile",
+        "name": "path"
+      },
+      "description": "Specify the path to logfile",
+      "name": [
+        "--logfile"
+      ]
+    },
+    {
+      "args": {
+        "description": "The log level",
+        "name": "level",
+        "suggestions": [
+          {
+            "name": "0"
+          },
+          {
+            "name": "1"
+          },
+          {
+            "name": "2"
+          }
+        ]
+      },
+      "description": "Set the log level",
+      "name": [
+        "--log-level"
+      ]
+    },
+    {
+      "description": "Specify path to pidfile",
+      "name": [
+        "--pidfile"
+      ]
+    },
+    {
+      "description": "Persist and wait for further responses",
+      "name": [
+        "-p",
+        "--persistent"
+      ]
+    },
+    {
+      "description": "Don't save state between invocations",
+      "name": [
+        "-n",
+        "--no-save-state"
+      ]
+    },
+    {
+      "args": {
+        "description": "The path to file to hold watch and trigger state",
+        "name": "path"
+      },
+      "description": "Specify path to file to hold watch and trigger state",
+      "name": [
+        "--statefile"
+      ]
+    },
+    {
+      "description": "Instead of parsing CLI arguments, take a single json object from stdin",
+      "name": [
+        "-j",
+        "--json-command"
+      ]
+    },
+    {
+      "args": {
+        "description": "The output encoding",
+        "name": "encoding",
+        "suggestions": [
+          {
+            "name": "json"
+          },
+          {
+            "name": "bser"
+          }
+        ]
+      },
+      "description": "CLI output encoding",
+      "name": [
+        "--output-encoding"
+      ]
+    },
+    {
+      "args": {
+        "description": "The server encoding",
+        "name": "encoding",
+        "suggestions": [
+          {
+            "name": "bser"
+          },
+          {
+            "name": "json"
+          }
+        ]
+      },
+      "description": "CLI<->server encoding",
+      "name": [
+        "--server-encoding"
+      ]
+    },
+    {
+      "description": "Run the service in the foreground",
+      "name": [
+        "-f",
+        "--foreground"
+      ]
+    },
+    {
+      "description": "Don't pretty print JSON",
+      "name": [
+        "--no-pretty"
+      ]
+    },
+    {
+      "description": "Don't try to start the service if it is not available",
+      "name": [
+        "--no-spawn"
+      ]
+    },
+    {
+      "description": "When no-spawn is enabled, don't try to handle request in client mode if service is unavailable",
+      "name": [
+        "--no-local"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "description": "The path to directory",
+        "name": "path",
+        "template": "folders"
+      },
+      "description": "Returns the current clock value for a watched root",
+      "name": "clock"
+    },
+    {
+      "args": {
+        "description": "The path to directory",
+        "isVariadic": true,
+        "name": "path",
+        "template": "folders"
+      },
+      "description": "Finds all files that match the optional list of patterns under the specified dir",
+      "name": "find"
+    },
+    {
+      "description": "This is designed to be used by interactive programs that have a background process or daemon maintaining a subscription to Watchman",
+      "name": "flush-subscriptions"
+    },
+    {
+      "description": "Returns the .watchmanconfig for the root",
+      "name": "get-config",
+      "subcommands": [
+        {
+          "description": "The path to root",
+          "name": "path"
+        }
+      ]
+    },
+    {
+      "description": "Get socket path",
+      "name": "get-sockname"
+    },
+    {
+      "description": "Returns the full list of supported capabilities offered by the watchman server",
+      "name": "list-capabilities"
+    },
+    {
+      "args": {
+        "description": "The log level",
+        "name": "level",
+        "suggestions": [
+          {
+            "name": "debug"
+          },
+          {
+            "name": "error"
+          },
+          {
+            "name": "off"
+          }
+        ]
+      },
+      "description": "Generates a log line in the watchman log",
+      "name": "log"
+    },
+    {
+      "args": {
+        "description": "The log level",
+        "name": "level",
+        "suggestions": [
+          {
+            "name": "debug"
+          },
+          {
+            "name": "error"
+          },
+          {
+            "name": "off"
+          }
+        ]
+      },
+      "description": "Changes the log level of your connection to the watchman service",
+      "name": "log-level"
+    },
+    {
+      "description": "Executes a query against the specified root",
+      "name": "query"
+    },
+    {
+      "description": "This causes your watchman service to exit with a normal status code",
+      "name": "shutdown-server"
+    },
+    {
+      "args": {
+        "description": "The path to directory",
+        "name": "path",
+        "template": "folders"
+      },
+      "description": "Finds all files that were modified since the specified clockspec that match the optional list of patterns",
+      "name": "since"
+    },
+    {
+      "description": "This causes a watch to be marked as being in a particular named state",
+      "name": "state-enter"
+    },
+    {
+      "description": "This causes a watch to no longer be marked as being in a particular named state",
+      "name": "state-leave"
+    },
+    {
+      "description": "Subscribes to changes against a specified root and requests that they be sent to the client via its connection",
+      "name": "subscribe"
+    },
+    {
+      "args": {
+        "description": "The path to directory",
+        "name": "path",
+        "template": "folders"
+      },
+      "description": "This will create or replace a trigger",
+      "name": "trigger"
+    },
+    {
+      "description": "Deletes a named trigger from the list of registered triggers",
+      "name": "trigger-del"
+    },
+    {
+      "description": "Returns the set of registered triggers associated with a root directory",
+      "name": "trigger-list"
+    },
+    {
+      "description": "Cancels a named subscription against the specified root",
+      "name": "unsubscribe"
+    },
+    {
+      "description": "The version and build information for the currently running watchman service",
+      "name": "version"
+    },
+    {
+      "args": {
+        "description": "The path to directory",
+        "name": "path",
+        "template": "folders"
+      },
+      "description": "Removes a watch and any associated triggers",
+      "name": "watch-del"
+    },
+    {
+      "description": "Removes all watches and associated triggers",
+      "name": "watch-del-all"
+    },
+    {
+      "description": "Returns a list of watched dirs",
+      "name": "watch-list"
+    },
+    {
+      "description": "Requests that the project containing the requested dir is watched for changes",
+      "name": "watch-project"
+    }
+  ]
+}

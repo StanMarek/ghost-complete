@@ -1,0 +1,3868 @@
+{
+  "description": "A terminal multiplexer",
+  "name": "tmux",
+  "subcommands": [
+    {
+      "description": "Attach to last session",
+      "name": "a",
+      "options": [
+        {
+          "description": "Detach all others clients to the session",
+          "name": [
+            "-d"
+          ]
+        },
+        {
+          "description": "Send SIGHUP to the parent process and detach the client",
+          "name": [
+            "-x"
+          ]
+        },
+        {
+          "args": {
+            "description": "Comma-separated list of flags",
+            "name": "flags",
+            "suggestions": [
+              {
+                "name": "active-pane"
+              },
+              {
+                "name": "ignore-size"
+              },
+              {
+                "name": "no-output"
+              },
+              {
+                "name": "pause-after"
+              },
+              {
+                "name": "read-only"
+              },
+              {
+                "name": "wait-exit"
+              }
+            ]
+          },
+          "description": "Set client flags",
+          "name": [
+            "-f"
+          ]
+        },
+        {
+          "args": {
+            "description": "The session's working directory",
+            "name": "working-directory",
+            "template": "folders"
+          },
+          "description": "Set the session's working directory",
+          "name": [
+            "-c"
+          ]
+        },
+        {
+          "description": "Don't use update-environment option",
+          "name": [
+            "-E"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "ls"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "target-session"
+          },
+          "description": "Attach to a session with the given name",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "The key to bind",
+          "name": "key"
+        },
+        {
+          "description": "The command to bind to the key",
+          "name": "command"
+        },
+        {
+          "description": "Arguments for the command",
+          "isOptional": true,
+          "isVariadic": true,
+          "name": "arguments"
+        }
+      ],
+      "description": "Bind a key to a command",
+      "name": "bind",
+      "options": [
+        {
+          "description": "Alias for -T root",
+          "name": [
+            "-n"
+          ]
+        },
+        {
+          "description": "Indicate that this key may repeat",
+          "name": [
+            "-r"
+          ]
+        },
+        {
+          "args": {
+            "name": "note"
+          },
+          "description": "Attach a note to the key",
+          "name": [
+            "-N"
+          ]
+        },
+        {
+          "args": {
+            "name": "key-table"
+          },
+          "description": "The key table to use",
+          "name": [
+            "-T"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Break a pane from an exiting into a new window",
+      "name": "breakp",
+      "options": [
+        {
+          "description": "Move the window to the next index after",
+          "name": [
+            "-a"
+          ]
+        },
+        {
+          "description": "Move the window to the next index before",
+          "name": [
+            "-b"
+          ]
+        },
+        {
+          "description": "The new windows does not become the current window",
+          "name": [
+            "-d"
+          ]
+        },
+        {
+          "description": "Print information about the new window",
+          "name": [
+            "-P"
+          ]
+        },
+        {
+          "args": {
+            "description": "The format for the output of this command",
+            "name": "format"
+          },
+          "description": "Format output",
+          "name": [
+            "-F"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsw"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "window-name"
+          },
+          "description": "The target window",
+          "name": [
+            "-n"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsp"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "src-pane"
+          },
+          "description": "The source pane",
+          "name": [
+            "-s"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsw"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "window-name"
+          },
+          "description": "The destination window",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Capture the contents of a pane to a buffer",
+      "name": "capturep",
+      "options": [
+        {
+          "description": "Use the alternate screen and history is not accessible",
+          "name": [
+            "-a"
+          ]
+        },
+        {
+          "description": "Include escape sequences for text and background attributes",
+          "name": [
+            "-e"
+          ]
+        },
+        {
+          "description": "Redirect output to stdout",
+          "name": [
+            "-p"
+          ]
+        },
+        {
+          "description": "Capture only outputs that is the beginning of an as-yet incomplete escape sequence",
+          "name": [
+            "-P"
+          ]
+        },
+        {
+          "description": "Do not throw an error if not alternate screen is found",
+          "name": [
+            "-q"
+          ]
+        },
+        {
+          "description": "Escape non-printable characters as octal",
+          "name": [
+            "-C"
+          ]
+        },
+        {
+          "description": "Preserve trailing spaces and join any wrapped lines",
+          "name": [
+            "-J"
+          ]
+        },
+        {
+          "description": "Preserve trailing spaces at each line's end",
+          "name": [
+            "-N"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsb"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "buffer-name"
+          },
+          "description": "The buffer name",
+          "name": [
+            "-b"
+          ]
+        },
+        {
+          "args": {
+            "name": "end-line"
+          },
+          "description": "Ending line number",
+          "name": [
+            "-E"
+          ]
+        },
+        {
+          "args": {
+            "name": "start-line"
+          },
+          "description": "Starting line number",
+          "name": [
+            "-S"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsp"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "src-pane"
+          },
+          "description": "The target pane",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "template"
+      },
+      "description": "Put a pane into buffer choice mode",
+      "name": "choose-buffer",
+      "options": [
+        {
+          "description": "Start without the preview",
+          "name": [
+            "-N"
+          ]
+        },
+        {
+          "description": "Zoom the pane",
+          "name": [
+            "-Z"
+          ]
+        },
+        {
+          "description": "Reverse the sort order",
+          "name": [
+            "-r"
+          ]
+        },
+        {
+          "args": {
+            "description": "The format for the output of this command",
+            "name": "format"
+          },
+          "description": "Format output",
+          "name": [
+            "-F"
+          ]
+        },
+        {
+          "args": {
+            "name": "filter"
+          },
+          "description": "Specify an initial filter",
+          "name": [
+            "-f"
+          ]
+        },
+        {
+          "args": {
+            "name": "sort-order",
+            "suggestions": [
+              {
+                "name": "time"
+              },
+              {
+                "name": "name"
+              },
+              {
+                "name": "size"
+              }
+            ]
+          },
+          "description": "Specify the sort order",
+          "name": [
+            "-O"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsp"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "src-pane"
+          },
+          "description": "The target pane",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "template"
+      },
+      "description": "Put a pane into buffer client mode",
+      "name": "choose-client",
+      "options": [
+        {
+          "description": "Start without the preview",
+          "name": [
+            "-N"
+          ]
+        },
+        {
+          "description": "Reserve the sort order",
+          "name": [
+            "-r"
+          ]
+        },
+        {
+          "description": "Zoom the pane",
+          "name": [
+            "-Z"
+          ]
+        },
+        {
+          "args": {
+            "description": "The format for the output of this command",
+            "name": "format"
+          },
+          "description": "Format output",
+          "name": [
+            "-F"
+          ]
+        },
+        {
+          "args": {
+            "name": "filter"
+          },
+          "description": "Specify an initial filter",
+          "name": [
+            "-f"
+          ]
+        },
+        {
+          "args": {
+            "name": "sort",
+            "suggestions": [
+              {
+                "name": "name"
+              },
+              {
+                "name": "size"
+              },
+              {
+                "name": "creation"
+              },
+              {
+                "name": "activity"
+              }
+            ]
+          },
+          "description": "Specify the initial sort field",
+          "name": [
+            "-O"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsp"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "src-pane"
+          },
+          "description": "The target pane",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "template"
+      },
+      "description": "Put a pane into buffer tree mode",
+      "name": "choose-tree",
+      "options": [
+        {
+          "description": "Include all sessions in any session group in the tree",
+          "name": [
+            "-G"
+          ]
+        },
+        {
+          "description": "Start without the preview",
+          "name": [
+            "-N"
+          ]
+        },
+        {
+          "description": "Reserve the sort order",
+          "name": [
+            "-r"
+          ]
+        },
+        {
+          "description": "Start with sessions collapsed",
+          "name": [
+            "-s"
+          ]
+        },
+        {
+          "description": "Start with windows collapsed",
+          "name": [
+            "-w"
+          ]
+        },
+        {
+          "description": "Zoom the pane",
+          "name": [
+            "-Z"
+          ]
+        },
+        {
+          "args": {
+            "description": "The format for the output of this command",
+            "name": "format"
+          },
+          "description": "Format output",
+          "name": [
+            "-F"
+          ]
+        },
+        {
+          "args": {
+            "name": "filter"
+          },
+          "description": "Specify an initial filter",
+          "name": [
+            "-f"
+          ]
+        },
+        {
+          "args": {
+            "name": "sort",
+            "suggestions": [
+              {
+                "name": "name"
+              },
+              {
+                "name": "size"
+              },
+              {
+                "name": "creation"
+              },
+              {
+                "name": "activity"
+              }
+            ]
+          },
+          "description": "Specify the initial sort field",
+          "name": [
+            "-O"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsp"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "src-pane"
+          },
+          "description": "The target pane",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Remove and clear history for a pane",
+      "name": "clearhist"
+    },
+    {
+      "description": "Enter clock mode",
+      "name": "clock-mode"
+    },
+    {
+      "args": {
+        "description": "If specified, used as a command",
+        "isOptional": true,
+        "name": "template"
+      },
+      "description": "Open the tmux command prompt in a client",
+      "name": "command-prompt",
+      "options": [
+        {
+          "description": "The prompt only accept one key press",
+          "name": [
+            "-l"
+          ]
+        },
+        {
+          "description": "Execute the command every time the prompt input changes",
+          "name": [
+            "-i"
+          ]
+        },
+        {
+          "description": "Like -l but the key press is translated to a key name",
+          "name": [
+            "-k"
+          ]
+        },
+        {
+          "description": "The prompt only accept numeric key press",
+          "name": [
+            "-N"
+          ]
+        },
+        {
+          "description": "Tell that the prompt is for a target",
+          "name": [
+            "-T"
+          ]
+        },
+        {
+          "description": "Tell that the prompt is for a window",
+          "name": [
+            "-W"
+          ]
+        },
+        {
+          "args": {
+            "name": "inputs"
+          },
+          "description": "Comma-separated list of the initial text for each prompt",
+          "name": [
+            "-I"
+          ]
+        },
+        {
+          "args": {
+            "name": "prompts"
+          },
+          "description": "Comma-separated list of prompts which are displayed in order",
+          "name": [
+            "-p"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsc"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "target-client"
+          },
+          "description": "The target client",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The command to run",
+        "isVariadic": true,
+        "name": "command"
+      },
+      "description": "Run a command but ask for confirmation before",
+      "name": "confirm",
+      "options": [
+        {
+          "args": {
+            "name": "prompt"
+          },
+          "description": "A prompt to display for confirmation",
+          "name": [
+            "-p"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsc"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "target-client"
+          },
+          "description": "The target client",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Enter copy mode",
+      "name": "copy-mode",
+      "options": [
+        {
+          "description": "Scrolling to the bottom should exit copy mode",
+          "name": [
+            "-e"
+          ]
+        },
+        {
+          "description": "Hide the position indicator",
+          "name": [
+            "-H"
+          ]
+        },
+        {
+          "description": "Begin a mouse drag",
+          "name": [
+            "-M"
+          ]
+        },
+        {
+          "description": "Cancel copy mode and any other modes",
+          "name": [
+            "-q"
+          ]
+        },
+        {
+          "description": "Scroll one page up",
+          "name": [
+            "-u"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsp"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "src-pane"
+          },
+          "description": "The source pane",
+          "name": [
+            "-s"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsp"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "src-pane"
+          },
+          "description": "The target pane",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Delete a paste buffer",
+      "name": "deleteb",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsb"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "buffer-name"
+          },
+          "description": "The target buffer",
+          "name": [
+            "-b"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Detach a client from the server",
+      "name": "detach",
+      "options": [
+        {
+          "description": "Kills all but the client given with -t",
+          "name": [
+            "-a"
+          ]
+        },
+        {
+          "description": "Send SIGHUP to the parent process",
+          "name": [
+            "-P"
+          ]
+        },
+        {
+          "args": {
+            "description": "The shell-command to run",
+            "name": "shell-command"
+          },
+          "description": "Run the given shell-command to replace the client",
+          "name": [
+            "-E"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsc"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "target-client"
+          },
+          "description": "The target client",
+          "name": [
+            "-t"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "ls"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "target-session"
+          },
+          "description": "Detach all clients attached to the specified session",
+          "name": [
+            "-s"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "The name of the menu",
+          "name": "name"
+        },
+        {
+          "description": "The key to press to open the menu",
+          "name": "key"
+        },
+        {
+          "description": "Commands to execute",
+          "isVariadic": true,
+          "name": "command"
+        }
+      ],
+      "description": "Display menu on target-client",
+      "name": "menu",
+      "options": [
+        {
+          "description": "Do not close the menu when the mouse button is released",
+          "name": [
+            "-O"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsc"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "target-client"
+          },
+          "description": "The target client",
+          "name": [
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsp"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "src-pane"
+          },
+          "description": "The target pane",
+          "name": [
+            "-t"
+          ]
+        },
+        {
+          "args": {
+            "name": "title"
+          },
+          "description": "Specify a title",
+          "name": [
+            "-T"
+          ]
+        },
+        {
+          "args": {
+            "name": "position"
+          },
+          "description": "Give the x position of the menu",
+          "name": [
+            "-x"
+          ]
+        },
+        {
+          "args": {
+            "name": "position"
+          },
+          "description": "Give the y position of the menu",
+          "name": [
+            "-y"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The message to display",
+        "isOptional": true,
+        "name": "message"
+      },
+      "description": "Display a message in the status line",
+      "name": "display",
+      "options": [
+        {
+          "description": "List the format variables and their values",
+          "name": [
+            "-a"
+          ]
+        },
+        {
+          "description": "Forward any input read from stdin to the empty pane target-pane",
+          "name": [
+            "-I"
+          ]
+        },
+        {
+          "description": "Print output to stdout",
+          "name": [
+            "-p"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsc"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "target-client"
+          },
+          "description": "Print verbose logging as the format is parsed",
+          "name": [
+            "-v"
+          ]
+        },
+        {
+          "args": {
+            "name": "delay"
+          },
+          "description": "A delay for the message",
+          "name": [
+            "-d"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsp"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "src-pane"
+          },
+          "description": "The target pane",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "template"
+      },
+      "description": "Display an indicator for each visible pane",
+      "name": "displayp",
+      "options": [
+        {
+          "description": "Do not block other commands from running until the indicator is closed",
+          "name": [
+            "-b"
+          ]
+        },
+        {
+          "description": "Do not close the indicator when a key is pressed",
+          "name": [
+            "-N"
+          ]
+        },
+        {
+          "args": {
+            "description": "The duration to close the indicator after in milliseconds",
+            "name": "duration"
+          },
+          "description": "Specify the duration",
+          "name": [
+            "-d"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsc"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "target-client"
+          },
+          "description": "The target client",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "A string to search for",
+        "name": "match-string"
+      },
+      "description": "Search for a pattern in windows",
+      "name": "findw",
+      "options": [
+        {
+          "description": "Make the search ignore cases",
+          "name": [
+            "-i"
+          ]
+        },
+        {
+          "description": "Match only visible window contents",
+          "name": [
+            "-C"
+          ]
+        },
+        {
+          "description": "Match only the window name",
+          "name": [
+            "-N"
+          ]
+        },
+        {
+          "description": "Search a regular expression",
+          "name": [
+            "-r"
+          ]
+        },
+        {
+          "description": "Match only the window's title",
+          "name": [
+            "-T"
+          ]
+        },
+        {
+          "description": "Zoom the pane",
+          "name": [
+            "-Z"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsp"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "src-pane"
+          },
+          "description": "The target pane",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Check and report if a session exists on the server",
+      "name": "has",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "ls"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "target-session"
+          },
+          "description": "Specify the target session",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Execute a tmux command if a shell-command succeeded",
+      "name": "if"
+    },
+    {
+      "description": "Split a pane and move an existing one into the new space",
+      "name": "joinp",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsp"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "src-pane"
+          },
+          "description": "Src-pane will be joined to left of or above dst-pane",
+          "name": [
+            "-b"
+          ]
+        },
+        {
+          "args": {
+            "description": "The size of the new space",
+            "name": "size"
+          },
+          "description": "Set the size of the new space",
+          "name": [
+            "-l"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsp"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "src-pane"
+          },
+          "description": "The source pane",
+          "name": [
+            "-s"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsp"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "src-pane"
+          },
+          "description": "The destination pane",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Destroy a given pane",
+      "name": "killp",
+      "options": [
+        {
+          "description": "Kill all but the target-pane",
+          "name": [
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsp"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "src-pane"
+          },
+          "description": "The target pane",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Kill clients, session and server",
+      "name": "kill-server"
+    },
+    {
+      "description": "Kill/delete sessions",
+      "name": "kill-ses",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "ls"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "target-session"
+          },
+          "description": "Kill/delete session with the given name",
+          "name": [
+            "-t"
+          ]
+        },
+        {
+          "description": "Kill/delete all session but the current",
+          "name": [
+            "-a"
+          ]
+        },
+        {
+          "description": "Clear alerts (bell, activity, or silence) in all windows linked to the session",
+          "name": [
+            "-C"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Destroy a given window",
+      "name": "killw",
+      "options": [
+        {
+          "description": "Kill all but the target-window",
+          "name": [
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsw"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "window-name"
+          },
+          "description": "The target window",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Select the previously selected pane",
+      "name": "lastp",
+      "options": [
+        {
+          "description": "Disable input to the pane",
+          "name": [
+            "-d"
+          ]
+        },
+        {
+          "description": "Enable input to the pane",
+          "name": [
+            "-e"
+          ]
+        },
+        {
+          "description": "Keep the window zoomed if it was zoomed",
+          "name": [
+            "-Z"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsw"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "window-name"
+          },
+          "description": "The target window",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Select the previously selected window",
+      "name": "last",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "ls"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "target-session"
+          },
+          "description": "Select the previously select window of the target-session",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Link a window to another",
+      "name": "linkw",
+      "options": [
+        {
+          "description": "Move the window to the next index after dst-window",
+          "name": [
+            "-a"
+          ]
+        },
+        {
+          "description": "Move the window to the next index before dst-window",
+          "name": [
+            "-b"
+          ]
+        },
+        {
+          "description": "Do not select the newly linked window",
+          "name": [
+            "-d"
+          ]
+        },
+        {
+          "description": "Kill dst-window if exist",
+          "name": [
+            "-k"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsw"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "window-name"
+          },
+          "description": "The source window",
+          "name": [
+            "-s"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsw"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "window-name"
+          },
+          "description": "The destination window",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "List paste buffers of a session",
+      "name": "lsb"
+    },
+    {
+      "description": "List clients attached to a server",
+      "name": "lsc",
+      "options": [
+        {
+          "args": {
+            "description": "The format for the output of this command",
+            "name": "format"
+          },
+          "description": "Format output",
+          "name": [
+            "-F"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "ls"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "target-session"
+          },
+          "description": "List only clients connected to that session",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The command to list syntax of",
+        "isOptional": true,
+        "name": "command"
+      },
+      "description": "List supported sub-commands",
+      "name": "lscm",
+      "options": [
+        {
+          "args": {
+            "description": "The format for the output of this command",
+            "name": "format"
+          },
+          "description": "Format output",
+          "name": [
+            "-F"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "List all key-bindings",
+      "name": "lsk"
+    },
+    {
+      "description": "List panes of a window",
+      "name": "lsp",
+      "options": [
+        {
+          "description": "Ignore target-window and list all panes",
+          "name": [
+            "-a"
+          ]
+        },
+        {
+          "description": "Target-window becomes a session",
+          "name": [
+            "-s"
+          ]
+        },
+        {
+          "args": {
+            "description": "The format for the output of this command",
+            "name": "format"
+          },
+          "description": "Format output",
+          "name": [
+            "-F"
+          ]
+        },
+        {
+          "args": {
+            "name": "filter"
+          },
+          "description": "Specify a filter",
+          "name": [
+            "-f"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsw"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "window-name"
+          },
+          "description": "The target window",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "List sessions managed by a server",
+      "name": "ls",
+      "options": [
+        {
+          "args": {
+            "description": "The format for the output of this command",
+            "name": "format"
+          },
+          "description": "Format output",
+          "name": [
+            "-F"
+          ]
+        },
+        {
+          "args": {
+            "name": "filter"
+          },
+          "description": "Filter the sessions",
+          "name": [
+            "-f"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "List windows of a session",
+      "name": "lsw",
+      "options": [
+        {
+          "description": "Ignore target-session and list all windows",
+          "name": [
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "description": "The format for the output of this command",
+            "name": "format"
+          },
+          "description": "Format output",
+          "name": [
+            "-F"
+          ]
+        },
+        {
+          "args": {
+            "name": "filter"
+          },
+          "description": "Specify a filter",
+          "name": [
+            "-f"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "ls"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "target-session"
+          },
+          "description": "The target session",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Load from this path",
+        "name": "path"
+      },
+      "description": "Load a file into a paste buffer",
+      "name": "loadb",
+      "options": [
+        {
+          "description": "Send the buffer to the clipboard",
+          "name": [
+            "-w"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsb"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "buffer-name"
+          },
+          "description": "The target buffer",
+          "name": [
+            "-b"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsc"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "target-client"
+          },
+          "description": "The target client",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Lock a client",
+      "name": "lockc",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsc"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "target-client"
+          },
+          "description": "The target client",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Lock all clients attached to the server",
+      "name": "lock"
+    },
+    {
+      "description": "Lock all clients attached to a session",
+      "name": "locks",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "ls"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "target-session"
+          },
+          "description": "Lock all clients attached to target-session",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Move a window to another",
+      "name": "movew",
+      "options": [
+        {
+          "description": "Move the window to the next index after dst-window",
+          "name": [
+            "-a"
+          ]
+        },
+        {
+          "description": "Move the window to the next index before dst-window",
+          "name": [
+            "-b"
+          ]
+        },
+        {
+          "description": "Renumber all windows in the session in sequential order",
+          "name": [
+            "-r"
+          ]
+        },
+        {
+          "description": "Do not select the newly linked window",
+          "name": [
+            "-d"
+          ]
+        },
+        {
+          "description": "Kill dst-window if exist",
+          "name": [
+            "-k"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsw"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "window-name"
+          },
+          "description": "The source window",
+          "name": [
+            "-s"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsw"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "window-name"
+          },
+          "description": "The destination window",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "A shell command to run when creating the session",
+        "name": "shell-command"
+      },
+      "description": "Create a new session",
+      "name": "new",
+      "options": [
+        {
+          "description": "Behave like attach-session if session-name already exist",
+          "name": [
+            "-A"
+          ]
+        },
+        {
+          "description": "Use the initial size from default-size",
+          "name": [
+            "-d"
+          ]
+        },
+        {
+          "description": "Behave like -d if -A is set",
+          "name": [
+            "-D"
+          ]
+        },
+        {
+          "description": "Do not use update-environment option",
+          "name": [
+            "-E"
+          ]
+        },
+        {
+          "description": "Print information about the new session",
+          "name": [
+            "-P"
+          ]
+        },
+        {
+          "description": "Behave like -x if -A is set",
+          "name": [
+            "-X"
+          ]
+        },
+        {
+          "args": {
+            "description": "The start directory",
+            "name": "start-directory",
+            "template": "folders"
+          },
+          "description": "Specify a start directory for the session",
+          "name": [
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "description": "Environment variables with the form VARIABLE=VALUE",
+            "name": "environment"
+          },
+          "description": "Set environment variables",
+          "name": [
+            "-e"
+          ]
+        },
+        {
+          "args": {
+            "description": "Comma-separated list of flags",
+            "name": "flags",
+            "suggestions": [
+              {
+                "name": "active-pane"
+              },
+              {
+                "name": "ignore-size"
+              },
+              {
+                "name": "no-output"
+              },
+              {
+                "name": "pause-after"
+              },
+              {
+                "name": "read-only"
+              },
+              {
+                "name": "wait-exit"
+              }
+            ]
+          },
+          "description": "Set client flags",
+          "name": [
+            "-f"
+          ]
+        },
+        {
+          "args": {
+            "description": "The format for the output of this command",
+            "name": "format"
+          },
+          "description": "Format output",
+          "name": [
+            "-F"
+          ]
+        },
+        {
+          "args": {
+            "name": "window-name"
+          },
+          "description": "Start a new session with the given name",
+          "name": [
+            "-n"
+          ]
+        },
+        {
+          "args": {
+            "name": "session-name"
+          },
+          "description": "Start a new session with the given name",
+          "name": [
+            "-s"
+          ]
+        },
+        {
+          "args": {
+            "name": "group-name"
+          },
+          "description": "The name of the group",
+          "name": [
+            "-t"
+          ]
+        },
+        {
+          "args": {
+            "name": "width"
+          },
+          "description": "The width of the session",
+          "name": [
+            "-x"
+          ]
+        },
+        {
+          "args": {
+            "name": "height"
+          },
+          "description": "The height of the session",
+          "name": [
+            "-y"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "A shell command to run when creating the window",
+        "name": "shell-command"
+      },
+      "description": "Create a new window",
+      "name": "neww",
+      "options": [
+        {
+          "description": "Insert the new window at the next index after target-window",
+          "name": [
+            "-a"
+          ]
+        },
+        {
+          "description": "Insert the new window at the next index before target-window",
+          "name": [
+            "-b"
+          ]
+        },
+        {
+          "description": "The session does not make the new window the current window",
+          "name": [
+            "-d"
+          ]
+        },
+        {
+          "description": "Kill the target-window if exist",
+          "name": [
+            "-k"
+          ]
+        },
+        {
+          "description": "Print information about the new window",
+          "name": [
+            "-P"
+          ]
+        },
+        {
+          "description": "Select window-name if exist",
+          "name": [
+            "-S"
+          ]
+        },
+        {
+          "args": {
+            "description": "The start directory",
+            "name": "start-directory",
+            "template": "folders"
+          },
+          "description": "Specify a start directory for the window",
+          "name": [
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "description": "Environment variables with the form VARIABLE=VALUE",
+            "name": "environment"
+          },
+          "description": "Set environment variables",
+          "name": [
+            "-e"
+          ]
+        },
+        {
+          "args": {
+            "description": "The format for the output of this command",
+            "name": "format"
+          },
+          "description": "Format output",
+          "name": [
+            "-F"
+          ]
+        },
+        {
+          "args": {
+            "name": "window-name"
+          },
+          "description": "Start a new window with the given name",
+          "name": [
+            "-n"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsw"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "window-name"
+          },
+          "description": "The target window",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Move a window to the next layout",
+      "name": "nextl",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsp"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "src-pane"
+          },
+          "description": "The target pane",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Move to the next window in a session",
+      "name": "next",
+      "options": [
+        {
+          "description": "Move to the next window with an alert",
+          "name": [
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "ls"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "target-session"
+          },
+          "description": "Move to the next window of the target-session",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Insert a paste buffer into the window",
+      "name": "pasteb"
+    },
+    {
+      "args": {
+        "description": "The shell-command to run",
+        "isOptional": true,
+        "name": "shell-command"
+      },
+      "description": "Pipe output from a pane to a shell command",
+      "name": "pipep",
+      "options": [
+        {
+          "description": "Connect stdout to shell-command",
+          "name": [
+            "-I"
+          ]
+        },
+        {
+          "description": "Connect stdin to shell-command",
+          "name": [
+            "-O"
+          ]
+        },
+        {
+          "description": "Only open a new pipe if no previous pipe exists",
+          "name": [
+            "-o"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsp"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "src-pane"
+          },
+          "description": "The target pane",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Move a window to the previous layout",
+      "name": "prevl",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsw"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "window-name"
+          },
+          "description": "The target window",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Move to the previous window in a session",
+      "name": "prev",
+      "options": [
+        {
+          "description": "Move with an alert",
+          "name": [
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "ls"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "target-session"
+          },
+          "description": "Move to the previous window of the target-session",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "An adjustment value to use",
+        "isOptional": true,
+        "name": "adjustment"
+      },
+      "description": "Refresh a client",
+      "name": "refresh",
+      "options": [
+        {
+          "description": "Return the tracking cursor",
+          "name": [
+            "-c"
+          ]
+        },
+        {
+          "description": "Allow the visible portion of a window to be changed",
+          "name": [
+            "-D"
+          ]
+        },
+        {
+          "description": "Request the clipboard from the client",
+          "name": [
+            "-l"
+          ]
+        },
+        {
+          "description": "Allow the visible portion of a window to be changed",
+          "name": [
+            "-L"
+          ]
+        },
+        {
+          "description": "Allow the visible portion of a window to be changed",
+          "name": [
+            "-R"
+          ]
+        },
+        {
+          "description": "Only update the client's status line",
+          "name": [
+            "-S"
+          ]
+        },
+        {
+          "description": "Allow the visible portion of a window to be changed",
+          "name": [
+            "-U"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsp"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "src-pane"
+          },
+          "description": "The target pane",
+          "name": [
+            "-A"
+          ]
+        },
+        {
+          "args": {
+            "name": "subscription"
+          },
+          "description": "A subscription to a format for a control mode",
+          "name": [
+            "-B"
+          ]
+        },
+        {
+          "args": {
+            "name": "XxY"
+          },
+          "description": "Set the width and height",
+          "name": [
+            "-C"
+          ]
+        },
+        {
+          "args": {
+            "description": "Comma-separated list of flags",
+            "name": "flags",
+            "suggestions": [
+              {
+                "name": "active-pane"
+              },
+              {
+                "name": "ignore-size"
+              },
+              {
+                "name": "no-output"
+              },
+              {
+                "name": "pause-after"
+              },
+              {
+                "name": "read-only"
+              },
+              {
+                "name": "wait-exit"
+              }
+            ]
+          },
+          "description": "Set client flags",
+          "name": [
+            "-f"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsc"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "target-client"
+          },
+          "description": "The target client",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The new name of the session",
+        "name": "new-name"
+      },
+      "description": "Rename a session",
+      "name": "rename",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "ls"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "target-session"
+          },
+          "description": "Rename the target-session",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The new name of the window",
+        "name": "new-name"
+      },
+      "description": "Rename a window",
+      "name": "renamew",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsw"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "window-name"
+          },
+          "description": "The target window",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Adjustment used with -ULDR",
+        "name": "adjustment"
+      },
+      "description": "Resize a pane",
+      "name": "resizep",
+      "options": [
+        {
+          "description": "Resize down by adjustment",
+          "name": [
+            "-D"
+          ]
+        },
+        {
+          "description": "Resize left by adjustment",
+          "name": [
+            "-L"
+          ]
+        },
+        {
+          "description": "Begin mouse resizing",
+          "name": [
+            "-M"
+          ]
+        },
+        {
+          "description": "Resize right by adjustment",
+          "name": [
+            "-R"
+          ]
+        },
+        {
+          "description": "Trim all lines below the current cursor position",
+          "name": [
+            "-T"
+          ]
+        },
+        {
+          "description": "Resize up by adjustment",
+          "name": [
+            "-U"
+          ]
+        },
+        {
+          "description": "Toggle the active pane between zoomed and unzoomed",
+          "name": [
+            "-Z"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsp"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "src-pane"
+          },
+          "description": "The target pane",
+          "name": [
+            "-t"
+          ]
+        },
+        {
+          "args": {
+            "name": "width"
+          },
+          "description": "The width of the pane",
+          "name": [
+            "-x"
+          ]
+        },
+        {
+          "args": {
+            "name": "height"
+          },
+          "description": "The height of the pane",
+          "name": [
+            "-y"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Adjustment used with -ULDR",
+        "name": "adjustment"
+      },
+      "description": "Resize a window",
+      "name": "resizew",
+      "options": [
+        {
+          "description": "Set the size of the smallest session containing the window",
+          "name": [
+            "-a"
+          ]
+        },
+        {
+          "description": "Set the size of the largest session containing the window",
+          "name": [
+            "-A"
+          ]
+        },
+        {
+          "description": "Resize down by adjustment",
+          "name": [
+            "-D"
+          ]
+        },
+        {
+          "description": "Resize left by adjustment",
+          "name": [
+            "-L"
+          ]
+        },
+        {
+          "description": "Resize right by adjustment",
+          "name": [
+            "-R"
+          ]
+        },
+        {
+          "description": "Resize up by adjustment",
+          "name": [
+            "-U"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsw"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "window-name"
+          },
+          "description": "The target window",
+          "name": [
+            "-t"
+          ]
+        },
+        {
+          "args": {
+            "name": "width"
+          },
+          "description": "The width of the pane",
+          "name": [
+            "-x"
+          ]
+        },
+        {
+          "args": {
+            "name": "height"
+          },
+          "description": "The height of the pane",
+          "name": [
+            "-y"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "A shell command to run when creating the pane",
+        "isOptional": true,
+        "name": "shell-command"
+      },
+      "description": "Reactivate a pane in which a command has exited",
+      "name": "respawnp",
+      "options": [
+        {
+          "description": "Kill the target-pane if exist",
+          "name": [
+            "-k"
+          ]
+        },
+        {
+          "args": {
+            "description": "The start directory",
+            "name": "start-directory",
+            "template": "folders"
+          },
+          "description": "Specify a start directory for the pane",
+          "name": [
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "description": "Environment variables with the form VARIABLE=VALUE",
+            "name": "environment"
+          },
+          "description": "Set environment variables",
+          "name": [
+            "-e"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsp"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "src-pane"
+          },
+          "description": "The target pane",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "A shell command to run when creating the window",
+        "isOptional": true,
+        "name": "shell-command"
+      },
+      "description": "Reactivate a window in which a command has exited",
+      "name": "respawnw",
+      "options": [
+        {
+          "description": "Kill the target-window if exist",
+          "name": [
+            "-k"
+          ]
+        },
+        {
+          "args": {
+            "description": "The start directory",
+            "name": "start-directory",
+            "template": "folders"
+          },
+          "description": "Specify a start directory for the window",
+          "name": [
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "description": "Environment variables with the form VARIABLE=VALUE",
+            "name": "environment"
+          },
+          "description": "Set environment variables",
+          "name": [
+            "-e"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsw"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "window-name"
+          },
+          "description": "The target window",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Rotate positions of panes in a window",
+      "name": "rotatew",
+      "options": [
+        {
+          "description": "Rotate upward",
+          "name": [
+            "-D"
+          ]
+        },
+        {
+          "description": "Rotate downward",
+          "name": [
+            "-U"
+          ]
+        },
+        {
+          "description": "Keep the window zoomed if it was zoomed",
+          "name": [
+            "-Z"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsw"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "window-name"
+          },
+          "description": "The target window",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Execute a command without create a new window",
+      "name": "run"
+    },
+    {
+      "description": "Save a paste buffer to a file",
+      "name": "saveb"
+    },
+    {
+      "args": {
+        "description": "Use the last preset layout used if not specified",
+        "isOptional": true,
+        "name": "layout-name"
+      },
+      "description": "Choose a layout for a pane",
+      "name": "selectl",
+      "options": [
+        {
+          "description": "Spread the current pane and any panes next to it evenly",
+          "name": [
+            "-E"
+          ]
+        },
+        {
+          "description": "Equivalent to next-layout",
+          "name": [
+            "-n"
+          ]
+        },
+        {
+          "description": "Apply the last set layout if possible",
+          "name": [
+            "-o"
+          ]
+        },
+        {
+          "description": "Equivalent to previous-layout",
+          "name": [
+            "-p"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsp"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "src-pane"
+          },
+          "description": "The target pane",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Make a pane the active one in the window",
+      "name": "selectp",
+      "options": [
+        {
+          "description": "Use the down pane",
+          "name": [
+            "-D"
+          ]
+        },
+        {
+          "description": "Disable input to the pane",
+          "name": [
+            "-d"
+          ]
+        },
+        {
+          "description": "Enable input to the pane",
+          "name": [
+            "-e"
+          ]
+        },
+        {
+          "description": "Use the left pane",
+          "name": [
+            "-L"
+          ]
+        },
+        {
+          "description": "Same as last-pane command",
+          "name": [
+            "-l"
+          ]
+        },
+        {
+          "description": "Clear the marked pane",
+          "name": [
+            "-M"
+          ]
+        },
+        {
+          "description": "Set the market pane",
+          "name": [
+            "-m"
+          ]
+        },
+        {
+          "description": "Use the right pane",
+          "name": [
+            "-R"
+          ]
+        },
+        {
+          "description": "Use the up pane",
+          "name": [
+            "-U"
+          ]
+        },
+        {
+          "description": "Set the pane's title",
+          "name": [
+            "-Z"
+          ]
+        },
+        {
+          "args": {
+            "name": "title"
+          },
+          "description": "Set the pane title",
+          "name": [
+            "-T"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsp"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "src-pane"
+          },
+          "description": "The target pane",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Select a window",
+      "name": "selectw",
+      "options": [
+        {
+          "description": "Same as last-window",
+          "name": [
+            "-l"
+          ]
+        },
+        {
+          "description": "Same as next-window",
+          "name": [
+            "-n"
+          ]
+        },
+        {
+          "description": "Same as previous-window",
+          "name": [
+            "-p"
+          ]
+        },
+        {
+          "description": "Same as last-window if the selected window is already the current window",
+          "name": [
+            "-T"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsw"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "window-name"
+          },
+          "description": "The target window",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Send key(s) to a window",
+      "name": "send"
+    },
+    {
+      "description": "Send the prefix key to a window",
+      "name": "send-prefix"
+    },
+    {
+      "description": "Show every session, window, pane, etc",
+      "name": "info"
+    },
+    {
+      "args": {
+        "description": "The data to set in the buffer",
+        "name": "data"
+      },
+      "description": "Set content of a paste buffer",
+      "name": "setb",
+      "options": [
+        {
+          "description": "Append to rather than overwriting the buffer",
+          "name": [
+            "-a"
+          ]
+        },
+        {
+          "description": "Send the buffer to the clipboard",
+          "name": [
+            "-w"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsb"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "buffer-name"
+          },
+          "description": "The name of the buffer",
+          "name": [
+            "-b"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsc"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "target-client"
+          },
+          "description": "The target client",
+          "name": [
+            "-t"
+          ]
+        },
+        {
+          "args": {
+            "name": "new-buffer-name"
+          },
+          "description": "The new name of the buffer",
+          "name": [
+            "-n"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "(Un)set an environment variable",
+      "name": "setenv"
+    },
+    {
+      "description": "Set a hook to a command",
+      "name": "set-hook"
+    },
+    {
+      "description": "Set a session option",
+      "name": "set"
+    },
+    {
+      "description": "Set a window option",
+      "name": "setw"
+    },
+    {
+      "description": "Display the contents of a paste buffer",
+      "name": "showb"
+    },
+    {
+      "description": "Display the environment",
+      "name": "showenv",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "ls"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "target-session"
+          },
+          "description": "Display the environment of the target-session",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Show the global list of hooks",
+      "name": "show-hooks"
+    },
+    {
+      "description": "Show client's message log",
+      "name": "showmsgs",
+      "options": [
+        {
+          "description": "Show debugging information about terminals",
+          "name": [
+            "-T"
+          ]
+        },
+        {
+          "description": "Show debugging information about jobs",
+          "name": [
+            "-J"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsc"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "target-client"
+          },
+          "description": "The target client",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Show session options",
+      "name": "show"
+    },
+    {
+      "description": "Show window options",
+      "name": "showw"
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "path"
+      },
+      "description": "Execute tmux commands from a file",
+      "name": "source",
+      "options": [
+        {
+          "description": "Expand path as a format",
+          "name": [
+            "-F"
+          ]
+        },
+        {
+          "description": "Parse the file but don't run commands",
+          "name": [
+            "-n"
+          ]
+        },
+        {
+          "description": "Don't return any error if path does not exist",
+          "name": [
+            "-q"
+          ]
+        },
+        {
+          "description": "Show the parsed command and line numbers if possible",
+          "name": [
+            "-v"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "A shell command to run when creating the pane",
+        "isOptional": true,
+        "name": "shell-command"
+      },
+      "description": "Splits a pane into two",
+      "name": "splitw",
+      "options": [
+        {
+          "description": "Create the new pane to the left of or above target-pane",
+          "name": [
+            "-b"
+          ]
+        },
+        {
+          "description": "Create a new pane spanning the full window height with -h or width with -v",
+          "name": [
+            "-f"
+          ]
+        },
+        {
+          "description": "Set the pane take full height",
+          "name": [
+            "-h"
+          ]
+        },
+        {
+          "description": "Create an empty pane and forward stdin to it",
+          "name": [
+            "-I"
+          ]
+        },
+        {
+          "description": "Set the pane take full width",
+          "name": [
+            "-v"
+          ]
+        },
+        {
+          "description": "Zoom if the window is not zoomed",
+          "name": [
+            "-Z"
+          ]
+        },
+        {
+          "args": {
+            "description": "The start directory",
+            "name": "start-directory",
+            "template": "folders"
+          },
+          "description": "Specify a start directory for the pane",
+          "name": [
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "description": "Environment variables with the form VARIABLE=VALUE",
+            "name": "environment"
+          },
+          "description": "Set environment variables",
+          "name": [
+            "-e"
+          ]
+        },
+        {
+          "args": {
+            "name": "size"
+          },
+          "description": "Set the size in columns (horizontal split) or rows (vertical split)",
+          "name": [
+            "-l"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsp"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "src-pane"
+          },
+          "description": "The target pane",
+          "name": [
+            "-t"
+          ]
+        },
+        {
+          "args": {
+            "description": "The format for the output of this command",
+            "name": "format"
+          },
+          "description": "Format output",
+          "name": [
+            "-F"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Start a tmux server",
+      "name": "start"
+    },
+    {
+      "description": "Suspend a client",
+      "name": "suspendc",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsc"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "target-client"
+          },
+          "description": "The target client",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Swap two panes",
+      "name": "swapp",
+      "options": [
+        {
+          "description": "Do not change the active pane",
+          "name": [
+            "-d"
+          ]
+        },
+        {
+          "description": "Swap with the next pane",
+          "name": [
+            "-D"
+          ]
+        },
+        {
+          "description": "Swap dst-pane with the previous pane",
+          "name": [
+            "-U"
+          ]
+        },
+        {
+          "description": "Keep the window zoomed if it was zoomed",
+          "name": [
+            "-Z"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsp"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "src-pane"
+          },
+          "description": "The source pane",
+          "name": [
+            "-s"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsp"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "src-pane"
+          },
+          "description": "The destination pane",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Swap two windows",
+      "name": "swapw",
+      "options": [
+        {
+          "description": "The new window does not become the current window",
+          "name": [
+            "-d"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsw"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "window-name"
+          },
+          "description": "The source window",
+          "name": [
+            "-s"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsw"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "window-name"
+          },
+          "description": "The destination window",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Switch the client to another session",
+      "name": "switchc",
+      "options": [
+        {
+          "description": "Do not use update-environment option",
+          "name": [
+            "-E"
+          ]
+        },
+        {
+          "description": "Move the client to the last session",
+          "name": [
+            "-l"
+          ]
+        },
+        {
+          "description": "Move the client to the next session",
+          "name": [
+            "-n"
+          ]
+        },
+        {
+          "description": "Move the client to the previous session",
+          "name": [
+            "-p"
+          ]
+        },
+        {
+          "description": "Toggle the client read-only and ignore-size flags",
+          "name": [
+            "-r"
+          ]
+        },
+        {
+          "description": "Keep the window zoomed if it was zoomed",
+          "name": [
+            "-Z"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsc"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "target-client"
+          },
+          "description": "The target client",
+          "name": [
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "ls"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "target-session"
+          },
+          "description": "Switch the client to the target-session",
+          "name": [
+            "-t"
+          ]
+        },
+        {
+          "args": {
+            "name": "key-table"
+          },
+          "description": "Set the client's key table",
+          "name": [
+            "-T"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The key to unbind",
+        "name": "key"
+      },
+      "description": "Unbind a key",
+      "name": "unbind",
+      "options": [
+        {
+          "description": "Remove all key-bindings",
+          "name": [
+            "-a"
+          ]
+        },
+        {
+          "description": "Alias for -T root",
+          "name": [
+            "-n"
+          ]
+        },
+        {
+          "description": "Prevent errors being returned",
+          "name": [
+            "-q"
+          ]
+        },
+        {
+          "args": {
+            "name": "key-table"
+          },
+          "description": "The key table to use",
+          "name": [
+            "-T"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Unlink a window",
+      "name": "unlinkw",
+      "options": [
+        {
+          "description": "Destroy the window",
+          "name": [
+            "-k"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "tmux",
+                  "lsw"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "window-name"
+          },
+          "description": "The target window",
+          "name": [
+            "-t"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Wait for this channel",
+        "name": "channel"
+      },
+      "description": "Wait for an event or trigger it",
+      "name": "wait",
+      "options": [
+        {
+          "description": "Lock the channel",
+          "name": [
+            "-L"
+          ]
+        },
+        {
+          "description": "Unlock the channel",
+          "name": [
+            "-U"
+          ]
+        }
+      ]
+    }
+  ]
+}

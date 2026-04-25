@@ -1,0 +1,364 @@
+{
+  "args": {
+    "description": "Host pattern",
+    "name": "pattern"
+  },
+  "description": "Define and run a single Ansible task 'playbook' against a set of hosts",
+  "name": "ansible",
+  "options": [
+    {
+      "description": "Ask for vault password",
+      "name": [
+        "--ask-vault-pass"
+      ]
+    },
+    {
+      "description": "Outputs a list of matching hosts; does not execute",
+      "name": [
+        "--list-hosts"
+      ]
+    },
+    {
+      "args": {
+        "name": "playbook dir",
+        "template": [
+          "folders"
+        ]
+      },
+      "description": "Since this tool does not use playbooks, use this as a substitute playbook directory.This sets the relative path for many features including roles/ group_vars/etc",
+      "name": [
+        "--playbook-dir"
+      ]
+    },
+    {
+      "description": "Perform a syntax check on the playbook, but do not execute it",
+      "name": [
+        "--syntax-check"
+      ]
+    },
+    {
+      "args": {
+        "name": "vault ID"
+      },
+      "description": "Specify the vault identity to use",
+      "name": [
+        "--vault-id"
+      ]
+    },
+    {
+      "args": {
+        "name": "vault password file",
+        "template": [
+          "filepaths"
+        ]
+      },
+      "description": "Specify a vault password file",
+      "name": [
+        "--vault-password-file"
+      ]
+    },
+    {
+      "description": "Show program's version number, config file location, configured module search path, module location and executable location",
+      "name": [
+        "--version"
+      ]
+    },
+    {
+      "args": {
+        "name": "seconds"
+      },
+      "description": "Run asynchronously, failing after specified seconds",
+      "name": [
+        "--background",
+        "-B"
+      ]
+    },
+    {
+      "description": "Don't make any changes; instead, try to predict some of the changes that may occur",
+      "name": [
+        "--check",
+        "-C"
+      ]
+    },
+    {
+      "description": "When changing (small) files and templates, show the differences in those files",
+      "name": [
+        "--diff",
+        "-D"
+      ]
+    },
+    {
+      "args": {
+        "name": "module path",
+        "template": [
+          "folders"
+        ]
+      },
+      "description": "Prepend colon-separated path(s) to module library",
+      "name": [
+        "--module-path",
+        "-M"
+      ]
+    },
+    {
+      "args": {
+        "name": "poll interval"
+      },
+      "description": "Set the poll interval if using -B",
+      "name": [
+        "--poll",
+        "-P"
+      ]
+    },
+    {
+      "args": {
+        "name": "module arguments"
+      },
+      "description": "Specify module arguments",
+      "name": [
+        "--args",
+        "-a"
+      ]
+    },
+    {
+      "args": {
+        "name": "extra vars"
+      },
+      "description": "Set additional variables as key=value or YAML/JSON, if filename prepend with @",
+      "name": [
+        "--extra-vars",
+        "-e"
+      ]
+    },
+    {
+      "args": {
+        "name": "forks"
+      },
+      "description": "Specify number of parallel processes to use",
+      "name": [
+        "--forks",
+        "-f"
+      ]
+    },
+    {
+      "description": "Show help for ansible",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "args": {
+        "name": "inventory"
+      },
+      "description": "Specify inventory host path or comma separated host list",
+      "name": [
+        "--inventory",
+        "-i"
+      ]
+    },
+    {
+      "args": {
+        "name": "subset"
+      },
+      "description": "Limit selected hosts to an additional pattern",
+      "name": [
+        "--limit",
+        "-l"
+      ]
+    },
+    {
+      "args": {
+        "name": "module name"
+      },
+      "description": "Specify the module name to execute",
+      "name": [
+        "--module-name",
+        "-m"
+      ]
+    },
+    {
+      "description": "Condense output",
+      "name": [
+        "--one-line",
+        "-o"
+      ]
+    },
+    {
+      "args": {
+        "name": "tree"
+      },
+      "description": "Log output to specific directory",
+      "name": [
+        "--tree",
+        "-t"
+      ]
+    },
+    {
+      "description": "Enable verbose mode",
+      "name": [
+        "--verbose",
+        "-v"
+      ]
+    },
+    {
+      "description": "Enable very verbose mode",
+      "name": [
+        "-vvv"
+      ]
+    },
+    {
+      "description": "Enable connection debug mode",
+      "name": [
+        "-vvvv"
+      ]
+    },
+    {
+      "args": {
+        "name": "become method",
+        "suggestions": [
+          {
+            "name": "sudo"
+          },
+          {
+            "name": "su"
+          },
+          {
+            "name": "pbrun"
+          },
+          {
+            "name": "pfexec"
+          },
+          {
+            "name": "doas"
+          },
+          {
+            "name": "dzdo"
+          },
+          {
+            "name": "ksu"
+          },
+          {
+            "name": "runas"
+          },
+          {
+            "name": "machinectl"
+          }
+        ]
+      },
+      "description": "Privilege escalation method to use",
+      "name": [
+        "--become-method"
+      ]
+    },
+    {
+      "args": {
+        "name": "become user"
+      },
+      "description": "Privilege escalation user to use",
+      "name": [
+        "--become-user"
+      ]
+    },
+    {
+      "description": "Prompt for privilege escalation password",
+      "name": [
+        "--ask-become-pass",
+        "-K"
+      ]
+    },
+    {
+      "description": "Run operations with become",
+      "name": [
+        "--become",
+        "-b"
+      ]
+    },
+    {
+      "args": {
+        "name": "private key",
+        "template": [
+          "filepaths"
+        ]
+      },
+      "description": "Use this fole to authenticate the connection",
+      "name": [
+        "--private-key",
+        "--key-file"
+      ]
+    },
+    {
+      "args": {
+        "name": "SCP extra args"
+      },
+      "description": "Extra arguments to pass to (only) scp",
+      "name": [
+        "--scp-extra-args"
+      ]
+    },
+    {
+      "args": {
+        "name": "SFTP extra args"
+      },
+      "description": "Extra arguments to pass to (only) sftp",
+      "name": [
+        "--sftp-extra-args"
+      ]
+    },
+    {
+      "args": {
+        "name": "SSH extra args"
+      },
+      "description": "Extra arguments to pass to (only) ssh",
+      "name": [
+        "-ssh-extra-args"
+      ]
+    },
+    {
+      "args": {
+        "name": "SSH common args"
+      },
+      "description": "Extra arguments to pass to sftp/scp/ssh",
+      "name": [
+        "--ssh-common-args"
+      ]
+    },
+    {
+      "args": {
+        "name": "timeout"
+      },
+      "description": "Override the connection timeout in seconds",
+      "name": [
+        "--timeout",
+        "-T"
+      ]
+    },
+    {
+      "args": {
+        "name": "connection type"
+      },
+      "description": "Connection type to use",
+      "name": [
+        "--connection",
+        "-c"
+      ]
+    },
+    {
+      "description": "Ask for connection password",
+      "name": [
+        "--ask-pass",
+        "-k"
+      ]
+    },
+    {
+      "args": {
+        "name": "user"
+      },
+      "description": "Connect as this user",
+      "name": [
+        "--user",
+        "-u"
+      ]
+    }
+  ]
+}

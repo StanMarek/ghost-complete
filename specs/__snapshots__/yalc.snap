@@ -1,0 +1,246 @@
+{
+  "description": "Work with yarn/npm packages locally like a boss",
+  "name": "yalc",
+  "options": [
+    {
+      "description": "Show help for yalc",
+      "name": [
+        "--help"
+      ]
+    },
+    {
+      "description": "Disable colors",
+      "name": [
+        "--no-colors"
+      ]
+    },
+    {
+      "description": "Fully disable output (except errors)",
+      "name": [
+        "--quiet"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Copy all the files that should be published in remote NPM registry",
+      "name": "publish",
+      "options": [
+        {
+          "description": "Publish package to the store and propagate all changes to existing yalc package installations",
+          "name": [
+            "--push"
+          ]
+        },
+        {
+          "description": "Publish without running scripts",
+          "name": [
+            "--no-scripts"
+          ]
+        },
+        {
+          "description": "Disable adding hash signature of all files when copying package content",
+          "name": [
+            "--no-sig"
+          ]
+        },
+        {
+          "description": "Show included files in the published package",
+          "name": [
+            "--content"
+          ]
+        },
+        {
+          "description": "Do not resolve 'workspace:' protocol in dependencies",
+          "name": [
+            "--no-workspace-resolve"
+          ]
+        },
+        {
+          "description": "Force publishing of private package",
+          "name": [
+            "--private"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Publish your package to the store and propagate all changes to existing yalc package installations",
+      "name": "push"
+    },
+    {
+      "args": {
+        "description": "The package you want to add",
+        "generators": [
+          {
+            "script": [
+              "bash",
+              "-c",
+              "command find ~/.yalc/packages -maxdepth 4 -iname 'package.json'"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "package"
+      },
+      "description": "Copy the current version from the store to your project",
+      "name": "add",
+      "options": [
+        {
+          "description": "Add a 'link:' dependency instead of 'file:'",
+          "name": [
+            "--link"
+          ]
+        },
+        {
+          "description": "Add yalc package to dev dependencies",
+          "name": [
+            "--dev"
+          ]
+        },
+        {
+          "description": "Do not touch 'package.json' or 'node_modules'",
+          "name": [
+            "--pure"
+          ]
+        },
+        {
+          "description": "Add dependency with 'workspace:' protocol",
+          "name": [
+            "--workspace",
+            "-W"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Alterative to 'add', instead using local '.yalc' as symlink source",
+      "name": "link"
+    },
+    {
+      "args": {
+        "description": "The package to update",
+        "generators": [
+          {
+            "script": [
+              "bash",
+              "-c",
+              "command find ~/.yalc/packages -maxdepth 4 -iname 'package.json'"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "isOptional": true,
+        "name": "package"
+      },
+      "description": "Update package(s)",
+      "name": "update",
+      "options": [
+        {
+          "description": "Run package manager's update command for packages",
+          "name": [
+            "--update",
+            "--upgrade",
+            "--up"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The package you want to remove",
+        "generators": [
+          {
+            "script": [
+              "ls",
+              ".yalc"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "isOptional": true,
+        "name": "package"
+      },
+      "description": "Remove package info from 'package.json' & 'yalc.lock'",
+      "name": "remove",
+      "options": [
+        {
+          "description": "Remove all packages from project",
+          "name": [
+            "--all"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "installations",
+      "subcommands": [
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "bash",
+                  "-c",
+                  "command find ~/.yalc/packages -maxdepth 4 -iname 'package.json'"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "package"
+          },
+          "description": "Unpublish a package published with yalc publish",
+          "name": "clean"
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "bash",
+                  "-c",
+                  "command find ~/.yalc/packages -maxdepth 4 -iname 'package.json'"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "package"
+          },
+          "description": "Show all packages to which chosen package has been added",
+          "name": "show"
+        }
+      ]
+    },
+    {
+      "description": "Show yalc system directory",
+      "name": "dir"
+    },
+    {
+      "description": "Check 'package.json' for yalc packages",
+      "name": "check"
+    },
+    {
+      "description": "Restore retreated packages",
+      "name": "restore"
+    },
+    {
+      "description": "Remove packages from project, but leave in lock file (to be restored later)",
+      "name": "retreat"
+    }
+  ]
+}

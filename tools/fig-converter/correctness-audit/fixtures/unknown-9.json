@@ -1,0 +1,12 @@
+{
+  "shape_id": "unknown-9",
+  "rationale": "Both unknown-9 generators do `e.split(\"END\").filter(i => i.trim() !== \"\")...`. On input `\"\"`: split yields `[\"\"]`, filter keeps nothing → forEach runs 0 times → `Array.from(new Set()) = []`, `.map(...) = []`. Rust `split_lines+filter_empty+json_extract(sentinel)` on `\"\"` yields `[]`.",
+  "expected_transforms": [
+    "split_lines",
+    "filter_empty",
+    { "type": "json_extract", "name": "__sentinel_no_field__" }
+  ],
+  "inputs": [
+    ""
+  ]
+}

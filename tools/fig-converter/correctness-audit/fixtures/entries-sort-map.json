@@ -1,0 +1,12 @@
+{
+  "shape_id": "entries-sort-map",
+  "rationale": "Fingerprint `Object.entries(...).sort(FN).map(FN)` — JS does `Object.entries(JSON.parse(o)).sort(...).map(...)` over a hash/object. Input `\"{}\"` routes every variant through `Object.entries({}) = [] → .sort() = [] → .map(...) = []`. Rust `split_lines+filter_empty+json_extract(sentinel)` on `\"{}\"` also returns `[]` (the line `{}` has no `__sentinel_no_field__` key). Both empty. Happy-path fixtures await a `hash_entries_extract` transform — classic follow-up for the existing-transforms verdict being too optimistic on Object.entries shapes.",
+  "expected_transforms": [
+    "split_lines",
+    "filter_empty",
+    { "type": "json_extract", "name": "__sentinel_no_field__" }
+  ],
+  "inputs": [
+    "{}"
+  ]
+}

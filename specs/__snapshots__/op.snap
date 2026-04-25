@@ -1,0 +1,1496 @@
+{
+  "description": "Official 1Password CLI",
+  "name": "op",
+  "options": [
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "t=>JSON.parse(t).map(n=>({name:n.email,description:n.url,insertValue:n.account_uuid,icon:e}))",
+            "requires_js": true,
+            "script": [
+              "op",
+              "account",
+              "list",
+              "--format",
+              "json"
+            ]
+          }
+        ],
+        "name": "account"
+      },
+      "description": "Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID. For a list of available accounts, run 'op account list'. Can be set as the OP_ACCOUNT environment variable",
+      "name": [
+        "--account"
+      ]
+    },
+    {
+      "description": "Store and use cached information",
+      "name": [
+        "--cache"
+      ]
+    },
+    {
+      "args": {
+        "name": "directory",
+        "template": "folders"
+      },
+      "description": "Use this configuration directory",
+      "name": [
+        "--config"
+      ]
+    },
+    {
+      "description": "Output debug logs. Can also be set using $OP_DEBUG environment variable",
+      "name": [
+        "--debug"
+      ]
+    },
+    {
+      "args": {
+        "name": "type",
+        "suggestions": [
+          {
+            "name": "UTF-8"
+          },
+          {
+            "name": "SHIFT_JIS"
+          },
+          {
+            "name": "gbk"
+          }
+        ]
+      },
+      "description": "Use this character encoding type. Default: UTF-8. Supported: SHIFT_JIS, gbk",
+      "name": [
+        "--encoding"
+      ]
+    },
+    {
+      "args": {
+        "name": "string",
+        "suggestions": [
+          {
+            "name": "human-readable"
+          },
+          {
+            "name": "json"
+          }
+        ]
+      },
+      "description": "Use this output format. Can be 'human-readable' or 'json'. Can be set as the OP_FORMAT environment variable. (default \"human-readable\")",
+      "name": [
+        "--format"
+      ]
+    },
+    {
+      "description": "Get help for op",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Format timestamps according to ISO 8601 / RFC 3339. Can be set as the OP_ISO_TIMESTAMPS environment variable",
+      "name": [
+        "--iso-timestamps"
+      ]
+    },
+    {
+      "description": "Print output without color",
+      "name": [
+        "--no-color"
+      ]
+    },
+    {
+      "args": {
+        "name": "token"
+      },
+      "description": "Authenticate with this session token. 1Password CLI outputs session tokens for successful 'op signin' commands when biometric unlock is disabled",
+      "name": [
+        "--session"
+      ]
+    },
+    {
+      "description": "Version for op",
+      "name": [
+        "-v",
+        "--version"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Manage your locally configured 1Password accounts",
+      "name": "account",
+      "subcommands": [
+        {
+          "description": "Add an account to sign in to for the first time",
+          "name": "add",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The sign-in address for your account",
+              "name": [
+                "--address"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "The email address associated with your account",
+              "name": [
+                "--email"
+              ]
+            },
+            {
+              "description": "Only return the session token",
+              "name": [
+                "--raw"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Set the short account name",
+              "name": [
+                "--shorthand"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Get details about your account",
+          "name": "get"
+        },
+        {
+          "description": "List users and accounts set up on this device",
+          "name": "list"
+        },
+        {
+          "args": {
+            "name": "account"
+          },
+          "description": "Remove a 1Password account from this device",
+          "name": "forget",
+          "options": [
+            {
+              "description": "Forget all authenticated accounts",
+              "name": [
+                "--all"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage Connect instances and Connect tokens in your 1Password account",
+      "name": "connect",
+      "subcommands": [
+        {
+          "description": "Manage group access to Secrets Automation",
+          "name": "group",
+          "subcommands": [
+            {
+              "description": "Grant a group access to manage Secrets Automation",
+              "name": "grant",
+              "options": [
+                {
+                  "description": "Grant access to all current and future servers in the authenticated account",
+                  "name": [
+                    "--all-servers"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "group"
+                  },
+                  "description": "The group to receive access",
+                  "name": [
+                    "--group"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Revoke a group's access to manage Secrets Automation",
+              "name": "revoke",
+              "options": [
+                {
+                  "description": "Revoke access to all current and future servers in the authenticated account",
+                  "name": [
+                    "--all-servers"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "group"
+                  },
+                  "description": "The group to revoke access from",
+                  "name": [
+                    "--group"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Manage Connect servers",
+          "name": "server",
+          "subcommands": [
+            {
+              "description": "Set up a Connect server",
+              "name": "create"
+            },
+            {
+              "args": {
+                "name": "serverName | serverID",
+                "suggestions": [
+                  {
+                    "description": "Read from stdin",
+                    "name": "-"
+                  }
+                ]
+              },
+              "description": "Get a Connect server",
+              "name": "get"
+            },
+            {
+              "args": {
+                "name": "serverName | serverID"
+              },
+              "description": "Rename a Connect server",
+              "name": "edit"
+            },
+            {
+              "args": {
+                "name": "serverName | serverID",
+                "suggestions": [
+                  {
+                    "description": "Read from stdin",
+                    "name": "-"
+                  }
+                ]
+              },
+              "description": "Remove a Connect server",
+              "name": "delete"
+            },
+            {
+              "description": "List Connect servers",
+              "name": "list"
+            }
+          ]
+        },
+        {
+          "description": "Manage Connect tokens",
+          "name": "token",
+          "subcommands": [
+            {
+              "description": "Issue a token for a 1Password Connect server",
+              "name": "create",
+              "options": [
+                {
+                  "args": {
+                    "name": "duration"
+                  },
+                  "description": "Set how long the Connect token is valid for in (s)econds, (m)inutes, or (h)ours",
+                  "name": [
+                    "--expires-in"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "string"
+                  },
+                  "description": "Issue a token for this server",
+                  "name": [
+                    "--server"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Rename a Connect token",
+              "name": "edit",
+              "options": [
+                {
+                  "args": {
+                    "name": "string"
+                  },
+                  "description": "Change the token's name",
+                  "name": [
+                    "--name"
+                  ]
+                }
+              ]
+            },
+            {
+              "args": {
+                "name": "token"
+              },
+              "description": "Revoke a token for a Connect server",
+              "name": "delete"
+            },
+            {
+              "description": "Get a list of tokens",
+              "name": "list"
+            }
+          ]
+        },
+        {
+          "description": "Manage connect server vault access",
+          "name": "vault",
+          "subcommands": [
+            {
+              "description": "Grant a Connect server access to a vault",
+              "name": "grant",
+              "options": [
+                {
+                  "args": {
+                    "name": "string"
+                  },
+                  "description": "The server to be granted access",
+                  "name": [
+                    "--server"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Revoke a Connect server's access to a vault",
+              "name": "revoke",
+              "options": [
+                {
+                  "args": {
+                    "name": "server"
+                  },
+                  "description": "The server to revoke access from",
+                  "name": [
+                    "--server"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Perform CRUD operations on Document items in your vaults",
+      "name": "document",
+      "subcommands": [
+        {
+          "args": {
+            "name": "file",
+            "suggestions": [
+              {
+                "description": "Read from stdin",
+                "name": "-"
+              }
+            ]
+          },
+          "description": "Create a document item",
+          "name": "create",
+          "options": [
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Set the file's name",
+              "name": [
+                "--file-name"
+              ]
+            },
+            {
+              "args": {
+                "name": "tags"
+              },
+              "description": "Set the tags to the specified (comma-separated) values",
+              "name": [
+                "--tags"
+              ]
+            },
+            {
+              "args": {
+                "name": "title"
+              },
+              "description": "Set the document item's title",
+              "name": [
+                "--title"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "itemName | itemID"
+          },
+          "description": "Download a document",
+          "name": "get",
+          "options": [
+            {
+              "description": "Include document items in the Archive. Can also be set using OP_INCLUDE_ARCHIVE environment variable",
+              "name": [
+                "--include-archive"
+              ]
+            },
+            {
+              "args": {
+                "name": "path"
+              },
+              "description": "Save the document to the file path instead of stdout",
+              "name": [
+                "--output"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "name": "itemName | itemID"
+            },
+            {
+              "name": "file",
+              "suggestions": [
+                {
+                  "description": "Read from stdin",
+                  "name": "-"
+                }
+              ]
+            }
+          ],
+          "description": "Edit a document item",
+          "name": "edit",
+          "options": [
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Set the file's name",
+              "name": [
+                "--file-name"
+              ]
+            },
+            {
+              "args": {
+                "name": "tags"
+              },
+              "description": "Set the tags to the specified (comma-separated) values. An empty value will remove all tags",
+              "name": [
+                "--tags"
+              ]
+            },
+            {
+              "args": {
+                "name": "title"
+              },
+              "description": "Set the document item's title",
+              "name": [
+                "--title"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "itemName | itemID",
+            "suggestions": [
+              {
+                "description": "Read from stdin",
+                "name": "-"
+              }
+            ]
+          },
+          "description": "Delete or archive a document item",
+          "name": "delete",
+          "options": [
+            {
+              "description": "Move the document to the Archive",
+              "name": [
+                "--archive"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Get a list of documents",
+          "name": "list",
+          "options": [
+            {
+              "description": "Include document items in the Archive. Can also be set using OP_INCLUDE_ARCHIVE environment variable",
+              "name": [
+                "--include-archive"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage Events API integrations in your 1Password account",
+      "name": "events-api",
+      "subcommands": [
+        {
+          "description": "Set up an integration with the Events API",
+          "name": "create"
+        }
+      ]
+    },
+    {
+      "description": "Perform CRUD operations on the groups of users in your 1Password account",
+      "name": "group",
+      "subcommands": [
+        {
+          "description": "Manage users in groups",
+          "name": "user",
+          "subcommands": [
+            {
+              "description": "Grant a user access to a group",
+              "name": "grant",
+              "options": [
+                {
+                  "args": {
+                    "name": "string"
+                  },
+                  "description": "Specify the group to grant the user access to",
+                  "name": [
+                    "--group"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "string"
+                  },
+                  "description": "Specify the user's role as a member or manager. Default: member",
+                  "name": [
+                    "--role"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Revoke a user's access to a vault or group",
+              "name": "revoke",
+              "options": [
+                {
+                  "args": {
+                    "name": "string"
+                  },
+                  "description": "Specify the group to revoke the user's access to",
+                  "name": [
+                    "--group"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Retrieve users that belong to a group",
+              "name": "list"
+            }
+          ]
+        },
+        {
+          "description": "Create a group",
+          "name": "create",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Set the group's description",
+              "name": [
+                "--description"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "groupName | groupID",
+            "suggestions": [
+              {
+                "description": "Read from stdin",
+                "name": "-"
+              }
+            ]
+          },
+          "description": "Get details about a group",
+          "name": "get"
+        },
+        {
+          "args": {
+            "name": "groupName | groupID",
+            "suggestions": [
+              {
+                "description": "Read from stdin",
+                "name": "-"
+              }
+            ]
+          },
+          "description": "Edit a group's name or description",
+          "name": "edit",
+          "options": [
+            {
+              "args": {
+                "name": "description"
+              },
+              "description": "Change the group's description",
+              "name": [
+                "--description"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "groupName | groupID",
+            "suggestions": [
+              {
+                "description": "Read from stdin",
+                "name": "-"
+              }
+            ]
+          },
+          "description": "Remove a group",
+          "name": "delete"
+        },
+        {
+          "description": "List groups",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "name": "user"
+              },
+              "description": "List groups that a user belongs to",
+              "name": [
+                "--user"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Perform CRUD operations on the 1Password items in your vaults",
+      "name": "item",
+      "subcommands": [
+        {
+          "description": "Manage templates",
+          "name": "template",
+          "subcommands": [
+            {
+              "args": {
+                "name": "category",
+                "suggestions": [
+                  {
+                    "description": "Read from stdin",
+                    "name": "-"
+                  }
+                ]
+              },
+              "description": "Get an item template",
+              "name": "get",
+              "options": [
+                {
+                  "description": "Do not prompt for confirmation",
+                  "name": [
+                    "-f",
+                    "--force"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Get a list of templates",
+              "name": "list"
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "assignment..."
+          },
+          "description": "Create an item",
+          "name": "create",
+          "options": [
+            {
+              "args": {
+                "name": "category"
+              },
+              "description": "Set the item's category",
+              "name": [
+                "--category"
+              ]
+            },
+            {
+              "description": "Perform a dry run of the command and output a preview of the resulting item",
+              "name": [
+                "--dry-run"
+              ]
+            },
+            {
+              "args": {
+                "name": "recipe"
+              },
+              "description": "Give the item a randomly generated password",
+              "name": [
+                "--generate-password"
+              ]
+            },
+            {
+              "args": {
+                "name": "tags"
+              },
+              "description": "Set the tags to the specified (comma-separated) values",
+              "name": [
+                "--tags"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify the filepath to read an item template from",
+              "name": [
+                "--template"
+              ]
+            },
+            {
+              "args": {
+                "name": "title"
+              },
+              "description": "Set the item's title",
+              "name": [
+                "--title"
+              ]
+            },
+            {
+              "args": {
+                "name": "URL"
+              },
+              "description": "Set the URL associated with the item",
+              "name": [
+                "--url"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "itemName | itemID | shareLink",
+            "suggestions": [
+              {
+                "description": "Read from stdin",
+                "name": "-"
+              }
+            ]
+          },
+          "description": "Get an item's details",
+          "name": "get",
+          "options": [
+            {
+              "args": {
+                "name": "fields"
+              },
+              "description": "Only return data from these fields. Use 'label=' to get the field by name or 'type=' to filter fields by type",
+              "name": [
+                "--fields"
+              ]
+            },
+            {
+              "description": "Include items in the Archive. Can also be set using OP_INCLUDE_ARCHIVE environment variable",
+              "name": [
+                "--include-archive"
+              ]
+            },
+            {
+              "description": "Output the primary one-time password for this item",
+              "name": [
+                "--otp"
+              ]
+            },
+            {
+              "description": "Get a shareable link for the item",
+              "name": [
+                "--share-link"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "name": "itemName | itemID | shareLink"
+            },
+            {
+              "name": "assignment ..."
+            }
+          ],
+          "description": "Edit an item's details",
+          "name": "edit"
+        },
+        {
+          "args": {
+            "name": "itemName | itemID | shareLink",
+            "suggestions": [
+              {
+                "description": "Read from stdin",
+                "name": "-"
+              }
+            ]
+          },
+          "description": "Delete or archive an item",
+          "name": "delete",
+          "options": [
+            {
+              "description": "Move the item to the Archive",
+              "name": [
+                "--archive"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List items",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "name": "categories"
+              },
+              "description": "Only list items in these categories (comma-separated)",
+              "name": [
+                "--categories"
+              ]
+            },
+            {
+              "description": "Include items in the Archive. Can also be set using OP_INCLUDE_ARCHIVE environment variable",
+              "name": [
+                "--include-archive"
+              ]
+            },
+            {
+              "description": "Output a more detailed item list",
+              "name": [
+                "--long"
+              ]
+            },
+            {
+              "args": {
+                "name": "tags"
+              },
+              "description": "Only list items with these tags (comma-separated)",
+              "name": [
+                "--tags"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "itemName | itemID"
+          },
+          "description": "Share an item",
+          "name": "share",
+          "options": [
+            {
+              "args": {
+                "name": "strings"
+              },
+              "description": "Email addresses to share with",
+              "name": [
+                "--emails"
+              ]
+            },
+            {
+              "args": {
+                "name": "duration"
+              },
+              "description": "Link expiring after the specified duration in (s)econds, (m)inutes, or (h)ours (default 7h)",
+              "name": [
+                "--expiry"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Look for the item in this vault",
+              "name": [
+                "--vault"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage users within this 1Password account",
+      "name": "user",
+      "subcommands": [
+        {
+          "description": "Provision a user in the authenticated account",
+          "name": "provision",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Provide the user's email address",
+              "name": [
+                "--email"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Provide the user's account language. (default \"en\")",
+              "name": [
+                "--language"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "email | name | userID",
+            "suggestions": [
+              {
+                "description": "Read from stdin",
+                "name": "-"
+              }
+            ]
+          },
+          "description": "Confirm a user",
+          "name": "confirm",
+          "options": [
+            {
+              "description": "Confirm all unconfirmed users",
+              "name": [
+                "--all"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "email | name | userID | --me",
+            "suggestions": [
+              {
+                "description": "Read from stdin",
+                "name": "-"
+              },
+              {
+                "description": "Get the authenticated user's details",
+                "name": "--me"
+              }
+            ]
+          },
+          "description": "Get details about a user",
+          "name": "get",
+          "options": [
+            {
+              "description": "Get the user's public key fingerprint",
+              "name": [
+                "--fingerprint"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "email | name | userID",
+            "suggestions": [
+              {
+                "description": "Read from stdin",
+                "name": "-"
+              }
+            ]
+          },
+          "description": "Edit a user's name or Travel Mode status",
+          "name": "edit",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Set the user's name",
+              "name": [
+                "--name"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "email | name | userID",
+            "suggestions": [
+              {
+                "description": "Read from stdin",
+                "name": "-"
+              }
+            ]
+          },
+          "description": "Suspend a user",
+          "name": "suspend",
+          "options": [
+            {
+              "args": {
+                "name": "duration"
+              },
+              "description": "Deauthorize the user's devices after a time (rounded down to seconds)",
+              "name": [
+                "--deauthorize-devices-after"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "email | name | userID",
+            "suggestions": [
+              {
+                "description": "Read from stdin",
+                "name": "-"
+              }
+            ]
+          },
+          "description": "Reactivate a suspended user",
+          "name": "reactivate"
+        },
+        {
+          "args": {
+            "name": "email | name | userID",
+            "suggestions": [
+              {
+                "description": "Read from stdin",
+                "name": "-"
+              }
+            ]
+          },
+          "description": "Remove a user and all their data from the account",
+          "name": "delete"
+        },
+        {
+          "description": "List users",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "name": "group"
+              },
+              "description": "List users who belong to a group",
+              "name": [
+                "--group"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage permissions and perform CRUD operations on your 1Password vaults",
+      "name": "vault",
+      "subcommands": [
+        {
+          "description": "Manage group vault access",
+          "name": "group",
+          "subcommands": [
+            {
+              "description": "Grant a group permissions to a vault",
+              "name": "grant",
+              "options": [
+                {
+                  "args": {
+                    "name": "group"
+                  },
+                  "description": "The group to receive access",
+                  "name": [
+                    "--group"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "input"
+                  },
+                  "description": "Do not prompt for input on interactive terminal",
+                  "name": [
+                    "--no-input"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "permissions"
+                  },
+                  "description": "The permissions to grant to the group",
+                  "name": [
+                    "--permissions"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Revoke a portion or the entire access of a group to a vault",
+              "name": "revoke",
+              "options": [
+                {
+                  "args": {
+                    "name": "group"
+                  },
+                  "description": "The group to revoke access from",
+                  "name": [
+                    "--group"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "input"
+                  },
+                  "description": "Do not prompt for input on interactive terminal",
+                  "name": [
+                    "--no-input"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "permissions"
+                  },
+                  "description": "The permissions to revoke from the group",
+                  "name": [
+                    "--permissions"
+                  ]
+                }
+              ]
+            },
+            {
+              "args": {
+                "name": "vault",
+                "suggestions": [
+                  {
+                    "description": "Read from stdin",
+                    "name": "-"
+                  }
+                ]
+              },
+              "description": "List all the groups that have access to the given vault",
+              "name": "list"
+            }
+          ]
+        },
+        {
+          "description": "Manage user vault access",
+          "name": "user",
+          "subcommands": [
+            {
+              "description": "Grant a user access to a vault",
+              "name": "grant",
+              "options": [
+                {
+                  "args": {
+                    "name": "input"
+                  },
+                  "description": "Do not prompt for input on interactive terminal",
+                  "name": [
+                    "--no-input"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "permissions"
+                  },
+                  "description": "The permissions to grant to the user",
+                  "name": [
+                    "--permissions"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "user"
+                  },
+                  "description": "The user to receive access",
+                  "name": [
+                    "--user"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Revoke a portion or the entire access of a user to a vault",
+              "name": "revoke",
+              "options": [
+                {
+                  "args": {
+                    "name": "input"
+                  },
+                  "description": "Do not prompt for input on interactive terminal",
+                  "name": [
+                    "--no-input"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "permissions"
+                  },
+                  "description": "The permissions to revoke from the user",
+                  "name": [
+                    "--permissions"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "user"
+                  },
+                  "description": "The user to revoke access from",
+                  "name": [
+                    "--user"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "List all users with access to the vault and their permissions",
+              "name": "list"
+            }
+          ]
+        },
+        {
+          "description": "Create a new vault",
+          "name": "create",
+          "options": [
+            {
+              "args": {
+                "name": "true|false"
+              },
+              "description": "Set whether admins can manage the vault. Default: false",
+              "name": [
+                "--allow-admins-to-manage"
+              ]
+            },
+            {
+              "args": {
+                "name": "description"
+              },
+              "description": "Set the group's description",
+              "name": [
+                "--description"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "vaultName | vaultID",
+            "suggestions": [
+              {
+                "description": "Read from stdin",
+                "name": "-"
+              }
+            ]
+          },
+          "description": "Get details about a vault",
+          "name": "get"
+        },
+        {
+          "args": {
+            "name": "vaultName | vaultID",
+            "suggestions": [
+              {
+                "description": "Read from stdin",
+                "name": "-"
+              }
+            ]
+          },
+          "description": "Edit a vault's name, description, icon or Travel Mode status",
+          "name": "edit",
+          "options": [
+            {
+              "args": {
+                "name": "description"
+              },
+              "description": "Change the vault's description",
+              "name": [
+                "--description"
+              ]
+            },
+            {
+              "args": {
+                "name": "icon"
+              },
+              "description": "Change the vault's icon",
+              "name": [
+                "--icon"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Change the vault's name",
+              "name": [
+                "--name"
+              ]
+            },
+            {
+              "args": {
+                "name": "on|off"
+              },
+              "description": "Turn Travel Mode on or off for the vault. Only vaults with Travel Mode enabled will be accessible while a user has Travel Mode turned on. (default off)",
+              "name": [
+                "--travel-mode"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "vaultName | vaultID",
+            "suggestions": [
+              {
+                "description": "Read from stdin",
+                "name": "-"
+              }
+            ]
+          },
+          "description": "Remove a vault",
+          "name": "delete"
+        },
+        {
+          "description": "List all vaults in the account",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "List vaults a group has access to",
+              "name": [
+                "--group"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generate shell completion information",
+      "name": "completion"
+    },
+    {
+      "description": "Inject secrets into a config file",
+      "name": "inject"
+    },
+    {
+      "description": "Read a secret using the secrets reference syntax",
+      "name": "read",
+      "options": [
+        {
+          "args": {
+            "name": "filemode"
+          },
+          "description": "Set filemode for the output file if it does not yet exist. It is ignored without the --out-file flag. (default 0600)",
+          "name": [
+            "--file-mode"
+          ]
+        },
+        {
+          "description": "Do not prompt for confirmation",
+          "name": [
+            "-f",
+            "--force"
+          ]
+        },
+        {
+          "description": "Do not print a new line after the secret",
+          "name": [
+            "-n",
+            "--no-newline"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "command"
+      },
+      "description": "Pass secrets as environment variables to a process",
+      "name": "run",
+      "options": [
+        {
+          "args": {
+            "name": "stringArray"
+          },
+          "description": "Enable Dotenv integration with specific Dotenv files to parse. For example: --env-file=.env",
+          "name": [
+            "--env-file"
+          ]
+        },
+        {
+          "description": "Disable masking of secrets on stdout and stderr",
+          "name": [
+            "--no-masking"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Sign in to a 1Password account",
+      "name": "signin",
+      "options": [
+        {
+          "description": "Ignore warnings and print raw output from this command",
+          "name": [
+            "-f",
+            "--force"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Sign out of a 1Password account",
+      "name": "signout",
+      "options": [
+        {
+          "description": "Sign out of all signed-in accounts",
+          "name": [
+            "--all"
+          ]
+        },
+        {
+          "description": "Remove the details for a 1Password account from this device",
+          "name": [
+            "--forget"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Check for and download updates",
+      "name": "update",
+      "options": [
+        {
+          "args": {
+            "name": "string",
+            "template": "folders"
+          },
+          "description": "Download the update to this ''path''",
+          "name": [
+            "--directory"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Get information about a signed-in account",
+      "name": "whoami"
+    }
+  ]
+}

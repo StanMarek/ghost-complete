@@ -1,0 +1,171 @@
+{
+  "description": "CDK for K8s",
+  "name": "cdk8s",
+  "options": [
+    {
+      "description": "The current version",
+      "name": [
+        "--version"
+      ]
+    },
+    {
+      "description": "Show help",
+      "name": [
+        "--help"
+      ]
+    },
+    {
+      "description": "Check for cdk8s-cli upgrade",
+      "name": [
+        "--check-upgrade"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "description": "Select language you are using",
+        "name": "type",
+        "suggestions": [
+          {
+            "name": "go-app"
+          },
+          {
+            "name": "java-app"
+          },
+          {
+            "name": "python-app"
+          },
+          {
+            "name": "typescript-app"
+          }
+        ]
+      },
+      "description": "Create a new, empty CDK8S project",
+      "name": "init"
+    },
+    {
+      "args": {
+        "description": "Path to the CRD schema",
+        "name": "spec",
+        "template": "filepaths"
+      },
+      "description": "Import a CRD schema to generate generate resources",
+      "name": "import",
+      "options": [
+        {
+          "args": {
+            "name": "language",
+            "suggestions": [
+              {
+                "name": "typescript"
+              },
+              {
+                "name": "python"
+              },
+              {
+                "name": "java"
+              },
+              {
+                "name": "go"
+              }
+            ]
+          },
+          "description": "Output programming language",
+          "name": [
+            "--language",
+            "-l"
+          ]
+        },
+        {
+          "description": "A prefix to add to all generated class names",
+          "name": [
+            "--class-prefix"
+          ]
+        },
+        {
+          "description": "Does not add a prefix to generated class names",
+          "name": [
+            "--no-class-prefix"
+          ]
+        },
+        {
+          "args": {
+            "name": "regexp"
+          },
+          "description": "Do not import types that match these regular expressions",
+          "name": [
+            "--exclude"
+          ]
+        },
+        {
+          "args": {
+            "template": "folders"
+          },
+          "description": "Output directory",
+          "name": [
+            "--output",
+            "-o"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Synthesizes Kubernetes manifests for all charts in your app",
+      "name": "synth",
+      "options": [
+        {
+          "description": "Command to use in order to execute cdk8s app",
+          "name": [
+            "--app",
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "template": "folders"
+          },
+          "description": "Output directory",
+          "name": [
+            "--output",
+            "-o"
+          ]
+        },
+        {
+          "description": "Write synthesized manifests to STDOUT instead of the output directory",
+          "name": [
+            "--stdout",
+            "-s"
+          ]
+        },
+        {
+          "description": "Directory to store cdk8s plugins",
+          "name": [
+            "--plugins-dir"
+          ]
+        },
+        {
+          "description": "Apply validation plugins on the resulting manifests",
+          "name": [
+            "--validate"
+          ]
+        },
+        {
+          "description": "Disable validation",
+          "name": [
+            "--no-validate"
+          ]
+        },
+        {
+          "args": {
+            "template": "filepaths"
+          },
+          "description": "File to write a JSON representation of the validation reports to",
+          "name": [
+            "--validation-reports-output-file"
+          ]
+        }
+      ]
+    }
+  ]
+}

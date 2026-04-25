@@ -1,0 +1,131 @@
+{
+  "args": {
+    "description": "Run this program for each line of stdin (default: echo)",
+    "isOptional": true,
+    "name": "utility"
+  },
+  "description": "Execute a command with whitespace-delimited strings (from stdin) as arguments",
+  "name": "xargs",
+  "options": [
+    {
+      "description": "Use NUL (0x00) as a separator, instead of whitespace",
+      "name": [
+        "-0"
+      ]
+    },
+    {
+      "args": {
+        "description": "The string to use that marks EOF",
+        "name": "eof-str"
+      },
+      "description": "Use this string as a logical EOF marker",
+      "name": [
+        "-E"
+      ]
+    },
+    {
+      "args": {
+        "description": "The string to replace",
+        "name": "replacement-str"
+      },
+      "description": "Replace occurrences of this string with the input",
+      "name": [
+        "-I"
+      ]
+    },
+    {
+      "args": {
+        "description": "The string to replace",
+        "name": "replacement-str"
+      },
+      "description": "Replace an argument exactly equal to this string with the input",
+      "name": [
+        "-J"
+      ]
+    },
+    {
+      "args": {
+        "name": "number"
+      },
+      "description": "Run the program each time this many lines of input are read",
+      "name": [
+        "-L"
+      ]
+    },
+    {
+      "args": {
+        "name": "number"
+      },
+      "description": "The maximum number of arguments that can be taken from stdin on each run",
+      "name": [
+        "-n"
+      ]
+    },
+    {
+      "description": "Reopen stdin as /dev/tty (useful for running interactive applications)",
+      "name": [
+        "-o"
+      ]
+    },
+    {
+      "args": {
+        "name": "max-procs"
+      },
+      "description": "Run up to this many commands in parallel (as many as possible if 0)",
+      "name": [
+        "-P"
+      ]
+    },
+    {
+      "description": "Prompt to run each command",
+      "name": [
+        "-p"
+      ]
+    },
+    {
+      "description": "Run the command once if there's no input (compatible with GNU xargs)",
+      "name": [
+        "-r"
+      ]
+    },
+    {
+      "args": {
+        "name": "number"
+      },
+      "description": "Specify the maximum number of occurrences that -I will replace",
+      "name": [
+        "-R"
+      ]
+    },
+    {
+      "args": {
+        "name": "replacement-size"
+      },
+      "description": "Specify the maximum size in bytes that -I can use for replacements (default: 255)",
+      "name": [
+        "-S"
+      ]
+    },
+    {
+      "args": {
+        "name": "max-args-size"
+      },
+      "description": "Maximum number of bytes that can be provided to the program (default: 4096)",
+      "name": [
+        "-s"
+      ]
+    },
+    {
+      "description": "Echo the command to stderr before it's executed",
+      "name": [
+        "-t"
+      ]
+    },
+    {
+      "description": "Terminal if the arguments will not fit in the maximum line length",
+      "name": [
+        "-x"
+      ]
+    }
+  ]
+}

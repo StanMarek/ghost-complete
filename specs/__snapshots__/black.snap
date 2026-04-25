@@ -1,0 +1,287 @@
+{
+  "args": {
+    "isVariadic": true,
+    "name": "file or directory",
+    "template": "filepaths"
+  },
+  "description": "Python code formatter",
+  "name": "black",
+  "options": [
+    {
+      "args": {
+        "name": "string"
+      },
+      "description": "Format the code passed in as a string",
+      "name": [
+        "--code",
+        "-c"
+      ]
+    },
+    {
+      "args": {
+        "name": "line length"
+      },
+      "description": "How many characters per line to allow",
+      "name": [
+        "--line-length",
+        "-l"
+      ]
+    },
+    {
+      "args": {
+        "name": "python version",
+        "suggestions": [
+          {
+            "name": "py33"
+          },
+          {
+            "name": "py34"
+          },
+          {
+            "name": "py35"
+          },
+          {
+            "name": "py36"
+          },
+          {
+            "name": "py37"
+          },
+          {
+            "name": "py38"
+          },
+          {
+            "name": "py39"
+          },
+          {
+            "name": "py310"
+          }
+        ]
+      },
+      "description": "Python versions that should be supported",
+      "name": [
+        "--target-version",
+        "-t"
+      ]
+    },
+    {
+      "description": "Format all input files regardless of file extension",
+      "name": [
+        "--pyi"
+      ]
+    },
+    {
+      "description": "Format all input files like Jupyter Notebooks regardless of file extension",
+      "name": [
+        "--ipynb"
+      ]
+    },
+    {
+      "args": {
+        "name": "python-magic",
+        "suggestions": [
+          {
+            "name": "python"
+          },
+          {
+            "name": "python3"
+          },
+          {
+            "name": "timeit"
+          },
+          {
+            "name": "prun"
+          },
+          {
+            "name": "time"
+          },
+          {
+            "name": "pypy"
+          },
+          {
+            "name": "capture"
+          }
+        ]
+      },
+      "description": "Add the given magic to the list of known python-magics",
+      "name": [
+        "--python-cell-magics"
+      ]
+    },
+    {
+      "description": "Don't normalize string quotes or prefixes",
+      "name": [
+        "--skip-string-normalization",
+        "-S"
+      ]
+    },
+    {
+      "description": "Don't use trailing commas as a reason to split lines",
+      "name": [
+        "--skip-magic-trailing-comma",
+        "-C"
+      ]
+    },
+    {
+      "description": "Enable potentially disruptive style changes",
+      "name": [
+        "--preview"
+      ]
+    },
+    {
+      "description": "Don't write the files back, just return the status",
+      "name": [
+        "--check"
+      ]
+    },
+    {
+      "description": "Don't write the files back, just output a diff for each file on stdout",
+      "name": [
+        "--diff"
+      ]
+    },
+    {
+      "description": "Show colored diff",
+      "name": [
+        "--color"
+      ]
+    },
+    {
+      "description": "Show uncolored diff",
+      "name": [
+        "--no-color"
+      ]
+    },
+    {
+      "description": "Skip temporary sanity checks",
+      "name": [
+        "--fast"
+      ]
+    },
+    {
+      "description": "Run temporary sanity checks",
+      "name": [
+        "--safe"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "cache": {
+              "ttl_seconds": 172800
+            },
+            "script": [
+              "gh",
+              "release",
+              "list",
+              "--repo",
+              "psf/black"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "version"
+      },
+      "description": "Require a specific version of Black",
+      "name": [
+        "--required-version"
+      ]
+    },
+    {
+      "args": {
+        "name": "Regex"
+      },
+      "description": "Regex that matches files and directories that should be included on recursive searches",
+      "name": [
+        "--include"
+      ]
+    },
+    {
+      "args": {
+        "name": "Regex"
+      },
+      "description": "Regex that matches files and directories that should be excluded on recursive searches",
+      "name": [
+        "--exclude"
+      ]
+    },
+    {
+      "args": {
+        "name": "Regex"
+      },
+      "description": "Additional exlusions",
+      "name": [
+        "--extend-exclude"
+      ]
+    },
+    {
+      "args": {
+        "name": "Regex"
+      },
+      "description": "Exlude matching files and folders even when passed explicitly",
+      "name": [
+        "--force-exclude"
+      ]
+    },
+    {
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      },
+      "description": "The name of the file when passing it through stdin",
+      "name": [
+        "--stdin-filename"
+      ]
+    },
+    {
+      "args": {
+        "name": "integer"
+      },
+      "description": "Number of parallel workers",
+      "name": [
+        "--workers",
+        "-W"
+      ]
+    },
+    {
+      "description": "Don't emit non-error messages to stderr",
+      "name": [
+        "--quiet",
+        "-q"
+      ]
+    },
+    {
+      "description": "Also emit messages about files that were not changed or were ignored due to exclusion patterns",
+      "name": [
+        "--verbose",
+        "-v"
+      ]
+    },
+    {
+      "description": "Show the version",
+      "name": [
+        "--version"
+      ]
+    },
+    {
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      },
+      "description": "Read configuration from filepath",
+      "name": [
+        "--config"
+      ]
+    },
+    {
+      "description": "Show usage information",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ]
+}

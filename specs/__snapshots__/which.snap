@@ -1,0 +1,35 @@
+{
+  "args": {
+    "generators": [
+      {
+        "script": [
+          "bash",
+          "-c",
+          "for i in $(echo $PATH | tr \":\" \"\n\"); do find $i -maxdepth 1 -perm -111 -type f; done"
+        ],
+        "transforms": [
+          "split_lines",
+          "filter_empty"
+        ]
+      }
+    ],
+    "isVariadic": true,
+    "name": "names"
+  },
+  "description": "Locate a program in the user's PATH",
+  "name": "which",
+  "options": [
+    {
+      "description": "No output, return 0 if all the executables are found, 1 if not",
+      "name": [
+        "-s"
+      ]
+    },
+    {
+      "description": "List all instances of executables found, instead of just the first",
+      "name": [
+        "-a"
+      ]
+    }
+  ]
+}

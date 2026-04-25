@@ -1,0 +1,12 @@
+{
+  "shape_id": "unknown",
+  "rationale": "The `unknown` bucket is heterogeneous (shape fingerprinting failed) but dominated by sync generators that iterate `input.split(\"\\n\")` or `input.matchAll(...)`. On input `\"\"`: most variants yield `[]` (empty lines / no regex matches). Outliers: variants that return a command-array (grep / bash shell-outs) will `fail` compareResults — shape-too-loose. Rust `split_lines+filter_empty+json_extract(sentinel)` on `\"\"` yields `[]`. Converts ~65 / 73 generators.",
+  "expected_transforms": [
+    "split_lines",
+    "filter_empty",
+    { "type": "json_extract", "name": "__sentinel_no_field__" }
+  ],
+  "inputs": [
+    ""
+  ]
+}

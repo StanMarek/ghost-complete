@@ -1,0 +1,254 @@
+{
+  "description": "CLI for dotenv-vault",
+  "name": "dotenv-vault",
+  "options": [
+    {
+      "description": "Get documentation for the command",
+      "name": [
+        "--help"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "description": "Set .env.vault identifier. Defaults to generated value",
+        "isOptional": true,
+        "name": "DOTENV_VAULT"
+      },
+      "description": "Create your project",
+      "name": "new",
+      "options": [
+        {
+          "description": "Automatic yes to prompts. Assume yes to all prompts and run non-interactively",
+          "name": [
+            "--yes",
+            "-y"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Set .env.me credential. Defaults to generated value",
+        "isOptional": true,
+        "name": "DOTENV_ME"
+      },
+      "description": "Log in to dotenv-vault",
+      "name": "login",
+      "options": [
+        {
+          "description": "Automatic yes to prompts. Assume yes to all prompts and run non-interactively",
+          "name": [
+            "--yes",
+            "-y"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Log out from dotenv-vault",
+      "name": "logout",
+      "options": [
+        {
+          "description": "Automatic yes to prompts. Assume yes to all prompts and run non-interactively",
+          "name": [
+            "--yes",
+            "-y"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Set environment to open to. Defaults to development",
+        "isOptional": true,
+        "name": "ENVIRONMENT"
+      },
+      "description": "Opens project page in a browser",
+      "name": "open",
+      "options": [
+        {
+          "description": "Automatic yes to prompts. Assume yes to all prompts and run non-interactively",
+          "name": [
+            "--yes",
+            "-y"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Set environment to open to. Defaults to development",
+          "isOptional": true,
+          "name": "ENVIRONMENT"
+        },
+        {
+          "description": "Set input filename. Defaults to .env for development and .env.{environment} for other environments",
+          "generators": [
+            {
+              "js_source": "(p,h,_)=>pe(this,void 0,void 0,function*(){var f;let{isDangerous:O,currentWorkingDirectory:b,searchTerm:v}=_,w=(f=(0,y.getCurrentInsertedDirectory)(u??b,v,_))!==null&&f!==void 0?f:\"/\";try{let $=yield h({command:\"ls\",args:[\"-1ApL\"],cwd:w}),te=Q($.stdout.split(`\n`),[\".DS_Store\"]),K=[];for(let E of te)if(E){let M=E.endsWith(\"/\")?\"folders\":\"filepaths\";(M===\"filepaths\"&&c!==\"only\"||M===\"folders\"&&c!==\"never\")&&K.push({type:M===\"filepaths\"?\"file\":\"folder\",name:E,insertValue:E,isDangerous:O,context:{templateType:M}})}return S(g(K))}catch{return[]}})",
+              "requires_js": true
+            }
+          ],
+          "isOptional": true,
+          "name": "FILENAME"
+        }
+      ],
+      "description": "Push .env securely",
+      "name": "push",
+      "options": [
+        {
+          "description": "Automatic yes to prompts. Assume yes to all prompts and run non-interactively",
+          "name": [
+            "--yes",
+            "-y"
+          ]
+        },
+        {
+          "args": {
+            "description": "Pass .env.me (DOTENV_ME) credential directly",
+            "name": "DOTENV_ME"
+          },
+          "description": "Pass .env.me (DOTENV_ME) credential directly (rather than reading from .env.me file)",
+          "name": [
+            "-m",
+            "--dotenvMe"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Set environment to open to. Defaults to development",
+          "isOptional": true,
+          "name": "ENVIRONMENT"
+        },
+        {
+          "description": "Set input filename. Defaults to .env for development and .env.{environment} for other environments",
+          "generators": [
+            {
+              "js_source": "(p,h,_)=>pe(this,void 0,void 0,function*(){var f;let{isDangerous:O,currentWorkingDirectory:b,searchTerm:v}=_,w=(f=(0,y.getCurrentInsertedDirectory)(u??b,v,_))!==null&&f!==void 0?f:\"/\";try{let $=yield h({command:\"ls\",args:[\"-1ApL\"],cwd:w}),te=Q($.stdout.split(`\n`),[\".DS_Store\"]),K=[];for(let E of te)if(E){let M=E.endsWith(\"/\")?\"folders\":\"filepaths\";(M===\"filepaths\"&&c!==\"only\"||M===\"folders\"&&c!==\"never\")&&K.push({type:M===\"filepaths\"?\"file\":\"folder\",name:E,insertValue:E,isDangerous:O,context:{templateType:M}})}return S(g(K))}catch{return[]}})",
+              "requires_js": true
+            }
+          ],
+          "isOptional": true,
+          "name": "FILENAME"
+        }
+      ],
+      "description": "Pull .env securely",
+      "name": "pull",
+      "options": [
+        {
+          "description": "Automatic yes to prompts. Assume yes to all prompts and run non-interactively",
+          "name": [
+            "--yes",
+            "-y"
+          ]
+        },
+        {
+          "args": {
+            "description": "Pass .env.me (DOTENV_ME) credential directly",
+            "name": "DOTENV_ME"
+          },
+          "description": "Pass .env.me (DOTENV_ME) credential directly (rather than reading from .env.me file)",
+          "name": [
+            "-m",
+            "--dotenvMe"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Set environment to open to. Defaults to development",
+          "isOptional": true,
+          "name": "ENVIRONMENT"
+        },
+        {
+          "description": "Set input filename. Defaults to .env for development and .env.{environment} for other environments",
+          "generators": [
+            {
+              "js_source": "(p,h,_)=>pe(this,void 0,void 0,function*(){var f;let{isDangerous:O,currentWorkingDirectory:b,searchTerm:v}=_,w=(f=(0,y.getCurrentInsertedDirectory)(u??b,v,_))!==null&&f!==void 0?f:\"/\";try{let $=yield h({command:\"ls\",args:[\"-1ApL\"],cwd:w}),te=Q($.stdout.split(`\n`),[\".DS_Store\"]),K=[];for(let E of te)if(E){let M=E.endsWith(\"/\")?\"folders\":\"filepaths\";(M===\"filepaths\"&&c!==\"only\"||M===\"folders\"&&c!==\"never\")&&K.push({type:M===\"filepaths\"?\"file\":\"folder\",name:E,insertValue:E,isDangerous:O,context:{templateType:M}})}return S(g(K))}catch{return[]}})",
+              "requires_js": true
+            }
+          ],
+          "isOptional": true,
+          "name": "FILENAME"
+        }
+      ],
+      "description": "List version history",
+      "name": "versions",
+      "options": [
+        {
+          "description": "Automatic yes to prompts. Assume yes to all prompts and run non-interactively",
+          "name": [
+            "--yes",
+            "-y"
+          ]
+        },
+        {
+          "args": {
+            "description": "Pass .env.me (DOTENV_ME) credential directly",
+            "name": "DOTENV_ME"
+          },
+          "description": "Pass .env.me (DOTENV_ME) credential directly (rather than reading from .env.me file)",
+          "name": [
+            "-m",
+            "--dotenvMe"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Display the current logged in user",
+      "name": "whoami",
+      "options": [
+        {
+          "args": {
+            "description": "Pass .env.me (DOTENV_ME) credential directly",
+            "name": "DOTENV_ME"
+          },
+          "description": "Pass .env.me (DOTENV_ME) credential directly (rather than reading from .env.me file)",
+          "name": [
+            "-m",
+            "--dotenvMe"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Check dotenv-operational status",
+      "name": "status",
+      "options": [
+        {
+          "description": "Automatic yes to prompts. Assume yes to all prompts and run non-interactively",
+          "name": [
+            "--yes",
+            "-y"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Display help for dotenv-vault",
+      "name": "help"
+    },
+    {
+      "description": "Update the dotenv-vault CLI",
+      "name": "update",
+      "options": [
+        {
+          "description": "Automatic yes to prompts. Assume yes to all prompts and run non-interactively",
+          "name": [
+            "--yes",
+            "-y"
+          ]
+        }
+      ]
+    }
+  ]
+}

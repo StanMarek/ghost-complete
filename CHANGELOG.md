@@ -7,6 +7,87 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Corrected
+
+- **Substring/slice misconversion.** The spec converter previously emitted
+  `column_extract` for `.substring(0, N)` and `.slice(0, N)` patterns, which are
+  byte-offset operations, not whitespace-delimited columns. Affected generators
+  now correctly report as requires-JS until the converter gains a substring/slice
+  lowering (tracked in `docs/phase-minus-1-followups.md`).
+  Affected specs: chezmoi, git, pass, pre-commit.
+- **JSON.parse silent fallback.** When `JSON.parse` appeared without a resolvable
+  field access, the converter silently emitted `{type: "json_extract", name: "name"}`,
+  producing wrong completions. These generators now report as requires-JS.
+  Affected specs: docker, podman.
+
+Generators affected by either correction are tagged in the embedded specs with
+`_corrected_in: "v0.10.0"`. `ghost-complete doctor` surfaces the count and names
+them under the new corrected-generator warning check so users know which specs
+silently changed behaviour.
+
+`git.json` and `cd.json` have related deferred work tracked in
+`docs/phase-minus-1-followups.md`.
+
+### Added
+
+- **`ghost-complete status --json`** — emits a structured JSON report with
+  `schema_version`, `spec_counts`, and `coverage_trend` (nullable). Suppresses
+  the human-readable output when present. Adds `--baseline <path>` for
+  overriding the default `docs/coverage-baseline.json` lookup.
+- **Coverage baseline (`docs/coverage-baseline.json`)** — committed JSON file
+  tracking per-release coverage numbers. Populated at each release per the
+  process documented in `docs/SPECS.md`. `ghost-complete status` now prints
+  a "Coverage trend" section sourced from this file.
+- **`ghost-complete validate-specs --json`** — newline-delimited JSON output
+  with one object per spec plus a trailing `{"summary":{...}}` row. Designed
+  for `jq 'select(.ok == false)'` filtering.
+- **Dotted-path `json_extract` / `json_extract_array` transform** — the spec
+  converter now recognises `JSON.parse(x).foo.bar.map(...)` patterns and emits
+  declarative `json_extract_array` transforms with dotted-path lookups, nested
+  indices, and bracketed-key syntax (`foo['bar'].baz`). 14 generators across
+  `expo`, `expo-cli`, `pnpx`, `react-native`, and `scarb` converted from
+  `requires_js` to native transforms.
+- **`suffix` transform** — appends a fixed literal to each suggestion's text.
+  Modelled on Fig's `{name: \`${x}=\`}` template-literal pattern. Used to
+  hand-port `docker service scale` from `requires_js` to a declarative
+  pipeline.
+- **`docs/SPECS.md`** — conversion pipeline reference, hand-port vs converter
+  extension guide, and the `_corrected_in` lifecycle doc.
+- **Native provider pipeline** — eight async Rust providers replace
+  JS-backed generators for the corresponding commands: `ansible-doc`
+  (module list), `arduino-cli` (FQBNs and port addresses via one shared
+  `arduino-cli board list --format json` call), macOS `defaults` (domain
+  list), `mamba` / `conda env list` (environment names), `multipass list`
+  (all instances, plus four state-filtered variants: running, stopped,
+  deleted, not-deleted), and `pandoc` (input and output formats). Every
+  provider subprocess enforces a 2-second timeout and returns an empty
+  `Vec` on spawn failure, timeout, non-zero exit, or parse error, so a
+  broken tool never stalls completion. Dispatch is wired through a
+  closed-for-the-crate `ProviderKind` enum with 12 variants.
+- **Build-time embedded-spec minification** — `crates/gc-suggest/build.rs`
+  (new) reads every `specs/*.json` at compile time, strips the
+  runtime-unused `js_source` field from each generator, minifies the
+  remaining JSON, and writes the compacted copy into `OUT_DIR` for
+  `include_str!` to bake into the binary. The release binary shrank from
+  ~47 MB to ~28.42 MB — no behaviour change, on-disk `specs/*.json`
+  remain pretty-printed; only the binary-embedded copies are minified.
+  Adds `serde_json` under `[build-dependencies]`.
+
+### Changed
+
+- **`ghost-complete status`** output now includes a "Coverage trend (vs
+  previous release)" section at the end. The delta renderer has three
+  cases: `(baseline)` for single-row bootstrap (no prior release to
+  compare against), `(unchanged)` when a metric matches the previous
+  release exactly, and signed `(+N)` / `(-N)` deltas otherwise.
+
+### Fixed
+
+- **`docker service scale` completions** — hand-ported to a declarative
+  pipeline; the trailing `=` (required by `docker service scale SERVICE=N`
+  syntax) is now produced by the `suffix` transform. Previously surfaced as
+  `requires_js` and did not complete.
+
 ## [0.9.1] - 2026-04-20
 
 ### Fixed

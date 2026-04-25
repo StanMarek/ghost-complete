@@ -13,10 +13,20 @@
  */
 
 /**
+ * Version tag stamped on generators whose prior conversion produced incorrect
+ * completions and has now been fixed.
+ * Only applied to the specific bug-class paths — substring/slice short-circuit
+ * and the JSON.parse unresolvable-field sentinel. Generic "can't match"
+ * requires_js returns are NOT tagged, because those were never mis-converted
+ * in the first place.
+ */
+export const CORRECTED_IN_VERSION = 'v0.10.0';
+
+/**
  * Analyze a postProcess function body and return a match result.
  *
  * @param {string} fnSource - The function source code (from .toString())
- * @returns {{ transforms: Array, requires_js: boolean, js_source?: string }}
+ * @returns {{ transforms: Array, requires_js: boolean, js_source?: string, _corrected_in?: string }}
  */
 export function matchPostProcess(fnSource) {
   if (!fnSource || typeof fnSource !== 'string') {
@@ -34,6 +44,18 @@ export function matchPostProcess(fnSource) {
     transforms.push(errorGuard);
   }
 
+  // Phase 1b: Detect `JSON.parse(x).<dotted.path>.map(...)` which consumes
+  // the raw output directly as a single JSON blob (NOT newline-delimited).
+  // These shapes don't go through `.split("\n")` at all — lift them into a
+  // terminal `json_extract_array` transform. Must run BEFORE Phase 2's
+  // `hasSplitPattern` bail-out, since these generators have no newline split.
+  const jsonExtractArray = matchJsonExtractArray(body);
+  if (jsonExtractArray) {
+    // json_extract_array is a terminal, raw-output transform — it replaces
+    // the split/filter/map pipeline rather than appending to it.
+    return { transforms: [jsonExtractArray], requires_js: false };
+  }
+
   // Phase 2: Look for the split pattern (required for most transforms)
   if (!hasSplitPattern(body)) {
     // No split found — this is likely a complex function we can't match
@@ -48,24 +70,44 @@ export function matchPostProcess(fnSource) {
     transforms.push('trim');
   }
 
-  // Phase 4: Check for JSON.parse extraction
+  // Phase 4: Substring/slice are byte-offset operations and CANNOT be
+  // represented by our whitespace-delimited column_extract transform. Any
+  // function that relies on .substring/.slice to derive a completion value
+  // must be deferred to JS execution — there is no safe native lowering.
+  // This is a corrected path: the old matcher emitted column_extract here
+  // and silently produced wrong completions. Tag with _corrected_in so
+  // `ghost-complete doctor` can surface the behaviour change.
+  if (hasSubstringOrSlice(body)) {
+    return {
+      transforms: null,
+      requires_js: true,
+      js_source: fnSource,
+      _corrected_in: CORRECTED_IN_VERSION,
+    };
+  }
+
+  // Phase 5: Check for JSON.parse extraction
   const jsonExtract = matchJsonExtract(body);
+  if (jsonExtract === REQUIRES_JS) {
+    // Corrected path: the old matcher guessed `name: "name"` when the
+    // extracted field couldn't be resolved, yielding wrong completions for
+    // shapes like `j.metadata.id`. Tag with _corrected_in for doctor.
+    return {
+      transforms: null,
+      requires_js: true,
+      js_source: fnSource,
+      _corrected_in: CORRECTED_IN_VERSION,
+    };
+  }
   if (jsonExtract) {
     transforms.push(jsonExtract);
     return { transforms, requires_js: false };
   }
 
-  // Phase 5: Check for regex extraction
+  // Phase 6: Check for regex extraction
   const regexExtract = matchRegexExtract(body);
   if (regexExtract) {
     transforms.push(regexExtract);
-    return { transforms, requires_js: false };
-  }
-
-  // Phase 6: Check for substring/column extraction
-  const columnExtract = matchColumnExtract(body);
-  if (columnExtract) {
-    transforms.push(columnExtract);
     return { transforms, requires_js: false };
   }
 
@@ -83,6 +125,9 @@ export function matchPostProcess(fnSource) {
   // If we got here with just split+filter, that's still a valid basic match
   return { transforms, requires_js: false };
 }
+
+// Sentinel returned by matchers that detect a pattern they can't safely lower.
+const REQUIRES_JS = Symbol('requires_js');
 
 // --- Pattern matchers ---
 
@@ -219,8 +264,10 @@ function matchJsonExtract(body) {
     return result;
   }
 
-  // Generic JSON.parse without clear field access
-  return { type: 'json_extract', name: 'name' };
+  // JSON.parse is present but we can't identify which field is being
+  // accessed (e.g. `JSON.parse(x); return x.metadata.id`). Guessing "name"
+  // here produced wrong completions at runtime — defer to JS instead.
+  return REQUIRES_JS;
 }
 
 /**
@@ -255,20 +302,17 @@ function matchRegexExtract(body) {
 }
 
 /**
- * Match column/substring extraction.
- * e.g., line.substring(0, 7), line.slice(0, 7)
+ * Detect substring/slice byte-offset operations.
+ *
+ * These are byte-offset slices (like `line.substring(0, 7)` grabbing the
+ * first 7 characters of a git SHA) and are NOT equivalent to the
+ * whitespace-delimited `column_extract` transform in the Rust pipeline.
+ * The previous implementation emitted `column_extract` here, which silently
+ * produced wrong completions. Now we detect the pattern so the caller can
+ * defer to JS instead.
  */
-function matchColumnExtract(body) {
-  const substringMatch = body.match(
-    /\.(?:substring|slice)\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)/
-  );
-  if (substringMatch) {
-    return {
-      type: 'column_extract',
-      column: parseInt(substringMatch[1], 10),
-    };
-  }
-  return null;
+function hasSubstringOrSlice(body) {
+  return /\.(?:substring|slice)\s*\(\s*\d+\s*,\s*\d+\s*\)/.test(body);
 }
 
 /**
@@ -282,6 +326,85 @@ function isSimpleSplitMap(body) {
   // Check for .map that produces {name: <var>} objects
   // This is intentionally loose — if we see split + map + name:, it's probably simple
   return /\.split\b/.test(body) && /\.map\b/.test(body) && /name\s*:/.test(body);
+}
+
+/**
+ * Match `JSON.parse(x).<dotted.path>.map(...)` — the two shapes covered are:
+ *
+ *   parse-map-6:     JSON.parse(t).project.schemes.map(e => ({name: e}))
+ *   parse-map-split: JSON.parse(e).workspace.members.map(n => n.split(" ")[0])
+ *
+ * Both consume the entire raw output as one JSON blob, walk a 2+ segment
+ * dotted path to reach an array, and emit one suggestion per element.
+ *
+ * Returns one of:
+ *   - a `{type:'json_extract_array', ...}` transform object on match
+ *   - `null` on no match (caller continues to other matchers)
+ *
+ * A single-segment path (e.g. `JSON.parse(x).items.map(...)`) is intentionally
+ * NOT matched here — those may use newline-delimited input elsewhere and are
+ * better handled by other phases or deferred to JS.
+ */
+function matchJsonExtractArray(body) {
+  if (!body.includes('JSON.parse')) return null;
+
+  // Require at least TWO path segments after JSON.parse(...). and a `.map(`
+  // somewhere after. Capture group 1 = the dotted path.
+  //
+  // Limitation: inner [^)]* does not tolerate a nested call inside
+  // JSON.parse(). The 14 target generators all pass a bare identifier. A
+  // chained call (e.g. JSON.parse(x.trim())) would NOT match this regex and
+  // would silently fall through to requires_js. If that changes, widen the
+  // matcher.
+  const m = body.match(
+    /JSON\.parse\s*\([^)]*\)\s*((?:\.[A-Za-z_$][\w$]*){2,})\s*\.map\s*\(/
+  );
+  if (!m) return null;
+
+  // m[1] looks like ".project.schemes" — strip the leading dot and keep only
+  // alphanumeric dotted segments. This intentionally rejects paths with
+  // brackets, numeric indices, or anything unusual; we only want the narrow
+  // 2-property dotted case the 14 target generators share.
+  const path = m[1].replace(/^\./, '');
+  if (!/^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)+$/.test(path)) return null;
+
+  const result = { type: 'json_extract_array', path };
+
+  // Detect the scarb parse-map-split variant inside the map callback:
+  //   .map(n => n.split(" ")[0])
+  // Keep it narrow: single-char string delimiter, numeric index, applied to
+  // the callback parameter.
+  const splitMatch = body.match(
+    /\.map\s*\(\s*(?:\w+|\(\s*\w+\s*\))\s*=>\s*\w+\.split\s*\(\s*["'`]([^"'`]+)["'`]\s*\)\s*\[\s*(\d+)\s*\]/
+  );
+  if (splitMatch) {
+    result.split_on = splitMatch[1];
+    result.split_index = parseInt(splitMatch[2], 10);
+    return result;
+  }
+
+  // Detect the parse-map-6 variant where the callback emits `{name: <param>}`.
+  // The element is used as-is → no item_name needed.
+  const nameIsParam = body.match(
+    /\.map\s*\(\s*(\w+)\s*=>\s*\(\s*\{\s*name\s*:\s*\1\s*[,}]/
+  );
+  if (nameIsParam) {
+    return result; // element-as-string shape, no sub-field
+  }
+
+  // Detect `.map(e => ({name: e.someField}))` — element object with sub-field.
+  const nameIsField = body.match(
+    /\.map\s*\(\s*(\w+)\s*=>\s*\(\s*\{\s*name\s*:\s*\1\.(\w+)/
+  );
+  if (nameIsField) {
+    result.item_name = nameIsField[2];
+    return result;
+  }
+
+  // Unknown map shape — bail so we don't emit a wrong transform. The caller
+  // will continue to the (null) Phase 2 split check, which hard-fails to
+  // requires_js.
+  return null;
 }
 
 /**

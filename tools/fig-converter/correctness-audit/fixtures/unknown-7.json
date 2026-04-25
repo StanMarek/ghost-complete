@@ -1,0 +1,12 @@
+{
+  "shape_id": "unknown-7",
+  "rationale": "Fingerprint not cleanly classified but all 7 generators follow the `function(t){let i=[];try{if(t.trim()==\"\")return i;...}catch{console.log(a)}return i}` pattern (cordova). Feed `\"\"`: trim() == \"\" → return `[]` early. Rust `split_lines+filter_empty+json_extract(sentinel)` on `\"\"` yields `[]` (filter_empty removes). Both empty.",
+  "expected_transforms": [
+    "split_lines",
+    "filter_empty",
+    { "type": "json_extract", "name": "__sentinel_no_field__" }
+  ],
+  "inputs": [
+    ""
+  ]
+}

@@ -1,6 +1,11 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { convertSingleSpec, listSpecNames } from './index.js';
+import { spawn } from 'node:child_process';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { convertSingleSpec, listSpecNames, cleanGenerator, runConversionBatch } from './index.js';
 
 describe('listSpecNames', () => {
   it('returns an array of spec names', async () => {
@@ -182,5 +187,161 @@ describe('convertSingleSpec', () => {
         assert.ok(json.includes('"type":"error_guard"'));
       }
     });
+  });
+});
+
+describe('cleanGenerator', () => {
+  it('strips generic underscore-prefixed keys', () => {
+    const result = cleanGenerator({
+      script: ['cmd'],
+      _postProcessSource: 'foo',
+      _custom: true,
+      _internal: 'secret',
+    });
+    assert.deepStrictEqual(result, { script: ['cmd'] });
+  });
+
+  it('preserves _corrected_in (format-extension allowlist)', () => {
+    // _corrected_in is a persistent spec-format extension, not an internal
+    // marker. It must survive cleaning so downstream tools (doctor, etc.)
+    // can see which generators were re-classified.
+    const result = cleanGenerator({
+      requires_js: true,
+      js_source: 'fn body',
+      _corrected_in: 'v0.10.0',
+      _postProcessSource: 'should be stripped',
+    });
+    assert.equal(result._corrected_in, 'v0.10.0');
+    assert.equal(result.requires_js, true);
+    assert.equal(result.js_source, 'fn body');
+    assert.equal(result._postProcessSource, undefined);
+  });
+
+  it('preserves non-underscore keys unchanged', () => {
+    const gen = {
+      type: 'git_branches',
+      cache: { ttl_seconds: 300 },
+      transforms: ['split_lines'],
+    };
+    const result = cleanGenerator(gen);
+    assert.deepStrictEqual(result, gen);
+  });
+
+  it('does not treat arbitrary underscore-keys as allowlisted', () => {
+    // Defense-in-depth: the allowlist must be exact, not a prefix match.
+    // A hypothetical future typo like `_corrected_in_` or `_corrected` must
+    // still be stripped.
+    const result = cleanGenerator({
+      script: ['cmd'],
+      _corrected: 'nope',
+      _corrected_in_v2: 'nope',
+      _CORRECTED_IN: 'nope',
+    });
+    assert.deepStrictEqual(result, { script: ['cmd'] });
+  });
+});
+
+describe('runConversionBatch', () => {
+  it('aggregates totals from multiple small specs (in-process smoke test)', async () => {
+    // Sanity-check the shared worker body: converting three small specs via
+    // the batch function should yield totals equal to the sum of calling
+    // convertSingleSpec on each individually. This locks the in-process /
+    // subprocess-worker code paths to the same semantics without spawning
+    // a subprocess.
+    const specs = ['ls', 'cat', 'echo'];
+
+    // Reference totals: sum of per-spec stats.
+    const reference = {
+      converted: 0,
+      subcommands: 0,
+      options: 0,
+      generators: 0,
+    };
+    for (const name of specs) {
+      const r = await convertSingleSpec(name);
+      assert.ok(r, `${name} should convert`);
+      reference.converted++;
+      reference.subcommands += r.stats.subcommands;
+      reference.options += r.stats.options;
+      reference.generators += r.stats.generators;
+    }
+
+    const { totals, errors } = await runConversionBatch({
+      specNames: specs,
+      outputDir: null,
+      dryRun: true,
+    });
+
+    assert.deepStrictEqual(errors, []);
+    assert.equal(totals.converted, reference.converted);
+    assert.equal(totals.failed, 0);
+    assert.equal(totals.subcommands, reference.subcommands);
+    assert.equal(totals.options, reference.options);
+    assert.equal(totals.generators, reference.generators);
+  });
+
+  it('records per-spec failures in errors without aborting the batch', async () => {
+    // A nonexistent spec must surface as an error but must not prevent
+    // subsequent real specs in the same batch from being counted.
+    const { totals, errors } = await runConversionBatch({
+      specNames: ['cat', 'this_spec_does_not_exist_xyz', 'echo'],
+      outputDir: null,
+      dryRun: true,
+    });
+
+    assert.equal(totals.converted, 2);
+    assert.equal(totals.failed, 1);
+    assert.equal(errors.length, 1);
+    assert.equal(errors[0].spec, 'this_spec_does_not_exist_xyz');
+  });
+});
+
+describe('batched convert integration', () => {
+  it('batched subprocess output matches direct convertSingleSpec output', { timeout: 60000 }, async () => {
+    const specs = ['ls', 'cat', 'echo', 'brew', 'git', 'npm', 'docker', 'grep', 'tar', 'curl'];
+    const tempDir = await mkdtemp(join(tmpdir(), 'gc-convert-it-'));
+    try {
+      // Run the orchestrator as a real subprocess with --batch-size 3, which
+      // forces 10 specs to split into 4 batches (ceil(10/3) = 4), exercising
+      // the subprocess-per-batch code path rather than the in-process fast path.
+      const indexPath = fileURLToPath(new URL('./index.js', import.meta.url));
+      const child = spawn(
+        process.execPath,
+        [indexPath, '--output', tempDir, '--specs', specs.join(','), '--batch-size', '3'],
+        { stdio: ['ignore', 'pipe', 'pipe'] },
+      );
+
+      let stderr = '';
+      child.stderr.on('data', (b) => { stderr += b.toString(); });
+      let stdout = '';
+      child.stdout.on('data', (b) => { stdout += b.toString(); });
+
+      const exitCode = await new Promise((resolve) => child.on('close', resolve));
+      assert.equal(exitCode, 0, `orchestrator exited ${exitCode}.\nstdout:\n${stdout}\nstderr:\n${stderr}`);
+
+      // Confirm the batched subprocess path was actually exercised: the
+      // orchestrator emits "[batch-N/M]" progress lines on stderr.
+      assert.match(stderr, /\[batch-\d+\/\d+\]/, `expected batching progress in stderr, got:\n${stderr}`);
+
+      // Compare each batched output file against an in-process convertSingleSpec
+      // call. They must be structurally identical post-parse.
+      for (const name of specs) {
+        const direct = await convertSingleSpec(name);
+        if (!direct) {
+          // Should not happen for the chosen specs, but skip gracefully rather
+          // than failing the entire test if the upstream dep is missing it.
+          console.log(`[integration] convertSingleSpec returned null for '${name}', skipping`);
+          continue;
+        }
+
+        const batchedPath = join(tempDir, `${name}.json`);
+        const batchedRaw = await readFile(batchedPath, 'utf8');
+        const batched = JSON.parse(batchedRaw);
+
+        assert.deepStrictEqual(batched, direct.spec, `output mismatch for spec '${name}'`);
+      }
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
   });
 });

@@ -1,0 +1,246 @@
+{
+  "description": "Command-line interface to interact with the Steadybit API",
+  "name": "steadybit",
+  "options": [
+    {
+      "description": "Display usage information",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Show/modify the CLI configuration and authentication profiles",
+      "name": "config",
+      "subcommands": [
+        {
+          "description": "Show the active CLI configuration. Warning: Prints secrets!",
+          "name": "show"
+        },
+        {
+          "description": "Configure authentication profiles",
+          "name": "profile",
+          "subcommands": [
+            {
+              "description": "Interactively configure a new profile",
+              "name": "add"
+            },
+            {
+              "description": "List all configured profiles",
+              "name": "list"
+            },
+            {
+              "description": "Interactively remove an existing profile",
+              "name": "remove"
+            },
+            {
+              "description": "Interactively change the currently active profile",
+              "name": "select"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Change versions and verify a task/policy definition repository state",
+      "name": "def-repo",
+      "subcommands": [
+        {
+          "description": "Set the versions in policies and task references",
+          "name": "set-version",
+          "options": [
+            {
+              "args": {
+                "name": "version"
+              },
+              "description": "Version to set",
+              "name": [
+                "-v",
+                "--version"
+              ]
+            },
+            {
+              "args": {
+                "name": "directory",
+                "template": "folders"
+              },
+              "description": "The directory to search for task and policy files",
+              "name": [
+                "-d",
+                "--directory"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Checks that the tasks and policies are valid",
+          "name": "check",
+          "options": [
+            {
+              "args": {
+                "name": "version"
+              },
+              "description": "The version to check",
+              "name": [
+                "-v",
+                "--version"
+              ]
+            },
+            {
+              "args": {
+                "name": "directory",
+                "template": "folders"
+              },
+              "description": "The directory to search for task and policy files",
+              "name": [
+                "-d",
+                "--directory"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Configure or verify service definitions",
+      "name": "service",
+      "subcommands": [
+        {
+          "description": "Upload a service definition",
+          "name": "apply",
+          "options": [
+            {
+              "args": {
+                "name": "file",
+                "template": "filepaths"
+              },
+              "description": "Path to the service definition file",
+              "name": [
+                "-f",
+                "--file"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Delete a service definition",
+          "name": "delete",
+          "options": [
+            {
+              "args": {
+                "name": "file",
+                "template": "filepaths"
+              },
+              "description": "Path to the service definition file",
+              "name": [
+                "-f",
+                "--file"
+              ]
+            },
+            {
+              "args": {
+                "name": "id"
+              },
+              "description": "ID of the service definition to delete",
+              "name": [
+                "-i",
+                "--id"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Initialize a service definition file",
+          "name": "init"
+        },
+        {
+          "description": "Open the service in the Steadybit UI",
+          "name": "open",
+          "options": [
+            {
+              "args": {
+                "name": "file",
+                "template": "filepaths"
+              },
+              "description": "Path to the service definition file",
+              "name": [
+                "-f",
+                "--file"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Read the current service definition and state",
+          "name": "verify",
+          "options": [
+            {
+              "args": {
+                "name": "file",
+                "template": "filepaths"
+              },
+              "description": "Path to the service definition file",
+              "name": [
+                "-f",
+                "--file"
+              ]
+            },
+            {
+              "description": "Print task parameters when listing tasks",
+              "name": [
+                "-pp",
+                "--print-parameters"
+              ]
+            },
+            {
+              "description": "Print the matrix execution context information when listing tasks",
+              "name": [
+                "-pm",
+                "--print-matrix-context"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Show a list of tasks and policies referenced by this service",
+          "name": "show",
+          "options": [
+            {
+              "args": {
+                "name": "file",
+                "template": "filepaths"
+              },
+              "description": "Path to the service definition file",
+              "name": [
+                "-f",
+                "--file"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Optional task name to filter the result list",
+              "name": [
+                "-n",
+                "--name"
+              ]
+            },
+            {
+              "args": {
+                "name": "version"
+              },
+              "description": "Optional task version to filter the result list",
+              "name": [
+                "-v",
+                "--version"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

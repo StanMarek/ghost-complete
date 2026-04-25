@@ -1,0 +1,29 @@
+{
+  "args": {
+    "generators": [
+      {
+        "js_source": "(h,v,m)=>ce(this,void 0,void 0,function*(){var d;let{isDangerous:O,currentWorkingDirectory:b,searchTerm:p}=m,w=(d=(0,g.getCurrentInsertedDirectory)(c??b,p,m))!==null&&d!==void 0?d:\"/\";try{let q=yield v({command:\"ls\",args:[\"-1ApL\"],cwd:w}),Z=$(q.stdout.split(`\n`),[\".DS_Store\"]),N=[];for(let V of Z)if(V){let F=V.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&a!==\"only\"||F===\"folders\"&&a!==\"never\")&&N.push({type:F===\"filepaths\"?\"file\":\"folder\",name:V,insertValue:V,isDangerous:O,context:{templateType:F}})}return S(y(N))}catch{return[]}})",
+        "requires_js": true
+      }
+    ],
+    "isVariadic": true
+  },
+  "description": "Combine multiple pdfs",
+  "name": "pdfunite",
+  "options": [
+    {
+      "description": "Print copyright and version info",
+      "name": [
+        "-v"
+      ]
+    },
+    {
+      "description": "Print usage information",
+      "name": [
+        "-h",
+        "--help",
+        "-?"
+      ]
+    }
+  ]
+}

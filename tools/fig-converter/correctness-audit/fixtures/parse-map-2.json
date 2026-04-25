@@ -1,0 +1,12 @@
+{
+  "shape_id": "parse-map-2",
+  "rationale": "Fingerprint `JSON.parse(...).map(FN)` (distinct bucket from `parse-map` due to shape-flag variations). Same root issue: JS consumes a top-level JSON array. Input `\"[]\"` routes every variant through `.map()` on an empty array → `[]`; Rust `json_extract` on `\"[]\"` also returns `[]`. Sad-path agreement. Follow-up: a `json_array_extract` transform (see `parse-map` fixture rationale).",
+  "expected_transforms": [
+    "split_lines",
+    "filter_empty",
+    { "type": "json_extract", "name": "__sentinel_no_field__" }
+  ],
+  "inputs": [
+    "[]"
+  ]
+}

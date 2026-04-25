@@ -1,0 +1,422 @@
+{
+  "description": "SurrealDB is the ultimate cloud database for tomorrow's applications - https://surrealdb.com/",
+  "name": "surreal",
+  "options": [
+    {
+      "description": "Print help information",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "description": "Command to get help for",
+        "isOptional": true,
+        "name": "command",
+        "template": "help"
+      },
+      "description": "Print this message or the help of the given subcommand(s)",
+      "name": "help"
+    },
+    {
+      "args": {
+        "description": "Database path used for storing data [env: DB_PATH=] [default: memory]",
+        "isOptional": true,
+        "name": "path"
+      },
+      "description": "Start the database server",
+      "name": "start",
+      "options": [
+        {
+          "description": "Everything after this is an argument",
+          "name": [
+            "--"
+          ]
+        },
+        {
+          "args": {
+            "description": "The allowed networks for master authentication [env: ADDR=] [default: 127.0.0.1/32]",
+            "name": "addr"
+          },
+          "description": "The allowed networks for master authentication [env: ADDR=] [default: 127.0.0.1/32]",
+          "name": [
+            "--addr"
+          ]
+        },
+        {
+          "args": {
+            "description": "The hostname or ip address to listen for connections on [env: BIND=] [default: 0.0.0.0:8000]",
+            "name": "bind"
+          },
+          "description": "The hostname or ip address to listen for connections on [env: BIND=] [default: 0.0.0.0:8000]",
+          "name": [
+            "--bind",
+            "-b"
+          ]
+        },
+        {
+          "args": {
+            "description": "Encryption key to use for on-disk encryption [env: KEY=]",
+            "name": "key"
+          },
+          "description": "Encryption key to use for on-disk encryption [env: KEY=]",
+          "name": [
+            "--key",
+            "-k"
+          ]
+        },
+        {
+          "args": {
+            "description": "Path to the CA file used when connecting to the remote KV store [env: KVS_CA=]",
+            "name": "kvs-ca"
+          },
+          "description": "Path to the CA file used when connecting to the remote KV store [env: KVS_CA=]",
+          "name": [
+            "--kvs-ca"
+          ]
+        },
+        {
+          "args": {
+            "description": "Path to the certificate file used when connecting to the remote KV store [env: KVS_CRT=]",
+            "name": "kvs-crt"
+          },
+          "description": "Path to the certificate file used when connecting to the remote KV store [env: KVS_CRT=]",
+          "name": [
+            "--kvs-crt"
+          ]
+        },
+        {
+          "args": {
+            "description": "Path to the private key file used when connecting to the remote KV store [env: KVS_KEY=]",
+            "name": "kvs-key"
+          },
+          "description": "Path to the private key file used when connecting to the remote KV store [env: KVS_KEY=]",
+          "name": [
+            "--kvs-key"
+          ]
+        },
+        {
+          "args": {
+            "description": "The logging level for the database server [env: LOG=] [default: info] [possible values: warn, info, debug, trace, full]",
+            "name": "log",
+            "suggestions": [
+              {
+                "name": "warn"
+              },
+              {
+                "name": "info"
+              },
+              {
+                "name": "debug"
+              },
+              {
+                "name": "trace"
+              },
+              {
+                "name": "full"
+              }
+            ]
+          },
+          "description": "The logging level for the database server [env: LOG=] [default: info] [possible values: warn, info, debug, trace, full]",
+          "name": [
+            "--log",
+            "-l"
+          ]
+        },
+        {
+          "args": {
+            "description": "The master password for the database [env: PASS=]",
+            "name": "pass"
+          },
+          "description": "The master password for the database [env: PASS=]",
+          "name": [
+            "--pass",
+            "-p"
+          ]
+        },
+        {
+          "args": {
+            "description": "Whether strict mode is enabled on this database instance [env: STRICT=]",
+            "name": "strict"
+          },
+          "description": "Whether strict mode is enabled on this database instance [env: STRICT=]",
+          "name": [
+            "--strict",
+            "-s"
+          ]
+        },
+        {
+          "args": {
+            "description": "The master username for the database [env: USER=] [default: root]",
+            "name": "user"
+          },
+          "description": "The master username for the database [env: USER=] [default: root]",
+          "name": [
+            "--user",
+            "-u"
+          ]
+        },
+        {
+          "args": {
+            "description": "Path to the certificate file for encrypted client connections [env: WEB_CRT=]",
+            "name": "web-crt"
+          },
+          "description": "Path to the certificate file for encrypted client connections [env: WEB_CRT=]",
+          "name": [
+            "--web-crt"
+          ]
+        },
+        {
+          "args": {
+            "description": "Path to the private key file for encrypted client connections [env: WEB_KEY=]",
+            "name": "web-key"
+          },
+          "description": "Path to the private key file for encrypted client connections [env: WEB_KEY=]",
+          "name": [
+            "--web-key"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Path to the remote database or file from which to export",
+          "name": "from"
+        },
+        {
+          "description": "Path to the remote database or file into which to import",
+          "name": "into"
+        }
+      ],
+      "description": "Backup data to or from an existing database",
+      "name": "backup",
+      "options": [
+        {
+          "args": {
+            "description": "Database authentication password to use when connecting [default: root]",
+            "name": "pass"
+          },
+          "description": "Database authentication password to use when connecting [default: root]",
+          "name": [
+            "--pass",
+            "-p"
+          ]
+        },
+        {
+          "args": {
+            "description": "Database authentication username to use when connecting [default: root]",
+            "name": "user"
+          },
+          "description": "Database authentication username to use when connecting [default: root]",
+          "name": [
+            "--user",
+            "-u"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Path to the sql file to import",
+        "name": "file"
+      },
+      "description": "Import a SurrealQL script into an existing database",
+      "name": "import",
+      "options": [
+        {
+          "args": {
+            "description": "Database authentication password to use when connecting [default: root]",
+            "name": "pass"
+          },
+          "description": "Database authentication password to use when connecting [default: root]",
+          "name": [
+            "--pass",
+            "-p"
+          ]
+        },
+        {
+          "args": {
+            "description": "Database authentication username to use when connecting [default: root]",
+            "name": "user"
+          },
+          "description": "Database authentication username to use when connecting [default: root]",
+          "name": [
+            "--user",
+            "-u"
+          ]
+        },
+        {
+          "args": {
+            "description": "Remote database server url to connect to [default: https://cloud.surrealdb.com]",
+            "name": "conn"
+          },
+          "description": "Remote database server url to connect to [default: https://cloud.surrealdb.com]",
+          "name": [
+            "--conn",
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "description": "The namespace to import the data into",
+            "name": "ns"
+          },
+          "description": "The namespace to import the data into",
+          "name": [
+            "--ns"
+          ]
+        },
+        {
+          "args": {
+            "description": "The database to import the data into",
+            "name": "db"
+          },
+          "description": "The database to import the data into",
+          "name": [
+            "--db"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Path to the sql file to export",
+        "name": "file"
+      },
+      "description": "Export an existing database as a SurrealQL script",
+      "name": "export",
+      "options": [
+        {
+          "args": {
+            "description": "Database authentication password to use when connecting [default: root]",
+            "name": "pass"
+          },
+          "description": "Database authentication password to use when connecting [default: root]",
+          "name": [
+            "--pass",
+            "-p"
+          ]
+        },
+        {
+          "args": {
+            "description": "Database authentication username to use when connecting [default: root]",
+            "name": "user"
+          },
+          "description": "Database authentication username to use when connecting [default: root]",
+          "name": [
+            "--user",
+            "-u"
+          ]
+        },
+        {
+          "args": {
+            "description": "Remote database server url to connect to [default: https://cloud.surrealdb.com]",
+            "name": "conn"
+          },
+          "description": "Remote database server url to connect to [default: https://cloud.surrealdb.com]",
+          "name": [
+            "--conn",
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "description": "The namespace to export the data from",
+            "name": "ns"
+          },
+          "description": "The namespace to export the data from",
+          "name": [
+            "--ns"
+          ]
+        },
+        {
+          "args": {
+            "description": "The database to export the data from",
+            "name": "db"
+          },
+          "description": "The database to export the data from",
+          "name": [
+            "--db"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Output the command-line tool version information",
+      "name": "version"
+    },
+    {
+      "args": {
+        "description": "Path to the sql file to export",
+        "name": "file"
+      },
+      "description": "Start an SQL REPL in your terminal with pipe support",
+      "name": "sql",
+      "options": [
+        {
+          "args": {
+            "description": "Database authentication password to use when connecting [default: root]",
+            "name": "pass"
+          },
+          "description": "Database authentication password to use when connecting [default: root]",
+          "name": [
+            "--pass",
+            "-p"
+          ]
+        },
+        {
+          "args": {
+            "description": "Database authentication username to use when connecting [default: root]",
+            "name": "user"
+          },
+          "description": "Database authentication username to use when connecting [default: root]",
+          "name": [
+            "--user",
+            "-u"
+          ]
+        },
+        {
+          "args": {
+            "description": "Remote database server url to connect to [default: https://cloud.surrealdb.com]",
+            "name": "conn"
+          },
+          "description": "Remote database server url to connect to [default: https://cloud.surrealdb.com]",
+          "name": [
+            "--conn",
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "description": "The namespace to export the data from",
+            "name": "ns"
+          },
+          "description": "The namespace to export the data from",
+          "name": [
+            "--ns"
+          ]
+        },
+        {
+          "args": {
+            "description": "The database to export the data from",
+            "name": "db"
+          },
+          "description": "The database to export the data from",
+          "name": [
+            "--db"
+          ]
+        },
+        {
+          "description": "Whether database responses should be pretty printed",
+          "name": [
+            "--pretty"
+          ]
+        }
+      ]
+    }
+  ]
+}

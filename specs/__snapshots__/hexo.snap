@@ -1,0 +1,412 @@
+{
+  "description": "Command line interface for Hexo, a static site generator",
+  "name": "hexo",
+  "options": [
+    {
+      "args": {
+        "name": "config file",
+        "template": "filepaths"
+      },
+      "description": "Uses a custom config file (instead of `_config.yml`). Also accepts a comma-separated list (no spaces) of JSON or YAML config files that will combine the files into a single `_multiconfig.yml`",
+      "name": [
+        "--config"
+      ]
+    },
+    {
+      "description": "Disable loading plugins and scripts",
+      "name": [
+        "--safe"
+      ]
+    },
+    {
+      "description": "Log verbose messages to the terminal and to `debug.log`",
+      "name": [
+        "--debug"
+      ]
+    },
+    {
+      "description": "Silence output to the terminal",
+      "name": [
+        "--silent"
+      ]
+    },
+    {
+      "description": "Display draft posts (stored in the `source/_drafts` folder)",
+      "name": [
+        "--draft"
+      ]
+    },
+    {
+      "args": {
+        "name": "directory",
+        "template": "folders"
+      },
+      "description": "Customize the path of current working directory",
+      "name": [
+        "--cwd"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": [
+        {
+          "description": "Setting name. Leave it blank if you want to show all configurations",
+          "isOptional": true,
+          "name": "name"
+        },
+        {
+          "description": "New value of a setting. Leave it blank if you just want to show a single configuration",
+          "isOptional": true,
+          "name": "value"
+        }
+      ],
+      "description": "Get or set configurations",
+      "name": "config"
+    },
+    {
+      "args": {
+        "description": "The command to display help for",
+        "isOptional": true,
+        "name": "command",
+        "template": "help"
+      },
+      "description": "Displays a help for each command",
+      "name": "help"
+    },
+    {
+      "args": {
+        "description": "Folder path. Initialize in current folder if not specified",
+        "isOptional": true,
+        "name": "destination",
+        "template": "folders"
+      },
+      "description": "Create a new Hexo folder",
+      "name": "init",
+      "options": [
+        {
+          "description": "Copy files instead of cloning from GitHub",
+          "name": [
+            "--no-clone"
+          ]
+        },
+        {
+          "description": "Skip npm install",
+          "name": [
+            "--no-install"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "The layout to use",
+          "isOptional": true,
+          "name": "layout",
+          "suggestions": [
+            {
+              "name": "post"
+            },
+            {
+              "name": "page"
+            },
+            {
+              "name": "draft"
+            }
+          ]
+        },
+        {
+          "description": "The title of the post",
+          "name": "title"
+        }
+      ],
+      "description": "Create a new article",
+      "name": "new",
+      "options": [
+        {
+          "args": {
+            "description": "The path of the post",
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Post path. Customize the path of the post",
+          "name": [
+            "-p",
+            "--path"
+          ]
+        },
+        {
+          "description": "Replace the current post if it existed",
+          "name": [
+            "-r",
+            "--replace"
+          ]
+        },
+        {
+          "args": {
+            "description": "The slug of the post",
+            "name": "slug"
+          },
+          "description": "Post slug. Customize the URL of the post",
+          "name": [
+            "-s",
+            "--slug"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generate static files",
+      "name": "generate",
+      "options": [
+        {
+          "description": "Deploy after generation finishes",
+          "name": [
+            "-d",
+            "--deploy"
+          ]
+        },
+        {
+          "description": "Force regenerate",
+          "name": [
+            "-f",
+            "--force"
+          ]
+        },
+        {
+          "description": "Watch file changes",
+          "name": [
+            "-w",
+            "--watch"
+          ]
+        },
+        {
+          "description": "Raise an error if any unhandled exception is thrown during generation",
+          "name": [
+            "-b",
+            "--bail"
+          ]
+        },
+        {
+          "args": {
+            "description": "The number of files to generate in parallel",
+            "isOptional": true,
+            "name": "concurrency"
+          },
+          "description": "Maximum number of files to be generated in parallel. Default is infinity",
+          "name": [
+            "-c",
+            "--concurrency"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "The layout to use",
+          "isOptional": true,
+          "name": "layout",
+          "suggestions": [
+            {
+              "name": "post"
+            },
+            {
+              "name": "page"
+            },
+            {
+              "name": "draft"
+            }
+          ]
+        },
+        {
+          "description": "The name of the post",
+          "generators": [
+            {
+              "script": [
+                "bash",
+                "-c",
+                "hexo list post | grep -E ^Draft"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty"
+              ]
+            }
+          ],
+          "name": "filename"
+        }
+      ],
+      "description": "Publish a draft",
+      "name": "publish"
+    },
+    {
+      "description": "Start a local server. By default, this is at http://localhost:4000/",
+      "name": "server",
+      "options": [
+        {
+          "args": {
+            "description": "The IP address to bind to",
+            "name": "ip"
+          },
+          "description": "Override the default server IP. Bind to all IP address by default",
+          "name": [
+            "-i",
+            "--ip"
+          ]
+        },
+        {
+          "args": {
+            "description": "Only serve static files",
+            "name": "port"
+          },
+          "description": "Override default port",
+          "name": [
+            "-p",
+            "--port"
+          ]
+        },
+        {
+          "description": "Serve static files from the given directory",
+          "name": [
+            "-s",
+            "--static"
+          ]
+        },
+        {
+          "args": {
+            "description": "The morgan logger format. Can be predefined or customized",
+            "isOptional": true,
+            "name": "format",
+            "suggestions": [
+              {
+                "name": "combined"
+              },
+              {
+                "name": "common"
+              },
+              {
+                "name": "tiny"
+              },
+              {
+                "name": "dev"
+              },
+              {
+                "name": "short"
+              }
+            ]
+          },
+          "description": "Enable logger. Override logger format",
+          "name": [
+            "-l",
+            "--log"
+          ]
+        },
+        {
+          "description": "Immediately open the server url in your default web browser",
+          "name": [
+            "-o",
+            "--open"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Deploy your website",
+      "name": "deploy",
+      "options": [
+        {
+          "description": "Setup without deployment",
+          "name": [
+            "--setup"
+          ]
+        },
+        {
+          "description": "Generate static files before deploying",
+          "name": [
+            "-g",
+            "--generate"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The file to render",
+        "isVariadic": true,
+        "name": "file",
+        "template": "filepaths"
+      },
+      "description": "Render files with renderer plugins (e.g. Markdown) and save them at the specified path",
+      "name": "render",
+      "options": [
+        {
+          "description": "Specify render engine",
+          "name": [
+            "--engine"
+          ]
+        },
+        {
+          "args": {
+            "description": "The path to output directory",
+            "name": "output directory",
+            "template": "folders"
+          },
+          "description": "Output destination. Result will be printed in the terminal if the output destination is not set",
+          "name": [
+            "-o",
+            "--output"
+          ]
+        },
+        {
+          "description": "Prettify JSON output",
+          "name": [
+            "--pretty"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The type of migration. check https://hexo.io/docs/migration for more details",
+        "name": "type"
+      },
+      "description": "Migrate content from other blog systems",
+      "name": "migrate"
+    },
+    {
+      "description": "Clean the cache file (`db.json`) and generated files (`public`)",
+      "name": "clean"
+    },
+    {
+      "args": {
+        "description": "The type of routes to list",
+        "name": "type",
+        "suggestions": [
+          {
+            "name": "post"
+          },
+          {
+            "name": "route"
+          },
+          {
+            "name": "page"
+          },
+          {
+            "name": "tag"
+          },
+          {
+            "name": "category"
+          }
+        ]
+      },
+      "description": "List all routes",
+      "name": "list"
+    },
+    {
+      "description": "Display version information",
+      "name": "version"
+    }
+  ]
+}

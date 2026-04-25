@@ -16,6 +16,7 @@ use crate::fuzzy;
 use crate::git;
 use crate::history::{HistoryProvider, DEFAULT_MAX_HISTORY_ENTRIES};
 use crate::provider::Provider;
+use crate::providers::{self, ProviderCtx, ProviderKind};
 use crate::script::{run_script, substitute_template};
 use crate::specs::{self, GeneratorSpec, SpecStore};
 use crate::ssh::SshHostCache;
@@ -74,6 +75,11 @@ pub struct SyncResult {
     /// Native git generators resolved from the spec. The caller dispatches
     /// these asynchronously via `resolve_git` to avoid blocking the runtime.
     pub git_generators: Vec<git::GitQueryKind>,
+    /// Native providers resolved from the spec (e.g. `arduino_cli_boards`).
+    /// The caller dispatches these asynchronously via `resolve_providers`.
+    /// Carries pre-resolved `ProviderKind`s so the engine can dispatch
+    /// without re-parsing the `"type"` string on the keystroke hot path.
+    pub provider_generators: Vec<ProviderKind>,
 }
 
 impl SyncResult {
@@ -282,6 +288,7 @@ impl SuggestionEngine {
                         .filter(|l| !l.trim().is_empty())
                         .map(|l| Suggestion {
                             text: l.to_string(),
+                            kind: SuggestionKind::Command,
                             source: SuggestionSource::Script,
                             ..Default::default()
                         })
@@ -410,6 +417,45 @@ impl SuggestionEngine {
         Ok(fuzzy::rank(query, all, MAX_DYNAMIC_CANDIDATES))
     }
 
+    /// Resolve native providers asynchronously. Mirrors `resolve_git`:
+    /// per-kind failures are downgraded to `tracing::warn!` + empty vec
+    /// so a single slow or broken provider cannot block the rest of the
+    /// pool. Empty-query case skips `fuzzy::rank` to preserve the raw
+    /// kind-ordering for the handler's eventual re-rank (same rationale
+    /// as `resolve_git`).
+    ///
+    /// CONTRACT: a per-kind `Err` MUST be logged via `tracing::warn!` and
+    /// the loop MUST continue — do NOT rewrite this loop with `?` or any
+    /// other short-circuit. One failing provider must not block sibling
+    /// providers; the top-level `Result` is reserved for truly fatal
+    /// conditions (none today). Providers are expected to absorb their
+    /// own transient failures into `Ok(vec![])`, but this loop is the
+    /// final backstop against any future provider that surfaces an
+    /// `Err`.
+    pub async fn resolve_providers(
+        &self,
+        kinds: &[ProviderKind],
+        ctx: &ProviderCtx,
+        query: &str,
+    ) -> Result<Vec<Suggestion>> {
+        if kinds.is_empty() {
+            return Ok(Vec::new());
+        }
+        let mut all = Vec::new();
+        for &kind in kinds {
+            match providers::resolve(kind, ctx).await {
+                Ok(suggestions) => all.extend(suggestions),
+                Err(e) => {
+                    tracing::warn!(provider = ?kind, "provider failed: {e}");
+                }
+            }
+        }
+        if query.is_empty() {
+            return Ok(all);
+        }
+        Ok(fuzzy::rank(query, all, MAX_DYNAMIC_CANDIDATES))
+    }
+
     /// Convenience method that resolves the spec and runs script generators.
     /// Prefer `run_generators` in the handler to avoid redundant spec resolution.
     pub async fn suggest_dynamic(
@@ -504,6 +550,7 @@ impl SuggestionEngine {
             suggestions: self.rank_with_history(ctx, cwd, buffer, candidates, true),
             script_generators: Vec::new(),
             git_generators: Vec::new(),
+            provider_generators: Vec::new(),
         }
     }
 
@@ -522,6 +569,7 @@ impl SuggestionEngine {
             suggestions: self.rank_with_history(ctx, cwd, buffer, candidates, true),
             script_generators: Vec::new(),
             git_generators: Vec::new(),
+            provider_generators: Vec::new(),
         }
     }
 
@@ -601,6 +649,7 @@ impl SuggestionEngine {
             subcommands,
             options,
             native_generators,
+            provider_generators,
             script_generators,
             wants_filepaths,
             wants_folders_only,
@@ -657,6 +706,7 @@ impl SuggestionEngine {
             suggestions,
             script_generators,
             git_generators,
+            provider_generators,
         })
     }
 
@@ -740,6 +790,7 @@ impl SuggestionEngine {
             suggestions: self.rank_with_history(ctx, cwd, buffer, candidates, true),
             script_generators: Vec::new(),
             git_generators: Vec::new(),
+            provider_generators: Vec::new(),
         }
     }
 
@@ -1425,24 +1476,42 @@ mod tests {
 
     #[test]
     fn test_history_matches_full_buffer_at_arg_position() {
-        let spec_store = SpecStore::load_from_dir(&spec_dir()).unwrap().store;
+        // Uses a made-up `myapp` spec with only plain subcommands — no
+        // filepath args, no generators. This avoids colliding with native
+        // generators (e.g. `git push` now dispatches to the `git_remotes`
+        // provider, which triggers the defer-to-git-refs history-suppression
+        // path introduced in 0e10f7c) and keeps filesystem fallback from
+        // flooding `max_results` before history is appended.
+        let spec_json = r#"{
+            "name": "myapp",
+            "subcommands": [
+                {"name": "deploy", "subcommands": [
+                    {"name": "production"},
+                    {"name": "staging"}
+                ]},
+                {"name": "build"}
+            ]
+        }"#;
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(dir.path().join("myapp.json"), spec_json).unwrap();
+        let spec_store = SpecStore::load_from_dir(dir.path()).unwrap().store;
         let history = HistoryProvider::from_entries(vec![
-            "git push origin main".into(),
-            "git checkout -b feature".into(),
+            "myapp deploy production".into(),
+            "myapp build release".into(),
         ]);
-        let commands = CommandsProvider::from_list(vec!["git".into()]);
+        let commands = CommandsProvider::from_list(vec!["myapp".into()]);
         let engine = SuggestionEngine::with_providers(spec_store, history, commands);
 
-        let ctx = make_ctx(Some("git"), vec!["push"], "", 2);
+        let ctx = make_ctx(Some("myapp"), vec!["deploy"], "", 2);
         let results = engine
-            .suggest_sync(&ctx, Path::new("/tmp"), "git push ")
+            .suggest_sync(&ctx, Path::new("/tmp"), "myapp deploy ")
             .unwrap();
         let hist: Vec<_> = results
             .iter()
             .filter(|s| s.source == crate::types::SuggestionSource::History)
             .collect();
         assert!(
-            hist.iter().any(|s| s.text == "git push origin main"),
+            hist.iter().any(|s| s.text == "myapp deploy production"),
             "expected full history entry in results: {hist:?}"
         );
     }
@@ -1479,6 +1548,56 @@ mod tests {
         assert!(
             results.iter().any(|s| s.text == "gamma"),
             "expected 'gamma' in results: {results:?}"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_suggest_dynamic_script_generator_without_transforms() {
+        // Covers the `if transforms.is_empty()` branch in
+        // SuggestionEngine::suggest_dynamic (~engine.rs:284-295) — the only
+        // path where a spec generator without a `transforms` field flows
+        // through. The branch explicitly sets kind=Command + source=Script;
+        // without this test, refactors that drop the filtering or change
+        // the kind/source pair would ship silently. Note the spec has NO
+        // "transforms" field, unlike test_suggest_dynamic_with_script_generator.
+        let spec_json = r#"{
+            "name": "test-dynamic-no-transforms",
+            "args": [{
+                "generators": [{
+                    "script": ["printf", "alpha\nbeta\n\n"]
+                }]
+            }]
+        }"#;
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("test-dynamic-no-transforms.json"),
+            spec_json,
+        )
+        .unwrap();
+
+        let dirs = vec![dir.path().to_path_buf()];
+        let engine = SuggestionEngine::new(&dirs).unwrap();
+        let ctx = make_ctx(Some("test-dynamic-no-transforms"), vec![], "", 1);
+        let results = engine
+            .suggest_dynamic(&ctx, Path::new("/tmp"), 5000)
+            .await
+            .unwrap();
+        // Default branch filters empty lines, so the trailing blank line
+        // from "alpha\nbeta\n\n" must be dropped.
+        assert_eq!(
+            results.len(),
+            2,
+            "empty line should be filtered: {results:?}"
+        );
+        assert_eq!(results[0].text, "alpha");
+        assert_eq!(results[1].text, "beta");
+        // Pin kind/source on the default branch so refactors can't silently
+        // flip to Suggestion::default() (ProviderValue).
+        assert!(
+            results
+                .iter()
+                .all(|s| s.kind == SuggestionKind::Command && s.source == SuggestionSource::Script),
+            "all results must be kind=Command, source=Script: {results:?}"
         );
     }
 
@@ -1597,6 +1716,27 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_resolve_providers_empty_slice() {
+        // An empty `kinds` slice must no-op cleanly — empty Vec and no
+        // panic — for both the empty-query and non-empty-query paths.
+        // Guards the empty-kinds shortcut at the top of
+        // `resolve_providers` against accidental removal, which would
+        // otherwise make the method pay a `fuzzy::rank` roundtrip on
+        // every call-site that passes an empty slice (a common case
+        // when a resolved spec has no provider generators).
+        let engine = make_engine();
+        let ctx = crate::providers::ProviderCtx {
+            cwd: Path::new("/tmp").to_path_buf(),
+            env: std::sync::Arc::new(std::collections::HashMap::new()),
+            current_token: String::new(),
+        };
+        let empty_query = engine.resolve_providers(&[], &ctx, "").await.unwrap();
+        assert!(empty_query.is_empty());
+        let non_empty_query = engine.resolve_providers(&[], &ctx, "foo").await.unwrap();
+        assert!(non_empty_query.is_empty());
+    }
+
+    #[tokio::test]
     async fn test_resolve_git_returns_branches() {
         // resolve_git must work asynchronously.
         let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
@@ -1674,6 +1814,7 @@ mod tests {
             cache: None,
             requires_js: false,
             js_source: None,
+            corrected_in: None,
             template: None,
         };
         let ctx = make_ctx(Some("test"), vec![], "", 1);
@@ -1691,6 +1832,7 @@ mod tests {
             cache: None,
             requires_js: false,
             js_source: None,
+            corrected_in: None,
             template: None,
         };
         let ctx = make_ctx(Some("test"), vec!["arg1"], "", 2);

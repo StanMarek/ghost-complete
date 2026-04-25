@@ -1,0 +1,94 @@
+{
+  "description": "ExpressoTS CLI",
+  "name": "expressots",
+  "options": [
+    {
+      "description": "Show help for expressots",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "description": "Display CLI details",
+      "name": [
+        "i",
+        "info"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "description": "Name of the application",
+        "name": "name"
+      },
+      "description": "Create a new ExpressoTS application",
+      "name": "new",
+      "options": [
+        {
+          "args": {
+            "description": "Choose a template",
+            "generators": [
+              {
+                "js_source": "function(e){return[{name:\"opinionated\",description:\"An opinionated ExpressoTS application\"},{name:\"non-opinionated\",description:\"An ExpressoTS application\"}]}",
+                "requires_js": true,
+                "script": [
+                  "expressots",
+                  "templates"
+                ]
+              }
+            ],
+            "name": "template"
+          },
+          "description": "Choose a template to use",
+          "name": [
+            "-t",
+            "--template"
+          ]
+        },
+        {
+          "args": {
+            "description": "Choose a package manager",
+            "generators": [
+              {
+                "js_source": "function(e){return[{name:\"npm\",description:\"\"},{name:\"yarn\",description:\"\"},{name:\"pnpm\",description:\"\"}]}",
+                "requires_js": true,
+                "script": [
+                  "expressots",
+                  "package",
+                  "manager"
+                ]
+              }
+            ],
+            "name": "package-manager"
+          },
+          "description": "Choose a package manager to use",
+          "name": [
+            "-p",
+            "--package-manager"
+          ]
+        },
+        {
+          "args": {
+            "description": "Select a directory",
+            "name": "directory",
+            "template": "filepaths"
+          },
+          "description": "Create the application in a specific directory",
+          "name": [
+            "-d",
+            "--directory"
+          ]
+        },
+        {
+          "description": "Show command help",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    }
+  ]
+}

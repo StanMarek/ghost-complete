@@ -1,0 +1,51 @@
+{
+  "args": {
+    "description": "File(s) to fold",
+    "isOptional": true,
+    "isVariadic": true,
+    "name": "file",
+    "template": "filepaths"
+  },
+  "description": "Fold long lines for finite width output device",
+  "name": "fold",
+  "options": [
+    {
+      "description": "Count width in bytes rather than column positions",
+      "name": [
+        "-b"
+      ]
+    },
+    {
+      "description": "Fold line after the last blank character within the first width\ncolumn positions (or bytes)",
+      "name": [
+        "-s"
+      ]
+    },
+    {
+      "args": {
+        "name": "width",
+        "suggestions": [
+          {
+            "name": "80"
+          },
+          {
+            "name": "90"
+          },
+          {
+            "name": "100"
+          },
+          {
+            "name": "110"
+          },
+          {
+            "name": "120"
+          }
+        ]
+      },
+      "description": "Specify a line width to use instead of the default 80 columns.\nThe width value should be a multiple of 8 if tabs are present,\nor the tabs should be expanded using expand(1) before using\nfold",
+      "name": [
+        "-w"
+      ]
+    }
+  ]
+}

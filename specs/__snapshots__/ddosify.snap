@@ -1,0 +1,192 @@
+{
+  "description": "High-performance load testing tool, written in Golang",
+  "name": "ddosify",
+  "options": [
+    {
+      "args": {
+        "name": "URL"
+      },
+      "description": "Target website URL. Example: https://ddosify.com",
+      "name": [
+        "-t"
+      ]
+    },
+    {
+      "args": {
+        "name": "RequestCount"
+      },
+      "description": "Total request count. Default: 100",
+      "name": [
+        "-n"
+      ]
+    },
+    {
+      "args": {
+        "name": "Duration"
+      },
+      "description": "Test duration in seconds. Default: 10",
+      "name": [
+        "-d"
+      ]
+    },
+    {
+      "args": {
+        "name": "RequestType",
+        "suggestions": [
+          {
+            "name": "linear"
+          },
+          {
+            "name": "incremental"
+          },
+          {
+            "name": "waved"
+          }
+        ]
+      },
+      "description": "Type of the request. Default: linear",
+      "name": [
+        "-l"
+      ]
+    },
+    {
+      "args": {
+        "name": "HTTPMethod",
+        "suggestions": [
+          {
+            "name": "GET"
+          },
+          {
+            "name": "POST"
+          },
+          {
+            "name": "PUT"
+          },
+          {
+            "name": "DELETE"
+          },
+          {
+            "name": "HEAD"
+          },
+          {
+            "name": "PATCH"
+          },
+          {
+            "name": "OPTIONS"
+          }
+        ]
+      },
+      "description": "HTTP Methods. Default: GET",
+      "name": [
+        "-m"
+      ]
+    },
+    {
+      "args": {
+        "name": "Body"
+      },
+      "description": "Body for the request",
+      "name": [
+        "-b"
+      ]
+    },
+    {
+      "args": {
+        "name": "BasicAuth",
+        "suggestions": [
+          {
+            "name": "username:password"
+          }
+        ]
+      },
+      "description": "Basic authentication",
+      "name": [
+        "-a"
+      ]
+    },
+    {
+      "args": {
+        "name": "header",
+        "suggestions": [
+          {
+            "name": "Content-Type: application/json"
+          },
+          {
+            "name": "User-Agent: DdosifyLoadGenerator/0.8.1"
+          }
+        ]
+      },
+      "description": "Headers of the request. You can provide multiple headers",
+      "name": [
+        "-h"
+      ]
+    },
+    {
+      "args": {
+        "name": "Timeout"
+      },
+      "description": "Timeout in seconds. Default: 5",
+      "name": [
+        "-T"
+      ]
+    },
+    {
+      "args": {
+        "name": "Proxy",
+        "suggestions": [
+          {
+            "name": "http://user:pass@proxy_host.com:port"
+          }
+        ]
+      },
+      "description": "Proxy address",
+      "name": [
+        "-P"
+      ]
+    },
+    {
+      "args": {
+        "name": "OutputFormat",
+        "suggestions": [
+          {
+            "name": "stdout"
+          },
+          {
+            "name": "stdout-json"
+          }
+        ]
+      },
+      "description": "Test result output format. Default: stdout",
+      "name": [
+        "-o"
+      ]
+    },
+    {
+      "args": {
+        "name": "ConfigFile"
+      },
+      "description": "Config file of the load test i.e example_ddosify_config.json",
+      "name": [
+        "--config"
+      ]
+    },
+    {
+      "description": "Prints version, git commit, built date (utc)",
+      "name": [
+        "--version"
+      ]
+    },
+    {
+      "description": "Iterates the scenario once and prints curl-like verbose result",
+      "name": [
+        "--debug"
+      ]
+    },
+    {
+      "description": "Prints CLI flags",
+      "name": [
+        "--help"
+      ]
+    }
+  ]
+}

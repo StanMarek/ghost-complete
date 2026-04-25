@@ -1,0 +1,106 @@
+{
+  "description": "Command line tool for querying information about file type handling and adding descriptions for new file types",
+  "name": "xdg-mime",
+  "options": [
+    {
+      "description": "Show command synopsis",
+      "name": [
+        "--help"
+      ]
+    },
+    {
+      "description": "Show manual page",
+      "name": [
+        "--manual"
+      ]
+    },
+    {
+      "description": "Show the xdg-utils version information",
+      "name": [
+        "--version"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "filetype | default",
+        "template": "filepaths"
+      },
+      "description": "Returns information related to file types",
+      "name": "query"
+    },
+    {
+      "args": [
+        {
+          "name": "application"
+        },
+        {
+          "isVariadic": true,
+          "name": "mimetype(s)"
+        }
+      ],
+      "description": "Ask the desktop environment to make application the default application for opening files of type mimetype",
+      "name": "default"
+    },
+    {
+      "args": {
+        "name": "mimetypes-file",
+        "template": "filepaths"
+      },
+      "description": "Adds the file type descriptions provided in mimetypes-file to the desktop environment",
+      "name": "install",
+      "options": [
+        {
+          "args": {
+            "name": "mode",
+            "suggestions": [
+              {
+                "name": "user"
+              },
+              {
+                "name": "system"
+              }
+            ]
+          },
+          "name": [
+            "--mode"
+          ]
+        },
+        {
+          "description": "Disables xdg-mime checks that the mimetypes-file to be installed has a proper vendor prefix",
+          "name": [
+            "--novendor"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "mimetypes-file",
+        "template": "filepaths"
+      },
+      "description": "Removes the file type descriptions provided in mimetypes-file and previously added with xdg-mime install from the desktop environment",
+      "name": "uninstall",
+      "options": [
+        {
+          "args": {
+            "name": "mode",
+            "suggestions": [
+              {
+                "name": "user"
+              },
+              {
+                "name": "system"
+              }
+            ]
+          },
+          "name": [
+            "--mode"
+          ]
+        }
+      ]
+    }
+  ]
+}

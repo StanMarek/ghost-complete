@@ -1,0 +1,66 @@
+{
+  "args": {
+    "description": "A list of file paths. If no files are passed, then standard input will       be read and piped into a new untitled document",
+    "isOptional": true,
+    "isVariadic": true,
+    "name": "file",
+    "template": "filepaths"
+  },
+  "description": "Xcode text editor invocation tool",
+  "name": "xed",
+  "options": [
+    {
+      "description": "Launches Xcode, opening a new empty unsaved file",
+      "name": [
+        "--launch",
+        "-x"
+      ]
+    },
+    {
+      "description": "Creates any non-existent files in the file list. If used without --launch, standard input will be read and piped to the last file created",
+      "name": [
+        "--create",
+        "-c"
+      ]
+    },
+    {
+      "description": "Wait for the files to be closed before exiting. xed will idle and will only terminate when all files are closed",
+      "name": [
+        "--wait",
+        "-w"
+      ]
+    },
+    {
+      "args": {
+        "description": "The line number to select",
+        "name": "number"
+      },
+      "description": "Selects the given line in the last file opened",
+      "name": [
+        "--line",
+        "-l"
+      ]
+    },
+    {
+      "description": "Opens Xcode without activating it; the process that invoked xed remains in front",
+      "name": [
+        "--background",
+        "-b"
+      ]
+    },
+    {
+      "description": "Show help for xed",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "description": "Prints the version number of xed",
+      "name": [
+        "--version",
+        "-v"
+      ]
+    }
+  ]
+}

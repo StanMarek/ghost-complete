@@ -1,0 +1,2457 @@
+{
+  "description": "Premake CLI",
+  "name": "premake",
+  "options": [
+    {
+      "description": "Shows a complete list of the actions supported",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "description": "Display version information",
+      "name": [
+        "--version"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Remove all binaries and generated files",
+      "name": "clean",
+      "options": [
+        {
+          "args": {
+            "description": "Path to the premake5.lua file",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "The premake5.lua file",
+          "name": [
+            "--file"
+          ]
+        },
+        {
+          "description": "Start MobDebug remote debugger. Works with ZeroBrane Studio",
+          "name": [
+            "--debugger"
+          ]
+        },
+        {
+          "description": "Treat warnings from project scripts as errors",
+          "name": [
+            "--fatal"
+          ]
+        },
+        {
+          "description": "Forfit SSH certification checks",
+          "name": [
+            "--insecure"
+          ]
+        },
+        {
+          "description": "Interactive command prompt",
+          "name": [
+            "--interactive"
+          ]
+        },
+        {
+          "args": {
+            "description": "The operating system",
+            "name": "os",
+            "suggestions": [
+              {
+                "name": "aix"
+              },
+              {
+                "name": "android"
+              },
+              {
+                "name": "bsd"
+              },
+              {
+                "name": "haiku"
+              },
+              {
+                "name": "hurd"
+              },
+              {
+                "name": "ios"
+              },
+              {
+                "name": "linux"
+              },
+              {
+                "name": "macosx"
+              },
+              {
+                "name": "solaris"
+              },
+              {
+                "name": "windows"
+              }
+            ]
+          },
+          "description": "Generate files for a different operating system",
+          "name": [
+            "--os"
+          ]
+        },
+        {
+          "args": {
+            "description": "The path to the scripts",
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "Search for additional scripts on the given path",
+          "name": [
+            "--scripts"
+          ]
+        },
+        {
+          "args": {
+            "description": "The system script",
+            "name": "script",
+            "template": "filepaths"
+          },
+          "description": "Override default system script (premake5-system.lua)",
+          "name": [
+            "--systemscript"
+          ]
+        },
+        {
+          "description": "Generate extra debug text output",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "args": {
+            "description": "The C/C++ compiler set",
+            "name": "cc",
+            "suggestions": [
+              {
+                "name": "clang"
+              },
+              {
+                "name": "gcc"
+              },
+              {
+                "name": "mingw"
+              }
+            ]
+          },
+          "description": "Choose a C/C++ compiler set",
+          "name": [
+            "--cc"
+          ]
+        },
+        {
+          "args": {
+            "description": "The D compiler set",
+            "name": "dc",
+            "suggestions": [
+              {
+                "name": "dmd"
+              },
+              {
+                "name": "gdc"
+              },
+              {
+                "name": "ldc"
+              }
+            ]
+          },
+          "description": "Choose a D compiler",
+          "name": [
+            "--dc"
+          ]
+        },
+        {
+          "args": {
+            "description": "The .NET compiler set",
+            "name": "dotnet",
+            "suggestions": [
+              {
+                "name": "mono"
+              },
+              {
+                "name": "msnet"
+              },
+              {
+                "name": "pnet"
+              }
+            ]
+          },
+          "description": "Choose a .NET compiler set",
+          "name": [
+            "--dotnet"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generate Visual Studio 2022 project files",
+      "name": "vs2022",
+      "options": [
+        {
+          "args": {
+            "description": "Path to the premake5.lua file",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "The premake5.lua file",
+          "name": [
+            "--file"
+          ]
+        },
+        {
+          "description": "Start MobDebug remote debugger. Works with ZeroBrane Studio",
+          "name": [
+            "--debugger"
+          ]
+        },
+        {
+          "description": "Treat warnings from project scripts as errors",
+          "name": [
+            "--fatal"
+          ]
+        },
+        {
+          "description": "Forfit SSH certification checks",
+          "name": [
+            "--insecure"
+          ]
+        },
+        {
+          "description": "Interactive command prompt",
+          "name": [
+            "--interactive"
+          ]
+        },
+        {
+          "args": {
+            "description": "The operating system",
+            "name": "os",
+            "suggestions": [
+              {
+                "name": "aix"
+              },
+              {
+                "name": "android"
+              },
+              {
+                "name": "bsd"
+              },
+              {
+                "name": "haiku"
+              },
+              {
+                "name": "hurd"
+              },
+              {
+                "name": "ios"
+              },
+              {
+                "name": "linux"
+              },
+              {
+                "name": "macosx"
+              },
+              {
+                "name": "solaris"
+              },
+              {
+                "name": "windows"
+              }
+            ]
+          },
+          "description": "Generate files for a different operating system",
+          "name": [
+            "--os"
+          ]
+        },
+        {
+          "args": {
+            "description": "The path to the scripts",
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "Search for additional scripts on the given path",
+          "name": [
+            "--scripts"
+          ]
+        },
+        {
+          "args": {
+            "description": "The system script",
+            "name": "script",
+            "template": "filepaths"
+          },
+          "description": "Override default system script (premake5-system.lua)",
+          "name": [
+            "--systemscript"
+          ]
+        },
+        {
+          "description": "Generate extra debug text output",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "args": {
+            "description": "The C/C++ compiler set",
+            "name": "cc",
+            "suggestions": [
+              {
+                "name": "clang"
+              },
+              {
+                "name": "gcc"
+              },
+              {
+                "name": "mingw"
+              }
+            ]
+          },
+          "description": "Choose a C/C++ compiler set",
+          "name": [
+            "--cc"
+          ]
+        },
+        {
+          "args": {
+            "description": "The D compiler set",
+            "name": "dc",
+            "suggestions": [
+              {
+                "name": "dmd"
+              },
+              {
+                "name": "gdc"
+              },
+              {
+                "name": "ldc"
+              }
+            ]
+          },
+          "description": "Choose a D compiler",
+          "name": [
+            "--dc"
+          ]
+        },
+        {
+          "args": {
+            "description": "The .NET compiler set",
+            "name": "dotnet",
+            "suggestions": [
+              {
+                "name": "mono"
+              },
+              {
+                "name": "msnet"
+              },
+              {
+                "name": "pnet"
+              }
+            ]
+          },
+          "description": "Choose a .NET compiler set",
+          "name": [
+            "--dotnet"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generate Visual Studio 2019 project files",
+      "name": "vs2019",
+      "options": [
+        {
+          "args": {
+            "description": "Path to the premake5.lua file",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "The premake5.lua file",
+          "name": [
+            "--file"
+          ]
+        },
+        {
+          "description": "Start MobDebug remote debugger. Works with ZeroBrane Studio",
+          "name": [
+            "--debugger"
+          ]
+        },
+        {
+          "description": "Treat warnings from project scripts as errors",
+          "name": [
+            "--fatal"
+          ]
+        },
+        {
+          "description": "Forfit SSH certification checks",
+          "name": [
+            "--insecure"
+          ]
+        },
+        {
+          "description": "Interactive command prompt",
+          "name": [
+            "--interactive"
+          ]
+        },
+        {
+          "args": {
+            "description": "The operating system",
+            "name": "os",
+            "suggestions": [
+              {
+                "name": "aix"
+              },
+              {
+                "name": "android"
+              },
+              {
+                "name": "bsd"
+              },
+              {
+                "name": "haiku"
+              },
+              {
+                "name": "hurd"
+              },
+              {
+                "name": "ios"
+              },
+              {
+                "name": "linux"
+              },
+              {
+                "name": "macosx"
+              },
+              {
+                "name": "solaris"
+              },
+              {
+                "name": "windows"
+              }
+            ]
+          },
+          "description": "Generate files for a different operating system",
+          "name": [
+            "--os"
+          ]
+        },
+        {
+          "args": {
+            "description": "The path to the scripts",
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "Search for additional scripts on the given path",
+          "name": [
+            "--scripts"
+          ]
+        },
+        {
+          "args": {
+            "description": "The system script",
+            "name": "script",
+            "template": "filepaths"
+          },
+          "description": "Override default system script (premake5-system.lua)",
+          "name": [
+            "--systemscript"
+          ]
+        },
+        {
+          "description": "Generate extra debug text output",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "args": {
+            "description": "The C/C++ compiler set",
+            "name": "cc",
+            "suggestions": [
+              {
+                "name": "clang"
+              },
+              {
+                "name": "gcc"
+              },
+              {
+                "name": "mingw"
+              }
+            ]
+          },
+          "description": "Choose a C/C++ compiler set",
+          "name": [
+            "--cc"
+          ]
+        },
+        {
+          "args": {
+            "description": "The D compiler set",
+            "name": "dc",
+            "suggestions": [
+              {
+                "name": "dmd"
+              },
+              {
+                "name": "gdc"
+              },
+              {
+                "name": "ldc"
+              }
+            ]
+          },
+          "description": "Choose a D compiler",
+          "name": [
+            "--dc"
+          ]
+        },
+        {
+          "args": {
+            "description": "The .NET compiler set",
+            "name": "dotnet",
+            "suggestions": [
+              {
+                "name": "mono"
+              },
+              {
+                "name": "msnet"
+              },
+              {
+                "name": "pnet"
+              }
+            ]
+          },
+          "description": "Choose a .NET compiler set",
+          "name": [
+            "--dotnet"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generate Visual Studio 2017 project files",
+      "name": "vs2017",
+      "options": [
+        {
+          "args": {
+            "description": "Path to the premake5.lua file",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "The premake5.lua file",
+          "name": [
+            "--file"
+          ]
+        },
+        {
+          "description": "Start MobDebug remote debugger. Works with ZeroBrane Studio",
+          "name": [
+            "--debugger"
+          ]
+        },
+        {
+          "description": "Treat warnings from project scripts as errors",
+          "name": [
+            "--fatal"
+          ]
+        },
+        {
+          "description": "Forfit SSH certification checks",
+          "name": [
+            "--insecure"
+          ]
+        },
+        {
+          "description": "Interactive command prompt",
+          "name": [
+            "--interactive"
+          ]
+        },
+        {
+          "args": {
+            "description": "The operating system",
+            "name": "os",
+            "suggestions": [
+              {
+                "name": "aix"
+              },
+              {
+                "name": "android"
+              },
+              {
+                "name": "bsd"
+              },
+              {
+                "name": "haiku"
+              },
+              {
+                "name": "hurd"
+              },
+              {
+                "name": "ios"
+              },
+              {
+                "name": "linux"
+              },
+              {
+                "name": "macosx"
+              },
+              {
+                "name": "solaris"
+              },
+              {
+                "name": "windows"
+              }
+            ]
+          },
+          "description": "Generate files for a different operating system",
+          "name": [
+            "--os"
+          ]
+        },
+        {
+          "args": {
+            "description": "The path to the scripts",
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "Search for additional scripts on the given path",
+          "name": [
+            "--scripts"
+          ]
+        },
+        {
+          "args": {
+            "description": "The system script",
+            "name": "script",
+            "template": "filepaths"
+          },
+          "description": "Override default system script (premake5-system.lua)",
+          "name": [
+            "--systemscript"
+          ]
+        },
+        {
+          "description": "Generate extra debug text output",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "args": {
+            "description": "The C/C++ compiler set",
+            "name": "cc",
+            "suggestions": [
+              {
+                "name": "clang"
+              },
+              {
+                "name": "gcc"
+              },
+              {
+                "name": "mingw"
+              }
+            ]
+          },
+          "description": "Choose a C/C++ compiler set",
+          "name": [
+            "--cc"
+          ]
+        },
+        {
+          "args": {
+            "description": "The D compiler set",
+            "name": "dc",
+            "suggestions": [
+              {
+                "name": "dmd"
+              },
+              {
+                "name": "gdc"
+              },
+              {
+                "name": "ldc"
+              }
+            ]
+          },
+          "description": "Choose a D compiler",
+          "name": [
+            "--dc"
+          ]
+        },
+        {
+          "args": {
+            "description": "The .NET compiler set",
+            "name": "dotnet",
+            "suggestions": [
+              {
+                "name": "mono"
+              },
+              {
+                "name": "msnet"
+              },
+              {
+                "name": "pnet"
+              }
+            ]
+          },
+          "description": "Choose a .NET compiler set",
+          "name": [
+            "--dotnet"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generate Visual Studio 2015 project files",
+      "name": "vs2015",
+      "options": [
+        {
+          "args": {
+            "description": "Path to the premake5.lua file",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "The premake5.lua file",
+          "name": [
+            "--file"
+          ]
+        },
+        {
+          "description": "Start MobDebug remote debugger. Works with ZeroBrane Studio",
+          "name": [
+            "--debugger"
+          ]
+        },
+        {
+          "description": "Treat warnings from project scripts as errors",
+          "name": [
+            "--fatal"
+          ]
+        },
+        {
+          "description": "Forfit SSH certification checks",
+          "name": [
+            "--insecure"
+          ]
+        },
+        {
+          "description": "Interactive command prompt",
+          "name": [
+            "--interactive"
+          ]
+        },
+        {
+          "args": {
+            "description": "The operating system",
+            "name": "os",
+            "suggestions": [
+              {
+                "name": "aix"
+              },
+              {
+                "name": "android"
+              },
+              {
+                "name": "bsd"
+              },
+              {
+                "name": "haiku"
+              },
+              {
+                "name": "hurd"
+              },
+              {
+                "name": "ios"
+              },
+              {
+                "name": "linux"
+              },
+              {
+                "name": "macosx"
+              },
+              {
+                "name": "solaris"
+              },
+              {
+                "name": "windows"
+              }
+            ]
+          },
+          "description": "Generate files for a different operating system",
+          "name": [
+            "--os"
+          ]
+        },
+        {
+          "args": {
+            "description": "The path to the scripts",
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "Search for additional scripts on the given path",
+          "name": [
+            "--scripts"
+          ]
+        },
+        {
+          "args": {
+            "description": "The system script",
+            "name": "script",
+            "template": "filepaths"
+          },
+          "description": "Override default system script (premake5-system.lua)",
+          "name": [
+            "--systemscript"
+          ]
+        },
+        {
+          "description": "Generate extra debug text output",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "args": {
+            "description": "The C/C++ compiler set",
+            "name": "cc",
+            "suggestions": [
+              {
+                "name": "clang"
+              },
+              {
+                "name": "gcc"
+              },
+              {
+                "name": "mingw"
+              }
+            ]
+          },
+          "description": "Choose a C/C++ compiler set",
+          "name": [
+            "--cc"
+          ]
+        },
+        {
+          "args": {
+            "description": "The D compiler set",
+            "name": "dc",
+            "suggestions": [
+              {
+                "name": "dmd"
+              },
+              {
+                "name": "gdc"
+              },
+              {
+                "name": "ldc"
+              }
+            ]
+          },
+          "description": "Choose a D compiler",
+          "name": [
+            "--dc"
+          ]
+        },
+        {
+          "args": {
+            "description": "The .NET compiler set",
+            "name": "dotnet",
+            "suggestions": [
+              {
+                "name": "mono"
+              },
+              {
+                "name": "msnet"
+              },
+              {
+                "name": "pnet"
+              }
+            ]
+          },
+          "description": "Choose a .NET compiler set",
+          "name": [
+            "--dotnet"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generate Visual Studio 2013 project files",
+      "name": "vs2013",
+      "options": [
+        {
+          "args": {
+            "description": "Path to the premake5.lua file",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "The premake5.lua file",
+          "name": [
+            "--file"
+          ]
+        },
+        {
+          "description": "Start MobDebug remote debugger. Works with ZeroBrane Studio",
+          "name": [
+            "--debugger"
+          ]
+        },
+        {
+          "description": "Treat warnings from project scripts as errors",
+          "name": [
+            "--fatal"
+          ]
+        },
+        {
+          "description": "Forfit SSH certification checks",
+          "name": [
+            "--insecure"
+          ]
+        },
+        {
+          "description": "Interactive command prompt",
+          "name": [
+            "--interactive"
+          ]
+        },
+        {
+          "args": {
+            "description": "The operating system",
+            "name": "os",
+            "suggestions": [
+              {
+                "name": "aix"
+              },
+              {
+                "name": "android"
+              },
+              {
+                "name": "bsd"
+              },
+              {
+                "name": "haiku"
+              },
+              {
+                "name": "hurd"
+              },
+              {
+                "name": "ios"
+              },
+              {
+                "name": "linux"
+              },
+              {
+                "name": "macosx"
+              },
+              {
+                "name": "solaris"
+              },
+              {
+                "name": "windows"
+              }
+            ]
+          },
+          "description": "Generate files for a different operating system",
+          "name": [
+            "--os"
+          ]
+        },
+        {
+          "args": {
+            "description": "The path to the scripts",
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "Search for additional scripts on the given path",
+          "name": [
+            "--scripts"
+          ]
+        },
+        {
+          "args": {
+            "description": "The system script",
+            "name": "script",
+            "template": "filepaths"
+          },
+          "description": "Override default system script (premake5-system.lua)",
+          "name": [
+            "--systemscript"
+          ]
+        },
+        {
+          "description": "Generate extra debug text output",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "args": {
+            "description": "The C/C++ compiler set",
+            "name": "cc",
+            "suggestions": [
+              {
+                "name": "clang"
+              },
+              {
+                "name": "gcc"
+              },
+              {
+                "name": "mingw"
+              }
+            ]
+          },
+          "description": "Choose a C/C++ compiler set",
+          "name": [
+            "--cc"
+          ]
+        },
+        {
+          "args": {
+            "description": "The D compiler set",
+            "name": "dc",
+            "suggestions": [
+              {
+                "name": "dmd"
+              },
+              {
+                "name": "gdc"
+              },
+              {
+                "name": "ldc"
+              }
+            ]
+          },
+          "description": "Choose a D compiler",
+          "name": [
+            "--dc"
+          ]
+        },
+        {
+          "args": {
+            "description": "The .NET compiler set",
+            "name": "dotnet",
+            "suggestions": [
+              {
+                "name": "mono"
+              },
+              {
+                "name": "msnet"
+              },
+              {
+                "name": "pnet"
+              }
+            ]
+          },
+          "description": "Choose a .NET compiler set",
+          "name": [
+            "--dotnet"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generate Visual Studio 2012 project files",
+      "name": "vs2012",
+      "options": [
+        {
+          "args": {
+            "description": "Path to the premake5.lua file",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "The premake5.lua file",
+          "name": [
+            "--file"
+          ]
+        },
+        {
+          "description": "Start MobDebug remote debugger. Works with ZeroBrane Studio",
+          "name": [
+            "--debugger"
+          ]
+        },
+        {
+          "description": "Treat warnings from project scripts as errors",
+          "name": [
+            "--fatal"
+          ]
+        },
+        {
+          "description": "Forfit SSH certification checks",
+          "name": [
+            "--insecure"
+          ]
+        },
+        {
+          "description": "Interactive command prompt",
+          "name": [
+            "--interactive"
+          ]
+        },
+        {
+          "args": {
+            "description": "The operating system",
+            "name": "os",
+            "suggestions": [
+              {
+                "name": "aix"
+              },
+              {
+                "name": "android"
+              },
+              {
+                "name": "bsd"
+              },
+              {
+                "name": "haiku"
+              },
+              {
+                "name": "hurd"
+              },
+              {
+                "name": "ios"
+              },
+              {
+                "name": "linux"
+              },
+              {
+                "name": "macosx"
+              },
+              {
+                "name": "solaris"
+              },
+              {
+                "name": "windows"
+              }
+            ]
+          },
+          "description": "Generate files for a different operating system",
+          "name": [
+            "--os"
+          ]
+        },
+        {
+          "args": {
+            "description": "The path to the scripts",
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "Search for additional scripts on the given path",
+          "name": [
+            "--scripts"
+          ]
+        },
+        {
+          "args": {
+            "description": "The system script",
+            "name": "script",
+            "template": "filepaths"
+          },
+          "description": "Override default system script (premake5-system.lua)",
+          "name": [
+            "--systemscript"
+          ]
+        },
+        {
+          "description": "Generate extra debug text output",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "args": {
+            "description": "The C/C++ compiler set",
+            "name": "cc",
+            "suggestions": [
+              {
+                "name": "clang"
+              },
+              {
+                "name": "gcc"
+              },
+              {
+                "name": "mingw"
+              }
+            ]
+          },
+          "description": "Choose a C/C++ compiler set",
+          "name": [
+            "--cc"
+          ]
+        },
+        {
+          "args": {
+            "description": "The D compiler set",
+            "name": "dc",
+            "suggestions": [
+              {
+                "name": "dmd"
+              },
+              {
+                "name": "gdc"
+              },
+              {
+                "name": "ldc"
+              }
+            ]
+          },
+          "description": "Choose a D compiler",
+          "name": [
+            "--dc"
+          ]
+        },
+        {
+          "args": {
+            "description": "The .NET compiler set",
+            "name": "dotnet",
+            "suggestions": [
+              {
+                "name": "mono"
+              },
+              {
+                "name": "msnet"
+              },
+              {
+                "name": "pnet"
+              }
+            ]
+          },
+          "description": "Choose a .NET compiler set",
+          "name": [
+            "--dotnet"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generate Visual Studio 2010 project files",
+      "name": "vs2010",
+      "options": [
+        {
+          "args": {
+            "description": "Path to the premake5.lua file",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "The premake5.lua file",
+          "name": [
+            "--file"
+          ]
+        },
+        {
+          "description": "Start MobDebug remote debugger. Works with ZeroBrane Studio",
+          "name": [
+            "--debugger"
+          ]
+        },
+        {
+          "description": "Treat warnings from project scripts as errors",
+          "name": [
+            "--fatal"
+          ]
+        },
+        {
+          "description": "Forfit SSH certification checks",
+          "name": [
+            "--insecure"
+          ]
+        },
+        {
+          "description": "Interactive command prompt",
+          "name": [
+            "--interactive"
+          ]
+        },
+        {
+          "args": {
+            "description": "The operating system",
+            "name": "os",
+            "suggestions": [
+              {
+                "name": "aix"
+              },
+              {
+                "name": "android"
+              },
+              {
+                "name": "bsd"
+              },
+              {
+                "name": "haiku"
+              },
+              {
+                "name": "hurd"
+              },
+              {
+                "name": "ios"
+              },
+              {
+                "name": "linux"
+              },
+              {
+                "name": "macosx"
+              },
+              {
+                "name": "solaris"
+              },
+              {
+                "name": "windows"
+              }
+            ]
+          },
+          "description": "Generate files for a different operating system",
+          "name": [
+            "--os"
+          ]
+        },
+        {
+          "args": {
+            "description": "The path to the scripts",
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "Search for additional scripts on the given path",
+          "name": [
+            "--scripts"
+          ]
+        },
+        {
+          "args": {
+            "description": "The system script",
+            "name": "script",
+            "template": "filepaths"
+          },
+          "description": "Override default system script (premake5-system.lua)",
+          "name": [
+            "--systemscript"
+          ]
+        },
+        {
+          "description": "Generate extra debug text output",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "args": {
+            "description": "The C/C++ compiler set",
+            "name": "cc",
+            "suggestions": [
+              {
+                "name": "clang"
+              },
+              {
+                "name": "gcc"
+              },
+              {
+                "name": "mingw"
+              }
+            ]
+          },
+          "description": "Choose a C/C++ compiler set",
+          "name": [
+            "--cc"
+          ]
+        },
+        {
+          "args": {
+            "description": "The D compiler set",
+            "name": "dc",
+            "suggestions": [
+              {
+                "name": "dmd"
+              },
+              {
+                "name": "gdc"
+              },
+              {
+                "name": "ldc"
+              }
+            ]
+          },
+          "description": "Choose a D compiler",
+          "name": [
+            "--dc"
+          ]
+        },
+        {
+          "args": {
+            "description": "The .NET compiler set",
+            "name": "dotnet",
+            "suggestions": [
+              {
+                "name": "mono"
+              },
+              {
+                "name": "msnet"
+              },
+              {
+                "name": "pnet"
+              }
+            ]
+          },
+          "description": "Choose a .NET compiler set",
+          "name": [
+            "--dotnet"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generate Visual Studio 2008 project files",
+      "name": "vs2008",
+      "options": [
+        {
+          "args": {
+            "description": "Path to the premake5.lua file",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "The premake5.lua file",
+          "name": [
+            "--file"
+          ]
+        },
+        {
+          "description": "Start MobDebug remote debugger. Works with ZeroBrane Studio",
+          "name": [
+            "--debugger"
+          ]
+        },
+        {
+          "description": "Treat warnings from project scripts as errors",
+          "name": [
+            "--fatal"
+          ]
+        },
+        {
+          "description": "Forfit SSH certification checks",
+          "name": [
+            "--insecure"
+          ]
+        },
+        {
+          "description": "Interactive command prompt",
+          "name": [
+            "--interactive"
+          ]
+        },
+        {
+          "args": {
+            "description": "The operating system",
+            "name": "os",
+            "suggestions": [
+              {
+                "name": "aix"
+              },
+              {
+                "name": "android"
+              },
+              {
+                "name": "bsd"
+              },
+              {
+                "name": "haiku"
+              },
+              {
+                "name": "hurd"
+              },
+              {
+                "name": "ios"
+              },
+              {
+                "name": "linux"
+              },
+              {
+                "name": "macosx"
+              },
+              {
+                "name": "solaris"
+              },
+              {
+                "name": "windows"
+              }
+            ]
+          },
+          "description": "Generate files for a different operating system",
+          "name": [
+            "--os"
+          ]
+        },
+        {
+          "args": {
+            "description": "The path to the scripts",
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "Search for additional scripts on the given path",
+          "name": [
+            "--scripts"
+          ]
+        },
+        {
+          "args": {
+            "description": "The system script",
+            "name": "script",
+            "template": "filepaths"
+          },
+          "description": "Override default system script (premake5-system.lua)",
+          "name": [
+            "--systemscript"
+          ]
+        },
+        {
+          "description": "Generate extra debug text output",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "args": {
+            "description": "The C/C++ compiler set",
+            "name": "cc",
+            "suggestions": [
+              {
+                "name": "clang"
+              },
+              {
+                "name": "gcc"
+              },
+              {
+                "name": "mingw"
+              }
+            ]
+          },
+          "description": "Choose a C/C++ compiler set",
+          "name": [
+            "--cc"
+          ]
+        },
+        {
+          "args": {
+            "description": "The D compiler set",
+            "name": "dc",
+            "suggestions": [
+              {
+                "name": "dmd"
+              },
+              {
+                "name": "gdc"
+              },
+              {
+                "name": "ldc"
+              }
+            ]
+          },
+          "description": "Choose a D compiler",
+          "name": [
+            "--dc"
+          ]
+        },
+        {
+          "args": {
+            "description": "The .NET compiler set",
+            "name": "dotnet",
+            "suggestions": [
+              {
+                "name": "mono"
+              },
+              {
+                "name": "msnet"
+              },
+              {
+                "name": "pnet"
+              }
+            ]
+          },
+          "description": "Choose a .NET compiler set",
+          "name": [
+            "--dotnet"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generate Visual Studio 2005 project files",
+      "name": "vs2005",
+      "options": [
+        {
+          "args": {
+            "description": "Path to the premake5.lua file",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "The premake5.lua file",
+          "name": [
+            "--file"
+          ]
+        },
+        {
+          "description": "Start MobDebug remote debugger. Works with ZeroBrane Studio",
+          "name": [
+            "--debugger"
+          ]
+        },
+        {
+          "description": "Treat warnings from project scripts as errors",
+          "name": [
+            "--fatal"
+          ]
+        },
+        {
+          "description": "Forfit SSH certification checks",
+          "name": [
+            "--insecure"
+          ]
+        },
+        {
+          "description": "Interactive command prompt",
+          "name": [
+            "--interactive"
+          ]
+        },
+        {
+          "args": {
+            "description": "The operating system",
+            "name": "os",
+            "suggestions": [
+              {
+                "name": "aix"
+              },
+              {
+                "name": "android"
+              },
+              {
+                "name": "bsd"
+              },
+              {
+                "name": "haiku"
+              },
+              {
+                "name": "hurd"
+              },
+              {
+                "name": "ios"
+              },
+              {
+                "name": "linux"
+              },
+              {
+                "name": "macosx"
+              },
+              {
+                "name": "solaris"
+              },
+              {
+                "name": "windows"
+              }
+            ]
+          },
+          "description": "Generate files for a different operating system",
+          "name": [
+            "--os"
+          ]
+        },
+        {
+          "args": {
+            "description": "The path to the scripts",
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "Search for additional scripts on the given path",
+          "name": [
+            "--scripts"
+          ]
+        },
+        {
+          "args": {
+            "description": "The system script",
+            "name": "script",
+            "template": "filepaths"
+          },
+          "description": "Override default system script (premake5-system.lua)",
+          "name": [
+            "--systemscript"
+          ]
+        },
+        {
+          "description": "Generate extra debug text output",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "args": {
+            "description": "The C/C++ compiler set",
+            "name": "cc",
+            "suggestions": [
+              {
+                "name": "clang"
+              },
+              {
+                "name": "gcc"
+              },
+              {
+                "name": "mingw"
+              }
+            ]
+          },
+          "description": "Choose a C/C++ compiler set",
+          "name": [
+            "--cc"
+          ]
+        },
+        {
+          "args": {
+            "description": "The D compiler set",
+            "name": "dc",
+            "suggestions": [
+              {
+                "name": "dmd"
+              },
+              {
+                "name": "gdc"
+              },
+              {
+                "name": "ldc"
+              }
+            ]
+          },
+          "description": "Choose a D compiler",
+          "name": [
+            "--dc"
+          ]
+        },
+        {
+          "args": {
+            "description": "The .NET compiler set",
+            "name": "dotnet",
+            "suggestions": [
+              {
+                "name": "mono"
+              },
+              {
+                "name": "msnet"
+              },
+              {
+                "name": "pnet"
+              }
+            ]
+          },
+          "description": "Choose a .NET compiler set",
+          "name": [
+            "--dotnet"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generate GNU Makefiles (This generator is deprecated by gmake2)",
+      "name": "gmake",
+      "options": [
+        {
+          "args": {
+            "description": "Path to the premake5.lua file",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "The premake5.lua file",
+          "name": [
+            "--file"
+          ]
+        },
+        {
+          "description": "Start MobDebug remote debugger. Works with ZeroBrane Studio",
+          "name": [
+            "--debugger"
+          ]
+        },
+        {
+          "description": "Treat warnings from project scripts as errors",
+          "name": [
+            "--fatal"
+          ]
+        },
+        {
+          "description": "Forfit SSH certification checks",
+          "name": [
+            "--insecure"
+          ]
+        },
+        {
+          "description": "Interactive command prompt",
+          "name": [
+            "--interactive"
+          ]
+        },
+        {
+          "args": {
+            "description": "The operating system",
+            "name": "os",
+            "suggestions": [
+              {
+                "name": "aix"
+              },
+              {
+                "name": "android"
+              },
+              {
+                "name": "bsd"
+              },
+              {
+                "name": "haiku"
+              },
+              {
+                "name": "hurd"
+              },
+              {
+                "name": "ios"
+              },
+              {
+                "name": "linux"
+              },
+              {
+                "name": "macosx"
+              },
+              {
+                "name": "solaris"
+              },
+              {
+                "name": "windows"
+              }
+            ]
+          },
+          "description": "Generate files for a different operating system",
+          "name": [
+            "--os"
+          ]
+        },
+        {
+          "args": {
+            "description": "The path to the scripts",
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "Search for additional scripts on the given path",
+          "name": [
+            "--scripts"
+          ]
+        },
+        {
+          "args": {
+            "description": "The system script",
+            "name": "script",
+            "template": "filepaths"
+          },
+          "description": "Override default system script (premake5-system.lua)",
+          "name": [
+            "--systemscript"
+          ]
+        },
+        {
+          "description": "Generate extra debug text output",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "args": {
+            "description": "The C/C++ compiler set",
+            "name": "cc",
+            "suggestions": [
+              {
+                "name": "clang"
+              },
+              {
+                "name": "gcc"
+              },
+              {
+                "name": "mingw"
+              }
+            ]
+          },
+          "description": "Choose a C/C++ compiler set",
+          "name": [
+            "--cc"
+          ]
+        },
+        {
+          "args": {
+            "description": "The D compiler set",
+            "name": "dc",
+            "suggestions": [
+              {
+                "name": "dmd"
+              },
+              {
+                "name": "gdc"
+              },
+              {
+                "name": "ldc"
+              }
+            ]
+          },
+          "description": "Choose a D compiler",
+          "name": [
+            "--dc"
+          ]
+        },
+        {
+          "args": {
+            "description": "The .NET compiler set",
+            "name": "dotnet",
+            "suggestions": [
+              {
+                "name": "mono"
+              },
+              {
+                "name": "msnet"
+              },
+              {
+                "name": "pnet"
+              }
+            ]
+          },
+          "description": "Choose a .NET compiler set",
+          "name": [
+            "--dotnet"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generate GNU Makefiles (including Cygwin and MinGW)",
+      "name": "gmake2",
+      "options": [
+        {
+          "args": {
+            "description": "Path to the premake5.lua file",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "The premake5.lua file",
+          "name": [
+            "--file"
+          ]
+        },
+        {
+          "description": "Start MobDebug remote debugger. Works with ZeroBrane Studio",
+          "name": [
+            "--debugger"
+          ]
+        },
+        {
+          "description": "Treat warnings from project scripts as errors",
+          "name": [
+            "--fatal"
+          ]
+        },
+        {
+          "description": "Forfit SSH certification checks",
+          "name": [
+            "--insecure"
+          ]
+        },
+        {
+          "description": "Interactive command prompt",
+          "name": [
+            "--interactive"
+          ]
+        },
+        {
+          "args": {
+            "description": "The operating system",
+            "name": "os",
+            "suggestions": [
+              {
+                "name": "aix"
+              },
+              {
+                "name": "android"
+              },
+              {
+                "name": "bsd"
+              },
+              {
+                "name": "haiku"
+              },
+              {
+                "name": "hurd"
+              },
+              {
+                "name": "ios"
+              },
+              {
+                "name": "linux"
+              },
+              {
+                "name": "macosx"
+              },
+              {
+                "name": "solaris"
+              },
+              {
+                "name": "windows"
+              }
+            ]
+          },
+          "description": "Generate files for a different operating system",
+          "name": [
+            "--os"
+          ]
+        },
+        {
+          "args": {
+            "description": "The path to the scripts",
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "Search for additional scripts on the given path",
+          "name": [
+            "--scripts"
+          ]
+        },
+        {
+          "args": {
+            "description": "The system script",
+            "name": "script",
+            "template": "filepaths"
+          },
+          "description": "Override default system script (premake5-system.lua)",
+          "name": [
+            "--systemscript"
+          ]
+        },
+        {
+          "description": "Generate extra debug text output",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "args": {
+            "description": "The C/C++ compiler set",
+            "name": "cc",
+            "suggestions": [
+              {
+                "name": "clang"
+              },
+              {
+                "name": "gcc"
+              },
+              {
+                "name": "mingw"
+              }
+            ]
+          },
+          "description": "Choose a C/C++ compiler set",
+          "name": [
+            "--cc"
+          ]
+        },
+        {
+          "args": {
+            "description": "The D compiler set",
+            "name": "dc",
+            "suggestions": [
+              {
+                "name": "dmd"
+              },
+              {
+                "name": "gdc"
+              },
+              {
+                "name": "ldc"
+              }
+            ]
+          },
+          "description": "Choose a D compiler",
+          "name": [
+            "--dc"
+          ]
+        },
+        {
+          "args": {
+            "description": "The .NET compiler set",
+            "name": "dotnet",
+            "suggestions": [
+              {
+                "name": "mono"
+              },
+              {
+                "name": "msnet"
+              },
+              {
+                "name": "pnet"
+              }
+            ]
+          },
+          "description": "Choose a .NET compiler set",
+          "name": [
+            "--dotnet"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generate Apple Xcode 4 project files",
+      "name": "xcode4",
+      "options": [
+        {
+          "args": {
+            "description": "Path to the premake5.lua file",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "The premake5.lua file",
+          "name": [
+            "--file"
+          ]
+        },
+        {
+          "description": "Start MobDebug remote debugger. Works with ZeroBrane Studio",
+          "name": [
+            "--debugger"
+          ]
+        },
+        {
+          "description": "Treat warnings from project scripts as errors",
+          "name": [
+            "--fatal"
+          ]
+        },
+        {
+          "description": "Forfit SSH certification checks",
+          "name": [
+            "--insecure"
+          ]
+        },
+        {
+          "description": "Interactive command prompt",
+          "name": [
+            "--interactive"
+          ]
+        },
+        {
+          "args": {
+            "description": "The operating system",
+            "name": "os",
+            "suggestions": [
+              {
+                "name": "aix"
+              },
+              {
+                "name": "android"
+              },
+              {
+                "name": "bsd"
+              },
+              {
+                "name": "haiku"
+              },
+              {
+                "name": "hurd"
+              },
+              {
+                "name": "ios"
+              },
+              {
+                "name": "linux"
+              },
+              {
+                "name": "macosx"
+              },
+              {
+                "name": "solaris"
+              },
+              {
+                "name": "windows"
+              }
+            ]
+          },
+          "description": "Generate files for a different operating system",
+          "name": [
+            "--os"
+          ]
+        },
+        {
+          "args": {
+            "description": "The path to the scripts",
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "Search for additional scripts on the given path",
+          "name": [
+            "--scripts"
+          ]
+        },
+        {
+          "args": {
+            "description": "The system script",
+            "name": "script",
+            "template": "filepaths"
+          },
+          "description": "Override default system script (premake5-system.lua)",
+          "name": [
+            "--systemscript"
+          ]
+        },
+        {
+          "description": "Generate extra debug text output",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "args": {
+            "description": "The C/C++ compiler set",
+            "name": "cc",
+            "suggestions": [
+              {
+                "name": "clang"
+              },
+              {
+                "name": "gcc"
+              },
+              {
+                "name": "mingw"
+              }
+            ]
+          },
+          "description": "Choose a C/C++ compiler set",
+          "name": [
+            "--cc"
+          ]
+        },
+        {
+          "args": {
+            "description": "The D compiler set",
+            "name": "dc",
+            "suggestions": [
+              {
+                "name": "dmd"
+              },
+              {
+                "name": "gdc"
+              },
+              {
+                "name": "ldc"
+              }
+            ]
+          },
+          "description": "Choose a D compiler",
+          "name": [
+            "--dc"
+          ]
+        },
+        {
+          "args": {
+            "description": "The .NET compiler set",
+            "name": "dotnet",
+            "suggestions": [
+              {
+                "name": "mono"
+              },
+              {
+                "name": "msnet"
+              },
+              {
+                "name": "pnet"
+              }
+            ]
+          },
+          "description": "Choose a .NET compiler set",
+          "name": [
+            "--dotnet"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generate CodeLite project files",
+      "name": "codelite",
+      "options": [
+        {
+          "args": {
+            "description": "Path to the premake5.lua file",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "The premake5.lua file",
+          "name": [
+            "--file"
+          ]
+        },
+        {
+          "description": "Start MobDebug remote debugger. Works with ZeroBrane Studio",
+          "name": [
+            "--debugger"
+          ]
+        },
+        {
+          "description": "Treat warnings from project scripts as errors",
+          "name": [
+            "--fatal"
+          ]
+        },
+        {
+          "description": "Forfit SSH certification checks",
+          "name": [
+            "--insecure"
+          ]
+        },
+        {
+          "description": "Interactive command prompt",
+          "name": [
+            "--interactive"
+          ]
+        },
+        {
+          "args": {
+            "description": "The operating system",
+            "name": "os",
+            "suggestions": [
+              {
+                "name": "aix"
+              },
+              {
+                "name": "android"
+              },
+              {
+                "name": "bsd"
+              },
+              {
+                "name": "haiku"
+              },
+              {
+                "name": "hurd"
+              },
+              {
+                "name": "ios"
+              },
+              {
+                "name": "linux"
+              },
+              {
+                "name": "macosx"
+              },
+              {
+                "name": "solaris"
+              },
+              {
+                "name": "windows"
+              }
+            ]
+          },
+          "description": "Generate files for a different operating system",
+          "name": [
+            "--os"
+          ]
+        },
+        {
+          "args": {
+            "description": "The path to the scripts",
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "Search for additional scripts on the given path",
+          "name": [
+            "--scripts"
+          ]
+        },
+        {
+          "args": {
+            "description": "The system script",
+            "name": "script",
+            "template": "filepaths"
+          },
+          "description": "Override default system script (premake5-system.lua)",
+          "name": [
+            "--systemscript"
+          ]
+        },
+        {
+          "description": "Generate extra debug text output",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "args": {
+            "description": "The C/C++ compiler set",
+            "name": "cc",
+            "suggestions": [
+              {
+                "name": "clang"
+              },
+              {
+                "name": "gcc"
+              },
+              {
+                "name": "mingw"
+              }
+            ]
+          },
+          "description": "Choose a C/C++ compiler set",
+          "name": [
+            "--cc"
+          ]
+        },
+        {
+          "args": {
+            "description": "The D compiler set",
+            "name": "dc",
+            "suggestions": [
+              {
+                "name": "dmd"
+              },
+              {
+                "name": "gdc"
+              },
+              {
+                "name": "ldc"
+              }
+            ]
+          },
+          "description": "Choose a D compiler",
+          "name": [
+            "--dc"
+          ]
+        },
+        {
+          "args": {
+            "description": "The .NET compiler set",
+            "name": "dotnet",
+            "suggestions": [
+              {
+                "name": "mono"
+              },
+              {
+                "name": "msnet"
+              },
+              {
+                "name": "pnet"
+              }
+            ]
+          },
+          "description": "Choose a .NET compiler set",
+          "name": [
+            "--dotnet"
+          ]
+        }
+      ]
+    }
+  ]
+}

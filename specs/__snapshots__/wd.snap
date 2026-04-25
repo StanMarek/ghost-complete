@@ -1,0 +1,142 @@
+{
+  "args": [
+    {
+      "description": "Warp point to the specified directory",
+      "generators": [
+        {
+          "js_source": "async(s,i,n)=>{let{stdout:o}=await i({command:\"cat\",args:[`${n.environmentVariables.HOME}/.warprc`]}),r=o.matchAll(/^(\\w+)/gm),t=[];for(let[a]of r)t.push({name:a,description:\"Warp point\",icon:\"\\u{1F518}\",priority:76});return t}",
+          "requires_js": true
+        }
+      ],
+      "name": "point"
+    },
+    {
+      "description": "Appended path",
+      "isOptional": true,
+      "name": "path"
+    }
+  ],
+  "description": "Warp to directories without using cd",
+  "name": "wd",
+  "options": [
+    {
+      "description": "Print version",
+      "name": [
+        "-v",
+        "--version"
+      ]
+    },
+    {
+      "description": "Exit after execution with exit codes (for testing)",
+      "name": [
+        "-d",
+        "--debug"
+      ]
+    },
+    {
+      "args": {
+        "name": "file"
+      },
+      "description": "Specify config file (default ~/.warprc)",
+      "name": [
+        "-c",
+        "--config"
+      ]
+    },
+    {
+      "description": "Suppress all output",
+      "name": [
+        "-q",
+        "--quiet"
+      ]
+    },
+    {
+      "description": "Allows overwriting without warning (for add & clean)",
+      "name": [
+        "-f",
+        "--force"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "description": "Name of the warp point to be created",
+        "isOptional": true,
+        "name": "point"
+      },
+      "description": "Adds the current working directory to your warp points",
+      "name": "add"
+    },
+    {
+      "args": {
+        "description": "Name of the warp point to be removed",
+        "generators": [
+          {
+            "js_source": "async(s,i,n)=>{let{stdout:o}=await i({command:\"cat\",args:[`${n.environmentVariables.HOME}/.warprc`]}),r=o.matchAll(/^(\\w+)/gm),t=[];for(let[a]of r)t.push({name:a,description:\"Warp point\",icon:\"\\u{1F518}\",priority:76});return t}",
+            "requires_js": true
+          }
+        ],
+        "isOptional": true,
+        "name": "point"
+      },
+      "description": "Removes the given warp point",
+      "name": "rm"
+    },
+    {
+      "args": {
+        "description": "Name of the warp point",
+        "generators": [
+          {
+            "js_source": "async(s,i,n)=>{let{stdout:o}=await i({command:\"cat\",args:[`${n.environmentVariables.HOME}/.warprc`]}),r=o.matchAll(/^(\\w+)/gm),t=[];for(let[a]of r)t.push({name:a,description:\"Warp point\",icon:\"\\u{1F518}\",priority:76});return t}",
+            "requires_js": true
+          }
+        ],
+        "isOptional": true,
+        "name": "point"
+      },
+      "description": "Print path to given warp point",
+      "name": "show"
+    },
+    {
+      "description": "Print all stored warp points",
+      "name": "list"
+    },
+    {
+      "args": {
+        "description": "Name of the warp point",
+        "generators": [
+          {
+            "js_source": "async(s,i,n)=>{let{stdout:o}=await i({command:\"cat\",args:[`${n.environmentVariables.HOME}/.warprc`]}),r=o.matchAll(/^(\\w+)/gm),t=[];for(let[a]of r)t.push({name:a,description:\"Warp point\",icon:\"\\u{1F518}\",priority:76});return t}",
+            "requires_js": true
+          }
+        ],
+        "name": "point"
+      },
+      "description": "Show files from given warp point (ls)",
+      "name": "ls"
+    },
+    {
+      "args": {
+        "description": "Name of the warp point",
+        "generators": [
+          {
+            "js_source": "async(s,i,n)=>{let{stdout:o}=await i({command:\"cat\",args:[`${n.environmentVariables.HOME}/.warprc`]}),r=o.matchAll(/^(\\w+)/gm),t=[];for(let[a]of r)t.push({name:a,description:\"Warp point\",icon:\"\\u{1F518}\",priority:76});return t}",
+            "requires_js": true
+          }
+        ],
+        "name": "point"
+      },
+      "description": "Show the path to given warp point (pwd)",
+      "name": "path"
+    },
+    {
+      "description": "Remove points warping to nonexistent directories (will prompt unless --force is used)",
+      "name": "clean"
+    },
+    {
+      "description": "Shows help for wd",
+      "name": "help"
+    }
+  ]
+}

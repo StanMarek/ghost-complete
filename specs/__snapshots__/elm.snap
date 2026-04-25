@@ -1,0 +1,203 @@
+{
+  "description": "Fig spec for the Elm language cli",
+  "name": "elm",
+  "options": [
+    {
+      "description": "Show help for elm",
+      "name": [
+        "--help"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Initialize a new Elm project",
+      "name": "init",
+      "options": [
+        {
+          "description": "Show help for elm init",
+          "name": [
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Start an Elm repl",
+      "name": "repl",
+      "options": [
+        {
+          "description": "Turn off colors in the repl",
+          "name": [
+            "--no-colors"
+          ]
+        },
+        {
+          "args": {
+            "name": "interpreter"
+          },
+          "description": "Path to an alternate JS interpreter, such as Node or Deno",
+          "name": [
+            "--interpreter"
+          ]
+        },
+        {
+          "description": "Show help for elm repl",
+          "name": [
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Start an Elm development server",
+      "name": "reactor",
+      "options": [
+        {
+          "args": {
+            "description": "The port number",
+            "name": "port"
+          },
+          "description": "The port to access the development server on",
+          "name": [
+            "--port"
+          ]
+        },
+        {
+          "description": "Show help for elm reactor",
+          "name": [
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The name of the package to install",
+        "generators": [
+          {
+            "cache": {
+              "ttl_seconds": 259200
+            },
+            "js_source": "o=>JSON.parse(o).map(e=>({name:e.name,description:e.summary}))",
+            "requires_js": true,
+            "script": [
+              "curl",
+              "-sH",
+              "accept-encoding: gzip",
+              "--compressed",
+              "https://package.elm-lang.org/search.json"
+            ]
+          }
+        ],
+        "name": "package"
+      },
+      "description": "Install an Elm dependency",
+      "name": "install",
+      "options": [
+        {
+          "description": "Show help for elm install",
+          "name": [
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The source files to compile",
+        "name": "source files",
+        "template": "filepaths"
+      },
+      "description": "Build your Elm code",
+      "name": "make",
+      "options": [
+        {
+          "description": "Show help for elm make",
+          "name": [
+            "--help"
+          ]
+        },
+        {
+          "description": "Compile in debug mode",
+          "name": [
+            "--debug"
+          ]
+        },
+        {
+          "description": "Compile in production mode",
+          "name": [
+            "--optimize"
+          ]
+        },
+        {
+          "args": {
+            "description": "Name and location of output",
+            "name": "output file"
+          },
+          "description": "Where to output the compiled code",
+          "name": [
+            "--output"
+          ]
+        },
+        {
+          "args": {
+            "description": "Name and location of output",
+            "name": "output json"
+          },
+          "description": "Generate a JSON file of documentation",
+          "name": [
+            "--docs"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Bump the version of your package",
+      "name": "bump",
+      "options": [
+        {
+          "description": "Show help for elm bump",
+          "name": [
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "isOptional": true,
+          "name": "package"
+        },
+        {
+          "isOptional": true,
+          "isVariadic": true,
+          "name": "version"
+        }
+      ],
+      "description": "See what changed between versions of a package",
+      "name": "diff",
+      "options": [
+        {
+          "description": "Show help for elm diff",
+          "name": [
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Publish your package",
+      "name": "publish",
+      "options": [
+        {
+          "description": "Show help for elm publish",
+          "name": [
+            "--help"
+          ]
+        }
+      ]
+    }
+  ]
+}

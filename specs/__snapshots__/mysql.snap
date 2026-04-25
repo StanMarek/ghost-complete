@@ -1,0 +1,812 @@
+{
+  "args": {},
+  "description": "Mysql is a terminal-based front-end to MySQL",
+  "name": "mysql",
+  "options": [
+    {
+      "description": "Enable automatic rehashing",
+      "name": [
+        "--auto-rehash"
+      ]
+    },
+    {
+      "description": "Enable automatic vertical result set display",
+      "name": [
+        "--auto-vertical-output"
+      ]
+    },
+    {
+      "description": "Do not use history file",
+      "name": [
+        "--batch",
+        "-B"
+      ]
+    },
+    {
+      "description": "Display binary values in hexadecimal notation",
+      "name": [
+        "--binary-as-hex"
+      ]
+    },
+    {
+      "description": "Disable \\r\\n - to - \\n translation and treatment of \\0 as end-of-query",
+      "name": [
+        "--binary-mode"
+      ]
+    },
+    {
+      "args": {
+        "name": "ip_address"
+      },
+      "description": "Use specified network interface to connect to MySQL Server",
+      "name": [
+        "--bind-address"
+      ]
+    },
+    {
+      "args": {
+        "description": "Directory where character sets are installed",
+        "name": "dir_name",
+        "template": "folders"
+      },
+      "description": "Directory where character sets are installed",
+      "name": [
+        "--character-sets-dir"
+      ]
+    },
+    {
+      "description": "Write column names in results",
+      "name": [
+        "--column-names"
+      ]
+    },
+    {
+      "description": "Display result set metadata",
+      "name": [
+        "--column-type-info"
+      ]
+    },
+    {
+      "description": "Whether to retain or strip comments in statements sent to the server",
+      "name": [
+        "--comments",
+        "-c"
+      ]
+    },
+    {
+      "description": "Compress all information sent between client and server",
+      "name": [
+        "--compress",
+        "-C"
+      ]
+    },
+    {
+      "args": {
+        "name": "value",
+        "suggestions": [
+          {
+            "name": "zlib"
+          },
+          {
+            "name": "zstd"
+          },
+          {
+            "name": "uncompressed"
+          }
+        ]
+      },
+      "description": "Permitted compression algorithms for connections to server",
+      "name": [
+        "--compression-algorithms"
+      ]
+    },
+    {
+      "description": "Indicate to server that client can handle expired-password sandbox mode",
+      "name": [
+        "--connect-expired-password"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Number of seconds before connection timeout",
+      "name": [
+        "--connect-timeout"
+      ]
+    },
+    {
+      "args": {
+        "name": "db_name"
+      },
+      "description": "The database to use",
+      "name": [
+        "-D",
+        "--database"
+      ]
+    },
+    {
+      "description": "Write debugging log; supported only if MySQL was built with debugging support",
+      "name": [
+        "--debug"
+      ]
+    },
+    {
+      "description": "Print debugging information when program exits",
+      "name": [
+        "--debug-check"
+      ]
+    },
+    {
+      "description": "Print debugging information, memory, and CPU statistics when program exits",
+      "name": [
+        "-T",
+        "--debug-info"
+      ]
+    },
+    {
+      "args": {
+        "name": "plugin"
+      },
+      "description": "Authentication plugin to use",
+      "name": [
+        "--default-auth"
+      ]
+    },
+    {
+      "args": {
+        "name": "charset_name"
+      },
+      "description": "Specify default character set",
+      "name": [
+        "--default-character-set"
+      ]
+    },
+    {
+      "args": {
+        "name": "file_name",
+        "template": "filepaths"
+      },
+      "description": "Read named option file in addition to usual option files",
+      "name": [
+        "--defaults-extra-file"
+      ]
+    },
+    {
+      "args": {
+        "name": "file_name",
+        "template": "filepaths"
+      },
+      "description": "Read only named option file",
+      "name": [
+        "--defaults-file"
+      ]
+    },
+    {
+      "args": {
+        "name": "str"
+      },
+      "description": "Option group suffix value",
+      "name": [
+        "--defaults-group-suffix"
+      ]
+    },
+    {
+      "args": {
+        "name": "str"
+      },
+      "description": "Set the statement delimiter",
+      "name": [
+        "--delimiter"
+      ]
+    },
+    {
+      "description": "Disable named commands. Use the \\* form only, or use named commands only at the beginning of a line ending with a semicolon (;). mysql starts with this option enabled by default. However, even with this option, long-format commands still work from the first line",
+      "name": [
+        "--disable-named-commands"
+      ]
+    },
+    {
+      "args": {
+        "name": "name"
+      },
+      "description": "Use DNS SRV lookup for host information",
+      "name": [
+        "--dns-srv-name"
+      ]
+    },
+    {
+      "description": "Enable cleartext authentication plugin",
+      "name": [
+        "--enable-cleartext-plugin"
+      ]
+    },
+    {
+      "args": {
+        "name": "statement"
+      },
+      "description": "Execute the statement and quit",
+      "name": [
+        "-e",
+        "--execute"
+      ]
+    },
+    {
+      "description": "Continue even if an SQL error occurs",
+      "name": [
+        "-f",
+        "--force"
+      ]
+    },
+    {
+      "description": "Request RSA public key from server",
+      "name": [
+        "--get-server-public-key"
+      ]
+    },
+    {
+      "description": "Display help message and exit",
+      "name": [
+        "--help",
+        "-?"
+      ]
+    },
+    {
+      "description": "Patterns specifying which statements to ignore for logging",
+      "name": [
+        "--histignore"
+      ]
+    },
+    {
+      "args": {
+        "name": "host_name"
+      },
+      "description": "Host on which MySQL server is located",
+      "name": [
+        "-h",
+        "--host"
+      ]
+    },
+    {
+      "description": "Produce HTML output",
+      "name": [
+        "-H",
+        "--html"
+      ]
+    },
+    {
+      "description": "Ignore spaces after function names",
+      "name": [
+        "-i",
+        "--ignore-spaces"
+      ]
+    },
+    {
+      "args": {
+        "name": "command"
+      },
+      "description": "SQL statement to execute after connecting",
+      "name": [
+        "--init-command"
+      ]
+    },
+    {
+      "description": "Write line numbers for errors",
+      "name": [
+        "--line-numbers"
+      ]
+    },
+    {
+      "args": {
+        "name": "dir_name",
+        "template": "folders"
+      },
+      "description": "Directory for files named in LOAD DATA LOCAL statements",
+      "name": [
+        "--load-data-local-dir"
+      ]
+    },
+    {
+      "args": {
+        "name": "is-local-inflie",
+        "suggestions": [
+          {
+            "description": "Disable",
+            "name": "0"
+          },
+          {
+            "description": "Enable",
+            "name": "1"
+          }
+        ]
+      },
+      "description": "Enable or disable for LOCAL capability for LOAD DATA",
+      "name": [
+        "--local-infile"
+      ]
+    },
+    {
+      "args": {
+        "name": "name"
+      },
+      "description": "Read login path options from .mylogin.cnf",
+      "name": [
+        "--login-path"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Maximum packet length to send to or receive from server",
+      "name": [
+        "--max-allowed-packet"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "The automatic limit for rows in a join when using --safe-updates",
+      "name": [
+        "--max-join-size"
+      ]
+    },
+    {
+      "description": "Enable named mysql commands",
+      "name": [
+        "-G",
+        "--named-commands"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Buffer size for TCP/IP and socket communication",
+      "name": [
+        "--net-buffer-length"
+      ]
+    },
+    {
+      "args": {
+        "name": "name"
+      },
+      "description": "Specify network namespace",
+      "name": [
+        "--network-namespace"
+      ]
+    },
+    {
+      "description": "Disable automatic rehashing",
+      "name": [
+        "-A",
+        "--no-auto-rehash"
+      ]
+    },
+    {
+      "description": "Do not beep when errors occur",
+      "name": [
+        "--no-beep",
+        "-b"
+      ]
+    },
+    {
+      "description": "Read no option files",
+      "name": [
+        "--no-defaults"
+      ]
+    },
+    {
+      "description": "Ignore statements except those for the default database named on the command line",
+      "name": [
+        "-o",
+        "--one-database"
+      ]
+    },
+    {
+      "args": {
+        "name": "command"
+      },
+      "description": "Use the given command for paging query output",
+      "name": [
+        "--pager"
+      ]
+    },
+    {
+      "args": {
+        "name": "password"
+      },
+      "description": "Password to use when connecting to server",
+      "name": [
+        "-p",
+        "--password"
+      ]
+    },
+    {
+      "description": "Connect to server using named pipe (Windows only)",
+      "name": [
+        "--pipe",
+        "-W"
+      ]
+    },
+    {
+      "args": {
+        "name": "dir_name",
+        "template": "folders"
+      },
+      "description": "Directory where plugins are installed",
+      "name": [
+        "--plugin-dir"
+      ]
+    },
+    {
+      "args": {
+        "name": "port_num"
+      },
+      "description": "TCP/IP port number for connection",
+      "name": [
+        "-P",
+        "--port"
+      ]
+    },
+    {
+      "description": "Print default options",
+      "name": [
+        "--print-defaults"
+      ]
+    },
+    {
+      "args": {
+        "name": "format_str"
+      },
+      "description": "Set the prompt to the specified format",
+      "name": [
+        "--prompt"
+      ]
+    },
+    {
+      "args": {
+        "name": "format_str",
+        "suggestions": [
+          {
+            "name": "TCP"
+          },
+          {
+            "name": "SOCKET"
+          },
+          {
+            "name": "PIPE"
+          },
+          {
+            "name": "MEMORY"
+          }
+        ]
+      },
+      "description": "Transport protocol to use",
+      "name": [
+        "--protocol"
+      ]
+    },
+    {
+      "description": "Do not cache each query result",
+      "name": [
+        "-q",
+        "--quick"
+      ]
+    },
+    {
+      "description": "Write column values without escape conversion",
+      "name": [
+        "-r",
+        "--raw"
+      ]
+    },
+    {
+      "description": "If the connection to the server is lost, automatically try to reconnect",
+      "name": [
+        "--reconnect"
+      ]
+    },
+    {
+      "description": "Allow only UPDATE and DELETE statements that specify key values",
+      "name": [
+        "-U",
+        "--safe-updates",
+        "--i-am-a-dummy"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "The automatic limit for SELECT statements when using --safe-updates",
+      "name": [
+        "--select-limit"
+      ]
+    },
+    {
+      "args": {
+        "name": "filename",
+        "template": "filepaths"
+      },
+      "description": "Path name to file containing RSA public key",
+      "name": [
+        "--server-public-key-path"
+      ]
+    },
+    {
+      "args": {
+        "name": "name"
+      },
+      "description": "Shared-memory name for shared-memory connections (Windows only)",
+      "name": [
+        "--shared-memory-base-name"
+      ]
+    },
+    {
+      "description": "Show warnings after each statement if there are any",
+      "name": [
+        "--show-warnings"
+      ]
+    },
+    {
+      "description": "Ignore SIGINT signals (typically the result of typing Control+C)",
+      "name": [
+        "--sigint-ignore"
+      ]
+    },
+    {
+      "description": "Silent mode.  Produce less output. This option can be given multiple times to produce less and less output",
+      "name": [
+        "-s",
+        "--silent"
+      ]
+    },
+    {
+      "description": "Disable automatic rehashing",
+      "name": [
+        "--skip-auto-rehash"
+      ]
+    },
+    {
+      "description": "Do not write column names in results",
+      "name": [
+        "-N",
+        "--skip-column-names"
+      ]
+    },
+    {
+      "description": "Skip line numbers for errors",
+      "name": [
+        "-L",
+        "--skip-line-numbers"
+      ]
+    },
+    {
+      "description": "Disable named mysql commands",
+      "name": [
+        "--skip-named-commands"
+      ]
+    },
+    {
+      "description": "Disable paging",
+      "name": [
+        "--skip-pager"
+      ]
+    },
+    {
+      "description": "Disable reconnecting",
+      "name": [
+        "--skip-reconnect"
+      ]
+    },
+    {
+      "args": {
+        "name": "name"
+      },
+      "description": "Unix socket file or Windows named pipe to use\"File that contains list of trusted SSL Certificate Authorities\"",
+      "name": [
+        "-S",
+        "--socket"
+      ]
+    },
+    {
+      "args": {
+        "name": "filename",
+        "template": "filepaths"
+      },
+      "description": "File that contains list of trusted SSL Certificate Authorities",
+      "name": [
+        "--ssl-ca"
+      ]
+    },
+    {
+      "args": {
+        "name": "dirname",
+        "template": "folders"
+      },
+      "description": "Directory that contains trusted SSL Certificate Authority certificate files",
+      "name": [
+        "--ssl-capath"
+      ]
+    },
+    {
+      "args": {
+        "name": "filename",
+        "template": "filepaths"
+      },
+      "description": "File that contains X.509 certificate",
+      "name": [
+        "--ssl-cert"
+      ]
+    },
+    {
+      "description": "Permissible ciphers for connection encryption",
+      "name": [
+        "--ssl-cipher"
+      ]
+    },
+    {
+      "args": {
+        "name": "filename",
+        "template": "filepaths"
+      },
+      "description": "File that contains certificate revocation lists",
+      "name": [
+        "--ssl-crl"
+      ]
+    },
+    {
+      "args": {
+        "name": "dirname",
+        "template": "folders"
+      },
+      "description": "Directory that contains certificate revocation-list files",
+      "name": [
+        "--ssl-crlpath"
+      ]
+    },
+    {
+      "args": {
+        "name": "mode",
+        "suggestions": [
+          {
+            "name": "OFF"
+          },
+          {
+            "name": "ON"
+          },
+          {
+            "name": "STRICT"
+          }
+        ]
+      },
+      "description": "Whether to enable FIPS mode on client side",
+      "name": [
+        "--ssl-fips-mode"
+      ]
+    },
+    {
+      "args": {
+        "name": "filename",
+        "template": "filepaths"
+      },
+      "description": "File that contains X.509 key",
+      "name": [
+        "--ssl-key"
+      ]
+    },
+    {
+      "description": "Desired security state of connection to server",
+      "name": [
+        "--ssl-mode"
+      ]
+    },
+    {
+      "description": "Log interactive statements to syslog",
+      "name": [
+        "-j",
+        "--syslog"
+      ]
+    },
+    {
+      "description": "Display output in tabular format",
+      "name": [
+        "-t",
+        "--table"
+      ]
+    },
+    {
+      "args": {
+        "name": "file_name",
+        "template": "filepaths"
+      },
+      "description": "Append a copy of output to named file",
+      "name": [
+        "--tee"
+      ]
+    },
+    {
+      "args": {
+        "name": "ciphersuite_list",
+        "template": "filepaths"
+      },
+      "description": "Permissible TLSv1.3 ciphersuites for encrypted connections",
+      "name": [
+        "--tls-ciphersuites"
+      ]
+    },
+    {
+      "args": {
+        "name": "protocol_list"
+      },
+      "description": "Permissible TLS protocols for encrypted connections",
+      "name": [
+        "--tls-version"
+      ]
+    },
+    {
+      "description": "Flush the buffer after each query",
+      "name": [
+        "-n",
+        "--unbuffered"
+      ]
+    },
+    {
+      "args": {
+        "name": "user_name"
+      },
+      "description": "MySQL user name to use when connecting to server",
+      "name": [
+        "-u",
+        "--user"
+      ]
+    },
+    {
+      "description": "Verbose mode",
+      "name": [
+        "-v",
+        "--verbose"
+      ]
+    },
+    {
+      "description": "Display version information and exit",
+      "name": [
+        "-V",
+        "--version"
+      ]
+    },
+    {
+      "description": "Print query output rows vertically (one line per column value)",
+      "name": [
+        "-E",
+        "--vertical"
+      ]
+    },
+    {
+      "description": "If the connection cannot be established, wait and retry instead of aborting",
+      "name": [
+        "-w",
+        "--wait"
+      ]
+    },
+    {
+      "description": "Produce XML output",
+      "name": [
+        "-X",
+        "--xml"
+      ]
+    },
+    {
+      "args": {
+        "description": "Compression level between 1-22. The default zstd compression level is 3. The compression level setting has no effect on connections that do not use zstd compression",
+        "name": "level"
+      },
+      "description": "Compression level for connections to server that use zstd compression",
+      "name": [
+        "--zstd-compression-level"
+      ]
+    }
+  ]
+}

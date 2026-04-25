@@ -1,0 +1,1011 @@
+{
+  "description": "A distributed version control system that is at the same time theoretically sound, fast and easy to learn and use",
+  "name": "pijul",
+  "subcommands": [
+    {
+      "args": {
+        "description": "Paths to add to the internal tree",
+        "name": "PATHS"
+      },
+      "description": "Adds a path to the tree",
+      "name": "add",
+      "options": [
+        {
+          "name": [
+            "-f",
+            "--force"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "name": [
+            "-r",
+            "--recursive"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The change that need to be applied. If this value is missing, read the change in text format on the standard input",
+        "name": "CHANGE"
+      },
+      "description": "Applies changes to a channel",
+      "name": "apply",
+      "options": [
+        {
+          "args": {
+            "name": "CHANNEL"
+          },
+          "description": "Apply change to this channel",
+          "name": [
+            "--channel"
+          ]
+        },
+        {
+          "description": "Only apply the dependencies of the change, not the change itself. Only applicable for a single change",
+          "name": [
+            "--deps-only"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "REPO_PATH"
+          },
+          "description": "Set the repository where this command should run. Defaults to the first ancestor of the current directory that contains a .pijul directory",
+          "name": [
+            "--repository"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Creates an archive of the repository",
+      "name": "archive",
+      "options": [
+        {
+          "args": {
+            "name": "CHANGE"
+          },
+          "description": "Apply these changes after switching to the channel",
+          "name": [
+            "--change"
+          ]
+        },
+        {
+          "args": {
+            "name": "CHANNEL"
+          },
+          "description": "Use this channel, instead of the current channel",
+          "name": [
+            "--channel"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Do not check certificates (HTTPS remotes only, this option might be dangerous)",
+          "name": [
+            "-k"
+          ]
+        },
+        {
+          "args": {
+            "name": "NAME"
+          },
+          "description": "Name of the output file",
+          "name": [
+            "-o"
+          ]
+        },
+        {
+          "args": {
+            "name": "PREFIX"
+          },
+          "description": "Append this path in front of each path inside the archive",
+          "name": [
+            "--prefix"
+          ]
+        },
+        {
+          "args": {
+            "name": "REMOTE"
+          },
+          "description": "Ask the remote to send an archive",
+          "name": [
+            "--remote"
+          ]
+        },
+        {
+          "args": {
+            "name": "REPO_PATH"
+          },
+          "description": "Set the repository where this command should run. Defaults to the first ancestor of the current directory that contains a .pijul directory",
+          "name": [
+            "--repository"
+          ]
+        },
+        {
+          "args": {
+            "name": "STATE"
+          },
+          "description": "Archive in this state",
+          "name": [
+            "--state"
+          ]
+        },
+        {
+          "args": {
+            "name": "UMASK"
+          },
+          "description": "Append this path in front of each path inside the archive",
+          "name": [
+            "--umask"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The hash of the change to show, or an unambiguous prefix thereof",
+        "name": "HASH"
+      },
+      "description": "Shows information about a particular change",
+      "name": "change",
+      "options": [
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "PATH"
+          },
+          "description": "Use the repository at PATH instead of the current directory",
+          "name": [
+            "--repository"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manages different channels",
+      "name": "channel",
+      "options": [
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "REPO_PATH"
+          },
+          "description": "Set the repository where this command should run. Defaults to the first ancestor of the current directory that contains a .pijul directory",
+          "name": [
+            "--repository"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": {
+            "name": "DELETE"
+          },
+          "description": "Delete a channel. The channel must not be the current channel",
+          "name": "delete",
+          "options": [
+            {
+              "description": "Print help information",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Print this message or the help of the given subcommand(s)",
+          "name": "help"
+        },
+        {
+          "description": "Create a new, empty channel",
+          "name": "new"
+        },
+        {
+          "args": [
+            {
+              "name": "FROM"
+            },
+            {
+              "name": "TO"
+            }
+          ],
+          "description": "Rename a channel",
+          "name": "rename",
+          "options": [
+            {
+              "description": "Print help information",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Switch to a channel. There must not be unrecorded changes in the working copy",
+          "name": "switch"
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Clone this remote",
+          "name": "REMOTE"
+        },
+        {
+          "description": "Path where to clone the repository. If missing, the inferred name of the remote repository is used",
+          "name": "PATH"
+        },
+        {
+          "name": "SALT"
+        }
+      ],
+      "description": "Clones an existing pijul repository",
+      "name": "clone",
+      "options": [
+        {
+          "args": {
+            "name": "CHANGE"
+          },
+          "description": "Clone this change and its dependencies",
+          "name": [
+            "--change"
+          ]
+        },
+        {
+          "args": {
+            "name": "CHANNEL"
+          },
+          "description": "Set the remote channel [default: main]",
+          "name": [
+            "--channel"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Do not check certificates (HTTPS remotes only, this option might be dangerous)",
+          "name": [
+            "-k"
+          ]
+        },
+        {
+          "args": {
+            "name": "PARTIAL_PATHS"
+          },
+          "description": "Clone this path only",
+          "name": [
+            "--path"
+          ]
+        },
+        {
+          "args": {
+            "name": "STATE"
+          },
+          "description": "Clone this state",
+          "name": [
+            "--state"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The file to annotate",
+        "name": "FILE"
+      },
+      "description": "Shows which change last affected each line of the given file(s)",
+      "name": "credit",
+      "options": [
+        {
+          "args": {
+            "name": "CHANNEL"
+          },
+          "description": "Use this channel instead of the current channel",
+          "name": [
+            "--channel"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "REPO_PATH"
+          },
+          "description": "Set the repository where this command should run. Defaults to the first ancestor of the current directory that contains a .pijul directory",
+          "name": [
+            "--repository"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Only diff those paths (files or directories). If missing, diff the entire repository",
+        "name": "PREFIXES"
+      },
+      "description": "Shows difference between two channels/changes",
+      "name": "diff",
+      "options": [
+        {
+          "args": {
+            "name": "CHANNEL"
+          },
+          "description": "Compare with this channel",
+          "name": [
+            "--channel"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Output the diff in JSON format instead of the default change text format",
+          "name": [
+            "--json"
+          ]
+        },
+        {
+          "args": {
+            "name": "REPO_PATH"
+          },
+          "description": "Set the repository where this command should run. Defaults to the first ancestor of the current directory that contains a .pijul directory",
+          "name": [
+            "--repository"
+          ]
+        },
+        {
+          "description": "Show a short version of the diff",
+          "name": [
+            "-s",
+            "--short"
+          ]
+        },
+        {
+          "description": "Add all the changes of this channel as dependencies (except changes implied transitively), instead of the minimal dependencies",
+          "name": [
+            "--tag"
+          ]
+        },
+        {
+          "description": "Include the untracked files",
+          "name": [
+            "-u",
+            "--untracked"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The name of the new channel",
+        "name": "TO"
+      },
+      "description": "Create a new channel",
+      "name": "fork",
+      "options": [
+        {
+          "args": {
+            "name": "CHANGE"
+          },
+          "description": "Apply this change after creating the channel",
+          "name": [
+            "--change"
+          ]
+        },
+        {
+          "args": {
+            "name": "CHANNEL"
+          },
+          "description": "Make the new channel from this channel instead of the current channel",
+          "name": [
+            "--channel"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "REPO_PATH"
+          },
+          "description": "Set the repository where this command should run. Defaults to the first ancestor of the current directory that contains a .pijul directory",
+          "name": [
+            "--repository"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Path where the repository should be initialized",
+        "name": "PATH"
+      },
+      "description": "Initializes an empty pijul repository",
+      "name": "init",
+      "options": [
+        {
+          "args": {
+            "name": "CHANNEL"
+          },
+          "description": "Set the name of the current channel (defaults to “main”)",
+          "name": [
+            "--channel"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "KIND"
+          },
+          "description": "Project kind; if Pijul knows about your project kind, the .ignore file will be populated with a conservative list of commonly ignored entries. Example: pijul init --kind=rust",
+          "name": [
+            "-k",
+            "--kind"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Filter log output, showing only log entries that touched the specified files. Accepted as a list of paths relative to your current directory. Currently, filters can only be applied when logging the channel that’s in use",
+        "name": "FILTERS"
+      },
+      "description": "Show the entire log of changes",
+      "name": "log",
+      "options": [
+        {
+          "args": {
+            "name": "CHANNEL"
+          },
+          "description": "Show logs for this channel instead of the current channel",
+          "name": [
+            "--channel"
+          ]
+        },
+        {
+          "description": "Include full change description in the output",
+          "name": [
+            "--description"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Only show the change hashes",
+          "name": [
+            "--hash-only"
+          ]
+        },
+        {
+          "args": {
+            "name": "LIMIT"
+          },
+          "description": "Output at most this many changes",
+          "name": [
+            "--limit"
+          ]
+        },
+        {
+          "args": {
+            "name": "OFFSET"
+          },
+          "description": "Start after this many changes",
+          "name": [
+            "--offset"
+          ]
+        },
+        {
+          "args": {
+            "name": "OUTPUT_FORMAT"
+          },
+          "name": [
+            "--output-format"
+          ]
+        },
+        {
+          "args": {
+            "name": "REPO_PATH"
+          },
+          "description": "Set the repository where this command should run. Defaults to the first ancestor of the current directory that contains a .pijul directory",
+          "name": [
+            "--repository"
+          ]
+        },
+        {
+          "description": "Include state identifiers in the output",
+          "name": [
+            "--state"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ls"
+    },
+    {
+      "name": "mv"
+    },
+    {
+      "args": [
+        {
+          "description": "Pulls from this remote",
+          "name": "FROM"
+        },
+        {
+          "description": "Pull changes from the local repository, not necessarily from a channel",
+          "name": "CHANGES"
+        }
+      ],
+      "description": "Pulls changes from a remote upstream",
+      "name": "pull",
+      "options": [
+        {
+          "description": "Pull all changes",
+          "name": [
+            "-a",
+            "--all"
+          ]
+        },
+        {
+          "description": "Force an update of the local remote cache. May effect some reporting of unrecords/concurrent changes in the remote",
+          "name": [
+            "-f",
+            "--force-cache"
+          ]
+        },
+        {
+          "args": {
+            "name": "FROM_CHANNEL"
+          },
+          "description": "Pull from this remote channel",
+          "name": [
+            "--from-channel"
+          ]
+        },
+        {
+          "description": "Download full changes, even when not necessary",
+          "name": [
+            "--full"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Do not check certificates (HTTPS remotes only, this option might be dangerous)",
+          "name": [
+            "-k"
+          ]
+        },
+        {
+          "args": {
+            "name": "PATH"
+          },
+          "description": "Only pull to these paths",
+          "name": [
+            "--path"
+          ]
+        },
+        {
+          "args": {
+            "name": "REPO_PATH"
+          },
+          "description": "Set the repository where this command should run. Defaults to the first ancestor of the current directory that contains a .pijul directory",
+          "name": [
+            "--repository"
+          ]
+        },
+        {
+          "args": {
+            "name": "TO_CHANNEL"
+          },
+          "description": "Pull into this channel instead of the current channel",
+          "name": [
+            "--to-channel"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Push to this remote",
+          "name": "TO"
+        },
+        {
+          "description": "Push only these changes",
+          "name": "CHANGES"
+        }
+      ],
+      "description": "Pushes changes to a remote upstream",
+      "name": "push",
+      "options": [
+        {
+          "description": "Push all changes",
+          "name": [
+            "-a",
+            "--all"
+          ]
+        },
+        {
+          "description": "Force an update of the local remote cache. May effect some reporting of unrecords/concurrent changes in the remote",
+          "name": [
+            "-f",
+            "--force-cache"
+          ]
+        },
+        {
+          "args": {
+            "name": "FROM_CHANNEL"
+          },
+          "description": "Push from this channel instead of the default channel",
+          "name": [
+            "--from-channel"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Do not check certificates (HTTPS remotes only, this option might be dangerous)",
+          "name": [
+            "-k"
+          ]
+        },
+        {
+          "args": {
+            "name": "PATH"
+          },
+          "description": "Push changes only relating to these paths",
+          "name": [
+            "--path"
+          ]
+        },
+        {
+          "args": {
+            "name": "REPO_PATH"
+          },
+          "description": "Path to the repository. Uses the current repository if the argument is omitted",
+          "name": [
+            "--repository"
+          ]
+        },
+        {
+          "args": {
+            "name": "TO_CHANNEL"
+          },
+          "description": "Push to this remote channel instead of the remote’s default channel",
+          "name": [
+            "--to-channel"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Paths in which to record the changes",
+        "name": "PREFIXES"
+      },
+      "description": "Creates a new change",
+      "name": "record",
+      "options": [
+        {
+          "description": "Record all paths that have changed",
+          "name": [
+            "-a",
+            "--all"
+          ]
+        },
+        {
+          "args": {
+            "name": "AMEND"
+          },
+          "description": "Amend this change instead of creating a new change",
+          "name": [
+            "--amend"
+          ]
+        },
+        {
+          "args": {
+            "name": "AUTHOR"
+          },
+          "description": "Set the author field",
+          "name": [
+            "--author"
+          ]
+        },
+        {
+          "args": {
+            "name": "CHANNEL"
+          },
+          "description": "Record the change in this channel instead of the current channel",
+          "name": [
+            "--channel"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Ignore missing (deleted) files",
+          "name": [
+            "--ignore-missing"
+          ]
+        },
+        {
+          "args": {
+            "name": "MESSAGE"
+          },
+          "description": "Set the change message",
+          "name": [
+            "-m",
+            "--message"
+          ]
+        },
+        {
+          "args": {
+            "name": "REPO_PATH"
+          },
+          "description": "Set the repository where this command should run. Defaults to the first ancestor of the current directory that contains a .pijul directory",
+          "name": [
+            "--repository"
+          ]
+        },
+        {
+          "args": {
+            "name": "TIMESTAMP"
+          },
+          "description": "Set the timestamp field",
+          "name": [
+            "--timestamp"
+          ]
+        },
+        {
+          "args": {
+            "name": "WORKING_COPY"
+          },
+          "name": [
+            "--working-copy"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manages remote repositories",
+      "name": "remote",
+      "options": [
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "REPO_PATH"
+          },
+          "description": "Set the repository where this command should run. Defaults to the first ancestor of the current directory that contains a .pijul directory",
+          "name": [
+            "--repository"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": {
+            "name": "REMOTE"
+          },
+          "description": "Deletes the remote",
+          "name": "delete",
+          "options": [
+            {
+              "description": "Print help information",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Print this message or the help of the given subcommand(s)",
+          "name": "help"
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The paths need to be removed",
+        "name": "PATHS"
+      },
+      "description": "Removes a file from the tree of tracked files (pijul record will then record this as a deletion)",
+      "name": "remove",
+      "options": [
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Only reset these files",
+        "name": "FILES"
+      },
+      "description": "Resets the working copy to the last recorded change.\nIn other words, discards all unrecorded changes",
+      "name": "reset",
+      "options": [
+        {
+          "args": {
+            "name": "CHANNEL"
+          },
+          "description": "Reset the working copy to this channel, and change the current channel to this channel",
+          "name": [
+            "--channel"
+          ]
+        },
+        {
+          "description": "Print this file to the standard output, without modifying the repository (works for a single file only)",
+          "name": [
+            "--dry-run"
+          ]
+        },
+        {
+          "description": "Reset even if there are unrecorded changes",
+          "name": [
+            "-f",
+            "--force"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "REPO_PATH"
+          },
+          "description": "Set the repository where this command should run. Defaults to the first ancestor of the current directory that contains a .pijul directory",
+          "name": [
+            "--repository"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The hash of a change (unambiguous prefixes are accepted)",
+        "name": "CHANGE_ID"
+      },
+      "description": "Unrecords a list of changes",
+      "name": "unrecord",
+      "options": [
+        {
+          "args": {
+            "name": "CHANNEL"
+          },
+          "description": "Unrecord changes from this channel instead of the current channel",
+          "name": [
+            "--channel"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "REPO_PATH"
+          },
+          "description": "Set the repository where this command should run. Defaults to the first ancestor of the current directory that contains a .pijul directory",
+          "name": [
+            "--repository"
+          ]
+        },
+        {
+          "description": "Also undo the changes in the working copy (preserving unrecorded changes if there are any)",
+          "name": [
+            "--reset"
+          ]
+        },
+        {
+          "args": {
+            "name": "N"
+          },
+          "description": "Show N changes in a text editor if no s were given. Defaults to the value of unrecord_changes in your global configuration",
+          "name": [
+            "--show-changes"
+          ]
+        }
+      ]
+    }
+  ]
+}

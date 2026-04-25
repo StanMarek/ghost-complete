@@ -1,0 +1,1844 @@
+{
+  "args": [
+    {
+      "isOptional": true,
+      "name": "--help"
+    },
+    {
+      "isOptional": true,
+      "name": "--version"
+    }
+  ],
+  "description": "Fuel Orchestrator",
+  "name": "forc",
+  "options": [
+    {
+      "description": "Print help information",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Use verbose output",
+      "name": [
+        "-v"
+      ]
+    },
+    {
+      "description": "Silence all output",
+      "name": [
+        "-s"
+      ]
+    },
+    {
+      "description": "Set the log level",
+      "name": [
+        "-L"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": [
+        {
+          "isOptional": true,
+          "name": "--help"
+        },
+        {
+          "isOptional": true,
+          "name": "--version"
+        }
+      ],
+      "description": "Show location and context of an opcode address in its source file",
+      "name": "addr2line",
+      "options": [
+        {
+          "description": "Where to search for the project root",
+          "name": [
+            "-S"
+          ]
+        },
+        {
+          "description": "Source file mapping in JSON format",
+          "name": [
+            "-g"
+          ]
+        },
+        {
+          "description": "How many lines of context to show",
+          "name": [
+            "-c"
+          ]
+        },
+        {
+          "description": "Opcode index",
+          "name": [
+            "-i"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "isOptional": true,
+          "name": "--help"
+        },
+        {
+          "isOptional": true,
+          "name": "--version"
+        },
+        {
+          "isOptional": true,
+          "name": "--offline"
+        },
+        {
+          "isOptional": true,
+          "name": "--output-directory"
+        },
+        {
+          "isOptional": true,
+          "name": "--locked"
+        },
+        {
+          "isOptional": true,
+          "name": "--json-abi-with-callpaths"
+        },
+        {
+          "isOptional": true,
+          "name": "--ipfs-node"
+        },
+        {
+          "isOptional": true,
+          "name": "--ast"
+        },
+        {
+          "isOptional": true,
+          "name": "--dca-graph"
+        },
+        {
+          "isOptional": true,
+          "name": "--dca-graph-url-format"
+        },
+        {
+          "isOptional": true,
+          "name": "--finalized-asm"
+        },
+        {
+          "isOptional": true,
+          "name": "--intermediate-asm"
+        },
+        {
+          "isOptional": true,
+          "name": "--ir"
+        },
+        {
+          "isOptional": true,
+          "name": "--time-phases"
+        },
+        {
+          "isOptional": true,
+          "name": "--reverse-order"
+        },
+        {
+          "isOptional": true,
+          "name": "--metrics-outfile"
+        },
+        {
+          "isOptional": true,
+          "name": "--json-abi"
+        },
+        {
+          "isOptional": true,
+          "name": "--json-storage-slots"
+        },
+        {
+          "isOptional": true,
+          "name": "--build-profile"
+        },
+        {
+          "isOptional": true,
+          "name": "--release"
+        },
+        {
+          "isOptional": true,
+          "name": "--error-on-warnings"
+        },
+        {
+          "isOptional": true,
+          "name": "--build-target",
+          "suggestions": [
+            {
+              "name": "fuel"
+            },
+            {
+              "name": "evm"
+            },
+            {
+              "name": "midenvm"
+            }
+          ]
+        },
+        {
+          "isOptional": true,
+          "name": "--tests"
+        },
+        {
+          "isOptional": true,
+          "name": "--experimental-new-encoding"
+        }
+      ],
+      "description": "Compile the current or target project",
+      "name": "build",
+      "options": [
+        {
+          "description": "Path to the project, if not specified, current working directory will be used",
+          "name": [
+            "-p"
+          ]
+        },
+        {
+          "description": "Terse mode. Limited warning and error output",
+          "name": [
+            "-t"
+          ]
+        },
+        {
+          "description": "If set, outputs a binary file representing the script bytes",
+          "name": [
+            "-o"
+          ]
+        },
+        {
+          "description": "If set, outputs source file mapping in JSON format",
+          "name": [
+            "-g"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "isOptional": true,
+          "name": "--help"
+        },
+        {
+          "isOptional": true,
+          "name": "--version"
+        },
+        {
+          "isOptional": true,
+          "name": "build-target",
+          "suggestions": [
+            {
+              "name": "fuel"
+            },
+            {
+              "name": "evm"
+            },
+            {
+              "name": "midenvm"
+            }
+          ]
+        },
+        {
+          "isOptional": true,
+          "name": "--offline-mode"
+        },
+        {
+          "isOptional": true,
+          "name": "--locked"
+        },
+        {
+          "isOptional": true,
+          "name": "--disable-tests"
+        },
+        {
+          "isOptional": true,
+          "name": "--ipfs-node"
+        }
+      ],
+      "description": "Check the current or target project and all of its dependencies for errors",
+      "name": "check",
+      "options": [
+        {
+          "description": "Path to the project, if not specified, current working directory will be used",
+          "name": [
+            "-p"
+          ]
+        },
+        {
+          "description": "Terse mode. Limited warning and error output",
+          "name": [
+            "-t"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "isOptional": true,
+          "name": "--help"
+        },
+        {
+          "isOptional": true,
+          "name": "--version"
+        }
+      ],
+      "description": "Removes the default forc compiler output artifact directory, i.e. `<project-name>/out`",
+      "name": "clean",
+      "options": [
+        {
+          "description": "Path to the project, if not specified, current working directory will be used",
+          "name": [
+            "-p"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "isOptional": true,
+          "name": "--help"
+        },
+        {
+          "isOptional": true,
+          "name": "--version"
+        }
+      ],
+      "description": "Generate tab-completion scripts for your shell",
+      "name": "completions",
+      "options": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "--target",
+            "suggestions": [
+              {
+                "description": "Bourne Again SHell (bash)",
+                "name": "bash"
+              },
+              {
+                "description": "Elvish shell",
+                "name": "elvish"
+              },
+              {
+                "description": "Friendly Interactive SHell (fish)",
+                "name": "fish"
+              },
+              {
+                "description": "PowerShell",
+                "name": "power-shell"
+              },
+              {
+                "description": "Z SHell (zsh)",
+                "name": "zsh"
+              },
+              {
+                "description": "Fig",
+                "name": "fig"
+              }
+            ]
+          },
+          "description": "Specify shell to enable tab-completion for",
+          "name": [
+            "-T"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "isOptional": true,
+          "name": "--help"
+        },
+        {
+          "isOptional": true,
+          "name": "--version"
+        },
+        {
+          "isOptional": true,
+          "name": "--contract"
+        },
+        {
+          "isOptional": true,
+          "name": "--script"
+        },
+        {
+          "isOptional": true,
+          "name": "--predicate"
+        },
+        {
+          "isOptional": true,
+          "name": "--library"
+        },
+        {
+          "isOptional": true,
+          "name": "--workspace"
+        },
+        {
+          "isOptional": true,
+          "name": "--name"
+        },
+        {
+          "isOptional": true,
+          "name": "path"
+        }
+      ],
+      "description": "Create a new Forc project at `<path>`",
+      "name": "new",
+      "options": [
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "isOptional": true,
+          "name": "--help"
+        },
+        {
+          "isOptional": true,
+          "name": "--version"
+        },
+        {
+          "isOptional": true,
+          "name": "--path"
+        },
+        {
+          "isOptional": true,
+          "name": "--contract"
+        },
+        {
+          "isOptional": true,
+          "name": "--script"
+        },
+        {
+          "isOptional": true,
+          "name": "--predicate"
+        },
+        {
+          "isOptional": true,
+          "name": "--library"
+        },
+        {
+          "isOptional": true,
+          "name": "--workspace"
+        },
+        {
+          "isOptional": true,
+          "name": "--name"
+        }
+      ],
+      "description": "Create a new Forc project in an existing directory",
+      "name": "init",
+      "options": [
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "isOptional": true,
+          "name": "--help"
+        },
+        {
+          "isOptional": true,
+          "name": "--version"
+        },
+        {
+          "isOptional": true,
+          "name": "file-path"
+        }
+      ],
+      "description": "Parse bytecode file into a debug format",
+      "name": "parse-bytecode",
+      "options": [
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "isOptional": true,
+          "name": "--help"
+        },
+        {
+          "isOptional": true,
+          "name": "--version"
+        },
+        {
+          "isOptional": true,
+          "name": "--offline"
+        },
+        {
+          "isOptional": true,
+          "name": "--output-directory"
+        },
+        {
+          "isOptional": true,
+          "name": "--locked"
+        },
+        {
+          "isOptional": true,
+          "name": "--json-abi-with-callpaths"
+        },
+        {
+          "isOptional": true,
+          "name": "--ipfs-node"
+        },
+        {
+          "isOptional": true,
+          "name": "--ast"
+        },
+        {
+          "isOptional": true,
+          "name": "--dca-graph"
+        },
+        {
+          "isOptional": true,
+          "name": "--dca-graph-url-format"
+        },
+        {
+          "isOptional": true,
+          "name": "--finalized-asm"
+        },
+        {
+          "isOptional": true,
+          "name": "--intermediate-asm"
+        },
+        {
+          "isOptional": true,
+          "name": "--ir"
+        },
+        {
+          "isOptional": true,
+          "name": "--time-phases"
+        },
+        {
+          "isOptional": true,
+          "name": "--reverse-order"
+        },
+        {
+          "isOptional": true,
+          "name": "--metrics-outfile"
+        },
+        {
+          "isOptional": true,
+          "name": "--json-abi"
+        },
+        {
+          "isOptional": true,
+          "name": "--json-storage-slots"
+        },
+        {
+          "isOptional": true,
+          "name": "--build-profile"
+        },
+        {
+          "isOptional": true,
+          "name": "--release"
+        },
+        {
+          "isOptional": true,
+          "name": "--error-on-warnings"
+        },
+        {
+          "isOptional": true,
+          "name": "--build-target",
+          "suggestions": [
+            {
+              "name": "fuel"
+            },
+            {
+              "name": "evm"
+            },
+            {
+              "name": "midenvm"
+            }
+          ]
+        },
+        {
+          "isOptional": true,
+          "name": "filter"
+        },
+        {
+          "isOptional": true,
+          "name": "--filter-exact"
+        },
+        {
+          "isOptional": true,
+          "name": "--test-threads"
+        },
+        {
+          "isOptional": true,
+          "name": "--experimental-new-encoding"
+        }
+      ],
+      "description": "Run the Sway unit tests for the current project",
+      "name": "test",
+      "options": [
+        {
+          "description": "Path to the project, if not specified, current working directory will be used",
+          "name": [
+            "-p"
+          ]
+        },
+        {
+          "description": "Terse mode. Limited warning and error output",
+          "name": [
+            "-t"
+          ]
+        },
+        {
+          "description": "If set, outputs a binary file representing the script bytes",
+          "name": [
+            "-o"
+          ]
+        },
+        {
+          "description": "If set, outputs source file mapping in JSON format",
+          "name": [
+            "-g"
+          ]
+        },
+        {
+          "description": "Pretty-print the logs emiited from tests",
+          "name": [
+            "-r"
+          ]
+        },
+        {
+          "description": "Print `Log` and `LogData` receipts for tests",
+          "name": [
+            "-l"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "isOptional": true,
+          "name": "--help"
+        },
+        {
+          "isOptional": true,
+          "name": "--version"
+        },
+        {
+          "isOptional": true,
+          "name": "--ipfs-node"
+        }
+      ],
+      "description": "Update dependencies in the Forc dependencies directory",
+      "name": "update",
+      "options": [
+        {
+          "description": "Path to the project, if not specified, current working directory will be used",
+          "name": [
+            "-p"
+          ]
+        },
+        {
+          "description": "Dependency to be updated. If not set, all dependencies will be updated",
+          "name": [
+            "-d"
+          ]
+        },
+        {
+          "description": "Checks if the dependencies have newer versions. Won't actually perform the update, will output which ones are up-to-date and outdated",
+          "name": [
+            "-c"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "isOptional": true,
+          "name": "--help"
+        },
+        {
+          "isOptional": true,
+          "name": "--version"
+        }
+      ],
+      "description": "List all forc plugins",
+      "name": "plugins",
+      "options": [
+        {
+          "description": "Prints the absolute path to each discovered plugin",
+          "name": [
+            "-p"
+          ]
+        },
+        {
+          "description": "Prints the long description associated with each listed plugin",
+          "name": [
+            "-d"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "isOptional": true,
+          "name": "--help"
+        },
+        {
+          "isOptional": true,
+          "name": "--version"
+        },
+        {
+          "isOptional": true,
+          "name": "project-name"
+        }
+      ],
+      "description": "Create a new Forc project from a git template",
+      "name": "template",
+      "options": [
+        {
+          "description": "The template url, should be a git repo",
+          "name": [
+            "-u"
+          ]
+        },
+        {
+          "description": "The name of the template that needs to be fetched and used from git repo provided",
+          "name": [
+            "-t"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "isOptional": true,
+          "name": "--help"
+        },
+        {
+          "isOptional": true,
+          "name": "--version"
+        },
+        {
+          "isOptional": true,
+          "name": "--offline"
+        },
+        {
+          "isOptional": true,
+          "name": "--output-directory"
+        },
+        {
+          "isOptional": true,
+          "name": "--locked"
+        },
+        {
+          "isOptional": true,
+          "name": "--json-abi-with-callpaths"
+        },
+        {
+          "isOptional": true,
+          "name": "--ipfs-node"
+        },
+        {
+          "isOptional": true,
+          "name": "--json-abi"
+        },
+        {
+          "isOptional": true,
+          "name": "--json-storage-slots"
+        },
+        {
+          "isOptional": true,
+          "name": "--ast"
+        },
+        {
+          "isOptional": true,
+          "name": "--dca-graph"
+        },
+        {
+          "isOptional": true,
+          "name": "--dca-graph-url-format"
+        },
+        {
+          "isOptional": true,
+          "name": "--finalized-asm"
+        },
+        {
+          "isOptional": true,
+          "name": "--intermediate-asm"
+        },
+        {
+          "isOptional": true,
+          "name": "--ir"
+        },
+        {
+          "isOptional": true,
+          "name": "--time-phases"
+        },
+        {
+          "isOptional": true,
+          "name": "--reverse-order"
+        },
+        {
+          "isOptional": true,
+          "name": "--metrics-outfile"
+        },
+        {
+          "isOptional": true,
+          "name": "--build-profile"
+        },
+        {
+          "isOptional": true,
+          "name": "--release"
+        },
+        {
+          "isOptional": true,
+          "name": "--error-on-warnings"
+        },
+        {
+          "isOptional": true,
+          "name": "--salt"
+        },
+        {
+          "isOptional": true,
+          "name": "--experimental-new-encoding"
+        }
+      ],
+      "description": "Determine contract-id for a contract. For workspaces outputs all contract ids in the workspace",
+      "name": "contract-id",
+      "options": [
+        {
+          "description": "Path to the project, if not specified, current working directory will be used",
+          "name": [
+            "-p"
+          ]
+        },
+        {
+          "description": "Terse mode. Limited warning and error output",
+          "name": [
+            "-t"
+          ]
+        },
+        {
+          "description": "If set, outputs a binary file representing the script bytes",
+          "name": [
+            "-o"
+          ]
+        },
+        {
+          "description": "If set, outputs source file mapping in JSON format",
+          "name": [
+            "-g"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "isOptional": true,
+          "name": "--help"
+        },
+        {
+          "isOptional": true,
+          "name": "--version"
+        },
+        {
+          "isOptional": true,
+          "name": "--offline"
+        },
+        {
+          "isOptional": true,
+          "name": "--output-directory"
+        },
+        {
+          "isOptional": true,
+          "name": "--locked"
+        },
+        {
+          "isOptional": true,
+          "name": "--json-abi-with-callpaths"
+        },
+        {
+          "isOptional": true,
+          "name": "--ipfs-node"
+        },
+        {
+          "isOptional": true,
+          "name": "--json-abi"
+        },
+        {
+          "isOptional": true,
+          "name": "--json-storage-slots"
+        },
+        {
+          "isOptional": true,
+          "name": "--ast"
+        },
+        {
+          "isOptional": true,
+          "name": "--dca-graph"
+        },
+        {
+          "isOptional": true,
+          "name": "--dca-graph-url-format"
+        },
+        {
+          "isOptional": true,
+          "name": "--finalized-asm"
+        },
+        {
+          "isOptional": true,
+          "name": "--intermediate-asm"
+        },
+        {
+          "isOptional": true,
+          "name": "--ir"
+        },
+        {
+          "isOptional": true,
+          "name": "--time-phases"
+        },
+        {
+          "isOptional": true,
+          "name": "--reverse-order"
+        },
+        {
+          "isOptional": true,
+          "name": "--metrics-outfile"
+        },
+        {
+          "isOptional": true,
+          "name": "--build-profile"
+        },
+        {
+          "isOptional": true,
+          "name": "--release"
+        },
+        {
+          "isOptional": true,
+          "name": "--error-on-warnings"
+        },
+        {
+          "isOptional": true,
+          "name": "--experimental-new-encoding"
+        }
+      ],
+      "description": "Determine predicate-root for a predicate. For workspaces outputs all predicate roots in the workspace",
+      "name": "predicate-root",
+      "options": [
+        {
+          "description": "Path to the project, if not specified, current working directory will be used",
+          "name": [
+            "-p"
+          ]
+        },
+        {
+          "description": "Terse mode. Limited warning and error output",
+          "name": [
+            "-t"
+          ]
+        },
+        {
+          "description": "If set, outputs a binary file representing the script bytes",
+          "name": [
+            "-o"
+          ]
+        },
+        {
+          "description": "If set, outputs source file mapping in JSON format",
+          "name": [
+            "-g"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "isOptional": true,
+          "name": "--help"
+        },
+        {
+          "isOptional": true,
+          "name": "--version"
+        },
+        {
+          "isOptional": true,
+          "name": "api-url"
+        }
+      ],
+      "name": "debug",
+      "options": [
+        {
+          "description": "Start the DAP server",
+          "name": [
+            "-s"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "isOptional": true,
+          "name": "--help"
+        },
+        {
+          "isOptional": true,
+          "name": "--version"
+        },
+        {
+          "isOptional": true,
+          "name": "--offline"
+        },
+        {
+          "isOptional": true,
+          "name": "--output-directory"
+        },
+        {
+          "isOptional": true,
+          "name": "--locked"
+        },
+        {
+          "isOptional": true,
+          "name": "--json-abi-with-callpaths"
+        },
+        {
+          "isOptional": true,
+          "name": "--ipfs-node"
+        },
+        {
+          "isOptional": true,
+          "name": "--json-abi"
+        },
+        {
+          "isOptional": true,
+          "name": "--json-storage-slots"
+        },
+        {
+          "isOptional": true,
+          "name": "--ast"
+        },
+        {
+          "isOptional": true,
+          "name": "--dca-graph"
+        },
+        {
+          "isOptional": true,
+          "name": "--dca-graph-url-format"
+        },
+        {
+          "isOptional": true,
+          "name": "--finalized-asm"
+        },
+        {
+          "isOptional": true,
+          "name": "--intermediate-asm"
+        },
+        {
+          "isOptional": true,
+          "name": "--ir"
+        },
+        {
+          "isOptional": true,
+          "name": "--time-phases"
+        },
+        {
+          "isOptional": true,
+          "name": "--reverse-order"
+        },
+        {
+          "isOptional": true,
+          "name": "--metrics-outfile"
+        },
+        {
+          "isOptional": true,
+          "name": "--price"
+        },
+        {
+          "isOptional": true,
+          "name": "--script-gas-limit"
+        },
+        {
+          "isOptional": true,
+          "name": "--maturity"
+        },
+        {
+          "isOptional": true,
+          "name": "--build-profile"
+        },
+        {
+          "isOptional": true,
+          "name": "--release"
+        },
+        {
+          "isOptional": true,
+          "name": "--error-on-warnings"
+        },
+        {
+          "isOptional": true,
+          "name": "--node-url"
+        },
+        {
+          "isOptional": true,
+          "name": "--target"
+        },
+        {
+          "isOptional": true,
+          "name": "--testnet"
+        },
+        {
+          "isOptional": true,
+          "name": "--dry-run"
+        },
+        {
+          "isOptional": true,
+          "name": "--contract"
+        },
+        {
+          "isOptional": true,
+          "name": "--simulate"
+        },
+        {
+          "isOptional": true,
+          "name": "--default-signer"
+        },
+        {
+          "isOptional": true,
+          "name": "--unsigned"
+        },
+        {
+          "isOptional": true,
+          "name": "signing-key"
+        },
+        {
+          "isOptional": true,
+          "name": "--manual-signing"
+        },
+        {
+          "isOptional": true,
+          "name": "--args"
+        },
+        {
+          "isOptional": true,
+          "name": "--experimental-new-encoding"
+        }
+      ],
+      "description": "Run script project. Crafts a script transaction then sends it to a running node",
+      "name": "run",
+      "options": [
+        {
+          "description": "Path to the project, if not specified, current working directory will be used",
+          "name": [
+            "-p"
+          ]
+        },
+        {
+          "description": "Terse mode. Limited warning and error output",
+          "name": [
+            "-t"
+          ]
+        },
+        {
+          "description": "If set, outputs a binary file representing the script bytes",
+          "name": [
+            "-o"
+          ]
+        },
+        {
+          "description": "If set, outputs source file mapping in JSON format",
+          "name": [
+            "-g"
+          ]
+        },
+        {
+          "description": "Hex string of data to input to script",
+          "name": [
+            "-d"
+          ]
+        },
+        {
+          "description": "Pretty-print the outputs from the node",
+          "name": [
+            "-r"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "isOptional": true,
+          "name": "--help"
+        },
+        {
+          "isOptional": true,
+          "name": "--version"
+        }
+      ],
+      "description": "Forc plugin for hashing arbitrary data",
+      "name": "crypto",
+      "options": [
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": [
+            {
+              "isOptional": true,
+              "name": "--help"
+            },
+            {
+              "isOptional": true,
+              "name": "--version"
+            },
+            {
+              "isOptional": true,
+              "name": "content-or-filepath"
+            }
+          ],
+          "description": "Hashes the argument or file with this algorithm",
+          "name": "keccak256",
+          "options": [
+            {
+              "description": "Print help information",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "isOptional": true,
+              "name": "--help"
+            },
+            {
+              "isOptional": true,
+              "name": "--version"
+            },
+            {
+              "isOptional": true,
+              "name": "content-or-filepath"
+            }
+          ],
+          "description": "Hashes the argument or file with this algorithm",
+          "name": "sha256",
+          "options": [
+            {
+              "description": "Print help information",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "isOptional": true,
+              "name": "--help"
+            },
+            {
+              "isOptional": true,
+              "name": "--version"
+            },
+            {
+              "isOptional": true,
+              "name": "address"
+            }
+          ],
+          "description": "Converts an address to another format",
+          "name": "address",
+          "options": [
+            {
+              "description": "Print help information",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "isOptional": true,
+              "name": "--help"
+            },
+            {
+              "isOptional": true,
+              "name": "--version"
+            },
+            {
+              "isOptional": true,
+              "name": "signature"
+            },
+            {
+              "isOptional": true,
+              "name": "message"
+            }
+          ],
+          "description": "Get the public key from a message and its signature",
+          "name": "get-public-key",
+          "options": [
+            {
+              "description": "Print help information",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "isOptional": true,
+              "name": "--help"
+            },
+            {
+              "isOptional": true,
+              "name": "--version"
+            }
+          ],
+          "description": "Creates a new key for use with fuel-core",
+          "name": "new-key",
+          "options": [
+            {
+              "args": {
+                "isOptional": true,
+                "name": "--key-type",
+                "suggestions": [
+                  {
+                    "name": "block-production"
+                  },
+                  {
+                    "name": "peering"
+                  }
+                ]
+              },
+              "description": "Key type to generate. It can either be `block-production` or `peering`",
+              "name": [
+                "-k"
+              ]
+            },
+            {
+              "description": "Print help information",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "isOptional": true,
+              "name": "--help"
+            },
+            {
+              "isOptional": true,
+              "name": "--version"
+            },
+            {
+              "isOptional": true,
+              "name": "secret"
+            }
+          ],
+          "description": "Parses a private key to view the associated public key",
+          "name": "parse-secret",
+          "options": [
+            {
+              "args": {
+                "isOptional": true,
+                "name": "--key-type",
+                "suggestions": [
+                  {
+                    "name": "block-production"
+                  },
+                  {
+                    "name": "peering"
+                  }
+                ]
+              },
+              "description": "Key type to generate. It can either be `block-production` or `peering`",
+              "name": [
+                "-k"
+              ]
+            },
+            {
+              "description": "Print help information",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "subcommand"
+          },
+          "description": "Print this message or the help of the given subcommand(s)",
+          "name": "help"
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "isOptional": true,
+          "name": "--help"
+        },
+        {
+          "isOptional": true,
+          "name": "--version"
+        },
+        {
+          "isOptional": true,
+          "name": "--manifest-path"
+        },
+        {
+          "isOptional": true,
+          "name": "--document-private-items"
+        },
+        {
+          "isOptional": true,
+          "name": "--open"
+        },
+        {
+          "isOptional": true,
+          "name": "--offline"
+        },
+        {
+          "isOptional": true,
+          "name": "--locked"
+        },
+        {
+          "isOptional": true,
+          "name": "--no-deps"
+        },
+        {
+          "isOptional": true,
+          "name": "--ipfs-node"
+        }
+      ],
+      "description": "Forc plugin for building a Sway package's documentation",
+      "name": "doc",
+      "options": [
+        {
+          "description": "Silent mode. Don't output any warnings or errors to the command line",
+          "name": [
+            "-s"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "isOptional": true,
+          "name": "--help"
+        },
+        {
+          "isOptional": true,
+          "name": "--version"
+        }
+      ],
+      "description": "Forc plugin for running the Sway code formatter",
+      "name": "fmt",
+      "options": [
+        {
+          "description": "Run in 'check' mode",
+          "name": [
+            "-c"
+          ]
+        },
+        {
+          "description": "Path to the project, if not specified, current working directory will be used",
+          "name": [
+            "-p"
+          ]
+        },
+        {
+          "description": "Formats a single .sw file with the default settings. If not specified, current working directory will be formatted using a Forc.toml configuration",
+          "name": [
+            "-f"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "isOptional": true,
+          "name": "--help"
+        },
+        {
+          "isOptional": true,
+          "name": "--version"
+        },
+        {
+          "isOptional": true,
+          "name": "--node-url"
+        },
+        {
+          "isOptional": true,
+          "name": "--target"
+        },
+        {
+          "isOptional": true,
+          "name": "--testnet"
+        },
+        {
+          "isOptional": true,
+          "name": "--await"
+        },
+        {
+          "isOptional": true,
+          "name": "--json"
+        },
+        {
+          "isOptional": true,
+          "name": "tx-path"
+        }
+      ],
+      "description": "A `forc` plugin for interacting with a Fuel node",
+      "name": "submit",
+      "options": [
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "isOptional": true,
+          "name": "--help"
+        },
+        {
+          "isOptional": true,
+          "name": "--version"
+        },
+        {
+          "isOptional": true,
+          "name": "--offline"
+        },
+        {
+          "isOptional": true,
+          "name": "--output-directory"
+        },
+        {
+          "isOptional": true,
+          "name": "--locked"
+        },
+        {
+          "isOptional": true,
+          "name": "--json-abi-with-callpaths"
+        },
+        {
+          "isOptional": true,
+          "name": "--ipfs-node"
+        },
+        {
+          "isOptional": true,
+          "name": "--json-abi"
+        },
+        {
+          "isOptional": true,
+          "name": "--json-storage-slots"
+        },
+        {
+          "isOptional": true,
+          "name": "--ast"
+        },
+        {
+          "isOptional": true,
+          "name": "--dca-graph"
+        },
+        {
+          "isOptional": true,
+          "name": "--dca-graph-url-format"
+        },
+        {
+          "isOptional": true,
+          "name": "--finalized-asm"
+        },
+        {
+          "isOptional": true,
+          "name": "--intermediate-asm"
+        },
+        {
+          "isOptional": true,
+          "name": "--ir"
+        },
+        {
+          "isOptional": true,
+          "name": "--time-phases"
+        },
+        {
+          "isOptional": true,
+          "name": "--reverse-order"
+        },
+        {
+          "isOptional": true,
+          "name": "--metrics-outfile"
+        },
+        {
+          "isOptional": true,
+          "name": "--price"
+        },
+        {
+          "isOptional": true,
+          "name": "--script-gas-limit"
+        },
+        {
+          "isOptional": true,
+          "name": "--maturity"
+        },
+        {
+          "isOptional": true,
+          "name": "--node-url"
+        },
+        {
+          "isOptional": true,
+          "name": "--target"
+        },
+        {
+          "isOptional": true,
+          "name": "--testnet"
+        },
+        {
+          "isOptional": true,
+          "name": "--salt"
+        },
+        {
+          "isOptional": true,
+          "name": "--default-salt"
+        },
+        {
+          "isOptional": true,
+          "name": "--build-profile"
+        },
+        {
+          "isOptional": true,
+          "name": "--default-signer"
+        },
+        {
+          "isOptional": true,
+          "name": "--unsigned"
+        },
+        {
+          "isOptional": true,
+          "name": "signing-key"
+        },
+        {
+          "isOptional": true,
+          "name": "--manual-signing"
+        },
+        {
+          "isOptional": true,
+          "name": "--JSON_FILE_PATH"
+        },
+        {
+          "isOptional": true,
+          "name": "--experimental-new-encoding"
+        }
+      ],
+      "description": "Build output file options",
+      "name": "deploy",
+      "options": [
+        {
+          "description": "Path to the project, if not specified, current working directory will be used",
+          "name": [
+            "-p"
+          ]
+        },
+        {
+          "description": "Terse mode. Limited warning and error output",
+          "name": [
+            "-t"
+          ]
+        },
+        {
+          "description": "If set, outputs a binary file representing the script bytes",
+          "name": [
+            "-o"
+          ]
+        },
+        {
+          "description": "If set, outputs source file mapping in JSON format",
+          "name": [
+            "-g"
+          ]
+        },
+        {
+          "description": "Print help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "subcommand"
+      },
+      "description": "Print this message or the help of the given subcommand(s)",
+      "name": "help"
+    }
+  ]
+}

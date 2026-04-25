@@ -680,11 +680,18 @@ impl InputHandler {
                 self.visible = true;
                 self.render_at(stdout, cursor_row, cursor_col, screen_rows, screen_cols);
                 self.last_trigger_fingerprint = Some(fingerprint);
-                self.spawn_generators(result.script_generators, result.git_generators, &ctx, &cwd);
+                self.spawn_generators(
+                    result.script_generators,
+                    result.git_generators,
+                    result.provider_generators,
+                    &ctx,
+                    &cwd,
+                );
             }
             Ok(result) => {
-                let has_async =
-                    !result.script_generators.is_empty() || !result.git_generators.is_empty();
+                let has_async = !result.script_generators.is_empty()
+                    || !result.git_generators.is_empty()
+                    || !result.provider_generators.is_empty();
                 if has_async {
                     // No static suggestions but generators are pending.
                     // If a popup is currently visible (e.g. from a previous
@@ -702,6 +709,7 @@ impl InputHandler {
                     self.spawn_generators(
                         result.script_generators,
                         result.git_generators,
+                        result.provider_generators,
                         &ctx,
                         &cwd,
                     );
@@ -729,10 +737,14 @@ impl InputHandler {
         &mut self,
         script_generators: Vec<std::sync::Arc<gc_suggest::specs::GeneratorSpec>>,
         git_generators: Vec<gc_suggest::git::GitQueryKind>,
+        provider_generators: Vec<gc_suggest::providers::ProviderKind>,
         ctx: &gc_buffer::CommandContext,
         cwd: &std::path::Path,
     ) {
-        if script_generators.is_empty() && git_generators.is_empty() {
+        if script_generators.is_empty()
+            && git_generators.is_empty()
+            && provider_generators.is_empty()
+        {
             return;
         }
         // Snapshot the command context so try_merge_dynamic can drop results
@@ -757,10 +769,24 @@ impl InputHandler {
         let handle = tokio::spawn(async move {
             let mut all_results = Vec::new();
 
-            // Run script generators and git generators concurrently
-            let (script_res, git_res) = tokio::join!(
+            // Build ProviderCtx once — the env snapshot is shared across
+            // every provider in this resolution pass. Skip the
+            // `std::env::vars().collect()` walk when no provider is
+            // scheduled this pass: script-only specs hit this branch on
+            // every keystroke, and no current provider reads `ctx.env`,
+            // so the collected map would be dead weight on the hot path.
+            let env = Arc::new(build_env_snapshot(!provider_generators.is_empty()));
+            let provider_ctx = gc_suggest::providers::ProviderCtx {
+                cwd: cwd.clone(),
+                env,
+                current_token: ctx.current_word.clone(),
+            };
+
+            // Run script generators, git generators, and providers concurrently.
+            let (script_res, git_res, provider_res) = tokio::join!(
                 engine.run_generators(&script_generators, &ctx, &cwd, timeout),
                 engine.resolve_git(&git_generators, &cwd, &ctx.current_word),
+                engine.resolve_providers(&provider_generators, &provider_ctx, &ctx.current_word,),
             );
 
             match script_res {
@@ -770,6 +796,10 @@ impl InputHandler {
             match git_res {
                 Ok(results) => all_results.extend(results),
                 Err(e) => tracing::warn!("git suggestions failed: {e}"),
+            }
+            match provider_res {
+                Ok(results) => all_results.extend(results),
+                Err(e) => tracing::warn!("provider suggestions failed: {e}"),
             }
 
             if !all_results.is_empty() {
@@ -1213,6 +1243,29 @@ fn buffer_fingerprint(buffer: &str, cursor: usize) -> (u64, usize) {
     let mut hasher = DefaultHasher::new();
     buffer.hash(&mut hasher);
     (hasher.finish(), cursor)
+}
+
+/// Build the env-var snapshot handed to providers as `ProviderCtx.env`.
+///
+/// Extracted as a pure helper so the `!provider_generators.is_empty()`
+/// branching logic inside `spawn_generators`'s `tokio::spawn` block is
+/// testable without standing up a full PTY event loop. The snapshot is
+/// produced once per resolution pass (not per-provider) and handed
+/// through as an `Arc`, which the caller wraps — this helper only owns
+/// the "scan env or skip" decision.
+///
+/// When `has_providers` is false, returns an empty map: skips the
+/// `std::env::vars().collect()` walk on the keystroke hot path for
+/// script-only specs (no current provider reads `ctx.env`, so the
+/// collected map would be dead weight). When true, snapshots the full
+/// process env so providers observe a consistent view even if the
+/// shell mutates `$PATH` between their spawns.
+fn build_env_snapshot(has_providers: bool) -> std::collections::HashMap<String, String> {
+    if has_providers {
+        std::env::vars().collect()
+    } else {
+        std::collections::HashMap::new()
+    }
 }
 
 #[cfg(test)]
@@ -2545,5 +2598,37 @@ mod tests {
                 "trigger() must clear or replace stale dynamic_ctx"
             );
         }
+    }
+
+    #[test]
+    fn build_env_snapshot_empty_when_no_providers() {
+        // When no provider is scheduled this pass, the caller pays
+        // zero cost for an env walk we don't need — pins the hot-path
+        // optimization. A future refactor that collapsed the branch to
+        // `std::env::vars().collect()` would flip this to non-empty on
+        // every CI host (PATH is always set).
+        let snapshot = build_env_snapshot(false);
+        assert!(
+            snapshot.is_empty(),
+            "expected empty map when has_providers=false, got {} entries",
+            snapshot.len()
+        );
+    }
+
+    #[test]
+    fn build_env_snapshot_populated_when_providers_present() {
+        // When at least one provider is scheduled, the snapshot must
+        // carry the real process env. PATH is the sentinel key — it is
+        // set on every CI host we target (macOS and Linux runners
+        // both) and is part of the default shell environment. A future
+        // refactor that collapsed the branch to always-empty would
+        // break every provider that reads `ctx.env`.
+        let snapshot = build_env_snapshot(true);
+        assert!(
+            snapshot.contains_key("PATH"),
+            "expected PATH in env snapshot when has_providers=true; \
+             snapshot had {} entries",
+            snapshot.len()
+        );
     }
 }

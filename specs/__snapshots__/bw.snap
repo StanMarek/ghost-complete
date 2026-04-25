@@ -1,0 +1,2000 @@
+{
+  "name": "bw",
+  "options": [
+    {
+      "description": "Format output. JSON is tabbed with two spaces",
+      "name": [
+        "--pretty"
+      ]
+    },
+    {
+      "description": "Return raw output instead of a descriptive message",
+      "name": [
+        "--raw"
+      ]
+    },
+    {
+      "description": "Return a JSON formatted version of response output",
+      "name": [
+        "--response"
+      ]
+    },
+    {
+      "description": "Exit with a success exit code (0) unless an error is thrown",
+      "name": [
+        "--cleanexit"
+      ]
+    },
+    {
+      "description": "Don't return anything to stdout",
+      "name": [
+        "--quiet"
+      ]
+    },
+    {
+      "description": "Do not prompt for interactive user input",
+      "name": [
+        "--nointeraction"
+      ]
+    },
+    {
+      "args": {
+        "description": "Session Key",
+        "name": "session"
+      },
+      "description": "Pass session key instead of reading from env",
+      "name": [
+        "--session"
+      ]
+    },
+    {
+      "description": "Output BW CLI tool version number",
+      "name": [
+        "-v",
+        "--version"
+      ]
+    },
+    {
+      "description": "Display help for command",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": [
+        {
+          "description": "Email Address of Bitwarden Account",
+          "isOptional": true,
+          "name": "email"
+        },
+        {
+          "description": "Master Password of Bitwarden Vault",
+          "isOptional": true,
+          "name": "password"
+        }
+      ],
+      "description": "Log into a user account",
+      "name": "login",
+      "options": [
+        {
+          "args": {
+            "description": "Authenticator = 0, Email = 1, YubiKey = 3",
+            "name": "method",
+            "suggestions": [
+              {
+                "description": "Authenticator",
+                "name": "0"
+              },
+              {
+                "description": "Email",
+                "name": "1"
+              },
+              {
+                "description": "YubiKey",
+                "name": "3"
+              }
+            ]
+          },
+          "description": "Two-step login method",
+          "name": [
+            "--method"
+          ]
+        },
+        {
+          "args": {
+            "description": "Valid TOTP Code",
+            "name": "code"
+          },
+          "description": "Two-step login code",
+          "name": [
+            "--code"
+          ]
+        },
+        {
+          "description": "Log in with Single-Sign On",
+          "name": [
+            "--sso"
+          ]
+        },
+        {
+          "description": "Log in with an Api Key",
+          "name": [
+            "--apikey"
+          ]
+        },
+        {
+          "args": {
+            "description": "Environmental Variable Name",
+            "name": "passwordenv"
+          },
+          "description": "Environment variable storing your password",
+          "name": [
+            "--passwordenv"
+          ]
+        },
+        {
+          "args": {
+            "description": "Path to a file containing your password",
+            "name": "passwordfile",
+            "template": "filepaths"
+          },
+          "description": "Path to a file containing your password as its first line",
+          "name": [
+            "--passwordfile"
+          ]
+        },
+        {
+          "description": "Check login status",
+          "name": [
+            "--check"
+          ]
+        },
+        {
+          "description": "Display help for login command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Log out of the current user account",
+      "name": "logout",
+      "options": [
+        {
+          "description": "Display help for logout command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Lock the vault and destroy active session keys",
+      "name": "lock",
+      "options": [
+        {
+          "description": "Display help for lock command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Master Password for the Vault to be unlocked",
+        "isOptional": true,
+        "name": "password"
+      },
+      "description": "Unlock the vault and return a new session key",
+      "name": "unlock",
+      "options": [
+        {
+          "description": "Check lock status",
+          "name": [
+            "--check"
+          ]
+        },
+        {
+          "args": {
+            "description": "Environmental variable containing your password",
+            "name": "passwordenv"
+          },
+          "description": "Supply an environment variable storing your password",
+          "name": [
+            "--passwordenv"
+          ]
+        },
+        {
+          "args": {
+            "description": "File containing your password",
+            "name": "passwordfile",
+            "template": "filepaths"
+          },
+          "description": "Path to a file containing your password as its first line",
+          "name": [
+            "--passwordfile"
+          ]
+        },
+        {
+          "description": "Display help for unlock command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Pull the latest vault data from server",
+      "name": "sync",
+      "options": [
+        {
+          "description": "Force a full sync",
+          "name": [
+            "-f",
+            "--force"
+          ]
+        },
+        {
+          "description": "Show details of the last sync",
+          "name": [
+            "--last"
+          ]
+        },
+        {
+          "description": "Display help for sync command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generate a password/passphrase",
+      "name": "generate",
+      "options": [
+        {
+          "description": "Include uppercase characters",
+          "name": [
+            "-u",
+            "--uppercase"
+          ]
+        },
+        {
+          "description": "Include lowercase characters",
+          "name": [
+            "-l",
+            "--lowercase"
+          ]
+        },
+        {
+          "description": "Include numeric characters",
+          "name": [
+            "-n",
+            "--number"
+          ]
+        },
+        {
+          "description": "Include special characters",
+          "name": [
+            "-s",
+            "--special"
+          ]
+        },
+        {
+          "args": {
+            "description": "Output length",
+            "name": "length"
+          },
+          "description": "Define password length",
+          "name": [
+            "--length"
+          ]
+        },
+        {
+          "description": "Display help for generate command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Generate a passphrase",
+          "name": "-p",
+          "options": [
+            {
+              "args": {
+                "description": "Number of words to include in passphrase",
+                "name": "Number of words"
+              },
+              "description": "Number of words to include in passphrase",
+              "name": [
+                "--words"
+              ]
+            },
+            {
+              "description": "Title case passphrase",
+              "name": [
+                "-c",
+                "--capitalize"
+              ]
+            },
+            {
+              "args": {
+                "description": "Character to delineate words in generated passphrase",
+                "name": "separator"
+              },
+              "description": "Define word separator",
+              "name": [
+                "--separator"
+              ]
+            },
+            {
+              "description": "Include a number in output",
+              "name": [
+                "--includeNumber"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Base 64 encode stdin",
+      "name": "encode",
+      "options": [
+        {
+          "description": "Display help for encode command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Setting to configure",
+          "name": "setting",
+          "suggestions": [
+            {
+              "name": "server"
+            }
+          ]
+        },
+        {
+          "description": "Value to set",
+          "name": "value"
+        }
+      ],
+      "description": "Configure CLI settings",
+      "name": "config",
+      "options": [
+        {
+          "args": {
+            "description": "URL for a self-hosted Bitwarden Server",
+            "name": "url"
+          },
+          "description": "Provides a custom web vault URL that differs from the base URL",
+          "name": [
+            "--web-vault"
+          ]
+        },
+        {
+          "args": {
+            "description": "API URL for a self-hosted Bitwarden Server",
+            "name": "url"
+          },
+          "description": "Provides a custom API URL that differs from the base URL",
+          "name": [
+            "--api"
+          ]
+        },
+        {
+          "args": {
+            "description": "Custom Identity URL that differs from the base URL",
+            "name": "url"
+          },
+          "description": "Provides a custom identity URL that differs from the base URL",
+          "name": [
+            "--identity"
+          ]
+        },
+        {
+          "args": {
+            "description": "Custom icon service URL that differs from the base URL",
+            "name": "url"
+          },
+          "description": "Provides a custom icon service URL that differs from the base URL",
+          "name": [
+            "--icons"
+          ]
+        },
+        {
+          "args": {
+            "description": "Custom notifications URL that differs from the base URL",
+            "name": "url"
+          },
+          "description": "Provides a custom notifications URL that differs from the base URL",
+          "name": [
+            "--notifications"
+          ]
+        },
+        {
+          "args": {
+            "description": "Custom events URL that differs from the base URL",
+            "name": "url"
+          },
+          "description": "Provides a custom events URL that differs from the base URL",
+          "name": [
+            "--events"
+          ]
+        },
+        {
+          "args": {
+            "description": "Custom Key Connector URL that differs from the base URL",
+            "name": "url"
+          },
+          "description": "Provides the URL for your Key Connector server",
+          "name": [
+            "--key-connector"
+          ]
+        },
+        {
+          "description": "Display help for the config command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Check for updates",
+      "name": "update",
+      "options": [
+        {
+          "description": "Display help for update command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generate shell completions",
+      "name": "completion",
+      "options": [
+        {
+          "args": {
+            "description": "Shell to generate completions for",
+            "name": "shell",
+            "suggestions": [
+              {
+                "name": "zsh"
+              }
+            ]
+          },
+          "description": "Shell to generate completions for",
+          "name": [
+            "--shell"
+          ]
+        },
+        {
+          "description": "Display help for completion command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Show server details, last sync time & date, user information, and vault status",
+      "name": "status",
+      "options": [
+        {
+          "description": "Display help for status command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Start a RESTful API webserver",
+      "name": "serve",
+      "options": [
+        {
+          "args": {
+            "name": "hostname"
+          },
+          "description": "The hostname to bind your API webserver to",
+          "name": [
+            "--hostname"
+          ]
+        },
+        {
+          "args": {
+            "name": "port"
+          },
+          "description": "The port to run your API webserver on",
+          "name": [
+            "--port"
+          ]
+        },
+        {
+          "description": "Display help for serve command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "object",
+        "suggestions": [
+          {
+            "name": "items"
+          },
+          {
+            "name": "folders"
+          },
+          {
+            "name": "collections"
+          },
+          {
+            "name": "org-collections"
+          },
+          {
+            "name": "org-members"
+          },
+          {
+            "name": "organizations"
+          }
+        ]
+      },
+      "description": "Retrieves an array of objects (items, folders, collections, org-collections, org-members, organizations) from your Vault",
+      "name": "list",
+      "options": [
+        {
+          "args": {
+            "name": "search"
+          },
+          "description": "Perform a search on the listed objects",
+          "name": [
+            "--search"
+          ]
+        },
+        {
+          "args": {
+            "name": "url"
+          },
+          "description": "Filter items of type login with a url-match search",
+          "name": [
+            "--url"
+          ]
+        },
+        {
+          "args": {
+            "name": "folderid"
+          },
+          "description": "Filter items by folder id",
+          "name": [
+            "--folderid"
+          ]
+        },
+        {
+          "args": {
+            "name": "collectionid"
+          },
+          "description": "Filter items by collection id",
+          "name": [
+            "--collectionid"
+          ]
+        },
+        {
+          "args": {
+            "name": "organizationid"
+          },
+          "description": "Filter items or collections by organization id",
+          "name": [
+            "--organizationid"
+          ]
+        },
+        {
+          "description": "Filter items that are in the trash",
+          "name": [
+            "--trash"
+          ]
+        },
+        {
+          "description": "Display help for the list command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Type of object to get from the Vault",
+          "name": "object",
+          "suggestions": [
+            {
+              "name": "item"
+            },
+            {
+              "name": "username"
+            },
+            {
+              "name": "password"
+            },
+            {
+              "name": "uri"
+            },
+            {
+              "name": "totp"
+            },
+            {
+              "name": "exposed"
+            },
+            {
+              "name": "folder"
+            },
+            {
+              "name": "collection"
+            }
+          ]
+        },
+        {
+          "description": "Search term or object's globally unique id",
+          "name": "id"
+        }
+      ],
+      "description": "Get an object from the vault",
+      "name": "get",
+      "options": [
+        {
+          "args": {
+            "description": "Object id",
+            "name": "id"
+          },
+          "description": "Exact id of the object",
+          "name": [
+            "--id"
+          ]
+        },
+        {
+          "args": {
+            "description": "Organization id",
+            "name": "organizationid"
+          },
+          "description": "Organization id for an organization object",
+          "name": [
+            "--organizationid"
+          ]
+        },
+        {
+          "description": "Display help for the get command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": {
+            "name": "object",
+            "suggestions": [
+              {
+                "name": "item"
+              },
+              {
+                "name": "item.field"
+              },
+              {
+                "name": "item.login"
+              },
+              {
+                "name": "item.login.uri"
+              },
+              {
+                "name": "item.card"
+              },
+              {
+                "name": "item.identity"
+              },
+              {
+                "name": "item.securenote"
+              },
+              {
+                "name": "folder"
+              },
+              {
+                "name": "collection"
+              },
+              {
+                "name": "item-collections"
+              },
+              {
+                "name": "org-collection"
+              },
+              {
+                "name": "send.text"
+              },
+              {
+                "name": "send.file"
+              }
+            ]
+          },
+          "description": "Type of template to get",
+          "name": "template"
+        },
+        {
+          "name": "attachment",
+          "options": [
+            {
+              "args": {
+                "description": "ID of Vault Item containing attachment",
+                "name": "itemid"
+              },
+              "description": "Vault Item ID containing attachment",
+              "name": [
+                "--itemid"
+              ]
+            },
+            {
+              "args": {
+                "description": "Output directory and/or filename",
+                "name": "output",
+                "template": "folders"
+              },
+              "description": "Output directory and/or filename",
+              "name": [
+                "--output"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Object to be created",
+          "name": "object",
+          "suggestions": [
+            {
+              "name": "item"
+            },
+            {
+              "name": "attachment"
+            },
+            {
+              "name": "folder"
+            },
+            {
+              "name": "org-collection"
+            }
+          ]
+        },
+        {
+          "description": "Encoded Json instead of uploading to Vault",
+          "name": "encodedJson"
+        }
+      ],
+      "description": "Create an object in the vault",
+      "name": "create",
+      "options": [
+        {
+          "args": {
+            "description": "File to attach",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Path to file for attachment",
+          "name": [
+            "--file"
+          ]
+        },
+        {
+          "args": {
+            "description": "Item ID",
+            "name": "itemid"
+          },
+          "description": "Attachment's item id",
+          "name": [
+            "--itemid"
+          ]
+        },
+        {
+          "args": {
+            "description": "Organization ID",
+            "name": "organizationid"
+          },
+          "description": "Organization id for an organization object",
+          "name": [
+            "--organizationid"
+          ]
+        },
+        {
+          "description": "Display help for the create command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Type of Vault Object to edit",
+          "name": "object",
+          "suggestions": [
+            {
+              "name": "item"
+            },
+            {
+              "name": "item-collections"
+            },
+            {
+              "name": "folder"
+            },
+            {
+              "name": "org-collection"
+            }
+          ]
+        },
+        {
+          "description": "Object's globally unique id",
+          "name": "id"
+        },
+        {
+          "description": "Encoded json of the object to create",
+          "isOptional": true,
+          "name": "encodedJson"
+        }
+      ],
+      "description": "Edit an object from the vault",
+      "name": "edit",
+      "options": [
+        {
+          "args": {
+            "description": "Organization ID",
+            "name": "organizationid"
+          },
+          "description": "Organization id for an organization object",
+          "name": [
+            "--organizationid"
+          ]
+        },
+        {
+          "description": "Display help for the edit command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Object to delete",
+          "name": "object",
+          "suggestions": [
+            {
+              "name": "item"
+            },
+            {
+              "name": "attachment"
+            },
+            {
+              "name": "folder"
+            },
+            {
+              "name": "org-collection"
+            }
+          ]
+        },
+        {
+          "description": "Unique Vault ID",
+          "name": "id"
+        }
+      ],
+      "description": "Delete an object from the vault",
+      "name": "delete",
+      "options": [
+        {
+          "args": {
+            "description": "Item Id",
+            "name": "itemid"
+          },
+          "description": "Attachment's item id",
+          "name": [
+            "--itemid"
+          ]
+        },
+        {
+          "args": {
+            "description": "Organization Id",
+            "name": "organizationid"
+          },
+          "description": "Organization id for an organization object",
+          "name": [
+            "--organizationid"
+          ]
+        },
+        {
+          "description": "Permanently deletes the item instead of soft-deleting it (item only)",
+          "name": [
+            "-p",
+            "--permanent"
+          ]
+        },
+        {
+          "description": "Display help for the delete command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "object"
+        },
+        {
+          "name": "id"
+        }
+      ],
+      "description": "Restores an object from the trash",
+      "name": "restore",
+      "options": [
+        {
+          "description": "Display help for the restore command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "id"
+        },
+        {
+          "name": "organizationId"
+        },
+        {
+          "isOptional": true,
+          "name": "encodedJson"
+        }
+      ],
+      "description": "Transfers a Vault item to an Organization",
+      "name": "move",
+      "options": [
+        {
+          "description": "Display help for the move command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Valid objects are: org-member",
+          "name": "object"
+        },
+        {
+          "description": "Organization id for an organization object",
+          "name": "id"
+        }
+      ],
+      "description": "Confirm an object to the organization",
+      "name": "confirm",
+      "options": [
+        {
+          "args": {
+            "description": "Organization ID",
+            "name": "organizationid"
+          },
+          "description": "Organization id for an organization object",
+          "name": [
+            "--organizationid"
+          ]
+        },
+        {
+          "description": "Display help for the confirm command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Format of import file",
+          "name": "format",
+          "suggestions": [
+            {
+              "name": "1password1pif"
+            },
+            {
+              "name": "1password1pux"
+            },
+            {
+              "name": "1passwordmaccsv"
+            },
+            {
+              "name": "1passwordwincsv"
+            },
+            {
+              "name": "ascendocsv"
+            },
+            {
+              "name": "avastcsv"
+            },
+            {
+              "name": "avastjson"
+            },
+            {
+              "name": "aviracsv"
+            },
+            {
+              "name": "bitwardencsv"
+            },
+            {
+              "name": "bitwardenjson"
+            },
+            {
+              "name": "blackberrycsv"
+            },
+            {
+              "name": "blurcsv"
+            },
+            {
+              "name": "buttercupcsv"
+            },
+            {
+              "name": "chromecsv"
+            },
+            {
+              "name": "clipperzhtml"
+            },
+            {
+              "name": "codebookcsv"
+            },
+            {
+              "name": "dashlanecsv"
+            },
+            {
+              "name": "dashlanejson"
+            },
+            {
+              "name": "encryptrcsv"
+            },
+            {
+              "name": "enpasscsv"
+            },
+            {
+              "name": "enpassjson"
+            },
+            {
+              "name": "firefoxcsv"
+            },
+            {
+              "name": "fsecurefsk"
+            },
+            {
+              "name": "gnomejson"
+            },
+            {
+              "name": "kasperskytxt"
+            },
+            {
+              "name": "keepass2xml"
+            },
+            {
+              "name": "keepassxcsv"
+            },
+            {
+              "name": "keepercsv"
+            },
+            {
+              "name": "lastpasscsv"
+            },
+            {
+              "name": "logmeoncecsv"
+            },
+            {
+              "name": "meldiumcsv"
+            },
+            {
+              "name": "msecurecsv"
+            },
+            {
+              "name": "mykicsv"
+            },
+            {
+              "name": "nordpasscsv"
+            },
+            {
+              "name": "operacsv"
+            },
+            {
+              "name": "padlockcsv"
+            },
+            {
+              "name": "passboltcsv"
+            },
+            {
+              "name": "passkeepcsv"
+            },
+            {
+              "name": "passmanjson"
+            },
+            {
+              "name": "passpackcsv"
+            },
+            {
+              "name": "passwordagentcsv"
+            },
+            {
+              "name": "passwordbossjson"
+            },
+            {
+              "name": "passworddragonxml"
+            },
+            {
+              "name": "passwordwallettxt"
+            },
+            {
+              "name": "pwsafexml"
+            },
+            {
+              "name": "remembearcsv"
+            },
+            {
+              "name": "roboformcsv"
+            },
+            {
+              "name": "safaricsv"
+            },
+            {
+              "name": "safeincloudxml"
+            },
+            {
+              "name": "saferpasscsv"
+            },
+            {
+              "name": "securesafecsv"
+            },
+            {
+              "name": "splashidcsv"
+            },
+            {
+              "name": "stickypasswordxml"
+            },
+            {
+              "name": "truekeycsv"
+            },
+            {
+              "name": "upmcsv"
+            },
+            {
+              "name": "vivaldicsv"
+            },
+            {
+              "name": "yoticsv"
+            },
+            {
+              "name": "zohovaultcsv"
+            }
+          ]
+        },
+        {
+          "description": "File to be imported",
+          "name": "input",
+          "template": "filepaths"
+        }
+      ],
+      "description": "Import vault data from a file",
+      "name": "import",
+      "options": [
+        {
+          "description": "List supported file formats",
+          "name": [
+            "--formats"
+          ]
+        },
+        {
+          "args": {
+            "description": "Organization ID to be imported to",
+            "name": "organizationid"
+          },
+          "description": "ID of the organization to import to",
+          "name": [
+            "--organizationid"
+          ]
+        },
+        {
+          "description": "Display help for the import command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Export vault data to a CSV or JSON file",
+      "name": "export",
+      "options": [
+        {
+          "args": {
+            "description": "Path to export to",
+            "name": "output",
+            "template": "folders"
+          },
+          "description": "Set output directory or filename",
+          "name": [
+            "--output"
+          ]
+        },
+        {
+          "args": {
+            "description": "Export format",
+            "name": "format",
+            "suggestions": [
+              {
+                "name": "csv"
+              },
+              {
+                "name": "json"
+              },
+              {
+                "name": "encrypted_json"
+              }
+            ]
+          },
+          "description": "Export file format",
+          "name": [
+            "--format"
+          ]
+        },
+        {
+          "args": {
+            "description": "Password that will encrypt this export",
+            "isOptional": true,
+            "name": "password"
+          },
+          "description": "Use a password to encrypt instead of your Bitwarden account encryption key. Only applies to the encrypted_json format",
+          "name": [
+            "--password"
+          ]
+        },
+        {
+          "args": {
+            "description": "Organization id",
+            "name": "organizationid"
+          },
+          "description": "Enter organization id for an organization",
+          "name": [
+            "--organizationid"
+          ]
+        },
+        {
+          "description": "Display help for the export command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Object's globally unique ID",
+          "name": "id"
+        },
+        {
+          "description": "Organization's globally unique ID",
+          "name": "organizationId"
+        },
+        {
+          "description": "Encoded json of an array of collection ids. Can also be piped into stdin",
+          "isOptional": true,
+          "name": "encodedJson"
+        }
+      ],
+      "description": "--DEPRECATED-- Move an item to an organization",
+      "name": "share",
+      "options": [
+        {
+          "description": "Display help for the share command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Encoded Json data",
+        "name": "data"
+      },
+      "description": "Work with Bitwarden Sends. A Send can be quickly created using this command or subcommands can be used to fine-tune the Send",
+      "name": "send",
+      "options": [
+        {
+          "description": "Specifies that <data> is a filepath",
+          "name": [
+            "-f",
+            "--file"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "days"
+          },
+          "description": "The number of days in the future to set deletion date (defaults to 7 if not specified)",
+          "name": [
+            "-d",
+            "--deleteInDays"
+          ]
+        },
+        {
+          "args": {
+            "description": "Max number of accesses allowed",
+            "name": "amount"
+          },
+          "description": "The max number of accesses allowed for this Send",
+          "name": [
+            "-a",
+            "--maxAccessCount"
+          ]
+        },
+        {
+          "description": "Hide <data> in web by default. Valid only if --file is not set",
+          "name": [
+            "--hidden"
+          ]
+        },
+        {
+          "args": {
+            "description": "Send name",
+            "name": "name"
+          },
+          "description": "The name of the Send. Defaults to a guid for text Sends and the filename for files",
+          "name": [
+            "-n",
+            "--name"
+          ]
+        },
+        {
+          "args": {
+            "description": "Notes to add to the Send",
+            "name": "notes"
+          },
+          "description": "Notes to add to the Send",
+          "name": [
+            "--notes"
+          ]
+        },
+        {
+          "description": "Specifies that the full Send object should be returned rather than just the access url",
+          "name": [
+            "--fullObject"
+          ]
+        },
+        {
+          "description": "Display help for the Send command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "List all the Sends owned by you",
+          "name": "list",
+          "options": [
+            {
+              "description": "Display help for the Send command",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Json template to fetch",
+            "name": "object",
+            "suggestions": [
+              {
+                "name": "send.text"
+              },
+              {
+                "name": "send.file"
+              }
+            ]
+          },
+          "description": "Get json templates for Send objects",
+          "name": "template",
+          "options": [
+            {
+              "description": "Display help for the template sub-command",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Send ID",
+            "name": "Send ID"
+          },
+          "description": "Get Sends owned by you",
+          "name": "get",
+          "options": [
+            {
+              "args": {
+                "name": "output",
+                "template": "folders"
+              },
+              "description": "Output directory or filename for attachment",
+              "name": [
+                "--output"
+              ]
+            },
+            {
+              "description": "Specifies to return the text content of a Send",
+              "name": [
+                "--text"
+              ]
+            },
+            {
+              "description": "Display help for the Send get sub-command",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "URL of Send to download",
+            "name": "Send URL"
+          },
+          "description": "Access a Bitwarden Send from a url",
+          "name": "receive",
+          "options": [
+            {
+              "args": {
+                "description": "Password for Send",
+                "name": "password"
+              },
+              "description": "Password needed to access the Send",
+              "name": [
+                "--password"
+              ]
+            },
+            {
+              "args": {
+                "description": "Environment variable containing Send's password",
+                "name": "passwordenv"
+              },
+              "description": "Environment variable storing the Send's password",
+              "name": [
+                "--passwordenv"
+              ]
+            },
+            {
+              "args": {
+                "description": "File containing Send's password",
+                "name": "passwordfile",
+                "template": "filepaths"
+              },
+              "description": "Path to a file containing the Send's password as its first line",
+              "name": [
+                "--passwordfile"
+              ]
+            },
+            {
+              "description": "Return the Send's json object rather than the Send's content",
+              "name": [
+                "--obj"
+              ]
+            },
+            {
+              "args": {
+                "description": "Path to save File-type Send",
+                "name": "location",
+                "template": "folders"
+              },
+              "description": "Specify a file path to save a File-type Send to",
+              "name": [
+                "--output"
+              ]
+            },
+            {
+              "description": "Display help for the receive sub-command",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Encoded Json to be uploaded",
+            "name": "encodedJson"
+          },
+          "description": "Create a Send",
+          "name": "create",
+          "options": [
+            {
+              "args": {
+                "description": "Path to file to attach as content",
+                "name": "path",
+                "template": "filepaths"
+              },
+              "description": "File to Send. Can also be specified in parent's JSON",
+              "name": [
+                "--file"
+              ]
+            },
+            {
+              "args": {
+                "description": "Text to include as content",
+                "name": "text"
+              },
+              "description": "Text to Send. Can also be specified in parent's JSON",
+              "name": [
+                "--text"
+              ]
+            },
+            {
+              "description": "Text hidden flag. Valid only with the --text option",
+              "name": [
+                "--hidden"
+              ]
+            },
+            {
+              "args": {
+                "description": "Password to secure the Send",
+                "name": "password"
+              },
+              "description": "Optional password to access this Send. Can also be specified in JSON",
+              "name": [
+                "--password"
+              ]
+            },
+            {
+              "description": "Display help for the create sub-command",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Encoded Json",
+            "name": "encodedJson"
+          },
+          "description": "Edit a Send",
+          "name": "edit",
+          "options": [
+            {
+              "args": {
+                "description": "ItemID",
+                "name": "itemid"
+              },
+              "description": "Overrides the itemId provided in [encodedJson]",
+              "name": [
+                "--itemid"
+              ]
+            },
+            {
+              "description": "Display help for the edit sub-command",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "ID of the Send to remove password from",
+            "name": "Send ID"
+          },
+          "description": "Removes the saved password from a Send",
+          "name": "remove-password",
+          "options": [
+            {
+              "description": "Display help for the remove-password sub-command",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "ID of the Send to delete",
+            "name": "Send ID"
+          },
+          "description": "Delete a Send",
+          "name": "delete",
+          "options": [
+            {
+              "description": "Display help for the delete sub-command",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "command"
+          },
+          "description": "Display help for the Send command",
+          "name": "help"
+        }
+      ]
+    },
+    {
+      "description": "Manage device approval requests sent to organizations that use SSO with trusted devices",
+      "name": "device-approval",
+      "subcommands": [
+        {
+          "description": "List all pending requests for an organisation",
+          "name": "list",
+          "options": [
+            {
+              "description": "Display help for the list sub-command",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Organisation ID",
+                "name": "organizationid"
+              },
+              "description": "The organisation id (required)",
+              "name": [
+                "--organizationid"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Approve a pending request",
+          "name": "approve",
+          "options": [
+            {
+              "description": "Display help for the approve sub-command",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "The id of the request to approve",
+                "isVariadic": true,
+                "name": "requestId"
+              },
+              "description": "The id of the request to approve",
+              "name": [
+                "requestId"
+              ]
+            },
+            {
+              "args": {
+                "description": "Organisation ID",
+                "name": "organizationid"
+              },
+              "description": "The organisation id (required)",
+              "name": [
+                "--organizationid"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Approve all pending requests for an organisation",
+          "name": "approve-all",
+          "options": [
+            {
+              "description": "Display help for the approve-all sub-command",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Organisation ID",
+                "name": "organizationid"
+              },
+              "description": "The organisation id (required)",
+              "name": [
+                "--organizationid"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Deny a pending request",
+          "name": "deny",
+          "options": [
+            {
+              "description": "Display help for the deny sub-command",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "The id of the request to approve",
+                "isVariadic": true,
+                "name": "requestId"
+              },
+              "description": "The id of the request to deny",
+              "name": [
+                "requestId"
+              ]
+            },
+            {
+              "args": {
+                "description": "Organisation ID",
+                "name": "organizationid"
+              },
+              "description": "The organisation id (required)",
+              "name": [
+                "--organizationid"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Deny all pending requests for an organisation",
+          "name": "deny-all",
+          "options": [
+            {
+              "description": "Display help for the deny-all sub-command",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Organisation ID",
+                "name": "organizationid"
+              },
+              "description": "The organisation id (required)",
+              "name": [
+                "--organizationid"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "command"
+          },
+          "description": "Display help for command",
+          "name": "help"
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "URL of Send to download",
+        "name": "Send URL"
+      },
+      "description": "Access a Bitwarden Send from a url",
+      "name": "receive",
+      "options": [
+        {
+          "args": {
+            "description": "Password for Send",
+            "name": "password"
+          },
+          "description": "Password needed to access the Send",
+          "name": [
+            "--password"
+          ]
+        },
+        {
+          "args": {
+            "description": "Environment variable containing Send's password",
+            "name": "passwordenv"
+          },
+          "description": "Environment variable storing the Send's password",
+          "name": [
+            "--passwordenv"
+          ]
+        },
+        {
+          "args": {
+            "description": "File containing Send's password",
+            "name": "passwordfile",
+            "template": "filepaths"
+          },
+          "description": "Path to a file containing the Send's password as its first line",
+          "name": [
+            "--passwordfile"
+          ]
+        },
+        {
+          "description": "Return the Send's json object rather than the Send's content",
+          "name": [
+            "--obj"
+          ]
+        },
+        {
+          "args": {
+            "description": "Path to save File-type Send",
+            "name": "location",
+            "template": "folders"
+          },
+          "description": "Specify a file path to save a File-type Send to",
+          "name": [
+            "--output"
+          ]
+        },
+        {
+          "description": "Display help for the receive sub-command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Subcommand to display help for",
+        "isOptional": true,
+        "name": "command",
+        "suggestions": [
+          {
+            "name": "login"
+          },
+          {
+            "name": "logout"
+          },
+          {
+            "name": "lock"
+          },
+          {
+            "name": "unlock"
+          },
+          {
+            "name": "sync"
+          },
+          {
+            "name": "generate"
+          },
+          {
+            "name": "encode"
+          },
+          {
+            "name": "config"
+          },
+          {
+            "name": "update"
+          },
+          {
+            "name": "completion"
+          },
+          {
+            "name": "status"
+          },
+          {
+            "name": "serve"
+          },
+          {
+            "name": "list"
+          },
+          {
+            "name": "get"
+          },
+          {
+            "name": "create"
+          },
+          {
+            "name": "edit"
+          },
+          {
+            "name": "delete"
+          },
+          {
+            "name": "restore"
+          },
+          {
+            "name": "move"
+          },
+          {
+            "name": "confirm"
+          },
+          {
+            "name": "import"
+          },
+          {
+            "name": "export"
+          },
+          {
+            "name": "share"
+          },
+          {
+            "name": "send"
+          },
+          {
+            "name": "receive"
+          },
+          {
+            "name": "device-approval"
+          }
+        ]
+      },
+      "description": "Display help for the Bitwarden CLI tool",
+      "name": "help"
+    }
+  ]
+}

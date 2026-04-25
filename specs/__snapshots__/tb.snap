@@ -1,0 +1,878 @@
+{
+  "description": "Tinybird CLI",
+  "name": "tb",
+  "options": [
+    {
+      "description": "Prints internal representation, can be combined with any command to get more information",
+      "name": [
+        "--debug"
+      ]
+    },
+    {
+      "description": "Prints internal representation, can be combined with any command to get more information",
+      "name": [
+        "--no-debug"
+      ]
+    },
+    {
+      "args": {
+        "name": "text"
+      },
+      "description": "Use auth token, defaults to TB_TOKEN envvar, then to the .tinyb file",
+      "name": [
+        "--token"
+      ]
+    },
+    {
+      "args": {
+        "name": "text"
+      },
+      "description": "Use custom host, defaults to TB_HOST envvar, then to https://api.tinybird.co",
+      "name": [
+        "--host"
+      ]
+    },
+    {
+      "args": {
+        "name": "text"
+      },
+      "description": "The Google Cloud project ID",
+      "name": [
+        "--gcp-project-id"
+      ]
+    },
+    {
+      "args": {
+        "name": "text"
+      },
+      "description": "The Google Cloud Storage bucket to write temp files when using the connectors",
+      "name": [
+        "--gcs-bucket"
+      ]
+    },
+    {
+      "args": {
+        "name": "text"
+      },
+      "description": "Set GOOGLE_APPLICATION_CREDENTIALS",
+      "name": [
+        "--google-application-credentials"
+      ]
+    },
+    {
+      "args": {
+        "name": "text"
+      },
+      "description": "The Snowflake Account (e.g. your-domain.west-europe.azure)",
+      "name": [
+        "--sf-account"
+      ]
+    },
+    {
+      "args": {
+        "name": "text"
+      },
+      "description": "The Snowflake warehouse name",
+      "name": [
+        "--sf-warehouse"
+      ]
+    },
+    {
+      "args": {
+        "name": "text"
+      },
+      "description": "The Snowflake database name",
+      "name": [
+        "--sf-database"
+      ]
+    },
+    {
+      "args": {
+        "name": "text"
+      },
+      "description": "The Snowflake schema name",
+      "name": [
+        "--sf-schema"
+      ]
+    },
+    {
+      "args": {
+        "name": "text"
+      },
+      "description": "The Snowflake role name",
+      "name": [
+        "--sf-role"
+      ]
+    },
+    {
+      "args": {
+        "name": "text"
+      },
+      "description": "The Snowflake user name",
+      "name": [
+        "--sf-user"
+      ]
+    },
+    {
+      "args": {
+        "name": "text"
+      },
+      "description": "The Snowflake password",
+      "name": [
+        "--sf-password"
+      ]
+    },
+    {
+      "args": {
+        "name": "text"
+      },
+      "description": "The Snowflake GCS storage integration name (leave empty to auto-generate one)",
+      "name": [
+        "--sf-storage-integration"
+      ]
+    },
+    {
+      "args": {
+        "name": "text"
+      },
+      "description": "The Snowflake GCS stage name (leave empty to auto-generate one)",
+      "name": [
+        "--sf-stage"
+      ]
+    },
+    {
+      "description": "Flag to enable connector to export with headers",
+      "name": [
+        "--with-headers"
+      ]
+    },
+    {
+      "description": "Don't print version warning message if there's a new available version. You can use TB_VERSION_WARNING envar",
+      "name": [
+        "--version-warning"
+      ]
+    },
+    {
+      "description": "Don't print version warning message if there's a new available version. You can use TB_VERSION_WARNING envar",
+      "name": [
+        "--no-version-warning"
+      ]
+    },
+    {
+      "description": "Disable the output of tokens",
+      "name": [
+        "--hide-tokens"
+      ]
+    },
+    {
+      "description": "Show the version and exit",
+      "name": [
+        "--version"
+      ]
+    },
+    {
+      "description": "Show this message and exit",
+      "name": [
+        "--help"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "name": "path",
+        "template": [
+          "folders",
+          "filepaths"
+        ]
+      },
+      "description": "Check file syntax",
+      "name": "check",
+      "options": [
+        {
+          "description": "Print internal representation",
+          "name": [
+            "--debug"
+          ]
+        },
+        {
+          "description": "Show this message and exit",
+          "name": [
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Print all data sources dependencies",
+      "name": "dependencies",
+      "options": [
+        {
+          "description": "Print only data sources with no pipes using them",
+          "name": [
+            "--no-deps"
+          ]
+        },
+        {
+          "args": {
+            "name": "text"
+          },
+          "description": "Retrieve any resource matching the pattern",
+          "name": [
+            "--match"
+          ]
+        },
+        {
+          "args": {
+            "name": "text"
+          },
+          "description": "Retrieve any resource used by pipe",
+          "name": [
+            "--pipe"
+          ]
+        },
+        {
+          "args": {
+            "name": "text"
+          },
+          "description": "Retrieve resources depending on this Data Source",
+          "name": [
+            "--datasource"
+          ]
+        },
+        {
+          "description": "Retrieve dependant Data Sources that will have their data replaced if a partial replace is executed in the Data Source selected",
+          "name": [
+            "--check-for-partial-replace"
+          ]
+        },
+        {
+          "description": "Calculate recursive dependencies",
+          "name": [
+            "--recursive"
+          ]
+        },
+        {
+          "description": "Show this message and exit",
+          "name": [
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "path",
+        "template": [
+          "folders",
+          "filepaths"
+        ]
+      },
+      "description": "Diffs local datafiles to the corresponding remote files in the workspace",
+      "name": "diff",
+      "options": [
+        {
+          "description": "Format files before doing the diff, default is True so both files match the format",
+          "name": [
+            "--fmt"
+          ]
+        },
+        {
+          "description": "Format files before doing the diff, default is True so both files match the format",
+          "name": [
+            "--no-fmt"
+          ]
+        },
+        {
+          "description": "Don't colorize diff",
+          "name": [
+            "--no-color"
+          ]
+        },
+        {
+          "description": "Diffs local datafiles to the corresponding remote files in the main workspace. Only works when authenticated on a branch",
+          "name": [
+            "--main"
+          ]
+        },
+        {
+          "description": "Show this message and exit",
+          "name": [
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "text"
+      },
+      "description": "Drop all the resources inside a project with prefix. This command is dangerous because it removes everything, use with care",
+      "name": "drop-prefix",
+      "options": [
+        {
+          "description": "Do not ask for confirmation",
+          "name": [
+            "--yes"
+          ]
+        },
+        {
+          "description": "Run the command without removing anything",
+          "name": [
+            "--dry-run"
+          ]
+        },
+        {
+          "description": "Show this message and exit",
+          "name": [
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "path",
+        "template": [
+          "folders",
+          "filepaths"
+        ]
+      },
+      "description": "Formats a .datasource, .pipe or .incl file\n\nThis command removes comments starting with # from the file, use DESCRIPTION instead.\n\nThe format command tries to parse the datafile so syntax errors might rise.\n\n.incl files must contain a NODE definition",
+      "name": "fmt",
+      "options": [
+        {
+          "args": {
+            "name": "integer"
+          },
+          "description": "A number indicating the maximum characters per line in the node SQL, lines will be splitted based on the SQL syntax and the number of characters passed as a parameter",
+          "name": [
+            "--line-length"
+          ]
+        },
+        {
+          "description": "Don't ask to override the local file",
+          "name": [
+            "--dry-run"
+          ]
+        },
+        {
+          "description": "Do not ask for confirmation to overwrite the local file",
+          "name": [
+            "--yes"
+          ]
+        },
+        {
+          "description": "Show this message and exit",
+          "name": [
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Initialize folder layout",
+      "name": "init",
+      "options": [
+        {
+          "description": "Generate datasources based on CSV, NDJSON and Parquet files in this folder",
+          "name": [
+            "--generate-datasources"
+          ]
+        },
+        {
+          "args": {
+            "name": "directory",
+            "template": [
+              "folders"
+            ]
+          },
+          "description": "Folder where files will be placed",
+          "name": [
+            "--folder"
+          ]
+        },
+        {
+          "description": "Overrides existing files",
+          "name": [
+            "--force"
+          ]
+        },
+        {
+          "description": "Show this message and exit",
+          "name": [
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "path",
+          "template": [
+            "folders",
+            "filepaths"
+          ]
+        },
+        {
+          "name": "text"
+        }
+      ],
+      "description": "[BETA] Given a local Pipe datafile path (FILENAME) and optionally a Materialized View name (TARGET_DATASOURCE), choose one of its nodes to materialize.\n\nThis command guides you to generate the Materialized View with name TARGET_DATASOURCE, the only requirement is having a valid Pipe datafile locally. Use `tb pull` to download resources from your workspace when needed.\n\nSyntax: tb materialize path/to/pipe.pipe",
+      "name": "materialize",
+      "options": [
+        {
+          "args": {
+            "name": "text"
+          },
+          "description": "Use prefix for all the resources",
+          "name": [
+            "--prefix"
+          ]
+        },
+        {
+          "description": "Push dependencies, disabled by default",
+          "name": [
+            "--push-deps"
+          ]
+        },
+        {
+          "args": [
+            {
+              "name": "text"
+            },
+            {
+              "name": "text"
+            }
+          ],
+          "name": [
+            "--workspace_map"
+          ]
+        },
+        {
+          "args": [
+            {
+              "name": "text"
+            },
+            {
+              "name": "text"
+            }
+          ],
+          "description": "Add a workspace path to the list of external workspaces, usage: --workspace name path/to/folder",
+          "name": [
+            "--workspace"
+          ]
+        },
+        {
+          "description": "When set, resource dependency versions are not used, it pushes the dependencies as-is",
+          "name": [
+            "--no-versions"
+          ]
+        },
+        {
+          "description": "Prints more log",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "args": {
+            "name": "text"
+          },
+          "description": "Subset or full",
+          "name": [
+            "--force-populate"
+          ]
+        },
+        {
+          "description": "If the populate job fails the Materialized View is unlinked and new data won't be ingested in the Materialized View. First time a populate job fails, the Materialized View is always unlinked",
+          "name": [
+            "--unlink-on-populate-error"
+          ]
+        },
+        {
+          "description": "Override pipe if exists or prompt",
+          "name": [
+            "--override-pipe"
+          ]
+        },
+        {
+          "description": "Override data source if exists or prompt",
+          "name": [
+            "--override-datasource"
+          ]
+        },
+        {
+          "description": "Show this message and exit",
+          "name": [
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Learn how to include info about the CLI in your shell PROMPT",
+      "name": "prompt",
+      "options": [
+        {
+          "description": "Show this message and exit",
+          "name": [
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Retrieve latest versions for project files from Tinybird",
+      "name": "pull",
+      "options": [
+        {
+          "args": {
+            "name": "directory",
+            "template": [
+              "folders"
+            ]
+          },
+          "description": "Folder where files will be placed",
+          "name": [
+            "--folder"
+          ]
+        },
+        {
+          "description": "Saves datafiles automatically into their default directories (/datasources or /pipes)",
+          "name": [
+            "--auto"
+          ]
+        },
+        {
+          "args": {
+            "name": "text"
+          },
+          "description": "Retrieve any resourcing matching the pattern. eg --match _test",
+          "name": [
+            "--match"
+          ]
+        },
+        {
+          "args": {
+            "name": "text"
+          },
+          "description": "Download only resources with this prefix",
+          "name": [
+            "--prefix"
+          ]
+        },
+        {
+          "description": "Override existing files",
+          "name": [
+            "--force"
+          ]
+        },
+        {
+          "description": "Show this message and exit",
+          "name": [
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "path",
+        "template": [
+          "folders",
+          "filepaths"
+        ]
+      },
+      "description": "Push files to Tinybird\n",
+      "name": "push",
+      "options": [
+        {
+          "args": {
+            "name": "text"
+          },
+          "description": "Use prefix for all the resources",
+          "name": [
+            "--prefix"
+          ]
+        },
+        {
+          "description": "Run the command without creating resources on the Tinybird account or any side effect",
+          "name": [
+            "--dry-run"
+          ]
+        },
+        {
+          "description": "Enable/Disable output checking, enabled by default",
+          "name": [
+            "--check"
+          ]
+        },
+        {
+          "description": "Enable/Disable output checking, enabled by default",
+          "name": [
+            "--no-check"
+          ]
+        },
+        {
+          "description": "Push dependencies, disabled by default",
+          "name": [
+            "--push-deps"
+          ]
+        },
+        {
+          "description": "Prints internal representation, can be combined with any command to get more information",
+          "name": [
+            "--debug"
+          ]
+        },
+        {
+          "description": "Override pipes when they already exist",
+          "name": [
+            "-f",
+            "--force"
+          ]
+        },
+        {
+          "description": "When pushing a pipe with a Materialized node if the target Data Source exists it will try to override it",
+          "name": [
+            "--override-datasource"
+          ]
+        },
+        {
+          "description": "Populate materialized nodes when pushing them",
+          "name": [
+            "--populate"
+          ]
+        },
+        {
+          "args": {
+            "name": "float"
+          },
+          "description": "Populate with a subset percent of the data (limited to a maximum of 2M rows), this is useful to quickly test a materialized node with some data. The subset must be greater than 0 and lower than 0.1. A subset of 0.1 means a 10 percent of the data in the source Data Source will be used to populate the materialized view. Use it together with --populate, it has precedence over --sql-condition",
+          "name": [
+            "--subset"
+          ]
+        },
+        {
+          "args": {
+            "name": "text"
+          },
+          "description": "Populate with a SQL condition to be applied to the trigger Data Source of the Materialized View. For instance, `--sql-condition='date == toYYYYMM(now())'` it'll populate taking all the rows from the trigger Data Source which `date` is the current month. Use it together with --populate. --sql-condition is not taken into account if the --subset param is present. Including in the ``sql_condition`` any column present in the Data Source ``engine_sorting_key`` will make the populate job process less data",
+          "name": [
+            "--sql-condition"
+          ]
+        },
+        {
+          "description": "If the populate job fails the Materialized View is unlinked and new data won't be ingested in the Materialized View. First time a populate job fails, the Materialized View is always unlinked",
+          "name": [
+            "--unlink-on-populate-error"
+          ]
+        },
+        {
+          "description": "Append fixtures to data sources",
+          "name": [
+            "--fixtures"
+          ]
+        },
+        {
+          "description": "To be used along with --populate command. Waits for populate jobs to finish, showing a progress bar. Disabled by default",
+          "name": [
+            "--wait"
+          ]
+        },
+        {
+          "description": "Do not ask for confirmation",
+          "name": [
+            "--yes"
+          ]
+        },
+        {
+          "description": "Checks only response times, when --force push a pipe",
+          "name": [
+            "--only-response-times"
+          ]
+        },
+        {
+          "args": [
+            {
+              "name": "text"
+            },
+            {
+              "name": "text"
+            }
+          ],
+          "name": [
+            "--workspace_map"
+          ]
+        },
+        {
+          "args": [
+            {
+              "name": "text"
+            },
+            {
+              "name": "text"
+            }
+          ],
+          "description": "Add a workspace path to the list of external workspaces, usage: --workspace name path/to/folder",
+          "name": [
+            "--workspace"
+          ]
+        },
+        {
+          "description": "When set, resource dependency versions are not used, it pushes the dependencies as-is",
+          "name": [
+            "--no-versions"
+          ]
+        },
+        {
+          "args": {
+            "name": "float"
+          },
+          "description": "Timeout you want to use for the job populate",
+          "name": [
+            "--timeout"
+          ]
+        },
+        {
+          "args": {
+            "name": "integer range"
+          },
+          "description": "Number of requests to validate",
+          "name": [
+            "-l",
+            "--limit"
+          ]
+        },
+        {
+          "args": {
+            "name": "integer range"
+          },
+          "description": "When set, we will aggregate the pipe_stats_rt requests by extractURLParameterNames(assumeNotNull(url)) and for each combination we will take a sample of N requests",
+          "name": [
+            "--sample-by-params"
+          ]
+        },
+        {
+          "description": "When set, the checker will exit as soon one test fails",
+          "name": [
+            "-ff",
+            "--failfast"
+          ]
+        },
+        {
+          "description": "When set, the checker will ignore the order of list properties",
+          "name": [
+            "--ignore-order"
+          ]
+        },
+        {
+          "description": "When set, the checker will validate that the new version doesn't process more than 25% than the current version",
+          "name": [
+            "--validate-processed-bytes"
+          ]
+        },
+        {
+          "description": "When set, the checker will get top requests requests from main",
+          "name": [
+            "--last-requests-from-main"
+          ]
+        },
+        {
+          "description": "Show this message and exit",
+          "name": [
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "text"
+      },
+      "description": "Run SQL query over data sources and pipes",
+      "name": "sql",
+      "options": [
+        {
+          "args": {
+            "name": "integer"
+          },
+          "description": "Max number of rows retrieved",
+          "name": [
+            "--rows_limit"
+          ]
+        },
+        {
+          "args": {
+            "name": "text"
+          },
+          "description": "The name of the Pipe to run the SQL Query",
+          "name": [
+            "--pipeline"
+          ]
+        },
+        {
+          "args": {
+            "name": "text"
+          },
+          "description": "The path to the .pipe file to run the SQL Query of a specific NODE",
+          "name": [
+            "--pipe"
+          ]
+        },
+        {
+          "args": {
+            "name": "text"
+          },
+          "description": "The NODE name",
+          "name": [
+            "--node"
+          ]
+        },
+        {
+          "args": {
+            "name": "choice",
+            "suggestions": [
+              {
+                "name": "json"
+              },
+              {
+                "name": "csv"
+              },
+              {
+                "name": "human"
+              }
+            ]
+          },
+          "description": "Output format",
+          "name": [
+            "--format"
+          ]
+        },
+        {
+          "description": "Show query stats",
+          "name": [
+            "--stats"
+          ]
+        },
+        {
+          "description": "Show query stats",
+          "name": [
+            "--no-stats"
+          ]
+        },
+        {
+          "description": "Show this message and exit",
+          "name": [
+            "--help"
+          ]
+        }
+      ]
+    }
+  ]
+}

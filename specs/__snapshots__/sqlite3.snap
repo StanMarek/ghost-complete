@@ -1,0 +1,232 @@
+{
+  "args": {
+    "generators": [
+      {
+        "js_source": "(p,m,b)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:S,currentWorkingDirectory:_,searchTerm:h}=b,w=(f=(0,g.getCurrentInsertedDirectory)(c??_,h,b))!==null&&f!==void 0?f:\"/\";try{let C=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:w}),G=z(C.stdout.split(`\n`),[\".DS_Store\"]),P=[];for(let M of G)if(M){let F=M.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&u!==\"only\"||F===\"folders\"&&u!==\"never\")&&P.push({type:F===\"filepaths\"?\"file\":\"folder\",name:M,insertValue:M,isDangerous:S,context:{templateType:F}})}return O(v(P))}catch{return[]}})",
+        "requires_js": true
+      }
+    ],
+    "name": "FILENAME"
+  },
+  "description": "A command line interface for SQLite version 3",
+  "name": "sqlite3",
+  "options": [
+    {
+      "description": "Append the database to the end of the file",
+      "name": [
+        "-append"
+      ]
+    },
+    {
+      "description": "Set output mode to 'ascii'",
+      "name": [
+        "-ascii"
+      ]
+    },
+    {
+      "description": "Stop after hitting an error",
+      "name": [
+        "-bail"
+      ]
+    },
+    {
+      "description": "Force batch I/O",
+      "name": [
+        "-batch"
+      ]
+    },
+    {
+      "description": "Set output mode to 'column'",
+      "name": [
+        "-column"
+      ]
+    },
+    {
+      "args": {
+        "name": "COMMAND"
+      },
+      "description": "Run \"COMMAND\" before reading stdin",
+      "name": [
+        "-cmd"
+      ]
+    },
+    {
+      "description": "Set output mode to 'csv'",
+      "name": [
+        "-csv"
+      ]
+    },
+    {
+      "description": "Print commands before execution",
+      "name": [
+        "-echo"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "(p,m,b)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:S,currentWorkingDirectory:_,searchTerm:h}=b,w=(f=(0,g.getCurrentInsertedDirectory)(c??_,h,b))!==null&&f!==void 0?f:\"/\";try{let C=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:w}),G=z(C.stdout.split(`\n`),[\".DS_Store\"]),P=[];for(let M of G)if(M){let F=M.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&u!==\"only\"||F===\"folders\"&&u!==\"never\")&&P.push({type:F===\"filepaths\"?\"file\":\"folder\",name:M,insertValue:M,isDangerous:S,context:{templateType:F}})}return O(v(P))}catch{return[]}})",
+            "requires_js": true
+          }
+        ],
+        "name": "FILENAME"
+      },
+      "description": "Read/process named file",
+      "name": [
+        "-init"
+      ]
+    },
+    {
+      "description": "Turn headers on",
+      "name": [
+        "-header"
+      ]
+    },
+    {
+      "description": "Turn headers off",
+      "name": [
+        "-noheader"
+      ]
+    },
+    {
+      "description": "Show help message",
+      "name": [
+        "-help"
+      ]
+    },
+    {
+      "description": "Set output mode to HTML",
+      "name": [
+        "-html"
+      ]
+    },
+    {
+      "description": "Force interactive I/O",
+      "name": [
+        "-interactive"
+      ]
+    },
+    {
+      "description": "Set output mode to 'line'",
+      "name": [
+        "-line"
+      ]
+    },
+    {
+      "description": "Set output mode to 'list'",
+      "name": [
+        "-list"
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "SIZE"
+        },
+        {
+          "name": "N"
+        }
+      ],
+      "description": "Use N entries of SZ bytes for lookaside memory",
+      "name": [
+        "-lookaside"
+      ]
+    },
+    {
+      "description": "Trace all memory allocations and deallocations",
+      "name": [
+        "-memtrace"
+      ]
+    },
+    {
+      "args": {
+        "name": "N"
+      },
+      "description": "Default mmap size set to N",
+      "name": [
+        "-mmap"
+      ]
+    },
+    {
+      "args": {
+        "name": "SEP"
+      },
+      "description": "Set output row separator",
+      "name": [
+        "-newline"
+      ]
+    },
+    {
+      "description": "Refuse to open symbolic links to database files",
+      "name": [
+        "-nofollow"
+      ]
+    },
+    {
+      "args": {
+        "name": "TEXT"
+      },
+      "description": "Set text string for NULL values",
+      "name": [
+        "-nullvalue"
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "SIZE"
+        },
+        {
+          "name": "N"
+        }
+      ],
+      "description": "Use N slots of SZ bytes each for page cache memory",
+      "name": [
+        "-pagecache"
+      ]
+    },
+    {
+      "description": "Set output mode to 'quote'",
+      "name": [
+        "-quote"
+      ]
+    },
+    {
+      "description": "Open the database read-only",
+      "name": [
+        "-readonly"
+      ]
+    },
+    {
+      "args": {
+        "name": "SEP"
+      },
+      "description": "Set output column separator",
+      "name": [
+        "-separator"
+      ]
+    },
+    {
+      "description": "Print memory stats before each finalize",
+      "name": [
+        "-stats"
+      ]
+    },
+    {
+      "description": "Show SQLite version",
+      "name": [
+        "-version"
+      ]
+    },
+    {
+      "args": {
+        "name": "NAME"
+      },
+      "description": "Use NAME as the default VFS",
+      "name": [
+        "-vfs"
+      ]
+    }
+  ]
+}

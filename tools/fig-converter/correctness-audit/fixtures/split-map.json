@@ -1,0 +1,12 @@
+{
+  "shape_id": "split-map",
+  "rationale": "Fingerprint `.split(STR).map(FN).map(FN)` — the canonical pattern is `t.split(\"\\n\").map(JSON.parse).map(n=>({name: n.<field>, ...}))` for JSON-lines output (docker/podman ps, volume, network, image, etc.). The bucket contains 63 variants that each read a DIFFERENT field (ID / Id / Name / Repository). A single `json_extract(\"ID\")` pipeline only matches the ID variants (19/63) on real-world inputs. Workaround: feed a single JSON line that contains ALL plausible field names with the same value — `{ID:\"x\", Id:\"x\", Name:\"x\", Repository:\"x\", ...}` — so every JS variant extracts the same string regardless of which field it reads, and Rust's `json_extract(\"ID\")` also extracts that string. Expected outlier: one docker generator uses a template-literal `\\`${n.Name}=\\`` which appends `=` and will `fail` — that's a legitimate shape-too-loose signal, not a fixture bug. Inputs deliberately avoid trailing newlines (JS `JSON.parse(\"\")` throws because there is no try/catch in this shape).",
+  "expected_transforms": [
+    "split_lines",
+    "filter_empty",
+    { "type": "json_extract", "name": "ID" }
+  ],
+  "inputs": [
+    "{\"ID\":\"item1\",\"Id\":\"item1\",\"Name\":\"item1\",\"Repository\":\"item1\",\"Image\":\"img\",\"repository\":\"item1\",\"Tag\":\"<none>\",\"tag\":\"<none>\"}"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "shape_id": "parse-map-7",
+  "rationale": "Fingerprint `JSON.parse(X).FIELD.map(FN)` — generators differ in which root field they access (envs / packages). Feed `'{\"envs\":[],\"packages\":[]}'`: every variant finds its field and maps over `[]` = `[]`. Rust `split_lines+filter_empty+json_extract(sentinel)` also yields `[]`. Both empty.",
+  "expected_transforms": [
+    "split_lines",
+    "filter_empty",
+    { "type": "json_extract", "name": "__sentinel_no_field__" }
+  ],
+  "inputs": [
+    "{\"envs\":[],\"packages\":[]}"
+  ]
+}

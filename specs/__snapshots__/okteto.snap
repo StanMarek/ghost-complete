@@ -1,0 +1,4138 @@
+{
+  "description": "Okteto - Remote Development Environments powered by Kubernetes",
+  "name": "okteto",
+  "options": [
+    {
+      "args": {
+        "name": "loglevel"
+      },
+      "description": "Amount of information outputted (debug, info, warn, error)",
+      "name": [
+        "--loglevel",
+        "-l"
+      ]
+    },
+    {
+      "args": {
+        "name": "output"
+      },
+      "description": "Output format (tty, plain, json)",
+      "name": [
+        "--output",
+        "-o"
+      ]
+    },
+    {
+      "description": "Help for okteto",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Enable / Disable analytics",
+      "name": "analytics",
+      "options": [
+        {
+          "args": {
+            "name": "loglevel"
+          },
+          "description": "Amount of information outputted (debug, info, warn, error)",
+          "name": [
+            "--loglevel",
+            "-l"
+          ]
+        },
+        {
+          "args": {
+            "name": "output"
+          },
+          "description": "Output format (tty, plain, json)",
+          "name": [
+            "--output",
+            "-o"
+          ]
+        },
+        {
+          "description": "Disable analytics",
+          "name": [
+            "--disable",
+            "-d"
+          ]
+        },
+        {
+          "description": "Help for analytics",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Build (and optionally push) a Docker image",
+      "name": "build",
+      "options": [
+        {
+          "args": {
+            "name": "loglevel"
+          },
+          "description": "Amount of information outputted (debug, info, warn, error)",
+          "name": [
+            "--loglevel",
+            "-l"
+          ]
+        },
+        {
+          "args": {
+            "name": "output"
+          },
+          "description": "Output format (tty, plain, json)",
+          "name": [
+            "--output",
+            "-o"
+          ]
+        },
+        {
+          "args": {
+            "name": "build-arg"
+          },
+          "description": "Set build-time variables",
+          "name": [
+            "--build-arg"
+          ]
+        },
+        {
+          "args": {
+            "name": "cache-from"
+          },
+          "description": "Cache source images",
+          "name": [
+            "--cache-from"
+          ]
+        },
+        {
+          "args": {
+            "name": "file"
+          },
+          "description": "Name of the Dockerfile (Default is 'PATH/Dockerfile')",
+          "name": [
+            "--file",
+            "-f"
+          ]
+        },
+        {
+          "args": {
+            "name": "namespace"
+          },
+          "description": "Namespace against which the image will be consumed. Default is the one defined at okteto context or okteto manifest",
+          "name": [
+            "--namespace"
+          ]
+        },
+        {
+          "description": "Do not use cache when building the image",
+          "name": [
+            "--no-cache"
+          ]
+        },
+        {
+          "args": {
+            "name": "progress"
+          },
+          "description": "Show plain/tty build output",
+          "name": [
+            "--progress"
+          ]
+        },
+        {
+          "args": {
+            "name": "secret"
+          },
+          "description": "Secret files exposed to the build. Format: id=mysecret,src=/local/secret",
+          "name": [
+            "--secret"
+          ]
+        },
+        {
+          "args": {
+            "name": "tag"
+          },
+          "description": "Name and optionally a tag in the 'name:tag' format (it is automatically pushed)",
+          "name": [
+            "--tag",
+            "-t"
+          ]
+        },
+        {
+          "args": {
+            "name": "target"
+          },
+          "description": "Set the target build stage to build",
+          "name": [
+            "--target"
+          ]
+        },
+        {
+          "description": "Help for build",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generate the autocompletion script for the specified shell",
+      "name": "completion",
+      "options": [
+        {
+          "args": {
+            "name": "loglevel"
+          },
+          "description": "Amount of information outputted (debug, info, warn, error)",
+          "name": [
+            "--loglevel",
+            "-l"
+          ]
+        },
+        {
+          "args": {
+            "name": "output"
+          },
+          "description": "Output format (tty, plain, json)",
+          "name": [
+            "--output",
+            "-o"
+          ]
+        },
+        {
+          "description": "Help for completion",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Generate the autocompletion script for bash",
+          "name": "bash",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Disable completion descriptions",
+              "name": [
+                "--no-descriptions"
+              ]
+            },
+            {
+              "description": "Help for bash",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Generate the autocompletion script for fish",
+          "name": "fish",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Disable completion descriptions",
+              "name": [
+                "--no-descriptions"
+              ]
+            },
+            {
+              "description": "Help for fish",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Generate the autocompletion script for powershell",
+          "name": "powershell",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Disable completion descriptions",
+              "name": [
+                "--no-descriptions"
+              ]
+            },
+            {
+              "description": "Help for powershell",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Generate the autocompletion script for zsh",
+          "name": "zsh",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Disable completion descriptions",
+              "name": [
+                "--no-descriptions"
+              ]
+            },
+            {
+              "description": "Help for zsh",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Set the default context",
+      "name": "ctx",
+      "options": [
+        {
+          "args": {
+            "name": "loglevel"
+          },
+          "description": "Amount of information outputted (debug, info, warn, error)",
+          "name": [
+            "--loglevel",
+            "-l"
+          ]
+        },
+        {
+          "args": {
+            "name": "output"
+          },
+          "description": "Output format (tty, plain, json)",
+          "name": [
+            "--output",
+            "-o"
+          ]
+        },
+        {
+          "args": {
+            "name": "builder"
+          },
+          "description": "Url of the builder service",
+          "name": [
+            "--builder",
+            "-b"
+          ]
+        },
+        {
+          "args": {
+            "name": "namespace"
+          },
+          "description": "Namespace of your okteto context",
+          "name": [
+            "--namespace",
+            "-n"
+          ]
+        },
+        {
+          "description": "Only shows okteto cluster options",
+          "name": [
+            "--okteto"
+          ]
+        },
+        {
+          "args": {
+            "name": "token"
+          },
+          "description": "API token for authentication",
+          "name": [
+            "--token",
+            "-t"
+          ]
+        },
+        {
+          "description": "Help for context",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": {
+            "generators": [
+              {
+                "cache": {
+                  "ttl_seconds": 1800
+                },
+                "script": [
+                  "okteto",
+                  "context",
+                  "list"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty",
+                  "trim"
+                ]
+              }
+            ]
+          },
+          "description": "Delete a context",
+          "name": "delete",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Help for delete",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List available contexts",
+          "name": "ls",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Help for list",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Print the current context",
+          "name": "show",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Help for show",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "cache": {
+                  "ttl_seconds": 1800
+                },
+                "script": [
+                  "okteto",
+                  "context",
+                  "list"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty",
+                  "trim"
+                ]
+              }
+            ]
+          },
+          "description": "Set the default context",
+          "name": "use",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "args": {
+                "name": "builder"
+              },
+              "description": "Url of the builder service",
+              "name": [
+                "--builder",
+                "-b"
+              ]
+            },
+            {
+              "args": {
+                "name": "namespace"
+              },
+              "description": "Namespace of your okteto context",
+              "name": [
+                "--namespace",
+                "-n"
+              ]
+            },
+            {
+              "description": "Only shows okteto cluster options",
+              "name": [
+                "--okteto"
+              ]
+            },
+            {
+              "args": {
+                "name": "token"
+              },
+              "description": "API token for authentication",
+              "name": [
+                "--token",
+                "-t"
+              ]
+            },
+            {
+              "description": "Help for use",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generate a zip file with the okteto logs",
+      "name": "doctor",
+      "options": [
+        {
+          "args": {
+            "name": "loglevel"
+          },
+          "description": "Amount of information outputted (debug, info, warn, error)",
+          "name": [
+            "--loglevel",
+            "-l"
+          ]
+        },
+        {
+          "args": {
+            "name": "output"
+          },
+          "description": "Output format (tty, plain, json)",
+          "name": [
+            "--output",
+            "-o"
+          ]
+        },
+        {
+          "args": {
+            "name": "context"
+          },
+          "description": "Context where the up command was executing",
+          "name": [
+            "--context",
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "name": "file"
+          },
+          "description": "Path to the manifest file",
+          "name": [
+            "--file",
+            "-f"
+          ]
+        },
+        {
+          "args": {
+            "name": "namespace"
+          },
+          "description": "Namespace where the up command was executing",
+          "name": [
+            "--namespace",
+            "-n"
+          ]
+        },
+        {
+          "description": "Help for doctor",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Deactivate your development container",
+      "name": "down",
+      "options": [
+        {
+          "args": {
+            "name": "loglevel"
+          },
+          "description": "Amount of information outputted (debug, info, warn, error)",
+          "name": [
+            "--loglevel",
+            "-l"
+          ]
+        },
+        {
+          "args": {
+            "name": "output"
+          },
+          "description": "Output format (tty, plain, json)",
+          "name": [
+            "--output",
+            "-o"
+          ]
+        },
+        {
+          "args": {
+            "name": "context"
+          },
+          "description": "Context where the down command is executed",
+          "name": [
+            "--context",
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "name": "file"
+          },
+          "description": "Path to the manifest file",
+          "name": [
+            "--file",
+            "-f"
+          ]
+        },
+        {
+          "args": {
+            "name": "namespace"
+          },
+          "description": "Namespace where the down command is executed",
+          "name": [
+            "--namespace",
+            "-n"
+          ]
+        },
+        {
+          "description": "Remove persistent volume",
+          "name": [
+            "--volumes",
+            "-v"
+          ]
+        },
+        {
+          "description": "Help for down",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Execute a command in your development container",
+      "name": "exec",
+      "options": [
+        {
+          "args": {
+            "name": "loglevel"
+          },
+          "description": "Amount of information outputted (debug, info, warn, error)",
+          "name": [
+            "--loglevel",
+            "-l"
+          ]
+        },
+        {
+          "args": {
+            "name": "output"
+          },
+          "description": "Output format (tty, plain, json)",
+          "name": [
+            "--output",
+            "-o"
+          ]
+        },
+        {
+          "args": {
+            "name": "context"
+          },
+          "description": "Context where the exec command is executed",
+          "name": [
+            "--context",
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "name": "file"
+          },
+          "description": "Path to the manifest file",
+          "name": [
+            "--file",
+            "-f"
+          ]
+        },
+        {
+          "args": {
+            "name": "namespace"
+          },
+          "description": "Namespace where the exec command is executed",
+          "name": [
+            "--namespace",
+            "-n"
+          ]
+        },
+        {
+          "description": "Help for exec",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Automatically generate your okteto manifest file",
+      "name": "init",
+      "options": [
+        {
+          "args": {
+            "name": "loglevel"
+          },
+          "description": "Amount of information outputted (debug, info, warn, error)",
+          "name": [
+            "--loglevel",
+            "-l"
+          ]
+        },
+        {
+          "args": {
+            "name": "output"
+          },
+          "description": "Output format (tty, plain, json)",
+          "name": [
+            "--output",
+            "-o"
+          ]
+        },
+        {
+          "args": {
+            "name": "context"
+          },
+          "description": "Context target for generating the okteto manifest",
+          "name": [
+            "--context",
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "name": "file"
+          },
+          "description": "Path to the manifest file",
+          "name": [
+            "--file",
+            "-f"
+          ]
+        },
+        {
+          "args": {
+            "name": "namespace"
+          },
+          "description": "Namespace target for generating the okteto manifest",
+          "name": [
+            "--namespace",
+            "-n"
+          ]
+        },
+        {
+          "description": "Overwrite existing manifest file",
+          "name": [
+            "--overwrite"
+          ]
+        },
+        {
+          "description": "Help for init",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Download credentials for the Kubernetes cluster selected via 'okteto context'",
+      "name": "kubeconfig",
+      "options": [
+        {
+          "args": {
+            "name": "loglevel"
+          },
+          "description": "Amount of information outputted (debug, info, warn, error)",
+          "name": [
+            "--loglevel",
+            "-l"
+          ]
+        },
+        {
+          "args": {
+            "name": "output"
+          },
+          "description": "Output format (tty, plain, json)",
+          "name": [
+            "--output",
+            "-o"
+          ]
+        },
+        {
+          "description": "Help for kubeconfig",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Configure the current namespace of the okteto context",
+      "name": "ns",
+      "options": [
+        {
+          "args": {
+            "name": "loglevel"
+          },
+          "description": "Amount of information outputted (debug, info, warn, error)",
+          "name": [
+            "--loglevel",
+            "-l"
+          ]
+        },
+        {
+          "args": {
+            "name": "output"
+          },
+          "description": "Output format (tty, plain, json)",
+          "name": [
+            "--output",
+            "-o"
+          ]
+        },
+        {
+          "description": "Load personal account",
+          "name": [
+            "--personal"
+          ]
+        },
+        {
+          "description": "Help for namespace",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Create a namespace",
+          "name": "create",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "args": {
+                "name": "members"
+              },
+              "description": "Members of the namespace, it can the username or email",
+              "name": [
+                "--members",
+                "-m"
+              ]
+            },
+            {
+              "description": "Help for create",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "cache": {
+                  "ttl_seconds": 1800
+                },
+                "script": [
+                  "okteto",
+                  "namespace",
+                  "list"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty",
+                  "trim"
+                ]
+              }
+            ]
+          },
+          "description": "Delete a namespace",
+          "name": "delete",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Help for delete",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List namespaces managed by Okteto in your current context",
+          "name": "ls",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Help for list",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "cache": {
+                  "ttl_seconds": 1800
+                },
+                "script": [
+                  "okteto",
+                  "namespace",
+                  "list"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty",
+                  "trim"
+                ]
+              }
+            ]
+          },
+          "description": "Configure the current namespace of the okteto context",
+          "name": "ns",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Load personal account",
+              "name": [
+                "--personal"
+              ]
+            },
+            {
+              "description": "Help for use",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Pipeline management commands",
+      "name": "pipeline",
+      "options": [
+        {
+          "args": {
+            "name": "loglevel"
+          },
+          "description": "Amount of information outputted (debug, info, warn, error)",
+          "name": [
+            "--loglevel",
+            "-l"
+          ]
+        },
+        {
+          "args": {
+            "name": "output"
+          },
+          "description": "Output format (tty, plain, json)",
+          "name": [
+            "--output",
+            "-o"
+          ]
+        },
+        {
+          "description": "Help for pipeline",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Deploy an okteto pipeline",
+          "name": "deploy",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "args": {
+                "name": "branch"
+              },
+              "description": "The branch to deploy (defaults to the current branch)",
+              "name": [
+                "--branch",
+                "-b"
+              ]
+            },
+            {
+              "args": {
+                "name": "file"
+              },
+              "description": "Relative path within the repository to the manifest file (default to okteto-pipeline.yaml or .okteto/okteto-pipeline.yaml)",
+              "name": [
+                "--file",
+                "-f"
+              ]
+            },
+            {
+              "args": {
+                "name": "filename"
+              },
+              "description": "Relative path within the repository to the manifest file (default to okteto-pipeline.yaml or .okteto/okteto-pipeline.yaml)",
+              "name": [
+                "--filename"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the pipeline (defaults to the git config name)",
+              "name": [
+                "--name",
+                "-p"
+              ]
+            },
+            {
+              "args": {
+                "name": "namespace"
+              },
+              "description": "Namespace where the up command is executed (defaults to the current namespace)",
+              "name": [
+                "--namespace",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "repository"
+              },
+              "description": "The repository to deploy (defaults to the current repository)",
+              "name": [
+                "--repository",
+                "-r"
+              ]
+            },
+            {
+              "description": "Skip the pipeline deployment if the pipeline already exists in the namespace (defaults to false)",
+              "name": [
+                "--skip-if-exists"
+              ]
+            },
+            {
+              "args": {
+                "name": "timeout"
+              },
+              "description": "The length of time to wait for completion, zero means never. Any other values should contain a corresponding time unit e.g. 1s, 2m, 3h",
+              "name": [
+                "--timeout",
+                "-t"
+              ]
+            },
+            {
+              "args": {
+                "name": "var"
+              },
+              "description": "Set a pipeline variable (can be set more than once)",
+              "name": [
+                "--var",
+                "-v"
+              ]
+            },
+            {
+              "description": "Wait until the pipeline finishes (defaults to false)",
+              "name": [
+                "--wait",
+                "-w"
+              ]
+            },
+            {
+              "description": "Help for deploy",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Destroy an okteto pipeline",
+          "name": "destroy",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Name of the pipeline (defaults to the git config name)",
+              "name": [
+                "--name",
+                "-p"
+              ]
+            },
+            {
+              "args": {
+                "name": "namespace"
+              },
+              "description": "Namespace where the up command is executed (defaults to the current namespace)",
+              "name": [
+                "--namespace",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "name": "timeout"
+              },
+              "description": "The length of time to wait for completion, zero means never. Any other values should contain a corresponding time unit e.g. 1s, 2m, 3h",
+              "name": [
+                "--timeout",
+                "-t"
+              ]
+            },
+            {
+              "description": "Destroy persistent volumes created by the pipeline (defaults to false)",
+              "name": [
+                "--volumes",
+                "-v"
+              ]
+            },
+            {
+              "description": "Wait until the pipeline finishes (defaults to false)",
+              "name": [
+                "--wait",
+                "-w"
+              ]
+            },
+            {
+              "description": "Help for destroy",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Preview environment management commands",
+      "name": "preview",
+      "options": [
+        {
+          "args": {
+            "name": "loglevel"
+          },
+          "description": "Amount of information outputted (debug, info, warn, error)",
+          "name": [
+            "--loglevel",
+            "-l"
+          ]
+        },
+        {
+          "args": {
+            "name": "output"
+          },
+          "description": "Output format (tty, plain, json)",
+          "name": [
+            "--output",
+            "-o"
+          ]
+        },
+        {
+          "description": "Help for preview",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Deploy a preview environment",
+          "name": "deploy",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "args": {
+                "name": "branch"
+              },
+              "description": "The branch to deploy (defaults to the current branch)",
+              "name": [
+                "--branch",
+                "-b"
+              ]
+            },
+            {
+              "args": {
+                "name": "file"
+              },
+              "description": "Relative path within the repository to the manifest file (default to okteto-pipeline.yaml or .okteto/okteto-pipeline.yaml)",
+              "name": [
+                "--file",
+                "-f"
+              ]
+            },
+            {
+              "args": {
+                "name": "filename"
+              },
+              "description": "Relative path within the repository to the manifest file (default to okteto-pipeline.yaml or .okteto/okteto-pipeline.yaml)",
+              "name": [
+                "--filename"
+              ]
+            },
+            {
+              "args": {
+                "name": "repository"
+              },
+              "description": "The repository to deploy (defaults to the current repository)",
+              "name": [
+                "--repository",
+                "-r"
+              ]
+            },
+            {
+              "args": {
+                "name": "scope"
+              },
+              "description": "The scope of preview environment to create. Accepted values are ['personal', 'global']",
+              "name": [
+                "--scope",
+                "-s"
+              ]
+            },
+            {
+              "args": {
+                "name": "sourceUrl"
+              },
+              "description": "The URL of the original pull/merge request",
+              "name": [
+                "--sourceUrl"
+              ]
+            },
+            {
+              "args": {
+                "name": "timeout"
+              },
+              "description": "The length of time to wait for completion, zero means never. Any other values should contain a corresponding time unit e.g. 1s, 2m, 3h",
+              "name": [
+                "--timeout",
+                "-t"
+              ]
+            },
+            {
+              "args": {
+                "name": "var"
+              },
+              "description": "Set a pipeline variable (can be set more than once)",
+              "name": [
+                "--var",
+                "-v"
+              ]
+            },
+            {
+              "description": "Wait until the preview environment deployment finishes (defaults to false)",
+              "name": [
+                "--wait",
+                "-w"
+              ]
+            },
+            {
+              "description": "Help for deploy",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Destroy a preview environment",
+          "name": "destroy",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Help for destroy",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Show endpoints for a preview environment",
+          "name": "endpoints",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Help for endpoints",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List all preview environments",
+          "name": "list",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Help for list",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Build, push and redeploy source code to the target app",
+      "name": "push",
+      "options": [
+        {
+          "args": {
+            "name": "loglevel"
+          },
+          "description": "Amount of information outputted (debug, info, warn, error)",
+          "name": [
+            "--loglevel",
+            "-l"
+          ]
+        },
+        {
+          "args": {
+            "name": "output"
+          },
+          "description": "Output format (tty, plain, json)",
+          "name": [
+            "--output",
+            "-o"
+          ]
+        },
+        {
+          "args": {
+            "name": "context"
+          },
+          "description": "Context where the push command is executed",
+          "name": [
+            "--context",
+            "-c"
+          ]
+        },
+        {
+          "description": "Create deployment when the app doesn't exist in a namespace",
+          "name": [
+            "--deploy",
+            "-d"
+          ]
+        },
+        {
+          "args": {
+            "name": "file"
+          },
+          "description": "Path to the manifest file",
+          "name": [
+            "--file",
+            "-f"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Name of the app to push to",
+          "name": [
+            "--name"
+          ]
+        },
+        {
+          "args": {
+            "name": "namespace"
+          },
+          "description": "Namespace where the push command is executed",
+          "name": [
+            "--namespace",
+            "-n"
+          ]
+        },
+        {
+          "description": "Do not use cache when building the image",
+          "name": [
+            "--no-cache"
+          ]
+        },
+        {
+          "args": {
+            "name": "progress"
+          },
+          "description": "Show plain/tty build output",
+          "name": [
+            "--progress"
+          ]
+        },
+        {
+          "args": {
+            "name": "tag"
+          },
+          "description": "Image tag to build, push and redeploy",
+          "name": [
+            "--tag",
+            "-t"
+          ]
+        },
+        {
+          "description": "Help for push",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Restart the deployments listed in the services field of the okteto manifest",
+      "name": "restart",
+      "options": [
+        {
+          "args": {
+            "name": "loglevel"
+          },
+          "description": "Amount of information outputted (debug, info, warn, error)",
+          "name": [
+            "--loglevel",
+            "-l"
+          ]
+        },
+        {
+          "args": {
+            "name": "output"
+          },
+          "description": "Output format (tty, plain, json)",
+          "name": [
+            "--output",
+            "-o"
+          ]
+        },
+        {
+          "args": {
+            "name": "context"
+          },
+          "description": "Context where the restart command is executed",
+          "name": [
+            "--context",
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "name": "file"
+          },
+          "description": "Path to the manifest file",
+          "name": [
+            "--file",
+            "-f"
+          ]
+        },
+        {
+          "args": {
+            "name": "namespace"
+          },
+          "description": "Namespace where the restart command is executed",
+          "name": [
+            "--namespace",
+            "-n"
+          ]
+        },
+        {
+          "description": "Help for restart",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Stack management commands",
+      "name": "stack",
+      "options": [
+        {
+          "args": {
+            "name": "loglevel"
+          },
+          "description": "Amount of information outputted (debug, info, warn, error)",
+          "name": [
+            "--loglevel",
+            "-l"
+          ]
+        },
+        {
+          "args": {
+            "name": "output"
+          },
+          "description": "Output format (tty, plain, json)",
+          "name": [
+            "--output",
+            "-o"
+          ]
+        },
+        {
+          "description": "Help for stack",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Deploy a stack",
+          "name": "deploy",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Build images before starting any Stack service",
+              "name": [
+                "--build"
+              ]
+            },
+            {
+              "args": {
+                "name": "file"
+              },
+              "description": "Path to the stack manifest files. If more than one is passed the latest will overwrite the fields from the previous",
+              "name": [
+                "--file",
+                "-f"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Overwrites the stack name",
+              "name": [
+                "--name"
+              ]
+            },
+            {
+              "args": {
+                "name": "namespace"
+              },
+              "description": "Overwrites the stack namespace where the stack is deployed",
+              "name": [
+                "--namespace",
+                "-n"
+              ]
+            },
+            {
+              "description": "Do not use cache when building the image",
+              "name": [
+                "--no-cache"
+              ]
+            },
+            {
+              "args": {
+                "name": "progress"
+              },
+              "description": "Show plain/tty build output (default \"tty\")",
+              "name": [
+                "--progress"
+              ]
+            },
+            {
+              "args": {
+                "name": "timeout"
+              },
+              "description": "The length of time to wait for completion, zero means never. Any other values should contain a corresponding time unit e.g. 1s, 2m, 3h",
+              "name": [
+                "--timeout",
+                "-t"
+              ]
+            },
+            {
+              "description": "Wait until a minimum number of containers are in a ready state for every service",
+              "name": [
+                "--wait"
+              ]
+            },
+            {
+              "description": "Help for deploy",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Destroy a stack",
+          "name": "destroy",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "args": {
+                "name": "file"
+              },
+              "description": "Path to the stack manifest file",
+              "name": [
+                "--file",
+                "-f"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Overwrites the stack name",
+              "name": [
+                "--name"
+              ]
+            },
+            {
+              "args": {
+                "name": "namespace"
+              },
+              "description": "Overwrites the stack namespace where the stack is destroyed",
+              "name": [
+                "--namespace",
+                "-n"
+              ]
+            },
+            {
+              "description": "Remove persistent volumes",
+              "name": [
+                "--volumes",
+                "-v"
+              ]
+            },
+            {
+              "description": "Help for destroy",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Show endpoints for a stack",
+          "name": "endpoints",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "args": {
+                "name": "file"
+              },
+              "description": "Path to the stack manifest files. If more than one is passed the latest will overwrite the fields from the previous",
+              "name": [
+                "--file",
+                "-f"
+              ]
+            },
+            {
+              "args": {
+                "name": "name"
+              },
+              "description": "Overwrites the stack name",
+              "name": [
+                "--name"
+              ]
+            },
+            {
+              "args": {
+                "name": "namespace"
+              },
+              "description": "Overwrites the stack namespace where the stack is deployed",
+              "name": [
+                "--namespace",
+                "-n"
+              ]
+            },
+            {
+              "description": "Help for endpoints",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Status of the synchronization process",
+      "name": "status",
+      "options": [
+        {
+          "args": {
+            "name": "loglevel"
+          },
+          "description": "Amount of information outputted (debug, info, warn, error)",
+          "name": [
+            "--loglevel",
+            "-l"
+          ]
+        },
+        {
+          "args": {
+            "name": "output"
+          },
+          "description": "Output format (tty, plain, json)",
+          "name": [
+            "--output",
+            "-o"
+          ]
+        },
+        {
+          "args": {
+            "name": "context"
+          },
+          "description": "Context where the up command is executing",
+          "name": [
+            "--context",
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "name": "file"
+          },
+          "description": "Path to the manifest file",
+          "name": [
+            "--file",
+            "-f"
+          ]
+        },
+        {
+          "description": "Show syncthing links for troubleshooting the synchronization service",
+          "name": [
+            "--info",
+            "-i"
+          ]
+        },
+        {
+          "args": {
+            "name": "namespace"
+          },
+          "description": "Namespace where the up command is executing",
+          "name": [
+            "--namespace",
+            "-n"
+          ]
+        },
+        {
+          "description": "Watch for changes",
+          "name": [
+            "--watch",
+            "-w"
+          ]
+        },
+        {
+          "description": "Help for status",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Activate your development container",
+      "name": "up",
+      "options": [
+        {
+          "args": {
+            "name": "loglevel"
+          },
+          "description": "Amount of information outputted (debug, info, warn, error)",
+          "name": [
+            "--loglevel",
+            "-l"
+          ]
+        },
+        {
+          "args": {
+            "name": "output"
+          },
+          "description": "Output format (tty, plain, json)",
+          "name": [
+            "--output",
+            "-o"
+          ]
+        },
+        {
+          "description": "Build on-the-fly the dev image using the info provided by the 'build' okteto manifest field",
+          "name": [
+            "--build"
+          ]
+        },
+        {
+          "args": {
+            "name": "context"
+          },
+          "description": "Context where the up command is executed",
+          "name": [
+            "--context",
+            "-c"
+          ]
+        },
+        {
+          "description": "Create deployment when it doesn't exist in a namespace",
+          "name": [
+            "--deploy",
+            "-d"
+          ]
+        },
+        {
+          "args": {
+            "name": "file"
+          },
+          "description": "Path to the manifest file",
+          "name": [
+            "--file",
+            "-f"
+          ]
+        },
+        {
+          "args": {
+            "name": "namespace"
+          },
+          "description": "Namespace where the up command is executed",
+          "name": [
+            "--namespace",
+            "-n"
+          ]
+        },
+        {
+          "description": "Force dev image pull",
+          "name": [
+            "--pull"
+          ]
+        },
+        {
+          "args": {
+            "name": "remote"
+          },
+          "description": "Configures remote execution on the specified port",
+          "name": [
+            "--remote",
+            "-r"
+          ]
+        },
+        {
+          "description": "Reset the file synchronization database",
+          "name": [
+            "--reset"
+          ]
+        },
+        {
+          "description": "Help for up",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Update okteto version",
+      "name": "update",
+      "options": [
+        {
+          "args": {
+            "name": "loglevel"
+          },
+          "description": "Amount of information outputted (debug, info, warn, error)",
+          "name": [
+            "--loglevel",
+            "-l"
+          ]
+        },
+        {
+          "args": {
+            "name": "output"
+          },
+          "description": "Output format (tty, plain, json)",
+          "name": [
+            "--output",
+            "-o"
+          ]
+        },
+        {
+          "description": "Help for update",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "View the version of the okteto binary",
+      "name": "version",
+      "options": [
+        {
+          "args": {
+            "name": "loglevel"
+          },
+          "description": "Amount of information outputted (debug, info, warn, error)",
+          "name": [
+            "--loglevel",
+            "-l"
+          ]
+        },
+        {
+          "args": {
+            "name": "output"
+          },
+          "description": "Output format (tty, plain, json)",
+          "name": [
+            "--output",
+            "-o"
+          ]
+        },
+        {
+          "description": "Help for version",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Help about any command",
+      "name": "help",
+      "options": [
+        {
+          "args": {
+            "name": "loglevel"
+          },
+          "description": "Amount of information outputted (debug, info, warn, error)",
+          "name": [
+            "--loglevel",
+            "-l"
+          ]
+        },
+        {
+          "args": {
+            "name": "output"
+          },
+          "description": "Output format (tty, plain, json)",
+          "name": [
+            "--output",
+            "-o"
+          ]
+        },
+        {
+          "description": "Help for help",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Enable / Disable analytics",
+          "name": "analytics",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Help for analytics",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Build (and optionally push) a Docker image",
+          "name": "build",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Help for build",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Generate the autocompletion script for the specified shell",
+          "name": "completion",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Help for completion",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "description": "Generate the autocompletion script for bash",
+              "name": "bash",
+              "options": [
+                {
+                  "args": {
+                    "name": "loglevel"
+                  },
+                  "description": "Amount of information outputted (debug, info, warn, error)",
+                  "name": [
+                    "--loglevel",
+                    "-l"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "output"
+                  },
+                  "description": "Output format (tty, plain, json)",
+                  "name": [
+                    "--output",
+                    "-o"
+                  ]
+                },
+                {
+                  "description": "Disable completion descriptions",
+                  "name": [
+                    "--no-descriptions"
+                  ]
+                },
+                {
+                  "description": "Help for bash",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Generate the autocompletion script for fish",
+              "name": "fish",
+              "options": [
+                {
+                  "args": {
+                    "name": "loglevel"
+                  },
+                  "description": "Amount of information outputted (debug, info, warn, error)",
+                  "name": [
+                    "--loglevel",
+                    "-l"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "output"
+                  },
+                  "description": "Output format (tty, plain, json)",
+                  "name": [
+                    "--output",
+                    "-o"
+                  ]
+                },
+                {
+                  "description": "Disable completion descriptions",
+                  "name": [
+                    "--no-descriptions"
+                  ]
+                },
+                {
+                  "description": "Help for fish",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Generate the autocompletion script for powershell",
+              "name": "powershell",
+              "options": [
+                {
+                  "args": {
+                    "name": "loglevel"
+                  },
+                  "description": "Amount of information outputted (debug, info, warn, error)",
+                  "name": [
+                    "--loglevel",
+                    "-l"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "output"
+                  },
+                  "description": "Output format (tty, plain, json)",
+                  "name": [
+                    "--output",
+                    "-o"
+                  ]
+                },
+                {
+                  "description": "Disable completion descriptions",
+                  "name": [
+                    "--no-descriptions"
+                  ]
+                },
+                {
+                  "description": "Help for powershell",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Generate the autocompletion script for zsh",
+              "name": "zsh",
+              "options": [
+                {
+                  "args": {
+                    "name": "loglevel"
+                  },
+                  "description": "Amount of information outputted (debug, info, warn, error)",
+                  "name": [
+                    "--loglevel",
+                    "-l"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "output"
+                  },
+                  "description": "Output format (tty, plain, json)",
+                  "name": [
+                    "--output",
+                    "-o"
+                  ]
+                },
+                {
+                  "description": "Disable completion descriptions",
+                  "name": [
+                    "--no-descriptions"
+                  ]
+                },
+                {
+                  "description": "Help for zsh",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Set the default context",
+          "name": "ctx",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Help for context",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "description": "Delete a context",
+              "name": "delete",
+              "options": [
+                {
+                  "args": {
+                    "name": "loglevel"
+                  },
+                  "description": "Amount of information outputted (debug, info, warn, error)",
+                  "name": [
+                    "--loglevel",
+                    "-l"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "output"
+                  },
+                  "description": "Output format (tty, plain, json)",
+                  "name": [
+                    "--output",
+                    "-o"
+                  ]
+                },
+                {
+                  "description": "Help for delete",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "List available contexts",
+              "name": "ls",
+              "options": [
+                {
+                  "args": {
+                    "name": "loglevel"
+                  },
+                  "description": "Amount of information outputted (debug, info, warn, error)",
+                  "name": [
+                    "--loglevel",
+                    "-l"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "output"
+                  },
+                  "description": "Output format (tty, plain, json)",
+                  "name": [
+                    "--output",
+                    "-o"
+                  ]
+                },
+                {
+                  "description": "Help for list",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Print the current context",
+              "name": "show",
+              "options": [
+                {
+                  "args": {
+                    "name": "loglevel"
+                  },
+                  "description": "Amount of information outputted (debug, info, warn, error)",
+                  "name": [
+                    "--loglevel",
+                    "-l"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "output"
+                  },
+                  "description": "Output format (tty, plain, json)",
+                  "name": [
+                    "--output",
+                    "-o"
+                  ]
+                },
+                {
+                  "description": "Help for show",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Set the default context",
+              "name": "use",
+              "options": [
+                {
+                  "args": {
+                    "name": "loglevel"
+                  },
+                  "description": "Amount of information outputted (debug, info, warn, error)",
+                  "name": [
+                    "--loglevel",
+                    "-l"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "output"
+                  },
+                  "description": "Output format (tty, plain, json)",
+                  "name": [
+                    "--output",
+                    "-o"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "builder"
+                  },
+                  "description": "Url of the builder service",
+                  "name": [
+                    "--builder",
+                    "-b"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "namespace"
+                  },
+                  "description": "Namespace of your okteto context",
+                  "name": [
+                    "--namespace",
+                    "-n"
+                  ]
+                },
+                {
+                  "description": "Only shows okteto cluster options",
+                  "name": [
+                    "--okteto"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "token"
+                  },
+                  "description": "API token for authentication",
+                  "name": [
+                    "--token",
+                    "-t"
+                  ]
+                },
+                {
+                  "description": "Help for use",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Generate a zip file with the okteto logs",
+          "name": "doctor",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Help for doctor",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Deactivate your development container",
+          "name": "down",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Help for down",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Execute a command in your development container",
+          "name": "exec",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Help for exec",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Automatically generate your okteto manifest file",
+          "name": "init",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Help for init",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Download credentials for the Kubernetes cluster selected via 'okteto context'",
+          "name": "kubeconfig",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Help for kubeconfig",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Configure the current namespace of the okteto context",
+          "name": "ns",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Help for namespace",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "description": "Create a namespace",
+              "name": "create",
+              "options": [
+                {
+                  "args": {
+                    "name": "loglevel"
+                  },
+                  "description": "Amount of information outputted (debug, info, warn, error)",
+                  "name": [
+                    "--loglevel",
+                    "-l"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "output"
+                  },
+                  "description": "Output format (tty, plain, json)",
+                  "name": [
+                    "--output",
+                    "-o"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "members"
+                  },
+                  "description": "Members of the namespace, it can the username or email",
+                  "name": [
+                    "--members",
+                    "-m"
+                  ]
+                },
+                {
+                  "description": "Help for create",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Delete a namespace",
+              "name": "delete",
+              "options": [
+                {
+                  "args": {
+                    "name": "loglevel"
+                  },
+                  "description": "Amount of information outputted (debug, info, warn, error)",
+                  "name": [
+                    "--loglevel",
+                    "-l"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "output"
+                  },
+                  "description": "Output format (tty, plain, json)",
+                  "name": [
+                    "--output",
+                    "-o"
+                  ]
+                },
+                {
+                  "description": "Help for delete",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "List namespaces managed by Okteto in your current context",
+              "name": "ls",
+              "options": [
+                {
+                  "args": {
+                    "name": "loglevel"
+                  },
+                  "description": "Amount of information outputted (debug, info, warn, error)",
+                  "name": [
+                    "--loglevel",
+                    "-l"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "output"
+                  },
+                  "description": "Output format (tty, plain, json)",
+                  "name": [
+                    "--output",
+                    "-o"
+                  ]
+                },
+                {
+                  "description": "Help for list",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Configure the current namespace of the okteto context",
+              "name": "ns",
+              "options": [
+                {
+                  "args": {
+                    "name": "loglevel"
+                  },
+                  "description": "Amount of information outputted (debug, info, warn, error)",
+                  "name": [
+                    "--loglevel",
+                    "-l"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "output"
+                  },
+                  "description": "Output format (tty, plain, json)",
+                  "name": [
+                    "--output",
+                    "-o"
+                  ]
+                },
+                {
+                  "description": "Load personal account",
+                  "name": [
+                    "--personal"
+                  ]
+                },
+                {
+                  "description": "Help for use",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Pipeline management commands",
+          "name": "pipeline",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Help for pipeline",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "description": "Deploy an okteto pipeline",
+              "name": "deploy",
+              "options": [
+                {
+                  "args": {
+                    "name": "loglevel"
+                  },
+                  "description": "Amount of information outputted (debug, info, warn, error)",
+                  "name": [
+                    "--loglevel",
+                    "-l"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "output"
+                  },
+                  "description": "Output format (tty, plain, json)",
+                  "name": [
+                    "--output",
+                    "-o"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "branch"
+                  },
+                  "description": "The branch to deploy (defaults to the current branch)",
+                  "name": [
+                    "--branch",
+                    "-b"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "file"
+                  },
+                  "description": "Relative path within the repository to the manifest file (default to okteto-pipeline.yaml or .okteto/okteto-pipeline.yaml)",
+                  "name": [
+                    "--file",
+                    "-f"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "filename"
+                  },
+                  "description": "Relative path within the repository to the manifest file (default to okteto-pipeline.yaml or .okteto/okteto-pipeline.yaml)",
+                  "name": [
+                    "--filename"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the pipeline (defaults to the git config name)",
+                  "name": [
+                    "--name",
+                    "-p"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "namespace"
+                  },
+                  "description": "Namespace where the up command is executed (defaults to the current namespace)",
+                  "name": [
+                    "--namespace",
+                    "-n"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "repository"
+                  },
+                  "description": "The repository to deploy (defaults to the current repository)",
+                  "name": [
+                    "--repository",
+                    "-r"
+                  ]
+                },
+                {
+                  "description": "Skip the pipeline deployment if the pipeline already exists in the namespace (defaults to false)",
+                  "name": [
+                    "--skip-if-exists"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "timeout"
+                  },
+                  "description": "The length of time to wait for completion, zero means never. Any other values should contain a corresponding time unit e.g. 1s, 2m, 3h",
+                  "name": [
+                    "--timeout",
+                    "-t"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "var"
+                  },
+                  "description": "Set a pipeline variable (can be set more than once)",
+                  "name": [
+                    "--var",
+                    "-v"
+                  ]
+                },
+                {
+                  "description": "Wait until the pipeline finishes (defaults to false)",
+                  "name": [
+                    "--wait",
+                    "-w"
+                  ]
+                },
+                {
+                  "description": "Help for deploy",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Destroy an okteto pipeline",
+              "name": "destroy",
+              "options": [
+                {
+                  "args": {
+                    "name": "loglevel"
+                  },
+                  "description": "Amount of information outputted (debug, info, warn, error)",
+                  "name": [
+                    "--loglevel",
+                    "-l"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "output"
+                  },
+                  "description": "Output format (tty, plain, json)",
+                  "name": [
+                    "--output",
+                    "-o"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Name of the pipeline (defaults to the git config name)",
+                  "name": [
+                    "--name",
+                    "-p"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "namespace"
+                  },
+                  "description": "Namespace where the up command is executed (defaults to the current namespace)",
+                  "name": [
+                    "--namespace",
+                    "-n"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "timeout"
+                  },
+                  "description": "The length of time to wait for completion, zero means never. Any other values should contain a corresponding time unit e.g. 1s, 2m, 3h",
+                  "name": [
+                    "--timeout",
+                    "-t"
+                  ]
+                },
+                {
+                  "description": "Destroy persistent volumes created by the pipeline (defaults to false)",
+                  "name": [
+                    "--volumes",
+                    "-v"
+                  ]
+                },
+                {
+                  "description": "Wait until the pipeline finishes (defaults to false)",
+                  "name": [
+                    "--wait",
+                    "-w"
+                  ]
+                },
+                {
+                  "description": "Help for destroy",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Preview environment management commands",
+          "name": "preview",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Help for preview",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "description": "Deploy a preview environment",
+              "name": "deploy",
+              "options": [
+                {
+                  "args": {
+                    "name": "loglevel"
+                  },
+                  "description": "Amount of information outputted (debug, info, warn, error)",
+                  "name": [
+                    "--loglevel",
+                    "-l"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "output"
+                  },
+                  "description": "Output format (tty, plain, json)",
+                  "name": [
+                    "--output",
+                    "-o"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "branch"
+                  },
+                  "description": "The branch to deploy (defaults to the current branch)",
+                  "name": [
+                    "--branch",
+                    "-b"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "file"
+                  },
+                  "description": "Relative path within the repository to the manifest file (default to okteto-pipeline.yaml or .okteto/okteto-pipeline.yaml)",
+                  "name": [
+                    "--file",
+                    "-f"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "filename"
+                  },
+                  "description": "Relative path within the repository to the manifest file (default to okteto-pipeline.yaml or .okteto/okteto-pipeline.yaml)",
+                  "name": [
+                    "--filename"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "repository"
+                  },
+                  "description": "The repository to deploy (defaults to the current repository)",
+                  "name": [
+                    "--repository",
+                    "-r"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "scope"
+                  },
+                  "description": "The scope of preview environment to create. Accepted values are ['personal', 'global']",
+                  "name": [
+                    "--scope",
+                    "-s"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "sourceUrl"
+                  },
+                  "description": "The URL of the original pull/merge request",
+                  "name": [
+                    "--sourceUrl"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "timeout"
+                  },
+                  "description": "The length of time to wait for completion, zero means never. Any other values should contain a corresponding time unit e.g. 1s, 2m, 3h",
+                  "name": [
+                    "--timeout",
+                    "-t"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "var"
+                  },
+                  "description": "Set a pipeline variable (can be set more than once)",
+                  "name": [
+                    "--var",
+                    "-v"
+                  ]
+                },
+                {
+                  "description": "Wait until the preview environment deployment finishes (defaults to false)",
+                  "name": [
+                    "--wait",
+                    "-w"
+                  ]
+                },
+                {
+                  "description": "Help for deploy",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Destroy a preview environment",
+              "name": "destroy",
+              "options": [
+                {
+                  "args": {
+                    "name": "loglevel"
+                  },
+                  "description": "Amount of information outputted (debug, info, warn, error)",
+                  "name": [
+                    "--loglevel",
+                    "-l"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "output"
+                  },
+                  "description": "Output format (tty, plain, json)",
+                  "name": [
+                    "--output",
+                    "-o"
+                  ]
+                },
+                {
+                  "description": "Help for destroy",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Show endpoints for a preview environment",
+              "name": "endpoints",
+              "options": [
+                {
+                  "args": {
+                    "name": "loglevel"
+                  },
+                  "description": "Amount of information outputted (debug, info, warn, error)",
+                  "name": [
+                    "--loglevel",
+                    "-l"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "output"
+                  },
+                  "description": "Output format (tty, plain, json)",
+                  "name": [
+                    "--output",
+                    "-o"
+                  ]
+                },
+                {
+                  "description": "Help for endpoints",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "List all preview environments",
+              "name": "list",
+              "options": [
+                {
+                  "args": {
+                    "name": "loglevel"
+                  },
+                  "description": "Amount of information outputted (debug, info, warn, error)",
+                  "name": [
+                    "--loglevel",
+                    "-l"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "output"
+                  },
+                  "description": "Output format (tty, plain, json)",
+                  "name": [
+                    "--output",
+                    "-o"
+                  ]
+                },
+                {
+                  "description": "Help for list",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Build, push and redeploy source code to the target app",
+          "name": "push",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Help for push",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Restart the deployments listed in the services field of the okteto manifest",
+          "name": "restart",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Help for restart",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Stack management commands",
+          "name": "stack",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Help for stack",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "description": "Deploy a stack",
+              "name": "deploy",
+              "options": [
+                {
+                  "args": {
+                    "name": "loglevel"
+                  },
+                  "description": "Amount of information outputted (debug, info, warn, error)",
+                  "name": [
+                    "--loglevel",
+                    "-l"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "output"
+                  },
+                  "description": "Output format (tty, plain, json)",
+                  "name": [
+                    "--output",
+                    "-o"
+                  ]
+                },
+                {
+                  "description": "Build images before starting any Stack service",
+                  "name": [
+                    "--build"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "file"
+                  },
+                  "description": "Path to the stack manifest files. If more than one is passed the latest will overwrite the fields from the previous",
+                  "name": [
+                    "--file",
+                    "-f"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Overwrites the stack name",
+                  "name": [
+                    "--name"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "namespace"
+                  },
+                  "description": "Overwrites the stack namespace where the stack is deployed",
+                  "name": [
+                    "--namespace",
+                    "-n"
+                  ]
+                },
+                {
+                  "description": "Do not use cache when building the image",
+                  "name": [
+                    "--no-cache"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "progress"
+                  },
+                  "description": "Show plain/tty build output (default \"tty\")",
+                  "name": [
+                    "--progress"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "timeout"
+                  },
+                  "description": "The length of time to wait for completion, zero means never. Any other values should contain a corresponding time unit e.g. 1s, 2m, 3h",
+                  "name": [
+                    "--timeout",
+                    "-t"
+                  ]
+                },
+                {
+                  "description": "Wait until a minimum number of containers are in a ready state for every service",
+                  "name": [
+                    "--wait"
+                  ]
+                },
+                {
+                  "description": "Help for deploy",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Destroy a stack",
+              "name": "destroy",
+              "options": [
+                {
+                  "args": {
+                    "name": "loglevel"
+                  },
+                  "description": "Amount of information outputted (debug, info, warn, error)",
+                  "name": [
+                    "--loglevel",
+                    "-l"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "output"
+                  },
+                  "description": "Output format (tty, plain, json)",
+                  "name": [
+                    "--output",
+                    "-o"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "file"
+                  },
+                  "description": "Path to the stack manifest file",
+                  "name": [
+                    "--file",
+                    "-f"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Overwrites the stack name",
+                  "name": [
+                    "--name"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "namespace"
+                  },
+                  "description": "Overwrites the stack namespace where the stack is destroyed",
+                  "name": [
+                    "--namespace",
+                    "-n"
+                  ]
+                },
+                {
+                  "description": "Remove persistent volumes",
+                  "name": [
+                    "--volumes",
+                    "-v"
+                  ]
+                },
+                {
+                  "description": "Help for destroy",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Show endpoints for a stack",
+              "name": "endpoints",
+              "options": [
+                {
+                  "args": {
+                    "name": "loglevel"
+                  },
+                  "description": "Amount of information outputted (debug, info, warn, error)",
+                  "name": [
+                    "--loglevel",
+                    "-l"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "output"
+                  },
+                  "description": "Output format (tty, plain, json)",
+                  "name": [
+                    "--output",
+                    "-o"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "file"
+                  },
+                  "description": "Path to the stack manifest files. If more than one is passed the latest will overwrite the fields from the previous",
+                  "name": [
+                    "--file",
+                    "-f"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "name"
+                  },
+                  "description": "Overwrites the stack name",
+                  "name": [
+                    "--name"
+                  ]
+                },
+                {
+                  "args": {
+                    "name": "namespace"
+                  },
+                  "description": "Overwrites the stack namespace where the stack is deployed",
+                  "name": [
+                    "--namespace",
+                    "-n"
+                  ]
+                },
+                {
+                  "description": "Help for endpoints",
+                  "name": [
+                    "--help",
+                    "-h"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Status of the synchronization process",
+          "name": "status",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Help for status",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Activate your development container",
+          "name": "up",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Help for up",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Update okteto version",
+          "name": "update",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Help for update",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "View the version of the okteto binary",
+          "name": "version",
+          "options": [
+            {
+              "args": {
+                "name": "loglevel"
+              },
+              "description": "Amount of information outputted (debug, info, warn, error)",
+              "name": [
+                "--loglevel",
+                "-l"
+              ]
+            },
+            {
+              "args": {
+                "name": "output"
+              },
+              "description": "Output format (tty, plain, json)",
+              "name": [
+                "--output",
+                "-o"
+              ]
+            },
+            {
+              "description": "Help for version",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

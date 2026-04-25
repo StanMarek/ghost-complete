@@ -1,0 +1,91 @@
+{
+  "args": {
+    "description": "File(s) to format",
+    "isOptional": true,
+    "isVariadic": true,
+    "name": "file",
+    "template": "filepaths"
+  },
+  "description": "Simple text formatter",
+  "name": "fmt",
+  "options": [
+    {
+      "description": "Center the text, line by line.  In this case, most of the other\noptions are ignored; no splitting or joining of lines is done",
+      "name": [
+        "-c"
+      ]
+    },
+    {
+      "description": "Try to format mail header lines contained in the input\nsensibly",
+      "name": [
+        "-m"
+      ]
+    },
+    {
+      "description": "Format lines beginning with a ‘.’ (dot) character",
+      "name": [
+        "-n"
+      ]
+    },
+    {
+      "description": "Allow indented paragraphs.  Without the -p flag, any change in\nthe amount of whitespace at the start of a line results in a\nnew paragraph being begun",
+      "name": [
+        "-p"
+      ]
+    },
+    {
+      "description": "Collapse whitespace inside lines, so that multiple whitespace\ncharacters are turned into a single space.  (Or, at the end of\na sentence, a double space.)",
+      "name": [
+        "-s"
+      ]
+    },
+    {
+      "args": {
+        "name": "chars",
+        "suggestions": [
+          {
+            "name": "."
+          },
+          {
+            "name": "?"
+          },
+          {
+            "name": "!"
+          }
+        ]
+      },
+      "description": "Treat the chars (and no others) as sentence-ending characters.\nBy default the sentence-ending characters are full stop (‘.’),\nquestion mark (‘?’) and exclamation mark (‘!’).  Remember that\nsome characters may need to be escaped to protect them from\nyour shell",
+      "name": [
+        "-d"
+      ]
+    },
+    {
+      "args": {
+        "name": "number",
+        "suggestions": [
+          {
+            "name": "8"
+          }
+        ]
+      },
+      "description": "Replace multiple spaces with tabs at the start of each output\nline, if possible.  Each number spaces will be replaced with\none tab.  The default is 8.  If number is 0, spaces are\npreserved",
+      "name": [
+        "-l"
+      ]
+    },
+    {
+      "args": {
+        "name": "number",
+        "suggestions": [
+          {
+            "name": "8"
+          }
+        ]
+      },
+      "description": "Assume that the input files' tabs assume number spaces per tab\nstop.  The default is 8",
+      "name": [
+        "-t"
+      ]
+    }
+  ]
+}

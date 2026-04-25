@@ -1,0 +1,226 @@
+{
+  "args": {
+    "description": "Sets the commit range to process",
+    "generators": [
+      {
+        "js_source": "(e,c)=>{if(e.startsWith(\"fatal:\"))return[];(e.startsWith(\"warning:\")||e.startsWith(\"error:\"))&&(e=e.slice(e.indexOf(`\n`)+1));let i=c.pop();return[...e.split(`\n`).map(t=>{let n=t.indexOf(\" \"),s=t.slice(0,n);return{name:s,insertValue:s+(i?.includes(\"..\")?\"\":\"..\"),icon:\"fig://icon?type=node\",description:t.slice(n+1),priority:1}}),{name:\"HEAD\",insertValue:\"HEAD\"+(i?.includes(\"..\")?\"\":\"..\"),icon:\"fig://icon?type=node\",description:\"The current commit\",priority:5}]}",
+        "requires_js": true,
+        "script": [
+          "git",
+          "rev-list",
+          "--all",
+          "--oneline",
+          "--abbrev-commit"
+        ]
+      }
+    ],
+    "name": "range"
+  },
+  "description": "A highly customizable changelog generator ⛰️",
+  "name": "git-cliff",
+  "options": [
+    {
+      "description": "Increases the logging verbosity",
+      "name": [
+        "--verbose",
+        "-v"
+      ]
+    },
+    {
+      "description": "Writes the default configuration file to cliff.toml",
+      "name": [
+        "--init",
+        "-i"
+      ]
+    },
+    {
+      "description": "Processes the commits starting from the latest tag",
+      "name": [
+        "--latest",
+        "-l"
+      ]
+    },
+    {
+      "description": "Processes the commits that belong to the current tag",
+      "name": [
+        "--current"
+      ]
+    },
+    {
+      "description": "Processes the commits that do not belong to a tag",
+      "name": [
+        "--unreleased",
+        "-u"
+      ]
+    },
+    {
+      "description": "Sorts the tags chronologically",
+      "name": [
+        "--date-order"
+      ]
+    },
+    {
+      "description": "Prints changelog context as JSON",
+      "name": [
+        "--context"
+      ]
+    },
+    {
+      "description": "Prints help information",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "description": "Prints version information",
+      "name": [
+        "--version",
+        "-V"
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "filepaths"
+      },
+      "description": "Sets the configuration file",
+      "name": [
+        "--config",
+        "-c"
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "folders"
+      },
+      "description": "Sets the working directory",
+      "name": [
+        "--workdir",
+        "-w"
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "folders"
+      },
+      "description": "Sets the git repository",
+      "name": [
+        "--repository",
+        "-r"
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "pattern"
+      },
+      "description": "Sets the path to include related commits",
+      "name": [
+        "--include-path"
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "pattern"
+      },
+      "description": "Sets the path to exclude related commits",
+      "name": [
+        "--exclude-path"
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "msg"
+      },
+      "description": "Sets custom commit messages to include in the changelog",
+      "name": [
+        "--with-commit"
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "filepaths"
+      },
+      "description": "Prepends entries to the given changelog file",
+      "name": [
+        "--prepend",
+        "-p"
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "filepaths"
+      },
+      "description": "Writes output to the given file",
+      "name": [
+        "--output",
+        "-o"
+      ]
+    },
+    {
+      "args": {
+        "name": "tag"
+      },
+      "description": "Sets the tag for the latest version",
+      "name": [
+        "--tag",
+        "-t"
+      ]
+    },
+    {
+      "args": {
+        "name": "template"
+      },
+      "description": "Sets the template for the changelog body",
+      "name": [
+        "--body",
+        "-b"
+      ]
+    },
+    {
+      "args": {
+        "name": "part",
+        "suggestions": [
+          {
+            "name": "header"
+          },
+          {
+            "name": "footer"
+          },
+          {
+            "name": "all"
+          }
+        ]
+      },
+      "description": "Strips the given parts from the changelog",
+      "name": [
+        "--strip",
+        "-s"
+      ]
+    },
+    {
+      "args": {
+        "name": "sort",
+        "suggestions": [
+          {
+            "name": "oldest"
+          },
+          {
+            "name": "newest"
+          }
+        ]
+      },
+      "description": "Sets sorting of the commits inside sections",
+      "name": [
+        "--sort"
+      ]
+    }
+  ]
+}

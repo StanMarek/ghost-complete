@@ -1,0 +1,173 @@
+{
+  "description": "'ghq' provides a way to organize remote repository clones, like go get does. When you clone a remote repository by ghq get, ghq makes a directory under a specific root directory (by default ~/ghq) using the remote repository URL’s host and path",
+  "name": "ghq",
+  "options": [
+    {
+      "description": "Show help",
+      "name": [
+        "-h",
+        "--help",
+        "h",
+        "help"
+      ]
+    },
+    {
+      "description": "Print the version",
+      "name": [
+        "-v",
+        "--version"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "name": "<repository URL>|<project>|<user>/<project>|<host>/<user>/<project>"
+      },
+      "description": "Clone/sync with a remote repository",
+      "name": "get",
+      "options": [
+        {
+          "description": "Update local repository if cloned already (default: false)",
+          "name": [
+            "-u",
+            "--update"
+          ]
+        },
+        {
+          "description": "Clone with SSH (default: false)",
+          "name": [
+            "-p"
+          ]
+        },
+        {
+          "description": "Do a shallow clone (default: false)",
+          "name": [
+            "--shallow"
+          ]
+        },
+        {
+          "description": "Look after get (default: false)",
+          "name": [
+            "-l",
+            "--look"
+          ]
+        },
+        {
+          "args": {
+            "name": "vcs"
+          },
+          "description": "Specify vcs backend for cloning",
+          "name": [
+            "--vcs"
+          ]
+        },
+        {
+          "description": "Clone or update silently (default: false)",
+          "name": [
+            "-s",
+            "--silent"
+          ]
+        },
+        {
+          "description": "Prevent recursive fetching (default: false)",
+          "name": [
+            "--no-recursive"
+          ]
+        },
+        {
+          "args": {
+            "name": "branch"
+          },
+          "description": "Specify branch name. This flag implies --single-branch on Git",
+          "name": [
+            "-b",
+            "--branch"
+          ]
+        },
+        {
+          "description": "Import parallelly (default: false)",
+          "name": [
+            "-P",
+            "--parallel"
+          ]
+        },
+        {
+          "description": "Do a bare clone (default: false)",
+          "name": [
+            "--bare"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "query"
+      },
+      "description": "List local repositories",
+      "name": "list",
+      "options": [
+        {
+          "description": "Perform an exact match (default: false)",
+          "name": [
+            "-e",
+            "--exact"
+          ]
+        },
+        {
+          "args": {
+            "name": "vcs"
+          },
+          "description": "Specify vcs backend for matching",
+          "name": [
+            "--vcs"
+          ]
+        },
+        {
+          "description": "Print full paths (default: false)",
+          "name": [
+            "-p",
+            "--full-path"
+          ]
+        },
+        {
+          "description": "Print unique subpaths (default: false)",
+          "name": [
+            "--unique"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Show repositories' root",
+      "name": "root",
+      "options": [
+        {
+          "description": "Show all roots (default: false)",
+          "name": [
+            "--all"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "<project>|<user>/<project>|<host>/<user>/<project>"
+      },
+      "description": "Create a new repository",
+      "name": "create",
+      "options": [
+        {
+          "args": {
+            "name": "vcs"
+          },
+          "description": "Specify vcs backend explicitly",
+          "name": [
+            "--vcs"
+          ]
+        }
+      ]
+    }
+  ]
+}

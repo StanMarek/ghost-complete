@@ -1,0 +1,3803 @@
+{
+  "description": "Daemon process manager",
+  "name": "pm2",
+  "options": [
+    {
+      "description": "Outputs the version number",
+      "name": [
+        "-V",
+        "--version"
+      ]
+    },
+    {
+      "description": "Gets version",
+      "name": [
+        "-v"
+      ]
+    },
+    {
+      "description": "Hides all messages",
+      "name": [
+        "-s",
+        "--silent"
+      ]
+    },
+    {
+      "description": "Displays a compacted list without formatting",
+      "name": [
+        "-m",
+        "--mini-list"
+      ]
+    },
+    {
+      "description": "Forces actions",
+      "name": [
+        "-f",
+        "--force"
+      ]
+    },
+    {
+      "description": "Do not write logs",
+      "name": [
+        "--disable-logs"
+      ]
+    },
+    {
+      "args": {
+        "name": "name"
+      },
+      "description": "Sets a name for script",
+      "name": [
+        "-n",
+        "--name"
+      ]
+    },
+    {
+      "args": {
+        "name": "number"
+      },
+      "description": "Launches [number] instances (for networked app)(load balanced)",
+      "name": [
+        "-i",
+        "--instances"
+      ]
+    },
+    {
+      "args": {
+        "name": "number"
+      },
+      "description": "Number of parallel actions (for restart/reload)",
+      "name": [
+        "--parallel"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "path",
+        "template": "filepaths"
+      },
+      "description": "Specifies entire log file (error and out are both included)",
+      "name": [
+        "-l",
+        "--log"
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "filepaths"
+      },
+      "description": "Specifies out log file",
+      "name": [
+        "-o",
+        "--output"
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "filepaths"
+      },
+      "description": "Specifies error log file",
+      "name": [
+        "-e",
+        "--error"
+      ]
+    },
+    {
+      "args": {
+        "name": "pid",
+        "template": "filepaths"
+      },
+      "description": "Specify pid file",
+      "name": [
+        "-p",
+        "--pid"
+      ]
+    },
+    {
+      "args": {
+        "name": "delay"
+      },
+      "description": "Delays before sending final SIGKILL signal to process",
+      "name": [
+        "-k",
+        "--kill-timeout"
+      ]
+    },
+    {
+      "args": {
+        "name": "delay"
+      },
+      "description": "Listen timeout on application reload",
+      "name": [
+        "--listen-timeout"
+      ]
+    },
+    {
+      "args": {
+        "name": "memory"
+      },
+      "description": "Specify max memory amount used to autorestart (in octet or use syntax like 100M)",
+      "name": [
+        "--max-memory-restart"
+      ]
+    },
+    {
+      "args": {
+        "name": "delay"
+      },
+      "description": "Specify a delay between restarts (in milliseconds)",
+      "name": [
+        "--restart-delay"
+      ]
+    },
+    {
+      "args": {
+        "name": "Environment Name"
+      },
+      "description": "Specify environment to get specific env variables",
+      "name": [
+        "--env"
+      ]
+    },
+    {
+      "args": {
+        "name": "type"
+      },
+      "description": "Specify log output style (raw by default, json optional)",
+      "name": [
+        "--log-type"
+      ]
+    },
+    {
+      "description": "Execute a program using fork system",
+      "name": [
+        "-x",
+        "--execute-command"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "Count"
+      },
+      "description": "Only Restart the script COUNT times",
+      "name": [
+        "--max-restarts"
+      ]
+    },
+    {
+      "args": {
+        "name": "username"
+      },
+      "description": "Defines user when generating startup script",
+      "name": [
+        "-u",
+        "--user"
+      ]
+    },
+    {
+      "args": {
+        "name": "uid"
+      },
+      "description": "Runs target script with <uid> rights",
+      "name": [
+        "--uid"
+      ]
+    },
+    {
+      "args": {
+        "name": "gid"
+      },
+      "description": "Runs target script with <gid> rights",
+      "name": [
+        "--gid"
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "filepaths"
+      },
+      "description": "Runs target script as <username>",
+      "name": [
+        "--cwd"
+      ]
+    },
+    {
+      "args": {
+        "name": "home path",
+        "template": "folders"
+      },
+      "description": "Defines home path when generating startup script",
+      "name": [
+        "--hp"
+      ]
+    },
+    {
+      "description": "Overrides systemd script to wait for full internet connectivity to launch pm2",
+      "name": [
+        "--wait-ip"
+      ]
+    },
+    {
+      "args": {
+        "name": "name"
+      },
+      "description": "Defines service name when generating startup script",
+      "name": [
+        "--service-name"
+      ]
+    },
+    {
+      "args": {
+        "name": "Cron Pattern"
+      },
+      "description": "Restarts a running process based on a cron pattern",
+      "name": [
+        "-c",
+        "--cron"
+      ]
+    },
+    {
+      "description": "Writes configuration in local folder",
+      "name": [
+        "-w",
+        "--write"
+      ]
+    },
+    {
+      "args": {
+        "name": "interpreter"
+      },
+      "description": "The interpreter pm2 should use for executing app (bash, python…)",
+      "name": [
+        "--interpreter"
+      ]
+    },
+    {
+      "args": {
+        "name": "Arguments"
+      },
+      "description": "Interprets options (alias of –node-args)",
+      "name": [
+        "--interpreter-args"
+      ]
+    },
+    {
+      "args": {
+        "name": "Date Format"
+      },
+      "description": "Adds custom prefix timestamp to logs",
+      "name": [
+        "--log-date-format"
+      ]
+    },
+    {
+      "description": "Runs pm2 daemon in the foreground if it doesn’t exist already",
+      "name": [
+        "--no-daemon"
+      ]
+    },
+    {
+      "description": "Updates environment on restart/reload (-a <=> apply)",
+      "name": [
+        "-a",
+        "--update-env"
+      ]
+    },
+    {
+      "description": "Force source map support",
+      "name": [
+        "–-source-map-support"
+      ]
+    },
+    {
+      "args": {
+        "name": "app name"
+      },
+      "description": "With json declaration, allow to only act on one application",
+      "name": [
+        "–-only"
+      ]
+    },
+    {
+      "description": "Force source map support",
+      "name": [
+        "–-disable-source-map-support"
+      ]
+    },
+    {
+      "description": "Asks pm2 to wait for ready event from your app",
+      "name": [
+        "–-wait-ready"
+      ]
+    },
+    {
+      "description": "Merges logs from different instances but keep error and out separated",
+      "name": [
+        "–-merge-logs"
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "paths",
+        "template": [
+          "folders"
+        ]
+      },
+      "description": "Watches application folder for changes (default: )",
+      "name": [
+        "–-watch"
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "Folder or Files",
+        "template": [
+          "folders",
+          "filepaths"
+        ]
+      },
+      "description": "Folder/files to be ignored watching",
+      "name": [
+        "–-ignore-watch"
+      ]
+    },
+    {
+      "args": {
+        "description": "–node-args=`–debug=7001 –trace-deprecation`",
+        "name": "Node Args"
+      },
+      "description": "Space delimited arguments to pass to node in cluster mode",
+      "name": [
+        "–-node-args"
+      ]
+    },
+    {
+      "description": "Skip colors",
+      "name": [
+        "–-no-color"
+      ]
+    },
+    {
+      "description": "Starts an app without vizion feature (versioning control)",
+      "name": [
+        "–-no-vizion"
+      ]
+    },
+    {
+      "description": "Starts an app without automatic restart",
+      "name": [
+        "–-no-autorestart"
+      ]
+    },
+    {
+      "description": "Only kills the main process, not detached children",
+      "name": [
+        "–-no-treekill"
+      ]
+    },
+    {
+      "description": "Starts an app without apm",
+      "name": [
+        "–-no-pmx"
+      ]
+    },
+    {
+      "description": "Starts an app without apm",
+      "name": [
+        "–-no-automation"
+      ]
+    },
+    {
+      "description": "Enables transaction tracing with km",
+      "name": [
+        "–-trace"
+      ]
+    },
+    {
+      "description": "Disables transaction tracing with km",
+      "name": [
+        "–-disable-trace"
+      ]
+    },
+    {
+      "description": "Attaches logging after your start/restart/stop/reload",
+      "name": [
+        "–-attach"
+      ]
+    },
+    {
+      "args": {
+        "description": "Field_name:sort",
+        "name": "field name"
+      },
+      "description": "Sort process according to field’s name",
+      "name": [
+        "–-sort"
+      ]
+    },
+    {
+      "description": "Enables v8 data collecting",
+      "name": [
+        "–-v8"
+      ]
+    },
+    {
+      "description": "Enables event-loop-inspector dump in apm",
+      "name": [
+        "–-event-loop-inspector"
+      ]
+    },
+    {
+      "description": "Enables all monitoring tools (equivalent to –v8 –event-loop-inspector –trace)",
+      "name": [
+        "–-deep-monitoring"
+      ]
+    },
+    {
+      "description": "Outputs usage information",
+      "name": [
+        "-h",
+        "–-help"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "name": "file, json, stdin, app name, pm id, etc"
+      },
+      "description": "Starts and daemonizes an app",
+      "name": "start",
+      "options": [
+        {
+          "description": "Outputs the version number",
+          "name": [
+            "-V",
+            "--version"
+          ]
+        },
+        {
+          "description": "Gets version",
+          "name": [
+            "-v"
+          ]
+        },
+        {
+          "description": "Hides all messages",
+          "name": [
+            "-s",
+            "--silent"
+          ]
+        },
+        {
+          "description": "Displays a compacted list without formatting",
+          "name": [
+            "-m",
+            "--mini-list"
+          ]
+        },
+        {
+          "description": "Forces actions",
+          "name": [
+            "-f",
+            "--force"
+          ]
+        },
+        {
+          "description": "Do not write logs",
+          "name": [
+            "--disable-logs"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Sets a name for script",
+          "name": [
+            "-n",
+            "--name"
+          ]
+        },
+        {
+          "args": {
+            "name": "number"
+          },
+          "description": "Launches [number] instances (for networked app)(load balanced)",
+          "name": [
+            "-i",
+            "--instances"
+          ]
+        },
+        {
+          "args": {
+            "name": "number"
+          },
+          "description": "Number of parallel actions (for restart/reload)",
+          "name": [
+            "--parallel"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Specifies entire log file (error and out are both included)",
+          "name": [
+            "-l",
+            "--log"
+          ]
+        },
+        {
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Specifies out log file",
+          "name": [
+            "-o",
+            "--output"
+          ]
+        },
+        {
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Specifies error log file",
+          "name": [
+            "-e",
+            "--error"
+          ]
+        },
+        {
+          "args": {
+            "name": "pid",
+            "template": "filepaths"
+          },
+          "description": "Specify pid file",
+          "name": [
+            "-p",
+            "--pid"
+          ]
+        },
+        {
+          "args": {
+            "name": "delay"
+          },
+          "description": "Delays before sending final SIGKILL signal to process",
+          "name": [
+            "-k",
+            "--kill-timeout"
+          ]
+        },
+        {
+          "args": {
+            "name": "delay"
+          },
+          "description": "Listen timeout on application reload",
+          "name": [
+            "--listen-timeout"
+          ]
+        },
+        {
+          "args": {
+            "name": "memory"
+          },
+          "description": "Specify max memory amount used to autorestart (in octet or use syntax like 100M)",
+          "name": [
+            "--max-memory-restart"
+          ]
+        },
+        {
+          "args": {
+            "name": "delay"
+          },
+          "description": "Specify a delay between restarts (in milliseconds)",
+          "name": [
+            "--restart-delay"
+          ]
+        },
+        {
+          "args": {
+            "name": "Environment Name"
+          },
+          "description": "Specify environment to get specific env variables",
+          "name": [
+            "--env"
+          ]
+        },
+        {
+          "args": {
+            "name": "type"
+          },
+          "description": "Specify log output style (raw by default, json optional)",
+          "name": [
+            "--log-type"
+          ]
+        },
+        {
+          "description": "Execute a program using fork system",
+          "name": [
+            "-x",
+            "--execute-command"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "Count"
+          },
+          "description": "Only Restart the script COUNT times",
+          "name": [
+            "--max-restarts"
+          ]
+        },
+        {
+          "args": {
+            "name": "username"
+          },
+          "description": "Defines user when generating startup script",
+          "name": [
+            "-u",
+            "--user"
+          ]
+        },
+        {
+          "args": {
+            "name": "uid"
+          },
+          "description": "Runs target script with <uid> rights",
+          "name": [
+            "--uid"
+          ]
+        },
+        {
+          "args": {
+            "name": "gid"
+          },
+          "description": "Runs target script with <gid> rights",
+          "name": [
+            "--gid"
+          ]
+        },
+        {
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Runs target script as <username>",
+          "name": [
+            "--cwd"
+          ]
+        },
+        {
+          "args": {
+            "name": "home path",
+            "template": "folders"
+          },
+          "description": "Defines home path when generating startup script",
+          "name": [
+            "--hp"
+          ]
+        },
+        {
+          "description": "Overrides systemd script to wait for full internet connectivity to launch pm2",
+          "name": [
+            "--wait-ip"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Defines service name when generating startup script",
+          "name": [
+            "--service-name"
+          ]
+        },
+        {
+          "args": {
+            "name": "Cron Pattern"
+          },
+          "description": "Restarts a running process based on a cron pattern",
+          "name": [
+            "-c",
+            "--cron"
+          ]
+        },
+        {
+          "description": "Writes configuration in local folder",
+          "name": [
+            "-w",
+            "--write"
+          ]
+        },
+        {
+          "args": {
+            "name": "interpreter"
+          },
+          "description": "The interpreter pm2 should use for executing app (bash, python…)",
+          "name": [
+            "--interpreter"
+          ]
+        },
+        {
+          "args": {
+            "name": "Arguments"
+          },
+          "description": "Interprets options (alias of –node-args)",
+          "name": [
+            "--interpreter-args"
+          ]
+        },
+        {
+          "args": {
+            "name": "Date Format"
+          },
+          "description": "Adds custom prefix timestamp to logs",
+          "name": [
+            "--log-date-format"
+          ]
+        },
+        {
+          "description": "Runs pm2 daemon in the foreground if it doesn’t exist already",
+          "name": [
+            "--no-daemon"
+          ]
+        },
+        {
+          "description": "Updates environment on restart/reload (-a <=> apply)",
+          "name": [
+            "-a",
+            "--update-env"
+          ]
+        },
+        {
+          "description": "Force source map support",
+          "name": [
+            "–-source-map-support"
+          ]
+        },
+        {
+          "args": {
+            "name": "app name"
+          },
+          "description": "With json declaration, allow to only act on one application",
+          "name": [
+            "–-only"
+          ]
+        },
+        {
+          "description": "Force source map support",
+          "name": [
+            "–-disable-source-map-support"
+          ]
+        },
+        {
+          "description": "Asks pm2 to wait for ready event from your app",
+          "name": [
+            "–-wait-ready"
+          ]
+        },
+        {
+          "description": "Merges logs from different instances but keep error and out separated",
+          "name": [
+            "–-merge-logs"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "paths",
+            "template": [
+              "folders"
+            ]
+          },
+          "description": "Watches application folder for changes (default: )",
+          "name": [
+            "–-watch"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "Folder or Files",
+            "template": [
+              "folders",
+              "filepaths"
+            ]
+          },
+          "description": "Folder/files to be ignored watching",
+          "name": [
+            "–-ignore-watch"
+          ]
+        },
+        {
+          "args": {
+            "description": "–node-args=`–debug=7001 –trace-deprecation`",
+            "name": "Node Args"
+          },
+          "description": "Space delimited arguments to pass to node in cluster mode",
+          "name": [
+            "–-node-args"
+          ]
+        },
+        {
+          "description": "Skip colors",
+          "name": [
+            "–-no-color"
+          ]
+        },
+        {
+          "description": "Starts an app without vizion feature (versioning control)",
+          "name": [
+            "–-no-vizion"
+          ]
+        },
+        {
+          "description": "Starts an app without automatic restart",
+          "name": [
+            "–-no-autorestart"
+          ]
+        },
+        {
+          "description": "Only kills the main process, not detached children",
+          "name": [
+            "–-no-treekill"
+          ]
+        },
+        {
+          "description": "Starts an app without apm",
+          "name": [
+            "–-no-pmx"
+          ]
+        },
+        {
+          "description": "Starts an app without apm",
+          "name": [
+            "–-no-automation"
+          ]
+        },
+        {
+          "description": "Enables transaction tracing with km",
+          "name": [
+            "–-trace"
+          ]
+        },
+        {
+          "description": "Disables transaction tracing with km",
+          "name": [
+            "–-disable-trace"
+          ]
+        },
+        {
+          "description": "Attaches logging after your start/restart/stop/reload",
+          "name": [
+            "–-attach"
+          ]
+        },
+        {
+          "args": {
+            "description": "Field_name:sort",
+            "name": "field name"
+          },
+          "description": "Sort process according to field’s name",
+          "name": [
+            "–-sort"
+          ]
+        },
+        {
+          "description": "Enables v8 data collecting",
+          "name": [
+            "–-v8"
+          ]
+        },
+        {
+          "description": "Enables event-loop-inspector dump in apm",
+          "name": [
+            "–-event-loop-inspector"
+          ]
+        },
+        {
+          "description": "Enables all monitoring tools (equivalent to –v8 –event-loop-inspector –trace)",
+          "name": [
+            "–-deep-monitoring"
+          ]
+        },
+        {
+          "description": "Outputs usage information",
+          "name": [
+            "-h",
+            "–-help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "Proc Name"
+        },
+        {
+          "name": "Action Name"
+        },
+        {
+          "isOptional": true,
+          "name": "Params"
+        }
+      ],
+      "description": "Deploy your json",
+      "name": "trigger"
+    },
+    {
+      "args": {
+        "name": "File or environment",
+        "template": "filepaths"
+      },
+      "description": "Deploy your json",
+      "name": "deploy"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "(m,g,O)=>ye(this,void 0,void 0,function*(){var u;let{isDangerous:b,currentWorkingDirectory:S,searchTerm:f}=O,_=(u=(0,y.getCurrentInsertedDirectory)(c??S,f,O))!==null&&u!==void 0?u:\"/\";try{let J=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:_}),se=$(J.stdout.split(`\n`),[\".DS_Store\"]),z=[];for(let L of se)if(L){let D=L.endsWith(\"/\")?\"folders\":\"filepaths\";(D===\"filepaths\"&&d!==\"only\"||D===\"folders\"&&d!==\"never\")&&z.push({type:D===\"filepaths\"?\"file\":\"folder\",name:L,insertValue:L,isDangerous:b,context:{templateType:D}})}return w(h(z))}catch{return[]}})",
+            "requires_js": true
+          }
+        ],
+        "name": "json"
+      },
+      "description": "Start or restart JSON file",
+      "name": "startOrRestart"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "(m,g,O)=>ye(this,void 0,void 0,function*(){var u;let{isDangerous:b,currentWorkingDirectory:S,searchTerm:f}=O,_=(u=(0,y.getCurrentInsertedDirectory)(c??S,f,O))!==null&&u!==void 0?u:\"/\";try{let J=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:_}),se=$(J.stdout.split(`\n`),[\".DS_Store\"]),z=[];for(let L of se)if(L){let D=L.endsWith(\"/\")?\"folders\":\"filepaths\";(D===\"filepaths\"&&d!==\"only\"||D===\"folders\"&&d!==\"never\")&&z.push({type:D===\"filepaths\"?\"file\":\"folder\",name:L,insertValue:L,isDangerous:b,context:{templateType:D}})}return w(h(z))}catch{return[]}})",
+            "requires_js": true
+          }
+        ],
+        "name": "json"
+      },
+      "description": "Start or gracefully reload JSON file",
+      "name": "startOrReload"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "app name"
+      },
+      "description": "Return pid of the specified app or all",
+      "name": "pid"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "(m,g,O)=>ye(this,void 0,void 0,function*(){var u;let{isDangerous:b,currentWorkingDirectory:S,searchTerm:f}=O,_=(u=(0,y.getCurrentInsertedDirectory)(c??S,f,O))!==null&&u!==void 0?u:\"/\";try{let J=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:_}),se=$(J.stdout.split(`\n`),[\".DS_Store\"]),z=[];for(let L of se)if(L){let D=L.endsWith(\"/\")?\"folders\":\"filepaths\";(D===\"filepaths\"&&d!==\"only\"||D===\"folders\"&&d!==\"never\")&&z.push({type:D===\"filepaths\"?\"file\":\"folder\",name:L,insertValue:L,isDangerous:b,context:{templateType:D}})}return w(h(z))}catch{return[]}})",
+            "requires_js": true
+          }
+        ],
+        "name": "json"
+      },
+      "description": "Start or gracefully reolad JSON file",
+      "name": "startOrGracefulReload"
+    },
+    {
+      "args": {
+        "name": "id, name, all, json, stdin, etc"
+      },
+      "description": "Stop a process",
+      "name": "stop",
+      "options": [
+        {
+          "description": "Outputs the version number",
+          "name": [
+            "-V",
+            "--version"
+          ]
+        },
+        {
+          "description": "Gets version",
+          "name": [
+            "-v"
+          ]
+        },
+        {
+          "description": "Hides all messages",
+          "name": [
+            "-s",
+            "--silent"
+          ]
+        },
+        {
+          "description": "Displays a compacted list without formatting",
+          "name": [
+            "-m",
+            "--mini-list"
+          ]
+        },
+        {
+          "description": "Forces actions",
+          "name": [
+            "-f",
+            "--force"
+          ]
+        },
+        {
+          "description": "Do not write logs",
+          "name": [
+            "--disable-logs"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Sets a name for script",
+          "name": [
+            "-n",
+            "--name"
+          ]
+        },
+        {
+          "args": {
+            "name": "number"
+          },
+          "description": "Launches [number] instances (for networked app)(load balanced)",
+          "name": [
+            "-i",
+            "--instances"
+          ]
+        },
+        {
+          "args": {
+            "name": "number"
+          },
+          "description": "Number of parallel actions (for restart/reload)",
+          "name": [
+            "--parallel"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Specifies entire log file (error and out are both included)",
+          "name": [
+            "-l",
+            "--log"
+          ]
+        },
+        {
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Specifies out log file",
+          "name": [
+            "-o",
+            "--output"
+          ]
+        },
+        {
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Specifies error log file",
+          "name": [
+            "-e",
+            "--error"
+          ]
+        },
+        {
+          "args": {
+            "name": "pid",
+            "template": "filepaths"
+          },
+          "description": "Specify pid file",
+          "name": [
+            "-p",
+            "--pid"
+          ]
+        },
+        {
+          "args": {
+            "name": "delay"
+          },
+          "description": "Delays before sending final SIGKILL signal to process",
+          "name": [
+            "-k",
+            "--kill-timeout"
+          ]
+        },
+        {
+          "args": {
+            "name": "delay"
+          },
+          "description": "Listen timeout on application reload",
+          "name": [
+            "--listen-timeout"
+          ]
+        },
+        {
+          "args": {
+            "name": "memory"
+          },
+          "description": "Specify max memory amount used to autorestart (in octet or use syntax like 100M)",
+          "name": [
+            "--max-memory-restart"
+          ]
+        },
+        {
+          "args": {
+            "name": "delay"
+          },
+          "description": "Specify a delay between restarts (in milliseconds)",
+          "name": [
+            "--restart-delay"
+          ]
+        },
+        {
+          "args": {
+            "name": "Environment Name"
+          },
+          "description": "Specify environment to get specific env variables",
+          "name": [
+            "--env"
+          ]
+        },
+        {
+          "args": {
+            "name": "type"
+          },
+          "description": "Specify log output style (raw by default, json optional)",
+          "name": [
+            "--log-type"
+          ]
+        },
+        {
+          "description": "Execute a program using fork system",
+          "name": [
+            "-x",
+            "--execute-command"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "Count"
+          },
+          "description": "Only Restart the script COUNT times",
+          "name": [
+            "--max-restarts"
+          ]
+        },
+        {
+          "args": {
+            "name": "username"
+          },
+          "description": "Defines user when generating startup script",
+          "name": [
+            "-u",
+            "--user"
+          ]
+        },
+        {
+          "args": {
+            "name": "uid"
+          },
+          "description": "Runs target script with <uid> rights",
+          "name": [
+            "--uid"
+          ]
+        },
+        {
+          "args": {
+            "name": "gid"
+          },
+          "description": "Runs target script with <gid> rights",
+          "name": [
+            "--gid"
+          ]
+        },
+        {
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Runs target script as <username>",
+          "name": [
+            "--cwd"
+          ]
+        },
+        {
+          "args": {
+            "name": "home path",
+            "template": "folders"
+          },
+          "description": "Defines home path when generating startup script",
+          "name": [
+            "--hp"
+          ]
+        },
+        {
+          "description": "Overrides systemd script to wait for full internet connectivity to launch pm2",
+          "name": [
+            "--wait-ip"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Defines service name when generating startup script",
+          "name": [
+            "--service-name"
+          ]
+        },
+        {
+          "args": {
+            "name": "Cron Pattern"
+          },
+          "description": "Restarts a running process based on a cron pattern",
+          "name": [
+            "-c",
+            "--cron"
+          ]
+        },
+        {
+          "description": "Writes configuration in local folder",
+          "name": [
+            "-w",
+            "--write"
+          ]
+        },
+        {
+          "args": {
+            "name": "interpreter"
+          },
+          "description": "The interpreter pm2 should use for executing app (bash, python…)",
+          "name": [
+            "--interpreter"
+          ]
+        },
+        {
+          "args": {
+            "name": "Arguments"
+          },
+          "description": "Interprets options (alias of –node-args)",
+          "name": [
+            "--interpreter-args"
+          ]
+        },
+        {
+          "args": {
+            "name": "Date Format"
+          },
+          "description": "Adds custom prefix timestamp to logs",
+          "name": [
+            "--log-date-format"
+          ]
+        },
+        {
+          "description": "Runs pm2 daemon in the foreground if it doesn’t exist already",
+          "name": [
+            "--no-daemon"
+          ]
+        },
+        {
+          "description": "Updates environment on restart/reload (-a <=> apply)",
+          "name": [
+            "-a",
+            "--update-env"
+          ]
+        },
+        {
+          "description": "Force source map support",
+          "name": [
+            "–-source-map-support"
+          ]
+        },
+        {
+          "args": {
+            "name": "app name"
+          },
+          "description": "With json declaration, allow to only act on one application",
+          "name": [
+            "–-only"
+          ]
+        },
+        {
+          "description": "Force source map support",
+          "name": [
+            "–-disable-source-map-support"
+          ]
+        },
+        {
+          "description": "Asks pm2 to wait for ready event from your app",
+          "name": [
+            "–-wait-ready"
+          ]
+        },
+        {
+          "description": "Merges logs from different instances but keep error and out separated",
+          "name": [
+            "–-merge-logs"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "paths",
+            "template": [
+              "folders"
+            ]
+          },
+          "description": "Watches application folder for changes (default: )",
+          "name": [
+            "–-watch"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "Folder or Files",
+            "template": [
+              "folders",
+              "filepaths"
+            ]
+          },
+          "description": "Folder/files to be ignored watching",
+          "name": [
+            "–-ignore-watch"
+          ]
+        },
+        {
+          "args": {
+            "description": "–node-args=`–debug=7001 –trace-deprecation`",
+            "name": "Node Args"
+          },
+          "description": "Space delimited arguments to pass to node in cluster mode",
+          "name": [
+            "–-node-args"
+          ]
+        },
+        {
+          "description": "Skip colors",
+          "name": [
+            "–-no-color"
+          ]
+        },
+        {
+          "description": "Starts an app without vizion feature (versioning control)",
+          "name": [
+            "–-no-vizion"
+          ]
+        },
+        {
+          "description": "Starts an app without automatic restart",
+          "name": [
+            "–-no-autorestart"
+          ]
+        },
+        {
+          "description": "Only kills the main process, not detached children",
+          "name": [
+            "–-no-treekill"
+          ]
+        },
+        {
+          "description": "Starts an app without apm",
+          "name": [
+            "–-no-pmx"
+          ]
+        },
+        {
+          "description": "Starts an app without apm",
+          "name": [
+            "–-no-automation"
+          ]
+        },
+        {
+          "description": "Enables transaction tracing with km",
+          "name": [
+            "–-trace"
+          ]
+        },
+        {
+          "description": "Disables transaction tracing with km",
+          "name": [
+            "–-disable-trace"
+          ]
+        },
+        {
+          "description": "Attaches logging after your start/restart/stop/reload",
+          "name": [
+            "–-attach"
+          ]
+        },
+        {
+          "args": {
+            "description": "Field_name:sort",
+            "name": "field name"
+          },
+          "description": "Sort process according to field’s name",
+          "name": [
+            "–-sort"
+          ]
+        },
+        {
+          "description": "Enables v8 data collecting",
+          "name": [
+            "–-v8"
+          ]
+        },
+        {
+          "description": "Enables event-loop-inspector dump in apm",
+          "name": [
+            "–-event-loop-inspector"
+          ]
+        },
+        {
+          "description": "Enables all monitoring tools (equivalent to –v8 –event-loop-inspector –trace)",
+          "name": [
+            "–-deep-monitoring"
+          ]
+        },
+        {
+          "description": "Outputs usage information",
+          "name": [
+            "-h",
+            "–-help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "id, name, all, json, stdin, etc"
+      },
+      "description": "Restart a process",
+      "name": "restart",
+      "options": [
+        {
+          "description": "Outputs the version number",
+          "name": [
+            "-V",
+            "--version"
+          ]
+        },
+        {
+          "description": "Gets version",
+          "name": [
+            "-v"
+          ]
+        },
+        {
+          "description": "Hides all messages",
+          "name": [
+            "-s",
+            "--silent"
+          ]
+        },
+        {
+          "description": "Displays a compacted list without formatting",
+          "name": [
+            "-m",
+            "--mini-list"
+          ]
+        },
+        {
+          "description": "Forces actions",
+          "name": [
+            "-f",
+            "--force"
+          ]
+        },
+        {
+          "description": "Do not write logs",
+          "name": [
+            "--disable-logs"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Sets a name for script",
+          "name": [
+            "-n",
+            "--name"
+          ]
+        },
+        {
+          "args": {
+            "name": "number"
+          },
+          "description": "Launches [number] instances (for networked app)(load balanced)",
+          "name": [
+            "-i",
+            "--instances"
+          ]
+        },
+        {
+          "args": {
+            "name": "number"
+          },
+          "description": "Number of parallel actions (for restart/reload)",
+          "name": [
+            "--parallel"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Specifies entire log file (error and out are both included)",
+          "name": [
+            "-l",
+            "--log"
+          ]
+        },
+        {
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Specifies out log file",
+          "name": [
+            "-o",
+            "--output"
+          ]
+        },
+        {
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Specifies error log file",
+          "name": [
+            "-e",
+            "--error"
+          ]
+        },
+        {
+          "args": {
+            "name": "pid",
+            "template": "filepaths"
+          },
+          "description": "Specify pid file",
+          "name": [
+            "-p",
+            "--pid"
+          ]
+        },
+        {
+          "args": {
+            "name": "delay"
+          },
+          "description": "Delays before sending final SIGKILL signal to process",
+          "name": [
+            "-k",
+            "--kill-timeout"
+          ]
+        },
+        {
+          "args": {
+            "name": "delay"
+          },
+          "description": "Listen timeout on application reload",
+          "name": [
+            "--listen-timeout"
+          ]
+        },
+        {
+          "args": {
+            "name": "memory"
+          },
+          "description": "Specify max memory amount used to autorestart (in octet or use syntax like 100M)",
+          "name": [
+            "--max-memory-restart"
+          ]
+        },
+        {
+          "args": {
+            "name": "delay"
+          },
+          "description": "Specify a delay between restarts (in milliseconds)",
+          "name": [
+            "--restart-delay"
+          ]
+        },
+        {
+          "args": {
+            "name": "Environment Name"
+          },
+          "description": "Specify environment to get specific env variables",
+          "name": [
+            "--env"
+          ]
+        },
+        {
+          "args": {
+            "name": "type"
+          },
+          "description": "Specify log output style (raw by default, json optional)",
+          "name": [
+            "--log-type"
+          ]
+        },
+        {
+          "description": "Execute a program using fork system",
+          "name": [
+            "-x",
+            "--execute-command"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "Count"
+          },
+          "description": "Only Restart the script COUNT times",
+          "name": [
+            "--max-restarts"
+          ]
+        },
+        {
+          "args": {
+            "name": "username"
+          },
+          "description": "Defines user when generating startup script",
+          "name": [
+            "-u",
+            "--user"
+          ]
+        },
+        {
+          "args": {
+            "name": "uid"
+          },
+          "description": "Runs target script with <uid> rights",
+          "name": [
+            "--uid"
+          ]
+        },
+        {
+          "args": {
+            "name": "gid"
+          },
+          "description": "Runs target script with <gid> rights",
+          "name": [
+            "--gid"
+          ]
+        },
+        {
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Runs target script as <username>",
+          "name": [
+            "--cwd"
+          ]
+        },
+        {
+          "args": {
+            "name": "home path",
+            "template": "folders"
+          },
+          "description": "Defines home path when generating startup script",
+          "name": [
+            "--hp"
+          ]
+        },
+        {
+          "description": "Overrides systemd script to wait for full internet connectivity to launch pm2",
+          "name": [
+            "--wait-ip"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Defines service name when generating startup script",
+          "name": [
+            "--service-name"
+          ]
+        },
+        {
+          "args": {
+            "name": "Cron Pattern"
+          },
+          "description": "Restarts a running process based on a cron pattern",
+          "name": [
+            "-c",
+            "--cron"
+          ]
+        },
+        {
+          "description": "Writes configuration in local folder",
+          "name": [
+            "-w",
+            "--write"
+          ]
+        },
+        {
+          "args": {
+            "name": "interpreter"
+          },
+          "description": "The interpreter pm2 should use for executing app (bash, python…)",
+          "name": [
+            "--interpreter"
+          ]
+        },
+        {
+          "args": {
+            "name": "Arguments"
+          },
+          "description": "Interprets options (alias of –node-args)",
+          "name": [
+            "--interpreter-args"
+          ]
+        },
+        {
+          "args": {
+            "name": "Date Format"
+          },
+          "description": "Adds custom prefix timestamp to logs",
+          "name": [
+            "--log-date-format"
+          ]
+        },
+        {
+          "description": "Runs pm2 daemon in the foreground if it doesn’t exist already",
+          "name": [
+            "--no-daemon"
+          ]
+        },
+        {
+          "description": "Updates environment on restart/reload (-a <=> apply)",
+          "name": [
+            "-a",
+            "--update-env"
+          ]
+        },
+        {
+          "description": "Force source map support",
+          "name": [
+            "–-source-map-support"
+          ]
+        },
+        {
+          "args": {
+            "name": "app name"
+          },
+          "description": "With json declaration, allow to only act on one application",
+          "name": [
+            "–-only"
+          ]
+        },
+        {
+          "description": "Force source map support",
+          "name": [
+            "–-disable-source-map-support"
+          ]
+        },
+        {
+          "description": "Asks pm2 to wait for ready event from your app",
+          "name": [
+            "–-wait-ready"
+          ]
+        },
+        {
+          "description": "Merges logs from different instances but keep error and out separated",
+          "name": [
+            "–-merge-logs"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "paths",
+            "template": [
+              "folders"
+            ]
+          },
+          "description": "Watches application folder for changes (default: )",
+          "name": [
+            "–-watch"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "Folder or Files",
+            "template": [
+              "folders",
+              "filepaths"
+            ]
+          },
+          "description": "Folder/files to be ignored watching",
+          "name": [
+            "–-ignore-watch"
+          ]
+        },
+        {
+          "args": {
+            "description": "–node-args=`–debug=7001 –trace-deprecation`",
+            "name": "Node Args"
+          },
+          "description": "Space delimited arguments to pass to node in cluster mode",
+          "name": [
+            "–-node-args"
+          ]
+        },
+        {
+          "description": "Skip colors",
+          "name": [
+            "–-no-color"
+          ]
+        },
+        {
+          "description": "Starts an app without vizion feature (versioning control)",
+          "name": [
+            "–-no-vizion"
+          ]
+        },
+        {
+          "description": "Starts an app without automatic restart",
+          "name": [
+            "–-no-autorestart"
+          ]
+        },
+        {
+          "description": "Only kills the main process, not detached children",
+          "name": [
+            "–-no-treekill"
+          ]
+        },
+        {
+          "description": "Starts an app without apm",
+          "name": [
+            "–-no-pmx"
+          ]
+        },
+        {
+          "description": "Starts an app without apm",
+          "name": [
+            "–-no-automation"
+          ]
+        },
+        {
+          "description": "Enables transaction tracing with km",
+          "name": [
+            "–-trace"
+          ]
+        },
+        {
+          "description": "Disables transaction tracing with km",
+          "name": [
+            "–-disable-trace"
+          ]
+        },
+        {
+          "description": "Attaches logging after your start/restart/stop/reload",
+          "name": [
+            "–-attach"
+          ]
+        },
+        {
+          "args": {
+            "description": "Field_name:sort",
+            "name": "field name"
+          },
+          "description": "Sort process according to field’s name",
+          "name": [
+            "–-sort"
+          ]
+        },
+        {
+          "description": "Enables v8 data collecting",
+          "name": [
+            "–-v8"
+          ]
+        },
+        {
+          "description": "Enables event-loop-inspector dump in apm",
+          "name": [
+            "–-event-loop-inspector"
+          ]
+        },
+        {
+          "description": "Enables all monitoring tools (equivalent to –v8 –event-loop-inspector –trace)",
+          "name": [
+            "–-deep-monitoring"
+          ]
+        },
+        {
+          "description": "Outputs usage information",
+          "name": [
+            "-h",
+            "–-help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "app name"
+        },
+        {
+          "name": "number"
+        }
+      ],
+      "description": "Scale up/down a process in cluster mode depending on the `number` param",
+      "name": "scale"
+    },
+    {
+      "description": "Snapshot PM2 memory",
+      "name": "snapshot"
+    },
+    {
+      "args": {
+        "name": "command"
+      },
+      "description": "Profile CPU",
+      "name": "profile"
+    },
+    {
+      "args": {
+        "name": "name or all"
+      },
+      "description": "Reload processes (for apps using HTTP/HTTPS)",
+      "name": "reload"
+    },
+    {
+      "args": {
+        "name": "name or all"
+      },
+      "description": "Gracefully reload a process. Send a “shutdown” message to close all connections",
+      "name": "gracefulReload"
+    },
+    {
+      "args": {
+        "name": "name"
+      },
+      "description": "Get process id by name",
+      "name": "id"
+    },
+    {
+      "args": {
+        "name": "name, id, script, all, json, stdin, etc"
+      },
+      "description": "Stops and deletes a process from pm2 process list",
+      "name": "delete"
+    },
+    {
+      "args": [
+        {
+          "name": "signal"
+        },
+        {
+          "name": "pm2_id or name"
+        }
+      ],
+      "description": "Send a system signal to the target process",
+      "name": "sendSignal"
+    },
+    {
+      "description": "Ping pm2 daemon - if not it will launch up",
+      "name": "ping"
+    },
+    {
+      "description": "Update in-memory PM2 with local PM2",
+      "name": "updatePM2"
+    },
+    {
+      "description": "(alias) update in-memory PM2 with local PM2",
+      "name": "update"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "module or git://"
+      },
+      "description": "Install or update a module and run it forever",
+      "name": "install",
+      "options": [
+        {
+          "description": "Outputs the version number",
+          "name": [
+            "-V",
+            "--version"
+          ]
+        },
+        {
+          "description": "Gets version",
+          "name": [
+            "-v"
+          ]
+        },
+        {
+          "description": "Hides all messages",
+          "name": [
+            "-s",
+            "--silent"
+          ]
+        },
+        {
+          "description": "Displays a compacted list without formatting",
+          "name": [
+            "-m",
+            "--mini-list"
+          ]
+        },
+        {
+          "description": "Forces actions",
+          "name": [
+            "-f",
+            "--force"
+          ]
+        },
+        {
+          "description": "Do not write logs",
+          "name": [
+            "--disable-logs"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Sets a name for script",
+          "name": [
+            "-n",
+            "--name"
+          ]
+        },
+        {
+          "args": {
+            "name": "number"
+          },
+          "description": "Launches [number] instances (for networked app)(load balanced)",
+          "name": [
+            "-i",
+            "--instances"
+          ]
+        },
+        {
+          "args": {
+            "name": "number"
+          },
+          "description": "Number of parallel actions (for restart/reload)",
+          "name": [
+            "--parallel"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Specifies entire log file (error and out are both included)",
+          "name": [
+            "-l",
+            "--log"
+          ]
+        },
+        {
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Specifies out log file",
+          "name": [
+            "-o",
+            "--output"
+          ]
+        },
+        {
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Specifies error log file",
+          "name": [
+            "-e",
+            "--error"
+          ]
+        },
+        {
+          "args": {
+            "name": "pid",
+            "template": "filepaths"
+          },
+          "description": "Specify pid file",
+          "name": [
+            "-p",
+            "--pid"
+          ]
+        },
+        {
+          "args": {
+            "name": "delay"
+          },
+          "description": "Delays before sending final SIGKILL signal to process",
+          "name": [
+            "-k",
+            "--kill-timeout"
+          ]
+        },
+        {
+          "args": {
+            "name": "delay"
+          },
+          "description": "Listen timeout on application reload",
+          "name": [
+            "--listen-timeout"
+          ]
+        },
+        {
+          "args": {
+            "name": "memory"
+          },
+          "description": "Specify max memory amount used to autorestart (in octet or use syntax like 100M)",
+          "name": [
+            "--max-memory-restart"
+          ]
+        },
+        {
+          "args": {
+            "name": "delay"
+          },
+          "description": "Specify a delay between restarts (in milliseconds)",
+          "name": [
+            "--restart-delay"
+          ]
+        },
+        {
+          "args": {
+            "name": "Environment Name"
+          },
+          "description": "Specify environment to get specific env variables",
+          "name": [
+            "--env"
+          ]
+        },
+        {
+          "args": {
+            "name": "type"
+          },
+          "description": "Specify log output style (raw by default, json optional)",
+          "name": [
+            "--log-type"
+          ]
+        },
+        {
+          "description": "Execute a program using fork system",
+          "name": [
+            "-x",
+            "--execute-command"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "Count"
+          },
+          "description": "Only Restart the script COUNT times",
+          "name": [
+            "--max-restarts"
+          ]
+        },
+        {
+          "args": {
+            "name": "username"
+          },
+          "description": "Defines user when generating startup script",
+          "name": [
+            "-u",
+            "--user"
+          ]
+        },
+        {
+          "args": {
+            "name": "uid"
+          },
+          "description": "Runs target script with <uid> rights",
+          "name": [
+            "--uid"
+          ]
+        },
+        {
+          "args": {
+            "name": "gid"
+          },
+          "description": "Runs target script with <gid> rights",
+          "name": [
+            "--gid"
+          ]
+        },
+        {
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Runs target script as <username>",
+          "name": [
+            "--cwd"
+          ]
+        },
+        {
+          "args": {
+            "name": "home path",
+            "template": "folders"
+          },
+          "description": "Defines home path when generating startup script",
+          "name": [
+            "--hp"
+          ]
+        },
+        {
+          "description": "Overrides systemd script to wait for full internet connectivity to launch pm2",
+          "name": [
+            "--wait-ip"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Defines service name when generating startup script",
+          "name": [
+            "--service-name"
+          ]
+        },
+        {
+          "args": {
+            "name": "Cron Pattern"
+          },
+          "description": "Restarts a running process based on a cron pattern",
+          "name": [
+            "-c",
+            "--cron"
+          ]
+        },
+        {
+          "description": "Writes configuration in local folder",
+          "name": [
+            "-w",
+            "--write"
+          ]
+        },
+        {
+          "args": {
+            "name": "interpreter"
+          },
+          "description": "The interpreter pm2 should use for executing app (bash, python…)",
+          "name": [
+            "--interpreter"
+          ]
+        },
+        {
+          "args": {
+            "name": "Arguments"
+          },
+          "description": "Interprets options (alias of –node-args)",
+          "name": [
+            "--interpreter-args"
+          ]
+        },
+        {
+          "args": {
+            "name": "Date Format"
+          },
+          "description": "Adds custom prefix timestamp to logs",
+          "name": [
+            "--log-date-format"
+          ]
+        },
+        {
+          "description": "Runs pm2 daemon in the foreground if it doesn’t exist already",
+          "name": [
+            "--no-daemon"
+          ]
+        },
+        {
+          "description": "Updates environment on restart/reload (-a <=> apply)",
+          "name": [
+            "-a",
+            "--update-env"
+          ]
+        },
+        {
+          "description": "Force source map support",
+          "name": [
+            "–-source-map-support"
+          ]
+        },
+        {
+          "args": {
+            "name": "app name"
+          },
+          "description": "With json declaration, allow to only act on one application",
+          "name": [
+            "–-only"
+          ]
+        },
+        {
+          "description": "Force source map support",
+          "name": [
+            "–-disable-source-map-support"
+          ]
+        },
+        {
+          "description": "Asks pm2 to wait for ready event from your app",
+          "name": [
+            "–-wait-ready"
+          ]
+        },
+        {
+          "description": "Merges logs from different instances but keep error and out separated",
+          "name": [
+            "–-merge-logs"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "paths",
+            "template": [
+              "folders"
+            ]
+          },
+          "description": "Watches application folder for changes (default: )",
+          "name": [
+            "–-watch"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "Folder or Files",
+            "template": [
+              "folders",
+              "filepaths"
+            ]
+          },
+          "description": "Folder/files to be ignored watching",
+          "name": [
+            "–-ignore-watch"
+          ]
+        },
+        {
+          "args": {
+            "description": "–node-args=`–debug=7001 –trace-deprecation`",
+            "name": "Node Args"
+          },
+          "description": "Space delimited arguments to pass to node in cluster mode",
+          "name": [
+            "–-node-args"
+          ]
+        },
+        {
+          "description": "Skip colors",
+          "name": [
+            "–-no-color"
+          ]
+        },
+        {
+          "description": "Starts an app without vizion feature (versioning control)",
+          "name": [
+            "–-no-vizion"
+          ]
+        },
+        {
+          "description": "Starts an app without automatic restart",
+          "name": [
+            "–-no-autorestart"
+          ]
+        },
+        {
+          "description": "Only kills the main process, not detached children",
+          "name": [
+            "–-no-treekill"
+          ]
+        },
+        {
+          "description": "Starts an app without apm",
+          "name": [
+            "–-no-pmx"
+          ]
+        },
+        {
+          "description": "Starts an app without apm",
+          "name": [
+            "–-no-automation"
+          ]
+        },
+        {
+          "description": "Enables transaction tracing with km",
+          "name": [
+            "–-trace"
+          ]
+        },
+        {
+          "description": "Disables transaction tracing with km",
+          "name": [
+            "–-disable-trace"
+          ]
+        },
+        {
+          "description": "Attaches logging after your start/restart/stop/reload",
+          "name": [
+            "–-attach"
+          ]
+        },
+        {
+          "args": {
+            "description": "Field_name:sort",
+            "name": "field name"
+          },
+          "description": "Sort process according to field’s name",
+          "name": [
+            "–-sort"
+          ]
+        },
+        {
+          "description": "Enables v8 data collecting",
+          "name": [
+            "–-v8"
+          ]
+        },
+        {
+          "description": "Enables event-loop-inspector dump in apm",
+          "name": [
+            "–-event-loop-inspector"
+          ]
+        },
+        {
+          "description": "Enables all monitoring tools (equivalent to –v8 –event-loop-inspector –trace)",
+          "name": [
+            "–-deep-monitoring"
+          ]
+        },
+        {
+          "description": "Outputs usage information",
+          "name": [
+            "-h",
+            "–-help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "app name"
+      },
+      "description": "Generate a sample module in current folder",
+      "name": "module:generate"
+    },
+    {
+      "args": {
+        "name": "module"
+      },
+      "description": "Stop and uninstall a module",
+      "name": "uninstall"
+    },
+    {
+      "description": "Publish the module you are currently on",
+      "name": "publish"
+    },
+    {
+      "args": [
+        {
+          "isOptional": true,
+          "name": "key"
+        },
+        {
+          "isOptional": true,
+          "name": "value"
+        }
+      ],
+      "description": "Sets the specified config",
+      "name": "set"
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "key value"
+      },
+      "description": "Multiset eg `key1 val1 key2 val2`",
+      "name": "multiset"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "key"
+      },
+      "description": "Get value for the specified key",
+      "name": "get"
+    },
+    {
+      "args": [
+        {
+          "isOptional": true,
+          "name": "key"
+        },
+        {
+          "isOptional": true,
+          "name": "value"
+        }
+      ],
+      "description": "Get / set module config values",
+      "name": "conf"
+    },
+    {
+      "args": [
+        {
+          "name": "key"
+        },
+        {
+          "isOptional": true,
+          "name": "value"
+        }
+      ],
+      "description": "Get / set module config values",
+      "name": "config"
+    },
+    {
+      "args": {
+        "name": "key"
+      },
+      "description": "Clears the specified config key",
+      "name": "unset"
+    },
+    {
+      "description": "Give a full pm2 report for https://github.com/Unitech/pm2/issues",
+      "name": "report"
+    },
+    {
+      "args": [
+        {
+          "isOptional": true,
+          "name": "secret"
+        },
+        {
+          "isOptional": true,
+          "name": "public"
+        },
+        {
+          "isOptional": true,
+          "name": "name"
+        }
+      ],
+      "description": "Linking action to keymetrics.io",
+      "name": "link",
+      "options": [
+        {
+          "description": "Outputs the version number",
+          "name": [
+            "-V",
+            "--version"
+          ]
+        },
+        {
+          "description": "Gets version",
+          "name": [
+            "-v"
+          ]
+        },
+        {
+          "description": "Hides all messages",
+          "name": [
+            "-s",
+            "--silent"
+          ]
+        },
+        {
+          "description": "Displays a compacted list without formatting",
+          "name": [
+            "-m",
+            "--mini-list"
+          ]
+        },
+        {
+          "description": "Forces actions",
+          "name": [
+            "-f",
+            "--force"
+          ]
+        },
+        {
+          "description": "Do not write logs",
+          "name": [
+            "--disable-logs"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Sets a name for script",
+          "name": [
+            "-n",
+            "--name"
+          ]
+        },
+        {
+          "args": {
+            "name": "number"
+          },
+          "description": "Launches [number] instances (for networked app)(load balanced)",
+          "name": [
+            "-i",
+            "--instances"
+          ]
+        },
+        {
+          "args": {
+            "name": "number"
+          },
+          "description": "Number of parallel actions (for restart/reload)",
+          "name": [
+            "--parallel"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Specifies entire log file (error and out are both included)",
+          "name": [
+            "-l",
+            "--log"
+          ]
+        },
+        {
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Specifies out log file",
+          "name": [
+            "-o",
+            "--output"
+          ]
+        },
+        {
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Specifies error log file",
+          "name": [
+            "-e",
+            "--error"
+          ]
+        },
+        {
+          "args": {
+            "name": "pid",
+            "template": "filepaths"
+          },
+          "description": "Specify pid file",
+          "name": [
+            "-p",
+            "--pid"
+          ]
+        },
+        {
+          "args": {
+            "name": "delay"
+          },
+          "description": "Delays before sending final SIGKILL signal to process",
+          "name": [
+            "-k",
+            "--kill-timeout"
+          ]
+        },
+        {
+          "args": {
+            "name": "delay"
+          },
+          "description": "Listen timeout on application reload",
+          "name": [
+            "--listen-timeout"
+          ]
+        },
+        {
+          "args": {
+            "name": "memory"
+          },
+          "description": "Specify max memory amount used to autorestart (in octet or use syntax like 100M)",
+          "name": [
+            "--max-memory-restart"
+          ]
+        },
+        {
+          "args": {
+            "name": "delay"
+          },
+          "description": "Specify a delay between restarts (in milliseconds)",
+          "name": [
+            "--restart-delay"
+          ]
+        },
+        {
+          "args": {
+            "name": "Environment Name"
+          },
+          "description": "Specify environment to get specific env variables",
+          "name": [
+            "--env"
+          ]
+        },
+        {
+          "args": {
+            "name": "type"
+          },
+          "description": "Specify log output style (raw by default, json optional)",
+          "name": [
+            "--log-type"
+          ]
+        },
+        {
+          "description": "Execute a program using fork system",
+          "name": [
+            "-x",
+            "--execute-command"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "Count"
+          },
+          "description": "Only Restart the script COUNT times",
+          "name": [
+            "--max-restarts"
+          ]
+        },
+        {
+          "args": {
+            "name": "username"
+          },
+          "description": "Defines user when generating startup script",
+          "name": [
+            "-u",
+            "--user"
+          ]
+        },
+        {
+          "args": {
+            "name": "uid"
+          },
+          "description": "Runs target script with <uid> rights",
+          "name": [
+            "--uid"
+          ]
+        },
+        {
+          "args": {
+            "name": "gid"
+          },
+          "description": "Runs target script with <gid> rights",
+          "name": [
+            "--gid"
+          ]
+        },
+        {
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Runs target script as <username>",
+          "name": [
+            "--cwd"
+          ]
+        },
+        {
+          "args": {
+            "name": "home path",
+            "template": "folders"
+          },
+          "description": "Defines home path when generating startup script",
+          "name": [
+            "--hp"
+          ]
+        },
+        {
+          "description": "Overrides systemd script to wait for full internet connectivity to launch pm2",
+          "name": [
+            "--wait-ip"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Defines service name when generating startup script",
+          "name": [
+            "--service-name"
+          ]
+        },
+        {
+          "args": {
+            "name": "Cron Pattern"
+          },
+          "description": "Restarts a running process based on a cron pattern",
+          "name": [
+            "-c",
+            "--cron"
+          ]
+        },
+        {
+          "description": "Writes configuration in local folder",
+          "name": [
+            "-w",
+            "--write"
+          ]
+        },
+        {
+          "args": {
+            "name": "interpreter"
+          },
+          "description": "The interpreter pm2 should use for executing app (bash, python…)",
+          "name": [
+            "--interpreter"
+          ]
+        },
+        {
+          "args": {
+            "name": "Arguments"
+          },
+          "description": "Interprets options (alias of –node-args)",
+          "name": [
+            "--interpreter-args"
+          ]
+        },
+        {
+          "args": {
+            "name": "Date Format"
+          },
+          "description": "Adds custom prefix timestamp to logs",
+          "name": [
+            "--log-date-format"
+          ]
+        },
+        {
+          "description": "Runs pm2 daemon in the foreground if it doesn’t exist already",
+          "name": [
+            "--no-daemon"
+          ]
+        },
+        {
+          "description": "Updates environment on restart/reload (-a <=> apply)",
+          "name": [
+            "-a",
+            "--update-env"
+          ]
+        },
+        {
+          "description": "Force source map support",
+          "name": [
+            "–-source-map-support"
+          ]
+        },
+        {
+          "args": {
+            "name": "app name"
+          },
+          "description": "With json declaration, allow to only act on one application",
+          "name": [
+            "–-only"
+          ]
+        },
+        {
+          "description": "Force source map support",
+          "name": [
+            "–-disable-source-map-support"
+          ]
+        },
+        {
+          "description": "Asks pm2 to wait for ready event from your app",
+          "name": [
+            "–-wait-ready"
+          ]
+        },
+        {
+          "description": "Merges logs from different instances but keep error and out separated",
+          "name": [
+            "–-merge-logs"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "paths",
+            "template": [
+              "folders"
+            ]
+          },
+          "description": "Watches application folder for changes (default: )",
+          "name": [
+            "–-watch"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "Folder or Files",
+            "template": [
+              "folders",
+              "filepaths"
+            ]
+          },
+          "description": "Folder/files to be ignored watching",
+          "name": [
+            "–-ignore-watch"
+          ]
+        },
+        {
+          "args": {
+            "description": "–node-args=`–debug=7001 –trace-deprecation`",
+            "name": "Node Args"
+          },
+          "description": "Space delimited arguments to pass to node in cluster mode",
+          "name": [
+            "–-node-args"
+          ]
+        },
+        {
+          "description": "Skip colors",
+          "name": [
+            "–-no-color"
+          ]
+        },
+        {
+          "description": "Starts an app without vizion feature (versioning control)",
+          "name": [
+            "–-no-vizion"
+          ]
+        },
+        {
+          "description": "Starts an app without automatic restart",
+          "name": [
+            "–-no-autorestart"
+          ]
+        },
+        {
+          "description": "Only kills the main process, not detached children",
+          "name": [
+            "–-no-treekill"
+          ]
+        },
+        {
+          "description": "Starts an app without apm",
+          "name": [
+            "–-no-pmx"
+          ]
+        },
+        {
+          "description": "Starts an app without apm",
+          "name": [
+            "–-no-automation"
+          ]
+        },
+        {
+          "description": "Enables transaction tracing with km",
+          "name": [
+            "–-trace"
+          ]
+        },
+        {
+          "description": "Disables transaction tracing with km",
+          "name": [
+            "–-disable-trace"
+          ]
+        },
+        {
+          "description": "Attaches logging after your start/restart/stop/reload",
+          "name": [
+            "–-attach"
+          ]
+        },
+        {
+          "args": {
+            "description": "Field_name:sort",
+            "name": "field name"
+          },
+          "description": "Sort process according to field’s name",
+          "name": [
+            "–-sort"
+          ]
+        },
+        {
+          "description": "Enables v8 data collecting",
+          "name": [
+            "–-v8"
+          ]
+        },
+        {
+          "description": "Enables event-loop-inspector dump in apm",
+          "name": [
+            "–-event-loop-inspector"
+          ]
+        },
+        {
+          "description": "Enables all monitoring tools (equivalent to –v8 –event-loop-inspector –trace)",
+          "name": [
+            "–-deep-monitoring"
+          ]
+        },
+        {
+          "description": "Outputs usage information",
+          "name": [
+            "-h",
+            "–-help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Linking action to keymetrics.io",
+      "name": "unlink"
+    },
+    {
+      "args": {
+        "name": "name"
+      },
+      "description": "Unmonitor target process",
+      "name": "unmonitor"
+    },
+    {
+      "args": {
+        "name": "name"
+      },
+      "description": "<Unm>onitor target process",
+      "name": "monitor"
+    },
+    {
+      "description": "Open dashboard in browser",
+      "name": "open"
+    },
+    {
+      "description": "Create an account on keymetrics",
+      "name": "register"
+    },
+    {
+      "description": "Login to keymetrics and link current PM2",
+      "name": "login"
+    },
+    {
+      "description": "Launch a health API on 0.0.0.0:9615",
+      "name": "web"
+    },
+    {
+      "description": "Dump all processes for resurrecting them later",
+      "name": "dump"
+    },
+    {
+      "args": [
+        {
+          "name": "pm id"
+        },
+        {
+          "name": "line"
+        }
+      ],
+      "description": "Send stdin to pm id",
+      "name": "send"
+    },
+    {
+      "args": [
+        {
+          "name": "pm id"
+        },
+        {
+          "isOptional": true,
+          "name": "command"
+        }
+      ],
+      "description": "Attach stdin/stdout to application identified by pm id",
+      "name": "attach"
+    },
+    {
+      "description": "Resurrect previously dumped processes",
+      "name": "resurrect"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "platform",
+        "suggestions": [
+          {
+            "name": "systemd"
+          },
+          {
+            "name": "upstart"
+          },
+          {
+            "name": "launchd"
+          },
+          {
+            "name": "rcd"
+          }
+        ]
+      },
+      "description": "Disable and clear auto startup",
+      "name": "unstartup"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "platform",
+        "suggestions": [
+          {
+            "name": "systemd"
+          },
+          {
+            "name": "upstart"
+          },
+          {
+            "name": "launchd"
+          },
+          {
+            "name": "rcd"
+          }
+        ]
+      },
+      "description": "Setup script for pm2 at boot",
+      "name": "startup"
+    },
+    {
+      "description": "Copy default logrotate configuration",
+      "name": "logrotate"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "mode",
+        "suggestions": [
+          {
+            "name": "null"
+          },
+          {
+            "name": "simple"
+          }
+        ]
+      },
+      "description": "Generate a process conf file",
+      "name": "ecosystem"
+    },
+    {
+      "args": {
+        "name": "name, id, or all"
+      },
+      "description": "Reset counters for process",
+      "name": "reset"
+    },
+    {
+      "args": {
+        "name": "id"
+      },
+      "description": "Describe all parameters of a process id",
+      "name": "describe"
+    },
+    {
+      "args": {
+        "name": "id"
+      },
+      "description": "(alias) Describe all parameters of a process id",
+      "name": "desc"
+    },
+    {
+      "description": "List all processes",
+      "name": "list"
+    },
+    {
+      "description": "(alias) list all processes",
+      "name": "l"
+    },
+    {
+      "description": "List all processes in JSON format",
+      "name": "jlist"
+    },
+    {
+      "description": "Print json in a prettified JSON",
+      "name": "prettylist"
+    },
+    {
+      "description": "Launch termcaps monitoring",
+      "name": "monit"
+    },
+    {
+      "description": "Launch legacy termcaps monitoring",
+      "name": "imonit"
+    },
+    {
+      "description": "Launch dashboard with monitoring and logs",
+      "name": "dashboard"
+    },
+    {
+      "description": "Flush logs",
+      "name": "flush"
+    },
+    {
+      "description": "Reload all logs",
+      "name": "reloadLogs"
+    },
+    {
+      "args": {
+        "name": "id or name"
+      },
+      "description": "Stream logs logs file",
+      "name": "logs",
+      "options": [
+        {
+          "description": "Outputs the version number",
+          "name": [
+            "-V",
+            "--version"
+          ]
+        },
+        {
+          "description": "Gets version",
+          "name": [
+            "-v"
+          ]
+        },
+        {
+          "description": "Hides all messages",
+          "name": [
+            "-s",
+            "--silent"
+          ]
+        },
+        {
+          "description": "Displays a compacted list without formatting",
+          "name": [
+            "-m",
+            "--mini-list"
+          ]
+        },
+        {
+          "description": "Forces actions",
+          "name": [
+            "-f",
+            "--force"
+          ]
+        },
+        {
+          "description": "Do not write logs",
+          "name": [
+            "--disable-logs"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Sets a name for script",
+          "name": [
+            "-n",
+            "--name"
+          ]
+        },
+        {
+          "args": {
+            "name": "number"
+          },
+          "description": "Launches [number] instances (for networked app)(load balanced)",
+          "name": [
+            "-i",
+            "--instances"
+          ]
+        },
+        {
+          "args": {
+            "name": "number"
+          },
+          "description": "Number of parallel actions (for restart/reload)",
+          "name": [
+            "--parallel"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Specifies entire log file (error and out are both included)",
+          "name": [
+            "-l",
+            "--log"
+          ]
+        },
+        {
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Specifies out log file",
+          "name": [
+            "-o",
+            "--output"
+          ]
+        },
+        {
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Specifies error log file",
+          "name": [
+            "-e",
+            "--error"
+          ]
+        },
+        {
+          "args": {
+            "name": "pid",
+            "template": "filepaths"
+          },
+          "description": "Specify pid file",
+          "name": [
+            "-p",
+            "--pid"
+          ]
+        },
+        {
+          "args": {
+            "name": "delay"
+          },
+          "description": "Delays before sending final SIGKILL signal to process",
+          "name": [
+            "-k",
+            "--kill-timeout"
+          ]
+        },
+        {
+          "args": {
+            "name": "delay"
+          },
+          "description": "Listen timeout on application reload",
+          "name": [
+            "--listen-timeout"
+          ]
+        },
+        {
+          "args": {
+            "name": "memory"
+          },
+          "description": "Specify max memory amount used to autorestart (in octet or use syntax like 100M)",
+          "name": [
+            "--max-memory-restart"
+          ]
+        },
+        {
+          "args": {
+            "name": "delay"
+          },
+          "description": "Specify a delay between restarts (in milliseconds)",
+          "name": [
+            "--restart-delay"
+          ]
+        },
+        {
+          "args": {
+            "name": "Environment Name"
+          },
+          "description": "Specify environment to get specific env variables",
+          "name": [
+            "--env"
+          ]
+        },
+        {
+          "args": {
+            "name": "type"
+          },
+          "description": "Specify log output style (raw by default, json optional)",
+          "name": [
+            "--log-type"
+          ]
+        },
+        {
+          "description": "Execute a program using fork system",
+          "name": [
+            "-x",
+            "--execute-command"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "Count"
+          },
+          "description": "Only Restart the script COUNT times",
+          "name": [
+            "--max-restarts"
+          ]
+        },
+        {
+          "args": {
+            "name": "username"
+          },
+          "description": "Defines user when generating startup script",
+          "name": [
+            "-u",
+            "--user"
+          ]
+        },
+        {
+          "args": {
+            "name": "uid"
+          },
+          "description": "Runs target script with <uid> rights",
+          "name": [
+            "--uid"
+          ]
+        },
+        {
+          "args": {
+            "name": "gid"
+          },
+          "description": "Runs target script with <gid> rights",
+          "name": [
+            "--gid"
+          ]
+        },
+        {
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Runs target script as <username>",
+          "name": [
+            "--cwd"
+          ]
+        },
+        {
+          "args": {
+            "name": "home path",
+            "template": "folders"
+          },
+          "description": "Defines home path when generating startup script",
+          "name": [
+            "--hp"
+          ]
+        },
+        {
+          "description": "Overrides systemd script to wait for full internet connectivity to launch pm2",
+          "name": [
+            "--wait-ip"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Defines service name when generating startup script",
+          "name": [
+            "--service-name"
+          ]
+        },
+        {
+          "args": {
+            "name": "Cron Pattern"
+          },
+          "description": "Restarts a running process based on a cron pattern",
+          "name": [
+            "-c",
+            "--cron"
+          ]
+        },
+        {
+          "description": "Writes configuration in local folder",
+          "name": [
+            "-w",
+            "--write"
+          ]
+        },
+        {
+          "args": {
+            "name": "interpreter"
+          },
+          "description": "The interpreter pm2 should use for executing app (bash, python…)",
+          "name": [
+            "--interpreter"
+          ]
+        },
+        {
+          "args": {
+            "name": "Arguments"
+          },
+          "description": "Interprets options (alias of –node-args)",
+          "name": [
+            "--interpreter-args"
+          ]
+        },
+        {
+          "args": {
+            "name": "Date Format"
+          },
+          "description": "Adds custom prefix timestamp to logs",
+          "name": [
+            "--log-date-format"
+          ]
+        },
+        {
+          "description": "Runs pm2 daemon in the foreground if it doesn’t exist already",
+          "name": [
+            "--no-daemon"
+          ]
+        },
+        {
+          "description": "Updates environment on restart/reload (-a <=> apply)",
+          "name": [
+            "-a",
+            "--update-env"
+          ]
+        },
+        {
+          "description": "Force source map support",
+          "name": [
+            "–-source-map-support"
+          ]
+        },
+        {
+          "args": {
+            "name": "app name"
+          },
+          "description": "With json declaration, allow to only act on one application",
+          "name": [
+            "–-only"
+          ]
+        },
+        {
+          "description": "Force source map support",
+          "name": [
+            "–-disable-source-map-support"
+          ]
+        },
+        {
+          "description": "Asks pm2 to wait for ready event from your app",
+          "name": [
+            "–-wait-ready"
+          ]
+        },
+        {
+          "description": "Merges logs from different instances but keep error and out separated",
+          "name": [
+            "–-merge-logs"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "paths",
+            "template": [
+              "folders"
+            ]
+          },
+          "description": "Watches application folder for changes (default: )",
+          "name": [
+            "–-watch"
+          ]
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "Folder or Files",
+            "template": [
+              "folders",
+              "filepaths"
+            ]
+          },
+          "description": "Folder/files to be ignored watching",
+          "name": [
+            "–-ignore-watch"
+          ]
+        },
+        {
+          "args": {
+            "description": "–node-args=`–debug=7001 –trace-deprecation`",
+            "name": "Node Args"
+          },
+          "description": "Space delimited arguments to pass to node in cluster mode",
+          "name": [
+            "–-node-args"
+          ]
+        },
+        {
+          "description": "Skip colors",
+          "name": [
+            "–-no-color"
+          ]
+        },
+        {
+          "description": "Starts an app without vizion feature (versioning control)",
+          "name": [
+            "–-no-vizion"
+          ]
+        },
+        {
+          "description": "Starts an app without automatic restart",
+          "name": [
+            "–-no-autorestart"
+          ]
+        },
+        {
+          "description": "Only kills the main process, not detached children",
+          "name": [
+            "–-no-treekill"
+          ]
+        },
+        {
+          "description": "Starts an app without apm",
+          "name": [
+            "–-no-pmx"
+          ]
+        },
+        {
+          "description": "Starts an app without apm",
+          "name": [
+            "–-no-automation"
+          ]
+        },
+        {
+          "description": "Enables transaction tracing with km",
+          "name": [
+            "–-trace"
+          ]
+        },
+        {
+          "description": "Disables transaction tracing with km",
+          "name": [
+            "–-disable-trace"
+          ]
+        },
+        {
+          "description": "Attaches logging after your start/restart/stop/reload",
+          "name": [
+            "–-attach"
+          ]
+        },
+        {
+          "args": {
+            "description": "Field_name:sort",
+            "name": "field name"
+          },
+          "description": "Sort process according to field’s name",
+          "name": [
+            "–-sort"
+          ]
+        },
+        {
+          "description": "Enables v8 data collecting",
+          "name": [
+            "–-v8"
+          ]
+        },
+        {
+          "description": "Enables event-loop-inspector dump in apm",
+          "name": [
+            "–-event-loop-inspector"
+          ]
+        },
+        {
+          "description": "Enables all monitoring tools (equivalent to –v8 –event-loop-inspector –trace)",
+          "name": [
+            "–-deep-monitoring"
+          ]
+        },
+        {
+          "description": "Outputs usage information",
+          "name": [
+            "-h",
+            "–-help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Kill daemon",
+      "name": "kill"
+    },
+    {
+      "args": [
+        {
+          "name": "name"
+        },
+        {
+          "isOptional": true,
+          "name": "commit id"
+        }
+      ],
+      "description": "Updates repository for a given app",
+      "name": "pull"
+    },
+    {
+      "args": {
+        "name": "name"
+      },
+      "description": "Updates repository to the next commit for a given app",
+      "name": "forward"
+    },
+    {
+      "args": {
+        "name": "name"
+      },
+      "description": "Downgrades repository to the previous commit for a given app",
+      "name": "backward"
+    },
+    {
+      "description": "Force PM2 to trigger garbage collection",
+      "name": "gc"
+    },
+    {
+      "description": "Performs a deep update of PM2",
+      "name": "deepUpdate"
+    },
+    {
+      "args": [
+        {
+          "isOptional": true,
+          "name": "path"
+        },
+        {
+          "isOptional": true,
+          "name": "port"
+        }
+      ],
+      "description": "Serves a directory over http via port",
+      "name": "serve"
+    }
+  ]
+}

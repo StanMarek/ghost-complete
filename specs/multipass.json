@@ -74,13 +74,7 @@
         "isVariadic": true,
         "generators": [
           {
-            "script": [
-              "multipass",
-              "list",
-              "--format=json"
-            ],
-            "requires_js": true,
-            "js_source": "a=>JSON.parse(a).list.map(e=>{if(e.state!==\"Deleted\")return{name:e.name,description:e.release}})"
+            "type": "multipass_list_not_deleted"
           }
         ]
       }
@@ -94,13 +88,7 @@
           "description": "Name of the instance to run the command on",
           "generators": [
             {
-              "script": [
-                "multipass",
-                "list",
-                "--format=json"
-              ],
-              "requires_js": true,
-              "js_source": "a=>JSON.parse(a).list.map(e=>{if(e.state!==\"Deleted\")return{name:e.name,description:e.release}})"
+              "type": "multipass_list_not_deleted"
             }
           ]
         },
@@ -235,13 +223,7 @@
         "isVariadic": true,
         "generators": [
           {
-            "script": [
-              "multipass",
-              "list",
-              "--format=json"
-            ],
-            "requires_js": true,
-            "js_source": "a=>JSON.parse(a).list.map(e=>{if(e.state!==\"Deleted\")return{name:e.name,description:e.release}})"
+            "type": "multipass_list_not_deleted"
           }
         ]
       }
@@ -458,13 +440,7 @@
         "isVariadic": true,
         "generators": [
           {
-            "script": [
-              "multipass",
-              "list",
-              "--format=json"
-            ],
-            "requires_js": true,
-            "js_source": "a=>JSON.parse(a).list.map(e=>{if(e.state===\"Deleted\")return{name:e.name,description:e.release}})"
+            "type": "multipass_list_deleted"
           }
         ]
       }
@@ -496,13 +472,7 @@
         "isOptional": true,
         "generators": [
           {
-            "script": [
-              "multipass",
-              "list",
-              "--format=json"
-            ],
-            "requires_js": true,
-            "js_source": "a=>JSON.parse(a).list.map(e=>{if(e.state!==\"Deleted\")return{name:e.name,description:e.release}})"
+            "type": "multipass_list_not_deleted"
           }
         ]
       }
@@ -556,13 +526,7 @@
         "isOptional": true,
         "generators": [
           {
-            "script": [
-              "multipass",
-              "list",
-              "--format=json"
-            ],
-            "requires_js": true,
-            "js_source": "a=>JSON.parse(a).list.map(e=>{if(e.state!==\"Deleted\")return{name:e.name,description:e.release}})"
+            "type": "multipass_list_not_deleted"
           }
         ]
       }
@@ -594,13 +558,7 @@
         "isOptional": true,
         "generators": [
           {
-            "script": [
-              "multipass",
-              "list",
-              "--format=json"
-            ],
-            "requires_js": true,
-            "js_source": "a=>JSON.parse(a).list.map(e=>{if(e.state===\"Stopped\")return{name:e.name,description:e.release}})"
+            "type": "multipass_list_stopped"
           }
         ]
       }
@@ -640,13 +598,7 @@
         "isOptional": true,
         "generators": [
           {
-            "script": [
-              "multipass",
-              "list",
-              "--format=json"
-            ],
-            "requires_js": true,
-            "js_source": "a=>JSON.parse(a).list.map(e=>{if(e.state===\"Running\")return{name:e.name,description:e.release}})"
+            "type": "multipass_list_running"
           }
         ]
       }
@@ -669,13 +621,7 @@
         "isOptional": true,
         "generators": [
           {
-            "script": [
-              "multipass",
-              "list",
-              "--format=json"
-            ],
-            "requires_js": true,
-            "js_source": "a=>JSON.parse(a).list.map(e=>{if(e.state===\"Running\")return{name:e.name,description:e.release}})"
+            "type": "multipass_list_running"
           }
         ]
       }

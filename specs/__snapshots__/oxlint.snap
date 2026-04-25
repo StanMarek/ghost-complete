@@ -1,0 +1,305 @@
+{
+  "args": {
+    "description": "File(s) to lint",
+    "isVariadic": true,
+    "name": "file|dir|glob",
+    "template": [
+      "filepaths",
+      "folders"
+    ]
+  },
+  "description": "A high performance linter for the Oxidation Compiler",
+  "name": "oxlint",
+  "options": [
+    {
+      "args": {
+        "generators": [
+          {
+            "template": [
+              "filepaths",
+              "history"
+            ]
+          }
+        ],
+        "name": "file"
+      },
+      "description": "Path to Oxlint JSON configuration file",
+      "name": [
+        "-c",
+        "--config"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "ls"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "file"
+      },
+      "description": "Path to tsconfig.json path for reading path aliases and project references for import plugin",
+      "name": [
+        "--tsconfig"
+      ]
+    },
+    {
+      "args": {
+        "name": "file",
+        "suggestions": [
+          {
+            "name": ".eslintignore"
+          }
+        ],
+        "template": "filepaths"
+      },
+      "description": "Specify the file to use as your .eslintignore",
+      "name": [
+        "--ignore-path"
+      ]
+    },
+    {
+      "args": {
+        "description": "Glob pattern",
+        "name": "pattern"
+      },
+      "description": "Specify file patterns to ignore (in addition to those in .eslintignore)",
+      "name": [
+        "--ignore-pattern"
+      ]
+    },
+    {
+      "description": "Disable exluding of files from .eslintignore files, --ignore-path, and --ignore-pattern",
+      "name": [
+        "--no-ignore"
+      ]
+    },
+    {
+      "description": "Follow symlinks when linting, which are ignored by default",
+      "name": [
+        "--symlinks"
+      ]
+    },
+    {
+      "description": "Enable the JSDoc plugin",
+      "name": [
+        "--jsdoc-plugin"
+      ]
+    },
+    {
+      "description": "Enable the Jest plugin",
+      "name": [
+        "--jest-plugin"
+      ]
+    },
+    {
+      "description": "Enable the Vitest plugin",
+      "name": [
+        "--vitest-plugin"
+      ]
+    },
+    {
+      "description": "Enable the Next.js plugin",
+      "name": [
+        "--nextjs-plugin"
+      ]
+    },
+    {
+      "description": "Enable the React Performance plugin",
+      "name": [
+        "--react-perf-plugin"
+      ]
+    },
+    {
+      "description": "Enable the Promise plugin",
+      "name": [
+        "--promise-plugin"
+      ]
+    },
+    {
+      "description": "Disable the React plugin, which is turned on by default",
+      "name": [
+        "--disable-react-plugin"
+      ]
+    },
+    {
+      "description": "Disable the Unicorn plugin, which is turned on by default",
+      "name": [
+        "--disable-unicorn-plugin"
+      ]
+    },
+    {
+      "description": "Disable the Oxc plugin, which is turned on by default",
+      "name": [
+        "--disable-oxc-plugin"
+      ]
+    },
+    {
+      "description": "Disable the TypeScript plugin, which is turned on by default",
+      "name": [
+        "--disable-typescript-plugin"
+      ]
+    },
+    {
+      "description": "Disable the Import plugin, which is turned on by default",
+      "name": [
+        "--disable-import-plugin"
+      ]
+    },
+    {
+      "args": {
+        "description": "Lint rule or category",
+        "generators": [
+          {
+            "js_source": "()=>Promise.resolve(d)",
+            "requires_js": true
+          },
+          {
+            "js_source": "async custom(i,e){let o;if(i.length&&i[0].startsWith(\"npx\")){let t=await e({command:\"npx\",args:[\"oxlint\",\"--rules\"]});if(t.status!==0)return[];o=t.stdout}else{if((await e({command:\"which\",args:[\"oxlint\"]})).status!==0)return[];o=(await e({command:\"oxlint\",args:[\"--rules\"]})).stdout}return o.split(`\n`).map(t=>t.trim()).filter(t=>t.startsWith(\"| \")).map(t=>t.split(\"|\").map(n=>n.trim())).filter(t=>{if(t.length<3)return!1;let n=t[1].charCodeAt(0);return n>=97&&n<=122}).map(t=>{let[,n,l,c]=t,p=c!=\"\";return{name:n,description:`${l} plugin`+(p?\" (enabled by default)\":\"\"),icon:m}})}",
+            "requires_js": true
+          }
+        ],
+        "name": "lint"
+      },
+      "description": "Deny a lint rule or category (enable a lint as an error)",
+      "name": [
+        "-D",
+        "--deny"
+      ]
+    },
+    {
+      "args": {
+        "description": "Lint rule or category",
+        "generators": [
+          {
+            "js_source": "()=>Promise.resolve(d)",
+            "requires_js": true
+          },
+          {
+            "js_source": "async custom(i,e){let o;if(i.length&&i[0].startsWith(\"npx\")){let t=await e({command:\"npx\",args:[\"oxlint\",\"--rules\"]});if(t.status!==0)return[];o=t.stdout}else{if((await e({command:\"which\",args:[\"oxlint\"]})).status!==0)return[];o=(await e({command:\"oxlint\",args:[\"--rules\"]})).stdout}return o.split(`\n`).map(t=>t.trim()).filter(t=>t.startsWith(\"| \")).map(t=>t.split(\"|\").map(n=>n.trim())).filter(t=>{if(t.length<3)return!1;let n=t[1].charCodeAt(0);return n>=97&&n<=122}).map(t=>{let[,n,l,c]=t,p=c!=\"\";return{name:n,description:`${l} plugin`+(p?\" (enabled by default)\":\"\"),icon:m}})}",
+            "requires_js": true
+          }
+        ],
+        "name": "lint"
+      },
+      "description": "Warn about a lint rule or category (enable a lint as a warning)",
+      "name": [
+        "-W",
+        "--warn"
+      ]
+    },
+    {
+      "args": {
+        "description": "Lint rule or category",
+        "generators": [
+          {
+            "js_source": "()=>Promise.resolve(d)",
+            "requires_js": true
+          },
+          {
+            "js_source": "async custom(i,e){let o;if(i.length&&i[0].startsWith(\"npx\")){let t=await e({command:\"npx\",args:[\"oxlint\",\"--rules\"]});if(t.status!==0)return[];o=t.stdout}else{if((await e({command:\"which\",args:[\"oxlint\"]})).status!==0)return[];o=(await e({command:\"oxlint\",args:[\"--rules\"]})).stdout}return o.split(`\n`).map(t=>t.trim()).filter(t=>t.startsWith(\"| \")).map(t=>t.split(\"|\").map(n=>n.trim())).filter(t=>{if(t.length<3)return!1;let n=t[1].charCodeAt(0);return n>=97&&n<=122}).map(t=>{let[,n,l,c]=t,p=c!=\"\";return{name:n,description:`${l} plugin`+(p?\" (enabled by default)\":\"\"),icon:m}})}",
+            "requires_js": true
+          }
+        ],
+        "name": "lint"
+      },
+      "description": "Allow a lint rule or category (suppress a lint)",
+      "name": [
+        "-A",
+        "--allow"
+      ]
+    },
+    {
+      "description": "Fix as many issues as possible. Only unfixed issues are reported in the output",
+      "name": [
+        "--fix"
+      ]
+    },
+    {
+      "description": "Do not display any diagnostics",
+      "name": [
+        "--silent"
+      ]
+    },
+    {
+      "description": "Exit with a non-zero code if there are any warnings",
+      "name": [
+        "--deny-warnings"
+      ]
+    },
+    {
+      "args": {
+        "description": "The maximum number of warnings",
+        "name": "max"
+      },
+      "description": "Exit with a non-zero code if there are more than `max` warnings",
+      "name": [
+        "--max-warnings"
+      ]
+    },
+    {
+      "args": {
+        "name": "format",
+        "suggestions": [
+          {
+            "name": "default"
+          },
+          {
+            "name": "json"
+          },
+          {
+            "name": "unix"
+          },
+          {
+            "name": "checkstyle"
+          },
+          {
+            "description": "GitHub Actions Annotations",
+            "name": "github"
+          }
+        ]
+      },
+      "description": "Use a specific output format",
+      "name": [
+        "-f",
+        "--format"
+      ]
+    },
+    {
+      "args": {
+        "description": "Number of threads (positive int)",
+        "name": "int"
+      },
+      "description": "Number of threads to use. Set to 1 to use only 1 CPU core",
+      "name": [
+        "--threads"
+      ]
+    },
+    {
+      "description": "List all available rules",
+      "name": [
+        "--rules"
+      ]
+    },
+    {
+      "description": "Show help",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Show version",
+      "name": [
+        "-V",
+        "--version"
+      ]
+    }
+  ]
+}

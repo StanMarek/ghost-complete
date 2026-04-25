@@ -1,0 +1,75 @@
+{
+  "description": "Shelve CLI a command-line interface designed for the Shelve platform. This tool enables users to authenticate with Shelve, facilitating the seamless transfer of environment variables for project collaboration within a team directly through the terminal interface",
+  "name": "shelve",
+  "options": [
+    {
+      "description": "Show help",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Create a new project",
+      "name": "create",
+      "options": [
+        {
+          "args": {
+            "name": "project-name"
+          },
+          "description": "Name of the project",
+          "name": [
+            "--name",
+            "-n"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Pull variables for specified environment to .env file",
+      "name": "pull",
+      "options": [
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "Specify the environment",
+          "name": [
+            "--env",
+            "-e"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Push variables for specified environment to Shelve",
+      "name": "push",
+      "options": [
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "Specify the environment",
+          "name": [
+            "--env",
+            "-e"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generate resources for a project",
+      "name": "generate"
+    },
+    {
+      "description": "Show the current configuration",
+      "name": "config"
+    },
+    {
+      "description": "Show help",
+      "name": "--help"
+    }
+  ]
+}

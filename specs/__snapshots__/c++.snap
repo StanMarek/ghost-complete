@@ -1,0 +1,6173 @@
+{
+  "args": {
+    "isVariadic": true,
+    "name": "file",
+    "template": "filepaths"
+  },
+  "description": "C++ compiler",
+  "name": "c++",
+  "options": [
+    {
+      "description": "Print (but do not run) the commands to run for this compilation",
+      "name": [
+        "-###"
+      ]
+    },
+    {
+      "args": {
+        "name": "value",
+        "suggestions": [
+          {
+            "name": "html"
+          },
+          {
+            "name": "plist"
+          },
+          {
+            "name": "plist-multi-file"
+          },
+          {
+            "name": "plist-html"
+          },
+          {
+            "name": "sarif"
+          },
+          {
+            "name": "text"
+          }
+        ]
+      },
+      "description": "Static analyzer report output format",
+      "name": [
+        "--analyzer-output"
+      ]
+    },
+    {
+      "description": "Run the static analyzer",
+      "name": [
+        "--analyze"
+      ]
+    },
+    {
+      "description": "Emit ARC errors even if the migrator can fix them",
+      "name": [
+        "-arcmt-migrate-emit-errors"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Output path for the plist report",
+      "name": [
+        "-arcmt-migrate-report-output"
+      ]
+    },
+    {
+      "args": {
+        "name": "dir",
+        "template": "folders"
+      },
+      "description": "Add <dir> to search path for binaries and object files used implicitly",
+      "name": [
+        "-B"
+      ]
+    },
+    {
+      "description": "Include comments from within macros in preprocessed output",
+      "name": [
+        "-CC"
+      ]
+    },
+    {
+      "description": "OpenCL only. Allow denormals to be flushed to zero",
+      "name": [
+        "-cl-denorms-are-zero"
+      ]
+    },
+    {
+      "description": "OpenCL only. Sets -cl-finite-math-only and -cl-unsafe-math-optimizations, and defines __FAST_RELAXED_MATH__",
+      "name": [
+        "-cl-fast-relaxed-math"
+      ]
+    },
+    {
+      "description": "OpenCL only. Allow floating-point optimizations that assume arguments and results are not NaNs or +-Inf",
+      "name": [
+        "-cl-finite-math-only"
+      ]
+    },
+    {
+      "description": "OpenCL only. Specify that single precision floating-point divide and sqrt used in the program source are correctly rounded",
+      "name": [
+        "-cl-fp32-correctly-rounded-divide-sqrt"
+      ]
+    },
+    {
+      "description": "OpenCL only. Generate kernel argument metadata",
+      "name": [
+        "-cl-kernel-arg-info"
+      ]
+    },
+    {
+      "description": "OpenCL only. Allow use of less precise MAD computations in the generated binary",
+      "name": [
+        "-cl-mad-enable"
+      ]
+    },
+    {
+      "description": "OpenCL only. Allow use of less precise no signed zeros computations in the generated binary",
+      "name": [
+        "-cl-no-signed-zeros"
+      ]
+    },
+    {
+      "description": "OpenCL only. This option disables all optimizations. By default optimizations are enabled",
+      "name": [
+        "-cl-opt-disable"
+      ]
+    },
+    {
+      "description": "OpenCL only. Treat double precision floating-point constant as single precision constant",
+      "name": [
+        "-cl-single-precision-constant"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "OpenCL language standard to compile for",
+      "name": [
+        "-cl-std"
+      ]
+    },
+    {
+      "description": "OpenCL only. This option is added for compatibility with OpenCL 1.0",
+      "name": [
+        "-cl-strict-aliasing"
+      ]
+    },
+    {
+      "description": "OpenCL only. Defines that the global work-size be a multiple of the work-group size specified to clEnqueueNDRangeKernel",
+      "name": [
+        "-cl-uniform-work-group-size"
+      ]
+    },
+    {
+      "description": "OpenCL only. Allow unsafe floating-point optimizations. Also implies -cl-no-signed-zeros and -cl-mad-enable",
+      "name": [
+        "-cl-unsafe-math-optimizations"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Specifies configuration file",
+      "name": [
+        "--config"
+      ]
+    },
+    {
+      "description": "Compile CUDA code for both host and device (default). Has no effect on non-CUDA compilations",
+      "name": [
+        "--cuda-compile-host-device"
+      ]
+    },
+    {
+      "description": "Compile CUDA code for device only",
+      "name": [
+        "--cuda-device-only"
+      ]
+    },
+    {
+      "description": "Compile CUDA code for host only. Has no effect on non-CUDA compilations",
+      "name": [
+        "--cuda-host-only"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Include PTX for the following GPU architecture (e.g. sm_35) or 'all'. May be specified more than once",
+      "name": [
+        "--cuda-include-ptx"
+      ]
+    },
+    {
+      "description": "Enable device-side debug info generation. Disables ptxas optimizations",
+      "name": [
+        "--cuda-noopt-device-debug"
+      ]
+    },
+    {
+      "description": "Ignore environment variables to detect CUDA installation",
+      "name": [
+        "--cuda-path-ignore-env"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "CUDA installation path",
+      "name": [
+        "--cuda-path"
+      ]
+    },
+    {
+      "args": {
+        "name": "directory",
+        "template": "folders"
+      },
+      "description": "Add directory to the C++ SYSTEM include search path",
+      "name": [
+        "-cxx-isystem"
+      ]
+    },
+    {
+      "description": "Include comments in preprocessed output",
+      "name": [
+        "-C"
+      ]
+    },
+    {
+      "description": "Only run preprocess, compile, and assemble steps",
+      "name": [
+        "-c"
+      ]
+    },
+    {
+      "description": "Print macro definitions in -E mode in addition to normal output",
+      "name": [
+        "-dD"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Filename to write DOT-formatted header dependencies to",
+      "name": [
+        "-dependency-dot"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Filename (or -) to write dependency output to",
+      "name": [
+        "-dependency-file"
+      ]
+    },
+    {
+      "description": "Print include directives in -E mode in addition to normal output",
+      "name": [
+        "-dI"
+      ]
+    },
+    {
+      "description": "Print macro definitions in -E mode instead of normal output",
+      "name": [
+        "-dM"
+      ]
+    },
+    {
+      "args": {
+        "name": "dir",
+        "template": "folders"
+      },
+      "description": "Directory to output dSYM's (if any) to",
+      "name": [
+        "-dsym-dir"
+      ]
+    },
+    {
+      "args": {
+        "name": "macro"
+      },
+      "description": "=<value> Define <macro> to <value> (or 1 if <value> omitted)",
+      "name": [
+        "-D"
+      ]
+    },
+    {
+      "description": "Emit Clang AST files for source inputs",
+      "name": [
+        "-emit-ast"
+      ]
+    },
+    {
+      "description": "Generate Interface Stub Files",
+      "name": [
+        "-emit-interface-stubs"
+      ]
+    },
+    {
+      "description": "Use the LLVM representation for assembler and object files",
+      "name": [
+        "-emit-llvm"
+      ]
+    },
+    {
+      "description": "Generate Interface Stub Files, emit merged text not binary",
+      "name": [
+        "-emit-merged-ifs"
+      ]
+    },
+    {
+      "description": "Enable linker job to emit a static library",
+      "name": [
+        "--emit-static-lib"
+      ]
+    },
+    {
+      "description": "Trivial automatic variable initialization to zero is only here for benchmarks, it'll eventually be removed, and I'm OK with that because I'm only using it to benchmark",
+      "name": [
+        "-enable-trivial-auto-var-init-zero-knowing-it-will-be-removed-from-clang"
+      ]
+    },
+    {
+      "description": "Only run the preprocessor",
+      "name": [
+        "-E"
+      ]
+    },
+    {
+      "description": "Follows the AAPCS standard that all volatile bit-field write generates at least one load. (ARM only)",
+      "name": [
+        "-faapcs-bitfield-load"
+      ]
+    },
+    {
+      "description": "Follow the AAPCS standard requirement stating that volatile bit-field width is dictated by the field container type. (ARM only)",
+      "name": [
+        "-faapcs-bitfield-width"
+      ]
+    },
+    {
+      "name": [
+        "-faccess-control"
+      ]
+    },
+    {
+      "description": "Emit an address-significance table",
+      "name": [
+        "-faddrsig"
+      ]
+    },
+    {
+      "description": "Enable C++17 aligned allocation functions",
+      "name": [
+        "-faligned-allocation"
+      ]
+    },
+    {
+      "description": "Treat editor placeholders as valid source code",
+      "name": [
+        "-fallow-editor-placeholders"
+      ]
+    },
+    {
+      "description": "Use ANSI escape codes for diagnostics",
+      "name": [
+        "-fansi-escape-codes"
+      ]
+    },
+    {
+      "args": {
+        "name": "directory",
+        "template": "folders"
+      },
+      "description": "Does nothing; API notes are no longer cached separately from modules",
+      "name": [
+        "-fapinotes-cache-path"
+      ]
+    },
+    {
+      "description": "Enable module-based external API notes support",
+      "name": [
+        "-fapinotes-modules"
+      ]
+    },
+    {
+      "args": {
+        "name": "version"
+      },
+      "description": "Specify the Swift version to use when filtering API notes",
+      "name": [
+        "-fapinotes-swift-version"
+      ]
+    },
+    {
+      "description": "Enable external API notes support",
+      "name": [
+        "-fapinotes"
+      ]
+    },
+    {
+      "description": "Use Apple's kernel extensions ABI",
+      "name": [
+        "-fapple-kext"
+      ]
+    },
+    {
+      "description": "Force linking the clang builtins runtime library",
+      "name": [
+        "-fapple-link-rtlib"
+      ]
+    },
+    {
+      "description": "Enable Apple gcc-compatible #pragma pack handling",
+      "name": [
+        "-fapple-pragma-pack"
+      ]
+    },
+    {
+      "description": "Restrict code to those available for App Extensions",
+      "name": [
+        "-fapplication-extension"
+      ]
+    },
+    {
+      "name": [
+        "-fasm-blocks"
+      ]
+    },
+    {
+      "name": [
+        "-fautolink"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Place each function's basic blocks in unique sections (ELF Only) : all | labels | none | list=<file>",
+      "name": [
+        "-fbasic-block-sections"
+      ]
+    },
+    {
+      "description": "Enable the 'blocks' language feature",
+      "name": [
+        "-fblocks"
+      ]
+    },
+    {
+      "description": "Accept non-standard constructs supported by the Borland compiler",
+      "name": [
+        "-fborland-extensions"
+      ]
+    },
+    {
+      "description": "Emit branch target identification instructions for indirect branch destinations",
+      "name": [
+        "-fbranch-target-identification"
+      ]
+    },
+    {
+      "args": {
+        "name": "file"
+      },
+      "description": "Use the last modification time of <file> as the build session timestamp",
+      "name": [
+        "-fbuild-session-file"
+      ]
+    },
+    {
+      "args": {
+        "name": "timesinceEpochinseconds"
+      },
+      "description": "Time when the current build session started",
+      "name": [
+        "-fbuild-session-timestamp"
+      ]
+    },
+    {
+      "description": "Load the clang builtins module map file",
+      "name": [
+        "-fbuiltin-module-map"
+      ]
+    },
+    {
+      "name": [
+        "-fc++-static-destructors"
+      ]
+    },
+    {
+      "description": "Make the x10 register call-saved (AArch64 only)",
+      "name": [
+        "-fcall-saved-x10"
+      ]
+    },
+    {
+      "description": "Make the x11 register call-saved (AArch64 only)",
+      "name": [
+        "-fcall-saved-x11"
+      ]
+    },
+    {
+      "description": "Make the x12 register call-saved (AArch64 only)",
+      "name": [
+        "-fcall-saved-x12"
+      ]
+    },
+    {
+      "description": "Make the x13 register call-saved (AArch64 only)",
+      "name": [
+        "-fcall-saved-x13"
+      ]
+    },
+    {
+      "description": "Make the x14 register call-saved (AArch64 only)",
+      "name": [
+        "-fcall-saved-x14"
+      ]
+    },
+    {
+      "description": "Make the x15 register call-saved (AArch64 only)",
+      "name": [
+        "-fcall-saved-x15"
+      ]
+    },
+    {
+      "description": "Make the x18 register call-saved (AArch64 only)",
+      "name": [
+        "-fcall-saved-x18"
+      ]
+    },
+    {
+      "description": "Make the x8 register call-saved (AArch64 only)",
+      "name": [
+        "-fcall-saved-x8"
+      ]
+    },
+    {
+      "description": "Make the x9 register call-saved (AArch64 only)",
+      "name": [
+        "-fcall-saved-x9"
+      ]
+    },
+    {
+      "name": [
+        "-fcaret-diagnostics"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "value",
+        "suggestions": [
+          {
+            "name": "return"
+          },
+          {
+            "name": "branch"
+          },
+          {
+            "name": "full"
+          },
+          {
+            "name": "none"
+          }
+        ]
+      },
+      "description": "Instrument control-flow architecture protection",
+      "name": [
+        "-fcf-protection"
+      ]
+    },
+    {
+      "description": "Enable C++ builtin type char8_t",
+      "name": [
+        "-fchar8_t"
+      ]
+    },
+    {
+      "args": {
+        "name": "version"
+      },
+      "description": "Attempt to match the ABI of Clang <version>",
+      "name": [
+        "-fclang-abi-compat"
+      ]
+    },
+    {
+      "description": "Enable colors in diagnostics",
+      "name": [
+        "-fcolor-diagnostics"
+      ]
+    },
+    {
+      "args": {
+        "name": "arg"
+      },
+      "description": "Treat each comma separated argument in <arg> as a documentation comment block command",
+      "name": [
+        "-fcomment-block-commands"
+      ]
+    },
+    {
+      "description": "Place uninitialized global variables in a common block",
+      "name": [
+        "-fcommon"
+      ]
+    },
+    {
+      "description": "Require member pointer base types to be complete if they would be significant under the Microsoft ABI",
+      "name": [
+        "-fcomplete-member-pointers"
+      ]
+    },
+    {
+      "name": [
+        "-fconstant-cfstrings"
+      ]
+    },
+    {
+      "description": "Assume functions may be convergent",
+      "name": [
+        "-fconvergent-functions"
+      ]
+    },
+    {
+      "description": "Enable support for the C++ Coroutines TS",
+      "name": [
+        "-fcoroutines-ts"
+      ]
+    },
+    {
+      "description": "Generate coverage mapping to enable code coverage analysis",
+      "name": [
+        "-fcoverage-mapping"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "directory",
+        "template": "folders"
+      },
+      "description": "Generate instrumented code to collect context sensitive execution counts into <directory>/default.profraw (overridden by LLVM_PROFILE_FILE env var)",
+      "name": [
+        "-fcs-profile-generate"
+      ]
+    },
+    {
+      "description": "Use approximate transcendental functions",
+      "name": [
+        "-fcuda-approx-transcendentals"
+      ]
+    },
+    {
+      "description": "Flush denormal floating point values to zero in CUDA device mode",
+      "name": [
+        "-fcuda-flush-denormals-to-zero"
+      ]
+    },
+    {
+      "description": "Use 32-bit pointers for accessing const/local/shared address spaces",
+      "name": [
+        "-fcuda-short-ptr"
+      ]
+    },
+    {
+      "description": "Enable C++ exceptions",
+      "name": [
+        "-fcxx-exceptions"
+      ]
+    },
+    {
+      "description": "Place each data in its own section",
+      "name": [
+        "-fdata-sections"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "The compilation directory to embed in the debug info",
+      "name": [
+        "-fdebug-compilation-dir"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Default DWARF version to use, if a -g option caused DWARF debug info to be produced",
+      "name": [
+        "-fdebug-default-version"
+      ]
+    },
+    {
+      "description": "Emit extra debug info to make sample profile more accurate",
+      "name": [
+        "-fdebug-info-for-profiling"
+      ]
+    },
+    {
+      "description": "Emit macro debug information",
+      "name": [
+        "-fdebug-macro"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Remap file source paths in debug info",
+      "name": [
+        "-fdebug-prefix-map"
+      ]
+    },
+    {
+      "description": "Use DWARF base address selection entries in .debug_ranges",
+      "name": [
+        "-fdebug-ranges-base-address"
+      ]
+    },
+    {
+      "description": "Place debug types in their own section (ELF Only)",
+      "name": [
+        "-fdebug-types-section"
+      ]
+    },
+    {
+      "description": "Allow __declspec as a keyword",
+      "name": [
+        "-fdeclspec"
+      ]
+    },
+    {
+      "description": "Parse templated function definitions at the end of the translation unit",
+      "name": [
+        "-fdelayed-template-parsing"
+      ]
+    },
+    {
+      "description": "Treat usage of null pointers as undefined behavior (default)",
+      "name": [
+        "-fdelete-null-pointer-checks"
+      ]
+    },
+    {
+      "description": "Print absolute paths in diagnostics",
+      "name": [
+        "-fdiagnostics-absolute-paths"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Prevent optimization remarks from being output if they do not have at least this profile count. Use 'auto' to apply the threshold from profile summary",
+      "name": [
+        "-fdiagnostics-hotness-threshold"
+      ]
+    },
+    {
+      "description": "Print fix-its in machine parseable form",
+      "name": [
+        "-fdiagnostics-parseable-fixits"
+      ]
+    },
+    {
+      "description": "Print source range spans in numeric form",
+      "name": [
+        "-fdiagnostics-print-source-range-info"
+      ]
+    },
+    {
+      "description": "Enable profile hotness information in diagnostic line",
+      "name": [
+        "-fdiagnostics-show-hotness"
+      ]
+    },
+    {
+      "description": "Display include stacks for diagnostic notes",
+      "name": [
+        "-fdiagnostics-show-note-include-stack"
+      ]
+    },
+    {
+      "description": "Print option name with mappable diagnostics",
+      "name": [
+        "-fdiagnostics-show-option"
+      ]
+    },
+    {
+      "description": "Print a template comparison tree for differing templates",
+      "name": [
+        "-fdiagnostics-show-template-tree"
+      ]
+    },
+    {
+      "description": "Enable alternative token representations '<:', ':>', '<%', '%>', '%:', '%:%:' (default)",
+      "name": [
+        "-fdigraphs"
+      ]
+    },
+    {
+      "description": "Discard value names in LLVM IR",
+      "name": [
+        "-fdiscard-value-names"
+      ]
+    },
+    {
+      "description": "Allow '$' in identifiers",
+      "name": [
+        "-fdollars-in-identifiers"
+      ]
+    },
+    {
+      "description": "Enable '[[]]' attributes in all C and C++ language modes",
+      "name": [
+        "-fdouble-square-bracket-attributes"
+      ]
+    },
+    {
+      "name": [
+        "-fdwarf-directory-asm"
+      ]
+    },
+    {
+      "description": "Use DWARF style exceptions",
+      "name": [
+        "-fdwarf-exceptions"
+      ]
+    },
+    {
+      "name": [
+        "-felide-constructors"
+      ]
+    },
+    {
+      "description": "Do not emit debug info for defined but unused types",
+      "name": [
+        "-feliminate-unused-debug-types"
+      ]
+    },
+    {
+      "description": "Embed placeholder LLVM IR data as a marker",
+      "name": [
+        "-fembed-bitcode-marker"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "option",
+        "suggestions": [
+          {
+            "name": "off"
+          },
+          {
+            "name": "all"
+          },
+          {
+            "name": "bitcode"
+          },
+          {
+            "name": "marker"
+          }
+        ]
+      },
+      "description": "Embed LLVM bitcode",
+      "name": [
+        "-fembed-bitcode"
+      ]
+    },
+    {
+      "description": "Emit all declarations, even if unused",
+      "name": [
+        "-femit-all-decls"
+      ]
+    },
+    {
+      "description": "Use emutls functions to access thread_local variables",
+      "name": [
+        "-femulated-tls"
+      ]
+    },
+    {
+      "description": "Enable matrix data type and related builtin functions",
+      "name": [
+        "-fenable-matrix"
+      ]
+    },
+    {
+      "name": [
+        "-fescaping-block-tail-calls"
+      ]
+    },
+    {
+      "description": "Enable support for exception handling",
+      "name": [
+        "-fexceptions"
+      ]
+    },
+    {
+      "description": "Enable the experimental new constant interpreter",
+      "name": [
+        "-fexperimental-new-constant-interpreter"
+      ]
+    },
+    {
+      "description": "Use the experimental C++ class ABI for classes with virtual tables",
+      "name": [
+        "-fexperimental-relative-c++-abi-vtables"
+      ]
+    },
+    {
+      "description": "Enables experimental strict floating point in LLVM",
+      "name": [
+        "-fexperimental-strict-floating-point"
+      ]
+    },
+    {
+      "description": "Allow aggressive, lossy floating-point optimizations",
+      "name": [
+        "-ffast-math"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Remap file source paths in debug info and predefined preprocessor macros",
+      "name": [
+        "-ffile-prefix-map"
+      ]
+    },
+    {
+      "description": "Use separate accesses for consecutive bitfield runs with legal widths and alignments",
+      "name": [
+        "-ffine-grained-bitfield-accesses"
+      ]
+    },
+    {
+      "description": "Assume all loops are finite",
+      "name": [
+        "-ffinite-loops"
+      ]
+    },
+    {
+      "name": [
+        "-ffinite-math-only"
+      ]
+    },
+    {
+      "description": "Enable fixed point types",
+      "name": [
+        "-ffixed-point"
+      ]
+    },
+    {
+      "description": "Reserve register r19 (Hexagon only)",
+      "name": [
+        "-ffixed-r19"
+      ]
+    },
+    {
+      "description": "Reserve the r9 register (ARM only)",
+      "name": [
+        "-ffixed-r9"
+      ]
+    },
+    {
+      "description": "Reserve the x10 register (AArch64/RISC-V only)",
+      "name": [
+        "-ffixed-x10"
+      ]
+    },
+    {
+      "description": "Reserve the x11 register (AArch64/RISC-V only)",
+      "name": [
+        "-ffixed-x11"
+      ]
+    },
+    {
+      "description": "Reserve the x12 register (AArch64/RISC-V only)",
+      "name": [
+        "-ffixed-x12"
+      ]
+    },
+    {
+      "description": "Reserve the x13 register (AArch64/RISC-V only)",
+      "name": [
+        "-ffixed-x13"
+      ]
+    },
+    {
+      "description": "Reserve the x14 register (AArch64/RISC-V only)",
+      "name": [
+        "-ffixed-x14"
+      ]
+    },
+    {
+      "description": "Reserve the x15 register (AArch64/RISC-V only)",
+      "name": [
+        "-ffixed-x15"
+      ]
+    },
+    {
+      "description": "Reserve the x16 register (AArch64/RISC-V only)",
+      "name": [
+        "-ffixed-x16"
+      ]
+    },
+    {
+      "description": "Reserve the x17 register (AArch64/RISC-V only)",
+      "name": [
+        "-ffixed-x17"
+      ]
+    },
+    {
+      "description": "Reserve the x18 register (AArch64/RISC-V only)",
+      "name": [
+        "-ffixed-x18"
+      ]
+    },
+    {
+      "description": "Reserve the x19 register (AArch64/RISC-V only)",
+      "name": [
+        "-ffixed-x19"
+      ]
+    },
+    {
+      "description": "Reserve the x1 register (AArch64/RISC-V only)",
+      "name": [
+        "-ffixed-x1"
+      ]
+    },
+    {
+      "description": "Reserve the x20 register (AArch64/RISC-V only)",
+      "name": [
+        "-ffixed-x20"
+      ]
+    },
+    {
+      "description": "Reserve the x21 register (AArch64/RISC-V only)",
+      "name": [
+        "-ffixed-x21"
+      ]
+    },
+    {
+      "description": "Reserve the x22 register (AArch64/RISC-V only)",
+      "name": [
+        "-ffixed-x22"
+      ]
+    },
+    {
+      "description": "Reserve the x23 register (AArch64/RISC-V only)",
+      "name": [
+        "-ffixed-x23"
+      ]
+    },
+    {
+      "description": "Reserve the x24 register (AArch64/RISC-V only)",
+      "name": [
+        "-ffixed-x24"
+      ]
+    },
+    {
+      "description": "Reserve the x25 register (AArch64/RISC-V only)",
+      "name": [
+        "-ffixed-x25"
+      ]
+    },
+    {
+      "description": "Reserve the x26 register (AArch64/RISC-V only)",
+      "name": [
+        "-ffixed-x26"
+      ]
+    },
+    {
+      "description": "Reserve the x27 register (AArch64/RISC-V only)",
+      "name": [
+        "-ffixed-x27"
+      ]
+    },
+    {
+      "description": "Reserve the x28 register (AArch64/RISC-V only)",
+      "name": [
+        "-ffixed-x28"
+      ]
+    },
+    {
+      "description": "Reserve the x29 register (AArch64/RISC-V only)",
+      "name": [
+        "-ffixed-x29"
+      ]
+    },
+    {
+      "description": "Reserve the x2 register (AArch64/RISC-V only)",
+      "name": [
+        "-ffixed-x2"
+      ]
+    },
+    {
+      "description": "Reserve the x30 register (AArch64/RISC-V only)",
+      "name": [
+        "-ffixed-x30"
+      ]
+    },
+    {
+      "description": "Reserve the x31 register (AArch64/RISC-V only)",
+      "name": [
+        "-ffixed-x31"
+      ]
+    },
+    {
+      "description": "Reserve the x3 register (AArch64/RISC-V only)",
+      "name": [
+        "-ffixed-x3"
+      ]
+    },
+    {
+      "description": "Reserve the x4 register (AArch64/RISC-V only)",
+      "name": [
+        "-ffixed-x4"
+      ]
+    },
+    {
+      "description": "Reserve the x5 register (AArch64/RISC-V only)",
+      "name": [
+        "-ffixed-x5"
+      ]
+    },
+    {
+      "description": "Reserve the x6 register (AArch64/RISC-V only)",
+      "name": [
+        "-ffixed-x6"
+      ]
+    },
+    {
+      "description": "Reserve the x7 register (AArch64/RISC-V only)",
+      "name": [
+        "-ffixed-x7"
+      ]
+    },
+    {
+      "description": "Reserve the x8 register (AArch64/RISC-V only)",
+      "name": [
+        "-ffixed-x8"
+      ]
+    },
+    {
+      "description": "Reserve the x9 register (AArch64/RISC-V only)",
+      "name": [
+        "-ffixed-x9"
+      ]
+    },
+    {
+      "description": "Always emit a debug frame section",
+      "name": [
+        "-fforce-dwarf-frame"
+      ]
+    },
+    {
+      "description": "Emits more virtual tables to improve devirtualization",
+      "name": [
+        "-fforce-emit-vtables"
+      ]
+    },
+    {
+      "description": "Enable support for int128_t type",
+      "name": [
+        "-fforce-enable-int128"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Form fused FP ops (e.g. FMAs): fast (fuses across statements disregarding pragmas) | on (only fuses in the same statement unless dictated by pragmas) | off (never fuses) | fast-honor-pragmas (fuses across statements unless diectated by pragmas). Default is 'fast' for CUDA, 'fast-honor-pragmas' for HIP, and 'on' otherwise",
+      "name": [
+        "-ffp-contract"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Specifies the exception behavior of floating-point operations",
+      "name": [
+        "-ffp-exception-behavior"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Controls the semantics of floating-point calculations",
+      "name": [
+        "-ffp-model"
+      ]
+    },
+    {
+      "description": "Assert that the compilation takes place in a freestanding environment",
+      "name": [
+        "-ffreestanding"
+      ]
+    },
+    {
+      "description": "Place each function in its own section",
+      "name": [
+        "-ffunction-sections"
+      ]
+    },
+    {
+      "description": "Enables the global instruction selector",
+      "name": [
+        "-fglobal-isel"
+      ]
+    },
+    {
+      "name": [
+        "-fgnu-inline-asm"
+      ]
+    },
+    {
+      "description": "Allow GNU-extension keywords regardless of language standard",
+      "name": [
+        "-fgnu-keywords"
+      ]
+    },
+    {
+      "description": "Generate output compatible with the standard GNU Objective-C runtime",
+      "name": [
+        "-fgnu-runtime"
+      ]
+    },
+    {
+      "description": "Use the gnu89 inline semantics",
+      "name": [
+        "-fgnu89-inline"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Sets various macros to claim compatibility with the given GCC version (default is 4.2.1)",
+      "name": [
+        "-fgnuc-version"
+      ]
+    },
+    {
+      "description": "Allow device side init function in HIP",
+      "name": [
+        "-fgpu-allow-device-init"
+      ]
+    },
+    {
+      "description": "Defer host/device related diagnostic messages for CUDA/HIP",
+      "name": [
+        "-fgpu-defer-diag"
+      ]
+    },
+    {
+      "description": "Generate relocatable device code, also known as separate compilation mode",
+      "name": [
+        "-fgpu-rdc"
+      ]
+    },
+    {
+      "description": "Use new kernel launching API for HIP",
+      "name": [
+        "-fhip-new-launch-api"
+      ]
+    },
+    {
+      "description": "Enable support for ignoring exception handling constructs",
+      "name": [
+        "-fignore-exceptions"
+      ]
+    },
+    {
+      "description": "Implicitly search the file system for module map files",
+      "name": [
+        "-fimplicit-module-maps"
+      ]
+    },
+    {
+      "name": [
+        "-fimplicit-modules"
+      ]
+    },
+    {
+      "description": "Inline suitable functions",
+      "name": [
+        "-finline-functions"
+      ]
+    },
+    {
+      "description": "Inline functions which are (explicitly or implicitly) marked inline",
+      "name": [
+        "-finline-hint-functions"
+      ]
+    },
+    {
+      "description": "Instrument function entry only, after inlining, without arguments to the instrumentation call",
+      "name": [
+        "-finstrument-function-entry-bare"
+      ]
+    },
+    {
+      "description": "Like -finstrument-functions, but insert the calls after inlining",
+      "name": [
+        "-finstrument-functions-after-inlining"
+      ]
+    },
+    {
+      "description": "Generate calls to instrument function entry and exit",
+      "name": [
+        "-finstrument-functions"
+      ]
+    },
+    {
+      "description": "Enable the integrated assembler",
+      "name": [
+        "-fintegrated-as"
+      ]
+    },
+    {
+      "description": "Run cc1 in-process",
+      "name": [
+        "-fintegrated-cc1"
+      ]
+    },
+    {
+      "description": "Use jump tables for lowering switches",
+      "name": [
+        "-fjump-tables"
+      ]
+    },
+    {
+      "description": "Keep static const variables if unused",
+      "name": [
+        "-fkeep-static-consts"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Enable implicit vector bit-casts",
+      "name": [
+        "-flax-vector-conversions"
+      ]
+    },
+    {
+      "description": "Use the legacy pass manager in LLVM",
+      "name": [
+        "-flegacy-pass-manager"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Controls the backend parallelism of -flto=thin (default of 0 means the number of threads will be derived from the number of CPUs detected)",
+      "name": [
+        "-flto-jobs"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "value",
+        "suggestions": [
+          {
+            "name": "full"
+          },
+          {
+            "name": "thin"
+          }
+        ]
+      },
+      "description": "Set LTO mode to either 'full' or 'thin'",
+      "name": [
+        "-flto"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Remap file source paths in predefined preprocessor macros",
+      "name": [
+        "-fmacro-prefix-map"
+      ]
+    },
+    {
+      "description": "Require math functions to indicate errors by setting errno",
+      "name": [
+        "-fmath-errno"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Max total number of preprocessed tokens for -Wmax-tokens",
+      "name": [
+        "-fmax-tokens"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Specify the maximum alignment to enforce on pointers lacking an explicit alignment",
+      "name": [
+        "-fmax-type-align"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "directory"
+      },
+      "description": "Enable heap memory profiling and dump results into <directory>",
+      "name": [
+        "-fmemory-profile"
+      ]
+    },
+    {
+      "description": "Allow merging of constants",
+      "name": [
+        "-fmerge-all-constants"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Format message diagnostics so that they fit within N columns",
+      "name": [
+        "-fmessage-length"
+      ]
+    },
+    {
+      "description": "[<name>=]<file> Specify the mapping of module name to precompiled module file, or load a module file if name is omitted",
+      "name": [
+        "-fmodule-file"
+      ]
+    },
+    {
+      "args": {
+        "name": "file"
+      },
+      "description": "Load this module map file",
+      "name": [
+        "-fmodule-map-file"
+      ]
+    },
+    {
+      "args": {
+        "name": "name"
+      },
+      "description": "Specify the name of the module to build",
+      "name": [
+        "-fmodule-name"
+      ]
+    },
+    {
+      "args": {
+        "name": "directory",
+        "template": "folders"
+      },
+      "description": "Specify the module cache path",
+      "name": [
+        "-fmodules-cache-path"
+      ]
+    },
+    {
+      "description": "Require declaration of modules used within a module",
+      "name": [
+        "-fmodules-decluse"
+      ]
+    },
+    {
+      "description": "Disable validation of the diagnostic options when loading the module",
+      "name": [
+        "-fmodules-disable-diagnostic-validation"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Ignore the definition of the given macro when building and loading modules",
+      "name": [
+        "-fmodules-ignore-macro"
+      ]
+    },
+    {
+      "args": {
+        "name": "seconds"
+      },
+      "description": "Specify the interval (in seconds) after which a module file will be considered unused",
+      "name": [
+        "-fmodules-prune-after"
+      ]
+    },
+    {
+      "args": {
+        "name": "seconds"
+      },
+      "description": "Specify the interval (in seconds) between attempts to prune the module cache",
+      "name": [
+        "-fmodules-prune-interval"
+      ]
+    },
+    {
+      "description": "Search even non-imported modules to resolve references",
+      "name": [
+        "-fmodules-search-all"
+      ]
+    },
+    {
+      "description": "Like -fmodules-decluse but requires all headers to be in modules",
+      "name": [
+        "-fmodules-strict-decluse"
+      ]
+    },
+    {
+      "description": "Enable support for the C++ Modules TS",
+      "name": [
+        "-fmodules-ts"
+      ]
+    },
+    {
+      "args": {
+        "name": "directory",
+        "template": "folders"
+      },
+      "description": "Specify the module user build path",
+      "name": [
+        "-fmodules-user-build-path"
+      ]
+    },
+    {
+      "description": "Validate PCM input files based on content if mtime differs",
+      "name": [
+        "-fmodules-validate-input-files-content"
+      ]
+    },
+    {
+      "description": "Don't verify input files for the modules if the module has been successfully validated or loaded during this build session",
+      "name": [
+        "-fmodules-validate-once-per-build-session"
+      ]
+    },
+    {
+      "description": "Validate the system headers that a module depends on when loading the module",
+      "name": [
+        "-fmodules-validate-system-headers"
+      ]
+    },
+    {
+      "description": "Enable the 'modules' language feature",
+      "name": [
+        "-fmodules"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Dot-separated value representing the Microsoft compiler version number to report in _MSC_VER (0 = don't define it (default))",
+      "name": [
+        "-fms-compatibility-version"
+      ]
+    },
+    {
+      "description": "Enable full Microsoft Visual C++ compatibility",
+      "name": [
+        "-fms-compatibility"
+      ]
+    },
+    {
+      "description": "Accept some non-standard constructs supported by the Microsoft compiler",
+      "name": [
+        "-fms-extensions"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Microsoft compiler version number to report in _MSC_VER (0 = don't define it (default))",
+      "name": [
+        "-fmsc-version"
+      ]
+    },
+    {
+      "args": {
+        "name": "align"
+      },
+      "description": "Specifies the largest alignment guaranteed by '::operator new(size_t)'",
+      "name": [
+        "-fnew-alignment"
+      ]
+    },
+    {
+      "description": "Do not follow the AAPCS standard requirement stating that volatile bit-field width is dictated by the field container type. (ARM only)",
+      "name": [
+        "-fno-aapcs-bitfield-width"
+      ]
+    },
+    {
+      "description": "Disable C++ access control",
+      "name": [
+        "-fno-access-control"
+      ]
+    },
+    {
+      "description": "Don't emit an address-significance table",
+      "name": [
+        "-fno-addrsig"
+      ]
+    },
+    {
+      "name": [
+        "-fno-allow-editor-placeholders"
+      ]
+    },
+    {
+      "description": "Disable module-based external API notes support",
+      "name": [
+        "-fno-apinotes-modules"
+      ]
+    },
+    {
+      "description": "Disable external API notes support",
+      "name": [
+        "-fno-apinotes"
+      ]
+    },
+    {
+      "name": [
+        "-fno-apple-pragma-pack"
+      ]
+    },
+    {
+      "name": [
+        "-fno-application-extension"
+      ]
+    },
+    {
+      "name": [
+        "-fno-asm-blocks"
+      ]
+    },
+    {
+      "description": "Don't assume that C++'s global operator new can't alias any pointer",
+      "name": [
+        "-fno-assume-sane-operator-new"
+      ]
+    },
+    {
+      "description": "Disable generation of linker directives for automatic library linking",
+      "name": [
+        "-fno-autolink"
+      ]
+    },
+    {
+      "name": [
+        "-fno-blocks"
+      ]
+    },
+    {
+      "name": [
+        "-fno-borland-extensions"
+      ]
+    },
+    {
+      "args": {},
+      "description": "Disable implicit builtin knowledge of a specific function",
+      "name": [
+        "-fno-builtin-value"
+      ]
+    },
+    {
+      "description": "Disable implicit builtin knowledge of functions",
+      "name": [
+        "-fno-builtin"
+      ]
+    },
+    {
+      "description": "Disable C++ static destructor registration",
+      "name": [
+        "-fno-c++-static-destructors"
+      ]
+    },
+    {
+      "name": [
+        "-fno-caret-diagnostics"
+      ]
+    },
+    {
+      "description": "Disable C++ builtin type char8_t",
+      "name": [
+        "-fno-char8_t"
+      ]
+    },
+    {
+      "description": "Disable colors in diagnostics",
+      "name": [
+        "-fno-color-diagnostics"
+      ]
+    },
+    {
+      "description": "Compile common globals like normal definitions",
+      "name": [
+        "-fno-common"
+      ]
+    },
+    {
+      "description": "Do not require member pointer base types to be complete if they would be significant under the Microsoft ABI",
+      "name": [
+        "-fno-complete-member-pointers"
+      ]
+    },
+    {
+      "description": "Disable creation of CodeFoundation-type constant strings",
+      "name": [
+        "-fno-constant-cfstrings"
+      ]
+    },
+    {
+      "description": "Disable creation of CodeFoundation-type constant initializer `NSArray`s from array literals",
+      "name": [
+        "-fno-constant-nsarray-literals"
+      ]
+    },
+    {
+      "description": "Disable creation of CodeFoundation-type constant initializer `NSDictionary`s from dictionary literals",
+      "name": [
+        "-fno-constant-nsdictionary-literals"
+      ]
+    },
+    {
+      "description": "Disable creation of CodeFoundation-type constant initializer `NSNumber`s from number literals",
+      "name": [
+        "-fno-constant-nsnumber-literals"
+      ]
+    },
+    {
+      "name": [
+        "-fno-coroutines-ts"
+      ]
+    },
+    {
+      "description": "Disable code coverage analysis",
+      "name": [
+        "-fno-coverage-mapping"
+      ]
+    },
+    {
+      "description": "Disable auto-generation of preprocessed source files and a script for reproduction during a clang crash",
+      "name": [
+        "-fno-crash-diagnostics"
+      ]
+    },
+    {
+      "description": "Don't use approximate transcendental functions",
+      "name": [
+        "-fno-cuda-approx-transcendentals"
+      ]
+    },
+    {
+      "name": [
+        "-fno-cuda-short-ptr"
+      ]
+    },
+    {
+      "name": [
+        "-fno-cxx-exceptions"
+      ]
+    },
+    {
+      "description": "Disable modules for C++",
+      "name": [
+        "-fno-cxx-modules"
+      ]
+    },
+    {
+      "name": [
+        "-fno-data-sections"
+      ]
+    },
+    {
+      "name": [
+        "-fno-debug-info-for-profiling"
+      ]
+    },
+    {
+      "description": "Do not emit macro debug information",
+      "name": [
+        "-fno-debug-macro"
+      ]
+    },
+    {
+      "name": [
+        "-fno-debug-ranges-base-address"
+      ]
+    },
+    {
+      "description": "Disallow __declspec as a keyword",
+      "name": [
+        "-fno-declspec"
+      ]
+    },
+    {
+      "description": "Disable delayed template parsing",
+      "name": [
+        "-fno-delayed-template-parsing"
+      ]
+    },
+    {
+      "description": "Do not treat usage of null pointers as undefined behavior",
+      "name": [
+        "-fno-delete-null-pointer-checks"
+      ]
+    },
+    {
+      "description": "Do not include fixit information in diagnostics",
+      "name": [
+        "-fno-diagnostics-fixit-info"
+      ]
+    },
+    {
+      "name": [
+        "-fno-diagnostics-show-hotness"
+      ]
+    },
+    {
+      "description": "Disallow alternative token representations '<:', ':>', '<%', '%>', '%:', '%:%:'",
+      "name": [
+        "-fno-digraphs"
+      ]
+    },
+    {
+      "description": "Do not discard value names in LLVM IR",
+      "name": [
+        "-fno-discard-value-names"
+      ]
+    },
+    {
+      "description": "Disallow '$' in identifiers",
+      "name": [
+        "-fno-dollars-in-identifiers"
+      ]
+    },
+    {
+      "description": "Disable '[[]]' attributes in all C and C++ language modes",
+      "name": [
+        "-fno-double-square-bracket-attributes"
+      ]
+    },
+    {
+      "name": [
+        "-fno-dwarf-directory-asm"
+      ]
+    },
+    {
+      "description": "Disable C++ copy constructor elision",
+      "name": [
+        "-fno-elide-constructors"
+      ]
+    },
+    {
+      "description": "Do not elide types when printing diagnostics",
+      "name": [
+        "-fno-elide-type"
+      ]
+    },
+    {
+      "description": "Emit debug info for defined but unused types",
+      "name": [
+        "-fno-eliminate-unused-debug-types"
+      ]
+    },
+    {
+      "name": [
+        "-fno-escaping-block-tail-calls"
+      ]
+    },
+    {
+      "description": "Disable support for exception handling",
+      "name": [
+        "-fno-exceptions"
+      ]
+    },
+    {
+      "description": "Do not use the experimental C++ class ABI for classes with virtual tables",
+      "name": [
+        "-fno-experimental-relative-c++-abi-vtables"
+      ]
+    },
+    {
+      "name": [
+        "-fno-fast-math"
+      ]
+    },
+    {
+      "description": "Use large-integer access for consecutive bitfield runs",
+      "name": [
+        "-fno-fine-grained-bitfield-accesses"
+      ]
+    },
+    {
+      "description": "Do not assume that any loop is finite",
+      "name": [
+        "-fno-finite-loops"
+      ]
+    },
+    {
+      "name": [
+        "-fno-finite-math-only"
+      ]
+    },
+    {
+      "description": "Disable fixed point types",
+      "name": [
+        "-fno-fixed-point"
+      ]
+    },
+    {
+      "name": [
+        "-fno-force-dwarf-frame"
+      ]
+    },
+    {
+      "name": [
+        "-fno-force-emit-vtables"
+      ]
+    },
+    {
+      "description": "Disable support for int128_t type",
+      "name": [
+        "-fno-force-enable-int128"
+      ]
+    },
+    {
+      "name": [
+        "-fno-function-sections"
+      ]
+    },
+    {
+      "description": "Disables the global instruction selector",
+      "name": [
+        "-fno-global-isel"
+      ]
+    },
+    {
+      "description": "Disable GNU style inline asm",
+      "name": [
+        "-fno-gnu-inline-asm"
+      ]
+    },
+    {
+      "name": [
+        "-fno-gnu89-inline"
+      ]
+    },
+    {
+      "description": "Don't allow device side init function in HIP",
+      "name": [
+        "-fno-gpu-allow-device-init"
+      ]
+    },
+    {
+      "description": "Don't defer host/device related diagnostic messages for CUDA/HIP",
+      "name": [
+        "-fno-gpu-defer-diag"
+      ]
+    },
+    {
+      "name": [
+        "-fno-gpu-rdc"
+      ]
+    },
+    {
+      "description": "Don't use new kernel launching API for HIP",
+      "name": [
+        "-fno-hip-new-launch-api"
+      ]
+    },
+    {
+      "name": [
+        "-fno-implicit-modules"
+      ]
+    },
+    {
+      "description": "Disable the integrated assembler",
+      "name": [
+        "-fno-integrated-as"
+      ]
+    },
+    {
+      "description": "Spawn a separate process for each cc1",
+      "name": [
+        "-fno-integrated-cc1"
+      ]
+    },
+    {
+      "description": "Do not use jump tables for lowering switches",
+      "name": [
+        "-fno-jump-tables"
+      ]
+    },
+    {
+      "description": "Don't keep static const variables if unused",
+      "name": [
+        "-fno-keep-static-consts"
+      ]
+    },
+    {
+      "description": "Use the new pass manager in LLVM",
+      "name": [
+        "-fno-legacy-pass-manager"
+      ]
+    },
+    {
+      "description": "Disable LTO mode (default)",
+      "name": [
+        "-fno-lto"
+      ]
+    },
+    {
+      "name": [
+        "-fno-math-errno"
+      ]
+    },
+    {
+      "description": "Disable heap memory profiling",
+      "name": [
+        "-fno-memory-profile"
+      ]
+    },
+    {
+      "description": "Disallow merging of constants",
+      "name": [
+        "-fno-merge-all-constants"
+      ]
+    },
+    {
+      "name": [
+        "-fno-modules-validate-system-headers"
+      ]
+    },
+    {
+      "name": [
+        "-fno-objc-arc-exceptions"
+      ]
+    },
+    {
+      "name": [
+        "-fno-objc-convert-messages-to-runtime-calls"
+      ]
+    },
+    {
+      "name": [
+        "-fno-objc-encode-cxx-class-template-spec"
+      ]
+    },
+    {
+      "name": [
+        "-fno-objc-exceptions"
+      ]
+    },
+    {
+      "description": "Do not infer Objective-C related result type based on method family",
+      "name": [
+        "-fno-objc-infer-related-result-type"
+      ]
+    },
+    {
+      "description": "Do not treat C++ operator name keywords as synonyms for operators",
+      "name": [
+        "-fno-operator-names"
+      ]
+    },
+    {
+      "name": [
+        "-fno-pascal-strings"
+      ]
+    },
+    {
+      "description": "Do not generate code for uses of this PCH that assumes an explicit object file will be built for the PCH",
+      "name": [
+        "-fno-pch-codegen"
+      ]
+    },
+    {
+      "description": "Do not generate debug info for types in an object file built from this PCH and do not generate them elsewhere",
+      "name": [
+        "-fno-pch-debuginfo"
+      ]
+    },
+    {
+      "name": [
+        "-fno-pch-instantiate-templates"
+      ]
+    },
+    {
+      "description": "Use GOT indirection instead of PLT to make external function calls (x86 only)",
+      "name": [
+        "-fno-plt"
+      ]
+    },
+    {
+      "name": [
+        "-fno-prebuilt-implicit-modules"
+      ]
+    },
+    {
+      "description": "Do not preserve comments in inline assembly",
+      "name": [
+        "-fno-preserve-as-comments"
+      ]
+    },
+    {
+      "name": [
+        "-fno-profile-arcs"
+      ]
+    },
+    {
+      "description": "Disable generation of profile instrumentation",
+      "name": [
+        "-fno-profile-generate"
+      ]
+    },
+    {
+      "description": "Disable generation of profile instrumentation",
+      "name": [
+        "-fno-profile-instr-generate"
+      ]
+    },
+    {
+      "description": "Disable using instrumentation data for profile-guided optimization",
+      "name": [
+        "-fno-profile-instr-use"
+      ]
+    },
+    {
+      "description": "Do not emit pseudo probes for sample profiler",
+      "name": [
+        "-fno-pseudo-probe-for-profiling"
+      ]
+    },
+    {
+      "description": "Disable Pointer Authentication ABI versioning",
+      "name": [
+        "-fno-ptrauth-abi-version"
+      ]
+    },
+    {
+      "description": "Disable Pointer Authentication kernel ABI versioning",
+      "name": [
+        "-fno-ptrauth-kernel-abi-version"
+      ]
+    },
+    {
+      "name": [
+        "-fno-reciprocal-math"
+      ]
+    },
+    {
+      "description": "Don't use atexit or __cxa_atexit to register global destructors",
+      "name": [
+        "-fno-register-global-dtors-with-atexit"
+      ]
+    },
+    {
+      "name": [
+        "-fno-relaxed-template-template-args"
+      ]
+    },
+    {
+      "name": [
+        "-fno-reroll-loops"
+      ]
+    },
+    {
+      "name": [
+        "-fno-rewrite-imports"
+      ]
+    },
+    {
+      "name": [
+        "-fno-rewrite-includes"
+      ]
+    },
+    {
+      "name": [
+        "-fno-ropi"
+      ]
+    },
+    {
+      "description": "Do not add -rpath with architecture-specific resource directory to the linker flags",
+      "name": [
+        "-fno-rtlib-add-rpath"
+      ]
+    },
+    {
+      "description": "Disable generation of RTTI data",
+      "name": [
+        "-fno-rtti-data"
+      ]
+    },
+    {
+      "description": "Disable generation of rtti information",
+      "name": [
+        "-fno-rtti"
+      ]
+    },
+    {
+      "name": [
+        "-fno-rwpi"
+      ]
+    },
+    {
+      "description": "Disable poisoning array cookies when using custom operator new[] in AddressSanitizer",
+      "name": [
+        "-fno-sanitize-address-poison-custom-array-cookie"
+      ]
+    },
+    {
+      "description": "Disable use-after-scope detection in AddressSanitizer",
+      "name": [
+        "-fno-sanitize-address-use-after-scope"
+      ]
+    },
+    {
+      "description": "Disable ODR indicator globals",
+      "name": [
+        "-fno-sanitize-address-use-odr-indicator"
+      ]
+    },
+    {
+      "description": "Don't use blacklist file for sanitizers",
+      "name": [
+        "-fno-sanitize-blacklist"
+      ]
+    },
+    {
+      "description": "Do not make the jump table addresses canonical in the symbol table",
+      "name": [
+        "-fno-sanitize-cfi-canonical-jump-tables"
+      ]
+    },
+    {
+      "description": "Disable control flow integrity (CFI) checks for cross-DSO calls",
+      "name": [
+        "-fno-sanitize-cfi-cross-dso"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Disable specified features of coverage instrumentation for Sanitizers",
+      "name": [
+        "-fno-sanitize-coverage"
+      ]
+    },
+    {
+      "description": "Disable origins tracking in MemorySanitizer",
+      "name": [
+        "-fno-sanitize-memory-track-origins"
+      ]
+    },
+    {
+      "description": "Disable use-after-destroy detection in MemorySanitizer",
+      "name": [
+        "-fno-sanitize-memory-use-after-dtor"
+      ]
+    },
+    {
+      "name": [
+        "-fno-sanitize-minimal-runtime"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Disable recovery for specified sanitizers",
+      "name": [
+        "-fno-sanitize-recover"
+      ]
+    },
+    {
+      "description": "Disable sanitizer statistics gathering",
+      "name": [
+        "-fno-sanitize-stats"
+      ]
+    },
+    {
+      "description": "Disable atomic operations instrumentation in ThreadSanitizer",
+      "name": [
+        "-fno-sanitize-thread-atomics"
+      ]
+    },
+    {
+      "description": "Disable function entry/exit instrumentation in ThreadSanitizer",
+      "name": [
+        "-fno-sanitize-thread-func-entry-exit"
+      ]
+    },
+    {
+      "description": "Disable memory access instrumentation in ThreadSanitizer",
+      "name": [
+        "-fno-sanitize-thread-memory-access"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "value"
+      },
+      "description": "Disable trapping for sanitizers",
+      "name": [
+        "-fno-sanitize-trap"
+      ]
+    },
+    {
+      "name": [
+        "-fno-semantic-interposition"
+      ]
+    },
+    {
+      "name": [
+        "-fno-short-enums"
+      ]
+    },
+    {
+      "description": "Force wchar_t to be an unsigned int",
+      "name": [
+        "-fno-short-wchar"
+      ]
+    },
+    {
+      "description": "Do not include column number on diagnostics",
+      "name": [
+        "-fno-show-column"
+      ]
+    },
+    {
+      "description": "Do not include source location information with diagnostics",
+      "name": [
+        "-fno-show-source-location"
+      ]
+    },
+    {
+      "description": "Char is unsigned",
+      "name": [
+        "-fno-signed-char"
+      ]
+    },
+    {
+      "description": "Allow optimizations that ignore the sign of floating point zeros",
+      "name": [
+        "-fno-signed-zeros"
+      ]
+    },
+    {
+      "name": [
+        "-fno-sized-deallocation"
+      ]
+    },
+    {
+      "description": "Disable spell-checking",
+      "name": [
+        "-fno-spell-checking"
+      ]
+    },
+    {
+      "name": [
+        "-fno-split-dwarf-inlining"
+      ]
+    },
+    {
+      "name": [
+        "-fno-split-lto-unit"
+      ]
+    },
+    {
+      "description": "Disable late function splitting using profile information (x86 ELF)",
+      "name": [
+        "-fno-split-machine-functions"
+      ]
+    },
+    {
+      "description": "Disable stack checking",
+      "name": [
+        "-fno-stack-check"
+      ]
+    },
+    {
+      "description": "Disable stack clash protection",
+      "name": [
+        "-fno-stack-clash-protection"
+      ]
+    },
+    {
+      "description": "Disable the use of stack protectors",
+      "name": [
+        "-fno-stack-protector"
+      ]
+    },
+    {
+      "name": [
+        "-fno-stack-size-section"
+      ]
+    },
+    {
+      "description": "Limit debug information produced to reduce size of debug binary",
+      "name": [
+        "-fno-standalone-debug"
+      ]
+    },
+    {
+      "description": "Relax language rules and try to match the behavior of the target's native float-to-int conversion instructions",
+      "name": [
+        "-fno-strict-float-cast-overflow"
+      ]
+    },
+    {
+      "description": "Don't treat control flow paths that fall off the end of a non-void function as unreachable",
+      "name": [
+        "-fno-strict-return"
+      ]
+    },
+    {
+      "name": [
+        "-fno-strict-vtable-pointers"
+      ]
+    },
+    {
+      "description": "Disable SYCL kernels compilation for device",
+      "name": [
+        "-fno-sycl"
+      ]
+    },
+    {
+      "description": "Directly create compilation output files. This may lead to incorrect incremental builds if the compiler crashes",
+      "name": [
+        "-fno-temp-file"
+      ]
+    },
+    {
+      "name": [
+        "-fno-test-coverage"
+      ]
+    },
+    {
+      "description": "Do not emit code to make initialization of local statics thread safe",
+      "name": [
+        "-fno-threadsafe-statics"
+      ]
+    },
+    {
+      "description": "Do not process trigraph sequences",
+      "name": [
+        "-fno-trigraphs"
+      ]
+    },
+    {
+      "name": [
+        "-fno-unique-basic-block-section-names"
+      ]
+    },
+    {
+      "name": [
+        "-fno-unique-internal-linkage-names"
+      ]
+    },
+    {
+      "description": "Don't use unique names for text and data sections",
+      "name": [
+        "-fno-unique-section-names"
+      ]
+    },
+    {
+      "description": "Turn off loop unroller",
+      "name": [
+        "-fno-unroll-loops"
+      ]
+    },
+    {
+      "description": "Don't use __cxa_atexit for calling destructors",
+      "name": [
+        "-fno-use-cxa-atexit"
+      ]
+    },
+    {
+      "description": "Use .ctors/.dtors instead of .init_array/.fini_array",
+      "name": [
+        "-fno-use-init-array"
+      ]
+    },
+    {
+      "name": [
+        "-fno-use-line-directives"
+      ]
+    },
+    {
+      "name": [
+        "-fno-virtual-function-elimination"
+      ]
+    },
+    {
+      "name": [
+        "-fno-visibility-from-dllstorageclass"
+      ]
+    },
+    {
+      "description": "Disables -fvisibility-inlines-hidden-static-local-var (this is the default on non-darwin targets)",
+      "name": [
+        "-fno-visibility-inlines-hidden-static-local-var"
+      ]
+    },
+    {
+      "name": [
+        "-fno-whole-program-vtables"
+      ]
+    },
+    {
+      "name": [
+        "-fno-xray-always-emit-customevents"
+      ]
+    },
+    {
+      "name": [
+        "-fno-xray-always-emit-typedevents"
+      ]
+    },
+    {
+      "description": "Omit function index section at the expense of single-function patching performance",
+      "name": [
+        "-fno-xray-function-index"
+      ]
+    },
+    {
+      "name": [
+        "-fno-xray-ignore-loops"
+      ]
+    },
+    {
+      "name": [
+        "-fno-xray-instrument"
+      ]
+    },
+    {
+      "description": "Don't place zero initialized data in BSS",
+      "name": [
+        "-fno-zero-initialized-in-bss"
+      ]
+    },
+    {
+      "name": [
+        "-fno-zvector"
+      ]
+    },
+    {
+      "description": "Use EH-safe code when synthesizing retains and releases in -fobjc-arc",
+      "name": [
+        "-fobjc-arc-exceptions"
+      ]
+    },
+    {
+      "description": "Synthesize retain and release calls for Objective-C pointers",
+      "name": [
+        "-fobjc-arc"
+      ]
+    },
+    {
+      "name": [
+        "-fobjc-convert-messages-to-runtime-calls"
+      ]
+    },
+    {
+      "description": "Ignore attribute objc_direct so that direct methods can be tested",
+      "name": [
+        "-fobjc-disable-direct-methods-for-testing"
+      ]
+    },
+    {
+      "description": "Fully encode c++ class template specialization",
+      "name": [
+        "-fobjc-encode-cxx-class-template-spec"
+      ]
+    },
+    {
+      "description": "Enable Objective-C exceptions",
+      "name": [
+        "-fobjc-exceptions"
+      ]
+    },
+    {
+      "name": [
+        "-fobjc-infer-related-result-type"
+      ]
+    },
+    {
+      "description": "Enable relative method lists",
+      "name": [
+        "-fobjc-relative-method-lists"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Specify the target Objective-C runtime kind and version",
+      "name": [
+        "-fobjc-runtime"
+      ]
+    },
+    {
+      "description": "Enable ARC-style weak references in Objective-C",
+      "name": [
+        "-fobjc-weak"
+      ]
+    },
+    {
+      "description": "Emit OpenMP code only for SIMD-based constructs",
+      "name": [
+        "-fopenmp-simd"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Specify comma-separated list of triples OpenMP offloading targets to be supported",
+      "name": [
+        "-fopenmp-targets"
+      ]
+    },
+    {
+      "description": "Parse OpenMP pragmas and generate parallel code",
+      "name": [
+        "-fopenmp"
+      ]
+    },
+    {
+      "args": {
+        "name": "file"
+      },
+      "description": "Specify the output name of the file containing the optimization remarks. Implies -fsave-optimization-record. On Darwin platforms, this cannot be used with multiple -arch <arch> options",
+      "name": [
+        "-foptimization-record-file"
+      ]
+    },
+    {
+      "args": {
+        "name": "regex"
+      },
+      "description": "Only include passes which match a specified regular expression in the generated optimization record (by default, include all passes)",
+      "name": [
+        "-foptimization-record-passes"
+      ]
+    },
+    {
+      "description": "Generate instrumented code to collect order file into default.profraw file (overridden by '=' form of option or LLVM_PROFILE_FILE env var)",
+      "name": [
+        "-forder-file-instrumentation"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Specify the default maximum struct packing alignment",
+      "name": [
+        "-fpack-struct"
+      ]
+    },
+    {
+      "description": "Recognize and construct Pascal-style string literals",
+      "name": [
+        "-fpascal-strings"
+      ]
+    },
+    {
+      "args": {
+        "name": "dsopath"
+      },
+      "description": "Load pass plugin from a dynamic shared object file (only with new pass manager)",
+      "name": [
+        "-fpass-plugin"
+      ]
+    },
+    {
+      "args": {
+        "name": "N,M"
+      },
+      "description": "Generate M NOPs before function entry and N-M NOPs after function entry",
+      "name": [
+        "-fpatchable-function-entry"
+      ]
+    },
+    {
+      "description": "Override the default ABI to return all structs on the stack",
+      "name": [
+        "-fpcc-struct-return"
+      ]
+    },
+    {
+      "description": "Generate code for uses of this PCH that assumes an explicit object file will be built for the PCH",
+      "name": [
+        "-fpch-codegen"
+      ]
+    },
+    {
+      "description": "Generate debug info for types in an object file built from this PCH and do not generate them elsewhere",
+      "name": [
+        "-fpch-debuginfo"
+      ]
+    },
+    {
+      "description": "Instantiate templates already while building a PCH",
+      "name": [
+        "-fpch-instantiate-templates"
+      ]
+    },
+    {
+      "description": "Validate PCH input files based on content if mtime differs",
+      "name": [
+        "-fpch-validate-input-files-content"
+      ]
+    },
+    {
+      "name": [
+        "-fplt"
+      ]
+    },
+    {
+      "args": {
+        "name": "dsopath"
+      },
+      "description": "Load the named plugin (dynamic shared object)",
+      "name": [
+        "-fplugin"
+      ]
+    },
+    {
+      "description": "Look up implicit modules in the prebuilt module path",
+      "name": [
+        "-fprebuilt-implicit-modules"
+      ]
+    },
+    {
+      "args": {
+        "name": "directory",
+        "template": "folders"
+      },
+      "description": "Specify the prebuilt module path",
+      "name": [
+        "-fprebuilt-module-path"
+      ]
+    },
+    {
+      "name": [
+        "-fpreserve-as-comments"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Save subprocess statistics to the given file",
+      "name": [
+        "-fproc-stat-report"
+      ]
+    },
+    {
+      "args": {},
+      "description": "Print subprocess statistics",
+      "name": [
+        "-fproc-stat-reportvalue"
+      ]
+    },
+    {
+      "name": [
+        "-fprofile-arcs"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Instrument only functions from files where names don't match all the regexes separated by a semi-colon",
+      "name": [
+        "-fprofile-exclude-files"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Instrument only functions from files where names match any regex separated by a semi-colon",
+      "name": [
+        "-fprofile-filter-files"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "directory"
+      },
+      "description": "Generate instrumented code to collect execution counts into <directory>/default.profraw (overridden by LLVM_PROFILE_FILE env var)",
+      "name": [
+        "-fprofile-generate"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "file",
+        "template": "filepaths"
+      },
+      "description": "Generate instrumented code to collect execution counts into <file> (overridden by LLVM_PROFILE_FILE env var)",
+      "name": [
+        "-fprofile-instr-generate"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Use instrumentation data for profile-guided optimization",
+      "name": [
+        "-fprofile-instr-use"
+      ]
+    },
+    {
+      "args": {
+        "name": "file"
+      },
+      "description": "Use the remappings described in <file> to match the profile data against names in the program",
+      "name": [
+        "-fprofile-remapping-file"
+      ]
+    },
+    {
+      "description": "Specifies that the sample profile is accurate",
+      "name": [
+        "-fprofile-sample-accurate"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Enable sample-based profile guided optimizations",
+      "name": [
+        "-fprofile-sample-use"
+      ]
+    },
+    {
+      "args": {
+        "name": "method"
+      },
+      "description": "Set update method of profile counters (atomic,prefer-atomic,single)",
+      "name": [
+        "-fprofile-update"
+      ]
+    },
+    {
+      "args": {
+        "name": "pathname"
+      },
+      "description": "Use instrumentation data for profile-guided optimization. If pathname is a directory, it reads from <pathname>/default.profdata. Otherwise, it reads from file <pathname>",
+      "name": [
+        "-fprofile-use"
+      ]
+    },
+    {
+      "description": "Emit pseudo probes for sample profiler",
+      "name": [
+        "-fpseudo-probe-for-profiling"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Pointer Authentication ABI version",
+      "name": [
+        "-fptrauth-abi-version"
+      ]
+    },
+    {
+      "description": "Enable traps on authentication failures",
+      "name": [
+        "-fptrauth-auth-traps"
+      ]
+    },
+    {
+      "description": "Enable signing block descriptors",
+      "name": [
+        "-fptrauth-block-descriptor-pointers"
+      ]
+    },
+    {
+      "description": "Enable signing and authentication of all indirect calls",
+      "name": [
+        "-fptrauth-calls"
+      ]
+    },
+    {
+      "description": "Enabling type discrimination on C function pointers",
+      "name": [
+        "-fptrauth-function-pointer-type-discrimination"
+      ]
+    },
+    {
+      "description": "Enable signing and authentication of indirect goto targets",
+      "name": [
+        "-fptrauth-indirect-gotos"
+      ]
+    },
+    {
+      "description": "Enable pointer-authentication intrinsics",
+      "name": [
+        "-fptrauth-intrinsics"
+      ]
+    },
+    {
+      "description": "Enable Pointer Authentication kernel ABI version",
+      "name": [
+        "-fptrauth-kernel-abi-version"
+      ]
+    },
+    {
+      "description": "Pre- and post-authentication masking mode of objective-c isa pointers",
+      "name": [
+        "-fptrauth-objc-isa-masking"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Authentication mode for ObjC isa field. Full auth if unspecified",
+      "name": [
+        "-fptrauth-objc-isa-mode"
+      ]
+    },
+    {
+      "description": "Enable signing and authentication of Objective-C object's 'isa' field",
+      "name": [
+        "-fptrauth-objc-isa"
+      ]
+    },
+    {
+      "description": "Enable signing and authentication of return addresses",
+      "name": [
+        "-fptrauth-returns"
+      ]
+    },
+    {
+      "description": "Enable software lowering of pointer authentication",
+      "name": [
+        "-fptrauth-soft"
+      ]
+    },
+    {
+      "description": "Enable address discrimination of vtable pointers",
+      "name": [
+        "-fptrauth-vtable-pointer-address-discrimination"
+      ]
+    },
+    {
+      "description": "Enable type discrimination of vtable pointers",
+      "name": [
+        "-fptrauth-vtable-pointer-type-discrimination"
+      ]
+    },
+    {
+      "description": "Allow division operations to be reassociated",
+      "name": [
+        "-freciprocal-math"
+      ]
+    },
+    {
+      "description": "Override the default ABI to return small structs in registers",
+      "name": [
+        "-freg-struct-return"
+      ]
+    },
+    {
+      "description": "Use atexit or __cxa_atexit to register global destructors",
+      "name": [
+        "-fregister-global-dtors-with-atexit"
+      ]
+    },
+    {
+      "description": "Enable C++17 relaxed template template argument matching",
+      "name": [
+        "-frelaxed-template-template-args"
+      ]
+    },
+    {
+      "description": "Turn on loop reroller",
+      "name": [
+        "-freroll-loops"
+      ]
+    },
+    {
+      "name": [
+        "-frewrite-imports"
+      ]
+    },
+    {
+      "name": [
+        "-frewrite-includes"
+      ]
+    },
+    {
+      "description": "Generate read-only position independent code (ARM only)",
+      "name": [
+        "-fropi"
+      ]
+    },
+    {
+      "description": "Add -rpath with architecture-specific resource directory to the linker flags",
+      "name": [
+        "-frtlib-add-rpath"
+      ]
+    },
+    {
+      "name": [
+        "-frtti-data"
+      ]
+    },
+    {
+      "name": [
+        "-frtti"
+      ]
+    },
+    {
+      "description": "Generate read-write position independent code (ARM only)",
+      "name": [
+        "-frwpi"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Level of field padding for AddressSanitizer",
+      "name": [
+        "-fsanitize-address-field-padding"
+      ]
+    },
+    {
+      "description": "Enable linker dead stripping of globals in AddressSanitizer",
+      "name": [
+        "-fsanitize-address-globals-dead-stripping"
+      ]
+    },
+    {
+      "description": "Enable poisoning array cookies when using custom operator new[] in AddressSanitizer",
+      "name": [
+        "-fsanitize-address-poison-custom-array-cookie"
+      ]
+    },
+    {
+      "description": "Enable use-after-scope detection in AddressSanitizer",
+      "name": [
+        "-fsanitize-address-use-after-scope"
+      ]
+    },
+    {
+      "description": "Enable ODR indicator globals to avoid false ODR violation reports in partially sanitized programs at the cost of an increase in binary size",
+      "name": [
+        "-fsanitize-address-use-odr-indicator"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Path to blacklist file for sanitizers",
+      "name": [
+        "-fsanitize-blacklist"
+      ]
+    },
+    {
+      "description": "Make the jump table addresses canonical in the symbol table",
+      "name": [
+        "-fsanitize-cfi-canonical-jump-tables"
+      ]
+    },
+    {
+      "description": "Enable control flow integrity (CFI) checks for cross-DSO calls",
+      "name": [
+        "-fsanitize-cfi-cross-dso"
+      ]
+    },
+    {
+      "description": "Generalize pointers in CFI indirect call type signature checks",
+      "name": [
+        "-fsanitize-cfi-icall-generalize-pointers"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Restrict sanitizer coverage instrumentation exclusively to modules and functions that match the provided special case list, except the blocked ones",
+      "name": [
+        "-fsanitize-coverage-allowlist"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Deprecated, use -fsanitize-coverage-blocklist= instead",
+      "name": [
+        "-fsanitize-coverage-blacklist"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Disable sanitizer coverage instrumentation for modules and functions that match the provided special case list, even the allowed ones",
+      "name": [
+        "-fsanitize-coverage-blocklist"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Deprecated, use -fsanitize-coverage-allowlist= instead",
+      "name": [
+        "-fsanitize-coverage-whitelist"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Specify the type of coverage instrumentation for Sanitizers",
+      "name": [
+        "-fsanitize-coverage"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Select the HWAddressSanitizer ABI to target (interceptor or platform, default interceptor). This option is currently unused",
+      "name": [
+        "-fsanitize-hwaddress-abi"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "value"
+      },
+      "description": "Enable origins tracking in MemorySanitizer",
+      "name": [
+        "-fsanitize-memory-track-origins"
+      ]
+    },
+    {
+      "description": "Enable use-after-destroy detection in MemorySanitizer",
+      "name": [
+        "-fsanitize-memory-use-after-dtor"
+      ]
+    },
+    {
+      "name": [
+        "-fsanitize-minimal-runtime"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Enable recovery for specified sanitizers",
+      "name": [
+        "-fsanitize-recover"
+      ]
+    },
+    {
+      "description": "Enable sanitizer statistics gathering",
+      "name": [
+        "-fsanitize-stats"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Path to system blacklist file for sanitizers",
+      "name": [
+        "-fsanitize-system-blacklist"
+      ]
+    },
+    {
+      "description": "Enable atomic operations instrumentation in ThreadSanitizer (default)",
+      "name": [
+        "-fsanitize-thread-atomics"
+      ]
+    },
+    {
+      "description": "Enable function entry/exit instrumentation in ThreadSanitizer (default)",
+      "name": [
+        "-fsanitize-thread-func-entry-exit"
+      ]
+    },
+    {
+      "description": "Enable memory access instrumentation in ThreadSanitizer (default)",
+      "name": [
+        "-fsanitize-thread-memory-access"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Enable trapping for sanitizers",
+      "name": [
+        "-fsanitize-trap"
+      ]
+    },
+    {
+      "args": {
+        "name": "number"
+      },
+      "description": "Strip (or keep only, if negative) a given number of path components when emitting check metadata",
+      "name": [
+        "-fsanitize-undefined-strip-path-components"
+      ]
+    },
+    {
+      "args": {
+        "name": "check"
+      },
+      "description": "Turn on runtime checks for various forms of undefined or suspicious behavior. See user manual for available checks",
+      "name": [
+        "-fsanitize"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "format"
+      },
+      "description": "Generate an optimization record file in a specific format",
+      "name": [
+        "-fsave-optimization-record"
+      ]
+    },
+    {
+      "description": "Use SEH style exceptions",
+      "name": [
+        "-fseh-exceptions"
+      ]
+    },
+    {
+      "name": [
+        "-fsemantic-interposition"
+      ]
+    },
+    {
+      "description": "Allocate to an enum type only as many bytes as it needs for the declared range of possible values",
+      "name": [
+        "-fshort-enums"
+      ]
+    },
+    {
+      "description": "Force wchar_t to be a short unsigned int",
+      "name": [
+        "-fshort-wchar"
+      ]
+    },
+    {
+      "name": [
+        "-fshow-column"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Which overload candidates to show when overload resolution fails: best|all; defaults to all",
+      "name": [
+        "-fshow-overloads"
+      ]
+    },
+    {
+      "description": "Char is signed",
+      "name": [
+        "-fsigned-char"
+      ]
+    },
+    {
+      "name": [
+        "-fsigned-zeros"
+      ]
+    },
+    {
+      "description": "Enable C++14 sized global deallocation functions",
+      "name": [
+        "-fsized-deallocation"
+      ]
+    },
+    {
+      "description": "Use SjLj style exceptions",
+      "name": [
+        "-fsjlj-exceptions"
+      ]
+    },
+    {
+      "description": "Enable the superword-level parallelism vectorization passes",
+      "name": [
+        "-fslp-vectorize"
+      ]
+    },
+    {
+      "description": "Enable small block descriptors",
+      "name": [
+        "-fsmall-block-descriptors"
+      ]
+    },
+    {
+      "name": [
+        "-fspell-checking"
+      ]
+    },
+    {
+      "description": "Provide minimal debug info in the object/executable to facilitate online symbolication/stack traces in the absence of .dwo/.dwp files when using Split DWARF",
+      "name": [
+        "-fsplit-dwarf-inlining"
+      ]
+    },
+    {
+      "description": "Enables splitting of the LTO unit",
+      "name": [
+        "-fsplit-lto-unit"
+      ]
+    },
+    {
+      "description": "Enable late function splitting using profile information (x86 ELF)",
+      "name": [
+        "-fsplit-machine-functions"
+      ]
+    },
+    {
+      "description": "Enable stack checking",
+      "name": [
+        "-fstack-check"
+      ]
+    },
+    {
+      "description": "Enable stack clash protection",
+      "name": [
+        "-fstack-clash-protection"
+      ]
+    },
+    {
+      "description": "Enable stack protectors for all functions",
+      "name": [
+        "-fstack-protector-all"
+      ]
+    },
+    {
+      "description": "Enable stack protectors for some functions vulnerable to stack smashing. Compared to -fstack-protector, this uses a stronger heuristic that includes functions containing arrays of any size (and any type), as well as any calls to alloca or the taking of an address from a local variable",
+      "name": [
+        "-fstack-protector-strong"
+      ]
+    },
+    {
+      "description": "Enable stack protectors for some functions vulnerable to stack smashing. This uses a loose heuristic which considers functions vulnerable if they contain a char (or 8bit integer) array or constant sized calls to alloca , which are of greater size than ssp-buffer-size (default: 8 bytes). All variable sized calls to alloca are considered vulnerable. A function with a stack protector has a guard value added to the stack frame that is checked on function exit. The guard value must be positioned in the stack frame such that a buffer overflow from a vulnerable variable will overwrite the guard value before overwriting the function's return address. The reference stack guard value is stored in a global variable",
+      "name": [
+        "-fstack-protector"
+      ]
+    },
+    {
+      "description": "Emit section containing metadata on function stack sizes",
+      "name": [
+        "-fstack-size-section"
+      ]
+    },
+    {
+      "description": "Emit full debug info for all types used by the program",
+      "name": [
+        "-fstandalone-debug"
+      ]
+    },
+    {
+      "description": "Enable optimizations based on the strict definition of an enum's value range",
+      "name": [
+        "-fstrict-enums"
+      ]
+    },
+    {
+      "description": "Assume that overflowing float-to-int casts are undefined (default)",
+      "name": [
+        "-fstrict-float-cast-overflow"
+      ]
+    },
+    {
+      "name": [
+        "-fstrict-return"
+      ]
+    },
+    {
+      "description": "Enable optimizations based on the strict rules for overwriting polymorphic C++ objects",
+      "name": [
+        "-fstrict-vtable-pointers"
+      ]
+    },
+    {
+      "description": "Enable SYCL kernels compilation for device",
+      "name": [
+        "-fsycl"
+      ]
+    },
+    {
+      "description": "Build this module as a system module. Only used with -emit-module",
+      "name": [
+        "-fsystem-module"
+      ]
+    },
+    {
+      "description": "Enable availability checks for the target variant platform",
+      "name": [
+        "-ftarget-variant-availability-checks"
+      ]
+    },
+    {
+      "name": [
+        "-ftest-coverage"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Write minimized bitcode to <file> for the ThinLTO thin link only",
+      "name": [
+        "-fthin-link-bitcode"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Perform ThinLTO importing using provided function summary index",
+      "name": [
+        "-fthinlto-index"
+      ]
+    },
+    {
+      "name": [
+        "-fthreadsafe-statics"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "(For new pass manager) \"per-pass\": one report for each pass; \"per-pass-run\": one report for each pass invocation",
+      "name": [
+        "-ftime-report"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Minimum time granularity (in microseconds) traced by time profiler",
+      "name": [
+        "-ftime-trace-granularity"
+      ]
+    },
+    {
+      "description": "Turn on time profiler. Generates JSON file based on output filename",
+      "name": [
+        "-ftime-trace"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Issue call to specified function rather than a trap instruction",
+      "name": [
+        "-ftrap-function"
+      ]
+    },
+    {
+      "args": {
+        "name": "functionname"
+      },
+      "description": "Specify the function to be called on overflow",
+      "name": [
+        "-ftrapv-handler"
+      ]
+    },
+    {
+      "description": "Trap on integer overflow",
+      "name": [
+        "-ftrapv"
+      ]
+    },
+    {
+      "description": "Process trigraph sequences",
+      "name": [
+        "-ftrigraphs"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Stop initializing trivial automatic stack variables after the specified number of instances",
+      "name": [
+        "-ftrivial-auto-var-init-stop-after"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Initialize trivial automatic stack variables: uninitialized (default) | pattern",
+      "name": [
+        "-ftrivial-auto-var-init"
+      ]
+    },
+    {
+      "description": "Use unique names for basic block sections (ELF Only)",
+      "name": [
+        "-funique-basic-block-section-names"
+      ]
+    },
+    {
+      "description": "Uniqueify Internal Linkage Symbol Names by appending the MD5 hash of the module path",
+      "name": [
+        "-funique-internal-linkage-names"
+      ]
+    },
+    {
+      "name": [
+        "-funique-section-names"
+      ]
+    },
+    {
+      "description": "Turn on loop unroller",
+      "name": [
+        "-funroll-loops"
+      ]
+    },
+    {
+      "name": [
+        "-fuse-cxa-atexit"
+      ]
+    },
+    {
+      "name": [
+        "-fuse-init-array"
+      ]
+    },
+    {
+      "description": "Use #line in preprocessed output",
+      "name": [
+        "-fuse-line-directives"
+      ]
+    },
+    {
+      "description": "Compute and store the hash of input files used to build an AST. Files with mismatching mtime's are considered valid if both contents is identical",
+      "name": [
+        "-fvalidate-ast-input-files-content"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Use the given vector functions library",
+      "name": [
+        "-fveclib"
+      ]
+    },
+    {
+      "description": "Enable the loop vectorization passes",
+      "name": [
+        "-fvectorize"
+      ]
+    },
+    {
+      "description": "Generate verbose assembly output",
+      "name": [
+        "-fverbose-asm"
+      ]
+    },
+    {
+      "description": "Enables dead virtual function elimination optimization. Requires -flto=full",
+      "name": [
+        "-fvirtual-function-elimination"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "The visibility for dllexport definitions [-fvisibility-from-dllstorageclass]",
+      "name": [
+        "-fvisibility-dllexport"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "The visibility for dllimport external declarations [-fvisibility-from-dllstorageclass]",
+      "name": [
+        "-fvisibility-externs-dllimport"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "The visibility for external declarations without an explicit DLL dllstorageclass [-fvisibility-from-dllstorageclass]",
+      "name": [
+        "-fvisibility-externs-nodllstorageclass"
+      ]
+    },
+    {
+      "description": "Set the visibility of symbols in the generated code from their DLL storage class",
+      "name": [
+        "-fvisibility-from-dllstorageclass"
+      ]
+    },
+    {
+      "description": "Give global C++ operator new and delete declarations hidden visibility",
+      "name": [
+        "-fvisibility-global-new-delete-hidden"
+      ]
+    },
+    {
+      "description": "When -fvisibility-inlines-hidden is enabled, static variables in inline C++ member functions will also be given hidden visibility by default",
+      "name": [
+        "-fvisibility-inlines-hidden-static-local-var"
+      ]
+    },
+    {
+      "description": "Give inline C++ member functions hidden visibility by default",
+      "name": [
+        "-fvisibility-inlines-hidden"
+      ]
+    },
+    {
+      "description": "Give global types 'default' visibility and global functions and variables 'hidden' visibility by default",
+      "name": [
+        "-fvisibility-ms-compat"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "The visibility for defintiions without an explicit DLL export class [-fvisibility-from-dllstorageclass]",
+      "name": [
+        "-fvisibility-nodllstorageclass"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Set the default symbol visibility for all global declarations",
+      "name": [
+        "-fvisibility"
+      ]
+    },
+    {
+      "description": "Use WebAssembly style exceptions",
+      "name": [
+        "-fwasm-exceptions"
+      ]
+    },
+    {
+      "description": "Enables whole-program vtable optimization. Requires -flto",
+      "name": [
+        "-fwhole-program-vtables"
+      ]
+    },
+    {
+      "description": "Treat signed integer overflow as two's complement",
+      "name": [
+        "-fwrapv"
+      ]
+    },
+    {
+      "description": "Store string literals as writable data",
+      "name": [
+        "-fwritable-strings"
+      ]
+    },
+    {
+      "description": "Always emit __xray_customevent(...) calls even if the containing function is not always instrumented",
+      "name": [
+        "-fxray-always-emit-customevents"
+      ]
+    },
+    {
+      "description": "Always emit __xray_typedevent(...) calls even if the containing function is not always instrumented",
+      "name": [
+        "-fxray-always-emit-typedevents"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "DEPRECATED: Filename defining the whitelist for imbuing the 'always instrument' XRay attribute",
+      "name": [
+        "-fxray-always-instrument"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Filename defining the list of functions/types for imbuing XRay attributes",
+      "name": [
+        "-fxray-attr-list"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Only instrument 1 of N groups",
+      "name": [
+        "-fxray-function-groups"
+      ]
+    },
+    {
+      "name": [
+        "-fxray-function-index"
+      ]
+    },
+    {
+      "description": "Don't instrument functions with loops unless they also meet the minimum function size",
+      "name": [
+        "-fxray-ignore-loops"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Sets the minimum function size to instrument with XRay",
+      "name": [
+        "-fxray-instruction-threshold"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Select which XRay instrumentation points to emit. Options: all, none, function-entry, function-exit, function, custom. Default is 'all'. 'function' includes both 'function-entry' and 'function-exit'",
+      "name": [
+        "-fxray-instrumentation-bundle"
+      ]
+    },
+    {
+      "description": "Generate XRay instrumentation sleds on function entry and exit",
+      "name": [
+        "-fxray-instrument"
+      ]
+    },
+    {
+      "description": "Tells clang to add the link dependencies for XRay",
+      "name": [
+        "-fxray-link-deps"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "List of modes to link in by default into XRay instrumented binaries",
+      "name": [
+        "-fxray-modes"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "DEPRECATED: Filename defining the whitelist for imbuing the 'never instrument' XRay attribute",
+      "name": [
+        "-fxray-never-instrument"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "When using -fxray-function-groups, select which group of functions to instrument. Valid range is 0 to fxray-function-groups - 1",
+      "name": [
+        "-fxray-selected-function-group"
+      ]
+    },
+    {
+      "name": [
+        "-fzero-initialized-in-bss"
+      ]
+    },
+    {
+      "description": "Enable System z vector language extension",
+      "name": [
+        "-fzvector"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Add directory to framework include search path",
+      "name": [
+        "-F"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Use the gcc toolchain at the given directory",
+      "name": [
+        "--gcc-toolchain"
+      ]
+    },
+    {
+      "description": "Emit type record hashes in a .debug$H section",
+      "name": [
+        "-gcodeview-ghash"
+      ]
+    },
+    {
+      "description": "Generate CodeView debug information",
+      "name": [
+        "-gcodeview"
+      ]
+    },
+    {
+      "name": [
+        "-gcolumn-info"
+      ]
+    },
+    {
+      "description": "Generate source-level debug information with dwarf version 2",
+      "name": [
+        "-gdwarf-2"
+      ]
+    },
+    {
+      "description": "Generate source-level debug information with dwarf version 3",
+      "name": [
+        "-gdwarf-3"
+      ]
+    },
+    {
+      "description": "Generate source-level debug information with dwarf version 4",
+      "name": [
+        "-gdwarf-4"
+      ]
+    },
+    {
+      "description": "Generate source-level debug information with dwarf version 5",
+      "name": [
+        "-gdwarf-5"
+      ]
+    },
+    {
+      "description": "Generate source-level debug information with the default dwarf version",
+      "name": [
+        "-gdwarf"
+      ]
+    },
+    {
+      "description": "Embed source text in DWARF debug sections",
+      "name": [
+        "-gembed-source"
+      ]
+    },
+    {
+      "name": [
+        "-ginline-line-tables"
+      ]
+    },
+    {
+      "description": "Emit debug line info directives only",
+      "name": [
+        "-gline-directives-only"
+      ]
+    },
+    {
+      "description": "Emit debug line number tables only",
+      "name": [
+        "-gline-tables-only"
+      ]
+    },
+    {
+      "description": "Generate debug info with external references to clang modules or precompiled headers",
+      "name": [
+        "-gmodules"
+      ]
+    },
+    {
+      "name": [
+        "-gno-codeview-ghash"
+      ]
+    },
+    {
+      "name": [
+        "-gno-column-info"
+      ]
+    },
+    {
+      "description": "Restore the default behavior of not embedding source text in DWARF debug sections",
+      "name": [
+        "-gno-embed-source"
+      ]
+    },
+    {
+      "description": "Don't emit inline line tables",
+      "name": [
+        "-gno-inline-line-tables"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Instrument device library for HIP, which is a LLVM bitcode containing __cyg_profile_func_enter and __cyg_profile_func_exit",
+      "name": [
+        "--gpu-instrument-lib"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Default max threads per block for kernel launch bounds for HIP",
+      "name": [
+        "--gpu-max-threads-per-block"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Set DWARF fission mode to either 'split' or 'single'",
+      "name": [
+        "-gsplit-dwarf"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "DWARF debug sections compression type",
+      "name": [
+        "-gz"
+      ]
+    },
+    {
+      "args": {
+        "name": "size"
+      },
+      "description": "Put objects of at most <size> bytes into small data section (MIPS / Hexagon)",
+      "name": [
+        "-G"
+      ]
+    },
+    {
+      "description": "Generate source-level debug information",
+      "name": [
+        "-g"
+      ]
+    },
+    {
+      "description": "Display help for hidden options",
+      "name": [
+        "--help-hidden"
+      ]
+    },
+    {
+      "description": "Display available options",
+      "name": [
+        "-help"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "HIP device library",
+      "name": [
+        "--hip-device-lib"
+      ]
+    },
+    {
+      "description": "Link clang-offload-bundler bundles for HIP",
+      "name": [
+        "--hip-link"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "HIP version in the format of major.minor.patch",
+      "name": [
+        "--hip-version"
+      ]
+    },
+    {
+      "description": "Show header includes and nesting depth",
+      "name": [
+        "-H"
+      ]
+    },
+    {
+      "description": "Restrict all prior -I flags to double-quoted inclusion and remove current directory from include path",
+      "name": [
+        "-I-"
+      ]
+    },
+    {
+      "args": {
+        "name": "directory",
+        "template": "folders"
+      },
+      "description": "Add directory to the API notes search path referenced by module name",
+      "name": [
+        "-iapinotes-modules"
+      ]
+    },
+    {
+      "description": "Enable builtin #include directories even when -nostdinc is used before or after -ibuiltininc. Using -nobuiltininc after the option disables it",
+      "name": [
+        "-ibuiltininc"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Add directory to AFTER include search path",
+      "name": [
+        "-idirafter"
+      ]
+    },
+    {
+      "args": {
+        "name": "directory",
+        "template": "folders"
+      },
+      "description": "Add directory to SYSTEM framework search path, absolute paths are relative to -isysroot",
+      "name": [
+        "-iframeworkwithsysroot"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Add directory to SYSTEM framework search path",
+      "name": [
+        "-iframework"
+      ]
+    },
+    {
+      "args": {
+        "name": "file"
+      },
+      "description": "Include macros from file before parsing",
+      "name": [
+        "-imacros"
+      ]
+    },
+    {
+      "args": {
+        "name": "file"
+      },
+      "description": "Include precompiled header file",
+      "name": [
+        "-include-pch"
+      ]
+    },
+    {
+      "args": {
+        "name": "file"
+      },
+      "description": "Include file before parsing",
+      "name": [
+        "-include"
+      ]
+    },
+    {
+      "description": "Make the next included directory (-I or -F) an indexer header map",
+      "name": [
+        "-index-header-map"
+      ]
+    },
+    {
+      "description": "Ignore macros during indexing",
+      "name": [
+        "-index-ignore-macros"
+      ]
+    },
+    {
+      "description": "Ignore symbols from system headers",
+      "name": [
+        "-index-ignore-system-symbols"
+      ]
+    },
+    {
+      "description": "Record the codegen name for symbols",
+      "name": [
+        "-index-record-codegen-name"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Enable indexing with the specified data store path",
+      "name": [
+        "-index-store-path"
+      ]
+    },
+    {
+      "args": {
+        "name": "path"
+      },
+      "description": "Use <path> as the output path for this compilation unit in the index unit file",
+      "name": [
+        "-index-unit-output-path"
+      ]
+    },
+    {
+      "args": {
+        "name": "dir",
+        "template": "folders"
+      },
+      "description": "Set the -iwithprefix/-iwithprefixbefore prefix",
+      "name": [
+        "-iprefix"
+      ]
+    },
+    {
+      "args": {
+        "name": "directory",
+        "template": "folders"
+      },
+      "description": "Add directory to QUOTE include search path",
+      "name": [
+        "-iquote"
+      ]
+    },
+    {
+      "args": {
+        "name": "dir",
+        "template": "folders"
+      },
+      "description": "Set the system root directory (usually /)",
+      "name": [
+        "-isysroot"
+      ]
+    },
+    {
+      "args": {
+        "name": "directory",
+        "template": "folders"
+      },
+      "description": "Add directory to end of the SYSTEM include search path",
+      "name": [
+        "-isystem-after"
+      ]
+    },
+    {
+      "args": {
+        "name": "directory",
+        "template": "folders"
+      },
+      "description": "Add directory to SYSTEM include search path",
+      "name": [
+        "-isystem"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Overlay the virtual filesystem described by file over the real file system",
+      "name": [
+        "-ivfsoverlay"
+      ]
+    },
+    {
+      "args": {
+        "name": "dir",
+        "template": "folders"
+      },
+      "description": "Set directory to include search path with prefix",
+      "name": [
+        "-iwithprefixbefore"
+      ]
+    },
+    {
+      "args": {
+        "name": "dir",
+        "template": "folders"
+      },
+      "description": "Set directory to SYSTEM include search path with prefix",
+      "name": [
+        "-iwithprefix"
+      ]
+    },
+    {
+      "args": {
+        "name": "directory",
+        "template": "folders"
+      },
+      "description": "Add directory to SYSTEM include search path, absolute paths are relative to -isysroot",
+      "name": [
+        "-iwithsysroot"
+      ]
+    },
+    {
+      "args": {
+        "name": "dir",
+        "template": "folders"
+      },
+      "description": "Add directory to include search path. If there are multiple -I options, these directories are searched in the order they are given before the standard system directories are searched. If the same directory is in the SYSTEM include search paths, for example if also specified with -isystem, the -I option will be ignored",
+      "name": [
+        "-I"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Path to libomptarget-nvptx libraries",
+      "name": [
+        "--libomptarget-nvptx-path"
+      ]
+    },
+    {
+      "args": {
+        "name": "dir",
+        "template": "folders"
+      },
+      "description": "Add directory to library search path",
+      "name": [
+        "-L"
+      ]
+    },
+    {
+      "args": {
+        "suggestions": [
+          {
+            "description": "Enable the default Altivec ABI on AIX (AIX only). Uses only volatile vector registers",
+            "name": "vec-default"
+          },
+          {
+            "description": "Enable the extended Altivec ABI on AIX (AIX only). Uses volatile and nonvolatile vector registers",
+            "name": "vec-extabi"
+          }
+        ]
+      },
+      "name": [
+        "-mabi"
+      ]
+    },
+    {
+      "description": "Enable SVR4-style position-independent code (Mips only)",
+      "name": [
+        "-mabicalls"
+      ]
+    },
+    {
+      "description": "Return all structs in memory (PPC32 only)",
+      "name": [
+        "-maix-struct-return"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Specify the boundary's size to align branches",
+      "name": [
+        "-malign-branch-boundary"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Specify types of branches to align",
+      "name": [
+        "-malign-branch"
+      ]
+    },
+    {
+      "description": "Align doubles to two words in structs (x86 only)",
+      "name": [
+        "-malign-double"
+      ]
+    },
+    {
+      "description": "Link stack frames through backchain on System Z",
+      "name": [
+        "-mbackchain"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Enforce targets of indirect branches and function returns",
+      "name": [
+        "-mbranch-protection"
+      ]
+    },
+    {
+      "description": "Align selected branches (fused, jcc, jmp) within 32-byte boundary",
+      "name": [
+        "-mbranches-within-32B-boundaries"
+      ]
+    },
+    {
+      "args": {
+        "suggestions": [
+          {
+            "name": "small"
+          },
+          {
+            "name": "medium"
+          },
+          {
+            "name": "medany"
+          },
+          {
+            "name": "medlow"
+          }
+        ]
+      },
+      "name": [
+        "-mcmodel"
+      ]
+    },
+    {
+      "description": "Allow use of CMSE (Armv8-M Security Extensions)",
+      "name": [
+        "-mcmse"
+      ]
+    },
+    {
+      "description": "Legacy option to specify code object ABI V2 (-mnocode-object-v3) or V3 (-mcode-object-v3) (AMDGPU only)",
+      "name": [
+        "-mcode-object-v3"
+      ]
+    },
+    {
+      "args": {
+        "name": "version"
+      },
+      "description": "Specify code object ABI version. Defaults to 3. (AMDGPU only)",
+      "name": [
+        "-mcode-object-version"
+      ]
+    },
+    {
+      "description": "Allow use of CRC instructions (ARM/Mips only)",
+      "name": [
+        "-mcrc"
+      ]
+    },
+    {
+      "description": "Specify CU (-mcumode) or WGP (-mno-cumode) wavefront execution mode (AMDGPU only)",
+      "name": [
+        "-mcumode"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Force double to be 32 bits or 64 bits",
+      "name": [
+        "-mdouble"
+      ]
+    },
+    {
+      "description": "Write a depfile containing user and system headers",
+      "name": [
+        "-MD"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Set EABI type, e.g. 4, 5 or gnu (default depends on triple)",
+      "name": [
+        "-meabi"
+      ]
+    },
+    {
+      "description": "Place constants in the .rodata section instead of the .sdata section even if they meet the -G <size> threshold (MIPS)",
+      "name": [
+        "-membedded-data"
+      ]
+    },
+    {
+      "description": "Enable use of experimental RISC-V extensions",
+      "name": [
+        "-menable-experimental-extensions"
+      ]
+    },
+    {
+      "description": "Allow unsafe floating-point math optimizations which may decrease precision",
+      "name": [
+        "-menable-unsafe-fp-math"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Execution model (WebAssembly only)",
+      "name": [
+        "-mexec-model"
+      ]
+    },
+    {
+      "description": "Disallow generation of data access to code sections (ARM only)",
+      "name": [
+        "-mexecute-only"
+      ]
+    },
+    {
+      "description": "Assume that externally defined data is in the small data if it meets the -G <size> threshold (MIPS)",
+      "name": [
+        "-mextern-sdata"
+      ]
+    },
+    {
+      "description": "Insert calls to fentry at function entry (x86/SystemZ only)",
+      "name": [
+        "-mfentry"
+      ]
+    },
+    {
+      "description": "Workaround Cortex-A53 erratum 835769 (AArch64 only)",
+      "name": [
+        "-mfix-cortex-a53-835769"
+      ]
+    },
+    {
+      "description": "Use 32-bit floating point registers (MIPS only)",
+      "name": [
+        "-mfp32"
+      ]
+    },
+    {
+      "description": "Use 64-bit floating point registers (MIPS only)",
+      "name": [
+        "-mfp64"
+      ]
+    },
+    {
+      "args": {
+        "name": "file"
+      },
+      "description": "Write depfile output from -MMD, -MD, -MM, or -M to <file>",
+      "name": [
+        "-MF"
+      ]
+    },
+    {
+      "description": "Generate code which only uses the general purpose registers (AArch64 only)",
+      "name": [
+        "-mgeneral-regs-only"
+      ]
+    },
+    {
+      "description": "Enable merging of globals",
+      "name": [
+        "-mglobal-merge"
+      ]
+    },
+    {
+      "description": "Use GP relative accesses for symbols known to be in a small data section (MIPS)",
+      "name": [
+        "-mgpopt"
+      ]
+    },
+    {
+      "description": "Add missing headers to depfile",
+      "name": [
+        "-MG"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Select straight-line speculation hardening scope",
+      "name": [
+        "-mharden-sls"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Set Hexagon Vector Length",
+      "name": [
+        "-mhvx-length"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "value"
+      },
+      "description": "Enable Hexagon Vector eXtensions",
+      "name": [
+        "-mhvx"
+      ]
+    },
+    {
+      "description": "Use Intel MCU ABI",
+      "name": [
+        "-miamcu"
+      ]
+    },
+    {
+      "description": "Not emit the visibility attribute for asm in AIX OS or give all symbols 'unspecified' visibility in XCOFF object file",
+      "name": [
+        "-mignore-xcoff-visibility"
+      ]
+    },
+    {
+      "description": "Run the migrator",
+      "name": [
+        "--migrate"
+      ]
+    },
+    {
+      "description": "(integrated-as) Emit an object file which can be used with an incremental linker",
+      "name": [
+        "-mincremental-linker-compatible"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Change indirect jump instructions to inhibit speculation",
+      "name": [
+        "-mindirect-jump"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Set iOS deployment target",
+      "name": [
+        "-mios-version-min"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Write a compilation database entry per input",
+      "name": [
+        "-MJ"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Additional arguments to forward to LLVM's option processing",
+      "name": [
+        "-mllvm"
+      ]
+    },
+    {
+      "description": "Extend the -G behaviour to object local data (MIPS)",
+      "name": [
+        "-mlocal-sdata"
+      ]
+    },
+    {
+      "description": "Generate branches with extended addressability, usually via indirect jumps",
+      "name": [
+        "-mlong-calls"
+      ]
+    },
+    {
+      "description": "Force long double to be 128 bits",
+      "name": [
+        "-mlong-double-128"
+      ]
+    },
+    {
+      "description": "Force long double to be 64 bits",
+      "name": [
+        "-mlong-double-64"
+      ]
+    },
+    {
+      "description": "Force long double to be 80 bits, padded to 128 bits for storage",
+      "name": [
+        "-mlong-double-80"
+      ]
+    },
+    {
+      "description": "Enable only control-flow mitigations for Load Value Injection (LVI)",
+      "name": [
+        "-mlvi-cfi"
+      ]
+    },
+    {
+      "description": "Enable all mitigations for Load Value Injection (LVI)",
+      "name": [
+        "-mlvi-hardening"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Set Mac OS X deployment target",
+      "name": [
+        "-mmacosx-version-min"
+      ]
+    },
+    {
+      "description": "Enable the generation of 4-operand madd.s, madd.d and related instructions",
+      "name": [
+        "-mmadd4"
+      ]
+    },
+    {
+      "description": "Add .note.gnu.property with BTI to assembly files (AArch64 only)",
+      "name": [
+        "-mmark-bti-property"
+      ]
+    },
+    {
+      "description": "Write a depfile containing user headers",
+      "name": [
+        "-MMD"
+      ]
+    },
+    {
+      "description": "Enable generation of memop instructions",
+      "name": [
+        "-mmemops"
+      ]
+    },
+    {
+      "description": "Set the default structure layout to be compatible with the Microsoft compiler standard",
+      "name": [
+        "-mms-bitfields"
+      ]
+    },
+    {
+      "description": "Enable MSA ASE (MIPS only)",
+      "name": [
+        "-mmsa"
+      ]
+    },
+    {
+      "description": "Enable MT ASE (MIPS only)",
+      "name": [
+        "-mmt"
+      ]
+    },
+    {
+      "description": "Like -MMD, but also implies -E and writes to stdout by default",
+      "name": [
+        "-MM"
+      ]
+    },
+    {
+      "description": "Disable SVR4-style position-independent code (Mips only)",
+      "name": [
+        "-mno-abicalls"
+      ]
+    },
+    {
+      "name": [
+        "-mno-backchain"
+      ]
+    },
+    {
+      "description": "Disallow use of CRC instructions (Mips only)",
+      "name": [
+        "-mno-crc"
+      ]
+    },
+    {
+      "description": "Do not place constants in the .rodata section instead of the .sdata if they meet the -G <size> threshold (MIPS)",
+      "name": [
+        "-mno-embedded-data"
+      ]
+    },
+    {
+      "description": "Allow generation of data access to code sections (ARM only)",
+      "name": [
+        "-mno-execute-only"
+      ]
+    },
+    {
+      "description": "Do not assume that externally defined data is in the small data if it meets the -G <size> threshold (MIPS)",
+      "name": [
+        "-mno-extern-sdata"
+      ]
+    },
+    {
+      "description": "Don't workaround Cortex-A53 erratum 835769 (AArch64 only)",
+      "name": [
+        "-mno-fix-cortex-a53-835769"
+      ]
+    },
+    {
+      "description": "Disable merging of globals",
+      "name": [
+        "-mno-global-merge"
+      ]
+    },
+    {
+      "description": "Do not use GP relative accesses for symbols known to be in a small data section (MIPS)",
+      "name": [
+        "-mno-gpopt"
+      ]
+    },
+    {
+      "description": "Disable Hexagon Vector eXtensions",
+      "name": [
+        "-mno-hvx"
+      ]
+    },
+    {
+      "description": "Don't generate implicit floating point instructions",
+      "name": [
+        "-mno-implicit-float"
+      ]
+    },
+    {
+      "description": "(integrated-as) Emit an object file which cannot be used with an incremental linker",
+      "name": [
+        "-mno-incremental-linker-compatible"
+      ]
+    },
+    {
+      "description": "Do not extend the -G behaviour to object local data (MIPS)",
+      "name": [
+        "-mno-local-sdata"
+      ]
+    },
+    {
+      "description": "Restore the default behaviour of not generating long calls",
+      "name": [
+        "-mno-long-calls"
+      ]
+    },
+    {
+      "description": "Disable control-flow mitigations for Load Value Injection (LVI)",
+      "name": [
+        "-mno-lvi-cfi"
+      ]
+    },
+    {
+      "description": "Disable mitigations for Load Value Injection (LVI)",
+      "name": [
+        "-mno-lvi-hardening"
+      ]
+    },
+    {
+      "description": "Disable the generation of 4-operand madd.s, madd.d and related instructions",
+      "name": [
+        "-mno-madd4"
+      ]
+    },
+    {
+      "description": "Disable generation of memop instructions",
+      "name": [
+        "-mno-memops"
+      ]
+    },
+    {
+      "description": "Disallow use of movt/movw pairs (ARM only)",
+      "name": [
+        "-mno-movt"
+      ]
+    },
+    {
+      "description": "Do not set the default structure layout to be compatible with the Microsoft compiler standard",
+      "name": [
+        "-mno-ms-bitfields"
+      ]
+    },
+    {
+      "description": "Disable MSA ASE (MIPS only)",
+      "name": [
+        "-mno-msa"
+      ]
+    },
+    {
+      "description": "Disable MT ASE (MIPS only)",
+      "name": [
+        "-mno-mt"
+      ]
+    },
+    {
+      "description": "Disallow converting instructions with negative immediates to their negation or inversion",
+      "name": [
+        "-mno-neg-immediates"
+      ]
+    },
+    {
+      "description": "Disable generation of new-value jumps",
+      "name": [
+        "-mno-nvj"
+      ]
+    },
+    {
+      "description": "Disable generation of new-value stores",
+      "name": [
+        "-mno-nvs"
+      ]
+    },
+    {
+      "description": "Don't generate local calls to out-of-line atomic operations",
+      "name": [
+        "-mno-outline-atomics"
+      ]
+    },
+    {
+      "description": "Disable function outlining (AArch64 only)",
+      "name": [
+        "-mno-outline"
+      ]
+    },
+    {
+      "description": "Disable generation of instruction packets",
+      "name": [
+        "-mno-packets"
+      ]
+    },
+    {
+      "name": [
+        "-mno-pie-copy-relocations"
+      ]
+    },
+    {
+      "description": "Disable linker relaxation",
+      "name": [
+        "-mno-relax"
+      ]
+    },
+    {
+      "description": "Allow generation of deprecated IT blocks for ARMv8. It is off by default for ARMv8 Thumb mode",
+      "name": [
+        "-mno-restrict-it"
+      ]
+    },
+    {
+      "description": "Disable using library calls for save and restore",
+      "name": [
+        "-mno-save-restore"
+      ]
+    },
+    {
+      "description": "Disable speculative execution side effect suppression (SESES)",
+      "name": [
+        "-mno-seses"
+      ]
+    },
+    {
+      "name": [
+        "-mno-speculative-load-hardening"
+      ]
+    },
+    {
+      "description": "Disable stack probes which are enabled by default",
+      "name": [
+        "-mno-stack-arg-probe"
+      ]
+    },
+    {
+      "description": "Disable direct TLS access through segment registers",
+      "name": [
+        "-mno-tls-direct-seg-refs"
+      ]
+    },
+    {
+      "description": "Force all memory accesses to be aligned (AArch32/AArch64 only)",
+      "name": [
+        "-mno-unaligned-access"
+      ]
+    },
+    {
+      "description": "Specify wavefront size 32 mode (AMDGPU only)",
+      "name": [
+        "-mno-wavefrontsize64"
+      ]
+    },
+    {
+      "description": "Disallow use of CRC instructions (ARM only)",
+      "name": [
+        "-mnocrc"
+      ]
+    },
+    {
+      "description": "Generate mcount/__fentry__ calls as nops. To activate they need to be patched in",
+      "name": [
+        "-mnop-mcount"
+      ]
+    },
+    {
+      "description": "Enable generation of new-value jumps",
+      "name": [
+        "-mnvj"
+      ]
+    },
+    {
+      "description": "Enable generation of new-value stores",
+      "name": [
+        "-mnvs"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Directory to dump module dependencies to",
+      "name": [
+        "-module-dependency-dir"
+      ]
+    },
+    {
+      "description": "Provide information about a particular module file",
+      "name": [
+        "-module-file-info"
+      ]
+    },
+    {
+      "description": "Omit frame pointer setup for leaf functions",
+      "name": [
+        "-momit-leaf-frame-pointer"
+      ]
+    },
+    {
+      "description": "Generate local calls to out-of-line atomic operations",
+      "name": [
+        "-moutline-atomics"
+      ]
+    },
+    {
+      "description": "Enable function outlining (AArch64 only)",
+      "name": [
+        "-moutline"
+      ]
+    },
+    {
+      "description": "Use packed stack layout (SystemZ only)",
+      "name": [
+        "-mpacked-stack"
+      ]
+    },
+    {
+      "description": "Enable generation of instruction packets",
+      "name": [
+        "-mpackets"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Specify maximum number of prefixes to use for padding",
+      "name": [
+        "-mpad-max-prefix-size"
+      ]
+    },
+    {
+      "description": "Use copy relocations support for PIE builds",
+      "name": [
+        "-mpie-copy-relocations"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Specifies preferred vector width for auto-vectorization. Defaults to 'none' which allows target specific decisions",
+      "name": [
+        "-mprefer-vector-width"
+      ]
+    },
+    {
+      "description": "Create phony target for each dependency (other than main file)",
+      "name": [
+        "-MP"
+      ]
+    },
+    {
+      "description": "Enable hexagon-qdsp6 backward compatibility",
+      "name": [
+        "-mqdsp6-compat"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Specify name of main file output to quote in depfile",
+      "name": [
+        "-MQ"
+      ]
+    },
+    {
+      "description": "Generate a __mcount_loc section entry for each __fentry__ call",
+      "name": [
+        "-mrecord-mcount"
+      ]
+    },
+    {
+      "description": "(integrated-as) Relax all machine instructions",
+      "name": [
+        "-mrelax-all"
+      ]
+    },
+    {
+      "description": "Enable linker relaxation",
+      "name": [
+        "-mrelax"
+      ]
+    },
+    {
+      "description": "Disallow generation of deprecated IT blocks for ARMv8. It is on by default for ARMv8 Thumb mode",
+      "name": [
+        "-mrestrict-it"
+      ]
+    },
+    {
+      "description": "Make StdCall calling convention the default",
+      "name": [
+        "-mrtd"
+      ]
+    },
+    {
+      "description": "Enable using library calls for save and restore",
+      "name": [
+        "-msave-restore"
+      ]
+    },
+    {
+      "description": "Enable speculative execution side effect suppression (SESES). Includes LVI control flow integrity mitigations",
+      "name": [
+        "-mseses"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Select return address signing scope",
+      "name": [
+        "-msign-return-address"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Put global and static data smaller than the limit into a special section",
+      "name": [
+        "-msmall-data-limit"
+      ]
+    },
+    {
+      "description": "Use software floating point",
+      "name": [
+        "-msoft-float"
+      ]
+    },
+    {
+      "name": [
+        "-mspeculative-load-hardening"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Set the stack alignment",
+      "name": [
+        "-mstack-alignment"
+      ]
+    },
+    {
+      "description": "Enable stack probes",
+      "name": [
+        "-mstack-arg-probe"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Set the stack probe size",
+      "name": [
+        "-mstack-probe-size"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Use the given offset for addressing the stack-protector guard",
+      "name": [
+        "-mstack-protector-guard-offset"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Use the given reg for addressing the stack-protector guard",
+      "name": [
+        "-mstack-protector-guard-reg"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Use the given guard (global, tls) for addressing the stack-protector guard",
+      "name": [
+        "-mstack-protector-guard"
+      ]
+    },
+    {
+      "description": "Force realign the stack at entry to every function",
+      "name": [
+        "-mstackrealign"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Specify the size in bits of an SVE vector register. Defaults to the vector length agnostic value of \"scalable\". (AArch64 only)",
+      "name": [
+        "-msve-vector-bits"
+      ]
+    },
+    {
+      "description": "Return small structs in registers (PPC32 only)",
+      "name": [
+        "-msvr4-struct-return"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "The thread model to use, e.g. posix, single (posix by default)",
+      "name": [
+        "-mthread-model"
+      ]
+    },
+    {
+      "description": "Enable direct TLS access through segment registers (default)",
+      "name": [
+        "-mtls-direct-seg-refs"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Specify bit size of immediate TLS offsets (AArch64 ELF only): 12 (for 4KB) | 24 (for 16MB, default) | 32 (for 4GB) | 48 (for 256TB, needs -mcmodel=large)",
+      "name": [
+        "-mtls-size"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Thread pointer access method (AArch32/AArch64 only)",
+      "name": [
+        "-mtp"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Only supported on X86 and RISC-V. Otherwise accepted for compatibility with GCC",
+      "name": [
+        "-mtune"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Specify name of main file output in depfile",
+      "name": [
+        "-MT"
+      ]
+    },
+    {
+      "description": "Allow memory accesses to be unaligned (AArch32/AArch64 only)",
+      "name": [
+        "-munaligned-access"
+      ]
+    },
+    {
+      "description": "Enable unsafe floating point atomic instructions (AMDGPU only)",
+      "name": [
+        "-munsafe-fp-atomics"
+      ]
+    },
+    {
+      "description": "Use NMake/Jom format for the depfile",
+      "name": [
+        "-MV"
+      ]
+    },
+    {
+      "description": "Specify wavefront size 64 mode (AMDGPU only)",
+      "name": [
+        "-mwavefrontsize64"
+      ]
+    },
+    {
+      "description": "Like -MD, but also implies -E and writes to stdout by default",
+      "name": [
+        "-M"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Do not include PTX for the following GPU architecture (e.g. sm_35) or 'all'. May be specified more than once",
+      "name": [
+        "--no-cuda-include-ptx"
+      ]
+    },
+    {
+      "description": "Don't error out if the detected version of the CUDA install is too low for the requested CUDA gpu architecture",
+      "name": [
+        "--no-cuda-version-check"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Remove CUDA/HIP offloading device architecture (e.g. sm_35, gfx906) from the list of devices to compile for. 'all' resets the list to its default value",
+      "name": [
+        "--no-offload-arch"
+      ]
+    },
+    {
+      "name": [
+        "-no-pthread"
+      ]
+    },
+    {
+      "args": {
+        "name": "prefix"
+      },
+      "description": "Treat all #include paths starting with <prefix> as not including a system header",
+      "name": [
+        "--no-system-header-prefix"
+      ]
+    },
+    {
+      "description": "Disable builtin #include directories",
+      "name": [
+        "-nobuiltininc"
+      ]
+    },
+    {
+      "description": "Do not add include paths for CUDA/HIP and do not include the default CUDA/HIP wrapper headers",
+      "name": [
+        "-nogpuinc"
+      ]
+    },
+    {
+      "description": "Do not link device library for CUDA/HIP device compilation",
+      "name": [
+        "-nogpulib"
+      ]
+    },
+    {
+      "description": "Disable standard #include directories for the C++ standard library",
+      "name": [
+        "-nostdinc++"
+      ]
+    },
+    {
+      "description": "Treat source input files as Objective-C++ inputs",
+      "name": [
+        "-ObjC++"
+      ]
+    },
+    {
+      "description": "Make migration to 'atomic' properties",
+      "name": [
+        "-objcmt-atomic-property"
+      ]
+    },
+    {
+      "description": "Enable migration to modern ObjC",
+      "name": [
+        "-objcmt-migrate-all"
+      ]
+    },
+    {
+      "description": "Enable migration to property and method annotations",
+      "name": [
+        "-objcmt-migrate-annotation"
+      ]
+    },
+    {
+      "description": "Enable migration to infer NS_DESIGNATED_INITIALIZER for initializer methods",
+      "name": [
+        "-objcmt-migrate-designated-init"
+      ]
+    },
+    {
+      "description": "Enable migration to infer instancetype for method result type",
+      "name": [
+        "-objcmt-migrate-instancetype"
+      ]
+    },
+    {
+      "description": "Enable migration to modern ObjC literals",
+      "name": [
+        "-objcmt-migrate-literals"
+      ]
+    },
+    {
+      "description": "Enable migration to NS_ENUM/NS_OPTIONS macros",
+      "name": [
+        "-objcmt-migrate-ns-macros"
+      ]
+    },
+    {
+      "description": "Enable migration of setter/getter messages to property-dot syntax",
+      "name": [
+        "-objcmt-migrate-property-dot-syntax"
+      ]
+    },
+    {
+      "description": "Enable migration to modern ObjC property",
+      "name": [
+        "-objcmt-migrate-property"
+      ]
+    },
+    {
+      "description": "Enable migration to add protocol conformance on classes",
+      "name": [
+        "-objcmt-migrate-protocol-conformance"
+      ]
+    },
+    {
+      "description": "Enable migration to modern ObjC readonly property",
+      "name": [
+        "-objcmt-migrate-readonly-property"
+      ]
+    },
+    {
+      "description": "Enable migration to modern ObjC readwrite property",
+      "name": [
+        "-objcmt-migrate-readwrite-property"
+      ]
+    },
+    {
+      "description": "Enable migration to modern ObjC subscripting",
+      "name": [
+        "-objcmt-migrate-subscripting"
+      ]
+    },
+    {
+      "description": "Enable migration to use NS_NONATOMIC_IOSONLY macro for setting property's 'atomic' attribute",
+      "name": [
+        "-objcmt-ns-nonatomic-iosonly"
+      ]
+    },
+    {
+      "description": "Enable migration to annotate property with NS_RETURNS_INNER_POINTER",
+      "name": [
+        "-objcmt-returns-innerpointer-property"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Only modify files with a filename contained in the provided directory path",
+      "name": [
+        "-objcmt-whitelist-dir-path"
+      ]
+    },
+    {
+      "description": "Treat source input files as Objective-C inputs",
+      "name": [
+        "-ObjC"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "CUDA offloading device architecture (e.g. sm_35), or HIP offloading target ID in the form of a device architecture followed by target ID features delimited by a colon. Each target ID feature is a pre-defined string followed by a plus or minus sign (e.g. gfx908:xnack+:sramecc-). May be specified more than once",
+      "name": [
+        "--offload-arch"
+      ]
+    },
+    {
+      "args": {
+        "name": "file"
+      },
+      "description": "Write output to <file>",
+      "name": [
+        "-o"
+      ]
+    },
+    {
+      "description": "Enable mcount instrumentation",
+      "name": [
+        "-pg"
+      ]
+    },
+    {
+      "description": "Use pipes between commands, when possible",
+      "name": [
+        "-pipe"
+      ]
+    },
+    {
+      "description": "Only precompile the input",
+      "name": [
+        "--precompile"
+      ]
+    },
+    {
+      "description": "Print the effective target triple",
+      "name": [
+        "-print-effective-triple"
+      ]
+    },
+    {
+      "args": {
+        "name": "file"
+      },
+      "description": "Print the full library path of <file>",
+      "name": [
+        "-print-file-name"
+      ]
+    },
+    {
+      "description": "Enable Objective-C Ivar layout bitmap print trace",
+      "name": [
+        "-print-ivar-layout"
+      ]
+    },
+    {
+      "description": "Print the library path for the currently used compiler runtime library (\"libgcc.a\" or \"libclang_rt.builtins.*.a\")",
+      "name": [
+        "-print-libgcc-file-name"
+      ]
+    },
+    {
+      "args": {
+        "name": "name"
+      },
+      "description": "Print the full program path of <name>",
+      "name": [
+        "-print-prog-name"
+      ]
+    },
+    {
+      "description": "Print the resource directory pathname",
+      "name": [
+        "-print-resource-dir"
+      ]
+    },
+    {
+      "description": "Print the paths used for finding libraries and programs",
+      "name": [
+        "-print-search-dirs"
+      ]
+    },
+    {
+      "description": "Print supported cpu models for the given target (if target is not specified, it will print the supported cpus for the default target)",
+      "name": [
+        "-print-supported-cpus"
+      ]
+    },
+    {
+      "description": "Print the normalized target triple",
+      "name": [
+        "-print-target-triple"
+      ]
+    },
+    {
+      "description": "Print the registered targets",
+      "name": [
+        "-print-targets"
+      ]
+    },
+    {
+      "description": "Support POSIX threads in generated code",
+      "name": [
+        "-pthread"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Path to ptxas (used for compiling CUDA code)",
+      "name": [
+        "--ptxas-path"
+      ]
+    },
+    {
+      "description": "Disable linemarker output in -E mode",
+      "name": [
+        "-P"
+      ]
+    },
+    {
+      "description": "Do not emit metadata containing compiler name and version",
+      "name": [
+        "-Qn"
+      ]
+    },
+    {
+      "description": "Don't emit warning for unused driver arguments",
+      "name": [
+        "-Qunused-arguments"
+      ]
+    },
+    {
+      "description": "Emit metadata containing compiler name and version",
+      "name": [
+        "-Qy"
+      ]
+    },
+    {
+      "description": "Whether to build a relocatable precompiled header",
+      "name": [
+        "-relocatable-pch"
+      ]
+    },
+    {
+      "description": "Rewrite Legacy Objective-C source to C++",
+      "name": [
+        "-rewrite-legacy-objc"
+      ]
+    },
+    {
+      "description": "Rewrite Objective-C source to C++",
+      "name": [
+        "-rewrite-objc"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "ROCm device library path. Alternative to rocm-path",
+      "name": [
+        "--rocm-device-lib-path"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "ROCm installation path, used for finding and automatically linking required bitcode libraries",
+      "name": [
+        "--rocm-path"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Report transformation analysis from optimization passes whose name matches the given POSIX regular expression",
+      "name": [
+        "-Rpass-analysis"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Report missed transformations by optimization passes whose name matches the given POSIX regular expression",
+      "name": [
+        "-Rpass-missed"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Report transformations performed by optimization passes whose name matches the given POSIX regular expression",
+      "name": [
+        "-Rpass"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Compiler runtime library to use",
+      "name": [
+        "-rtlib"
+      ]
+    },
+    {
+      "args": {},
+      "description": "Enable the specified remark",
+      "name": [
+        "-Rremark"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "value"
+      },
+      "description": "Save llvm statistics",
+      "name": [
+        "-save-stats"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "value"
+      },
+      "description": "Save intermediate compilation results",
+      "name": [
+        "-save-temps"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Serialize compiler diagnostics to a file",
+      "name": [
+        "-serialize-diagnostics"
+      ]
+    },
+    {
+      "description": "Dynamically link the sanitizer runtime",
+      "name": [
+        "-shared-libsan"
+      ]
+    },
+    {
+      "description": "Statically link the sanitizer runtime",
+      "name": [
+        "-static-libsan"
+      ]
+    },
+    {
+      "description": "Use the static host OpenMP runtime while linking",
+      "name": [
+        "-static-openmp"
+      ]
+    },
+    {
+      "args": {
+        "name": "directory",
+        "template": "folders"
+      },
+      "description": "Use directory as the C++ standard library include path",
+      "name": [
+        "-stdlib++-isystem"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "C++ standard library to use",
+      "name": [
+        "-stdlib"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "SYCL language standard to compile for",
+      "name": [
+        "-sycl-std"
+      ]
+    },
+    {
+      "args": {
+        "name": "prefix"
+      },
+      "description": "Treat all #include paths starting with <prefix> as including a system header",
+      "name": [
+        "--system-header-prefix"
+      ]
+    },
+    {
+      "description": "Only run preprocess and compilation steps",
+      "name": [
+        "-S"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Generate code that may run on a particular variant of the deployment target",
+      "name": [
+        "-target-variant"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Generate code for the given target",
+      "name": [
+        "--target"
+      ]
+    },
+    {
+      "args": {
+        "name": "addr"
+      },
+      "description": "Set starting address of BSS to <addr>",
+      "name": [
+        "-Tbss"
+      ]
+    },
+    {
+      "args": {
+        "name": "addr"
+      },
+      "description": "Set starting address of DATA to <addr>",
+      "name": [
+        "-Tdata"
+      ]
+    },
+    {
+      "description": "Time individual commands",
+      "name": [
+        "-time"
+      ]
+    },
+    {
+      "description": "Enable some traditional CPP emulation",
+      "name": [
+        "-traditional-cpp"
+      ]
+    },
+    {
+      "description": "Process trigraph sequences",
+      "name": [
+        "-trigraphs"
+      ]
+    },
+    {
+      "args": {
+        "name": "addr"
+      },
+      "description": "Set starting address of TEXT to <addr>",
+      "name": [
+        "-Ttext"
+      ]
+    },
+    {
+      "args": {
+        "name": "script"
+      },
+      "description": "Specify <script> as linker script",
+      "name": [
+        "-T"
+      ]
+    },
+    {
+      "description": "Undef all system defines",
+      "name": [
+        "-undef"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Unwind library to use",
+      "name": [
+        "-unwindlib"
+      ]
+    },
+    {
+      "args": {
+        "name": "macro"
+      },
+      "description": "Undefine macro <macro>",
+      "name": [
+        "-U"
+      ]
+    },
+    {
+      "description": "Verify the binary representation of debug output",
+      "name": [
+        "--verify-debug-info"
+      ]
+    },
+    {
+      "description": "Load and verify that a pre-compiled header file is not stale",
+      "name": [
+        "-verify-pch"
+      ]
+    },
+    {
+      "description": "Print version information",
+      "name": [
+        "--version"
+      ]
+    },
+    {
+      "description": "Show commands to run and use verbose output",
+      "name": [
+        "-v"
+      ]
+    },
+    {
+      "args": {
+        "name": "arg"
+      },
+      "description": "Pass the comma separated arguments in <arg> to the assembler",
+      "name": [
+        "-Wa"
+      ]
+    },
+    {
+      "description": "Enable warnings for deprecated constructs and define __DEPRECATED",
+      "name": [
+        "-Wdeprecated"
+      ]
+    },
+    {
+      "args": {
+        "name": "arg"
+      },
+      "description": "Pass the comma separated arguments in <arg> to the linker",
+      "name": [
+        "-Wl"
+      ]
+    },
+    {
+      "args": {
+        "name": "value"
+      },
+      "description": "Resolve file paths relative to the specified directory",
+      "name": [
+        "-working-directory"
+      ]
+    },
+    {
+      "args": {
+        "name": "arg"
+      },
+      "description": "Pass the comma separated arguments in <arg> to the preprocessor",
+      "name": [
+        "-Wp"
+      ]
+    },
+    {
+      "args": {},
+      "description": "Enable the specified warning",
+      "name": [
+        "-Wwarning"
+      ]
+    },
+    {
+      "description": "Suppress all warnings",
+      "name": [
+        "-w"
+      ]
+    },
+    {
+      "args": {
+        "name": "arg"
+      },
+      "description": "Pass <arg> to the static analyzer",
+      "name": [
+        "-Xanalyzer"
+      ]
+    },
+    {
+      "args": {
+        "name": "arg"
+      },
+      "description": "Pass <arg> to the CUDA/HIP device compilation",
+      "name": [
+        "-Xarch_device"
+      ]
+    },
+    {
+      "args": {
+        "name": "arg"
+      },
+      "description": "Pass <arg> to the CUDA/HIP host compilation",
+      "name": [
+        "-Xarch_host"
+      ]
+    },
+    {
+      "args": {
+        "name": "arg"
+      },
+      "description": "Pass <arg> to the assembler",
+      "name": [
+        "-Xassembler"
+      ]
+    },
+    {
+      "args": {
+        "name": "arg"
+      },
+      "description": "Pass <arg> to the clang compiler",
+      "name": [
+        "-Xclang"
+      ]
+    },
+    {
+      "args": {
+        "name": "arg"
+      },
+      "description": "Pass <arg> to fatbinary invocation",
+      "name": [
+        "-Xcuda-fatbinary"
+      ]
+    },
+    {
+      "args": {
+        "name": "arg"
+      },
+      "description": "Pass <arg> to the ptxas assembler",
+      "name": [
+        "-Xcuda-ptxas"
+      ]
+    },
+    {
+      "args": {
+        "name": "arg"
+      },
+      "description": "Pass <arg> to the linker",
+      "name": [
+        "-Xlinker"
+      ]
+    },
+    {
+      "args": [
+        {
+          "isOptional": true,
+          "name": "triple"
+        },
+        {
+          "name": "arg"
+        }
+      ],
+      "description": "Pass <arg> to the target offloading toolchain identified by <triple>",
+      "name": [
+        "-Xopenmp-target"
+      ]
+    },
+    {
+      "args": {
+        "name": "arg"
+      },
+      "description": "Pass <arg> to the preprocessor",
+      "name": [
+        "-Xpreprocessor"
+      ]
+    },
+    {
+      "args": {
+        "name": "language"
+      },
+      "description": "Treat subsequent input files as having type <language>",
+      "name": [
+        "-x"
+      ]
+    },
+    {
+      "args": {
+        "name": "arg"
+      },
+      "description": "Pass -z <arg> to the linker",
+      "name": [
+        "-z"
+      ]
+    },
+    {
+      "args": {
+        "name": "value",
+        "suggestions": [
+          {
+            "description": "ISO C++ 1998 with amendments",
+            "name": "c++98"
+          },
+          {
+            "description": "ISO C++ 1998 with amendments and GNU extensions",
+            "name": "gnu++98"
+          },
+          {
+            "description": "ISO C++ 2011 with amendments",
+            "name": "c++11"
+          },
+          {
+            "description": "ISO C++ 2011 with amendments and GNU extensions",
+            "name": "gnu++11"
+          },
+          {
+            "description": "ISO C++ 2014 with amendments",
+            "name": "c++14"
+          },
+          {
+            "description": "ISO C++ 2014 with amendments and GNU extensions",
+            "name": "gnu++14"
+          },
+          {
+            "description": "ISO C++ 2017 with amendments",
+            "name": "c++17"
+          },
+          {
+            "description": "ISO C++ 2017 with amendments and GNU extensions",
+            "name": "gnu++17"
+          },
+          {
+            "description": "ISO C++ 2020 DIS",
+            "name": "c++20"
+          },
+          {
+            "description": "ISO C++ 2020 DIS with GNU extensions",
+            "name": "gnu++20"
+          },
+          {
+            "description": "Working draft for ISO C++ 2023 DIS",
+            "name": "c++2b"
+          },
+          {
+            "description": "Working draft for ISO C++ 2023 DIS with GNU extensions",
+            "name": "gnu++2b"
+          },
+          {
+            "description": "C++ for OpenCL 1.0",
+            "name": "clc++"
+          },
+          {
+            "description": "C++ for OpenCL 2021",
+            "name": "clc++2021"
+          },
+          {
+            "description": "NVIDIA CUDA(tm)",
+            "name": "cuda"
+          },
+          {
+            "description": "HIP",
+            "name": "hip"
+          },
+          {
+            "description": "High Level Shader Language",
+            "name": "hlsl"
+          },
+          {
+            "description": "High Level Shader Language 2015",
+            "name": "hlsl2015"
+          },
+          {
+            "description": "High Level Shader Language 2016",
+            "name": "hlsl2016"
+          },
+          {
+            "description": "High Level Shader Language 2017",
+            "name": "hlsl2017"
+          },
+          {
+            "description": "High Level Shader Language 2018",
+            "name": "hlsl2018"
+          },
+          {
+            "description": "High Level Shader Language 2021",
+            "name": "hlsl2021"
+          },
+          {
+            "description": "High Level Shader Language 202x",
+            "name": "hlsl202x"
+          }
+        ]
+      },
+      "description": "Language standard to compile for",
+      "name": [
+        "-std"
+      ]
+    }
+  ]
+}

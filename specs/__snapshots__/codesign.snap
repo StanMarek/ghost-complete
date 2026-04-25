@@ -1,0 +1,244 @@
+{
+  "description": "Create and manipulate code signatures",
+  "name": "codesign",
+  "options": [
+    {
+      "description": "When verifying a code signature on code that has a universal ('fat') Mach-O binary, separately verify each architecture contained. This is the default unless overridden with the -a (--architecture) option",
+      "name": [
+        "--all-architectures"
+      ]
+    },
+    {
+      "args": {
+        "name": "architecture"
+      },
+      "description": "When verifying or displaying signatures, explicitly select the Mach-O architecture given",
+      "name": [
+        "-a",
+        "--architecture"
+      ]
+    },
+    {
+      "args": {
+        "name": "version-string"
+      },
+      "description": "When handling versioned bundles such as frameworks, explicitly specify the version to operate on",
+      "name": [
+        "--bundle-version"
+      ]
+    },
+    {
+      "description": "Display information about the code at the path(s) given",
+      "name": [
+        "-d",
+        "--display"
+      ]
+    },
+    {
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      },
+      "description": "When signing, designates that a detached signature should be written to the specified file",
+      "name": [
+        "-D",
+        "--detached"
+      ]
+    },
+    {
+      "description": "When signing a bundle, specifies that nested code content such as helpers, frameworks, and plug-ins, should be recursively signed in turn. Beware that all signing options you specify will apply, in turn, to such nested content",
+      "name": [
+        "--deep"
+      ]
+    },
+    {
+      "description": "When signing, specifies that a detached signature should be generated as with the --detached option, but that the resulting signature should be written into a system database, from where it is made automatically available whenever apparently unsigned code is validated on the system",
+      "name": [
+        "--detached-database"
+      ]
+    },
+    {
+      "description": "When signing, causes codesign to replace any existing signature on the path(s) given",
+      "name": [
+        "-f",
+        "--force"
+      ]
+    },
+    {
+      "description": "Constructs and prints the hosting chain of a running program",
+      "name": [
+        "-h",
+        "--hosting"
+      ]
+    },
+    {
+      "args": {
+        "name": "identifier"
+      },
+      "description": "During signing, explicitly specify the unique identifier string that is embedded in code signatures",
+      "name": [
+        "-i",
+        "--identifier"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "(...r)=>D(this,void 0,void 0,function*(){var o;let l=yield E(t,i?e:\"\",n,r);if(s)return l;let[u]=r,c=(o=u[u.length-1])===null||o===void 0?void 0:o.split(e);return C(c,l)})",
+            "requires_js": true
+          }
+        ],
+        "name": "version-string"
+      },
+      "description": "During signing, specifies a set of option flags to be embedded in the code signature",
+      "name": [
+        "-o",
+        "--options"
+      ]
+    },
+    {
+      "args": {
+        "name": "size"
+      },
+      "description": "Indicates the granularity of code signing. Pagesize must be a power of two",
+      "name": [
+        "-P",
+        "--pagesize"
+      ]
+    },
+    {
+      "args": {
+        "name": "requirements"
+      },
+      "description": "During signing, indicates that internal requirements should be embedded in the code path(s) as specified",
+      "name": [
+        "-r",
+        "--requirements"
+      ]
+    },
+    {
+      "args": {
+        "name": "requirement"
+      },
+      "description": "During verification, indicates that the path(s) given should be verified against the code requirement specified",
+      "name": [
+        "-R",
+        "--test-requirement"
+      ]
+    },
+    {
+      "args": {
+        "name": "identity"
+      },
+      "description": "Sign the code at the path(s) given using this identity",
+      "name": [
+        "-s",
+        "--sign"
+      ]
+    },
+    {
+      "description": "Requests verification of code signatures",
+      "name": [
+        "-v",
+        "--verify"
+      ]
+    },
+    {
+      "description": "Instructs codesign to continue processing path arguments even if processing one fails",
+      "name": [
+        "--continue"
+      ]
+    },
+    {
+      "description": "During signing, performs almost all signing operations, but does not actually write the result anywhere",
+      "name": [
+        "--dryrun"
+      ]
+    },
+    {
+      "args": {
+        "name": "path"
+      },
+      "description": "When signing, take the file at the given path and embed its contents in the signature as entitlement data",
+      "name": [
+        "--entitlements"
+      ]
+    },
+    {
+      "args": {
+        "name": "prefix"
+      },
+      "description": "When displaying a signature, extract the certificates in the embedded certificate chain and write them to individual files",
+      "name": [
+        "--extract-certificates"
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "file",
+        "template": "filepaths"
+      },
+      "description": "When signing or displaying a signature, codesign writes to the given path a list of files that may have been modified as part of the signing process",
+      "name": [
+        "--file-list"
+      ]
+    },
+    {
+      "description": "During static validation, do not validate the contents of the code's resources",
+      "name": [
+        "--ignore-resources"
+      ]
+    },
+    {
+      "args": {
+        "name": "filename"
+      },
+      "description": "During signing, only search for the signing identity in the keychain file specified",
+      "name": [
+        "--keychain"
+      ]
+    },
+    {
+      "args": {
+        "name": "prefix"
+      },
+      "description": "If no explicit unique identifier is specified (using the -i option), and if the implicitly generated identifier does not contain any dot (.) characters, then the given string is prefixed to the identifier before use",
+      "name": [
+        "--prefix"
+      ]
+    },
+    {
+      "description": "When re-signing code that is already signed, reuse some information from the old signature",
+      "name": [
+        "--preserve-metadata=list"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "(h,p,_)=>le(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:O,searchTerm:g}=_,x=(f=(0,y.getCurrentInsertedDirectory)(l??O,g,_))!==null&&f!==void 0?f:\"/\";try{let P=yield p({command:\"ls\",args:[\"-1ApL\"],cwd:x}),X=N(P.stdout.split(`\n`),[\".DS_Store\"]),R=[];for(let q of X)if(q){let A=q.endsWith(\"/\")?\"folders\":\"filepaths\";(A===\"filepaths\"&&u!==\"only\"||A===\"folders\"&&u!==\"never\")&&R.push({type:A===\"filepaths\"?\"file\":\"folder\",name:q,insertValue:q,isDangerous:b,context:{templateType:A}})}return w(m(R))}catch{return[]}})",
+            "requires_js": true
+          }
+        ],
+        "name": "file"
+      },
+      "description": "During signing, this option overrides the default rules for identifying and collecting bundle resources and nested code to be sealed into the signature",
+      "name": [
+        "--resource-rules"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "URL"
+      },
+      "description": "During signing, requests that a timestamp authority server be contacted to authenticate the time of signing",
+      "name": [
+        "--timestamp"
+      ]
+    }
+  ]
+}

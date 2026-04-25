@@ -1,0 +1,716 @@
+{
+  "args": {
+    "isVariadic": true,
+    "name": "entry points",
+    "template": "filepaths"
+  },
+  "description": "An extremely fast JavaScript bundler",
+  "name": "esbuild",
+  "options": [
+    {
+      "description": "Bundle all dependencies into the output files",
+      "name": [
+        "--bundle"
+      ]
+    },
+    {
+      "args": {
+        "name": "name=value"
+      },
+      "description": "Replace variable names with a literal value, eg. --define:DEBUG=true",
+      "name": [
+        "--define"
+      ]
+    },
+    {
+      "args": {
+        "name": "module specifier"
+      },
+      "description": "Exclude modules from the build",
+      "name": [
+        "--external"
+      ]
+    },
+    {
+      "args": {
+        "name": "format",
+        "suggestions": [
+          {
+            "name": "iife"
+          },
+          {
+            "name": "cjs"
+          },
+          {
+            "name": "esm"
+          }
+        ]
+      },
+      "description": "The output format",
+      "name": [
+        "--format"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "(...l)=>k(this,void 0,void 0,function*(){let[a]=l,p=a[a.length-1],h=C(p,e,t),A=h===-1||p.slice(h,h+e.length)!==e,f=A?r:s,g=G(A,n),d=yield R(f,A?i?e:\"\":o?t:\"\",g,l);if(A){if(u)return d;let x=p.split(t).map(m=>m.slice(0,m.indexOf(e)));return W(x,d)}if(c)return d;let S=p.split(t).map(x=>x.slice(x.indexOf(e)+e.length));return W(S,d)})",
+            "requires_js": true
+          }
+        ],
+        "name": "loaders"
+      },
+      "description": "For a given file extension, specify a loader",
+      "name": [
+        "--loader"
+      ]
+    },
+    {
+      "description": "Minify the output (sets all the --minify-* options)",
+      "name": [
+        "--minify"
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "folders"
+      },
+      "description": "The output directory for multiple entrypoints",
+      "name": [
+        "--outdir"
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "filepaths"
+      },
+      "description": "The output file for one entrypoint",
+      "name": [
+        "--outfile"
+      ]
+    },
+    {
+      "args": {
+        "name": "name",
+        "suggestions": [
+          {
+            "name": "browser"
+          },
+          {
+            "name": "node"
+          },
+          {
+            "name": "neutral"
+          }
+        ]
+      },
+      "description": "The platform target",
+      "name": [
+        "--platform"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "[address:]port"
+      },
+      "description": "Start a local HTTP server on this host:port",
+      "name": [
+        "--serve"
+      ]
+    },
+    {
+      "description": "Enable code splitting",
+      "name": [
+        "--splitting"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "(...i)=>k(this,void 0,void 0,function*(){var o;let u=yield R(t,s?e:\"\",r,i);if(n)return u;let[c]=i,l=(o=c[c.length-1])===null||o===void 0?void 0:o.split(e);return W(l,u)})",
+            "requires_js": true
+          }
+        ],
+        "name": "target"
+      },
+      "description": "Set the environment target. Can be a particular ES version or browser version, eg. chrome101",
+      "name": [
+        "--target"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "forever",
+        "suggestions": [
+          {
+            "name": "forever"
+          }
+        ]
+      },
+      "description": "Rebuild on file system changes",
+      "name": [
+        "--watch"
+      ]
+    },
+    {
+      "description": "Allow output files to overwrite input files",
+      "name": [
+        "--allow-overwrite"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "verbose",
+        "suggestions": [
+          {
+            "name": "verbose"
+          }
+        ]
+      },
+      "description": "Print a report about the contents of the bundle",
+      "name": [
+        "--analyze"
+      ]
+    },
+    {
+      "args": {
+        "name": "template"
+      },
+      "description": "Path template for 'file' loader files",
+      "name": [
+        "--asset-names"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "(...l)=>k(this,void 0,void 0,function*(){let[a]=l,p=a[a.length-1],h=C(p,e,t),A=h===-1||p.slice(h,h+e.length)!==e,f=A?r:s,g=G(A,n),d=yield R(f,A?i?e:\"\":o?t:\"\",g,l);if(A){if(u)return d;let x=p.split(t).map(m=>m.slice(0,m.indexOf(e)));return W(x,d)}if(c)return d;let S=p.split(t).map(x=>x.slice(x.indexOf(e)+e.length));return W(S,d)})",
+            "requires_js": true
+          }
+        ],
+        "name": "ext=text[,ext=text...]"
+      },
+      "description": "Text to be prepended to each output file type",
+      "name": [
+        "--banner"
+      ]
+    },
+    {
+      "args": {},
+      "description": "Use UTF-8 instead of escaped codepoints in ASCII",
+      "name": [
+        "--charset"
+      ]
+    },
+    {
+      "args": {
+        "name": "template"
+      },
+      "description": "Path template to use for code splitting chunks",
+      "name": [
+        "--chunk-names"
+      ]
+    },
+    {
+      "args": {
+        "name": "enabled",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Force use of terminal colors",
+      "name": [
+        "--color"
+      ]
+    },
+    {
+      "args": {
+        "suggestions": [
+          {
+            "name": "console"
+          },
+          {
+            "name": "debugger"
+          }
+        ]
+      },
+      "description": "Remove certain constructs",
+      "name": [
+        "--drop"
+      ]
+    },
+    {
+      "args": {
+        "name": "template"
+      },
+      "description": "Path template to use for entry point output paths",
+      "name": [
+        "--entry-names"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "(...l)=>k(this,void 0,void 0,function*(){let[a]=l,p=a[a.length-1],h=C(p,e,t),A=h===-1||p.slice(h,h+e.length)!==e,f=A?r:s,g=G(A,n),d=yield R(f,A?i?e:\"\":o?t:\"\",g,l);if(A){if(u)return d;let x=p.split(t).map(m=>m.slice(0,m.indexOf(e)));return W(x,d)}if(c)return d;let S=p.split(t).map(x=>x.slice(x.indexOf(e)+e.length));return W(S,d)})",
+            "requires_js": true
+          }
+        ],
+        "name": "ext=text"
+      },
+      "description": "Text to be appended to each file type",
+      "name": [
+        "--footer"
+      ]
+    },
+    {
+      "args": {
+        "name": "name"
+      },
+      "description": "The name of the global if using --format=iife",
+      "name": [
+        "--global-name"
+      ]
+    },
+    {
+      "description": "Enable this to work with packages that have incorrect tree-shaking annotations",
+      "name": [
+        "--ignore-annotations"
+      ]
+    },
+    {
+      "args": {
+        "name": "import",
+        "template": "filepaths"
+      },
+      "description": "Import the file into all input files, automatically replace matching globals",
+      "name": [
+        "--inject"
+      ]
+    },
+    {
+      "args": {
+        "name": "factory",
+        "suggestions": [
+          {
+            "name": "React.createElement"
+          },
+          {
+            "name": "h"
+          },
+          {
+            "name": "preact.h"
+          }
+        ]
+      },
+      "description": "What to use for the JSX factory",
+      "name": [
+        "--jsx-factory"
+      ]
+    },
+    {
+      "args": {
+        "name": "fragment",
+        "suggestions": [
+          {
+            "name": "React.Fragment"
+          },
+          {
+            "name": "Fragment"
+          }
+        ]
+      },
+      "description": "What to use for the JS Fragment factory",
+      "name": [
+        "--jsx-fragment"
+      ]
+    },
+    {
+      "args": {
+        "suggestions": [
+          {
+            "description": "Preserve JSX instead of transforming",
+            "name": "preserve"
+          },
+          {
+            "description": "Use React's new automatic JSX transform",
+            "name": "automatic"
+          }
+        ]
+      },
+      "description": "Preserve JSX instead of transforming",
+      "name": [
+        "--jsx"
+      ]
+    },
+    {
+      "description": "Toggles development mode for the automatic runtime",
+      "name": [
+        "--jsx-dev"
+      ]
+    },
+    {
+      "args": {
+        "name": "source"
+      },
+      "description": "Overrides the root import for runtime functions (default: react)",
+      "name": [
+        "--jsx-import-source"
+      ]
+    },
+    {
+      "description": "Preserve 'name' on functions and classes",
+      "name": [
+        "--keep-names"
+      ]
+    },
+    {
+      "args": {
+        "name": "location",
+        "suggestions": [
+          {
+            "name": "none"
+          },
+          {
+            "name": "inline"
+          },
+          {
+            "name": "eof"
+          },
+          {
+            "name": "linked"
+          },
+          {
+            "name": "external"
+          }
+        ]
+      },
+      "description": "Where to place legal comments",
+      "name": [
+        "--legal-comments"
+      ]
+    },
+    {
+      "args": {
+        "name": "level",
+        "suggestions": [
+          {
+            "name": "verbose"
+          },
+          {
+            "name": "debug"
+          },
+          {
+            "name": "info"
+          },
+          {
+            "name": "warning"
+          },
+          {
+            "name": "error"
+          },
+          {
+            "name": "silent"
+          }
+        ]
+      },
+      "description": "Set the log level",
+      "name": [
+        "--log-level"
+      ]
+    },
+    {
+      "args": {
+        "name": "count"
+      },
+      "description": "Maximum message count, 0 to disable",
+      "name": [
+        "--log-limit"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "(...l)=>k(this,void 0,void 0,function*(){let[a]=l,p=a[a.length-1],h=C(p,e,t),A=h===-1||p.slice(h,h+e.length)!==e,f=A?r:s,g=G(A,n),d=yield R(f,A?i?e:\"\":o?t:\"\",g,l);if(A){if(u)return d;let x=p.split(t).map(m=>m.slice(0,m.indexOf(e)));return W(x,d)}if(c)return d;let S=p.split(t).map(x=>x.slice(x.indexOf(e)+e.length));return W(S,d)})",
+            "requires_js": true
+          }
+        ],
+        "name": "identifier:level"
+      },
+      "description": "For a particular identifier, set the log level",
+      "name": [
+        "--log-override"
+      ]
+    },
+    {
+      "args": {
+        "name": "field order"
+      },
+      "description": "Override the main file order in package.json",
+      "name": [
+        "--main-fields"
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "filepaths"
+      },
+      "description": "Save 'mangle props' decisions to a JSON file",
+      "name": [
+        "--mangle-cache"
+      ]
+    },
+    {
+      "args": {
+        "name": "regex"
+      },
+      "description": "Rename all properties matching a regular expression",
+      "name": [
+        "--mangle-props"
+      ]
+    },
+    {
+      "args": {
+        "name": "status",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Enable mangling (renaming) quoted properties",
+      "name": [
+        "--mangle-quoted"
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "filepaths"
+      },
+      "description": "Write metadata about the build to a JSON file",
+      "name": [
+        "--metafile"
+      ]
+    },
+    {
+      "description": "Remove unnecessary whitespace in output files",
+      "name": [
+        "--minify-whitespace"
+      ]
+    },
+    {
+      "description": "Shorten identifiers in output files",
+      "name": [
+        "--minify-identifiers"
+      ]
+    },
+    {
+      "description": "Use equivalent but shorter syntax in output files",
+      "name": [
+        "--minify-syntax"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "(...l)=>k(this,void 0,void 0,function*(){let[a]=l,p=a[a.length-1],h=C(p,e,t),A=h===-1||p.slice(h,h+e.length)!==e,f=A?r:s,g=G(A,n),d=yield R(f,A?i?e:\"\":o?t:\"\",g,l);if(A){if(u)return d;let x=p.split(t).map(m=>m.slice(0,m.indexOf(e)));return W(x,d)}if(c)return d;let S=p.split(t).map(x=>x.slice(x.indexOf(e)+e.length));return W(S,d)})",
+            "requires_js": true
+          }
+        ],
+        "name": "ext=new"
+      },
+      "description": "Use a custom output extension for each extension",
+      "name": [
+        "--out-extension"
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "folders"
+      },
+      "description": "Base path used to determine entrypoint output paths, for multiple entrypoints",
+      "name": [
+        "--outbase"
+      ]
+    },
+    {
+      "description": "Disable symlink resolution",
+      "name": [
+        "--preserve-symlinks"
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "folders"
+      },
+      "description": "Set the base URL for the 'file' loader",
+      "name": [
+        "--public-path"
+      ]
+    },
+    {
+      "args": {
+        "name": "name"
+      },
+      "description": "Mark the name as a pure function for tree shaking",
+      "name": [
+        "--pure"
+      ]
+    },
+    {
+      "args": {
+        "name": "properties"
+      },
+      "description": "Do not mangle these properties",
+      "name": [
+        "--reserve-props"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "(...l)=>k(this,void 0,void 0,function*(){let[a]=l,p=a[a.length-1],h=C(p,e,t),A=h===-1||p.slice(h,h+e.length)!==e,f=A?r:s,g=G(A,n),d=yield R(f,A?i?e:\"\":o?t:\"\",g,l);if(A){if(u)return d;let x=p.split(t).map(m=>m.slice(0,m.indexOf(e)));return W(x,d)}if(c)return d;let S=p.split(t).map(x=>x.slice(x.indexOf(e)+e.length));return W(S,d)})",
+            "requires_js": true
+          }
+        ],
+        "name": "extensions"
+      },
+      "description": "Comma-separated list of implicit extensions",
+      "name": [
+        "--resolve-extensions"
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "folders"
+      },
+      "description": "What to serve in addition to the generated output files",
+      "name": [
+        "--servedir"
+      ]
+    },
+    {
+      "args": {
+        "name": "URL"
+      },
+      "description": "Set the sourceRoot field in generated source maps",
+      "name": [
+        "--source-root"
+      ]
+    },
+    {
+      "args": {
+        "name": "name"
+      },
+      "description": "Set the source file for the source map if there's no file name to use",
+      "name": [
+        "--sourcefile"
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "options",
+        "suggestions": [
+          {
+            "description": "Generate a separate .map.js file with no comment",
+            "name": "external"
+          },
+          {
+            "description": "Append source maps to JS files",
+            "name": "inline"
+          }
+        ]
+      },
+      "description": "Generate source maps?",
+      "name": [
+        "--sourcemap"
+      ]
+    },
+    {
+      "args": {
+        "suggestions": [
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Omit the sourcesContent field in generated source maps",
+      "name": [
+        "--sources-content"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "(...l)=>k(this,void 0,void 0,function*(){let[a]=l,p=a[a.length-1],h=C(p,e,t),A=h===-1||p.slice(h,h+e.length)!==e,f=A?r:s,g=G(A,n),d=yield R(f,A?i?e:\"\":o?t:\"\",g,l);if(A){if(u)return d;let x=p.split(t).map(m=>m.slice(0,m.indexOf(e)));return W(x,d)}if(c)return d;let S=p.split(t).map(x=>x.slice(x.indexOf(e)+e.length));return W(S,d)})",
+            "requires_js": true
+          }
+        ],
+        "name": "syntax=status"
+      },
+      "description": "Consider a given syntax to be supported",
+      "name": [
+        "--supported"
+      ]
+    },
+    {
+      "args": {
+        "name": "status",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Force tree shaking on or off",
+      "name": [
+        "--tree-shaking"
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "filepaths"
+      },
+      "description": "Use this TypeScript config instead of the default",
+      "name": [
+        "--tsconfig"
+      ]
+    },
+    {
+      "description": "Print the current version and exit",
+      "name": [
+        "--version"
+      ]
+    }
+  ]
+}

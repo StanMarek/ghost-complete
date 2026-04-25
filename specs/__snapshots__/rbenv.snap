@@ -1,0 +1,163 @@
+{
+  "description": "Pick a Ruby version for your application and guarantee that your development environment matches production",
+  "name": "rbenv",
+  "subcommands": [
+    {
+      "description": "List all available rbenv commands",
+      "name": "commands",
+      "options": [
+        {
+          "name": [
+            "--sh"
+          ]
+        },
+        {
+          "name": [
+            "--no-sh"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "rbenv",
+              "versions",
+              "--bare"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "isOptional": true,
+        "name": "version"
+      },
+      "description": "Set or show the global Ruby version",
+      "name": "global",
+      "options": [
+        {
+          "name": [
+            "--unset"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "rbenv",
+              "install",
+              "-L"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "version"
+      },
+      "description": "Install a Ruby version using ruby-build",
+      "name": "install",
+      "options": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "version"
+          },
+          "description": "Show version of ruby-build",
+          "name": [
+            "--version"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "rbenv",
+              "versions",
+              "--bare"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "isOptional": true,
+        "name": "version"
+      },
+      "description": "Set or show the local application-specific Ruby version",
+      "name": "local",
+      "options": [
+        {
+          "name": [
+            "--unset"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Rehash rbenv shims (run this after installing executables)",
+      "name": "rehash"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "rbenv",
+              "versions",
+              "--bare"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "isOptional": true,
+        "name": "version"
+      },
+      "description": "Set or show the shell-specific Ruby version",
+      "name": "shell"
+    },
+    {
+      "description": "Uninstall a specific Ruby version",
+      "name": "uninstall",
+      "options": [
+        {
+          "args": {},
+          "description": "If the version does not exist, do not display an error message",
+          "name": [
+            "-f"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "List installed Ruby versions",
+      "name": "versions"
+    },
+    {
+      "description": "List all Ruby versions that contain the given executable",
+      "name": "whence"
+    },
+    {
+      "args": {
+        "name": "command"
+      },
+      "description": "Display the full path to an executable",
+      "name": "which"
+    }
+  ]
+}

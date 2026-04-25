@@ -1,0 +1,328 @@
+{
+  "description": "Open Asset Import Library",
+  "name": "assimp",
+  "options": [
+    {
+      "description": "Display some basic help",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "List all known file extensions available for import",
+      "name": "listext"
+    },
+    {
+      "description": "List all supported export formats",
+      "name": "listexport"
+    },
+    {
+      "args": {
+        "description": "Check whether a particular file extension is known by us",
+        "generators": [
+          {
+            "js_source": "function(t){return t.split(\";\").map(i=>({name:i,description:\"Extension\"}))}",
+            "requires_js": true,
+            "script": [
+              "assimp",
+              "listext"
+            ]
+          }
+        ],
+        "name": "extension"
+      },
+      "description": "List all known file extensions available for import",
+      "name": "knowext"
+    },
+    {
+      "args": {
+        "description": "Specific file extension",
+        "generators": [
+          {
+            "script": [
+              "assimp",
+              "listexport"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "extension"
+      },
+      "description": "Show basic information on a specific export format",
+      "name": "exportinfo"
+    },
+    {
+      "args": {
+        "description": "Print basic structure of a 3D model",
+        "isVariadic": true,
+        "name": "file",
+        "template": "filepaths"
+      },
+      "description": "Load a model file and print basic statistics. Full postprocessing is applied unless the `-r` switch is specified",
+      "name": "info",
+      "options": [
+        {
+          "description": "No postprocessing, do a raw import",
+          "name": [
+            "-r",
+            "--raw"
+          ]
+        },
+        {
+          "description": "Print verbose info such as node transform data",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Print only minimal info",
+          "name": [
+            "-s",
+            "--silent"
+          ]
+        },
+        {
+          "description": "Detailed help on a command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Relative or absolute path to the input model",
+          "name": "model",
+          "template": "filepaths"
+        },
+        {
+          "description": "Relative or absolute path to write the output export to",
+          "name": "out",
+          "template": "folders"
+        }
+      ],
+      "description": "Export a file to one of the supported output formats",
+      "name": "export",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "assimp",
+                  "listexport"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "format"
+          },
+          "description": "Export file formats supported by Assimp",
+          "name": [
+            "-f",
+            "--format"
+          ]
+        },
+        {
+          "description": "Detailed help on a command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Relative or absolute path to the input model",
+          "name": "model",
+          "template": "filepaths"
+        },
+        {
+          "description": "Relative or absolute path to write the output images to",
+          "isOptional": true,
+          "name": "out",
+          "template": "folders"
+        }
+      ],
+      "description": "Extract embedded texture images",
+      "name": "extract",
+      "options": [
+        {
+          "args": {
+            "name": "index"
+          },
+          "description": "Zero-based index of the texture to be extracted",
+          "name": [
+            "-t",
+            "--texture"
+          ]
+        },
+        {
+          "description": "Specifies whether output BMPs contain an alpha channel or not",
+          "name": [
+            "-ba",
+            "–-bmp-with-alpha"
+          ]
+        },
+        {
+          "args": {
+            "name": "format",
+            "suggestions": [
+              {
+                "name": "bmp"
+              },
+              {
+                "name": "tga"
+              }
+            ]
+          },
+          "description": "Specifies the output file format. Supported formats are BMP and TGA. The default value is BMP (if a full output filename is specified, the output file format is taken from its extension)",
+          "name": [
+            "-f",
+            "--format"
+          ]
+        },
+        {
+          "description": "Prevents the tool from adding the _img<n> suffix to all filenames. This option must be specified together with -t to ensure that just one image is written",
+          "name": [
+            "-s",
+            "–-nosuffix"
+          ]
+        },
+        {
+          "description": "Fast post processing preset, runs just a few important steps",
+          "name": [
+            "-cfast"
+          ]
+        },
+        {
+          "description": "Default post processing: runs all recommended steps",
+          "name": [
+            "-cdefault"
+          ]
+        },
+        {
+          "description": "Fires almost all post processing steps",
+          "name": [
+            "-cfull"
+          ]
+        },
+        {
+          "description": "Detailed help on a command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Relative or absolute path to the input model",
+          "name": "model",
+          "template": "filepaths"
+        },
+        {
+          "description": "Relative or absolute path to write the output dump to. If it is omitted, the dump is written to '<model>-dump.txt'",
+          "isOptional": true,
+          "name": "out",
+          "template": "folders"
+        }
+      ],
+      "description": "Convert models to a binary or textual dump (ASSBIN/ASSXML)",
+      "name": "dump",
+      "options": [
+        {
+          "description": "If true, the dump is written in binary format",
+          "name": [
+            "-b",
+            "--binary"
+          ]
+        },
+        {
+          "description": "If true, the dump is shortened to include only min/max values for all vertex components and animation channels",
+          "name": [
+            "-s",
+            "--short"
+          ]
+        },
+        {
+          "description": "If true, Compressed",
+          "name": [
+            "-z",
+            "--compressed"
+          ]
+        },
+        {
+          "description": "Fast post processing preset, runs just a few important steps",
+          "name": [
+            "-cfast"
+          ]
+        },
+        {
+          "description": "Default post processing: runs all recommended steps",
+          "name": [
+            "-cdefault"
+          ]
+        },
+        {
+          "description": "Fires almost all post processing steps",
+          "name": [
+            "-cfull"
+          ]
+        },
+        {
+          "description": "Detailed help on a command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Mini dump now",
+          "name": "actual",
+          "template": "filepaths"
+        },
+        {
+          "description": "Archived dump from some point in the past",
+          "name": "expected",
+          "template": "filepaths"
+        }
+      ],
+      "description": "Compare dumps created using 'assimp dump <file> -s ...'",
+      "name": "cmpdump",
+      "options": [
+        {
+          "description": "Detailed help on a command",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Display Assimp version",
+      "name": "version"
+    }
+  ]
+}

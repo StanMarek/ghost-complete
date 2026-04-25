@@ -1,0 +1,1657 @@
+{
+  "args": {
+    "generators": [
+      {
+        "js_source": "function(i){let e=new RegExp(\"^(https?://)?(www.)?(youtube.com|youtu.?be)/.+$\");try{if(e.test(i))return[{name:i,description:\"Clipboard\",icon:\"https://www.youtube.com/s/desktop/810941b4/img/favicon_32.png\"}]}catch(t){return console.error(t),[]}}",
+        "requires_js": true,
+        "script": [
+          "pbpaste"
+        ]
+      }
+    ],
+    "isVariadic": true,
+    "name": "URL"
+  },
+  "description": "Download videos from YouTube",
+  "name": "youtube-dl",
+  "options": [
+    {
+      "description": "Print the help text and exit",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "description": "Print program version and exit",
+      "name": [
+        "--version"
+      ]
+    },
+    {
+      "description": "Update this program to latest version. Make sure you have sufficient permissions (run with sudo if needed)",
+      "name": [
+        "-U",
+        "--update"
+      ]
+    },
+    {
+      "description": "Continue on download errors, for example to skip unavailable videos in a playlist",
+      "name": [
+        "--ignore-errors",
+        "-i"
+      ]
+    },
+    {
+      "description": "Abort downloading of further videos (in the playlist or the command line) if an error occurs",
+      "name": [
+        "--abort-on-error"
+      ]
+    },
+    {
+      "description": "Display the current browser identification",
+      "name": [
+        "--dump-user-agent"
+      ]
+    },
+    {
+      "description": "List all supported extractors",
+      "name": [
+        "--list-extractors"
+      ]
+    },
+    {
+      "description": "Output descriptions of all supported extractors",
+      "name": [
+        "--extractor-descriptions"
+      ]
+    },
+    {
+      "args": {
+        "name": "PREFIX"
+      },
+      "description": "Use this prefix for unqualified URLs. For example \"gvsearch2:\" downloads two videos from google videos for youtube-dl \"large apple\"",
+      "name": [
+        "--default-search"
+      ]
+    },
+    {
+      "args": {
+        "name": "PATH",
+        "template": [
+          "filepaths",
+          "folders"
+        ]
+      },
+      "description": "Location of the configuration file; either the path to the config or its containing directory",
+      "name": [
+        "--config-location"
+      ]
+    },
+    {
+      "description": "Force extraction to use the generic extractor",
+      "name": [
+        "--force-generic-extractor"
+      ]
+    },
+    {
+      "description": "Do not read configuration files",
+      "name": [
+        "--ignore-config"
+      ]
+    },
+    {
+      "description": "Do not extract the videos of a playlist, only list them",
+      "name": [
+        "--flat-playlist"
+      ]
+    },
+    {
+      "description": "Mark videos watched (YouTube only)",
+      "name": [
+        "--mark-watched"
+      ]
+    },
+    {
+      "description": "Do not mark videos watched (YouTube only)",
+      "name": [
+        "--no-mark-watched"
+      ]
+    },
+    {
+      "description": "Do not emit color codes in output",
+      "name": [
+        "--no-color"
+      ]
+    },
+    {
+      "args": {
+        "name": "URL"
+      },
+      "description": "Use the specified HTTP/HTTPS/SOCKS proxy. Pass in an empty string for direct connection",
+      "name": [
+        "--proxy"
+      ]
+    },
+    {
+      "args": {
+        "name": "SECONDS"
+      },
+      "description": "Time to wait before giving up, in seconds",
+      "name": [
+        "--socket-timeout"
+      ]
+    },
+    {
+      "args": {
+        "name": "IP"
+      },
+      "description": "Client-side IP address to bind to",
+      "name": [
+        "--source-address"
+      ]
+    },
+    {
+      "description": "Make all connections via IPv4",
+      "name": [
+        "-4",
+        "--force-ipv4"
+      ]
+    },
+    {
+      "description": "Make all connections via IPv6",
+      "name": [
+        "-6",
+        "--force-ipv6"
+      ]
+    },
+    {
+      "args": {
+        "name": "URL"
+      },
+      "description": "Use this proxy to verify the IP address for some geo-restricted sites",
+      "name": [
+        "--geo-verification-proxy"
+      ]
+    },
+    {
+      "description": "Bypass geographic restriction via faking X-Forwarded-For HTTP header",
+      "name": [
+        "--geo-bypass"
+      ]
+    },
+    {
+      "description": "Do not bypass geographic restriction via faking X-Forwarded-For HTTP header",
+      "name": [
+        "--no-geo-bypass"
+      ]
+    },
+    {
+      "args": {
+        "name": "CODE"
+      },
+      "description": "Force bypass geographic restriction with explicitly provided two-letter ISO 3166-2 county code",
+      "name": [
+        "--geo-bypass-country"
+      ]
+    },
+    {
+      "args": {
+        "name": "IP_BLOCK"
+      },
+      "description": "Force bypass geographic restriction with explicitly provided IP block in CIDR notation",
+      "name": [
+        "--geo-bypass-ip-block"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "i=>[\"youtube-dl\",\"--flat-playlist\",\"-J\",...i.filter(e=>e.includes(\"youtube.\"))]",
+            "requires_js": true
+          }
+        ],
+        "name": "NUMBER"
+      },
+      "description": "Playlist video to start at (default is 1)",
+      "name": [
+        "--playlist-start"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "i=>[\"youtube-dl\",\"--flat-playlist\",\"-J\",...i.filter(e=>e.includes(\"youtube.\"))]",
+            "requires_js": true
+          }
+        ],
+        "name": "NUMBER"
+      },
+      "description": "Playlist video to end at (default is last)",
+      "name": [
+        "--playlist-end"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "i=>[\"youtube-dl\",\"--flat-playlist\",\"-J\",...i.filter(e=>e.includes(\"youtube.\"))]",
+            "requires_js": true
+          }
+        ],
+        "name": "ITEM_SPEC"
+      },
+      "description": "Playlist video to end at (default is last)",
+      "name": [
+        "--playlist-items"
+      ]
+    },
+    {
+      "args": {
+        "name": "REGEX"
+      },
+      "description": "Download only matching titles (regex or caseless sub-string)",
+      "name": [
+        "--match-title"
+      ]
+    },
+    {
+      "args": {
+        "name": "REGEX"
+      },
+      "description": "Skip download for matching titles (regex or caseless sub-string)",
+      "name": [
+        "--reject-title"
+      ]
+    },
+    {
+      "args": {
+        "name": "NUMBER"
+      },
+      "description": "Abort after downloading NUMBER files",
+      "name": [
+        "--max-downloads"
+      ]
+    },
+    {
+      "args": {
+        "name": "SIZE"
+      },
+      "description": "Do not download any videos smaller than SIZE (e.g. 50k or 44.6)",
+      "name": [
+        "--min-filesize"
+      ]
+    },
+    {
+      "args": {
+        "name": "SIZE"
+      },
+      "description": "Do not download any videos larger than SIZE (e.g. 50k or 44.6)",
+      "name": [
+        "--max-filesize"
+      ]
+    },
+    {
+      "args": {
+        "name": "DATE"
+      },
+      "description": "Download only videos uploaded in this date",
+      "name": [
+        "--date"
+      ]
+    },
+    {
+      "args": {
+        "name": "DATE"
+      },
+      "description": "Download only videos uploaded on or before this date (i.e. inclusive)",
+      "name": [
+        "--datebefore"
+      ]
+    },
+    {
+      "args": {
+        "name": "DATE"
+      },
+      "description": "Download only videos uploaded on or after this date (i.e. inclusive)",
+      "name": [
+        "--dateafter"
+      ]
+    },
+    {
+      "args": {
+        "name": "COUNT"
+      },
+      "description": "Do not download any videos with less than COUNT views",
+      "name": [
+        "--min-views"
+      ]
+    },
+    {
+      "args": {
+        "name": "COUNT"
+      },
+      "description": "Do not download any videos with more than COUNT views",
+      "name": [
+        "--max-views"
+      ]
+    },
+    {
+      "args": {
+        "name": "FILTER"
+      },
+      "description": "Generic video filter",
+      "name": [
+        "--match-filter"
+      ]
+    },
+    {
+      "description": "Download only the video, if the URL refers to a video and a playlist",
+      "name": [
+        "--no-playlist"
+      ]
+    },
+    {
+      "description": "Download the playlist, if the URL refers to a video and a playlist",
+      "name": [
+        "--yes-playlist"
+      ]
+    },
+    {
+      "args": {
+        "name": "YEARS"
+      },
+      "description": "Download only videos suitable for the given age",
+      "name": [
+        "--age-limit"
+      ]
+    },
+    {
+      "args": {
+        "name": "FILE"
+      },
+      "description": "Download only videos not listed in the archive file. Record the IDs of all downloaded videos in it",
+      "name": [
+        "--download-archive"
+      ]
+    },
+    {
+      "description": "Download advertisements as well (experimental)",
+      "name": [
+        "--include-ads"
+      ]
+    },
+    {
+      "args": {
+        "name": "RATE"
+      },
+      "description": "Maximum download rate in bytes per second (e.g. 50K or 4.2M)",
+      "name": [
+        "-r",
+        "--limit-rate"
+      ]
+    },
+    {
+      "args": {
+        "name": "RETRIES"
+      },
+      "description": "Number of retries or \"infinite\"",
+      "name": [
+        "-R",
+        "--retries"
+      ]
+    },
+    {
+      "args": {
+        "name": "RETRIES"
+      },
+      "description": "Number of retries for a fragment or \"infinite\"",
+      "name": [
+        "--fragment-retries"
+      ]
+    },
+    {
+      "description": "Skip unavailable fragments",
+      "name": [
+        "--skip-unavailable-fragments"
+      ]
+    },
+    {
+      "description": "Abort downloading when some fragment is not available",
+      "name": [
+        "--abort-on-unavailable-fragments"
+      ]
+    },
+    {
+      "description": "Keep downloaded fragments on disk after downloading is finished; fragments are erased by default",
+      "name": [
+        "--keep-fragments"
+      ]
+    },
+    {
+      "args": {
+        "name": "SIZE"
+      },
+      "description": "Size of download buffer (e.g. 1024 or 16K)",
+      "name": [
+        "--buffer-size"
+      ]
+    },
+    {
+      "description": "Do not automatically adjust the buffer size",
+      "name": [
+        "--no-resize-buffer"
+      ]
+    },
+    {
+      "args": {
+        "name": "SIZE"
+      },
+      "description": "Size of a chunk for chunk-based HTTP downloading (e.g. 10385760 or 10M)",
+      "name": [
+        "--http-chunk-size"
+      ]
+    },
+    {
+      "description": "Download playlist videos in reverse order",
+      "name": [
+        "--playlist-reverse"
+      ]
+    },
+    {
+      "description": "Download playlist videos in random order",
+      "name": [
+        "--playlist-random"
+      ]
+    },
+    {
+      "description": "Set file xattribute ytdl.filesize with expected file size",
+      "name": [
+        "--xattr-set-filesize"
+      ]
+    },
+    {
+      "description": "Use the native HLS downloader instead of ffmpeg",
+      "name": [
+        "--hls-prefer-native"
+      ]
+    },
+    {
+      "description": "Use ffmpeg instead of the native HLS downloader",
+      "name": [
+        "--hls-prefer-ffmpeg"
+      ]
+    },
+    {
+      "description": "Use the mpegts container for HLS videos, allowing to play the video while downloading",
+      "name": [
+        "--hls-prefer-mpegts"
+      ]
+    },
+    {
+      "args": {
+        "name": "COMMAND",
+        "suggestions": [
+          {
+            "name": "aria2c"
+          },
+          {
+            "name": "avconv"
+          },
+          {
+            "name": "axel"
+          },
+          {
+            "name": "curl"
+          },
+          {
+            "name": "ffmpeg"
+          },
+          {
+            "name": "httpie"
+          },
+          {
+            "name": "wget"
+          }
+        ]
+      },
+      "description": "Use the specified external downloader",
+      "name": [
+        "--external-downloader"
+      ]
+    },
+    {
+      "args": {
+        "name": "ARGS"
+      },
+      "description": "Give these arguments to the external downloader",
+      "name": [
+        "--external-downloader-args"
+      ]
+    },
+    {
+      "args": {
+        "name": "FILE",
+        "suggestions": [
+          {
+            "name": "-"
+          }
+        ],
+        "template": [
+          "filepaths"
+        ]
+      },
+      "description": "File containing URLs to download ('-' for stdin), one URL per line. Lines starting with '#', ';' or ']' are considered as comments and ignored",
+      "name": [
+        "-a",
+        "--batch-file"
+      ]
+    },
+    {
+      "description": "Use only video ID in file name",
+      "name": [
+        "--id"
+      ]
+    },
+    {
+      "args": {
+        "name": "TEMPLATE"
+      },
+      "description": "Output filename template",
+      "name": [
+        "-o",
+        "--output"
+      ]
+    },
+    {
+      "args": {
+        "name": "PLACEHOLDER"
+      },
+      "description": "Placeholder value for unavailable meta fields in output filename template",
+      "name": [
+        "--output-na-placeholder"
+      ]
+    },
+    {
+      "args": {
+        "name": "NUMBER"
+      },
+      "description": "Specify the start value for %(autonumber)s",
+      "name": [
+        "--autonumber-start"
+      ]
+    },
+    {
+      "description": "Restrict filenames to only ASCII characters, and avoid \"&\" and spaces in filenames",
+      "name": [
+        "--restrict-filenames"
+      ]
+    },
+    {
+      "description": "Do not overwrite files",
+      "name": [
+        "-w",
+        "--no-overwrites"
+      ]
+    },
+    {
+      "description": "Do not resume partially downloaded files (restart from beginning)",
+      "name": [
+        "-c",
+        "--continue"
+      ]
+    },
+    {
+      "description": "Do not use .part files - write directly into output file",
+      "name": [
+        "--no-part"
+      ]
+    },
+    {
+      "description": "Do not use the Last-modified header to set the file modification time",
+      "name": [
+        "--no-mtime"
+      ]
+    },
+    {
+      "description": "Write video descriptions to a .description file",
+      "name": [
+        "--write-description"
+      ]
+    },
+    {
+      "description": "Write video metadata to a .info.json file",
+      "name": [
+        "--write-info-json"
+      ]
+    },
+    {
+      "description": "Write video annotations to a .annotations.xml file",
+      "name": [
+        "--write-annotations"
+      ]
+    },
+    {
+      "args": {
+        "name": "FILE",
+        "template": "filepaths"
+      },
+      "description": "JSON file containing the video information (created with the \"--write-info-json\" option",
+      "name": [
+        "--load-info-json"
+      ]
+    },
+    {
+      "args": {
+        "name": "FILE",
+        "template": "filepaths"
+      },
+      "description": "File to read cookies from and dump cookie jar in",
+      "name": [
+        "--cookies"
+      ]
+    },
+    {
+      "args": {
+        "name": "DIR",
+        "template": "folders"
+      },
+      "description": "Location in the filesystem where youtube-dl can store some downloaded information permanently",
+      "name": [
+        "--cache-dir"
+      ]
+    },
+    {
+      "description": "Disable filesystem caching",
+      "name": [
+        "--no-cache-dir"
+      ]
+    },
+    {
+      "description": "Delete all filesystem cache files",
+      "name": [
+        "--rm-cache-dir"
+      ]
+    },
+    {
+      "description": "Write thumbnail image to disk",
+      "name": [
+        "--write-thumbnail"
+      ]
+    },
+    {
+      "description": "Write all thumbnail image formats to disk",
+      "name": [
+        "--write-all-thumbnail"
+      ]
+    },
+    {
+      "description": "Simulate and list all available thumbnail formats",
+      "name": [
+        "--list-thumbnails"
+      ]
+    },
+    {
+      "description": "Activate quite mode",
+      "name": [
+        "-q",
+        "--quiet"
+      ]
+    },
+    {
+      "description": "Ignore warnings",
+      "name": [
+        "--no-warnings"
+      ]
+    },
+    {
+      "description": "Do not download the video and do note write anything to disk",
+      "name": [
+        "-s",
+        "--simulate"
+      ]
+    },
+    {
+      "description": "Do not download the video",
+      "name": [
+        "--skip-download"
+      ]
+    },
+    {
+      "description": "Simulate, quiet but print URL",
+      "name": [
+        "-g",
+        "--get-url"
+      ]
+    },
+    {
+      "description": "Simulate, quiet but print title",
+      "name": [
+        "-e",
+        "--get-title"
+      ]
+    },
+    {
+      "description": "Simulate, quiet but print id",
+      "name": [
+        "--get-id"
+      ]
+    },
+    {
+      "description": "Simulate, quiet but print thumbnail URL",
+      "name": [
+        "--get-thumbnail"
+      ]
+    },
+    {
+      "description": "Simulate, quiet but print video description",
+      "name": [
+        "--get-description"
+      ]
+    },
+    {
+      "description": "Simulate, quiet but print video length",
+      "name": [
+        "--get-duration"
+      ]
+    },
+    {
+      "description": "Simulate, quiet but print output filename",
+      "name": [
+        "--get-filename"
+      ]
+    },
+    {
+      "description": "Simulate, quiet but print output format",
+      "name": [
+        "--get-format"
+      ]
+    },
+    {
+      "description": "Simulate, quiet but JSON information",
+      "name": [
+        "-j",
+        "--dump-json"
+      ]
+    },
+    {
+      "description": "Simulate, quiet but JSON information for each command-line argument",
+      "name": [
+        "-J",
+        "--dump-single-json"
+      ]
+    },
+    {
+      "description": "Be quiet and print the video information as JSON (video is still being downloaded)",
+      "name": [
+        "--print-json"
+      ]
+    },
+    {
+      "description": "Output the progress bar as new lines",
+      "name": [
+        "--newline"
+      ]
+    },
+    {
+      "description": "Do not print the progress bar",
+      "name": [
+        "--no-progress"
+      ]
+    },
+    {
+      "description": "Display progress in console titlebar",
+      "name": [
+        "--console-title"
+      ]
+    },
+    {
+      "description": "Print various debugging information",
+      "name": [
+        "-v",
+        "--verbose"
+      ]
+    },
+    {
+      "description": "Print downloaded pages encoded using base64 to debug problems (very verbose)",
+      "name": [
+        "--dump-pages"
+      ]
+    },
+    {
+      "description": "Write downloaded intermediary pages to files in the current directory to debug problems",
+      "name": [
+        "--write-pages"
+      ]
+    },
+    {
+      "description": "Display sent and read HTTP traffic",
+      "name": [
+        "--print-traffic"
+      ]
+    },
+    {
+      "description": "Contact the youtube-dl server for debugging",
+      "name": [
+        "-C",
+        "--call-home"
+      ]
+    },
+    {
+      "description": "Do NOT contact the youtube-dl server for debugging",
+      "name": [
+        "--no-call-home"
+      ]
+    },
+    {
+      "args": {
+        "name": "ENCODING"
+      },
+      "description": "Force the specified encoding (experimental)",
+      "name": [
+        "--encoding"
+      ]
+    },
+    {
+      "description": "Suppress HTTPS certificate validation",
+      "name": [
+        "--no-check-certificate"
+      ]
+    },
+    {
+      "description": "Use an unencrypted connection to retrieve information about the video. (Currently supported only for YouTube)",
+      "name": [
+        "--prefer-insecure"
+      ]
+    },
+    {
+      "args": {
+        "name": "UA"
+      },
+      "description": "Specify a custom user agent",
+      "name": [
+        "--user-agent"
+      ]
+    },
+    {
+      "args": {
+        "name": "URL"
+      },
+      "description": "Specify a custom referer, use if the video access is restricted to one domain",
+      "name": [
+        "--referer"
+      ]
+    },
+    {
+      "args": {
+        "name": "FIELD:VALUE"
+      },
+      "description": "Specify a custom HTTP header and its value, separated by a colon ':'",
+      "name": [
+        "--add-header"
+      ]
+    },
+    {
+      "description": "Work around terminals that lack bidirectional text support. Requires bidiv or fribidi executable in PATH",
+      "name": [
+        "--bidi-workaround"
+      ]
+    },
+    {
+      "args": {
+        "name": "SECONDS"
+      },
+      "description": "Number of seconds to sleep before each download when used alone or a lower bound of a range for randomized sleep before each download when used along with --max-sleep-interval",
+      "name": [
+        "--sleep-interval"
+      ]
+    },
+    {
+      "args": {
+        "name": "SECONDS"
+      },
+      "description": "Upper bound of a range for randomized sleep before each download. Must only be used along with --min- sleep-interval",
+      "name": [
+        "--max-sleep-interval"
+      ]
+    },
+    {
+      "args": {
+        "name": "FORMAT"
+      },
+      "description": "Video format code",
+      "name": [
+        "-f",
+        "--format"
+      ]
+    },
+    {
+      "description": "Download all available video formats",
+      "name": [
+        "--all-formats"
+      ]
+    },
+    {
+      "description": "Prefer free video formats unless a specific one is requested",
+      "name": [
+        "--prefer-free-formats"
+      ]
+    },
+    {
+      "description": "List all available formats of requested videos",
+      "name": [
+        "-F",
+        "--list-formats"
+      ]
+    },
+    {
+      "description": "Do not download the DASH manifests and related data on YouTube videos",
+      "name": [
+        "--youtube-skip-dash-manifest"
+      ]
+    },
+    {
+      "args": {
+        "name": "FORMAT",
+        "suggestions": [
+          {
+            "name": "mkv"
+          },
+          {
+            "name": "mp4"
+          },
+          {
+            "name": "ogg"
+          },
+          {
+            "name": "webm"
+          },
+          {
+            "name": "flv"
+          }
+        ]
+      },
+      "description": "If a merge is required (e.g. bestvideo+bestaudio), output to given container format",
+      "name": [
+        "--merge-output-format"
+      ]
+    },
+    {
+      "description": "Write subtitle file",
+      "name": [
+        "--write-sub"
+      ]
+    },
+    {
+      "description": "Write automatically generated subtitle file (YouTube only)",
+      "name": [
+        "--write-auto-sub"
+      ]
+    },
+    {
+      "description": "Download all the available subtitles of the video",
+      "name": [
+        "--all-subs"
+      ]
+    },
+    {
+      "description": "List all available subtitles for the video",
+      "name": [
+        "--list-subs"
+      ]
+    },
+    {
+      "args": {
+        "name": "FORMAT"
+      },
+      "description": "Subtitle format, accepts formats preference, for example: \"srt\" or \"ass/srt/best\"",
+      "name": [
+        "--sub-format"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {}
+        ],
+        "name": "LANGS",
+        "suggestions": [
+          {
+            "name": "af"
+          },
+          {
+            "name": "sq"
+          },
+          {
+            "name": "am"
+          },
+          {
+            "name": "ar"
+          },
+          {
+            "name": "hy"
+          },
+          {
+            "name": "az"
+          },
+          {
+            "name": "bn"
+          },
+          {
+            "name": "eu"
+          },
+          {
+            "name": "be"
+          },
+          {
+            "name": "bs"
+          },
+          {
+            "name": "bg"
+          },
+          {
+            "name": "my"
+          },
+          {
+            "name": "ca"
+          },
+          {
+            "name": "ceb"
+          },
+          {
+            "name": "zh-Hans"
+          },
+          {
+            "name": "zh-Hant"
+          },
+          {
+            "name": "co"
+          },
+          {
+            "name": "hr"
+          },
+          {
+            "name": "cs"
+          },
+          {
+            "name": "da"
+          },
+          {
+            "name": "nl"
+          },
+          {
+            "name": "en"
+          },
+          {
+            "name": "eo"
+          },
+          {
+            "name": "et"
+          },
+          {
+            "name": "fil"
+          },
+          {
+            "name": "fi"
+          },
+          {
+            "name": "fr"
+          },
+          {
+            "name": "gl"
+          },
+          {
+            "name": "ka"
+          },
+          {
+            "name": "de"
+          },
+          {
+            "name": "el"
+          },
+          {
+            "name": "gu"
+          },
+          {
+            "name": "ht"
+          },
+          {
+            "name": "ha"
+          },
+          {
+            "name": "haw"
+          },
+          {
+            "name": "iw"
+          },
+          {
+            "name": "hi"
+          },
+          {
+            "name": "hmn"
+          },
+          {
+            "name": "hu"
+          },
+          {
+            "name": "is"
+          },
+          {
+            "name": "ig"
+          },
+          {
+            "name": "id"
+          },
+          {
+            "name": "ga"
+          },
+          {
+            "name": "it"
+          },
+          {
+            "name": "ja"
+          },
+          {
+            "name": "jv"
+          },
+          {
+            "name": "kn"
+          },
+          {
+            "name": "kk"
+          },
+          {
+            "name": "km"
+          },
+          {
+            "name": "rw"
+          },
+          {
+            "name": "ko"
+          },
+          {
+            "name": "ku"
+          },
+          {
+            "name": "ky"
+          },
+          {
+            "name": "lo"
+          },
+          {
+            "name": "la"
+          },
+          {
+            "name": "lv"
+          },
+          {
+            "name": "lt"
+          },
+          {
+            "name": "lb"
+          },
+          {
+            "name": "mk"
+          },
+          {
+            "name": "mg"
+          },
+          {
+            "name": "ms"
+          },
+          {
+            "name": "ml"
+          },
+          {
+            "name": "mt"
+          },
+          {
+            "name": "mi"
+          },
+          {
+            "name": "mr"
+          },
+          {
+            "name": "mn"
+          },
+          {
+            "name": "ne"
+          },
+          {
+            "name": "no"
+          },
+          {
+            "name": "ny"
+          },
+          {
+            "name": "or"
+          },
+          {
+            "name": "ps"
+          },
+          {
+            "name": "fa"
+          },
+          {
+            "name": "pl"
+          },
+          {
+            "name": "pt"
+          },
+          {
+            "name": "pa"
+          },
+          {
+            "name": "ro"
+          },
+          {
+            "name": "ru"
+          },
+          {
+            "name": "sm"
+          },
+          {
+            "name": "gd"
+          },
+          {
+            "name": "sr"
+          },
+          {
+            "name": "sn"
+          },
+          {
+            "name": "sd"
+          },
+          {
+            "name": "si"
+          },
+          {
+            "name": "sk"
+          },
+          {
+            "name": "sl"
+          },
+          {
+            "name": "so"
+          },
+          {
+            "name": "st"
+          },
+          {
+            "name": "es"
+          },
+          {
+            "name": "su"
+          },
+          {
+            "name": "sw"
+          },
+          {
+            "name": "sv"
+          },
+          {
+            "name": "tg"
+          },
+          {
+            "name": "ta"
+          },
+          {
+            "name": "tt"
+          },
+          {
+            "name": "te"
+          },
+          {
+            "name": "th"
+          },
+          {
+            "name": "tr"
+          },
+          {
+            "name": "tk"
+          },
+          {
+            "name": "uk"
+          },
+          {
+            "name": "ur"
+          },
+          {
+            "name": "ug"
+          },
+          {
+            "name": "uz"
+          },
+          {
+            "name": "vi"
+          },
+          {
+            "name": "cy"
+          },
+          {
+            "name": "fy"
+          },
+          {
+            "name": "xh"
+          },
+          {
+            "name": "yi"
+          },
+          {
+            "name": "yo"
+          },
+          {
+            "name": "zu"
+          }
+        ]
+      },
+      "description": "Languages of the subtitles to download (optional) separated by commas",
+      "name": [
+        "--sub-lang"
+      ]
+    },
+    {
+      "args": {
+        "name": "USERNAME"
+      },
+      "description": "Login with this account ID",
+      "name": [
+        "-u",
+        "--username"
+      ]
+    },
+    {
+      "args": {
+        "name": "PASSWORD"
+      },
+      "description": "Account password. If this option is left out, youtube-dl will ask interactively",
+      "name": [
+        "-p",
+        "--password"
+      ]
+    },
+    {
+      "args": {
+        "name": "TWOFACTOR"
+      },
+      "description": "Two-factor authentication code",
+      "name": [
+        "-2",
+        "--twofactor"
+      ]
+    },
+    {
+      "description": "Use .netrc authentication data",
+      "name": [
+        "-n",
+        "--netrc"
+      ]
+    },
+    {
+      "args": {
+        "name": "PASSWORD"
+      },
+      "description": "Video password (vimeo, youku)",
+      "name": [
+        "--video-password"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "async(i,e,t)=>{let{stdout:n}=await e({command:\"youtube-dl\",args:[...i.filter(o=>o.includes(\"youtube.\")),\"--simulate\",\"--ap-list-mso\"]});return n.split(`\n`).slice(3).map(o=>{let[r,...s]=o.split(\" \");return{name:r,description:s.join(\" \")}})}",
+            "requires_js": true
+          }
+        ],
+        "name": "MSO"
+      },
+      "description": "Adobe Pass multiple-system operator (TV provider) identifier",
+      "name": [
+        "--ap-mso"
+      ]
+    },
+    {
+      "args": {
+        "name": "USERNAME"
+      },
+      "description": "Multiple-system operator account login",
+      "name": [
+        "--ap-username"
+      ]
+    },
+    {
+      "args": {
+        "name": "PASSWORD"
+      },
+      "description": "Multiple-system operator account password. If this option is left out, youtube-dl will ask interactively",
+      "name": [
+        "--ap-password"
+      ]
+    },
+    {
+      "description": "List all supported multiple-system operators",
+      "name": [
+        "--ap-list-mso"
+      ]
+    },
+    {
+      "description": "Convert audio files to audio-only files (requires ffmpeg/avconv and ffprobe/avprobe)",
+      "name": [
+        "-x",
+        "--extract-audio"
+      ]
+    },
+    {
+      "args": {
+        "name": "FORMAT",
+        "suggestions": [
+          {
+            "name": "best"
+          },
+          {
+            "name": "aac"
+          },
+          {
+            "name": "flac"
+          },
+          {
+            "name": "mp3"
+          },
+          {
+            "name": "m4a"
+          },
+          {
+            "name": "opus"
+          },
+          {
+            "name": "vorbis"
+          },
+          {
+            "name": "wav"
+          }
+        ]
+      },
+      "description": "Specify audio format",
+      "name": [
+        "--audio-format"
+      ]
+    },
+    {
+      "args": {
+        "name": "QUALITY"
+      },
+      "description": "Specify ffmpeg/avconv audio quality, insert a value between 0 (better) and 9 (worse) for VBR or a specific bitrate like 128K",
+      "name": [
+        "--audio-quality"
+      ]
+    },
+    {
+      "args": {
+        "name": "FORMAT",
+        "suggestions": [
+          {
+            "name": "mp4"
+          },
+          {
+            "name": "flv"
+          },
+          {
+            "name": "ogg"
+          },
+          {
+            "name": "webm"
+          },
+          {
+            "name": "mkv"
+          },
+          {
+            "name": "avi"
+          }
+        ]
+      },
+      "description": "Encode the video to another format if necessary",
+      "name": [
+        "--recode-video"
+      ]
+    },
+    {
+      "args": {
+        "name": "ARGS"
+      },
+      "description": "Give these arguments to the postprocessor",
+      "name": [
+        "--postprocessor-args"
+      ]
+    },
+    {
+      "description": "Keep the video file on disk after the post-processing; the video is erased by default",
+      "name": [
+        "-k",
+        "--keep-video"
+      ]
+    },
+    {
+      "description": "Do not overwrite post-processed files; the post-processed files are overwritten by default",
+      "name": [
+        "--no-post-overwrites"
+      ]
+    },
+    {
+      "description": "Embed subtitles in the video (only for mp4, webm and mkv videos)",
+      "name": [
+        "--embed-subs"
+      ]
+    },
+    {
+      "description": "Embed thumbnail in the audio as cover art",
+      "name": [
+        "--embed-thumbnail"
+      ]
+    },
+    {
+      "description": "Write metadata to the video file",
+      "name": [
+        "--embed-metadata"
+      ]
+    },
+    {
+      "args": {
+        "name": "FORMAT"
+      },
+      "description": "Parse additional metadata like song title / artist from the video title. The format syntax is the same as --output. Regular expressions with named capture groups may also be used. The parsed parameters replace existing values",
+      "name": [
+        "--metadata-from-title"
+      ]
+    },
+    {
+      "description": "Write metadata to the video file's xattrs (using dublin core and xdg standards)",
+      "name": [
+        "--xattrs"
+      ]
+    },
+    {
+      "args": {
+        "name": "POLICY",
+        "suggestions": [
+          {
+            "description": "Do nothing",
+            "name": "never"
+          },
+          {
+            "description": "Only emit a warning",
+            "name": "warn"
+          },
+          {
+            "description": "Fix file if we can, warn otherwise",
+            "name": "detect_or_warn"
+          }
+        ]
+      },
+      "description": "Automatically correct known faults of the file",
+      "name": [
+        "--fixup"
+      ]
+    },
+    {
+      "description": "Prefer avconv over ffmpeg for running the postprocessors",
+      "name": [
+        "--prefer-avconv"
+      ]
+    },
+    {
+      "description": "Prefer ffmpeg over avconv for running the postprocessors (default)",
+      "name": [
+        "--prefer-ffmpeg"
+      ]
+    },
+    {
+      "args": {
+        "name": "PATH",
+        "template": [
+          "folders",
+          "filepaths"
+        ]
+      },
+      "description": "Location of the ffmpeg/avconv binary; either the path to the binary or its containing directory",
+      "name": [
+        "--ffmpeg-location"
+      ]
+    },
+    {
+      "args": {
+        "name": "CMD"
+      },
+      "description": "Execute a command on the file after downloading and post-processing, similar to find's -exec syntax",
+      "name": [
+        "--exec"
+      ]
+    },
+    {
+      "args": {
+        "name": "FORMAT",
+        "suggestions": [
+          {
+            "name": "srt"
+          },
+          {
+            "name": "ass"
+          },
+          {
+            "name": "vtt"
+          },
+          {
+            "name": "lrc"
+          }
+        ]
+      },
+      "description": "Convert the subtitles to other format",
+      "name": [
+        "--convert-subs"
+      ]
+    }
+  ]
+}

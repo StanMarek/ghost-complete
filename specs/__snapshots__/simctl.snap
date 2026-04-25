@@ -1,0 +1,1056 @@
+{
+  "name": "simctl",
+  "subcommands": [
+    {
+      "args": [
+        {
+          "name": "device"
+        },
+        {
+          "isVariadic": true,
+          "name": "path"
+        }
+      ],
+      "description": "Add photos, live photos, videos, or contacts to the library of a device",
+      "name": "addmedia"
+    },
+    {
+      "args": {
+        "name": "device"
+      },
+      "description": "Boot a device or device pair",
+      "name": "boot",
+      "options": [
+        {
+          "description": "Specify the architecture to use when booting the simulator (eg: 'arm64' or 'x86_64')",
+          "name": [
+            "--arch"
+          ]
+        },
+        {
+          "description": "Disables the given launchd job. Multiple jobs can be disabled by passing multiple flags",
+          "name": [
+            "--disabledJob"
+          ]
+        },
+        {
+          "description": "Enables the given launchd job when it would normally be disabled. Multiple jobs can be enabled by passing multiple flags",
+          "name": [
+            "--enabledJob"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "device"
+        },
+        {
+          "name": "new name"
+        },
+        {
+          "isVariadic": true,
+          "name": "destination device set"
+        }
+      ],
+      "description": "Clone an existing device",
+      "name": "clone"
+    },
+    {
+      "args": [
+        {
+          "name": "name"
+        },
+        {
+          "description": "A valid available device type. Find these by running 'xcrun simctl list devicetypes'. Examples: ('iPhone X', 'com.apple.CoreSimulator.SimDeviceType.iPhone-X')",
+          "name": "device type id"
+        },
+        {
+          "description": "A valid and available runtime. Find these by running 'xcrun simctl list runtimes'. If no runtime is specified the newest runtime compatible with the device type is chosen. Examples: ('watchOS3', 'watchOS3.2', 'watchOS 3.2', 'com.apple.CoreSimulator.SimRuntime.watchOS-3-2', '/Volumes/path/to/Runtimes/watchOS 3.2.simruntime')",
+          "isVariadic": true,
+          "name": "runtime id"
+        }
+      ],
+      "description": "Create a new device",
+      "name": "create"
+    },
+    {
+      "args": [
+        {
+          "isVariadic": true,
+          "name": "device"
+        },
+        {
+          "description": "Specifying unavailable will delete devices that are not supported by the current Xcode SDK",
+          "name": "unavailable"
+        },
+        {
+          "name": "all"
+        }
+      ],
+      "description": "Delete specified devices, unavailable devices, or all devices",
+      "name": "delete"
+    },
+    {
+      "description": "Collect diagnostic information and logs",
+      "name": "diagnose",
+      "options": [
+        {
+          "description": "Do NOT show the resulting archive in a Finder window upon completion",
+          "name": [
+            "-b"
+          ]
+        },
+        {
+          "description": "Run all diagnostics with no timeout. It ignores the --timeout value if it is specified",
+          "name": [
+            "-X"
+          ]
+        },
+        {
+          "description": "Specify a duration (in seconds) to wait for the log collection before timeout",
+          "name": [
+            "--timeout"
+          ]
+        },
+        {
+          "description": "Specify the output directory. If not provided the temporary directory is used",
+          "name": [
+            "--output"
+          ]
+        },
+        {
+          "description": "Do not create an archive, leave the collected files uncompressed",
+          "name": [
+            "--no-archive"
+          ]
+        },
+        {
+          "description": "Include all device logs, even for non-booted devices",
+          "name": [
+            "--all-logs"
+          ]
+        },
+        {
+          "description": "Include booted device(s) data directory. Warning: May include private information, app data containers, and increases the size of the archive! Default is NOT to collect the data container",
+          "name": [
+            "--data-containers"
+          ]
+        },
+        {
+          "description": "Collect diagnostics only from the specified device. This option may be specified more than once to consider multiple devices. The --all-logs option causes all --udid options to be ignored",
+          "name": [
+            "--udid"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "isVariadic": true,
+          "name": "device"
+        },
+        {
+          "description": "Specifying all will erase all existing devices",
+          "name": "all"
+        }
+      ],
+      "description": "Erase a device's contents and settings",
+      "name": "erase"
+    },
+    {
+      "args": [
+        {
+          "name": "device"
+        },
+        {
+          "name": "app bundle identifier"
+        },
+        {
+          "description": "Optionally specify the container. Defaults to app.\napp                 The .app bundle\ndata                The application's data container\ngroups              The App Group containers\n<group identifier>  A specific App Group container",
+          "isOptional": true,
+          "name": "container",
+          "suggestions": [
+            {
+              "description": "The .app bundle",
+              "name": "app"
+            },
+            {
+              "description": "The application's data container",
+              "name": "data"
+            },
+            {
+              "description": "The App Group containers",
+              "name": "groups"
+            },
+            {
+              "description": "A specific App Group container",
+              "name": "<group identifier>"
+            }
+          ]
+        }
+      ],
+      "description": "Print the path of the installed app's container",
+      "name": "get_app_container"
+    },
+    {
+      "args": [
+        {
+          "name": "device"
+        },
+        {
+          "name": "variable name"
+        }
+      ],
+      "description": "Print an environment variable from a running device",
+      "name": "getenv"
+    },
+    {
+      "description": "Prints the usage for a given subcommand",
+      "name": "help"
+    },
+    {
+      "args": {
+        "name": "device"
+      },
+      "description": "Trigger iCloud sync on a device",
+      "name": "icloud_sync"
+    },
+    {
+      "args": [
+        {
+          "name": "device"
+        },
+        {
+          "name": "path"
+        }
+      ],
+      "description": "Install an app on a device",
+      "name": "install"
+    },
+    {
+      "args": [
+        {
+          "name": "device"
+        },
+        {
+          "name": "path to xcappdata package"
+        }
+      ],
+      "description": "Install an xcappdata package to a device, replacing the current contents of the container",
+      "name": "install_app_data"
+    },
+    {
+      "args": {
+        "name": "device"
+      },
+      "description": "Set up a device IO operation",
+      "name": "io",
+      "subcommands": [
+        {
+          "description": "Lists all available IO ports and descriptor states",
+          "name": "enumerate",
+          "options": [
+            {
+              "description": "Poll after enumeration",
+              "name": [
+                "--poll"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Polls all available IO ports for events",
+          "name": "poll"
+        },
+        {
+          "args": {
+            "name": "file or url"
+          },
+          "description": "Records the display to a QuickTime movie at the specified file or url",
+          "name": "recordVideo",
+          "options": [
+            {
+              "description": "Specifies the codec type: 'h264' or 'hevc'. Default is 'hevc'",
+              "name": [
+                "--codec"
+              ]
+            },
+            {
+              "description": "iOS: supports 'internal' or 'external'. Default is 'internal'. tvOS: supports only 'external' watchOS: supports only 'internal'",
+              "name": [
+                "--display"
+              ]
+            },
+            {
+              "description": "For non-rectangular displays, handle the mask by policy: ignored: The mask is ignored and the unmasked framebuffer is saved. alpha: Not supported, but retained for compatibility; the mask is rendered black. black: The mask is rendered black",
+              "name": [
+                "--mask"
+              ]
+            },
+            {
+              "description": "Force the output file to be written to, even if the file already exists",
+              "name": [
+                "--force"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "file or url"
+          },
+          "description": "Saves a screenshot as a PNG to the specified file or url(use '-' for stdout)",
+          "name": "screenshot",
+          "options": [
+            {
+              "description": "Can be 'png', 'tiff', 'bmp', 'gif', 'jpeg'. Default is png",
+              "name": [
+                "--type"
+              ]
+            },
+            {
+              "description": "iOS: supports 'internal' or 'external'. Default is 'internal'. tvOS: supports only 'external' watchOS: supports only 'internal'. You may also specify a port by UUID",
+              "name": [
+                "--display"
+              ]
+            },
+            {
+              "description": "For non-rectangular displays, handle the mask by policy: ignored: The mask is ignored and the unmasked framebuffer is saved. alpha: The mask is used as premultiplied alpha. black: The mask is rendered black",
+              "name": [
+                "--mask"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manipulate a device's keychain",
+      "name": "keychain",
+      "subcommands": [
+        {
+          "args": {
+            "name": "path"
+          },
+          "description": "Add a certificate to the trusted root store",
+          "name": "add-root-cert"
+        },
+        {
+          "args": {
+            "name": "path"
+          },
+          "description": "Add a certificate to the keychain",
+          "name": "add-cert"
+        },
+        {
+          "description": "Reset the keychain",
+          "name": "reset"
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "device"
+        },
+        {
+          "name": "app bundle identifier"
+        },
+        {
+          "isVariadic": true,
+          "name": "argv"
+        }
+      ],
+      "description": "Launch an application by identifier on a device",
+      "name": "launch",
+      "options": [
+        {
+          "name": [
+            "-w",
+            "--wait-for-debugger"
+          ]
+        },
+        {
+          "description": "Block and print the application's stdout and stderr to the current terminal. Signals received by simctl are passed through to the application. (Cannot be combined with --stdout or --stderr)",
+          "name": [
+            "--console"
+          ]
+        },
+        {
+          "description": "Block and print the application's stdout and stderr to the current terminal via a PTY. Signals received by simctl are passed through to the application. (Cannot be combined with --stdout or --stderr)",
+          "name": [
+            "--console-pty"
+          ]
+        },
+        {
+          "args": {
+            "name": "path"
+          },
+          "description": "Redirect the application's standard output to a file",
+          "name": [
+            "--stdout"
+          ]
+        },
+        {
+          "args": {
+            "name": "path"
+          },
+          "description": "Redirect the application's standard error to a file",
+          "name": [
+            "--stderr"
+          ]
+        },
+        {
+          "description": "Terminate any running copy of the application. Note: Log output is often directed to stderr, not stdout",
+          "name": [
+            "--terminate-running-process"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "type",
+          "suggestions": [
+            {
+              "name": "devices"
+            },
+            {
+              "name": "deviceTypes"
+            },
+            {
+              "name": "runtimes"
+            },
+            {
+              "name": "pairs"
+            }
+          ]
+        },
+        {
+          "name": "search term",
+          "suggestions": [
+            {
+              "name": "available"
+            }
+          ]
+        }
+      ],
+      "description": "List available devices, device types, runtimes, or device pairs",
+      "name": "list",
+      "options": [
+        {
+          "description": "Print as JSON",
+          "name": [
+            "-j",
+            "--json"
+          ]
+        },
+        {
+          "description": "Encode slashes without escapes in JSON output",
+          "name": [
+            "-e",
+            "--no-escape-slashes"
+          ]
+        },
+        {
+          "description": "More verbose output",
+          "name": [
+            "-v"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "device"
+        },
+        {
+          "name": "empty"
+        }
+      ],
+      "description": "Control a device's simulated location",
+      "name": "location",
+      "subcommands": [
+        {
+          "description": "List available simulation scenarios",
+          "name": "list"
+        },
+        {
+          "description": "Stop any running scenario and clear any simulated location",
+          "name": "clear"
+        },
+        {
+          "args": {
+            "name": "lat,lon"
+          },
+          "description": "Set the location to a specific latitude and longitude",
+          "name": "set"
+        },
+        {
+          "args": {
+            "name": "scenario"
+          },
+          "description": "Run a simulated location scenario (use the list action to get a list of scenarios)",
+          "name": "run"
+        },
+        {
+          "args": {
+            "isVariadic": true,
+            "name": "lat,lon"
+          },
+          "description": "Set the location to a series of waypoints specified as 'lat,lon' pairs, interpolating between them over time.\nAt least two waypoints are required. Use '-' to read waypoints from stdin, one waypoint per li\nSpeed specifies how quickly to move between waypoints in meters per second. If not specified 20m/s is us\nThe system will issue location updates along the path between each pair of waypoints. Use distance or interval to \ncontrol how often those updates are issued. Distance will issue an update every <meters> travelled without regard\nfor the time between updates. Interval will issue updates at fixed times without regard for how much\nthe location moves between updates.\nIf neither are specified an interval of 1.0 seconds is used. If both are specified the system picks on\nExample simulating a direct line between San Francisco and New York City, with updates every km:\nset --distance=1000 --speed=260 37.629538,-122.395733 40.628083,-73.768254",
+          "name": "start",
+          "options": [
+            {
+              "name": [
+                "speed"
+              ]
+            },
+            {
+              "name": [
+                "distance"
+              ]
+            },
+            {
+              "name": [
+                "interval"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "The device. If not provided all booted devices are affected",
+          "name": "device"
+        },
+        {
+          "description": "Enable or Disable verbose logging",
+          "name": "enable/disable",
+          "suggestions": [
+            {
+              "name": "enable"
+            },
+            {
+              "name": "disable"
+            }
+          ]
+        }
+      ],
+      "description": "Enable or disable verbose logging for a device.\nNOTE: You may need to reboot the affected device before logging changes will be effective",
+      "name": "logverbose"
+    },
+    {
+      "args": [
+        {
+          "name": "device"
+        },
+        {
+          "name": "URL"
+        }
+      ],
+      "description": "Open a URL in a device",
+      "name": "openurl"
+    },
+    {
+      "args": [
+        {
+          "name": "watch device"
+        },
+        {
+          "name": "phone device"
+        }
+      ],
+      "description": "Create a new watch and phone pair",
+      "name": "pair"
+    },
+    {
+      "args": {
+        "name": "pair"
+      },
+      "description": "Set a given pair as active",
+      "name": "pair_activate"
+    },
+    {
+      "args": {
+        "name": "device of 'host'"
+      },
+      "description": "Copy standard input onto the device pasteboard",
+      "name": "pbcopy",
+      "options": [
+        {
+          "name": [
+            "-v"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "device of 'host'"
+      },
+      "description": "Print the contents of the device's pasteboard to standard output",
+      "name": "pbpaste",
+      "options": [
+        {
+          "name": [
+            "-v"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "source device or 'host'"
+        },
+        {
+          "name": "destination device or 'host'"
+        }
+      ],
+      "description": "Sync the pasteboard content from one pasteboard to another",
+      "name": "pbsync",
+      "options": [
+        {
+          "description": "Causes simctl to use promise data for secondary types.  simctl will continue to run to provide that promise data until something else replaces it on the pasteboard",
+          "name": [
+            "-p"
+          ]
+        },
+        {
+          "name": [
+            "-v"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "device"
+        },
+        {
+          "name": "action",
+          "suggestions": [
+            {
+              "name": "grant"
+            },
+            {
+              "name": "revoke"
+            },
+            {
+              "name": "reset"
+            }
+          ]
+        },
+        {
+          "name": "service",
+          "suggestions": [
+            {
+              "name": "all"
+            },
+            {
+              "name": "calendar"
+            },
+            {
+              "name": "contacts-limited"
+            },
+            {
+              "name": "contacts"
+            },
+            {
+              "name": "location"
+            },
+            {
+              "name": "location-always"
+            },
+            {
+              "name": "photos-add"
+            },
+            {
+              "name": "photos"
+            },
+            {
+              "name": "media-library"
+            },
+            {
+              "name": "microphone"
+            },
+            {
+              "name": "motion"
+            },
+            {
+              "name": "reminders"
+            },
+            {
+              "name": "siri"
+            }
+          ]
+        },
+        {
+          "description": "The bundle identifier of the target application",
+          "name": "bundle identifier"
+        }
+      ],
+      "description": "Grant, revoke, or reset privacy and permissions",
+      "name": "privacy"
+    },
+    {
+      "args": [
+        {
+          "name": "device"
+        },
+        {
+          "description": "The bundle identifier of the target application If the payload file contains a 'Simulator Target Bundle' top-level key this parameter may be omitted. If both are provided this argument will override the value from the payload",
+          "name": "bundle identifier"
+        },
+        {
+          "description": "Path to a JSON payload or '-' to read from stdin. The payload must:\n- Contain an object at the top level.\n- Contain an 'aps' key with valid Apple Push Notification values.\n- Be 4096 bytes or less",
+          "name": "json file",
+          "suggestions": [
+            {
+              "name": "-"
+            }
+          ]
+        }
+      ],
+      "description": "Send a simulated push notification",
+      "name": "push"
+    },
+    {
+      "args": [
+        {
+          "name": "device"
+        },
+        {
+          "name": "name"
+        }
+      ],
+      "description": "Rename a device",
+      "name": "rename"
+    },
+    {
+      "description": "Perform operations on runtimes",
+      "name": "runtime",
+      "subcommands": [
+        {
+          "args": {
+            "name": "path"
+          },
+          "description": "Add a runtime disk image to the secure storage area. The image will be staged, verified, and mounted. When possible the image file will be cloned so no additional disk space will be used. If stdout is a terminal and a copy is required then progress will be reported",
+          "name": "add",
+          "options": [
+            {
+              "description": "Remove the original file if the image is added successfully. If the image cannot be staged or the add fails the original is not removed",
+              "name": [
+                "-m",
+                "--move"
+              ]
+            },
+            {
+              "description": "Print the UUID of the new image then exit, do not wait on the results of the add operation",
+              "name": [
+                "-a",
+                "--async"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "identifier"
+          },
+          "description": "Delete a simulator runtime from the secure storage area. If runtime is a disk image any booted simulators are shutdown and the disk is unmounted first. Use the alias 'all' to delete all images",
+          "name": "delete",
+          "options": [
+            {
+              "description": "Delete images not used within the past <days> days",
+              "name": [
+                "-d",
+                "--notUsedSinceDays"
+              ]
+            },
+            {
+              "description": "Print what images would be deleted without actually deleting anything",
+              "name": [
+                "-n",
+                "--dry-run"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "identifier"
+          },
+          "description": "Re-verify the signature of a given runtime",
+          "name": "verify"
+        },
+        {
+          "name": "list",
+          "options": [
+            {
+              "description": "Print more verbose output",
+              "name": [
+                "-v"
+              ]
+            },
+            {
+              "description": "Print as JSON",
+              "name": [
+                "-j",
+                "--json"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List the SDK build to runtime build mapping rules for the selected Xcode. Preferred means the runtime was either bundled with Xcode, exactly matched your SDK version, or the downloadable index indicated a better match for your SDK Manual overrides using 'match set' have the highest priority",
+          "name": "match list",
+          "options": [
+            {
+              "description": "Verbose mode. Includes the full preferred build map, user override map, and known SDK names",
+              "name": [
+                "-v"
+              ]
+            },
+            {
+              "description": "Print as JSON",
+              "name": [
+                "-j",
+                "--json"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "name": "sdk canonical name"
+            },
+            {
+              "name": "runtime build"
+            }
+          ],
+          "description": "Override the SDK to runtime build mapping. This controls which build of a given runtime Xcode will prefer for building and running when using that SDK. This matters most often during Beta releases when there are multiple builds for a given OS version. If --sdkBuild is not specified it is assumed you mean the SDK build for the currently selected Xcode.\n\nNote: Remember this is about build numbers, not semantic versions. When using the iOS 16.0 SDK Xcwill always prefer an iOS 16.0 runtime. Matching policy controls what to do when there are multiiOS 16.0 runtimes availabeg if the iOS 16.0 SDK is 20A245 and the available runtimes are (20A248, 20A252, 20A254) which should Xcode use for building, SwiftUI Previews, and when launching iOS 16.0 Simulators? They are all iOS 16.0 runtimes so a policy must decide which one is selected",
+          "name": "match set",
+          "options": [
+            {
+              "description": "Clear the override for the given SDK and revert to default behavior",
+              "name": [
+                "--default"
+              ]
+            },
+            {
+              "description": "Explicitly specify the SDK build, eg for an Xcode other than the selected Xcode",
+              "name": [
+                "--sdkBuild"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "device"
+        },
+        {
+          "name": "all",
+          "suggestions": [
+            {
+              "name": "all"
+            }
+          ]
+        }
+      ],
+      "description": "Shutdown a device",
+      "name": "shutdown"
+    },
+    {
+      "args": [
+        {
+          "name": "device"
+        },
+        {
+          "name": "path to executable"
+        },
+        {
+          "isVariadic": true,
+          "name": "argv"
+        }
+      ],
+      "description": "Spawn a process by executing a given executable on a device",
+      "name": "spawn",
+      "options": [
+        {
+          "name": [
+            "-w",
+            "--wait-for-debugger"
+          ]
+        },
+        {
+          "name": [
+            "-s",
+            "--standalone"
+          ]
+        },
+        {
+          "name": [
+            "-a",
+            "--arch"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "device"
+      },
+      "description": "Set or clear status bar overrides",
+      "name": "status_bar",
+      "subcommands": [
+        {
+          "description": "List existing overrides",
+          "name": "list"
+        },
+        {
+          "description": "Clear all existing status bar overrides",
+          "name": "clear"
+        },
+        {
+          "description": "Set status bar override values, according to these flags. You may specify any combination of these flags (at least one is required)",
+          "name": "override",
+          "options": [
+            {
+              "description": "Set the date or time to a fixed value. If the string is a valid ISO date string it will also set the date on relevant devices",
+              "name": [
+                "--time"
+              ]
+            },
+            {
+              "description": "If specified must be one of 'hide', 'wifi', '3g', '4g', 'lte', 'lte-a', 'lte+', '5g', '5g+', '5g-uwb', or '5g-uc'",
+              "name": [
+                "--dataNetwork"
+              ]
+            },
+            {
+              "description": "If specified must be one of 'searching', 'failed', or 'active'",
+              "name": [
+                "--wifiMode"
+              ]
+            },
+            {
+              "description": "If specified must be 0-3",
+              "name": [
+                "--wifiBars"
+              ]
+            },
+            {
+              "description": "If specified must be one of 'notSupported', 'searching', 'failed', or 'active'",
+              "name": [
+                "--cellularMode"
+              ]
+            },
+            {
+              "description": "If specified must be 0-4",
+              "name": [
+                "--cellularBars"
+              ]
+            },
+            {
+              "description": "Set the cellular operator/carrier name. Use '' for the empty string",
+              "name": [
+                "--operatorName"
+              ]
+            },
+            {
+              "description": "If specified must be one of 'charging', 'charged', or 'discharging'",
+              "name": [
+                "--batteryState"
+              ]
+            },
+            {
+              "description": "If specified must be 0-100",
+              "name": [
+                "--batteryLevel"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "device"
+        },
+        {
+          "name": "app bundle identifier"
+        }
+      ],
+      "description": "Terminate an application by identifier on a device",
+      "name": "terminate"
+    },
+    {
+      "args": {
+        "name": "device"
+      },
+      "description": "Get or Set UI options",
+      "name": "ui",
+      "subcommands": [
+        {
+          "description": "When invoked without arguments prints the current user interface appearance style:\nlight\nThe Light appearance style.\ndark\nThe Dark appearance style.\nunsupported\nThe platform or runtime version do not support appearance styles.\nunknown\nThe current style is unknown or there was an error detecting it",
+          "name": "appearance"
+        },
+        {
+          "description": "When invoked without arguments prints whether the Increase Contrast mode is currently enabled:\nenabled\nIncrease Contrast is enabled.\ndisabled\nIncrease Contrast is disabled.\nunsupported\nThe platform or runtime version do not support the Increase Contrast setting.\nunknown\nThe current setting is unknown or there was an error detecting it",
+          "name": "increase_contrast"
+        },
+        {
+          "description": "When invoked without arguments prints the current preferred content size category, from the following possible values:",
+          "name": "content_size"
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "name": "device"
+        },
+        {
+          "name": "app bundle identifier"
+        }
+      ],
+      "description": "Uninstall an app from a device",
+      "name": "uninstall"
+    },
+    {
+      "args": {
+        "name": "pair UUID"
+      },
+      "description": "Unpair a watch and phone pair",
+      "name": "unpair"
+    },
+    {
+      "args": [
+        {
+          "name": "device"
+        },
+        {
+          "name": "runtime id"
+        }
+      ],
+      "description": "Upgrade a device to a newer runtime",
+      "name": "upgrade"
+    }
+  ]
+}

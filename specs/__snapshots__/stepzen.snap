@@ -1,0 +1,117 @@
+{
+  "description": "The StepZen CLI is the primary way to build, deploy and test your schemas on StepZen",
+  "name": "StepZen",
+  "subcommands": [
+    {
+      "args": {
+        "description": "Command name for which to display help",
+        "name": "command"
+      },
+      "description": "Display help for StepZen",
+      "name": "help"
+    },
+    {
+      "description": "Login to StepZen",
+      "name": "login"
+    },
+    {
+      "description": "Logout of StepZen",
+      "name": "logout"
+    },
+    {
+      "description": "Deploy, watch and develop your API",
+      "name": "start",
+      "options": [
+        {
+          "args": {
+            "description": "Path to StepZen directory",
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "The working directory for StepZen assets",
+          "name": [
+            "--dir"
+          ]
+        },
+        {
+          "args": {
+            "description": "The StepZen endpoint",
+            "generators": [
+              {
+                "js_source": "t=>{try{return JSON.parse(t).map(e=>({name:e,description:\"StepZen endpoint\"}))}catch{return[]}}",
+                "requires_js": true,
+                "script": [
+                  "stepzen",
+                  "list",
+                  "schemas"
+                ]
+              }
+            ],
+            "name": "endpoint"
+          },
+          "description": "The folder/endpoint to deploy to",
+          "name": [
+            "--endpoint"
+          ]
+        },
+        {
+          "args": {
+            "description": "A port to run on",
+            "name": "port"
+          },
+          "description": "The port number to use for the GraphiQL explorer",
+          "name": [
+            "--port"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The name of the generator to import",
+        "generators": [
+          {
+            "js_source": "t=>{try{return JSON.parse(t).filter(e=>e.type==\"dir\"&&!e.name.startsWith(\".\")).map(e=>({name:e.name,description:\"Stepzen schema\",icon:\"\\u{1F4E6}\"}))}catch{return[]}}",
+            "requires_js": true,
+            "script": [
+              "curl",
+              "https://api.github.com/repos/steprz/stepzen-schemas/contents"
+            ]
+          }
+        ],
+        "name": "name"
+      },
+      "description": "Import pre-configured schemas to Your API",
+      "name": "import",
+      "options": [
+        {
+          "args": {
+            "description": "Path to directory",
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "The directory to which the schema will be imported",
+          "name": [
+            "--dir"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "The type of asset to list (schemas or configurationsets)",
+        "name": "type",
+        "suggestions": [
+          {
+            "name": "schemas"
+          },
+          {
+            "name": "configurationsets"
+          }
+        ]
+      },
+      "description": "List the assets of a specified type that are linked to the StepZen account",
+      "name": "list"
+    }
+  ]
+}

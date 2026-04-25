@@ -1,0 +1,249 @@
+{
+  "args": {
+    "description": "Invokes the task (mix run) in a project",
+    "generators": [
+      {
+        "cache": {
+          "ttl_seconds": 10
+        },
+        "script": [
+          "mix",
+          "help"
+        ],
+        "transforms": [
+          "split_lines",
+          "filter_empty",
+          "trim"
+        ]
+      }
+    ],
+    "isOptional": true,
+    "name": "task"
+  },
+  "description": "Build tool for Elixir",
+  "name": "mix",
+  "options": [
+    {
+      "description": "Shows usage information",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Shows versioning information",
+      "name": [
+        "-v",
+        "--version"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "name": "path"
+      },
+      "description": "Creates a new Elixir project at the given path",
+      "name": "new",
+      "options": [
+        {
+          "description": "Output usage information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "app"
+          },
+          "description": "Name the OTP application for the project",
+          "name": [
+            "--app"
+          ]
+        },
+        {
+          "args": {
+            "name": "module"
+          },
+          "description": "Name the modules in the generated code skeleton",
+          "name": [
+            "--modules"
+          ]
+        },
+        {
+          "description": "Generate an OTP application skeleton including a supervision tree. Normally an app is generated without a supervisor and without the app callback",
+          "name": [
+            "--sup"
+          ]
+        },
+        {
+          "description": "Generate an umbrella project",
+          "name": [
+            "--umbrella"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "(f,m,x)=>ue(this,void 0,void 0,function*(){var d;let{isDangerous:y,currentWorkingDirectory:S,searchTerm:p}=x,O=(d=(0,v.getCurrentInsertedDirectory)(l??S,p,x))!==null&&d!==void 0?d:\"/\";try{let D=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:O}),$=_(D.stdout.split(`\n`),[\".DS_Store\"]),R=[];for(let L of $)if(L){let w=L.endsWith(\"/\")?\"folders\":\"filepaths\";(w===\"filepaths\"&&c!==\"only\"||w===\"folders\"&&c!==\"never\")&&R.push({type:w===\"filepaths\"?\"file\":\"folder\",name:L,insertValue:L,isDangerous:y,context:{templateType:w}})}return V(h(R))}catch{return[]}})",
+            "requires_js": true
+          }
+        ],
+        "isOptional": true,
+        "name": "file"
+      },
+      "description": "Starts the current application and runs code",
+      "name": "run",
+      "options": [
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Loads the given configuration files",
+          "name": [
+            "--config"
+          ]
+        },
+        {
+          "args": {
+            "description": "String containing code to execute",
+            "name": "code"
+          },
+          "description": "Evaluates the given code",
+          "name": [
+            "-e",
+            "--eval"
+          ]
+        },
+        {
+          "args": {
+            "description": "The file|pattern to execute",
+            "generators": [
+              {
+                "js_source": "(f,m,x)=>ue(this,void 0,void 0,function*(){var d;let{isDangerous:y,currentWorkingDirectory:S,searchTerm:p}=x,O=(d=(0,v.getCurrentInsertedDirectory)(l??S,p,x))!==null&&d!==void 0?d:\"/\";try{let D=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:O}),$=_(D.stdout.split(`\n`),[\".DS_Store\"]),R=[];for(let L of $)if(L){let w=L.endsWith(\"/\")?\"folders\":\"filepaths\";(w===\"filepaths\"&&c!==\"only\"||w===\"folders\"&&c!==\"never\")&&R.push({type:w===\"filepaths\"?\"file\":\"folder\",name:L,insertValue:L,isDangerous:y,context:{templateType:w}})}return V(h(R))}catch{return[]}})",
+                "requires_js": true
+              }
+            ],
+            "name": "file|pattern"
+          },
+          "description": "Executes the given pattern/file",
+          "name": [
+            "-r",
+            "--require"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "js_source": "(f,m,x)=>ue(this,void 0,void 0,function*(){var d;let{isDangerous:y,currentWorkingDirectory:S,searchTerm:p}=x,O=(d=(0,v.getCurrentInsertedDirectory)(l??S,p,x))!==null&&d!==void 0?d:\"/\";try{let D=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:O}),$=_(D.stdout.split(`\n`),[\".DS_Store\"]),R=[];for(let L of $)if(L){let w=L.endsWith(\"/\")?\"folders\":\"filepaths\";(w===\"filepaths\"&&c!==\"only\"||w===\"folders\"&&c!==\"never\")&&R.push({type:w===\"filepaths\"?\"file\":\"folder\",name:L,insertValue:L,isDangerous:y,context:{templateType:w}})}return V(h(R))}catch{return[]}})",
+                "requires_js": true
+              }
+            ],
+            "name": "file|pattern"
+          },
+          "description": "Executes the given pattern/file",
+          "name": [
+            "-p",
+            "--parallel"
+          ]
+        },
+        {
+          "description": "Preloads all modules defined in applications",
+          "name": [
+            "--preload-modules"
+          ]
+        },
+        {
+          "description": "Does not compile even if files require compilation",
+          "name": [
+            "--no-compile"
+          ]
+        },
+        {
+          "description": "Does not check dependencies",
+          "name": [
+            "--no-deps-check"
+          ]
+        },
+        {
+          "description": "Does not check archives",
+          "name": [
+            "--no-archives-check"
+          ]
+        },
+        {
+          "description": "Does not halt the system after running the command",
+          "name": [
+            "--no-halt"
+          ]
+        },
+        {
+          "description": "Allows the command to run even if there is no mix.exs",
+          "name": [
+            "--no-mix-exs"
+          ]
+        },
+        {
+          "description": "Does not start applications after compilation",
+          "name": [
+            "--no-start"
+          ]
+        },
+        {
+          "description": "Does not check the Elixir version from mix.exs",
+          "name": [
+            "--no-elixir-version-check"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Prints documentation for a given task",
+        "generators": [
+          {
+            "cache": {
+              "ttl_seconds": 10
+            },
+            "script": [
+              "mix",
+              "help"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "isOptional": true,
+        "name": "task"
+      },
+      "description": "Prints documentation for a given task (Lists all the tasks if no task is specified)",
+      "name": "help",
+      "options": [
+        {
+          "args": {
+            "name": "pattern"
+          },
+          "description": "Prints all tasks and aliases that contain 'pattern' in the name",
+          "name": [
+            "--search"
+          ]
+        },
+        {
+          "description": "Prints all task names and aliases",
+          "name": [
+            "--names"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -137,8 +137,8 @@ fn transform_benchmarks(c: &mut Criterion) {
     let json_transforms = vec![
         Transform::Named(NamedTransform::SplitLines),
         Transform::Parameterized(ParameterizedTransform::JsonExtract {
-            name: "name".to_string(),
-            description: Some("desc".to_string()),
+            name: gc_suggest::JsonPath::parse("name").unwrap(),
+            description: Some(gc_suggest::JsonPath::parse("desc").unwrap()),
         }),
     ];
     group.bench_function("json", |b| {

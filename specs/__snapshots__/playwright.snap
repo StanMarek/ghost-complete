@@ -1,0 +1,110 @@
+{
+  "name": "playwright",
+  "options": [
+    {
+      "description": "Output the version number",
+      "name": [
+        "--version",
+        "-V"
+      ]
+    },
+    {
+      "description": "Display help for command",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "description": "Test files to run",
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "tests",
+        "template": [
+          "filepaths",
+          "folders"
+        ]
+      },
+      "description": "Run tests with Playwright Test",
+      "name": "test",
+      "options": [
+        {
+          "args": {
+            "name": "title"
+          },
+          "description": "Run the test with the title",
+          "name": [
+            "-g"
+          ]
+        },
+        {
+          "description": "Run tests in headed browsers",
+          "name": [
+            "--headed"
+          ]
+        },
+        {
+          "description": "Display help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Browser to install",
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "browsers",
+        "suggestions": [
+          {
+            "name": "chromium"
+          },
+          {
+            "name": "chrome"
+          },
+          {
+            "name": "chrome-beta"
+          },
+          {
+            "name": "msedge"
+          },
+          {
+            "name": "msedge-beta"
+          },
+          {
+            "name": "msedge-dev"
+          },
+          {
+            "name": "firefox"
+          },
+          {
+            "name": "webkit"
+          }
+        ]
+      },
+      "description": "Running without arguments will install default browsers",
+      "name": "install",
+      "options": [
+        {
+          "description": "Install system dependencies for browsers",
+          "name": [
+            "--with-deps"
+          ]
+        },
+        {
+          "description": "Display help for command",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    }
+  ]
+}

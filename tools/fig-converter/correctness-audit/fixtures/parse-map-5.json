@@ -1,0 +1,12 @@
+{
+  "shape_id": "parse-map-5",
+  "rationale": "Fingerprint `JSON.parse(X).map(FN)` variant — all 8 generators call `JSON.parse(e).map(n => ({name: n.FIELD}))` over a top-level JSON array. Feed `\"[]\"`: JS `JSON.parse(\"[]\") = []`, `.map(...) = []`. Rust `split_lines+filter_empty+json_extract(sentinel)` on `\"[]\"` also yields `[]`. Contract holds.",
+  "expected_transforms": [
+    "split_lines",
+    "filter_empty",
+    { "type": "json_extract", "name": "__sentinel_no_field__" }
+  ],
+  "inputs": [
+    "[]"
+  ]
+}

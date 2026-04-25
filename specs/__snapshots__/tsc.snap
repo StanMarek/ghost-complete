@@ -1,0 +1,973 @@
+{
+  "args": {
+    "generators": [
+      {
+        "js_source": "(f,h,b)=>le(this,void 0,void 0,function*(){var u;let{isDangerous:S,currentWorkingDirectory:w,searchTerm:m}=b,O=(u=(0,y.getCurrentInsertedDirectory)(l??w,m,b))!==null&&u!==void 0?u:\"/\";try{let R=yield h({command:\"ls\",args:[\"-1ApL\"],cwd:O}),Q=N(R.stdout.split(`\n`),[\".DS_Store\"]),V=[];for(let k of Q)if(k){let T=k.endsWith(\"/\")?\"folders\":\"filepaths\";(T===\"filepaths\"&&d!==\"only\"||T===\"folders\"&&d!==\"never\")&&V.push({type:T===\"filepaths\"?\"file\":\"folder\",name:k,insertValue:k,isDangerous:S,context:{templateType:T}})}return x(g(V))}catch{return[]}})",
+        "requires_js": true
+      }
+    ],
+    "name": "tsc script"
+  },
+  "description": "CLI tool for TypeScript compiler",
+  "name": "tsc",
+  "options": [
+    {
+      "description": "Show all compiler options",
+      "name": [
+        "--all"
+      ]
+    },
+    {
+      "description": "Generates an event trace and a list of types",
+      "name": [
+        "--generateTrace"
+      ]
+    },
+    {
+      "description": "Gives local information for help on the CLI",
+      "name": [
+        "--help"
+      ]
+    },
+    {
+      "description": "Initializes a TypeScript project and creates a tsconfig.json file",
+      "name": [
+        "--init"
+      ]
+    },
+    {
+      "description": "Print names of files that are part of the compilation and then stop processing",
+      "name": [
+        "--listFilesOnly"
+      ]
+    },
+    {
+      "description": "Set the language of the messaging from TypeScript. This does not affect emit",
+      "name": [
+        "--locale"
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": [
+          "filepaths",
+          "folders"
+        ]
+      },
+      "description": "Compile the project given the path to its configuration file, or to a folder with a tsconfig.json",
+      "name": [
+        "--project"
+      ]
+    },
+    {
+      "description": "Print the final configuration instead of building",
+      "name": [
+        "--showConfig"
+      ]
+    },
+    {
+      "description": "Print the compiler's version",
+      "name": [
+        "--version"
+      ]
+    },
+    {
+      "description": "Build one or more projects and their dependencies, if out of date",
+      "name": [
+        "--build"
+      ]
+    },
+    {
+      "description": "Delete the outputs of all projects",
+      "name": [
+        "--clean"
+      ]
+    },
+    {
+      "description": "Show what would be built (or deleted, if specified with '--clean')",
+      "name": [
+        "--dry"
+      ]
+    },
+    {
+      "description": "Build all projects, including those that appear to be up to date",
+      "name": [
+        "--force"
+      ]
+    },
+    {
+      "description": "Enable verbose logging",
+      "name": [
+        "--verbose"
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "dir",
+        "template": "folders"
+      },
+      "description": "Remove a list of directories from the watch process",
+      "name": [
+        "--excludeDirectories"
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "files",
+        "template": "filepaths"
+      },
+      "description": "Remove a list of files from the watch mode's processing",
+      "name": [
+        "--excludeFiles"
+      ]
+    },
+    {
+      "args": {
+        "name": "approach",
+        "suggestions": [
+          {
+            "name": "fixedPollingInterval"
+          },
+          {
+            "name": "priorityPollingInterval"
+          },
+          {
+            "name": "dynamicPriorityPolling"
+          }
+        ]
+      },
+      "description": "Specify what approach the watcher should use if the system runs out of native file watchers",
+      "name": [
+        "--fallbackPolling"
+      ]
+    },
+    {
+      "description": "Synchronously call callbacks and update the state of directory watchers on platforms that don`t support recursive watching natively",
+      "name": [
+        "--synchronousWatchDirectory"
+      ]
+    },
+    {
+      "description": "Watch input files",
+      "name": [
+        "--watch"
+      ]
+    },
+    {
+      "args": {
+        "name": "approach",
+        "suggestions": [
+          {
+            "name": "fixedPollingInterval"
+          },
+          {
+            "name": "dynamicPriorityPolling"
+          },
+          {
+            "name": "useFsEvents"
+          }
+        ]
+      },
+      "description": "Specify how directories are watched on systems that lack recursive file-watching functionality",
+      "name": [
+        "--watchDirectory"
+      ]
+    },
+    {
+      "args": {
+        "name": "approach",
+        "suggestions": [
+          {
+            "name": "fixedPollingInterval"
+          },
+          {
+            "name": "priorityPollingInterval"
+          },
+          {
+            "name": "dynamicPriorityPolling"
+          },
+          {
+            "name": "useFsEvents"
+          },
+          {
+            "name": "useFsEventsOnParentDirectory"
+          }
+        ]
+      },
+      "description": "Specify how the TypeScript watch mode works",
+      "name": [
+        "--watchFile"
+      ]
+    },
+    {
+      "description": "Allow JavaScript files to be a part of your program. Use the checkJS option to get errors from these files",
+      "name": [
+        "--allowJs"
+      ]
+    },
+    {
+      "description": "Allow 'import x from y' when a module doesn't have a default export",
+      "name": [
+        "--allowSyntheticDefaultImports"
+      ]
+    },
+    {
+      "description": "Allow accessing UMD globals from modules",
+      "name": [
+        "--allowUmdGlobalAccess"
+      ]
+    },
+    {
+      "description": "Disable error reporting for unreachable code",
+      "name": [
+        "--allowUnreachableCode"
+      ]
+    },
+    {
+      "description": "Disable error reporting for unused label",
+      "name": [
+        "--allowUnusedLabels"
+      ]
+    },
+    {
+      "description": "Ensure 'use strict' is always emitted",
+      "name": [
+        "--alwaysStrict"
+      ]
+    },
+    {
+      "description": "Have recompiles in projects that use incremental and watch mode assume that changes within a file will only affect files directly depending on it",
+      "name": [
+        "--assumeChangesOnlyAffectDirectDependencies"
+      ]
+    },
+    {
+      "args": {
+        "name": "directory",
+        "template": "filepaths"
+      },
+      "description": "Specify the base directory to resolve non-relative module names",
+      "name": [
+        "--baseUrl"
+      ]
+    },
+    {
+      "description": "Enable error reporting in type-checked JavaScript files",
+      "name": [
+        "--checkJs"
+      ]
+    },
+    {
+      "description": "Enable constraints that allow a TypeScript project to be used with project references",
+      "name": [
+        "--composite"
+      ]
+    },
+    {
+      "description": "Generate .d.ts files from TypeScript and JavaScript files in your project",
+      "name": [
+        "--declaration"
+      ]
+    },
+    {
+      "args": {
+        "name": "string",
+        "template": "folders"
+      },
+      "description": "Specify the output directory for generated declaration files",
+      "name": [
+        "--declarationDir"
+      ]
+    },
+    {
+      "description": "Create sourcemaps for d.ts files",
+      "name": [
+        "--declarationMap"
+      ]
+    },
+    {
+      "description": "Output compiler performance information after building",
+      "name": [
+        "--diagnostics"
+      ]
+    },
+    {
+      "description": "Reduce the number of projects loaded automatically by TypeScript",
+      "name": [
+        "--disableReferencedProjectLoad"
+      ]
+    },
+    {
+      "description": "Remove the 20mb cap on total source code size for JavaScript files in the TypeScript language server",
+      "name": [
+        "--disableSizeLimit"
+      ]
+    },
+    {
+      "description": "Opt a project out of multi-project reference checking when editing",
+      "name": [
+        "--disableSolutionSearching"
+      ]
+    },
+    {
+      "description": "Disable preferring source files instead of declaration files when referencing composite projects",
+      "name": [
+        "--disableSourceOfProjectReferenceRedirect"
+      ]
+    },
+    {
+      "description": "Emit more compliant, but verbose and less performant JavaScript for iteration",
+      "name": [
+        "--downlevelIteration"
+      ]
+    },
+    {
+      "description": "Emit a UTF-8 Byte Order Mark (BOM) in the beginning of output files",
+      "name": [
+        "--emitBOM"
+      ]
+    },
+    {
+      "description": "Only output d.ts files and not JavaScript files",
+      "name": [
+        "--emitDeclarationOnly"
+      ]
+    },
+    {
+      "description": "Emit design-type metadata for decorated declarations in source files",
+      "name": [
+        "--emitDecoratorMetadata"
+      ]
+    },
+    {
+      "description": "Emit additional JavaScript to ease support for importing CommonJS modules. This enables allowSyntheticDefaultImports for type compatibility",
+      "name": [
+        "--esModuleInterop"
+      ]
+    },
+    {
+      "description": "Differentiate between undefined and not present when type checking",
+      "name": [
+        "--exactOptionalPropertyTypes"
+      ]
+    },
+    {
+      "description": "Enable experimental support for TC39 stage 2 draft decorators",
+      "name": [
+        "--experimentalDecorators"
+      ]
+    },
+    {
+      "description": "Print files read during the compilation including why it was included",
+      "name": [
+        "--explainFiles"
+      ]
+    },
+    {
+      "description": "Output more detailed compiler performance information after building",
+      "name": [
+        "--extendedDiagnostics"
+      ]
+    },
+    {
+      "description": "Ensure that casing is correct in imports",
+      "name": [
+        "--forceConsistentCasingInFileNames"
+      ]
+    },
+    {
+      "description": "Emit a v8 CPU profile of the compiler run for debugging",
+      "name": [
+        "--generateCpuProfile"
+      ]
+    },
+    {
+      "description": "Allow importing helper functions from tslib once per project, instead of including them per-file",
+      "name": [
+        "--importHelpers"
+      ]
+    },
+    {
+      "args": {
+        "name": "type",
+        "suggestions": [
+          {
+            "name": "remove"
+          },
+          {
+            "name": "preserve"
+          },
+          {
+            "name": "error"
+          }
+        ]
+      },
+      "description": "Specify emit/checking behavior for imports that are only used for types",
+      "name": [
+        "--importsNotUsedAsValues"
+      ]
+    },
+    {
+      "description": "Save .tsbuildinfo files to allow for incremental compilation of projects",
+      "name": [
+        "--incremental"
+      ]
+    },
+    {
+      "description": "Include sourcemap files inside the emitted JavaScript",
+      "name": [
+        "--inlineSourceMap"
+      ]
+    },
+    {
+      "description": "Include source code in the sourcemaps inside the emitted JavaScript",
+      "name": [
+        "--inlineSources"
+      ]
+    },
+    {
+      "description": "Ensure that each file can be safely transpiled without relying on other imports",
+      "name": [
+        "--isolatedModules"
+      ]
+    },
+    {
+      "args": {
+        "name": "type",
+        "suggestions": [
+          {
+            "name": "react"
+          },
+          {
+            "name": "react-jsx"
+          },
+          {
+            "name": "react-jsxdev"
+          },
+          {
+            "name": "react-native"
+          },
+          {
+            "name": "preserve"
+          }
+        ]
+      },
+      "description": "Specify what JSX code is generated",
+      "name": [
+        "--jsx"
+      ]
+    },
+    {
+      "args": {
+        "name": "JSX factory function"
+      },
+      "description": "Specify the JSX factory function used when targeting React JSX emit, e.g. 'React.createElement' or 'h'",
+      "name": [
+        "--jsxFactory"
+      ]
+    },
+    {
+      "args": {
+        "name": "JSX fragment"
+      },
+      "description": "Specify the JSX Fragment reference used for fragments when targeting React JSX emit e.g. 'React.Fragment' or 'Fragment'",
+      "name": [
+        "--jsxFragmentFactory"
+      ]
+    },
+    {
+      "args": {
+        "name": "string"
+      },
+      "description": "Specify module specifier used to import the JSX factory functions when using jsx: react-jsx*",
+      "name": [
+        "--jsxImportSource"
+      ]
+    },
+    {
+      "description": "Make keyof only return strings instead of string, numbers or symbols. Legacy option",
+      "name": [
+        "--keyofStringsOnly"
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "list",
+        "template": "filepaths"
+      },
+      "description": "Specify a set of bundled library declaration files that describe the target runtime environment",
+      "name": [
+        "--lib"
+      ]
+    },
+    {
+      "description": "Print the names of emitted files after a compilation",
+      "name": [
+        "--listEmittedFiles"
+      ]
+    },
+    {
+      "description": "Print all of the files read during the compilation",
+      "name": [
+        "--listFiles"
+      ]
+    },
+    {
+      "args": {
+        "name": "string",
+        "template": "folders"
+      },
+      "description": "Specify the location where debugger should locate map files instead of generated locations",
+      "name": [
+        "--mapRoot"
+      ]
+    },
+    {
+      "args": {
+        "name": "number"
+      },
+      "description": "Specify the maximum folder depth used for checking JavaScript files from node_modules. Only applicable with allowJs",
+      "name": [
+        "--maxNodeModuleJsDepth"
+      ]
+    },
+    {
+      "args": {
+        "name": "module",
+        "suggestions": [
+          {
+            "name": "ES6"
+          },
+          {
+            "name": "ES2015"
+          },
+          {
+            "name": "ES2020"
+          },
+          {
+            "name": "None"
+          },
+          {
+            "name": "UMD"
+          },
+          {
+            "name": "AMD"
+          },
+          {
+            "name": "System"
+          },
+          {
+            "name": "ESNext"
+          },
+          {
+            "name": "CommonJS"
+          }
+        ]
+      },
+      "description": "Specify what module code is generated",
+      "name": [
+        "--module"
+      ]
+    },
+    {
+      "args": {
+        "name": "module"
+      },
+      "description": "Specify how TypeScript looks up a file from a given module specifier",
+      "name": [
+        "--moduleResolution"
+      ]
+    },
+    {
+      "args": {
+        "name": "character"
+      },
+      "description": "Set the newline character for emitting files",
+      "name": [
+        "--newLine"
+      ]
+    },
+    {
+      "description": "Disable emitting file from a compilation",
+      "name": [
+        "--noEmit"
+      ]
+    },
+    {
+      "description": "Disable generating custom helper functions like __extends in compiled output",
+      "name": [
+        "--noEmitHelpers"
+      ]
+    },
+    {
+      "description": "Disable emitting files if any type checking errors are reported",
+      "name": [
+        "--noEmitOnError"
+      ]
+    },
+    {
+      "description": "Disable truncating types in error messages",
+      "name": [
+        "--noErrorTruncation"
+      ]
+    },
+    {
+      "description": "Enable error reporting for fallthrough cases in switch statements",
+      "name": [
+        "--noFallthroughCasesInSwitch"
+      ]
+    },
+    {
+      "description": "Enable error reporting for expressions and declarations with an implied any type",
+      "name": [
+        "--noImplicitAny"
+      ]
+    },
+    {
+      "description": "Ensure overriding members in derived classes are marked with an override modifier",
+      "name": [
+        "--noImplicitOverride"
+      ]
+    },
+    {
+      "description": "Enable error reporting for codepaths that do not explicitly return in a function",
+      "name": [
+        "--noImplicitReturns"
+      ]
+    },
+    {
+      "description": "Enable error reporting when this is given the type any",
+      "name": [
+        "--noImplicitThis"
+      ]
+    },
+    {
+      "description": "Disable adding 'use strict' directives in emitted JavaScript files",
+      "name": [
+        "--noImplicitUseStrict"
+      ]
+    },
+    {
+      "description": "Disable including any library files, including the default lib.d.ts",
+      "name": [
+        "--noLib"
+      ]
+    },
+    {
+      "description": "Enforces using indexed accessors for keys declared using an indexed type",
+      "name": [
+        "--noPropertyAccessFromIndexSignature"
+      ]
+    },
+    {
+      "description": "Disallow imports, requires or <reference>s from expanding the number of files TypeScript should add to a project",
+      "name": [
+        "--noResolve"
+      ]
+    },
+    {
+      "description": "Disable strict checking of generic signatures in function types",
+      "name": [
+        "--noStrictGenericChecks"
+      ]
+    },
+    {
+      "description": "Add undefined to a type when accessed using an index",
+      "name": [
+        "--noUncheckedIndexedAccess"
+      ]
+    },
+    {
+      "description": "Enable error reporting when a local variables aren't read",
+      "name": [
+        "--noUnusedLocals"
+      ]
+    },
+    {
+      "description": "Raise an error when a function parameter isn't read",
+      "name": [
+        "--noUnusedParameters"
+      ]
+    },
+    {
+      "args": {
+        "name": "string",
+        "template": "folders"
+      },
+      "description": "Specify an output folder for all emitted files",
+      "name": [
+        "--outDir"
+      ]
+    },
+    {
+      "args": {
+        "name": "string",
+        "template": "filepaths"
+      },
+      "description": "Specify a file that bundles all outputs into one JavaScript file. If declaration is true, also designates a file that bundles all .d.ts output",
+      "name": [
+        "--outFile"
+      ]
+    },
+    {
+      "args": {
+        "name": "object"
+      },
+      "description": "Specify a set of entries that re-map imports to additional lookup locations",
+      "name": [
+        "--paths"
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "plugins"
+      },
+      "description": "Specify a list of language service plugins to include",
+      "name": [
+        "--plugins"
+      ]
+    },
+    {
+      "description": "Disable erasing const enum declarations in generated code",
+      "name": [
+        "--preserveConstEnums"
+      ]
+    },
+    {
+      "description": "Disable resolving symlinks to their realpath. This correlates to the same flag in node",
+      "name": [
+        "--preserveSymlinks"
+      ]
+    },
+    {
+      "description": "Disable wiping the console in watch mode",
+      "name": [
+        "--preserveWatchOutput"
+      ]
+    },
+    {
+      "description": "Enable color and formatting in output to make compiler errors easier to read",
+      "name": [
+        "--pretty"
+      ]
+    },
+    {
+      "args": {
+        "name": "object"
+      },
+      "description": "Specify the object invoked for createElement. This only applies when targeting react JSX emit",
+      "name": [
+        "--reactNamespace"
+      ]
+    },
+    {
+      "description": "Disable emitting comments",
+      "name": [
+        "--removeComments"
+      ]
+    },
+    {
+      "description": "Enable importing .json files",
+      "name": [
+        "--resolveJsonModule"
+      ]
+    },
+    {
+      "args": {
+        "name": "string",
+        "template": "folders"
+      },
+      "description": "Specify the root folder within your source files",
+      "name": [
+        "--rootDir"
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "string",
+        "template": "folders"
+      },
+      "description": "Allow multiple folders to be treated as one when resolving modules",
+      "name": [
+        "--rootDirs"
+      ]
+    },
+    {
+      "description": "Skip type checking .d.ts files that are included with TypeScript",
+      "name": [
+        "--skipDefaultLibCheck"
+      ]
+    },
+    {
+      "description": "Skip type checking all .d.ts files",
+      "name": [
+        "--skipLibCheck"
+      ]
+    },
+    {
+      "description": "Create source map files for emitted JavaScript files",
+      "name": [
+        "--sourceMap"
+      ]
+    },
+    {
+      "args": {
+        "name": "string",
+        "template": [
+          "filepaths",
+          "folders"
+        ]
+      },
+      "description": "Specify the root path for debuggers to find the reference source code",
+      "name": [
+        "--sourceRoot"
+      ]
+    },
+    {
+      "description": "Enable all strict type checking options",
+      "name": [
+        "--strict"
+      ]
+    },
+    {
+      "description": "Check that the arguments for bind, call, and apply methods match the original function",
+      "name": [
+        "--strictBindCallApply"
+      ]
+    },
+    {
+      "description": "When assigning functions, check to ensure parameters and the return values are subtype-compatible",
+      "name": [
+        "--strictFunctionTypes"
+      ]
+    },
+    {
+      "description": "When type checking, take into account null and undefined",
+      "name": [
+        "--strictNullChecks"
+      ]
+    },
+    {
+      "description": "Check for class properties that are declared but not set in the constructor",
+      "name": [
+        "--strictPropertyInitialization"
+      ]
+    },
+    {
+      "description": "Disable emitting declarations that have @internal in their JSDoc comments",
+      "name": [
+        "--stripInternal"
+      ]
+    },
+    {
+      "description": "Disable reporting of excess property errors during the creation of object literals",
+      "name": [
+        "--suppressExcessPropertyErrors"
+      ]
+    },
+    {
+      "description": "Suppress noImplicitAny errors when indexing objects that lack index signatures",
+      "name": [
+        "--suppressImplicitAnyIndexErrors"
+      ]
+    },
+    {
+      "args": {
+        "suggestions": [
+          {
+            "name": "ES3"
+          },
+          {
+            "name": "ES5"
+          },
+          {
+            "name": "ES6"
+          },
+          {
+            "name": "ES2015"
+          },
+          {
+            "name": "ES7"
+          },
+          {
+            "name": "ES2016"
+          },
+          {
+            "name": "ES2017"
+          },
+          {
+            "name": "ES2018"
+          },
+          {
+            "name": "ES2019"
+          },
+          {
+            "name": "ES2020"
+          },
+          {
+            "name": "ESNext"
+          }
+        ]
+      },
+      "description": "Set the JavaScript language version for emitted JavaScript and include compatible library declarations",
+      "name": [
+        "--target"
+      ]
+    },
+    {
+      "description": "Log paths used during the moduleResolution process",
+      "name": [
+        "--traceResolution"
+      ]
+    },
+    {
+      "args": {
+        "name": "string",
+        "template": "folders"
+      },
+      "description": "Specify the folder for .tsbuildinfo incremental compilation files",
+      "name": [
+        "--tsBuildInfoFile"
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "folders",
+        "template": "folders"
+      },
+      "description": "Specify multiple folders that act like ./node_modules/@types",
+      "name": [
+        "--typeRoots"
+      ]
+    },
+    {
+      "args": {
+        "isVariadic": true,
+        "name": "package names"
+      },
+      "description": "Specify type package names to be included without being referenced in a source file",
+      "name": [
+        "--types"
+      ]
+    },
+    {
+      "description": "Emit ECMAScript-standard-compliant class fields",
+      "name": [
+        "--useDefineForClassFields"
+      ]
+    },
+    {
+      "description": "Default catch clause variables as unknown instead of any",
+      "name": [
+        "--useUnknownInCatchVariables"
+      ]
+    }
+  ]
+}

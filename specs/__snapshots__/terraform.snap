@@ -1,0 +1,1097 @@
+{
+  "description": "Terraform CLI",
+  "name": "terraform",
+  "options": [
+    {
+      "description": "Show this help output, or the help for a specified subcommand",
+      "name": [
+        "-help"
+      ]
+    },
+    {
+      "args": {
+        "template": "filepaths"
+      },
+      "description": "Switch to a different working directory before executing the given subcommand",
+      "name": [
+        "-chdir"
+      ]
+    },
+    {
+      "description": "Show the current Terraform version",
+      "name": [
+        "-version"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Prepare your working directory for other commands",
+      "name": "init",
+      "options": [
+        {
+          "description": "Opt to upgrade modules and plugins as part of their respective installation steps",
+          "name": [
+            "-upgrade"
+          ]
+        },
+        {
+          "args": {
+            "name": "true or false",
+            "suggestions": [
+              {
+                "name": "true"
+              },
+              {
+                "name": "false"
+              }
+            ]
+          },
+          "description": "Lock the state file when locking is supported. Defaults to true",
+          "name": [
+            "-lock"
+          ]
+        },
+        {
+          "args": {
+            "name": "true or false",
+            "suggestions": [
+              {
+                "name": "true"
+              },
+              {
+                "name": "false"
+              }
+            ]
+          },
+          "description": "Delete the workspace even if its state is not empty. Defaults to false",
+          "name": [
+            "-force"
+          ]
+        },
+        {
+          "args": {
+            "name": "seconds"
+          },
+          "description": "Duration to retry a state lock. Default 0s",
+          "name": [
+            "-lock-timeout"
+          ]
+        },
+        {
+          "args": {
+            "name": "true or false",
+            "suggestions": [
+              {
+                "name": "true"
+              },
+              {
+                "name": "false"
+              }
+            ]
+          },
+          "description": "Ask for input for variables if not directly set",
+          "name": [
+            "-input"
+          ]
+        },
+        {
+          "description": "Disables output with coloring",
+          "name": [
+            "-no-color"
+          ]
+        },
+        {
+          "description": "Show this help output, or the help for a specified subcommand",
+          "name": [
+            "-help"
+          ]
+        },
+        {
+          "args": {
+            "template": "filepaths"
+          },
+          "description": "Switch to a different working directory before executing the given subcommand",
+          "name": [
+            "-chdir"
+          ]
+        },
+        {
+          "description": "Show the current Terraform version",
+          "name": [
+            "-version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Check whether the configuration is valid",
+      "name": "validate",
+      "options": [
+        {
+          "description": "Show this help output, or the help for a specified subcommand",
+          "name": [
+            "-help"
+          ]
+        },
+        {
+          "args": {
+            "template": "filepaths"
+          },
+          "description": "Switch to a different working directory before executing the given subcommand",
+          "name": [
+            "-chdir"
+          ]
+        },
+        {
+          "description": "Show the current Terraform version",
+          "name": [
+            "-version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Show changes required by the current configuration",
+      "name": "plan",
+      "options": [
+        {
+          "description": "If Terraform produces any warnings that are not accompanied by errors, show them in a more compact form that includes only the summary messages",
+          "name": [
+            "-compact-warnings"
+          ]
+        },
+        {
+          "description": "If set, generates a plan to destroy all the known resources",
+          "name": [
+            "-destroy"
+          ]
+        },
+        {
+          "description": "Return a detailed exit code when the command exits",
+          "name": [
+            "-detailed-exitcode"
+          ]
+        },
+        {
+          "description": "The path to save the generated execution plan",
+          "name": [
+            "-out"
+          ]
+        },
+        {
+          "args": {
+            "name": "number"
+          },
+          "description": "Limit the number of concurrent operation as Terraform walks the graph. Defaults to 10",
+          "name": [
+            "-parallelism"
+          ]
+        },
+        {
+          "args": {
+            "name": "true or false",
+            "suggestions": [
+              {
+                "name": "true"
+              },
+              {
+                "name": "false"
+              }
+            ]
+          },
+          "description": "Update the state prior to checking for differences",
+          "name": [
+            "-refresh"
+          ]
+        },
+        {
+          "args": {
+            "template": "filepaths"
+          },
+          "description": "Path to the state file. Defaults to 'terraform.tfstate'. Ignored when remote state is used",
+          "name": [
+            "-state"
+          ]
+        },
+        {
+          "description": "A Resource Address to target. This flag can be used multiple times",
+          "name": [
+            "-target"
+          ]
+        },
+        {
+          "args": {
+            "name": "foo=bar"
+          },
+          "description": "Set a variable in the Terraform configuration. This flag can be set multiple times",
+          "name": [
+            "-var"
+          ]
+        },
+        {
+          "args": {
+            "template": "filepaths"
+          },
+          "description": "Set variables in the Terraform configuration from a variable file",
+          "name": [
+            "-var-file"
+          ]
+        },
+        {
+          "args": {
+            "name": "true or false",
+            "suggestions": [
+              {
+                "name": "true"
+              },
+              {
+                "name": "false"
+              }
+            ]
+          },
+          "description": "Lock the state file when locking is supported. Defaults to true",
+          "name": [
+            "-lock"
+          ]
+        },
+        {
+          "args": {
+            "name": "true or false",
+            "suggestions": [
+              {
+                "name": "true"
+              },
+              {
+                "name": "false"
+              }
+            ]
+          },
+          "description": "Delete the workspace even if its state is not empty. Defaults to false",
+          "name": [
+            "-force"
+          ]
+        },
+        {
+          "args": {
+            "name": "seconds"
+          },
+          "description": "Duration to retry a state lock. Default 0s",
+          "name": [
+            "-lock-timeout"
+          ]
+        },
+        {
+          "args": {
+            "name": "true or false",
+            "suggestions": [
+              {
+                "name": "true"
+              },
+              {
+                "name": "false"
+              }
+            ]
+          },
+          "description": "Ask for input for variables if not directly set",
+          "name": [
+            "-input"
+          ]
+        },
+        {
+          "description": "Disables output with coloring",
+          "name": [
+            "-no-color"
+          ]
+        },
+        {
+          "description": "Show this help output, or the help for a specified subcommand",
+          "name": [
+            "-help"
+          ]
+        },
+        {
+          "args": {
+            "template": "filepaths"
+          },
+          "description": "Switch to a different working directory before executing the given subcommand",
+          "name": [
+            "-chdir"
+          ]
+        },
+        {
+          "description": "Show the current Terraform version",
+          "name": [
+            "-version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Create or update infrastructure",
+      "name": "apply",
+      "options": [
+        {
+          "description": "Show this help output, or the help for a specified subcommand",
+          "name": [
+            "-help"
+          ]
+        },
+        {
+          "args": {
+            "template": "filepaths"
+          },
+          "description": "Switch to a different working directory before executing the given subcommand",
+          "name": [
+            "-chdir"
+          ]
+        },
+        {
+          "description": "Show the current Terraform version",
+          "name": [
+            "-version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Destroy previously-created infrastructure",
+      "name": "destroy",
+      "options": [
+        {
+          "description": "Show this help output, or the help for a specified subcommand",
+          "name": [
+            "-help"
+          ]
+        },
+        {
+          "args": {
+            "template": "filepaths"
+          },
+          "description": "Switch to a different working directory before executing the given subcommand",
+          "name": [
+            "-chdir"
+          ]
+        },
+        {
+          "description": "Show the current Terraform version",
+          "name": [
+            "-version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Try Terraform expressions at an interactive command prompt",
+      "name": "console",
+      "options": [
+        {
+          "description": "Show this help output, or the help for a specified subcommand",
+          "name": [
+            "-help"
+          ]
+        },
+        {
+          "args": {
+            "template": "filepaths"
+          },
+          "description": "Switch to a different working directory before executing the given subcommand",
+          "name": [
+            "-chdir"
+          ]
+        },
+        {
+          "description": "Show the current Terraform version",
+          "name": [
+            "-version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Reformat your configuration in the standard style",
+      "name": "fmt",
+      "options": [
+        {
+          "description": "Show this help output, or the help for a specified subcommand",
+          "name": [
+            "-help"
+          ]
+        },
+        {
+          "args": {
+            "template": "filepaths"
+          },
+          "description": "Switch to a different working directory before executing the given subcommand",
+          "name": [
+            "-chdir"
+          ]
+        },
+        {
+          "description": "Show the current Terraform version",
+          "name": [
+            "-version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Release a stuck lock on the current workspace",
+      "name": "force-unlock",
+      "options": [
+        {
+          "description": "Show this help output, or the help for a specified subcommand",
+          "name": [
+            "-help"
+          ]
+        },
+        {
+          "args": {
+            "template": "filepaths"
+          },
+          "description": "Switch to a different working directory before executing the given subcommand",
+          "name": [
+            "-chdir"
+          ]
+        },
+        {
+          "description": "Show the current Terraform version",
+          "name": [
+            "-version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Install or upgrade remote Terraform modules",
+      "name": "get",
+      "options": [
+        {
+          "description": "If specified, modules that are already downloaded will be checked for updates and the updates will be downloaded if present",
+          "name": [
+            "-update"
+          ]
+        },
+        {
+          "description": "Show this help output, or the help for a specified subcommand",
+          "name": [
+            "-help"
+          ]
+        },
+        {
+          "args": {
+            "template": "filepaths"
+          },
+          "description": "Switch to a different working directory before executing the given subcommand",
+          "name": [
+            "-chdir"
+          ]
+        },
+        {
+          "description": "Show the current Terraform version",
+          "name": [
+            "-version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Generate a Graphviz graph of the steps in an operation",
+      "name": "graph",
+      "options": [
+        {
+          "description": "Show this help output, or the help for a specified subcommand",
+          "name": [
+            "-help"
+          ]
+        },
+        {
+          "args": {
+            "template": "filepaths"
+          },
+          "description": "Switch to a different working directory before executing the given subcommand",
+          "name": [
+            "-chdir"
+          ]
+        },
+        {
+          "description": "Show the current Terraform version",
+          "name": [
+            "-version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Associate existing infrastructure with a Terraform resource",
+      "name": "import",
+      "options": [
+        {
+          "description": "Show this help output, or the help for a specified subcommand",
+          "name": [
+            "-help"
+          ]
+        },
+        {
+          "args": {
+            "template": "filepaths"
+          },
+          "description": "Switch to a different working directory before executing the given subcommand",
+          "name": [
+            "-chdir"
+          ]
+        },
+        {
+          "description": "Show the current Terraform version",
+          "name": [
+            "-version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Obtain and save credentials for a remote hos",
+      "name": "login",
+      "options": [
+        {
+          "description": "Show this help output, or the help for a specified subcommand",
+          "name": [
+            "-help"
+          ]
+        },
+        {
+          "args": {
+            "template": "filepaths"
+          },
+          "description": "Switch to a different working directory before executing the given subcommand",
+          "name": [
+            "-chdir"
+          ]
+        },
+        {
+          "description": "Show the current Terraform version",
+          "name": [
+            "-version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Remove locally-stored credentials for a remote host",
+      "name": "logout",
+      "options": [
+        {
+          "description": "Show this help output, or the help for a specified subcommand",
+          "name": [
+            "-help"
+          ]
+        },
+        {
+          "args": {
+            "template": "filepaths"
+          },
+          "description": "Switch to a different working directory before executing the given subcommand",
+          "name": [
+            "-chdir"
+          ]
+        },
+        {
+          "description": "Show the current Terraform version",
+          "name": [
+            "-version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Show output values from your root module",
+      "name": "output",
+      "options": [
+        {
+          "description": "Show this help output, or the help for a specified subcommand",
+          "name": [
+            "-help"
+          ]
+        },
+        {
+          "args": {
+            "template": "filepaths"
+          },
+          "description": "Switch to a different working directory before executing the given subcommand",
+          "name": [
+            "-chdir"
+          ]
+        },
+        {
+          "description": "Show the current Terraform version",
+          "name": [
+            "-version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Show the providers required for this configuration",
+      "name": "providers",
+      "options": [
+        {
+          "description": "Show this help output, or the help for a specified subcommand",
+          "name": [
+            "-help"
+          ]
+        },
+        {
+          "args": {
+            "template": "filepaths"
+          },
+          "description": "Switch to a different working directory before executing the given subcommand",
+          "name": [
+            "-chdir"
+          ]
+        },
+        {
+          "description": "Show the current Terraform version",
+          "name": [
+            "-version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Update the state to match remote systems",
+      "name": "refresh",
+      "options": [
+        {
+          "description": "Show this help output, or the help for a specified subcommand",
+          "name": [
+            "-help"
+          ]
+        },
+        {
+          "args": {
+            "template": "filepaths"
+          },
+          "description": "Switch to a different working directory before executing the given subcommand",
+          "name": [
+            "-chdir"
+          ]
+        },
+        {
+          "description": "Show the current Terraform version",
+          "name": [
+            "-version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Show the current state or a saved plan",
+      "name": "show",
+      "options": [
+        {
+          "description": "Show this help output, or the help for a specified subcommand",
+          "name": [
+            "-help"
+          ]
+        },
+        {
+          "args": {
+            "template": "filepaths"
+          },
+          "description": "Switch to a different working directory before executing the given subcommand",
+          "name": [
+            "-chdir"
+          ]
+        },
+        {
+          "description": "Show the current Terraform version",
+          "name": [
+            "-version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Advanced state management",
+      "name": "state"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "terraform",
+              "state",
+              "list"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "name": "address"
+      },
+      "description": "Mark a resource instance as not fully functional",
+      "name": "taint",
+      "options": [
+        {
+          "description": "If specified, the command will succeed (exit code 0) even if the resource is missing. The command might still return an error for other situations, such as if there is a problem reading or writing the state",
+          "name": [
+            "-allow-missing"
+          ]
+        },
+        {
+          "args": {
+            "name": "true or false",
+            "suggestions": [
+              {
+                "name": "true"
+              },
+              {
+                "name": "false"
+              }
+            ]
+          },
+          "description": "Disables Terraform's default behavior of attempting to take a read/write lock on the state for the duration of the operation if set to false. Defaults to true",
+          "name": [
+            "-lock"
+          ]
+        },
+        {
+          "args": {
+            "name": "seconds"
+          },
+          "description": "Unless locking is disabled with -lock=false, instructs Terraform to retry acquiring a lock for a period of time before returning an error. The duration syntax is a number followed by a time unit letter, such as 3s for three seconds",
+          "name": [
+            "-lock-timeout"
+          ]
+        },
+        {
+          "args": {
+            "name": "seconds"
+          },
+          "description": "When using the enhanced remote backend with Terraform Cloud, continue even if remote and local Terraform versions differ. This may result in an unusable Terraform Cloud workspace, and should be used with extreme caution",
+          "name": [
+            "-ignore-remote-version"
+          ]
+        },
+        {
+          "description": "Show this help output, or the help for a specified subcommand",
+          "name": [
+            "-help"
+          ]
+        },
+        {
+          "args": {
+            "template": "filepaths"
+          },
+          "description": "Switch to a different working directory before executing the given subcommand",
+          "name": [
+            "-chdir"
+          ]
+        },
+        {
+          "description": "Show the current Terraform version",
+          "name": [
+            "-version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Remove the 'tainted' state from a resource instance",
+      "name": "untaint",
+      "options": [
+        {
+          "description": "Show this help output, or the help for a specified subcommand",
+          "name": [
+            "-help"
+          ]
+        },
+        {
+          "args": {
+            "template": "filepaths"
+          },
+          "description": "Switch to a different working directory before executing the given subcommand",
+          "name": [
+            "-chdir"
+          ]
+        },
+        {
+          "description": "Show the current Terraform version",
+          "name": [
+            "-version"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Workspace management",
+      "name": "workspace",
+      "options": [
+        {
+          "description": "Show this help output, or the help for a specified subcommand",
+          "name": [
+            "-help"
+          ]
+        },
+        {
+          "args": {
+            "template": "filepaths"
+          },
+          "description": "Switch to a different working directory before executing the given subcommand",
+          "name": [
+            "-chdir"
+          ]
+        },
+        {
+          "description": "Show the current Terraform version",
+          "name": [
+            "-version"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": {
+            "name": "workspace name"
+          },
+          "description": "Create a new workspace",
+          "name": "new",
+          "options": [
+            {
+              "args": {
+                "name": "true or false",
+                "suggestions": [
+                  {
+                    "name": "true"
+                  },
+                  {
+                    "name": "false"
+                  }
+                ]
+              },
+              "description": "Lock the state file when locking is supported. Defaults to true",
+              "name": [
+                "-lock"
+              ]
+            },
+            {
+              "args": {
+                "name": "seconds"
+              },
+              "description": "Duration to retry a stae lock. Default 0s",
+              "name": [
+                "-lock-timeout"
+              ]
+            },
+            {
+              "args": {
+                "name": "path",
+                "template": "filepaths"
+              },
+              "description": "Path to an existing state file to initialize the state of this environment",
+              "name": [
+                "-state"
+              ]
+            },
+            {
+              "description": "Show this help output, or the help for a specified subcommand",
+              "name": [
+                "-help"
+              ]
+            },
+            {
+              "args": {
+                "template": "filepaths"
+              },
+              "description": "Switch to a different working directory before executing the given subcommand",
+              "name": [
+                "-chdir"
+              ]
+            },
+            {
+              "description": "Show the current Terraform version",
+              "name": [
+                "-version"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Display the current workspace",
+          "name": "show",
+          "options": [
+            {
+              "description": "Show this help output, or the help for a specified subcommand",
+              "name": [
+                "-help"
+              ]
+            },
+            {
+              "args": {
+                "template": "filepaths"
+              },
+              "description": "Switch to a different working directory before executing the given subcommand",
+              "name": [
+                "-chdir"
+              ]
+            },
+            {
+              "description": "Show the current Terraform version",
+              "name": [
+                "-version"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List the workspace",
+          "name": "list",
+          "options": [
+            {
+              "description": "Show this help output, or the help for a specified subcommand",
+              "name": [
+                "-help"
+              ]
+            },
+            {
+              "args": {
+                "template": "filepaths"
+              },
+              "description": "Switch to a different working directory before executing the given subcommand",
+              "name": [
+                "-chdir"
+              ]
+            },
+            {
+              "description": "Show the current Terraform version",
+              "name": [
+                "-version"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "terraform",
+                  "workspace",
+                  "list"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty",
+                  "trim"
+                ]
+              }
+            ],
+            "name": "workspace name"
+          },
+          "description": "Delete the specified workspace",
+          "name": "delete",
+          "options": [
+            {
+              "args": {
+                "name": "true or false",
+                "suggestions": [
+                  {
+                    "name": "true"
+                  },
+                  {
+                    "name": "false"
+                  }
+                ]
+              },
+              "description": "Lock the state file when locking is supported. Defaults to true",
+              "name": [
+                "-lock"
+              ]
+            },
+            {
+              "args": {
+                "name": "true or false",
+                "suggestions": [
+                  {
+                    "name": "true"
+                  },
+                  {
+                    "name": "false"
+                  }
+                ]
+              },
+              "description": "Delete the workspace even if its state is not empty. Defaults to false",
+              "name": [
+                "-force"
+              ]
+            },
+            {
+              "args": {
+                "name": "seconds"
+              },
+              "description": "Duration to retry a state lock. Default 0s",
+              "name": [
+                "-lock-timeout"
+              ]
+            },
+            {
+              "args": {
+                "name": "true or false",
+                "suggestions": [
+                  {
+                    "name": "true"
+                  },
+                  {
+                    "name": "false"
+                  }
+                ]
+              },
+              "description": "Ask for input for variables if not directly set",
+              "name": [
+                "-input"
+              ]
+            },
+            {
+              "description": "Disables output with coloring",
+              "name": [
+                "-no-color"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "terraform",
+                  "workspace",
+                  "list"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty",
+                  "trim"
+                ]
+              }
+            ]
+          },
+          "description": "Change the current working workspace",
+          "name": "select"
+        }
+      ]
+    },
+    {
+      "description": "Install bash/zsh tab completion",
+      "name": "-install-autocomplete"
+    },
+    {
+      "description": "Uninstall bash/zsh tab completion",
+      "name": "-uninstall-autocomplete"
+    }
+  ]
+}

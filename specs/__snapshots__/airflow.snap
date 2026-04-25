@@ -1,0 +1,4884 @@
+{
+  "description": "Subcommand",
+  "name": "airflow",
+  "options": [
+    {
+      "description": "Show this help message and exit",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Celery components",
+      "name": "celery",
+      "options": [
+        {
+          "description": "Show this help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Start a Celery Flower",
+          "name": "flower",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Securing Flower with Basic Authentication. Accepts user:password pairs separated by a comma. Example: flower_basic_auth = user1:password1,user2:password2",
+                "generators": [
+                  {
+                    "js_source": "(...l)=>I(this,void 0,void 0,function*(){let[a]=l,p=a[a.length-1],f=L(p,e,t),_=f===-1||p.slice(f,f+e.length)!==e,u=_?i:o,g=U(_,n),m=yield W(u,_?s?e:\"\":r?t:\"\",g,l);if(_){if(d)return m;let O=p.split(t).map(h=>h.slice(0,h.indexOf(e)));return H(O,m)}if(c)return m;let v=p.split(t).map(O=>O.slice(O.indexOf(e)+e.length));return H(v,m)})",
+                    "requires_js": true
+                  }
+                ],
+                "name": "basic_auth"
+              },
+              "description": "Securing Flower with Basic Authentication. Accepts user:password pairs separated by a comma. Example: flower_basic_auth = user1:password1,user2:password2",
+              "name": [
+                "-A",
+                "--basic-auth"
+              ]
+            },
+            {
+              "args": {
+                "description": "Broker API",
+                "name": "broker_api"
+              },
+              "description": "Broker API",
+              "name": [
+                "-a",
+                "--broker-api"
+              ]
+            },
+            {
+              "description": "Daemonize instead of running in the foreground",
+              "name": [
+                "-D",
+                "--daemon"
+              ]
+            },
+            {
+              "args": {
+                "description": "Configuration file for flower",
+                "name": "flower_conf"
+              },
+              "description": "Configuration file for flower",
+              "name": [
+                "-c",
+                "--flower-conf"
+              ]
+            },
+            {
+              "args": {
+                "description": "Set the hostname on which to run the server",
+                "name": "hostname"
+              },
+              "description": "Set the hostname on which to run the server",
+              "name": [
+                "-H",
+                "--hostname"
+              ]
+            },
+            {
+              "args": {
+                "description": "Location of the log file",
+                "name": "log_file"
+              },
+              "description": "Location of the log file",
+              "name": [
+                "-l",
+                "--log-file"
+              ]
+            },
+            {
+              "args": {
+                "description": "PID file location",
+                "isOptional": true,
+                "name": "pid"
+              },
+              "description": "PID file location",
+              "name": [
+                "--pid"
+              ]
+            },
+            {
+              "args": {
+                "description": "The port on which to run the server",
+                "name": "port"
+              },
+              "description": "The port on which to run the server",
+              "name": [
+                "-p",
+                "--port"
+              ]
+            },
+            {
+              "args": {
+                "description": "Redirect stderr to this file",
+                "name": "stderr"
+              },
+              "description": "Redirect stderr to this file",
+              "name": [
+                "--stderr"
+              ]
+            },
+            {
+              "args": {
+                "description": "Redirect stdout to this file",
+                "name": "stdout"
+              },
+              "description": "Redirect stdout to this file",
+              "name": [
+                "--stdout"
+              ]
+            },
+            {
+              "args": {
+                "description": "URL prefix for Flower",
+                "name": "url_prefix"
+              },
+              "description": "URL prefix for Flower",
+              "name": [
+                "-u",
+                "--url-prefix"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Stop the Celery worker gracefully",
+          "name": "stop",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "PID file location",
+                "isOptional": true,
+                "name": "pid"
+              },
+              "description": "PID file location",
+              "name": [
+                "--pid"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Start a Celery worker node",
+          "name": "worker",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Minimum and Maximum number of worker to autoscale",
+                "name": "autoscale"
+              },
+              "description": "Minimum and Maximum number of worker to autoscale",
+              "name": [
+                "-a",
+                "--autoscale"
+              ]
+            },
+            {
+              "args": {
+                "description": "Set the hostname of celery worker if you have multiple workers on a single machine",
+                "name": "celery_hostname"
+              },
+              "description": "Set the hostname of celery worker if you have multiple workers on a single machine",
+              "name": [
+                "-H",
+                "--celery-hostname"
+              ]
+            },
+            {
+              "args": {
+                "description": "The number of worker processes",
+                "name": "concurrency"
+              },
+              "description": "The number of worker processes",
+              "name": [
+                "-c",
+                "--concurrency"
+              ]
+            },
+            {
+              "description": "Daemonize instead of running in the foreground",
+              "name": [
+                "-D",
+                "--daemon"
+              ]
+            },
+            {
+              "args": {
+                "description": "Location of the log file",
+                "name": "log_file"
+              },
+              "description": "Location of the log file",
+              "name": [
+                "-l",
+                "--log-file"
+              ]
+            },
+            {
+              "args": {
+                "description": "PID file location",
+                "isOptional": true,
+                "name": "pid"
+              },
+              "description": "PID file location",
+              "name": [
+                "--pid"
+              ]
+            },
+            {
+              "args": {
+                "description": "Comma delimited list of queues to serve",
+                "name": "queues"
+              },
+              "description": "Comma delimited list of queues to serve",
+              "name": [
+                "-q",
+                "--queues"
+              ]
+            },
+            {
+              "description": "Don't start the serve logs process along with the workers",
+              "name": [
+                "-s",
+                "--skip-serve-logs"
+              ]
+            },
+            {
+              "args": {
+                "description": "Redirect stderr to this file",
+                "name": "stderr"
+              },
+              "description": "Redirect stderr to this file",
+              "name": [
+                "--stderr"
+              ]
+            },
+            {
+              "args": {
+                "description": "Redirect stdout to this file",
+                "name": "stdout"
+              },
+              "description": "Redirect stdout to this file",
+              "name": [
+                "--stdout"
+              ]
+            },
+            {
+              "args": {
+                "description": "Set the umask of celery worker in daemon mode",
+                "name": "umask"
+              },
+              "description": "Set the umask of celery worker in daemon mode",
+              "name": [
+                "-u",
+                "--umask"
+              ]
+            },
+            {
+              "description": "Don't subscribe to other workers events",
+              "name": [
+                "--without-gossip"
+              ]
+            },
+            {
+              "description": "Don't synchronize with other workers at start-up",
+              "name": [
+                "--without-mingle"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Display cheat sheet",
+      "name": "cheat-sheet",
+      "options": [
+        {
+          "description": "Show this help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Make logging output more verbose",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "View configuration",
+      "name": "config",
+      "options": [
+        {
+          "description": "Show this help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": [
+            {
+              "description": "The section name",
+              "name": "section"
+            },
+            {
+              "description": "The option name",
+              "name": "option"
+            }
+          ],
+          "description": "Print the value of the configuration",
+          "name": "get-value",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List options for the configuration",
+          "name": "list",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Do emit colored output (default: auto)",
+                "name": "color",
+                "suggestions": [
+                  {
+                    "name": "off"
+                  },
+                  {
+                    "name": "auto"
+                  },
+                  {
+                    "name": "on"
+                  }
+                ]
+              },
+              "description": "Do emit colored output (default: auto)",
+              "name": [
+                "--color"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage connections",
+      "name": "connections",
+      "options": [
+        {
+          "description": "Show this help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": {
+            "description": "Connection id, required to get/add/delete a connection",
+            "name": "conn_id"
+          },
+          "description": "Add a connection",
+          "name": "add",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Connection description, optional when adding a connection",
+                "name": "conn_description"
+              },
+              "description": "Connection description, optional when adding a connection",
+              "name": [
+                "--conn-description"
+              ]
+            },
+            {
+              "args": {
+                "description": "Connection `Extra` field, optional when adding a connection",
+                "name": "conn_extra"
+              },
+              "description": "Connection `Extra` field, optional when adding a connection",
+              "name": [
+                "--conn-extra"
+              ]
+            },
+            {
+              "args": {
+                "description": "Connection host, optional when adding a connection",
+                "name": "conn_host"
+              },
+              "description": "Connection host, optional when adding a connection",
+              "name": [
+                "--conn-host"
+              ]
+            },
+            {
+              "args": {
+                "description": "Connection JSON, required to add a connection using JSON representation",
+                "name": "conn_json"
+              },
+              "description": "Connection JSON, required to add a connection using JSON representation",
+              "name": [
+                "--conn-json"
+              ]
+            },
+            {
+              "args": {
+                "description": "Connection login, optional when adding a connection",
+                "name": "conn_login"
+              },
+              "description": "Connection login, optional when adding a connection",
+              "name": [
+                "--conn-login"
+              ]
+            },
+            {
+              "args": {
+                "description": "Connection password, optional when adding a connection",
+                "name": "conn_password"
+              },
+              "description": "Connection password, optional when adding a connection",
+              "name": [
+                "--conn-password"
+              ]
+            },
+            {
+              "args": {
+                "description": "Connection port, optional when adding a connection",
+                "name": "conn_port"
+              },
+              "description": "Connection port, optional when adding a connection",
+              "name": [
+                "--conn-port"
+              ]
+            },
+            {
+              "args": {
+                "description": "Connection schema, optional when adding a connection",
+                "name": "conn_schema"
+              },
+              "description": "Connection schema, optional when adding a connection",
+              "name": [
+                "--conn-schema"
+              ]
+            },
+            {
+              "args": {
+                "description": "Connection type, required to add a connection without conn_uri",
+                "name": "conn_type"
+              },
+              "description": "Connection type, required to add a connection without conn_uri",
+              "name": [
+                "--conn-type"
+              ]
+            },
+            {
+              "args": {
+                "description": "Connection URI, required to add a connection without conn_type",
+                "name": "conn_uri"
+              },
+              "description": "Connection URI, required to add a connection without conn_type",
+              "name": [
+                "--conn-uri"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Connection id, required to get/add/delete a connection",
+            "name": "conn_id"
+          },
+          "description": "Delete a connection",
+          "name": "delete",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Do emit colored output (default: auto)",
+                "name": "color",
+                "suggestions": [
+                  {
+                    "name": "off"
+                  },
+                  {
+                    "name": "auto"
+                  },
+                  {
+                    "name": "on"
+                  }
+                ]
+              },
+              "description": "Do emit colored output (default: auto)",
+              "name": [
+                "--color"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Output file path for exporting the connections",
+            "name": "file"
+          },
+          "description": "Export all connections",
+          "name": "export",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "File format for the export",
+                "name": "file_format",
+                "suggestions": [
+                  {
+                    "name": "json"
+                  },
+                  {
+                    "name": "yaml"
+                  },
+                  {
+                    "name": "env"
+                  }
+                ]
+              },
+              "description": "File format for the export",
+              "name": [
+                "--file-format"
+              ]
+            },
+            {
+              "args": {
+                "description": "Deprecated -- use `--file-format` instead. File format to use for the export",
+                "name": "format",
+                "suggestions": [
+                  {
+                    "name": "json"
+                  },
+                  {
+                    "name": "yaml"
+                  },
+                  {
+                    "name": "env"
+                  }
+                ]
+              },
+              "description": "Deprecated -- use `--file-format` instead. File format to use for the export",
+              "name": [
+                "--format"
+              ]
+            },
+            {
+              "args": {
+                "description": "When exporting as `.env` format, defines how connections should be serialized. Default is `uri`",
+                "name": "serialization_format",
+                "suggestions": [
+                  {
+                    "name": "json"
+                  },
+                  {
+                    "name": "uri"
+                  }
+                ]
+              },
+              "description": "When exporting as `.env` format, defines how connections should be serialized. Default is `uri`",
+              "name": [
+                "--serialization-format"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Connection id, required to get/add/delete a connection",
+            "name": "conn_id"
+          },
+          "description": "Get a connection",
+          "name": "get",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Do emit colored output (default: auto)",
+                "name": "color",
+                "suggestions": [
+                  {
+                    "name": "off"
+                  },
+                  {
+                    "name": "auto"
+                  },
+                  {
+                    "name": "on"
+                  }
+                ]
+              },
+              "description": "Do emit colored output (default: auto)",
+              "name": [
+                "--color"
+              ]
+            },
+            {
+              "args": {
+                "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+                "name": "(table, json, yaml, plain)",
+                "suggestions": [
+                  {
+                    "name": "table"
+                  },
+                  {
+                    "name": "json"
+                  },
+                  {
+                    "name": "yaml"
+                  },
+                  {
+                    "name": "plain"
+                  }
+                ]
+              },
+              "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Import connections from a file",
+            "name": "file"
+          },
+          "description": "Import connections from a file",
+          "name": "import",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List connections",
+          "name": "list",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "If passed, only items with the specified connection ID will be displayed",
+                "name": "conn_id"
+              },
+              "description": "If passed, only items with the specified connection ID will be displayed",
+              "name": [
+                "--conn-id"
+              ]
+            },
+            {
+              "args": {
+                "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+                "name": "(table, json, yaml, plain)",
+                "suggestions": [
+                  {
+                    "name": "table"
+                  },
+                  {
+                    "name": "json"
+                  },
+                  {
+                    "name": "yaml"
+                  },
+                  {
+                    "name": "plain"
+                  }
+                ]
+              },
+              "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Start a standalone Dag Processor instance",
+      "name": "dag-processor",
+      "options": [
+        {
+          "description": "Show this help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Daemonize instead of running in the foreground",
+          "name": [
+            "-D",
+            "--daemon"
+          ]
+        },
+        {
+          "description": "Attempt to pickle the DAG object to send over to the workers, instead of letting workers run their version of the code",
+          "name": [
+            "-p",
+            "--do-pickle"
+          ]
+        },
+        {
+          "args": {
+            "description": "Location of the log file",
+            "name": "log_file"
+          },
+          "description": "Location of the log file",
+          "name": [
+            "-l",
+            "--log-file"
+          ]
+        },
+        {
+          "args": {
+            "description": "Set the number of runs to execute before exiting",
+            "name": "num_runs"
+          },
+          "description": "Set the number of runs to execute before exiting",
+          "name": [
+            "-n",
+            "--num-runs"
+          ]
+        },
+        {
+          "args": {
+            "description": "PID file location",
+            "isOptional": true,
+            "name": "pid"
+          },
+          "description": "PID file location",
+          "name": [
+            "--pid"
+          ]
+        },
+        {
+          "args": {
+            "description": "Redirect stderr to this file",
+            "name": "stderr"
+          },
+          "description": "Redirect stderr to this file",
+          "name": [
+            "--stderr"
+          ]
+        },
+        {
+          "args": {
+            "description": "Redirect stdout to this file",
+            "name": "stdout"
+          },
+          "description": "Redirect stdout to this file",
+          "name": [
+            "--stdout"
+          ]
+        },
+        {
+          "args": {
+            "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+            "name": "subdir"
+          },
+          "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+          "name": [
+            "-S",
+            "--subdir"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage DAGs",
+      "name": "dags",
+      "options": [
+        {
+          "description": "Show this help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": {
+            "description": "The id of the dag",
+            "name": "dag_id"
+          },
+          "description": "Run subsections of a DAG for a specified date range",
+          "name": "backfill",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "JSON string that gets pickled into the DagRun's conf attribute",
+                "name": "conf"
+              },
+              "description": "JSON string that gets pickled into the DagRun's conf attribute",
+              "name": [
+                "-c",
+                "--conf"
+              ]
+            },
+            {
+              "description": "If set, the backfill will keep going even if some of the tasks failed",
+              "name": [
+                "--continue-on-failures"
+              ]
+            },
+            {
+              "args": {
+                "description": "Amount of time in seconds to wait when the limit on maximum active dag runs (max_active_runs) has been reached before trying to execute a dag run again",
+                "name": "delay_on_limit"
+              },
+              "description": "Amount of time in seconds to wait when the limit on maximum active dag runs (max_active_runs) has been reached before trying to execute a dag run again",
+              "name": [
+                "--delay-on-limit"
+              ]
+            },
+            {
+              "description": "Do not attempt to pickle the DAG object to send over to the workers, just tell the workers to run their version of the code",
+              "name": [
+                "-x",
+                "--donot-pickle"
+              ]
+            },
+            {
+              "description": "Perform a dry run for each task. Only renders Template Fields for each task, nothing else",
+              "name": [
+                "-n",
+                "--dry-run"
+              ]
+            },
+            {
+              "args": {
+                "description": "Override end_date YYYY-MM-DD",
+                "name": "end_date"
+              },
+              "description": "Override end_date YYYY-MM-DD",
+              "name": [
+                "-e",
+                "--end-date"
+              ]
+            },
+            {
+              "description": "Skip upstream tasks, run only the tasks matching the regexp. Only works in conjunction with task_regex",
+              "name": [
+                "-i",
+                "--ignore-dependencies"
+              ]
+            },
+            {
+              "description": "Ignores depends_on_past dependencies for the first set of tasks only (subsequent executions in the backfill DO respect depends_on_past)",
+              "name": [
+                "-I",
+                "--ignore-first-depends-on-past"
+              ]
+            },
+            {
+              "description": "Run the task using the LocalExecutor",
+              "name": [
+                "-l",
+                "--local"
+              ]
+            },
+            {
+              "description": "Mark jobs as succeeded without running them",
+              "name": [
+                "-m",
+                "--mark-success"
+              ]
+            },
+            {
+              "args": {
+                "description": "Resource pool to use",
+                "name": "pool"
+              },
+              "description": "Resource pool to use",
+              "name": [
+                "--pool"
+              ]
+            },
+            {
+              "description": "If set, the backfill will auto-rerun all the failed tasks for the backfill date range instead of throwing exceptions",
+              "name": [
+                "--rerun-failed-tasks"
+              ]
+            },
+            {
+              "description": "If set, the backfill will delete existing backfill-related DAG runs and start anew with fresh, running DAG runs",
+              "name": [
+                "--reset-dagruns"
+              ]
+            },
+            {
+              "description": "If set, the backfill will run tasks from the most recent day first.  if there are tasks that depend_on_past this option will throw an exception",
+              "name": [
+                "-B",
+                "--run-backwards"
+              ]
+            },
+            {
+              "args": {
+                "description": "Override start_date YYYY-MM-DD",
+                "name": "start_date"
+              },
+              "description": "Override start_date YYYY-MM-DD",
+              "name": [
+                "-s",
+                "--start-date"
+              ]
+            },
+            {
+              "args": {
+                "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+                "name": "subdir"
+              },
+              "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+              "name": [
+                "-S",
+                "--subdir"
+              ]
+            },
+            {
+              "args": {
+                "description": "The regex to filter specific task_ids to backfill (optional)",
+                "name": "task_regex"
+              },
+              "description": "The regex to filter specific task_ids to backfill (optional)",
+              "name": [
+                "-t",
+                "--task-regex"
+              ]
+            },
+            {
+              "description": "If set, dag_id will be treated as regex instead of an exact string",
+              "name": [
+                "--treat-dag-as-regex"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Do not prompt to confirm. Use with care!",
+              "name": [
+                "-y",
+                "--yes"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "The id of the dag",
+            "name": "dag_id"
+          },
+          "description": "Delete all DB records related to the specified DAG",
+          "name": "delete",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "description": "Do not prompt to confirm. Use with care!",
+              "name": [
+                "-y",
+                "--yes"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List all the DAGs",
+          "name": "list",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+                "name": "(table, json, yaml, plain)",
+                "suggestions": [
+                  {
+                    "name": "table"
+                  },
+                  {
+                    "name": "json"
+                  },
+                  {
+                    "name": "yaml"
+                  },
+                  {
+                    "name": "plain"
+                  }
+                ]
+              },
+              "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            },
+            {
+              "args": {
+                "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+                "name": "subdir"
+              },
+              "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+              "name": [
+                "-S",
+                "--subdir"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List all the DAGs that have import errors",
+          "name": "list-import-errors",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+                "name": "(table, json, yaml, plain)",
+                "suggestions": [
+                  {
+                    "name": "table"
+                  },
+                  {
+                    "name": "json"
+                  },
+                  {
+                    "name": "yaml"
+                  },
+                  {
+                    "name": "plain"
+                  }
+                ]
+              },
+              "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            },
+            {
+              "args": {
+                "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+                "name": "subdir"
+              },
+              "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+              "name": [
+                "-S",
+                "--subdir"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List the jobs",
+          "name": "list-jobs",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "The id of the dag",
+                "name": "dag_id"
+              },
+              "description": "The id of the dag",
+              "name": [
+                "-d",
+                "--dag-id"
+              ]
+            },
+            {
+              "args": {
+                "description": "Return a limited number of records",
+                "name": "limit"
+              },
+              "description": "Return a limited number of records",
+              "name": [
+                "--limit"
+              ]
+            },
+            {
+              "args": {
+                "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+                "name": "(table, json, yaml, plain)",
+                "suggestions": [
+                  {
+                    "name": "table"
+                  },
+                  {
+                    "name": "json"
+                  },
+                  {
+                    "name": "yaml"
+                  },
+                  {
+                    "name": "plain"
+                  }
+                ]
+              },
+              "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            },
+            {
+              "args": {
+                "description": "Only list the dag runs corresponding to the state",
+                "name": "state"
+              },
+              "description": "Only list the dag runs corresponding to the state",
+              "name": [
+                "--state"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List DAG runs given a DAG id",
+          "name": "list-runs",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "The id of the dag",
+                "name": "dag_id"
+              },
+              "description": "The id of the dag",
+              "name": [
+                "-d",
+                "--dag-id"
+              ]
+            },
+            {
+              "args": {
+                "description": "Override end_date YYYY-MM-DD",
+                "name": "end_date"
+              },
+              "description": "Override end_date YYYY-MM-DD",
+              "name": [
+                "-e",
+                "--end-date"
+              ]
+            },
+            {
+              "description": "Filter all the backfill dagruns given the dag id",
+              "name": [
+                "--no-backfill"
+              ]
+            },
+            {
+              "args": {
+                "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+                "name": "(table, json, yaml, plain)",
+                "suggestions": [
+                  {
+                    "name": "table"
+                  },
+                  {
+                    "name": "json"
+                  },
+                  {
+                    "name": "yaml"
+                  },
+                  {
+                    "name": "plain"
+                  }
+                ]
+              },
+              "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            },
+            {
+              "args": {
+                "description": "Override start_date YYYY-MM-DD",
+                "name": "start_date"
+              },
+              "description": "Override start_date YYYY-MM-DD",
+              "name": [
+                "-s",
+                "--start-date"
+              ]
+            },
+            {
+              "args": {
+                "description": "Only list the dag runs corresponding to the state",
+                "name": "state"
+              },
+              "description": "Only list the dag runs corresponding to the state",
+              "name": [
+                "--state"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "The id of the dag",
+            "name": "dag_id"
+          },
+          "description": "Get the next execution datetimes of a DAG",
+          "name": "next-execution",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "The number of next execution datetimes to show",
+                "name": "num_executions"
+              },
+              "description": "The number of next execution datetimes to show",
+              "name": [
+                "-n",
+                "--num-executions"
+              ]
+            },
+            {
+              "args": {
+                "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+                "name": "subdir"
+              },
+              "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+              "name": [
+                "-S",
+                "--subdir"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "The id of the dag",
+            "name": "dag_id"
+          },
+          "description": "Pause a DAG",
+          "name": "pause",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+                "name": "subdir"
+              },
+              "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+              "name": [
+                "-S",
+                "--subdir"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Show DagBag loading report",
+          "name": "report",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+                "name": "(table, json, yaml, plain)",
+                "suggestions": [
+                  {
+                    "name": "table"
+                  },
+                  {
+                    "name": "json"
+                  },
+                  {
+                    "name": "yaml"
+                  },
+                  {
+                    "name": "plain"
+                  }
+                ]
+              },
+              "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            },
+            {
+              "args": {
+                "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+                "name": "subdir"
+              },
+              "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+              "name": [
+                "-S",
+                "--subdir"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Reserialize all DAGs by parsing the DagBag files",
+          "name": "reserialize",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "description": "If passed, serialized DAGs will be cleared but not reserialized",
+              "name": [
+                "--clear-only"
+              ]
+            },
+            {
+              "args": {
+                "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+                "name": "subdir"
+              },
+              "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+              "name": [
+                "-S",
+                "--subdir"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "The id of the dag",
+            "name": "dag_id"
+          },
+          "description": "Displays DAG's tasks with their dependencies",
+          "name": "show",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "description": "Displays graph using the imgcat tool",
+              "name": [
+                "--imgcat"
+              ]
+            },
+            {
+              "args": {
+                "description": "Saves the result to the indicated file",
+                "name": "save"
+              },
+              "description": "Saves the result to the indicated file",
+              "name": [
+                "-s",
+                "--save"
+              ]
+            },
+            {
+              "args": {
+                "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+                "name": "subdir"
+              },
+              "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+              "name": [
+                "-S",
+                "--subdir"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Displays DAGs with their dependencies",
+          "name": "show-dependencies",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "description": "Displays graph using the imgcat tool",
+              "name": [
+                "--imgcat"
+              ]
+            },
+            {
+              "args": {
+                "description": "Saves the result to the indicated file",
+                "name": "save"
+              },
+              "description": "Saves the result to the indicated file",
+              "name": [
+                "-s",
+                "--save"
+              ]
+            },
+            {
+              "args": {
+                "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+                "name": "subdir"
+              },
+              "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+              "name": [
+                "-S",
+                "--subdir"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "description": "The id of the dag",
+              "name": "dag_id"
+            },
+            {
+              "description": "The execution date of the DAG",
+              "name": "execution_date"
+            }
+          ],
+          "description": "Get the status of a dag run",
+          "name": "state",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+                "name": "subdir"
+              },
+              "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+              "name": [
+                "-S",
+                "--subdir"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "description": "The id of the dag",
+              "name": "dag_id"
+            },
+            {
+              "description": "The execution date of the DAG (optional)",
+              "isOptional": true,
+              "name": "execution_date"
+            }
+          ],
+          "description": "Execute one single DagRun",
+          "name": "test",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "JSON string that gets pickled into the DagRun's conf attribute",
+                "name": "conf"
+              },
+              "description": "JSON string that gets pickled into the DagRun's conf attribute",
+              "name": [
+                "-c",
+                "--conf"
+              ]
+            },
+            {
+              "description": "After completing the dag run, prints a diagram on the screen for the current DAG Run using the imgcat tool.\n",
+              "name": [
+                "--imgcat-dagrun"
+              ]
+            },
+            {
+              "args": {
+                "description": "After completing the backfill, saves the diagram for current DAG Run to the indicated file.\n\n",
+                "name": "save_dagrun"
+              },
+              "description": "After completing the backfill, saves the diagram for current DAG Run to the indicated file.\n\n",
+              "name": [
+                "--save-dagrun"
+              ]
+            },
+            {
+              "description": "After completing the backfill, shows the diagram for current DAG Run.\n\nThe diagram is in DOT language\n",
+              "name": [
+                "--show-dagrun"
+              ]
+            },
+            {
+              "args": {
+                "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+                "name": "subdir"
+              },
+              "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+              "name": [
+                "-S",
+                "--subdir"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "The id of the dag",
+            "name": "dag_id"
+          },
+          "description": "Trigger a DAG run",
+          "name": "trigger",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "JSON string that gets pickled into the DagRun's conf attribute",
+                "name": "conf"
+              },
+              "description": "JSON string that gets pickled into the DagRun's conf attribute",
+              "name": [
+                "-c",
+                "--conf"
+              ]
+            },
+            {
+              "args": {
+                "description": "The execution date of the DAG",
+                "name": "exec_date"
+              },
+              "description": "The execution date of the DAG",
+              "name": [
+                "-e",
+                "--exec-date"
+              ]
+            },
+            {
+              "args": {
+                "description": "Helps to identify this run",
+                "name": "run_id"
+              },
+              "description": "Helps to identify this run",
+              "name": [
+                "-r",
+                "--run-id"
+              ]
+            },
+            {
+              "args": {
+                "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+                "name": "subdir"
+              },
+              "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+              "name": [
+                "-S",
+                "--subdir"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "The id of the dag",
+            "name": "dag_id"
+          },
+          "description": "Resume a paused DAG",
+          "name": "unpause",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+                "name": "subdir"
+              },
+              "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+              "name": [
+                "-S",
+                "--subdir"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Database operations",
+      "name": "db",
+      "options": [
+        {
+          "description": "Show this help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Check if the database can be reached",
+          "name": "check",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Check if migration have finished",
+          "name": "check-migrations",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Timeout to wait for db to migrate",
+                "name": "migration_wait_timeout"
+              },
+              "description": "Timeout to wait for db to migrate",
+              "name": [
+                "-t",
+                "--migration-wait-timeout"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Purge old records in metastore tables",
+          "name": "clean",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "The date or timestamp before which data should be purged.\nIf no timezone info is supplied then dates are assumed to be in airflow default timezone.\nExample: '2022-01-01 00:00:00+01:00'",
+                "name": "clean_before_timestamp"
+              },
+              "description": "The date or timestamp before which data should be purged.\nIf no timezone info is supplied then dates are assumed to be in airflow default timezone.\nExample: '2022-01-01 00:00:00+01:00'",
+              "name": [
+                "--clean-before-timestamp"
+              ]
+            },
+            {
+              "description": "Perform a dry run",
+              "name": [
+                "--dry-run"
+              ]
+            },
+            {
+              "description": "Don't preserve purged records in an archive table",
+              "name": [
+                "--skip-archive"
+              ]
+            },
+            {
+              "args": {
+                "description": "Table names to perform maintenance on (use comma-separated list).\nOptions: ['callback_request', 'celery_taskmeta', 'celery_tasksetmeta', 'dag', 'dag_run', 'dataset_event', 'import_error', 'job', 'log', 'rendered_task_instance_fields', 'sla_miss', 'task_fail', 'task_instance', 'task_reschedule', 'xcom']",
+                "name": "tables"
+              },
+              "description": "Table names to perform maintenance on (use comma-separated list).\nOptions: ['callback_request', 'celery_taskmeta', 'celery_tasksetmeta', 'dag', 'dag_run', 'dataset_event', 'import_error', 'job', 'log', 'rendered_task_instance_fields', 'sla_miss', 'task_fail', 'task_instance', 'task_reschedule', 'xcom']",
+              "name": [
+                "-t",
+                "--tables"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            },
+            {
+              "description": "Do not prompt to confirm. Use with care!",
+              "name": [
+                "-y",
+                "--yes"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Downgrade the schema of the metadata database",
+          "name": "downgrade",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "(Optional) If generating sql, may supply a *from* Alembic revision",
+                "name": "from_revision"
+              },
+              "description": "(Optional) If generating sql, may supply a *from* Alembic revision",
+              "name": [
+                "--from-revision"
+              ]
+            },
+            {
+              "args": {
+                "description": "(Optional) If generating sql, may supply a *from* version",
+                "name": "from_version"
+              },
+              "description": "(Optional) If generating sql, may supply a *from* version",
+              "name": [
+                "--from-version"
+              ]
+            },
+            {
+              "description": "Don't actually run migrations; just print out sql scripts for offline migration. Required if using either `--from-version` or `--from-version`",
+              "name": [
+                "-s",
+                "--show-sql-only"
+              ]
+            },
+            {
+              "args": {
+                "description": "The Alembic revision to downgrade to. Note: must provide either `--to-revision` or `--to-version`",
+                "name": "to_revision"
+              },
+              "description": "The Alembic revision to downgrade to. Note: must provide either `--to-revision` or `--to-version`",
+              "name": [
+                "-r",
+                "--to-revision"
+              ]
+            },
+            {
+              "args": {
+                "description": "(Optional) If provided, only run migrations up to this version",
+                "name": "to_version"
+              },
+              "description": "(Optional) If provided, only run migrations up to this version",
+              "name": [
+                "-n",
+                "--to-version"
+              ]
+            },
+            {
+              "description": "Do not prompt to confirm. Use with care!",
+              "name": [
+                "-y",
+                "--yes"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Initialize the metadata database",
+          "name": "init",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Burn down and rebuild the metadata database",
+          "name": "reset",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "description": "Only remove tables; do not perform db init",
+              "name": [
+                "-s",
+                "--skip-init"
+              ]
+            },
+            {
+              "description": "Do not prompt to confirm. Use with care!",
+              "name": [
+                "-y",
+                "--yes"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Runs a shell to access the database",
+          "name": "shell",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Upgrade the metadata database to latest version",
+          "name": "upgrade",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "(Optional) If generating sql, may supply a *from* Alembic revision",
+                "name": "from_revision"
+              },
+              "description": "(Optional) If generating sql, may supply a *from* Alembic revision",
+              "name": [
+                "--from-revision"
+              ]
+            },
+            {
+              "args": {
+                "description": "(Optional) If generating sql, may supply a *from* version",
+                "name": "from_version"
+              },
+              "description": "(Optional) If generating sql, may supply a *from* version",
+              "name": [
+                "--from-version"
+              ]
+            },
+            {
+              "description": "Don't actually run migrations; just print out sql scripts for offline migration. Required if using either `--from-version` or `--from-version`",
+              "name": [
+                "-s",
+                "--show-sql-only"
+              ]
+            },
+            {
+              "args": {
+                "description": "(Optional) If provided, only run migrations up to and including this Alembic revision",
+                "name": "to_revision"
+              },
+              "description": "(Optional) If provided, only run migrations up to and including this Alembic revision",
+              "name": [
+                "-r",
+                "--to-revision"
+              ]
+            },
+            {
+              "args": {
+                "description": "(Optional) The airflow version to upgrade to. Note: must provide either `--to-revision` or `--to-version`",
+                "name": "to_version"
+              },
+              "description": "(Optional) The airflow version to upgrade to. Note: must provide either `--to-revision` or `--to-version`",
+              "name": [
+                "-n",
+                "--to-version"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Show information about current Airflow and environment",
+      "name": "info",
+      "options": [
+        {
+          "description": "Show this help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Minimize any personal identifiable information. Use it when sharing output with others",
+          "name": [
+            "--anonymize"
+          ]
+        },
+        {
+          "description": "Send output to file.io service and returns link",
+          "name": [
+            "--file-io"
+          ]
+        },
+        {
+          "args": {
+            "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+            "name": "(table, json, yaml, plain)",
+            "suggestions": [
+              {
+                "name": "table"
+              },
+              {
+                "name": "json"
+              },
+              {
+                "name": "yaml"
+              },
+              {
+                "name": "plain"
+              }
+            ]
+          },
+          "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+          "name": [
+            "-o",
+            "--output"
+          ]
+        },
+        {
+          "description": "Make logging output more verbose",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage jobs",
+      "name": "jobs",
+      "options": [
+        {
+          "description": "Show this help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Checks if job(s) are still alive",
+          "name": "check",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "description": "If passed, this command will be successful even if multiple matching alive jobs are found",
+              "name": [
+                "--allow-multiple"
+              ]
+            },
+            {
+              "args": {
+                "description": "The hostname of job(s) that will be checked",
+                "name": "hostname"
+              },
+              "description": "The hostname of job(s) that will be checked",
+              "name": [
+                "--hostname"
+              ]
+            },
+            {
+              "args": {
+                "description": "The type of job(s) that will be checked",
+                "name": "job_type",
+                "suggestions": [
+                  {
+                    "name": "BackfillJob"
+                  },
+                  {
+                    "name": "LocalTaskJob"
+                  },
+                  {
+                    "name": "SchedulerJob"
+                  },
+                  {
+                    "name": "TriggererJob"
+                  }
+                ]
+              },
+              "description": "The type of job(s) that will be checked",
+              "name": [
+                "--job-type"
+              ]
+            },
+            {
+              "args": {
+                "description": "The number of recent jobs that will be checked. To disable limit, set 0",
+                "name": "limit"
+              },
+              "description": "The number of recent jobs that will be checked. To disable limit, set 0",
+              "name": [
+                "--limit"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Kerberos principal",
+        "isOptional": true,
+        "name": "principal"
+      },
+      "description": "Start a kerberos ticket renewer",
+      "name": "kerberos",
+      "options": [
+        {
+          "description": "Show this help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Daemonize instead of running in the foreground",
+          "name": [
+            "-D",
+            "--daemon"
+          ]
+        },
+        {
+          "args": {
+            "description": "Keytab",
+            "isOptional": true,
+            "name": "keytab"
+          },
+          "description": "Keytab",
+          "name": [
+            "-k",
+            "--keytab"
+          ]
+        },
+        {
+          "args": {
+            "description": "Location of the log file",
+            "name": "log_file"
+          },
+          "description": "Location of the log file",
+          "name": [
+            "-l",
+            "--log-file"
+          ]
+        },
+        {
+          "args": {
+            "description": "PID file location",
+            "isOptional": true,
+            "name": "pid"
+          },
+          "description": "PID file location",
+          "name": [
+            "--pid"
+          ]
+        },
+        {
+          "args": {
+            "description": "Redirect stderr to this file",
+            "name": "stderr"
+          },
+          "description": "Redirect stderr to this file",
+          "name": [
+            "--stderr"
+          ]
+        },
+        {
+          "args": {
+            "description": "Redirect stdout to this file",
+            "name": "stdout"
+          },
+          "description": "Redirect stdout to this file",
+          "name": [
+            "--stdout"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Tools to help run the KubernetesExecutor",
+      "name": "kubernetes",
+      "options": [
+        {
+          "description": "Show this help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Clean up Kubernetes pods (created by KubernetesExecutor/KubernetesPodOperator) in evicted/failed/succeeded/pending states",
+          "name": "cleanup-pods",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Pending pods created before the time interval are to be cleaned up, measured in minutes. Default value is 30(m). The minimum value is 5(m)",
+                "name": "min_pending_minutes"
+              },
+              "description": "Pending pods created before the time interval are to be cleaned up, measured in minutes. Default value is 30(m). The minimum value is 5(m)",
+              "name": [
+                "--min-pending-minutes"
+              ]
+            },
+            {
+              "args": {
+                "description": "Kubernetes Namespace. Default value is `[kubernetes] namespace` in configuration",
+                "name": "namespace"
+              },
+              "description": "Kubernetes Namespace. Default value is `[kubernetes] namespace` in configuration",
+              "name": [
+                "--namespace"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "description": "The id of the dag",
+              "name": "dag_id"
+            },
+            {
+              "description": "The execution date of the DAG",
+              "name": "execution_date"
+            }
+          ],
+          "description": "Generate YAML files for all tasks in DAG. Useful for debugging tasks without launching into a cluster",
+          "name": "generate-dag-yaml",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "The output for generated yaml files",
+                "name": "output_path"
+              },
+              "description": "The output for generated yaml files",
+              "name": [
+                "-o",
+                "--output-path"
+              ]
+            },
+            {
+              "args": {
+                "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+                "name": "subdir"
+              },
+              "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+              "name": [
+                "-S",
+                "--subdir"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Dump information about loaded plugins",
+      "name": "plugins",
+      "options": [
+        {
+          "description": "Show this help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+            "name": "(table, json, yaml, plain)",
+            "suggestions": [
+              {
+                "name": "table"
+              },
+              {
+                "name": "json"
+              },
+              {
+                "name": "yaml"
+              },
+              {
+                "name": "plain"
+              }
+            ]
+          },
+          "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+          "name": [
+            "-o",
+            "--output"
+          ]
+        },
+        {
+          "description": "Make logging output more verbose",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage pools",
+      "name": "pools",
+      "options": [
+        {
+          "description": "Show this help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": {
+            "description": "Pool name",
+            "name": "NAME"
+          },
+          "description": "Delete pool",
+          "name": "delete",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+                "name": "(table, json, yaml, plain)",
+                "suggestions": [
+                  {
+                    "name": "table"
+                  },
+                  {
+                    "name": "json"
+                  },
+                  {
+                    "name": "yaml"
+                  },
+                  {
+                    "name": "plain"
+                  }
+                ]
+              },
+              "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Export all pools to JSON file",
+            "name": "FILEPATH"
+          },
+          "description": "Export all pools",
+          "name": "export",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Pool name",
+            "name": "NAME"
+          },
+          "description": "Get pool size",
+          "name": "get",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+                "name": "(table, json, yaml, plain)",
+                "suggestions": [
+                  {
+                    "name": "table"
+                  },
+                  {
+                    "name": "json"
+                  },
+                  {
+                    "name": "yaml"
+                  },
+                  {
+                    "name": "plain"
+                  }
+                ]
+              },
+              "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Import pools from JSON file. Example format::\n\n    {\n        \"pool_1\": {\"slots\": 5, \"description\": \"\"},\n        \"pool_2\": {\"slots\": 10, \"description\": \"test\"}\n    }",
+            "name": "FILEPATH"
+          },
+          "description": "Import pools",
+          "name": "import",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List pools",
+          "name": "list",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+                "name": "(table, json, yaml, plain)",
+                "suggestions": [
+                  {
+                    "name": "table"
+                  },
+                  {
+                    "name": "json"
+                  },
+                  {
+                    "name": "yaml"
+                  },
+                  {
+                    "name": "plain"
+                  }
+                ]
+              },
+              "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "description": "Pool name",
+              "name": "NAME"
+            },
+            {
+              "description": "Pool slots",
+              "name": "slots"
+            },
+            {
+              "description": "Pool description",
+              "name": "description"
+            }
+          ],
+          "description": "Configure pool",
+          "name": "set",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+                "name": "(table, json, yaml, plain)",
+                "suggestions": [
+                  {
+                    "name": "table"
+                  },
+                  {
+                    "name": "json"
+                  },
+                  {
+                    "name": "yaml"
+                  },
+                  {
+                    "name": "plain"
+                  }
+                ]
+              },
+              "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Display providers",
+      "name": "providers",
+      "options": [
+        {
+          "description": "Show this help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Get information about API auth backends provided",
+          "name": "auth",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+                "name": "(table, json, yaml, plain)",
+                "suggestions": [
+                  {
+                    "name": "table"
+                  },
+                  {
+                    "name": "json"
+                  },
+                  {
+                    "name": "yaml"
+                  },
+                  {
+                    "name": "plain"
+                  }
+                ]
+              },
+              "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Get information about registered connection types with custom behaviours",
+          "name": "behaviours",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+                "name": "(table, json, yaml, plain)",
+                "suggestions": [
+                  {
+                    "name": "table"
+                  },
+                  {
+                    "name": "json"
+                  },
+                  {
+                    "name": "yaml"
+                  },
+                  {
+                    "name": "plain"
+                  }
+                ]
+              },
+              "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Provider name, required to get provider information",
+            "name": "provider_name"
+          },
+          "description": "Get detailed information about a provider",
+          "name": "get",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Do emit colored output (default: auto)",
+                "name": "color",
+                "suggestions": [
+                  {
+                    "name": "off"
+                  },
+                  {
+                    "name": "auto"
+                  },
+                  {
+                    "name": "on"
+                  }
+                ]
+              },
+              "description": "Do emit colored output (default: auto)",
+              "name": [
+                "--color"
+              ]
+            },
+            {
+              "description": "Full information about the provider, including documentation information",
+              "name": [
+                "-f",
+                "--full"
+              ]
+            },
+            {
+              "args": {
+                "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+                "name": "(table, json, yaml, plain)",
+                "suggestions": [
+                  {
+                    "name": "table"
+                  },
+                  {
+                    "name": "json"
+                  },
+                  {
+                    "name": "yaml"
+                  },
+                  {
+                    "name": "plain"
+                  }
+                ]
+              },
+              "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List registered provider hooks",
+          "name": "hooks",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+                "name": "(table, json, yaml, plain)",
+                "suggestions": [
+                  {
+                    "name": "table"
+                  },
+                  {
+                    "name": "json"
+                  },
+                  {
+                    "name": "yaml"
+                  },
+                  {
+                    "name": "plain"
+                  }
+                ]
+              },
+              "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List extra links registered by the providers",
+          "name": "links",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+                "name": "(table, json, yaml, plain)",
+                "suggestions": [
+                  {
+                    "name": "table"
+                  },
+                  {
+                    "name": "json"
+                  },
+                  {
+                    "name": "yaml"
+                  },
+                  {
+                    "name": "plain"
+                  }
+                ]
+              },
+              "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List installed providers",
+          "name": "list",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+                "name": "(table, json, yaml, plain)",
+                "suggestions": [
+                  {
+                    "name": "table"
+                  },
+                  {
+                    "name": "json"
+                  },
+                  {
+                    "name": "yaml"
+                  },
+                  {
+                    "name": "plain"
+                  }
+                ]
+              },
+              "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Get information about task logging handlers provided",
+          "name": "logging",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+                "name": "(table, json, yaml, plain)",
+                "suggestions": [
+                  {
+                    "name": "table"
+                  },
+                  {
+                    "name": "json"
+                  },
+                  {
+                    "name": "yaml"
+                  },
+                  {
+                    "name": "plain"
+                  }
+                ]
+              },
+              "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Get information about secrets backends provided",
+          "name": "secrets",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+                "name": "(table, json, yaml, plain)",
+                "suggestions": [
+                  {
+                    "name": "table"
+                  },
+                  {
+                    "name": "json"
+                  },
+                  {
+                    "name": "yaml"
+                  },
+                  {
+                    "name": "plain"
+                  }
+                ]
+              },
+              "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Get information about registered connection form widgets",
+          "name": "widgets",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+                "name": "(table, json, yaml, plain)",
+                "suggestions": [
+                  {
+                    "name": "table"
+                  },
+                  {
+                    "name": "json"
+                  },
+                  {
+                    "name": "yaml"
+                  },
+                  {
+                    "name": "plain"
+                  }
+                ]
+              },
+              "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage roles",
+      "name": "roles",
+      "options": [
+        {
+          "description": "Show this help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": {
+            "description": "The name of a role",
+            "isOptional": true,
+            "isVariadic": true,
+            "name": "role"
+          },
+          "description": "Create role",
+          "name": "create",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "The name of a role",
+            "isOptional": true,
+            "isVariadic": true,
+            "name": "role"
+          },
+          "description": "Delete role",
+          "name": "delete",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Export all roles to JSON file",
+            "name": "file"
+          },
+          "description": "Export roles (without permissions) from db to JSON file",
+          "name": "export",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "description": "Format output JSON file by sorting role names and indenting by 4 spaces",
+              "name": [
+                "-p",
+                "--pretty"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Import roles from JSON file",
+            "name": "file"
+          },
+          "description": "Import roles (without permissions) from JSON file to db",
+          "name": "import",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List roles",
+          "name": "list",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+                "name": "(table, json, yaml, plain)",
+                "suggestions": [
+                  {
+                    "name": "table"
+                  },
+                  {
+                    "name": "json"
+                  },
+                  {
+                    "name": "yaml"
+                  },
+                  {
+                    "name": "plain"
+                  }
+                ]
+              },
+              "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Rotate encrypted connection credentials and variables",
+      "name": "rotate-fernet-key",
+      "options": [
+        {
+          "description": "Show this help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Start a scheduler instance",
+      "name": "scheduler",
+      "options": [
+        {
+          "description": "Show this help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Daemonize instead of running in the foreground",
+          "name": [
+            "-D",
+            "--daemon"
+          ]
+        },
+        {
+          "description": "Attempt to pickle the DAG object to send over to the workers, instead of letting workers run their version of the code",
+          "name": [
+            "-p",
+            "--do-pickle"
+          ]
+        },
+        {
+          "args": {
+            "description": "Location of the log file",
+            "name": "log_file"
+          },
+          "description": "Location of the log file",
+          "name": [
+            "-l",
+            "--log-file"
+          ]
+        },
+        {
+          "args": {
+            "description": "Set the number of runs to execute before exiting",
+            "name": "num_runs"
+          },
+          "description": "Set the number of runs to execute before exiting",
+          "name": [
+            "-n",
+            "--num-runs"
+          ]
+        },
+        {
+          "args": {
+            "description": "PID file location",
+            "isOptional": true,
+            "name": "pid"
+          },
+          "description": "PID file location",
+          "name": [
+            "--pid"
+          ]
+        },
+        {
+          "description": "Don't start the serve logs process along with the workers",
+          "name": [
+            "-s",
+            "--skip-serve-logs"
+          ]
+        },
+        {
+          "args": {
+            "description": "Redirect stderr to this file",
+            "name": "stderr"
+          },
+          "description": "Redirect stderr to this file",
+          "name": [
+            "--stderr"
+          ]
+        },
+        {
+          "args": {
+            "description": "Redirect stdout to this file",
+            "name": "stdout"
+          },
+          "description": "Redirect stdout to this file",
+          "name": [
+            "--stdout"
+          ]
+        },
+        {
+          "args": {
+            "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+            "name": "subdir"
+          },
+          "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+          "name": [
+            "-S",
+            "--subdir"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Run an all-in-one copy of Airflow",
+      "name": "standalone",
+      "options": [
+        {
+          "description": "Show this help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Update permissions for existing roles and optionally DAGs",
+      "name": "sync-perm",
+      "options": [
+        {
+          "description": "Show this help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "If passed, DAG specific permissions will also be synced",
+          "name": [
+            "--include-dags"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage tasks",
+      "name": "tasks",
+      "options": [
+        {
+          "description": "Show this help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": {
+            "description": "The id of the dag",
+            "name": "dag_id"
+          },
+          "description": "Clear a set of task instance, as if they never ran",
+          "name": "clear",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "description": "Search dag_id as regex instead of exact string",
+              "name": [
+                "-R",
+                "--dag-regex"
+              ]
+            },
+            {
+              "description": "Include downstream tasks",
+              "name": [
+                "-d",
+                "--downstream"
+              ]
+            },
+            {
+              "args": {
+                "description": "Override end_date YYYY-MM-DD",
+                "name": "end_date"
+              },
+              "description": "Override end_date YYYY-MM-DD",
+              "name": [
+                "-e",
+                "--end-date"
+              ]
+            },
+            {
+              "description": "Exclude ParentDAGS if the task cleared is a part of a SubDAG",
+              "name": [
+                "-X",
+                "--exclude-parentdag"
+              ]
+            },
+            {
+              "description": "Exclude subdags",
+              "name": [
+                "-x",
+                "--exclude-subdags"
+              ]
+            },
+            {
+              "description": "Only failed jobs",
+              "name": [
+                "-f",
+                "--only-failed"
+              ]
+            },
+            {
+              "description": "Only running jobs",
+              "name": [
+                "-r",
+                "--only-running"
+              ]
+            },
+            {
+              "args": {
+                "description": "Override start_date YYYY-MM-DD",
+                "name": "start_date"
+              },
+              "description": "Override start_date YYYY-MM-DD",
+              "name": [
+                "-s",
+                "--start-date"
+              ]
+            },
+            {
+              "args": {
+                "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+                "name": "subdir"
+              },
+              "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+              "name": [
+                "-S",
+                "--subdir"
+              ]
+            },
+            {
+              "args": {
+                "description": "The regex to filter specific task_ids to backfill (optional)",
+                "name": "task_regex"
+              },
+              "description": "The regex to filter specific task_ids to backfill (optional)",
+              "name": [
+                "-t",
+                "--task-regex"
+              ]
+            },
+            {
+              "description": "Include upstream tasks",
+              "name": [
+                "-u",
+                "--upstream"
+              ]
+            },
+            {
+              "description": "Do not prompt to confirm. Use with care!",
+              "name": [
+                "-y",
+                "--yes"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "description": "The id of the dag",
+              "name": "dag_id"
+            },
+            {
+              "description": "The id of the task",
+              "name": "task_id"
+            },
+            {
+              "description": "The execution_date of the DAG or run_id of the DAGRun",
+              "name": "execution_date_or_run_id"
+            }
+          ],
+          "description": "Returns the unmet dependencies for a task instance",
+          "name": "failed-deps",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Mapped task index",
+                "name": "map_index"
+              },
+              "description": "Mapped task index",
+              "name": [
+                "--map-index"
+              ]
+            },
+            {
+              "args": {
+                "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+                "name": "subdir"
+              },
+              "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+              "name": [
+                "-S",
+                "--subdir"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "The id of the dag",
+            "name": "dag_id"
+          },
+          "description": "List the tasks within a DAG",
+          "name": "list",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+                "name": "subdir"
+              },
+              "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+              "name": [
+                "-S",
+                "--subdir"
+              ]
+            },
+            {
+              "description": "Tree view",
+              "name": [
+                "-t",
+                "--tree"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "description": "The id of the dag",
+              "name": "dag_id"
+            },
+            {
+              "description": "The id of the task",
+              "name": "task_id"
+            },
+            {
+              "description": "The execution_date of the DAG or run_id of the DAGRun",
+              "name": "execution_date_or_run_id"
+            }
+          ],
+          "description": "Render a task instance's template(s)",
+          "name": "render",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Mapped task index",
+                "name": "map_index"
+              },
+              "description": "Mapped task index",
+              "name": [
+                "--map-index"
+              ]
+            },
+            {
+              "args": {
+                "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+                "name": "subdir"
+              },
+              "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+              "name": [
+                "-S",
+                "--subdir"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "description": "The id of the dag",
+              "name": "dag_id"
+            },
+            {
+              "description": "The id of the task",
+              "name": "task_id"
+            },
+            {
+              "description": "The execution_date of the DAG or run_id of the DAGRun",
+              "name": "execution_date_or_run_id"
+            }
+          ],
+          "description": "Run a single task instance",
+          "name": "run",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Path to config file to use instead of airflow.cfg",
+                "name": "cfg_path"
+              },
+              "description": "Path to config file to use instead of airflow.cfg",
+              "name": [
+                "--cfg-path"
+              ]
+            },
+            {
+              "description": "Ignore previous task instance state, rerun regardless if task already succeeded/failed",
+              "name": [
+                "-f",
+                "--force"
+              ]
+            },
+            {
+              "description": "Ignores all non-critical dependencies, including ignore_ti_state and ignore_task_deps",
+              "name": [
+                "-A",
+                "--ignore-all-dependencies"
+              ]
+            },
+            {
+              "description": "Ignore task-specific dependencies, e.g. upstream, depends_on_past, and retry delay dependencies",
+              "name": [
+                "-i",
+                "--ignore-dependencies"
+              ]
+            },
+            {
+              "description": "Ignore depends_on_past dependencies (but respect upstream dependencies)",
+              "name": [
+                "-I",
+                "--ignore-depends-on-past"
+              ]
+            },
+            {
+              "description": "Do not capture standard output and error streams (useful for interactive debugging)",
+              "name": [
+                "-N",
+                "--interactive"
+              ]
+            },
+            {
+              "args": {
+                "name": "job_id"
+              },
+              "name": [
+                "-j",
+                "--job-id"
+              ]
+            },
+            {
+              "description": "Run the task using the LocalExecutor",
+              "name": [
+                "-l",
+                "--local"
+              ]
+            },
+            {
+              "args": {
+                "description": "Mapped task index",
+                "name": "map_index"
+              },
+              "description": "Mapped task index",
+              "name": [
+                "--map-index"
+              ]
+            },
+            {
+              "description": "Mark jobs as succeeded without running them",
+              "name": [
+                "-m",
+                "--mark-success"
+              ]
+            },
+            {
+              "name": [
+                "--no-shut-down-logging"
+              ]
+            },
+            {
+              "args": {
+                "description": "Serialized pickle object of the entire dag (used internally)",
+                "name": "pickle"
+              },
+              "description": "Serialized pickle object of the entire dag (used internally)",
+              "name": [
+                "-p",
+                "--pickle"
+              ]
+            },
+            {
+              "args": {
+                "description": "Resource pool to use",
+                "name": "pool"
+              },
+              "description": "Resource pool to use",
+              "name": [
+                "--pool"
+              ]
+            },
+            {
+              "name": [
+                "-r",
+                "--raw"
+              ]
+            },
+            {
+              "description": "Pickles (serializes) the DAG and ships it to the worker",
+              "name": [
+                "--ship-dag"
+              ]
+            },
+            {
+              "args": {
+                "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+                "name": "subdir"
+              },
+              "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+              "name": [
+                "-S",
+                "--subdir"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "description": "The id of the dag",
+              "name": "dag_id"
+            },
+            {
+              "description": "The id of the task",
+              "name": "task_id"
+            },
+            {
+              "description": "The execution_date of the DAG or run_id of the DAGRun",
+              "name": "execution_date_or_run_id"
+            }
+          ],
+          "description": "Get the status of a task instance",
+          "name": "state",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Mapped task index",
+                "name": "map_index"
+              },
+              "description": "Mapped task index",
+              "name": [
+                "--map-index"
+              ]
+            },
+            {
+              "args": {
+                "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+                "name": "subdir"
+              },
+              "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+              "name": [
+                "-S",
+                "--subdir"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "description": "The id of the dag",
+              "name": "dag_id"
+            },
+            {
+              "description": "The execution_date of the DAG or run_id of the DAGRun",
+              "name": "execution_date_or_run_id"
+            }
+          ],
+          "description": "Get the status of all task instances in a dag run",
+          "name": "states-for-dag-run",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+                "name": "(table, json, yaml, plain)",
+                "suggestions": [
+                  {
+                    "name": "table"
+                  },
+                  {
+                    "name": "json"
+                  },
+                  {
+                    "name": "yaml"
+                  },
+                  {
+                    "name": "plain"
+                  }
+                ]
+              },
+              "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "description": "The id of the dag",
+              "name": "dag_id"
+            },
+            {
+              "description": "The id of the task",
+              "name": "task_id"
+            },
+            {
+              "description": "The execution_date of the DAG or run_id of the DAGRun (optional)",
+              "isOptional": true,
+              "name": "execution_date_or_run_id"
+            }
+          ],
+          "description": "Test a task instance",
+          "name": "test",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "description": "Perform a dry run for each task. Only renders Template Fields for each task, nothing else",
+              "name": [
+                "-n",
+                "--dry-run"
+              ]
+            },
+            {
+              "args": {
+                "description": "Set env var in both parsing time and runtime for each of entry supplied in a JSON dict",
+                "name": "env_vars"
+              },
+              "description": "Set env var in both parsing time and runtime for each of entry supplied in a JSON dict",
+              "name": [
+                "--env-vars"
+              ]
+            },
+            {
+              "args": {
+                "description": "Mapped task index",
+                "name": "map_index"
+              },
+              "description": "Mapped task index",
+              "name": [
+                "--map-index"
+              ]
+            },
+            {
+              "description": "Open debugger on uncaught exception",
+              "name": [
+                "-m",
+                "--post-mortem"
+              ]
+            },
+            {
+              "args": {
+                "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+                "name": "subdir"
+              },
+              "description": "File location or directory from which to look for the dag. Defaults to '[AIRFLOW_HOME]/dags' where [AIRFLOW_HOME] is the value you set for 'AIRFLOW_HOME' config you set in 'airflow.cfg'",
+              "name": [
+                "-S",
+                "--subdir"
+              ]
+            },
+            {
+              "args": {
+                "description": "Sends a JSON params dict to the task",
+                "name": "task_params"
+              },
+              "description": "Sends a JSON params dict to the task",
+              "name": [
+                "-t",
+                "--task-params"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Start a triggerer instance",
+      "name": "triggerer",
+      "options": [
+        {
+          "description": "Show this help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "description": "The maximum number of triggers that a Triggerer will run at one time",
+            "name": "capacity"
+          },
+          "description": "The maximum number of triggers that a Triggerer will run at one time",
+          "name": [
+            "--capacity"
+          ]
+        },
+        {
+          "description": "Daemonize instead of running in the foreground",
+          "name": [
+            "-D",
+            "--daemon"
+          ]
+        },
+        {
+          "args": {
+            "description": "Location of the log file",
+            "name": "log_file"
+          },
+          "description": "Location of the log file",
+          "name": [
+            "-l",
+            "--log-file"
+          ]
+        },
+        {
+          "args": {
+            "description": "PID file location",
+            "isOptional": true,
+            "name": "pid"
+          },
+          "description": "PID file location",
+          "name": [
+            "--pid"
+          ]
+        },
+        {
+          "args": {
+            "description": "Redirect stderr to this file",
+            "name": "stderr"
+          },
+          "description": "Redirect stderr to this file",
+          "name": [
+            "--stderr"
+          ]
+        },
+        {
+          "args": {
+            "description": "Redirect stdout to this file",
+            "name": "stdout"
+          },
+          "description": "Redirect stdout to this file",
+          "name": [
+            "--stdout"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage users",
+      "name": "users",
+      "options": [
+        {
+          "description": "Show this help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Add role to a user",
+          "name": "add-role",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Email of the user",
+                "name": "email"
+              },
+              "description": "Email of the user",
+              "name": [
+                "-e",
+                "--email"
+              ]
+            },
+            {
+              "args": {
+                "description": "Role of the user. Existing roles include Admin, User, Op, Viewer, and Public",
+                "name": "role"
+              },
+              "description": "Role of the user. Existing roles include Admin, User, Op, Viewer, and Public",
+              "name": [
+                "-r",
+                "--role"
+              ]
+            },
+            {
+              "args": {
+                "description": "Username of the user",
+                "name": "username"
+              },
+              "description": "Username of the user",
+              "name": [
+                "-u",
+                "--username"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Create a user",
+          "name": "create",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Email of the user",
+                "name": "email"
+              },
+              "description": "Email of the user",
+              "name": [
+                "-e",
+                "--email"
+              ]
+            },
+            {
+              "args": {
+                "description": "First name of the user",
+                "name": "firstname"
+              },
+              "description": "First name of the user",
+              "name": [
+                "-f",
+                "--firstname"
+              ]
+            },
+            {
+              "args": {
+                "description": "Last name of the user",
+                "name": "lastname"
+              },
+              "description": "Last name of the user",
+              "name": [
+                "-l",
+                "--lastname"
+              ]
+            },
+            {
+              "args": {
+                "description": "Password of the user, required to create a user without --use-random-password",
+                "name": "password"
+              },
+              "description": "Password of the user, required to create a user without --use-random-password",
+              "name": [
+                "-p",
+                "--password"
+              ]
+            },
+            {
+              "args": {
+                "description": "Role of the user. Existing roles include Admin, User, Op, Viewer, and Public",
+                "name": "role"
+              },
+              "description": "Role of the user. Existing roles include Admin, User, Op, Viewer, and Public",
+              "name": [
+                "-r",
+                "--role"
+              ]
+            },
+            {
+              "description": "Do not prompt for password. Use random string instead. Required to create a user without --password",
+              "name": [
+                "--use-random-password"
+              ]
+            },
+            {
+              "args": {
+                "description": "Username of the user",
+                "name": "username"
+              },
+              "description": "Username of the user",
+              "name": [
+                "-u",
+                "--username"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Delete a user",
+          "name": "delete",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Email of the user",
+                "name": "email"
+              },
+              "description": "Email of the user",
+              "name": [
+                "-e",
+                "--email"
+              ]
+            },
+            {
+              "args": {
+                "description": "Username of the user",
+                "name": "username"
+              },
+              "description": "Username of the user",
+              "name": [
+                "-u",
+                "--username"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Export all users to JSON file",
+            "name": "FILEPATH"
+          },
+          "description": "Export all users",
+          "name": "export",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Import users from JSON file. Example format::\n\n    [\n        {\n            \"email\": \"foo@bar.org\",\n            \"firstname\": \"Jon\",\n            \"lastname\": \"Doe\",\n            \"roles\": [\"Public\"],\n            \"username\": \"jondoe\"\n        }\n    ]",
+            "name": "FILEPATH"
+          },
+          "description": "Import users",
+          "name": "import",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List users",
+          "name": "list",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+                "name": "(table, json, yaml, plain)",
+                "suggestions": [
+                  {
+                    "name": "table"
+                  },
+                  {
+                    "name": "json"
+                  },
+                  {
+                    "name": "yaml"
+                  },
+                  {
+                    "name": "plain"
+                  }
+                ]
+              },
+              "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Remove role from a user",
+          "name": "remove-role",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Email of the user",
+                "name": "email"
+              },
+              "description": "Email of the user",
+              "name": [
+                "-e",
+                "--email"
+              ]
+            },
+            {
+              "args": {
+                "description": "Role of the user. Existing roles include Admin, User, Op, Viewer, and Public",
+                "name": "role"
+              },
+              "description": "Role of the user. Existing roles include Admin, User, Op, Viewer, and Public",
+              "name": [
+                "-r",
+                "--role"
+              ]
+            },
+            {
+              "args": {
+                "description": "Username of the user",
+                "name": "username"
+              },
+              "description": "Username of the user",
+              "name": [
+                "-u",
+                "--username"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Manage variables",
+      "name": "variables",
+      "options": [
+        {
+          "description": "Show this help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": {
+            "description": "Variable key",
+            "name": "key"
+          },
+          "description": "Delete variable",
+          "name": "delete",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Export all variables to JSON file",
+            "name": "file"
+          },
+          "description": "Export all variables",
+          "name": "export",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Variable key",
+            "name": "key"
+          },
+          "description": "Get variable",
+          "name": "get",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Default value returned if variable does not exist",
+                "name": "VAL"
+              },
+              "description": "Default value returned if variable does not exist",
+              "name": [
+                "-d",
+                "--default"
+              ]
+            },
+            {
+              "description": "Deserialize JSON variable",
+              "name": [
+                "-j",
+                "--json"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Import variables from JSON file",
+            "name": "file"
+          },
+          "description": "Import variables",
+          "name": "import",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List variables",
+          "name": "list",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+                "name": "(table, json, yaml, plain)",
+                "suggestions": [
+                  {
+                    "name": "table"
+                  },
+                  {
+                    "name": "json"
+                  },
+                  {
+                    "name": "yaml"
+                  },
+                  {
+                    "name": "plain"
+                  }
+                ]
+              },
+              "description": "Output format. Allowed values: json, yaml, plain, table (default: table)",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            },
+            {
+              "description": "Make logging output more verbose",
+              "name": [
+                "-v",
+                "--verbose"
+              ]
+            }
+          ]
+        },
+        {
+          "args": [
+            {
+              "description": "Variable key",
+              "name": "key"
+            },
+            {
+              "description": "Variable value",
+              "name": "VALUE"
+            }
+          ],
+          "description": "Set variable",
+          "name": "set",
+          "options": [
+            {
+              "description": "Show this help message and exit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "description": "Serialize JSON variable",
+              "name": [
+                "-j",
+                "--json"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Show the version",
+      "name": "version",
+      "options": [
+        {
+          "description": "Show this help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Start a Airflow webserver instance",
+      "name": "webserver",
+      "options": [
+        {
+          "description": "Show this help message and exit",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "description": "The logfile to store the webserver access log. Use '-' to print to stderr",
+            "name": "access_logfile"
+          },
+          "description": "The logfile to store the webserver access log. Use '-' to print to stderr",
+          "name": [
+            "-A",
+            "--access-logfile"
+          ]
+        },
+        {
+          "args": {
+            "description": "The access log format for gunicorn logs",
+            "name": "access_logformat"
+          },
+          "description": "The access log format for gunicorn logs",
+          "name": [
+            "-L",
+            "--access-logformat"
+          ]
+        },
+        {
+          "description": "Daemonize instead of running in the foreground",
+          "name": [
+            "-D",
+            "--daemon"
+          ]
+        },
+        {
+          "description": "Use the server that ships with Flask in debug mode",
+          "name": [
+            "-d",
+            "--debug"
+          ]
+        },
+        {
+          "args": {
+            "description": "The logfile to store the webserver error log. Use '-' to print to stderr",
+            "name": "error_logfile"
+          },
+          "description": "The logfile to store the webserver error log. Use '-' to print to stderr",
+          "name": [
+            "-E",
+            "--error-logfile"
+          ]
+        },
+        {
+          "args": {
+            "description": "Set the hostname on which to run the web server",
+            "name": "hostname"
+          },
+          "description": "Set the hostname on which to run the web server",
+          "name": [
+            "-H",
+            "--hostname"
+          ]
+        },
+        {
+          "args": {
+            "description": "Location of the log file",
+            "name": "log_file"
+          },
+          "description": "Location of the log file",
+          "name": [
+            "-l",
+            "--log-file"
+          ]
+        },
+        {
+          "args": {
+            "description": "PID file location",
+            "isOptional": true,
+            "name": "pid"
+          },
+          "description": "PID file location",
+          "name": [
+            "--pid"
+          ]
+        },
+        {
+          "args": {
+            "description": "The port on which to run the server",
+            "name": "port"
+          },
+          "description": "The port on which to run the server",
+          "name": [
+            "-p",
+            "--port"
+          ]
+        },
+        {
+          "args": {
+            "description": "Path to the SSL certificate for the webserver",
+            "name": "ssl_cert"
+          },
+          "description": "Path to the SSL certificate for the webserver",
+          "name": [
+            "--ssl-cert"
+          ]
+        },
+        {
+          "args": {
+            "description": "Path to the key to use with the SSL certificate",
+            "name": "ssl_key"
+          },
+          "description": "Path to the key to use with the SSL certificate",
+          "name": [
+            "--ssl-key"
+          ]
+        },
+        {
+          "args": {
+            "description": "Redirect stderr to this file",
+            "name": "stderr"
+          },
+          "description": "Redirect stderr to this file",
+          "name": [
+            "--stderr"
+          ]
+        },
+        {
+          "args": {
+            "description": "Redirect stdout to this file",
+            "name": "stdout"
+          },
+          "description": "Redirect stdout to this file",
+          "name": [
+            "--stdout"
+          ]
+        },
+        {
+          "args": {
+            "description": "The timeout for waiting on webserver workers",
+            "name": "worker_timeout"
+          },
+          "description": "The timeout for waiting on webserver workers",
+          "name": [
+            "-t",
+            "--worker-timeout"
+          ]
+        },
+        {
+          "args": {
+            "description": "The worker class to use for Gunicorn",
+            "name": "workerclass",
+            "suggestions": [
+              {
+                "name": "sync"
+              },
+              {
+                "name": "eventlet"
+              },
+              {
+                "name": "gevent"
+              },
+              {
+                "name": "tornado"
+              }
+            ]
+          },
+          "description": "The worker class to use for Gunicorn",
+          "name": [
+            "-k",
+            "--workerclass"
+          ]
+        },
+        {
+          "args": {
+            "description": "Number of workers to run the webserver on",
+            "name": "workers"
+          },
+          "description": "Number of workers to run the webserver on",
+          "name": [
+            "-w",
+            "--workers"
+          ]
+        }
+      ]
+    }
+  ]
+}

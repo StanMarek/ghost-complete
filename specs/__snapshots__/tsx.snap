@@ -1,0 +1,80 @@
+{
+  "args": {
+    "generators": [
+      {
+        "js_source": "(h,g,O)=>ae(this,void 0,void 0,function*(){var d;let{isDangerous:m,currentWorkingDirectory:b,searchTerm:p}=O,w=(d=(0,y.getCurrentInsertedDirectory)(c??b,p,O))!==null&&d!==void 0?d:\"/\";try{let N=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:w}),U=z(N.stdout.split(`\n`),[\".DS_Store\"]),W=[];for(let F of U)if(F){let V=F.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&a!==\"only\"||V===\"folders\"&&a!==\"never\")&&W.push({type:V===\"filepaths\"?\"file\":\"folder\",name:F,insertValue:F,isDangerous:m,context:{templateType:V}})}return S(v(W))}catch{return[]}})",
+        "requires_js": true
+      }
+    ],
+    "name": "script path"
+  },
+  "description": "Run TypeScript file using tsx",
+  "name": "tsx",
+  "options": [
+    {
+      "description": "Show help for tsx",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "description": "Disable caching",
+      "name": [
+        "--no-cache"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "(h,g,O)=>ae(this,void 0,void 0,function*(){var d;let{isDangerous:m,currentWorkingDirectory:b,searchTerm:p}=O,w=(d=(0,y.getCurrentInsertedDirectory)(c??b,p,O))!==null&&d!==void 0?d:\"/\";try{let N=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:w}),U=z(N.stdout.split(`\n`),[\".DS_Store\"]),W=[];for(let F of U)if(F){let V=F.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&a!==\"only\"||V===\"folders\"&&a!==\"never\")&&W.push({type:V===\"filepaths\"?\"file\":\"folder\",name:F,insertValue:F,isDangerous:m,context:{templateType:V}})}return S(v(W))}catch{return[]}})",
+            "requires_js": true
+          }
+        ],
+        "name": "script path"
+      },
+      "description": "Disable clearing the screen on rerun",
+      "name": [
+        "--clear-screen"
+      ]
+    },
+    {
+      "description": "Show version",
+      "name": [
+        "-v",
+        "--version"
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "(h,g,O)=>ae(this,void 0,void 0,function*(){var d;let{isDangerous:m,currentWorkingDirectory:b,searchTerm:p}=O,w=(d=(0,y.getCurrentInsertedDirectory)(c??b,p,O))!==null&&d!==void 0?d:\"/\";try{let N=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:w}),U=z(N.stdout.split(`\n`),[\".DS_Store\"]),W=[];for(let F of U)if(F){let V=F.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&a!==\"only\"||V===\"folders\"&&a!==\"never\")&&W.push({type:V===\"filepaths\"?\"file\":\"folder\",name:F,insertValue:F,isDangerous:m,context:{templateType:V}})}return S(v(W))}catch{return[]}})",
+            "requires_js": true
+          }
+        ],
+        "name": "tsconfig.json path"
+      },
+      "description": "Custom tsconfig.json path",
+      "name": [
+        "--tsconfig"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "generators": [
+          {
+            "js_source": "(h,g,O)=>ae(this,void 0,void 0,function*(){var d;let{isDangerous:m,currentWorkingDirectory:b,searchTerm:p}=O,w=(d=(0,y.getCurrentInsertedDirectory)(c??b,p,O))!==null&&d!==void 0?d:\"/\";try{let N=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:w}),U=z(N.stdout.split(`\n`),[\".DS_Store\"]),W=[];for(let F of U)if(F){let V=F.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&a!==\"only\"||V===\"folders\"&&a!==\"never\")&&W.push({type:V===\"filepaths\"?\"file\":\"folder\",name:F,insertValue:F,isDangerous:m,context:{templateType:V}})}return S(v(W))}catch{return[]}})",
+            "requires_js": true
+          }
+        ],
+        "name": "script path"
+      },
+      "description": "Run the script and watch for changes",
+      "name": "watch"
+    }
+  ]
+}
