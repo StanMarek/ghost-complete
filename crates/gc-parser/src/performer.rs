@@ -161,6 +161,7 @@ impl Perform for TerminalState {
                         // the proxy can query the real terminal for the actual
                         // cursor position and correct any VT tracking drift.
                         self.request_cursor_sync();
+                        self.mark_prompt_started();
                         self.set_prompt_row(self.cursor_row());
                         self.set_in_prompt(true);
                         tracing::debug!(
@@ -196,6 +197,7 @@ impl Perform for TerminalState {
                 match params[1] {
                     b"A" => {
                         self.request_cursor_sync();
+                        self.mark_prompt_started();
                         self.set_prompt_row(self.cursor_row());
                         self.set_in_prompt(true);
                         tracing::debug!(
@@ -627,6 +629,14 @@ mod tests {
     }
 
     #[test]
+    fn test_osc133_prompt_a_sets_prompt_started() {
+        let mut p = make_parser();
+        assert!(!p.state_mut().take_prompt_started());
+        p.process_bytes(b"\x1b]133;A\x07");
+        assert!(p.state_mut().take_prompt_started());
+    }
+
+    #[test]
     fn test_osc133_prompt_c() {
         let mut p = make_parser();
         p.process_bytes(b"\x1b]133;A\x07"); // start prompt
@@ -645,6 +655,14 @@ mod tests {
         assert_eq!(p.state().prompt_row(), Some(2));
         assert!(p.state().in_prompt());
         assert!(p.state_mut().take_cursor_sync_requested());
+    }
+
+    #[test]
+    fn test_osc7771_prompt_a_sets_prompt_started() {
+        let mut p = make_parser();
+        assert!(!p.state_mut().take_prompt_started());
+        p.process_bytes(b"\x1b]7771;A\x07");
+        assert!(p.state_mut().take_prompt_started());
     }
 
     #[test]
