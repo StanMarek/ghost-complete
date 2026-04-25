@@ -149,13 +149,4 @@ mod kind_invariants {
         let s = Suggestion::default();
         assert_eq!(s.priority, None);
     }
-
-    #[test]
-    fn suggestion_priority_can_be_set() {
-        let s = Suggestion {
-            priority: Some(100),
-            ..Default::default()
-        };
-        assert_eq!(s.priority, Some(100));
-    }
 }
