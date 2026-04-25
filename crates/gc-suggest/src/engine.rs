@@ -828,8 +828,17 @@ impl SuggestionEngine {
             }
         }
 
-        // Apply frecency boost to ALL suggestions, then re-sort.
-        // Re-sort after frecency boost changes scores. Maintains history-comes-last partition.
+        // Apply frecency boost to ALL suggestions, then re-sort by
+        // (history-partition, score-desc, priority-desc, alpha).
+        //
+        // The explicit `a_hist` / `b_hist` partition is retained on purpose
+        // even though `priority::effective(History) == 10` would normally
+        // sink history to the bottom. Frecency can boost a heavily-used
+        // history entry's `score` well above non-history items, and
+        // because score is the primary sort key, a boosted history match
+        // could otherwise outrank domain content on the same query. The
+        // partition guarantees history never outranks non-history
+        // regardless of how aggressive frecency gets.
         self.frecency_db
             .boost_scores(&mut results, ctx.command.as_deref());
         results.sort_by(|a, b| {

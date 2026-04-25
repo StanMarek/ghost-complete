@@ -1394,7 +1394,7 @@ mod tests {
         // branches arrive. Previously the empty-query branch of
         // `try_merge_dynamic` skipped sorting entirely and just `extend`-ed,
         // which left branches stranded BELOW the earlier rows. Branches must
-        // sort to the top by kind priority.
+        // sort to the top by effective priority.
         use gc_suggest::SuggestionKind;
 
         let mut handler = make_visible_handler(vec![
