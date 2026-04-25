@@ -25,6 +25,7 @@ pub enum Context {
 /// Inputs passed in by the engine. Kept as a struct (not borrows of
 /// `CommandContext`) so the classifier can be tested without dragging
 /// the full engine context types into scope.
+#[derive(Debug, Clone, Copy)]
 pub struct ClassifyInput<'a> {
     pub current_word: &'a str,
     pub in_redirect: bool,
@@ -91,6 +92,16 @@ mod tests {
     fn redirect_beats_path_prefix() {
         assert_eq!(
             classify(input("./out.txt", 1, true, true)),
+            Context::Redirect
+        );
+    }
+
+    #[test]
+    fn redirect_fires_with_plain_word() {
+        // Redirect classification must not depend on the word looking
+        // like a path — `echo foo > output.txt` is the canonical case.
+        assert_eq!(
+            classify(input("output.txt", 1, true, false)),
             Context::Redirect
         );
     }
