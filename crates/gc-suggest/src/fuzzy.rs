@@ -1,17 +1,17 @@
 use nucleo::pattern::{AtomKind, CaseMatching, Normalization, Pattern};
 use nucleo::{Config, Matcher, Utf32String};
 
-use crate::types::{Suggestion, SuggestionSource};
+use crate::priority;
+use crate::types::Suggestion;
 
 pub const DEFAULT_MAX_RESULTS: usize = 50;
 
 pub fn rank(query: &str, mut suggestions: Vec<Suggestion>, max_results: usize) -> Vec<Suggestion> {
     if query.is_empty() {
-        // Sort by kind priority (branches before flags before files, etc.)
+        // Empty query: priority alone determines order (score is 0 for all).
         suggestions.sort_by(|a, b| {
-            a.kind
-                .sort_priority()
-                .cmp(&b.kind.sort_priority())
+            priority::effective(b)
+                .cmp(&priority::effective(a))
                 .then_with(|| a.text.cmp(&b.text))
         });
         suggestions.truncate(max_results);
@@ -43,12 +43,9 @@ pub fn rank(query: &str, mut suggestions: Vec<Suggestion>, max_results: usize) -
     });
 
     suggestions.sort_by(|a, b| {
-        let a_hist = a.source == SuggestionSource::History;
-        let b_hist = b.source == SuggestionSource::History;
-        a_hist
-            .cmp(&b_hist)
-            .then_with(|| b.score.cmp(&a.score))
-            .then_with(|| a.kind.sort_priority().cmp(&b.kind.sort_priority()))
+        b.score
+            .cmp(&a.score)
+            .then_with(|| priority::effective(b).cmp(&priority::effective(a)))
             .then_with(|| a.text.cmp(&b.text))
     });
     suggestions.truncate(max_results);
@@ -58,7 +55,6 @@ pub fn rank(query: &str, mut suggestions: Vec<Suggestion>, max_results: usize) -
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::SuggestionSource;
 
     fn make(text: &str) -> Suggestion {
         Suggestion {
@@ -113,43 +109,26 @@ mod tests {
     }
 
     #[test]
-    fn test_history_items_sorted_after_non_history() {
+    fn test_history_ranks_below_equal_score_non_history() {
+        use crate::types::{SuggestionKind, SuggestionSource};
         let items = vec![
             Suggestion {
                 text: "checkout".to_string(),
+                kind: SuggestionKind::History,
                 source: SuggestionSource::History,
                 ..Default::default()
             },
             Suggestion {
-                text: "cherry-pick".to_string(),
-                source: SuggestionSource::Commands,
-                ..Default::default()
-            },
-            Suggestion {
-                text: "check".to_string(),
-                source: SuggestionSource::History,
-                ..Default::default()
-            },
-            Suggestion {
-                text: "chmod".to_string(),
-                source: SuggestionSource::Commands,
+                text: "checkout".to_string(),
+                kind: SuggestionKind::Subcommand,
+                source: SuggestionSource::Spec,
                 ..Default::default()
             },
         ];
-        let result = rank("ch", items, DEFAULT_MAX_RESULTS);
-        // All non-history items should come before any history item
-        let first_hist = result
-            .iter()
-            .position(|s| s.source == SuggestionSource::History);
-        let last_non_hist = result
-            .iter()
-            .rposition(|s| s.source != SuggestionSource::History);
-        if let (Some(fh), Some(lnh)) = (first_hist, last_non_hist) {
-            assert!(
-                lnh < fh,
-                "non-history items should all precede history items: {result:?}"
-            );
-        }
+        let result = rank("checkout", items, DEFAULT_MAX_RESULTS);
+        // Same fuzzy score → priority breaks tie. Subcommand base 70 > History base 10.
+        assert_eq!(result[0].source, SuggestionSource::Spec);
+        assert_eq!(result[1].source, SuggestionSource::History);
     }
 
     #[test]
@@ -191,5 +170,50 @@ mod tests {
         let items = vec![make("checkout")];
         let result = rank("", items, DEFAULT_MAX_RESULTS);
         assert!(result[0].match_indices.is_empty());
+    }
+
+    #[test]
+    fn test_priority_overrides_kind_base() {
+        use crate::types::SuggestionKind;
+        let items = vec![
+            Suggestion {
+                text: "A".to_string(),
+                kind: SuggestionKind::Flag,
+                priority: Some(95),
+                ..Default::default()
+            },
+            Suggestion {
+                text: "B".to_string(),
+                kind: SuggestionKind::GitBranch,
+                priority: None,
+                ..Default::default()
+            },
+        ];
+        let result = rank("", items, DEFAULT_MAX_RESULTS);
+        assert_eq!(
+            result[0].text, "A",
+            "spec priority 95 should beat branch base 80"
+        );
+    }
+
+    #[test]
+    fn test_history_base_keeps_history_last_on_empty_query() {
+        use crate::types::{SuggestionKind, SuggestionSource};
+        let items = vec![
+            Suggestion {
+                text: "from-history".to_string(),
+                kind: SuggestionKind::History,
+                source: SuggestionSource::History,
+                ..Default::default()
+            },
+            Suggestion {
+                text: "a-flag".to_string(),
+                kind: SuggestionKind::Flag,
+                ..Default::default()
+            },
+        ];
+        let result = rank("", items, DEFAULT_MAX_RESULTS);
+        assert_eq!(result[0].text, "a-flag");
+        assert_eq!(result[1].text, "from-history");
     }
 }
