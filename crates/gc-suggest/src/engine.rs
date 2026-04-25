@@ -182,6 +182,22 @@ mod sync_result_tests {
         // top_sync = 30 (Flag), git_base = 80 → 80 > 30 → true
         assert!(result.has_pending_high_priority());
     }
+
+    #[test]
+    fn has_pending_high_priority_true_when_provider_pending_and_flags_only_in_sync() {
+        let result = SyncResult {
+            suggestions: vec![Suggestion {
+                kind: SuggestionKind::Flag,
+                priority: None,
+                ..Default::default()
+            }],
+            script_generators: vec![],
+            git_generators: vec![],
+            provider_generators: vec![ProviderKind::DefaultsDomains],
+        };
+        // top_sync = 30 (Flag), provider_base = 70 (ProviderValue) → 70 > 30 → true
+        assert!(result.has_pending_high_priority());
+    }
 }
 
 pub struct SuggestionEngine {
