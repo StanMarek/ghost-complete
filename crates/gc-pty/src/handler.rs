@@ -188,9 +188,10 @@ pub struct InputHandler {
     terminal_profile: TerminalProfile,
     /// Accumulated viewport scroll from popup rendering. Persists across
     /// re-render cycles within a single prompt context because viewport
-    /// scroll is permanent. Reset synchronously when a new prompt boundary
-    /// is detected (OSC 133;A / OSC 7771;A via take_prompt_started), on
-    /// dismiss, on resize, and as a CPR-sync fallback (take_cpr_synced).
+    /// scroll is permanent. Reset synchronously on a new prompt boundary
+    /// (OSC 133;A / OSC 7771;A via take_prompt_started), on dismiss, on
+    /// resize, and via take_cpr_synced as the async fallback for terminals
+    /// where the boundary is observed only after the CPR roundtrip.
     scroll_deficit: u16,
     /// Fingerprint (buffer hash + cursor offset) of the last trigger that
     /// produced a visible popup. Used as an idempotency guard in
@@ -401,14 +402,12 @@ impl InputHandler {
         // Configurable actions checked first via if-chain
         if key == &self.keybindings.navigate_up {
             self.overlay.move_up();
-            self.drain_prompt_started_reset(parser);
             self.render(parser, stdout);
             return Vec::new();
         }
         if key == &self.keybindings.navigate_down {
             self.overlay
                 .move_down(self.suggestions.len(), self.max_visible);
-            self.drain_prompt_started_reset(parser);
             self.render(parser, stdout);
             return Vec::new();
         }
@@ -1000,11 +999,13 @@ impl InputHandler {
         }
     }
 
-    /// Synchronous prompt-boundary reset. Called at every render entry point
-    /// so a re-render that fires before the async CPR roundtrip lands still
-    /// sees a clean per-prompt render context. Complements the async CPR
-    /// fallback in [`InputHandler::trigger`] — both must drain so neither
-    /// flag carries forward stale state. Mirrors render's poison handling.
+    /// Drain `prompt_started` under a parser lock and clear per-prompt render
+    /// state (`scroll_deficit`, `last_layout`). Called by render entry points
+    /// (`render`, `accept_with_chaining`, `try_merge_dynamic`) that go through
+    /// `render_at` without draining first. [`InputHandler::trigger`] does its
+    /// own inline drain because it reads `cpr_synced` in the same critical
+    /// section. On a poisoned parser mutex this leaves `prompt_started` set
+    /// on the parser; recovery is upstream. Mirrors render's poison handling.
     fn drain_prompt_started_reset(&mut self, parser: &Arc<Mutex<TerminalParser>>) {
         match parser.lock() {
             Ok(mut p) => {
@@ -2586,7 +2587,7 @@ mod tests {
         }
     }
 
-    // --- Per-prompt synchronous reset (issue #83) ---
+    // --- Per-prompt synchronous reset ---
 
     /// Drive the parser through an OSC 133;A sequence so `prompt_started`
     /// is set without needing crate-private access to `mark_prompt_started`.
@@ -2596,11 +2597,11 @@ mod tests {
     }
 
     #[test]
-    fn test_render_resets_scroll_deficit_on_prompt_started() {
-        // Regression for issue #83: after Ctrl+C, a new prompt boundary
-        // (OSC 133;A) must synchronously reset scroll_deficit AND
-        // last_layout BEFORE render reads cursor state, otherwise the
-        // popup paints anchored on top of the new prompt.
+    fn test_drain_prompt_started_reset_with_flag_clears_state() {
+        // After a new prompt boundary (Ctrl+C, fresh prompt) the helper must
+        // synchronously zero scroll_deficit AND drop last_layout so the next
+        // render anchors clear_popup on the new prompt row instead of the
+        // stale geometry of the prior prompt.
         let mut handler = make_visible_handler(vec![Suggestion {
             text: "item".to_string(),
             ..Default::default()
@@ -2611,26 +2612,43 @@ mod tests {
         let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
         feed_prompt_start(&parser);
 
-        let mut buf = Vec::new();
-        handler.render(&parser, &mut buf);
+        handler.drain_prompt_started_reset(&parser);
 
-        // After render, scroll_deficit reflects the FRESH layout's deficit
-        // (which itself starts from 0 because we drained first). last_layout
-        // is repopulated by render_at, but the drain-then-paint ordering is
-        // what matters: confirm the parser flag was consumed.
-        let drained = parser.lock().unwrap().state_mut().take_prompt_started();
-        assert!(
-            !drained,
-            "render must drain prompt_started so a follow-up drain returns false"
+        assert_eq!(
+            handler.scroll_deficit, 0,
+            "drain must reset scroll_deficit when prompt_started is set"
         );
-        // The pre-render layout was cleared, then a new layout was painted —
-        // so last_layout is Some, but it's the FRESH one (height matching the
-        // single suggestion), not the stale 1-row mock layout from the test
-        // builder. Easier to assert: confirm the stale scroll_deficit (5) was
-        // overwritten by the layout's own deficit, which can't carry the 5.
-        assert_ne!(
-            handler.scroll_deficit, 5,
-            "stale scroll_deficit must not persist across prompt boundary"
+        assert!(
+            handler.last_layout.is_none(),
+            "drain must clear last_layout when prompt_started is set"
+        );
+        let still_set = parser.lock().unwrap().state_mut().take_prompt_started();
+        assert!(!still_set, "drain must consume the prompt_started flag");
+    }
+
+    #[test]
+    fn test_drain_prompt_started_reset_no_flag_preserves_state() {
+        // Without a fresh prompt boundary, the drain must be a no-op: it
+        // must not clobber a valid scroll_deficit or layout that the prior
+        // render committed.
+        let mut handler = make_visible_handler(vec![Suggestion {
+            text: "item".to_string(),
+            ..Default::default()
+        }]);
+        handler.scroll_deficit = 7;
+        assert!(handler.last_layout.is_some(), "setup invariant");
+
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+
+        handler.drain_prompt_started_reset(&parser);
+
+        assert_eq!(
+            handler.scroll_deficit, 7,
+            "drain must preserve scroll_deficit when prompt_started is unset"
+        );
+        assert!(
+            handler.last_layout.is_some(),
+            "drain must preserve last_layout when prompt_started is unset"
         );
     }
 
@@ -2656,19 +2674,16 @@ mod tests {
     }
 
     #[test]
-    fn test_try_merge_dynamic_resets_scroll_deficit_on_prompt_started() {
-        // The merge path is also a render entry — it must drain the flag so
-        // a popup that was visible from a prior prompt and then merges new
-        // dynamic results across a Ctrl+C boundary doesn't paint with stale
-        // scroll_deficit.
+    fn test_try_merge_dynamic_drains_prompt_started_on_entry() {
+        // The merge path is a render entry — it must drain the flag so a
+        // popup that was visible from a prior prompt and then merges new
+        // dynamic results across a Ctrl+C boundary doesn't paint with
+        // stale per-prompt state.
         let mut handler = make_visible_handler(vec![Suggestion {
             text: "static".to_string(),
             ..Default::default()
         }]);
-        handler.scroll_deficit = 9;
 
-        // Wire up a closed channel so try_merge_dynamic takes the
-        // Disconnected branch (which still re-renders when visible).
         let (tx, rx) = mpsc::channel::<Vec<Suggestion>>(1);
         drop(tx);
         handler.dynamic_rx = Some(rx);
@@ -2679,14 +2694,10 @@ mod tests {
         let mut buf = Vec::new();
         handler.try_merge_dynamic(&parser, &mut buf);
 
-        let drained = parser.lock().unwrap().state_mut().take_prompt_started();
+        let still_set = parser.lock().unwrap().state_mut().take_prompt_started();
         assert!(
-            !drained,
-            "try_merge_dynamic must drain prompt_started on entry"
-        );
-        assert_ne!(
-            handler.scroll_deficit, 9,
-            "stale scroll_deficit must not survive prompt boundary in merge path"
+            !still_set,
+            "try_merge_dynamic must consume prompt_started on entry"
         );
     }
 
@@ -2765,5 +2776,67 @@ mod tests {
                 "prompt_started must clear last_layout"
             );
         }
+
+        // Case 3: BOTH flags set within the same trigger() — both must drain
+        // and the prompt_started branch (which clears last_layout) must win.
+        {
+            let mut handler = make_handler();
+            handler.scroll_deficit = 4;
+            handler.last_layout = Some(stale_layout.clone());
+            feed_prompt_start(&parser);
+            parser
+                .lock()
+                .unwrap()
+                .state_mut()
+                .set_cursor_from_report(2, 1);
+
+            let mut stdout = Vec::new();
+            handler.trigger(&parser, &mut stdout);
+
+            assert_eq!(
+                handler.scroll_deficit, 0,
+                "both flags must clear scroll_deficit"
+            );
+            assert!(
+                handler.last_layout.is_none(),
+                "prompt_started branch must clear last_layout even with cpr_synced also set"
+            );
+            assert!(
+                !parser.lock().unwrap().state_mut().take_prompt_started(),
+                "trigger must consume prompt_started"
+            );
+            assert!(
+                !parser.lock().unwrap().state_mut().take_cpr_synced(),
+                "trigger must consume cpr_synced"
+            );
+        }
+    }
+
+    #[test]
+    fn test_handle_resize_does_not_consume_prompt_started() {
+        // handle_resize dismisses the popup and zeroes scroll_deficit on its
+        // own — it does NOT touch prompt_started, so a fresh prompt boundary
+        // observed after resize is still drained at the next render entry.
+        let mut handler = make_visible_handler(vec![Suggestion {
+            text: "item".to_string(),
+            ..Default::default()
+        }]);
+        handler.scroll_deficit = 5;
+
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        feed_prompt_start(&parser);
+
+        let mut buf = Vec::new();
+        handler.handle_resize(&parser, &mut buf);
+
+        assert!(!handler.visible, "resize must dismiss the popup");
+        assert_eq!(
+            handler.scroll_deficit, 0,
+            "resize must reset scroll_deficit independently"
+        );
+        assert!(
+            parser.lock().unwrap().state_mut().take_prompt_started(),
+            "resize must NOT consume prompt_started — next render owns the drain"
+        );
     }
 }

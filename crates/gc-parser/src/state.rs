@@ -46,11 +46,11 @@ pub struct TerminalState {
     cwd_dirty: bool,
     cursor_sync_requested: bool,
     cpr_synced: bool,
-    /// Set to true on every detected new-prompt boundary (OSC 133;A or OSC
-    /// 7771;A) so the handler can synchronously reset render state that's
-    /// scoped to a single prompt context (e.g., scroll_deficit). Unlike
-    /// cpr_synced this does NOT depend on a terminal roundtrip — it fires
-    /// the moment the parser sees the prompt-start sequence.
+    /// Sentinel set on each detected new-prompt boundary (OSC 133;A or OSC
+    /// 7771;A). Drives synchronous per-prompt render-state reset (e.g.
+    /// scroll_deficit) — independent of cpr_synced, which depends on a
+    /// terminal CPR roundtrip and may land later or not at all on terminals
+    /// without robust CPR support.
     prompt_started: bool,
     /// FIFO queue of pending CPR requests in send-order.
     ///
