@@ -717,6 +717,7 @@ mod tests {
             source: SuggestionSource::Spec,
             score: 100,
             match_indices: vec![],
+            priority: None,
         }];
 
         db.boost_scores(&mut suggestions, Some("git"));
@@ -738,6 +739,7 @@ mod tests {
             source: SuggestionSource::History,
             score: 42,
             match_indices: vec![],
+            priority: None,
         }];
         db.boost_scores(&mut suggestions, None);
         assert_eq!(suggestions[0].score, 42);
@@ -816,6 +818,7 @@ mod tests {
             source: SuggestionSource::History,
             score: 10,
             match_indices: vec![],
+            priority: None,
         }];
 
         // Even when called with Some("git"), history items should look up with None

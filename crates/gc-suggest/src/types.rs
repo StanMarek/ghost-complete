@@ -99,6 +99,10 @@ pub struct Suggestion {
     pub source: SuggestionSource,
     pub score: u32,
     pub match_indices: Vec<u32>,
+    /// Spec-declared rank hint, range 0..=100. When `None`, falls back to
+    /// the kind's base priority (see `crate::priority::base_for_kind`).
+    /// Higher values rank earlier in the popup.
+    pub priority: Option<u8>,
 }
 
 impl Default for Suggestion {
@@ -118,6 +122,7 @@ impl Default for Suggestion {
             source: SuggestionSource::Provider,
             score: 0,
             match_indices: Vec::new(),
+            priority: None,
         }
     }
 }
@@ -137,5 +142,20 @@ mod kind_invariants {
         assert_eq!(SuggestionKind::ProviderValue.sort_priority(), 6);
         assert_eq!(Suggestion::default().kind, SuggestionKind::ProviderValue);
         assert_eq!(Suggestion::default().source, SuggestionSource::Provider);
+    }
+
+    #[test]
+    fn suggestion_priority_defaults_to_none() {
+        let s = Suggestion::default();
+        assert_eq!(s.priority, None);
+    }
+
+    #[test]
+    fn suggestion_priority_can_be_set() {
+        let s = Suggestion {
+            priority: Some(100),
+            ..Default::default()
+        };
+        assert_eq!(s.priority, Some(100));
     }
 }
