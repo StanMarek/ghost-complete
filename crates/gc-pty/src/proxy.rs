@@ -845,7 +845,7 @@ async fn debounce_loop(
                 }
                 _ = notify.notified() => {
                     // Keystroke supersedes — drop rx and let the next
-                    // trigger cycle aborts the in-flight task and spawn fresh.
+                    // trigger cycle abort the in-flight task and spawn fresh.
                     drop(rx);
                     continue;
                 }
