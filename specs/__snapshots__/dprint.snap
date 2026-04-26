@@ -39,7 +39,8 @@
   "subcommands": [
     {
       "description": "Initializes a configuration file in the current directory",
-      "name": "init"
+      "name": "init",
+      "priority": 60
     },
     {
       "args": {
@@ -103,7 +104,8 @@
             "--allow-node-modules"
           ]
         }
-      ]
+      ],
+      "priority": 76
     },
     {
       "args": {
@@ -151,11 +153,13 @@
             "--allow-node-modules"
           ]
         }
-      ]
+      ],
+      "priority": 60
     },
     {
       "description": "Functionality related to the configuration file",
       "name": "config",
+      "priority": 60,
       "subcommands": [
         {
           "args": {
@@ -280,7 +284,8 @@
     },
     {
       "description": "Upgrades the dprint executable",
-      "name": "upgrade"
+      "name": "upgrade",
+      "priority": 55
     },
     {
       "description": "Outputs the software license",

@@ -95,13 +95,15 @@
       "description": "Enable auto reload in the Bun runtime, test runner, or bundler",
       "name": [
         "--hot"
-      ]
+      ],
+      "priority": 50
     },
     {
       "description": "Automatically restart the process on file change",
       "name": [
         "--watch"
-      ]
+      ],
+      "priority": 50
     }
   ],
   "subcommands": [
@@ -189,7 +191,8 @@
           "description": "Overwrite existing files",
           "name": [
             "--force"
-          ]
+          ],
+          "priority": 20
         },
         {
           "description": "Don't install node_modules",
@@ -207,7 +210,8 @@
           "description": "Too many logs",
           "name": [
             "--verbose"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Disable package.json transforms",
@@ -246,7 +250,8 @@
         "name": "script"
       },
       "description": "Run a package.json script or executable",
-      "name": "run"
+      "name": "run",
+      "priority": 90
     },
     {
       "description": "Install dependencies for a package.json",
@@ -276,7 +281,8 @@
           "name": [
             "-p",
             "--production"
-          ]
+          ],
+          "priority": 60
         },
         {
           "description": "Don't save a lockfile",
@@ -294,20 +300,23 @@
           "description": "Don't install anything",
           "name": [
             "--dry-run"
-          ]
+          ],
+          "priority": 50
         },
         {
           "description": "Disallow changes to lockfile",
           "name": [
             "--frozen-lockfile"
-          ]
+          ],
+          "priority": 60
         },
         {
           "description": "Always request the latest versions from the registry & reinstall all dependencies",
           "name": [
             "-f",
             "--force"
-          ]
+          ],
+          "priority": 20
         },
         {
           "args": {
@@ -335,14 +344,16 @@
           "description": "Excessively verbose logging",
           "name": [
             "--verbose"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Install globally",
           "name": [
             "-g",
             "--global"
-          ]
+          ],
+          "priority": 60
         },
         {
           "args": {
@@ -418,7 +429,8 @@
             "--dev",
             "-D",
             "--development"
-          ]
+          ],
+          "priority": 75
         },
         {
           "description": "Install exact version",
@@ -432,7 +444,8 @@
             "--optional"
           ]
         }
-      ]
+      ],
+      "priority": 90
     },
     {
       "args": {
@@ -472,7 +485,8 @@
           "name": [
             "-p",
             "--production"
-          ]
+          ],
+          "priority": 60
         },
         {
           "description": "Don't save a lockfile",
@@ -490,20 +504,23 @@
           "description": "Don't install anything",
           "name": [
             "--dry-run"
-          ]
+          ],
+          "priority": 50
         },
         {
           "description": "Disallow changes to lockfile",
           "name": [
             "--frozen-lockfile"
-          ]
+          ],
+          "priority": 60
         },
         {
           "description": "Always request the latest versions from the registry & reinstall all dependencies",
           "name": [
             "-f",
             "--force"
-          ]
+          ],
+          "priority": 20
         },
         {
           "args": {
@@ -531,14 +548,16 @@
           "description": "Excessively verbose logging",
           "name": [
             "--verbose"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Install globally",
           "name": [
             "-g",
             "--global"
-          ]
+          ],
+          "priority": 60
         },
         {
           "args": {
@@ -614,7 +633,8 @@
             "--dev",
             "-D",
             "--development"
-          ]
+          ],
+          "priority": 75
         },
         {
           "description": "Install exact version",
@@ -668,7 +688,8 @@
           "name": [
             "-p",
             "--production"
-          ]
+          ],
+          "priority": 60
         },
         {
           "description": "Don't save a lockfile",
@@ -686,20 +707,23 @@
           "description": "Don't install anything",
           "name": [
             "--dry-run"
-          ]
+          ],
+          "priority": 50
         },
         {
           "description": "Disallow changes to lockfile",
           "name": [
             "--frozen-lockfile"
-          ]
+          ],
+          "priority": 60
         },
         {
           "description": "Always request the latest versions from the registry & reinstall all dependencies",
           "name": [
             "-f",
             "--force"
-          ]
+          ],
+          "priority": 20
         },
         {
           "args": {
@@ -727,14 +751,16 @@
           "description": "Excessively verbose logging",
           "name": [
             "--verbose"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Install globally",
           "name": [
             "-g",
             "--global"
-          ]
+          ],
+          "priority": 60
         },
         {
           "args": {
@@ -810,7 +836,8 @@
             "--dev",
             "-D",
             "--development"
-          ]
+          ],
+          "priority": 75
         },
         {
           "description": "Install exact version",
@@ -824,7 +851,8 @@
             "--optional"
           ]
         }
-      ]
+      ],
+      "priority": 78
     },
     {
       "args": {
@@ -915,7 +943,8 @@
           "description": "Changes the function called when compiling JSX fragments",
           "name": [
             "--jsx-fragment"
-          ]
+          ],
+          "priority": 49
         },
         {
           "args": {
@@ -1066,7 +1095,8 @@
           "description": "Minify (experimental)",
           "name": [
             "--minify"
-          ]
+          ],
+          "priority": 50
         },
         {
           "description": "Minify syntax and inline data (experimental)",
@@ -1104,7 +1134,8 @@
           "description": "Target environment",
           "name": [
             "--target"
-          ]
+          ],
+          "priority": 50
         },
         {
           "args": {
@@ -1179,13 +1210,15 @@
           "description": "Enable auto reload in the Bun runtime, test runner, or bundler",
           "name": [
             "--hot"
-          ]
+          ],
+          "priority": 50
         },
         {
           "description": "Automatically restart the process on file change",
           "name": [
             "--watch"
-          ]
+          ],
+          "priority": 50
         },
         {
           "description": "Disable auto install in the Bun runtime",
@@ -1244,7 +1277,8 @@
           "description": "Generate a standalone Bun executable containing your bundled code",
           "name": [
             "compile"
-          ]
+          ],
+          "priority": 50
         },
         {
           "args": {
@@ -1267,7 +1301,8 @@
           "description": "Default to \"dist\" if multiple files",
           "name": [
             "--outdir"
-          ]
+          ],
+          "priority": 50
         },
         {
           "args": {
@@ -1276,7 +1311,8 @@
           "description": "Write to a file",
           "name": [
             "--outfile"
-          ]
+          ],
+          "priority": 50
         },
         {
           "args": {
@@ -1291,7 +1327,8 @@
           "description": "Enable code splitting",
           "name": [
             "--splitting"
-          ]
+          ],
+          "priority": 50
         },
         {
           "args": {
@@ -1321,7 +1358,8 @@
           "description": "Build with sourcemaps - 'inline', 'external', or 'none'",
           "name": [
             "--sourcemap"
-          ]
+          ],
+          "priority": 50
         },
         {
           "args": {
@@ -1366,15 +1404,18 @@
           "description": "Dump environment variables from .env and process as JSON and quit. Useful for debugging",
           "name": [
             "--dump-environment-variables"
-          ]
+          ],
+          "priority": 49
         },
         {
           "description": "Dump system limits. Useful for debugging",
           "name": [
             "--dump-limits"
-          ]
+          ],
+          "priority": 49
         }
-      ]
+      ],
+      "priority": 88
     },
     {
       "args": {
@@ -1415,7 +1456,8 @@
           "name": [
             "-p",
             "--production"
-          ]
+          ],
+          "priority": 60
         },
         {
           "description": "Don't save a lockfile",
@@ -1433,20 +1475,23 @@
           "description": "Don't install anything",
           "name": [
             "--dry-run"
-          ]
+          ],
+          "priority": 50
         },
         {
           "description": "Disallow changes to lockfile",
           "name": [
             "--frozen-lockfile"
-          ]
+          ],
+          "priority": 60
         },
         {
           "description": "Always request the latest versions from the registry & reinstall all dependencies",
           "name": [
             "-f",
             "--force"
-          ]
+          ],
+          "priority": 20
         },
         {
           "args": {
@@ -1474,14 +1519,16 @@
           "description": "Excessively verbose logging",
           "name": [
             "--verbose"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Install globally",
           "name": [
             "-g",
             "--global"
-          ]
+          ],
+          "priority": 60
         },
         {
           "args": {
@@ -1557,7 +1604,8 @@
             "--dev",
             "-D",
             "--development"
-          ]
+          ],
+          "priority": 75
         },
         {
           "description": "Install exact version",
@@ -1571,7 +1619,8 @@
             "--optional"
           ]
         }
-      ]
+      ],
+      "priority": 78
     },
     {
       "args": {
@@ -1605,7 +1654,8 @@
             "--save"
           ]
         }
-      ]
+      ],
+      "priority": 55
     },
     {
       "description": "Unlink this package from the global package registry",
@@ -1621,7 +1671,8 @@
             "--canary"
           ]
         }
-      ]
+      ],
+      "priority": 78
     },
     {
       "args": {
@@ -1724,7 +1775,8 @@
           "description": "Changes the function called when compiling JSX fragments",
           "name": [
             "--jsx-fragment"
-          ]
+          ],
+          "priority": 49
         },
         {
           "args": {
@@ -1875,7 +1927,8 @@
           "description": "Minify (experimental)",
           "name": [
             "--minify"
-          ]
+          ],
+          "priority": 50
         },
         {
           "description": "Minify syntax and inline data (experimental)",
@@ -1913,7 +1966,8 @@
           "description": "Target environment",
           "name": [
             "--target"
-          ]
+          ],
+          "priority": 50
         },
         {
           "args": {
@@ -1988,13 +2042,15 @@
           "description": "Enable auto reload in the Bun runtime, test runner, or bundler",
           "name": [
             "--hot"
-          ]
+          ],
+          "priority": 50
         },
         {
           "description": "Automatically restart the process on file change",
           "name": [
             "--watch"
-          ]
+          ],
+          "priority": 50
         },
         {
           "description": "Disable auto install in the Bun runtime",
@@ -2115,15 +2171,18 @@
           "description": "Dump environment variables from .env and process as JSON and quit. Useful for debugging",
           "name": [
             "--dump-environment-variables"
-          ]
+          ],
+          "priority": 49
         },
         {
           "description": "Dump system limits. Useful for debugging",
           "name": [
             "--dump-limits"
-          ]
+          ],
+          "priority": 49
         }
-      ]
+      ],
+      "priority": 85
     },
     {
       "description": "Set of utilities for working with Bun's package manager",
@@ -2323,7 +2382,8 @@
         ]
       },
       "description": "Run an npx command",
-      "name": "x"
+      "name": "x",
+      "priority": 75
     },
     {
       "description": "Run a REPL (read eval print loop) with the Bun runtime.(experimental)",
@@ -2340,7 +2400,8 @@
             "--yes"
           ]
         }
-      ]
+      ],
+      "priority": 55
     }
   ]
 }

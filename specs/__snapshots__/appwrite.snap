@@ -26,13 +26,15 @@
       "name": [
         "-h",
         "--help"
-      ]
+      ],
+      "priority": 49
     }
   ],
   "subcommands": [
     {
       "description": "The login command allows you to authenticate and manage a user account",
-      "name": "login"
+      "name": "login",
+      "priority": 88
     },
     {
       "description": "The init command helps you initialize your Appwrite project, functions and collections",
@@ -40,7 +42,8 @@
       "subcommands": [
         {
           "description": "Initialise your Appwrite project",
-          "name": "project"
+          "name": "project",
+          "priority": 78
         },
         {
           "description": "Initialise your Appwrite cloud function",
@@ -72,6 +75,7 @@
     {
       "description": "The deploy command provides a convenient wrapper for deploying your functions and collections",
       "name": "deploy",
+      "priority": 90,
       "subcommands": [
         {
           "description": "Deploy functions in the current directory",
@@ -110,7 +114,8 @@
     },
     {
       "description": "The logout command allows you to logout of your Appwrite account",
-      "name": "logout"
+      "name": "logout",
+      "priority": 60
     },
     {
       "description": "The account command allows you to authenticate and manage a user account",
@@ -118,7 +123,8 @@
       "subcommands": [
         {
           "description": "Get currently logged in user data as JSON object",
-          "name": "get"
+          "name": "get",
+          "priority": 82
         },
         {
           "description": "Use this endpoint to allow a new user to register a new account in your project. After the user registration completes successfully, you can use the [/account/verfication](/docs/client/account#accountCreateVerification) route to start verifying the user email address. To allow the new user to login to their new account, you need to create a new [account session](/docs/client/account#accountCreateSession)",
@@ -160,7 +166,8 @@
                 "--name"
               ]
             }
-          ]
+          ],
+          "priority": 72
         },
         {
           "description": "Update currently logged in user account email address. After changing user address, the user confirmation status will get reset. A new confirmation email is not sent automatically however you can use the send confirmation email endpoint again to send the confirmation email. For security measures, user password is required to complete this request. This endpoint can also be used to convert an anonymous account to a normal one, by passing an email address and a new password",
@@ -1052,7 +1059,8 @@
                 "--orderType"
               ]
             }
-          ]
+          ],
+          "priority": 82
         },
         {
           "name": "create",
@@ -1075,7 +1083,8 @@
                 "--name"
               ]
             }
-          ]
+          ],
+          "priority": 72
         },
         {
           "name": "getUsage",
@@ -1103,7 +1112,8 @@
                 "--databaseId"
               ]
             }
-          ]
+          ],
+          "priority": 82
         },
         {
           "name": "update",
@@ -1140,7 +1150,8 @@
                 "--databaseId"
               ]
             }
-          ]
+          ],
+          "priority": 50
         },
         {
           "name": "listCollections",
@@ -2666,7 +2677,8 @@
                 "--orderType"
               ]
             }
-          ]
+          ],
+          "priority": 82
         },
         {
           "description": "Create a new function. You can pass a list of [permissions](/docs/permissions) to allow different project users or team with access to execute the function using the client API",
@@ -2746,7 +2758,8 @@
                 "--timeout"
               ]
             }
-          ]
+          ],
+          "priority": 72
         },
         {
           "description": "Get a list of all runtimes that are currently active on your instance",
@@ -2765,7 +2778,8 @@
                 "--functionId"
               ]
             }
-          ]
+          ],
+          "priority": 82
         },
         {
           "description": "Update function by its unique ID",
@@ -2851,7 +2865,8 @@
                 "--functionId"
               ]
             }
-          ]
+          ],
+          "priority": 50
         },
         {
           "description": "Get a list of all the project's code deployments. You can use the query params to filter your results",
@@ -3216,7 +3231,8 @@
       "subcommands": [
         {
           "description": "Check the Appwrite HTTP server is up and responsive",
-          "name": "get"
+          "name": "get",
+          "priority": 82
         },
         {
           "description": "Check the Appwrite Antivirus server is up and connection is successful",
@@ -3261,7 +3277,8 @@
       "subcommands": [
         {
           "description": "Get the current user location based on IP. Returns an object with user country code, country name, continent name, continent code, ip address and suggested currency. You can use the locale header to get the data in a supported language.  ([IP Geolocation by DB-IP](https://db-ip.com))",
-          "name": "get"
+          "name": "get",
+          "priority": 82
         },
         {
           "description": "List of all continents. You can use the locale header to get the data in a supported language",
@@ -3292,6 +3309,7 @@
     {
       "description": "The projects command allows you to view, create and manage your Appwrite projects",
       "name": "projects",
+      "priority": 78,
       "subcommands": [
         {
           "name": "list",
@@ -3350,7 +3368,8 @@
                 "--orderType"
               ]
             }
-          ]
+          ],
+          "priority": 82
         },
         {
           "name": "create",
@@ -3463,7 +3482,8 @@
                 "--legalTaxId"
               ]
             }
-          ]
+          ],
+          "priority": 72
         },
         {
           "name": "get",
@@ -3477,7 +3497,8 @@
                 "--projectId"
               ]
             }
-          ]
+          ],
+          "priority": 82
         },
         {
           "name": "update",
@@ -3604,7 +3625,8 @@
                 "--password"
               ]
             }
-          ]
+          ],
+          "priority": 50
         },
         {
           "name": "updateAuthLimit",
@@ -5084,7 +5106,8 @@
               "description": "Output format type (jpeg, jpg, png, gif and webp)",
               "name": [
                 "--output"
-              ]
+              ],
+              "priority": 75
             },
             {
               "args": {
@@ -5231,7 +5254,8 @@
                 "--orderType"
               ]
             }
-          ]
+          ],
+          "priority": 82
         },
         {
           "description": "Create a new team. The user who creates the team will automatically be assigned as the owner of the team. Only the users with the owner role can invite new members, add new owners and delete or update the team",
@@ -5265,7 +5289,8 @@
                 "--roles"
               ]
             }
-          ]
+          ],
+          "priority": 72
         },
         {
           "description": "Get a team by its ID. All team members have read access for this resource",
@@ -5280,7 +5305,8 @@
                 "--teamId"
               ]
             }
-          ]
+          ],
+          "priority": 82
         },
         {
           "description": "Update a team using its ID. Only members with the owner role can update the team",
@@ -5319,7 +5345,8 @@
                 "--teamId"
               ]
             }
-          ]
+          ],
+          "priority": 50
         },
         {
           "description": "Get the team activity logs list by its unique ID",
@@ -5654,7 +5681,8 @@
                 "--orderType"
               ]
             }
-          ]
+          ],
+          "priority": 82
         },
         {
           "description": "Create a new user",
@@ -5696,7 +5724,8 @@
                 "--name"
               ]
             }
-          ]
+          ],
+          "priority": 72
         },
         {
           "name": "getUsage",
@@ -5723,11 +5752,13 @@
         },
         {
           "description": "Get a user by its unique ID",
-          "name": "get"
+          "name": "get",
+          "priority": 82
         },
         {
           "description": "Delete a user by its unique ID, thereby releasing it's ID. Since ID is released and can be reused, all user-related resources like documents or storage files should be deleted before user deletion. If you want to keep ID reserved, use the [updateStatus](/docs/server/users#usersUpdateStatus) endpoint instead",
-          "name": "delete"
+          "name": "delete",
+          "priority": 50
         },
         {
           "description": "Update the user email by its unique ID",

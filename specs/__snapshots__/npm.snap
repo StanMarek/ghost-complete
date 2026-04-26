@@ -29,7 +29,8 @@
           "name": [
             "-D",
             "--save-dev"
-          ]
+          ],
+          "priority": 65
         },
         {
           "description": "Package will appear in your `optionalDependencies`",
@@ -63,7 +64,8 @@
           "name": [
             "-g",
             "--global"
-          ]
+          ],
+          "priority": 60
         },
         {
           "description": "Causes npm to install the package into your local node_modules folder with the same layout it uses with the global node_modules folder",
@@ -111,7 +113,8 @@
           "description": "Show extra information",
           "name": [
             "--verbose"
-          ]
+          ],
+          "priority": 25
         },
         {
           "args": {
@@ -161,7 +164,8 @@
           "description": "Indicates that you don't want npm to make any changes and that it should only report what it would have done",
           "name": [
             "--dry-run"
-          ]
+          ],
+          "priority": 50
         },
         {
           "args": {
@@ -187,7 +191,8 @@
             "--workspaces"
           ]
         }
-      ]
+      ],
+      "priority": 92
     },
     {
       "args": {
@@ -270,7 +275,8 @@
             "--"
           ]
         }
-      ]
+      ],
+      "priority": 90
     },
     {
       "description": "Trigger the initialization",
@@ -292,7 +298,8 @@
             "-w"
           ]
         }
-      ]
+      ],
+      "priority": 55
     },
     {
       "description": "Set access controls on private packages",
@@ -413,6 +420,7 @@
           ]
         }
       ],
+      "priority": 60,
       "subcommands": [
         {
           "description": "If the fix argument is provided, then remediations will be applied to the package tree",
@@ -422,14 +430,16 @@
               "description": "Indicates that you don't want npm to make any changes and that it should only report what it would have done",
               "name": [
                 "--dry-run"
-              ]
+              ],
+              "priority": 50
             },
             {
               "description": "Removes various protections against unfortunate side effects, common mistakes, unnecessary performance degradation, and malicious input",
               "name": [
                 "-f",
                 "--force"
-              ]
+              ],
+              "priority": 20
             },
             {
               "args": {
@@ -468,7 +478,8 @@
           "name": [
             "-g",
             "--global"
-          ]
+          ],
+          "priority": 60
         }
       ]
     },
@@ -530,11 +541,13 @@
       "subcommands": [
         {
           "description": "Add the specified packages to the local cache",
-          "name": "add"
+          "name": "add",
+          "priority": 90
         },
         {
           "description": "Delete all data out of the cache folder",
-          "name": "clean"
+          "name": "clean",
+          "priority": 55
         },
         {
           "description": "Verify the contents of the cache folder, garbage collecting any unneeded data, and verifying the integrity of the cache index and all cached data",
@@ -591,7 +604,8 @@
           "description": "Show extra information",
           "name": [
             "--verbose"
-          ]
+          ],
+          "priority": 25
         },
         {
           "args": {
@@ -637,7 +651,8 @@
               "name": [
                 "-g",
                 "--global"
-              ]
+              ],
+              "priority": 60
             }
           ]
         },
@@ -656,7 +671,8 @@
               "description": "Lists globally installed packages",
               "name": [
                 "-g"
-              ]
+              ],
+              "priority": 60
             },
             {
               "description": "Also shows defaults",
@@ -670,7 +686,8 @@
                 "--json"
               ]
             }
-          ]
+          ],
+          "priority": 72
         },
         {
           "args": {
@@ -687,7 +704,8 @@
               "description": "Edits the global config",
               "name": [
                 "--global"
-              ]
+              ],
+              "priority": 60
             }
           ]
         }
@@ -695,7 +713,8 @@
     },
     {
       "description": "Create a package.json file",
-      "name": "create"
+      "name": "create",
+      "priority": 65
     },
     {
       "description": "Reduce duplication in the package tree",
@@ -892,7 +911,8 @@
         "template": "filepaths"
       },
       "description": "Symlink a package folder",
-      "name": "link"
+      "name": "link",
+      "priority": 55
     },
     {
       "description": "Symlink a package folder",
@@ -990,7 +1010,8 @@
           "name": [
             "-g",
             "--global"
-          ]
+          ],
+          "priority": 60
         },
         {
           "args": {
@@ -1036,7 +1057,8 @@
             "--workspaces"
           ]
         }
-      ]
+      ],
+      "priority": 72
     },
     {
       "description": "Manage orgs",
@@ -1123,7 +1145,8 @@
                 "--otp"
               ]
             }
-          ]
+          ],
+          "priority": 78
         },
         {
           "args": [
@@ -1171,7 +1194,8 @@
                 "--parseable"
               ]
             }
-          ]
+          ],
+          "priority": 72
         }
       ]
     },
@@ -1215,7 +1239,8 @@
           "description": "Checks globally",
           "name": [
             "-g"
-          ]
+          ],
+          "priority": 60
         },
         {
           "args": {
@@ -1241,7 +1266,8 @@
             "--workspaces"
           ]
         }
-      ]
+      ],
+      "priority": 65
     },
     {
       "description": "Manage package owners",
@@ -1263,7 +1289,8 @@
                 "--registry"
               ]
             }
-          ]
+          ],
+          "priority": 72
         },
         {
           "args": [
@@ -1295,7 +1322,8 @@
                 "--otp"
               ]
             }
-          ]
+          ],
+          "priority": 90
         },
         {
           "args": [
@@ -1327,7 +1355,8 @@
                 "--otp"
               ]
             }
-          ]
+          ],
+          "priority": 78
         }
       ]
     },
@@ -1348,7 +1377,8 @@
           "description": "Indicates that you don't want npm to make any changes and that it should only report what it would have done",
           "name": [
             "--dry-run"
-          ]
+          ],
+          "priority": 50
         },
         {
           "args": {
@@ -1492,7 +1522,8 @@
               "name": [
                 "-f",
                 "--force"
-              ]
+              ],
+              "priority": 20
             }
           ]
         },
@@ -1534,7 +1565,8 @@
               "name": [
                 "-f",
                 "--force"
-              ]
+              ],
+              "priority": 20
             }
           ]
         }
@@ -1549,7 +1581,8 @@
           "name": [
             "-g",
             "--global"
-          ]
+          ],
+          "priority": 60
         }
       ]
     },
@@ -1769,7 +1802,8 @@
           "description": "Indicates that you don't want npm to make any changes and that it should only report what it would have done",
           "name": [
             "--dry-run"
-          ]
+          ],
+          "priority": 50
         },
         {
           "description": "Show output in json format",
@@ -1781,7 +1815,8 @@
           "description": "Remove the packages specified in your devDependencies",
           "name": [
             "--production"
-          ]
+          ],
+          "priority": 60
         },
         {
           "args": {
@@ -1874,7 +1909,8 @@
           "description": "Indicates that you don't want npm to make any changes and that it should only report what it would have done",
           "name": [
             "--dry-run"
-          ]
+          ],
+          "priority": 50
         },
         {
           "args": {
@@ -1885,7 +1921,8 @@
             "--otp"
           ]
         }
-      ]
+      ],
+      "priority": 75
     },
     {
       "args": {
@@ -1899,7 +1936,8 @@
           "name": [
             "-g",
             "--global"
-          ]
+          ],
+          "priority": 60
         },
         {
           "args": {
@@ -2034,7 +2072,8 @@
           "name": [
             "-g",
             "--global"
-          ]
+          ],
+          "priority": 60
         }
       ]
     },
@@ -2261,7 +2300,8 @@
             "--"
           ]
         }
-      ]
+      ],
+      "priority": 88
     },
     {
       "description": "Stop a package",
@@ -2321,7 +2361,8 @@
                 "--otp"
               ]
             }
-          ]
+          ],
+          "priority": 65
         },
         {
           "args": {
@@ -2378,7 +2419,8 @@
                 "--otp"
               ]
             }
-          ]
+          ],
+          "priority": 90
         },
         {
           "args": [
@@ -2409,7 +2451,8 @@
                 "--otp"
               ]
             }
-          ]
+          ],
+          "priority": 78
         },
         {
           "args": {
@@ -2439,7 +2482,8 @@
                 "--parseable"
               ]
             }
-          ]
+          ],
+          "priority": 72
         }
       ]
     },
@@ -2462,7 +2506,8 @@
             "--script-shell"
           ]
         }
-      ]
+      ],
+      "priority": 85
     },
     {
       "description": "Manage your authentication tokens",
@@ -2505,7 +2550,8 @@
                 "--parseable"
               ]
             }
-          ]
+          ],
+          "priority": 72
         },
         {
           "description": "Create a new authentication token",
@@ -2526,7 +2572,8 @@
                 "--cidr"
               ]
             }
-          ]
+          ],
+          "priority": 65
         },
         {
           "args": {
@@ -2563,7 +2610,8 @@
           "name": [
             "-D",
             "--save-dev"
-          ]
+          ],
+          "priority": 65
         },
         {
           "description": "Package will appear in your `optionalDependencies`",
@@ -2582,7 +2630,8 @@
           "description": "Uninstall global package",
           "name": [
             "-g"
-          ]
+          ],
+          "priority": 60
         },
         {
           "args": {
@@ -2608,7 +2657,8 @@
             "--workspaces"
           ]
         }
-      ]
+      ],
+      "priority": 78
     },
     {
       "args": {
@@ -2636,7 +2686,8 @@
           "name": [
             "-D",
             "--save-dev"
-          ]
+          ],
+          "priority": 65
         },
         {
           "description": "Package will appear in your `optionalDependencies`",
@@ -2655,7 +2706,8 @@
           "description": "Uninstall global package",
           "name": [
             "-g"
-          ]
+          ],
+          "priority": 60
         },
         {
           "args": {
@@ -2709,7 +2761,8 @@
           "name": [
             "-D",
             "--save-dev"
-          ]
+          ],
+          "priority": 65
         },
         {
           "description": "Package will appear in your `optionalDependencies`",
@@ -2728,7 +2781,8 @@
           "description": "Uninstall global package",
           "name": [
             "-g"
-          ]
+          ],
+          "priority": 60
         },
         {
           "args": {
@@ -2782,7 +2836,8 @@
           "name": [
             "-D",
             "--save-dev"
-          ]
+          ],
+          "priority": 65
         },
         {
           "description": "Package will appear in your `optionalDependencies`",
@@ -2801,7 +2856,8 @@
           "description": "Uninstall global package",
           "name": [
             "-g"
-          ]
+          ],
+          "priority": 60
         },
         {
           "args": {
@@ -2827,7 +2883,8 @@
             "--workspaces"
           ]
         }
-      ]
+      ],
+      "priority": 80
     },
     {
       "args": {
@@ -2855,7 +2912,8 @@
           "name": [
             "-D",
             "--save-dev"
-          ]
+          ],
+          "priority": 65
         },
         {
           "description": "Package will appear in your `optionalDependencies`",
@@ -2874,7 +2932,8 @@
           "description": "Uninstall global package",
           "name": [
             "-g"
-          ]
+          ],
+          "priority": 60
         },
         {
           "args": {
@@ -2913,14 +2972,16 @@
           "description": "Indicates that you don't want npm to make any changes and that it should only report what it would have done",
           "name": [
             "--dry-run"
-          ]
+          ],
+          "priority": 50
         },
         {
           "description": "Allow unpublishing all versions of a published package. Removes various protections against unfortunate side effects, common mistakes, unnecessary performance degradation, and malicious input",
           "name": [
             "-f",
             "--force"
-          ]
+          ],
+          "priority": 20
         },
         {
           "args": {
@@ -2990,7 +3051,8 @@
           "description": "Update global package",
           "name": [
             "-g"
-          ]
+          ],
+          "priority": 60
         },
         {
           "description": "Causes npm to install the package into your local node_modules folder with the same layout it uses with the global node_modules folder",
@@ -3070,7 +3132,8 @@
           "description": "Indicates that you don't want npm to make any changes and that it should only report what it would have done",
           "name": [
             "--dry-run"
-          ]
+          ],
+          "priority": 50
         },
         {
           "args": {
@@ -3096,7 +3159,8 @@
             "--workspaces"
           ]
         }
-      ]
+      ],
+      "priority": 78
     },
     {
       "description": "Bump a package version",
