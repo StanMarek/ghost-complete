@@ -143,15 +143,18 @@
             "name": "namespace"
           },
           "description": "Create a new namespace",
-          "name": "create"
+          "name": "create",
+          "priority": 72
         },
         {
           "description": "Delete namespace",
-          "name": "delete"
+          "name": "delete",
+          "priority": 50
         },
         {
           "description": "List all namespaces on your Cloudflare account",
-          "name": "list"
+          "name": "list",
+          "priority": 82
         }
       ]
     },
@@ -223,14 +226,16 @@
                 "--namespace-id"
               ]
             }
-          ]
+          ],
+          "priority": 50
         },
         {
           "args": {
             "name": "key"
           },
           "description": "Get a key's value from a namespace",
-          "name": "get"
+          "name": "get",
+          "priority": 82
         },
         {
           "description": "Prints this message or the help of the given subcommand(s)",
@@ -238,7 +243,8 @@
         },
         {
           "description": "List all keys in a namespace. Produces JSON output",
-          "name": "list"
+          "name": "list",
+          "priority": 82
         },
         {
           "args": {
@@ -294,7 +300,8 @@
             "name": "keys"
           },
           "description": "Delete multiple keys and their values from a namespace",
-          "name": "delete"
+          "name": "delete",
+          "priority": 50
         },
         {
           "description": "Prints this message or the help of the given subcommand(s)",
@@ -355,11 +362,13 @@
             "name": "routeId"
           },
           "description": "Delete a route by ID",
-          "name": "delete"
+          "name": "delete",
+          "priority": 50
         },
         {
           "description": "List all routes associated with a zone (outputs json)",
-          "name": "list"
+          "name": "list",
+          "priority": 82
         }
       ]
     },
@@ -408,11 +417,13 @@
             "name": "secret"
           },
           "description": "Delete a secret variable from a script",
-          "name": "delete"
+          "name": "delete",
+          "priority": 50
         },
         {
           "description": "List all secrets for a script",
-          "name": "list"
+          "name": "list",
+          "priority": 82
         },
         {
           "args": {
@@ -798,7 +809,8 @@
             "--no-verify"
           ]
         }
-      ]
+      ],
+      "priority": 65
     },
     {
       "args": {
@@ -999,7 +1011,8 @@
             "--verbose"
           ]
         }
-      ]
+      ],
+      "priority": 88
     },
     {
       "description": "Report an error caught by Wrangler to Cloudflare",

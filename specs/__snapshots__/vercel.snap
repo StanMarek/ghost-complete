@@ -59,7 +59,8 @@
       "name": [
         "-f",
         "--force"
-      ]
+      ],
+      "priority": 22
     },
     {
       "description": "Retain build cache when using --force",
@@ -150,7 +151,8 @@
         "template": "folders"
       },
       "description": "Performs a deployment (default)",
-      "name": "deploy"
+      "name": "deploy",
+      "priority": 90
     },
     {
       "description": "Start a local development server",
@@ -233,7 +235,8 @@
             "name": "environment"
           },
           "description": "List environment variables for a specific environment",
-          "name": "ls"
+          "name": "ls",
+          "priority": 82
         }
       ]
     },
@@ -269,7 +272,8 @@
             "--meta"
           ]
         }
-      ]
+      ],
+      "priority": 82
     },
     {
       "args": {
@@ -277,7 +281,8 @@
         "name": "project name"
       },
       "description": "Lists deployments",
-      "name": "ls"
+      "name": "ls",
+      "priority": 82
     },
     {
       "args": {
@@ -289,11 +294,13 @@
     },
     {
       "description": "Logs into your account or creates a new one",
-      "name": "login"
+      "name": "login",
+      "priority": 88
     },
     {
       "description": "Logs out of your account",
-      "name": "logout"
+      "name": "logout",
+      "priority": 60
     },
     {
       "args": {
@@ -341,15 +348,18 @@
         "name": "deployment url"
       },
       "description": "Removes a deployment",
-      "name": "remove"
+      "name": "remove",
+      "priority": 50
     },
     {
       "description": "Manages your domain names",
       "name": "domains",
+      "priority": 60,
       "subcommands": [
         {
           "description": "List all domains under an account",
-          "name": "ls"
+          "name": "ls",
+          "priority": 82
         },
         {
           "args": {
@@ -506,7 +516,8 @@
       "subcommands": [
         {
           "description": "List all certificates under an account",
-          "name": "ls"
+          "name": "ls",
+          "priority": 82
         },
         {
           "args": {
@@ -530,10 +541,12 @@
     {
       "description": "Manages your global Secrets, for use in Environment Variables",
       "name": "secrets",
+      "priority": 65,
       "subcommands": [
         {
           "description": "List all secrets",
-          "name": "list"
+          "name": "list",
+          "priority": 82
         },
         {
           "args": [
@@ -569,7 +582,8 @@
             "name": "secret name"
           },
           "description": "Remove a secret",
-          "name": "remove"
+          "name": "remove",
+          "priority": 50
         }
       ]
     },
@@ -609,7 +623,8 @@
           "name": [
             "-o",
             "--output"
-          ]
+          ],
+          "priority": 75
         },
         {
           "args": {},
@@ -633,7 +648,8 @@
             "--until"
           ]
         }
-      ]
+      ],
+      "priority": 88
     },
     {
       "description": "Manages your teams",
@@ -641,7 +657,8 @@
       "subcommands": [
         {
           "description": "List all teams under an account",
-          "name": "list"
+          "name": "list",
+          "priority": 82
         },
         {
           "description": "Create a new team",
@@ -689,7 +706,8 @@
         },
         {
           "description": "List custom domains that were assigned to deployments",
-          "name": "ls"
+          "name": "ls",
+          "priority": 82
         }
       ]
     },
@@ -708,7 +726,8 @@
       "subcommands": [
         {
           "description": "List all the payment methods of the active account",
-          "name": "ls"
+          "name": "ls",
+          "priority": 82
         },
         {
           "description": "Interactively add a new credit card",

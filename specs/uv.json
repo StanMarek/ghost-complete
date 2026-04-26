@@ -188,7 +188,8 @@
         "generators": [
           {}
         ]
-      }
+      },
+      "priority": 90
     },
     {
       "name": "init",
@@ -337,7 +338,8 @@
         "name": "Path",
         "description": "The path to use for the project/script",
         "template": "filepaths"
-      }
+      },
+      "priority": 55
     },
     {
       "name": "add",
@@ -770,7 +772,8 @@
         "name": "packages",
         "description": "Packages to add",
         "isVariadic": true
-      }
+      },
+      "priority": 90
     },
     {
       "name": "remove",
@@ -1148,7 +1151,8 @@
         "generators": [
           {}
         ]
-      }
+      },
+      "priority": 80
     },
     {
       "name": "sync",
@@ -1606,7 +1610,8 @@
           "name": [
             "--dry-run"
           ],
-          "description": "Perform a dry run, without writing the lockfile"
+          "description": "Perform a dry run, without writing the lockfile",
+          "priority": 50
         },
         {
           "name": [
@@ -2845,7 +2850,8 @@
               ],
               "description": "Run the tool in an isolated virtual environment"
             }
-          ]
+          ],
+          "priority": 90
         },
         {
           "name": "install",
@@ -2890,7 +2896,8 @@
               ],
               "description": "Install the tool in an isolated virtual environment"
             }
-          ]
+          ],
+          "priority": 92
         },
         {
           "name": "upgrade",
@@ -2902,7 +2909,8 @@
               ],
               "description": "Upgrade all tools"
             }
-          ]
+          ],
+          "priority": 78
         },
         {
           "name": "list",
@@ -2920,7 +2928,8 @@
               ],
               "description": "Whether to display the version specifier(s) used to install each tool"
             }
-          ]
+          ],
+          "priority": 72
         },
         {
           "name": "uninstall",
@@ -2932,7 +2941,8 @@
               ],
               "description": "Uninstall all tools"
             }
-          ]
+          ],
+          "priority": 78
         },
         {
           "name": "update-shell",
@@ -3024,7 +3034,8 @@
               ],
               "description": "Only show installed Python versions, exclude available downloads"
             }
-          ]
+          ],
+          "priority": 72
         },
         {
           "name": "install",
@@ -3058,7 +3069,8 @@
               "name": [
                 "--force"
               ],
-              "description": "Replace existing Python executables during installation"
+              "description": "Replace existing Python executables during installation",
+              "priority": 20
             },
             {
               "name": [
@@ -3070,7 +3082,8 @@
           "args": {
             "name": "VERSION",
             "description": "The Python version to install"
-          }
+          },
+          "priority": 92
         },
         {
           "name": "find",
@@ -3142,7 +3155,8 @@
           "args": {
             "name": "VERSION",
             "description": "The Python version to uninstall"
-          }
+          },
+          "priority": 78
         }
       ],
       "options": [
@@ -3215,7 +3229,8 @@
             "name": "PACKAGES",
             "description": "Packages to install",
             "isVariadic": true
-          }
+          },
+          "priority": 92
         },
         {
           "name": "uninstall",
@@ -3224,7 +3239,8 @@
             "name": "PACKAGES",
             "description": "Packages to uninstall",
             "isVariadic": true
-          }
+          },
+          "priority": 78
         },
         {
           "name": "freeze",
@@ -3232,7 +3248,8 @@
         },
         {
           "name": "list",
-          "description": "List, in tabular format, packages installed in an environment"
+          "description": "List, in tabular format, packages installed in an environment",
+          "priority": 72
         },
         {
           "name": "show",
@@ -3241,7 +3258,8 @@
             "name": "PACKAGES",
             "description": "Packages to show",
             "isVariadic": true
-          }
+          },
+          "priority": 65
         },
         {
           "name": "tree",
@@ -3908,7 +3926,8 @@
       "args": {
         "name": "SOURCE",
         "description": "The directory from which distributions should be built, or a source distribution archive to build into a wheel"
-      }
+      },
+      "priority": 88
     },
     {
       "name": "publish",
@@ -4045,7 +4064,8 @@
         "name": "FILES",
         "description": "Paths to the files to upload, [default: dist/*]",
         "isVariadic": true
-      }
+      },
+      "priority": 75
     },
     {
       "name": "cache",
@@ -4058,7 +4078,8 @@
             "name": "PACKAGE",
             "description": "The package to remove from the cache",
             "isVariadic": true
-          }
+          },
+          "priority": 55
         },
         {
           "name": "prune",
@@ -4134,7 +4155,8 @@
           "args": {
             "name": "TARGET_VERSION",
             "description": "Update to the specified version. If not provided, uv will update to the latest version"
-          }
+          },
+          "priority": 78
         }
       ],
       "options": [
@@ -4270,14 +4292,16 @@
         "-q",
         "--quiet"
       ],
-      "description": "Do not print any output"
+      "description": "Do not print any output",
+      "priority": 25
     },
     {
       "name": [
         "-v",
         "--verbose"
       ],
-      "description": "Use verbose output"
+      "description": "Use verbose output",
+      "priority": 25
     },
     {
       "name": [

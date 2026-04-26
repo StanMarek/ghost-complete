@@ -7,7 +7,8 @@
         "--help",
         "-h"
       ],
-      "description": "Display help for command"
+      "description": "Display help for command",
+      "priority": 10
     },
     {
       "name": [
@@ -15,6 +16,7 @@
         "-n"
       ],
       "description": "The package name to release",
+      "priority": 100,
       "args": {
         "name": "name"
       }
@@ -25,6 +27,7 @@
         "-p"
       ],
       "description": "The path to the current package. For non-monorepos this is just \".\"",
+      "priority": 90,
       "args": {
         "name": "path",
         "template": "folders"
@@ -136,7 +139,8 @@
         "--version",
         "-V"
       ],
-      "description": "Output the version number"
+      "description": "Output the version number",
+      "priority": 1
     }
   ]
 }

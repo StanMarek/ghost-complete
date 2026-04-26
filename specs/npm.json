@@ -18,7 +18,8 @@
             "-D",
             "--save-dev"
           ],
-          "description": "Package will appear in your `devDependencies`"
+          "description": "Package will appear in your `devDependencies`",
+          "priority": 65
         },
         {
           "name": [
@@ -52,7 +53,8 @@
             "-g",
             "--global"
           ],
-          "description": "Operates in 'global' mode, so that packages are installed into the prefix folder instead of the current working directory"
+          "description": "Operates in 'global' mode, so that packages are installed into the prefix folder instead of the current working directory",
+          "priority": 60
         },
         {
           "name": [
@@ -100,7 +102,8 @@
           "description": "Show extra information",
           "args": {
             "name": "verbose"
-          }
+          },
+          "priority": 25
         },
         {
           "name": [
@@ -150,7 +153,8 @@
           "name": [
             "--dry-run"
           ],
-          "description": "Indicates that you don't want npm to make any changes and that it should only report what it would have done"
+          "description": "Indicates that you don't want npm to make any changes and that it should only report what it would have done",
+          "priority": 50
         },
         {
           "name": [
@@ -187,7 +191,8 @@
             "js_source": "async(s,c,p)=>{let t=s[s.length-1];if(t===\"\")return[];let r=n&&n.length>0?`+keywords:${n.join(\",\")}`:\"\",g=[\"-s\",\"-H\",\"Accept: application/json\",r?`https://api.npms.io/v2/search?size=20&q=${t}${r}`:`https://api.npms.io/v2/search/suggestions?q=${t}&size=20`],d=[\"-s\",\"-H\",\"Accept: application/vnd.npm.install-v1+json\",`https://registry.npmjs.org/${t.slice(0,-1)}`],P=m=>c({command:\"curl\",args:m[m.length-1]===\"@\"?d:g}),x=t.startsWith(\"@\")?j(t)>1:t.includes(\"@\");try{let m=JSON.parse((await P(t)).stdout);if(x){let w=Object.entries(m[\"dist-tags\"]||{}).map(([D,T])=>({name:D,description:T}));return w.push(...Object.keys(m.versions).map(D=>({name:D})).reverse()),w}return(r?m.results:m).map(w=>({name:w.package.name,description:w.package.description}))}catch(m){return console.error({error:m}),[]}}"
           }
         ]
-      }
+      },
+      "priority": 92
     },
     {
       "name": "run",
@@ -270,7 +275,8 @@
             }
           }
         ]
-      }
+      },
+      "priority": 90
     },
     {
       "name": "init",
@@ -292,7 +298,8 @@
             "name": "dir"
           }
         }
-      ]
+      ],
+      "priority": 55
     },
     {
       "name": "access",
@@ -335,14 +342,16 @@
               "name": [
                 "--dry-run"
               ],
-              "description": "Indicates that you don't want npm to make any changes and that it should only report what it would have done"
+              "description": "Indicates that you don't want npm to make any changes and that it should only report what it would have done",
+              "priority": 50
             },
             {
               "name": [
                 "-f",
                 "--force"
               ],
-              "description": "Removes various protections against unfortunate side effects, common mistakes, unnecessary performance degradation, and malicious input"
+              "description": "Removes various protections against unfortunate side effects, common mistakes, unnecessary performance degradation, and malicious input",
+              "priority": 20
             },
             {
               "name": [
@@ -457,7 +466,8 @@
             ]
           }
         }
-      ]
+      ],
+      "priority": 60
     },
     {
       "name": "bin",
@@ -468,7 +478,8 @@
             "-g",
             "--global"
           ],
-          "description": "Operates in 'global' mode, so that packages are installed into the prefix folder instead of the current working directory"
+          "description": "Operates in 'global' mode, so that packages are installed into the prefix folder instead of the current working directory",
+          "priority": 60
         }
       ]
     },
@@ -519,11 +530,13 @@
       "subcommands": [
         {
           "name": "add",
-          "description": "Add the specified packages to the local cache"
+          "description": "Add the specified packages to the local cache",
+          "priority": 90
         },
         {
           "name": "clean",
-          "description": "Delete all data out of the cache folder"
+          "description": "Delete all data out of the cache folder",
+          "priority": 55
         },
         {
           "name": "verify",
@@ -591,7 +604,8 @@
           "description": "Show extra information",
           "args": {
             "name": "verbose"
-          }
+          },
+          "priority": 25
         },
         {
           "name": [
@@ -629,7 +643,8 @@
                 "-g",
                 "--global"
               ],
-              "description": "Sets it globally"
+              "description": "Sets it globally",
+              "priority": 60
             }
           ],
           "args": [
@@ -656,7 +671,8 @@
               "name": [
                 "-g"
               ],
-              "description": "Lists globally installed packages"
+              "description": "Lists globally installed packages",
+              "priority": 60
             },
             {
               "name": [
@@ -670,7 +686,8 @@
               ],
               "description": "Show output in json format"
             }
-          ]
+          ],
+          "priority": 72
         },
         {
           "name": "delete",
@@ -687,7 +704,8 @@
               "name": [
                 "--global"
               ],
-              "description": "Edits the global config"
+              "description": "Edits the global config",
+              "priority": 60
             }
           ]
         }
@@ -695,7 +713,8 @@
     },
     {
       "name": "create",
-      "description": "Create a package.json file"
+      "description": "Create a package.json file",
+      "priority": 65
     },
     {
       "name": "dedupe",
@@ -892,7 +911,8 @@
       "args": {
         "name": "path",
         "template": "filepaths"
-      }
+      },
+      "priority": 55
     },
     {
       "name": "ln",
@@ -986,7 +1006,8 @@
             "-g",
             "--global"
           ],
-          "description": "Operates in 'global' mode, so that packages are installed into the prefix folder instead of the current working directory"
+          "description": "Operates in 'global' mode, so that packages are installed into the prefix folder instead of the current working directory",
+          "priority": 60
         },
         {
           "name": [
@@ -1036,7 +1057,8 @@
       "args": {
         "name": "[@scope]/pkg",
         "isVariadic": true
-      }
+      },
+      "priority": 72
     },
     {
       "name": "org",
@@ -1123,7 +1145,8 @@
               "name": "username",
               "description": "User name"
             }
-          ]
+          ],
+          "priority": 78
         },
         {
           "name": "ls",
@@ -1171,7 +1194,8 @@
               "description": "User name",
               "isOptional": true
             }
-          ]
+          ],
+          "priority": 72
         }
       ]
     },
@@ -1210,7 +1234,8 @@
           "name": [
             "-g"
           ],
-          "description": "Checks globally"
+          "description": "Checks globally",
+          "priority": 60
         },
         {
           "name": [
@@ -1241,7 +1266,8 @@
         "name": "[<@scope>/]<pkg>",
         "isVariadic": true,
         "isOptional": true
-      }
+      },
+      "priority": 65
     },
     {
       "name": "owner",
@@ -1263,7 +1289,8 @@
           ],
           "args": {
             "name": "[@scope/]pkg"
-          }
+          },
+          "priority": 72
         },
         {
           "name": "add",
@@ -1295,7 +1322,8 @@
             {
               "name": "[@scope/]pkg"
             }
-          ]
+          ],
+          "priority": 90
         },
         {
           "name": "rm",
@@ -1327,7 +1355,8 @@
             {
               "name": "[@scope/]pkg"
             }
-          ]
+          ],
+          "priority": 78
         }
       ]
     },
@@ -1345,7 +1374,8 @@
           "name": [
             "--dry-run"
           ],
-          "description": "Indicates that you don't want npm to make any changes and that it should only report what it would have done"
+          "description": "Indicates that you don't want npm to make any changes and that it should only report what it would have done",
+          "priority": 50
         },
         {
           "name": [
@@ -1487,7 +1517,8 @@
                 "-f",
                 "--force"
               ],
-              "description": "Removes various protections against unfortunate side effects, common mistakes, unnecessary performance degradation, and malicious input. Allow clobbering existing values in npm pkg"
+              "description": "Removes various protections against unfortunate side effects, common mistakes, unnecessary performance degradation, and malicious input. Allow clobbering existing values in npm pkg",
+              "priority": 20
             }
           ],
           "args": {
@@ -1529,7 +1560,8 @@
                 "-f",
                 "--force"
               ],
-              "description": "Removes various protections against unfortunate side effects, common mistakes, unnecessary performance degradation, and malicious input. Allow clobbering existing values in npm pkg"
+              "description": "Removes various protections against unfortunate side effects, common mistakes, unnecessary performance degradation, and malicious input. Allow clobbering existing values in npm pkg",
+              "priority": 20
             }
           ],
           "args": {
@@ -1549,7 +1581,8 @@
             "-g",
             "--global"
           ],
-          "description": "Print the global prefix to standard out"
+          "description": "Print the global prefix to standard out",
+          "priority": 60
         }
       ]
     },
@@ -1765,7 +1798,8 @@
           "name": [
             "--dry-run"
           ],
-          "description": "Indicates that you don't want npm to make any changes and that it should only report what it would have done"
+          "description": "Indicates that you don't want npm to make any changes and that it should only report what it would have done",
+          "priority": 50
         },
         {
           "name": [
@@ -1777,7 +1811,8 @@
           "name": [
             "--production"
           ],
-          "description": "Remove the packages specified in your devDependencies"
+          "description": "Remove the packages specified in your devDependencies",
+          "priority": 60
         },
         {
           "name": [
@@ -1866,7 +1901,8 @@
           "name": [
             "--dry-run"
           ],
-          "description": "Indicates that you don't want npm to make any changes and that it should only report what it would have done"
+          "description": "Indicates that you don't want npm to make any changes and that it should only report what it would have done",
+          "priority": 50
         },
         {
           "name": [
@@ -1885,7 +1921,8 @@
           "folders"
         ],
         "isOptional": true
-      }
+      },
+      "priority": 75
     },
     {
       "name": "rebuild",
@@ -1896,7 +1933,8 @@
             "-g",
             "--global"
           ],
-          "description": "Operates in 'global' mode, so that packages are installed into the prefix folder instead of the current working directory"
+          "description": "Operates in 'global' mode, so that packages are installed into the prefix folder instead of the current working directory",
+          "priority": 60
         },
         {
           "name": [
@@ -2034,7 +2072,8 @@
             "-g",
             "--global"
           ],
-          "description": "Print the effective global node_modules folder to standard out"
+          "description": "Print the effective global node_modules folder to standard out",
+          "priority": 60
         }
       ]
     },
@@ -2261,7 +2300,8 @@
             "description": "Arguments to be passed to the start script"
           }
         }
-      ]
+      ],
+      "priority": 88
     },
     {
       "name": "stop",
@@ -2321,7 +2361,8 @@
           ],
           "args": {
             "name": "scope:team"
-          }
+          },
+          "priority": 65
         },
         {
           "name": "destroy",
@@ -2378,7 +2419,8 @@
             {
               "name": "user"
             }
-          ]
+          ],
+          "priority": 90
         },
         {
           "name": "rm",
@@ -2409,7 +2451,8 @@
             {
               "name": "user"
             }
-          ]
+          ],
+          "priority": 78
         },
         {
           "name": "ls",
@@ -2439,7 +2482,8 @@
           ],
           "args": {
             "name": "scope|scope:team"
-          }
+          },
+          "priority": 72
         }
       ]
     },
@@ -2462,7 +2506,8 @@
             "name": "script-shell"
           }
         }
-      ]
+      ],
+      "priority": 85
     },
     {
       "name": "token",
@@ -2485,7 +2530,8 @@
               ],
               "description": "Output parseable results from commands that write to standard output"
             }
-          ]
+          ],
+          "priority": 72
         },
         {
           "name": "create",
@@ -2506,7 +2552,8 @@
                 "name": "cidr"
               }
             }
-          ]
+          ],
+          "priority": 65
         },
         {
           "name": "revoke",
@@ -2553,7 +2600,8 @@
             "-D",
             "--save-dev"
           ],
-          "description": "Package will appear in your `devDependencies`"
+          "description": "Package will appear in your `devDependencies`",
+          "priority": 65
         },
         {
           "name": [
@@ -2572,7 +2620,8 @@
           "name": [
             "-g"
           ],
-          "description": "Uninstall global package"
+          "description": "Uninstall global package",
+          "priority": 60
         },
         {
           "name": [
@@ -2608,7 +2657,8 @@
             "js_source": "async function(n,s){if(!n.includes(\"-g\")&&!n.includes(\"--global\")){let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=JSON.parse(p),r=t.dependencies??{},h=t.devDependencies,g=t.optionalDependencies??{};return Object.assign(r,h,g),Object.keys(r).filter(d=>!n.some(x=>x===d)).map(d=>({name:d,icon:\"\\u{1F4E6}\",description:r[d]?\"dependency\":g[d]?\"optionalDependency\":\"devDependency\"}))}else{let{stdout:c}=await s({command:\"bash\",args:[\"-c\",\"ls -1 `npm root -g`\"]});return c.split(`\n`).map(p=>({name:p,icon:\"\\u{1F4E6}\",description:\"Global dependency\"}))}}"
           }
         ]
-      }
+      },
+      "priority": 78
     },
     {
       "name": "r",
@@ -2626,7 +2676,8 @@
             "-D",
             "--save-dev"
           ],
-          "description": "Package will appear in your `devDependencies`"
+          "description": "Package will appear in your `devDependencies`",
+          "priority": 65
         },
         {
           "name": [
@@ -2645,7 +2696,8 @@
           "name": [
             "-g"
           ],
-          "description": "Uninstall global package"
+          "description": "Uninstall global package",
+          "priority": 60
         },
         {
           "name": [
@@ -2699,7 +2751,8 @@
             "-D",
             "--save-dev"
           ],
-          "description": "Package will appear in your `devDependencies`"
+          "description": "Package will appear in your `devDependencies`",
+          "priority": 65
         },
         {
           "name": [
@@ -2718,7 +2771,8 @@
           "name": [
             "-g"
           ],
-          "description": "Uninstall global package"
+          "description": "Uninstall global package",
+          "priority": 60
         },
         {
           "name": [
@@ -2772,7 +2826,8 @@
             "-D",
             "--save-dev"
           ],
-          "description": "Package will appear in your `devDependencies`"
+          "description": "Package will appear in your `devDependencies`",
+          "priority": 65
         },
         {
           "name": [
@@ -2791,7 +2846,8 @@
           "name": [
             "-g"
           ],
-          "description": "Uninstall global package"
+          "description": "Uninstall global package",
+          "priority": 60
         },
         {
           "name": [
@@ -2827,7 +2883,8 @@
             "js_source": "async function(n,s){if(!n.includes(\"-g\")&&!n.includes(\"--global\")){let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=JSON.parse(p),r=t.dependencies??{},h=t.devDependencies,g=t.optionalDependencies??{};return Object.assign(r,h,g),Object.keys(r).filter(d=>!n.some(x=>x===d)).map(d=>({name:d,icon:\"\\u{1F4E6}\",description:r[d]?\"dependency\":g[d]?\"optionalDependency\":\"devDependency\"}))}else{let{stdout:c}=await s({command:\"bash\",args:[\"-c\",\"ls -1 `npm root -g`\"]});return c.split(`\n`).map(p=>({name:p,icon:\"\\u{1F4E6}\",description:\"Global dependency\"}))}}"
           }
         ]
-      }
+      },
+      "priority": 80
     },
     {
       "name": "unlink",
@@ -2845,7 +2902,8 @@
             "-D",
             "--save-dev"
           ],
-          "description": "Package will appear in your `devDependencies`"
+          "description": "Package will appear in your `devDependencies`",
+          "priority": 65
         },
         {
           "name": [
@@ -2864,7 +2922,8 @@
           "name": [
             "-g"
           ],
-          "description": "Uninstall global package"
+          "description": "Uninstall global package",
+          "priority": 60
         },
         {
           "name": [
@@ -2910,14 +2969,16 @@
           "name": [
             "--dry-run"
           ],
-          "description": "Indicates that you don't want npm to make any changes and that it should only report what it would have done"
+          "description": "Indicates that you don't want npm to make any changes and that it should only report what it would have done",
+          "priority": 50
         },
         {
           "name": [
             "-f",
             "--force"
           ],
-          "description": "Allow unpublishing all versions of a published package. Removes various protections against unfortunate side effects, common mistakes, unnecessary performance degradation, and malicious input"
+          "description": "Allow unpublishing all versions of a published package. Removes various protections against unfortunate side effects, common mistakes, unnecessary performance degradation, and malicious input",
+          "priority": 20
         },
         {
           "name": [
@@ -2990,7 +3051,8 @@
           "name": [
             "-g"
           ],
-          "description": "Update global package"
+          "description": "Update global package",
+          "priority": 60
         },
         {
           "name": [
@@ -3070,7 +3132,8 @@
           "name": [
             "--dry-run"
           ],
-          "description": "Indicates that you don't want npm to make any changes and that it should only report what it would have done"
+          "description": "Indicates that you don't want npm to make any changes and that it should only report what it would have done",
+          "priority": 50
         },
         {
           "name": [
@@ -3096,7 +3159,8 @@
           ],
           "description": "Enable running a command in the context of all the configured workspaces"
         }
-      ]
+      ],
+      "priority": 78
     },
     {
       "name": "version",

@@ -7,14 +7,16 @@
       "name": [
         "-q",
         "--quiet"
-      ]
+      ],
+      "priority": 25
     },
     {
       "description": "Use verbose output",
       "name": [
         "-v",
         "--verbose"
-      ]
+      ],
+      "priority": 25
     },
     {
       "args": {
@@ -301,7 +303,8 @@
             "--no-project"
           ]
         }
-      ]
+      ],
+      "priority": 90
     },
     {
       "args": {
@@ -450,7 +453,8 @@
             "--cache-dir"
           ]
         }
-      ]
+      ],
+      "priority": 55
     },
     {
       "args": {
@@ -883,7 +887,8 @@
             "--refresh-package"
           ]
         }
-      ]
+      ],
+      "priority": 90
     },
     {
       "args": {
@@ -1261,7 +1266,8 @@
             "--refresh-package"
           ]
         }
-      ]
+      ],
+      "priority": 80
     },
     {
       "description": "Update the project's environment",
@@ -1719,7 +1725,8 @@
           "description": "Perform a dry run, without writing the lockfile",
           "name": [
             "--dry-run"
-          ]
+          ],
+          "priority": 50
         },
         {
           "args": {
@@ -3004,7 +3011,8 @@
                 "--isolated"
               ]
             }
-          ]
+          ],
+          "priority": 90
         },
         {
           "description": "Install commands provided by a Python package",
@@ -3049,7 +3057,8 @@
                 "--isolated"
               ]
             }
-          ]
+          ],
+          "priority": 92
         },
         {
           "description": "Upgrade installed tools",
@@ -3061,7 +3070,8 @@
                 "--all"
               ]
             }
-          ]
+          ],
+          "priority": 78
         },
         {
           "description": "List installed tools",
@@ -3079,7 +3089,8 @@
                 "--show-version-specifiers"
               ]
             }
-          ]
+          ],
+          "priority": 72
         },
         {
           "description": "Uninstall a tool",
@@ -3091,7 +3102,8 @@
                 "--all"
               ]
             }
-          ]
+          ],
+          "priority": 78
         },
         {
           "description": "Ensure that the tool executable directory is on the `PATH`",
@@ -3183,7 +3195,8 @@
                 "--only-installed"
               ]
             }
-          ]
+          ],
+          "priority": 72
         },
         {
           "args": {
@@ -3221,7 +3234,8 @@
               "description": "Replace existing Python executables during installation",
               "name": [
                 "--force"
-              ]
+              ],
+              "priority": 20
             },
             {
               "description": "Use as the default Python version",
@@ -3229,7 +3243,8 @@
                 "--default"
               ]
             }
-          ]
+          ],
+          "priority": 92
         },
         {
           "args": {
@@ -3301,7 +3316,8 @@
                 "--all"
               ]
             }
-          ]
+          ],
+          "priority": 78
         }
       ]
     },
@@ -3374,7 +3390,8 @@
             "name": "PACKAGES"
           },
           "description": "Install packages into an environment",
-          "name": "install"
+          "name": "install",
+          "priority": 92
         },
         {
           "args": {
@@ -3383,7 +3400,8 @@
             "name": "PACKAGES"
           },
           "description": "Uninstall packages from an environment",
-          "name": "uninstall"
+          "name": "uninstall",
+          "priority": 78
         },
         {
           "description": "List, in requirements format, packages installed in an environment",
@@ -3391,7 +3409,8 @@
         },
         {
           "description": "List, in tabular format, packages installed in an environment",
-          "name": "list"
+          "name": "list",
+          "priority": 72
         },
         {
           "args": {
@@ -3400,7 +3419,8 @@
             "name": "PACKAGES"
           },
           "description": "Show information about one or more installed packages",
-          "name": "show"
+          "name": "show",
+          "priority": 65
         },
         {
           "description": "Display the dependency tree for an environment",
@@ -4021,7 +4041,8 @@
             "--refresh-package"
           ]
         }
-      ]
+      ],
+      "priority": 88
     },
     {
       "args": {
@@ -4158,7 +4179,8 @@
             "--no-python-downloads"
           ]
         }
-      ]
+      ],
+      "priority": 75
     },
     {
       "description": "Manage uv's cache",
@@ -4217,7 +4239,8 @@
             "name": "PACKAGE"
           },
           "description": "Clear the cache",
-          "name": "clean"
+          "name": "clean",
+          "priority": 55
         },
         {
           "description": "Prune all unreachable objects from the cache",
@@ -4293,7 +4316,8 @@
                 "--token"
               ]
             }
-          ]
+          ],
+          "priority": 78
         }
       ]
     },

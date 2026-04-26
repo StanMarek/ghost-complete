@@ -34,7 +34,8 @@
             "js_source": "async(c,m)=>{let d=c[c.length-1],{stdout:l}=await m({command:\"gem\",args:[\"search\",\"--both\",\"--no-versions\",\"--no-details\",\"--quiet\",\"--norc\",d]});return l.trim().split(`\n`).filter(n=>n&&!n.startsWith(\"*\")).map(n=>({name:n}))}"
           }
         ]
-      }
+      },
+      "priority": 92
     },
     {
       "name": "cert",
@@ -186,7 +187,8 @@
           "name": [
             "--dry-run"
           ],
-          "description": "Do not remove files, only report what would be removed"
+          "description": "Do not remove files, only report what would be removed",
+          "priority": 50
         },
         {
           "name": [
@@ -239,14 +241,16 @@
             "-d",
             "--dry-run"
           ],
-          "description": "Do not uninstall gems"
+          "description": "Do not uninstall gems",
+          "priority": 50
         },
         {
           "name": [
             "-D",
             "--check-development"
           ],
-          "description": "Check development dependencies while uninstalling (default: true)"
+          "description": "Check development dependencies while uninstalling (default: true)",
+          "priority": 65
         },
         {
           "name": [
@@ -747,7 +751,8 @@
             "js_source": "async(c,m)=>{let d=c[c.length-1],{stdout:l}=await m({command:\"gem\",args:[\"search\",\"--both\",\"--no-versions\",\"--no-details\",\"--quiet\",\"--norc\",d]});return l.trim().split(`\n`).filter(n=>n&&!n.startsWith(\"*\")).map(n=>({name:n}))}"
           }
         ]
-      }
+      },
+      "priority": 65
     },
     {
       "name": "lock",
@@ -1401,7 +1406,8 @@
             "-f",
             "--force"
           ],
-          "description": "Do not show any confirmation prompts and behave as if 'yes' was always answered"
+          "description": "Do not show any confirmation prompts and behave as if 'yes' was always answered",
+          "priority": 20
         },
         {
           "name": [
@@ -1646,7 +1652,8 @@
             "-D",
             "--check-development"
           ],
-          "description": "Check development dependencies while uninstalling (default: false)"
+          "description": "Check development dependencies while uninstalling (default: false)",
+          "priority": 65
         },
         {
           "name": [
@@ -1693,7 +1700,8 @@
           "name": [
             "--force"
           ],
-          "description": "Uninstall all versions of the named gems ignoring dependencies"
+          "description": "Uninstall all versions of the named gems ignoring dependencies",
+          "priority": 20
         },
         {
           "name": [
@@ -1737,7 +1745,8 @@
             "js_source": "async(c,m)=>{let d=c[c.length-1],{stdout:l}=await m({command:\"gem\",args:[\"search\",\"--both\",\"--no-versions\",\"--no-details\",\"--quiet\",\"--norc\",d]});return l.trim().split(`\n`).filter(n=>n&&!n.startsWith(\"*\")).map(n=>({name:n}))}"
           }
         ]
-      }
+      },
+      "priority": 78
     },
     {
       "name": "list",
@@ -1904,7 +1913,8 @@
         "name": "REGEXP",
         "description": "Regexp to look for in gem name",
         "isOptional": true
-      }
+      },
+      "priority": 72
     },
     {
       "name": "build",
@@ -1924,7 +1934,8 @@
           "name": [
             "--force"
           ],
-          "description": "Skip validation of the spec"
+          "description": "Skip validation of the spec",
+          "priority": 20
         },
         {
           "name": [
@@ -1958,7 +1969,8 @@
       "args": {
         "name": "GEMSPEC_FILE",
         "description": "Gemspec file name to build a gem for"
-      }
+      },
+      "priority": 88
     },
     {
       "name": "push",
@@ -2107,7 +2119,8 @@
             "-g",
             "--gems-first"
           ],
-          "description": "Search gems before non-gems"
+          "description": "Search gems before non-gems",
+          "priority": 60
         }
       ],
       "args": {
@@ -2129,7 +2142,8 @@
             "isVariadic": true
           }
         }
-      ]
+      ],
+      "priority": 65
     },
     {
       "name": "update",
@@ -2234,7 +2248,8 @@
             "--force",
             "-f"
           ],
-          "description": "Force gem to install, bypassing dependency checks"
+          "description": "Force gem to install, bypassing dependency checks",
+          "priority": 20
         },
         {
           "name": [
@@ -2310,7 +2325,8 @@
           "args": {
             "name": "FILE",
             "template": "filepaths"
-          }
+          },
+          "priority": 60
         },
         {
           "name": [
@@ -2351,7 +2367,8 @@
         "description": "The gem(s) you want to update",
         "isVariadic": true,
         "isOptional": true
-      }
+      },
+      "priority": 78
     }
   ],
   "options": [
@@ -2367,7 +2384,8 @@
         "-V",
         "--verbose"
       ],
-      "description": "Set the verbose level of output"
+      "description": "Set the verbose level of output",
+      "priority": 25
     },
     {
       "name": [
@@ -2380,7 +2398,8 @@
         "-q",
         "--quiet"
       ],
-      "description": "Silence command progress meter"
+      "description": "Silence command progress meter",
+      "priority": 25
     },
     {
       "name": [

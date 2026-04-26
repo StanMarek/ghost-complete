@@ -1,9 +1,13 @@
-//! Golden snapshot tests for the 8 commands audited in
+//! Golden snapshot tests covering ranking + suppression invariants from
 //! `docs/superpowers/specs/2026-04-25-completion-ranking-and-suppression-design.md`.
 //!
 //! Each test feeds a canonical buffer into `SuggestionEngine::suggest_sync`
-//! and asserts the kind of the top results. Intentionally checks kinds (not
-//! exact text) so the tests survive spec content changes upstream.
+//! and asserts an invariant about the resulting suggestions — usually that
+//! certain kinds appear at the top, that filesystem entries are absent
+//! entirely (no fs leak under spec-driven contexts), or that priorities are
+//! honoured when they disagree with the alphabetical fallback. Intentionally
+//! checks kinds and ordinal positions (not exact text) so the tests survive
+//! spec content changes upstream.
 
 use std::path::{Path, PathBuf};
 
@@ -207,6 +211,44 @@ fn kubectl_get_no_filesystem_when_spec_provides_generators() {
             .suggestions
             .iter()
             .map(|s| (&s.text, s.kind))
+            .collect::<Vec<_>>()
+    );
+}
+
+/// The audit pass set `cargo run` to priority 92 and `cargo add` to 90.
+/// With an empty query the ranker has no fuzzy signal — only kind/priority,
+/// then alphabetical tiebreak. Alphabetically `add` precedes `run`, so if
+/// the priority plumbing were ever broken (both subcommands falling back to
+/// the Subcommand kind base of 70 with no override), `add` would land
+/// before `run`. Picking a pair where alphabetical order is REVERSED by
+/// priority means this assertion only passes when priorities are actually
+/// honoured end-to-end.
+#[test]
+fn cargo_high_priority_subcommand_outranks_alphabetical_neighbour() {
+    let engine = build_engine();
+    let buffer = "cargo ";
+    let ctx = ctx_from(buffer);
+    let result = engine.suggest_sync(&ctx, &tmp_cwd(), buffer).unwrap();
+
+    let position = |name: &str| {
+        result
+            .suggestions
+            .iter()
+            .position(|s| s.text == name && s.kind == SuggestionKind::Subcommand)
+    };
+
+    let run_pos = position("run").expect("`cargo run` subcommand should be suggested");
+    let add_pos = position("add").expect("`cargo add` subcommand should be suggested");
+
+    assert!(
+        run_pos < add_pos,
+        "cargo run (priority 92) must rank before cargo add (priority 90); \
+         alphabetical fallback would put `add` first, so this only holds \
+         when priorities are honoured. got run at {run_pos}, add at {add_pos}: {:?}",
+        result
+            .suggestions
+            .iter()
+            .map(|s| (&s.text, s.kind, s.priority))
             .collect::<Vec<_>>()
     );
 }

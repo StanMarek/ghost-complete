@@ -126,7 +126,8 @@
     },
     {
       "name": "status",
-      "description": "Show the working tree status"
+      "description": "Show the working tree status",
+      "priority": 92
     },
     {
       "name": "info",
@@ -138,7 +139,8 @@
       "args": {
         "name": "repository",
         "description": "The repository you want to checkout"
-      }
+      },
+      "priority": 88
     },
     {
       "name": "commit",
@@ -150,6 +152,7 @@
             "--message"
           ],
           "description": "Use the given message as the commit message",
+          "priority": 100,
           "args": {
             "name": "message"
           }
@@ -159,6 +162,7 @@
             "--username"
           ],
           "description": "Specify a username ARG",
+          "priority": 95,
           "args": {
             "name": "username"
           }
@@ -168,6 +172,7 @@
             "--password"
           ],
           "description": "Specify a password ARG",
+          "priority": 94,
           "args": {
             "name": "password"
           }
@@ -232,7 +237,8 @@
             "name": "message"
           }
         }
-      ]
+      ],
+      "priority": 92
     }
   ],
   "options": [
@@ -246,13 +252,15 @@
       "name": [
         "--verbose"
       ],
-      "description": "Show help for svn"
+      "description": "Show help for svn",
+      "priority": 25
     },
     {
       "name": [
         "--quiet"
       ],
-      "description": "Show help for svn"
+      "description": "Show help for svn",
+      "priority": 25
     }
   ]
 }

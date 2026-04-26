@@ -27,7 +27,8 @@
           ],
           "description": "Proxy all received signals to the process (default true)"
         }
-      ]
+      ],
+      "priority": 55
     },
     {
       "name": "build",
@@ -229,7 +230,8 @@
             "template": "folders"
           }
         ]
-      }
+      },
+      "priority": 90
     },
     {
       "name": "commit",
@@ -243,7 +245,8 @@
           "description": "Author (e.g., \"John Hannibal Smith <hannibal@a-team.com>\")",
           "args": {
             "name": "string"
-          }
+          },
+          "priority": 60
         },
         {
           "name": [
@@ -309,7 +312,8 @@
             "-a",
             "--archive"
           ],
-          "description": "Archive mode (copy all uid/gid information)"
+          "description": "Archive mode (copy all uid/gid information)",
+          "priority": 60
         },
         {
           "name": [
@@ -344,7 +348,8 @@
           "description": "Attach to STDIN, STDOUT or STDERR",
           "args": {
             "name": "list"
-          }
+          },
+          "priority": 60
         },
         {
           "name": [
@@ -705,7 +710,8 @@
             "-i",
             "--interactive"
           ],
-          "description": "Keep STDIN open even if not attached"
+          "description": "Keep STDIN open even if not attached",
+          "priority": 70
         },
         {
           "name": [
@@ -941,7 +947,8 @@
           "name": [
             "--privileged"
           ],
-          "description": "Give extended privileges to this container"
+          "description": "Give extended privileges to this container",
+          "priority": 35
         },
         {
           "name": [
@@ -1166,7 +1173,8 @@
         {
           "name": "command"
         }
-      ]
+      ],
+      "priority": 65
     },
     {
       "name": "diff",
@@ -1244,14 +1252,16 @@
           "name": [
             "-it"
           ],
-          "description": "Launch an interactive session"
+          "description": "Launch an interactive session",
+          "priority": 70
         },
         {
           "name": [
             "-d",
             "--detach"
           ],
-          "description": "Detached mode: run command in the background"
+          "description": "Detached mode: run command in the background",
+          "priority": 75
         },
         {
           "name": [
@@ -1286,13 +1296,15 @@
             "-i",
             "--interactive"
           ],
-          "description": "Keep STDIN open even if not attached"
+          "description": "Keep STDIN open even if not attached",
+          "priority": 70
         },
         {
           "name": [
             "--privileged"
           ],
-          "description": "Give extended privileges to the command"
+          "description": "Give extended privileges to the command",
+          "priority": 35
         },
         {
           "name": [
@@ -1347,7 +1359,8 @@
         {
           "name": "command"
         }
-      ]
+      ],
+      "priority": 88
     },
     {
       "name": "export",
@@ -1447,7 +1460,8 @@
             "-a",
             "--all"
           ],
-          "description": "Show all images (default hides intermediate images)"
+          "description": "Show all images (default hides intermediate images)",
+          "priority": 60
         },
         {
           "name": [
@@ -1490,7 +1504,8 @@
       ],
       "args": {
         "name": "[REPOSITORY[:TAG]]"
-      }
+      },
+      "priority": 78
     },
     {
       "name": "import",
@@ -1544,7 +1559,8 @@
             "name": "string"
           }
         }
-      ]
+      ],
+      "priority": 55
     },
     {
       "name": "inspect",
@@ -1617,7 +1633,8 @@
             "_corrected_in": "v0.10.0"
           }
         ]
-      }
+      },
+      "priority": 75
     },
     {
       "name": "kill",
@@ -1655,7 +1672,8 @@
             ]
           }
         ]
-      }
+      },
+      "priority": 60
     },
     {
       "name": "load",
@@ -1677,7 +1695,8 @@
           ],
           "description": "Suppress the load output"
         }
-      ]
+      ],
+      "priority": 55
     },
     {
       "name": "login",
@@ -1794,7 +1813,8 @@
             ]
           }
         ]
-      }
+      },
+      "priority": 85
     },
     {
       "name": "pause",
@@ -1860,7 +1880,8 @@
             "-a",
             "--all"
           ],
-          "description": "Show all containers (default shows just running)"
+          "description": "Show all containers (default shows just running)",
+          "priority": 60
         },
         {
           "name": [
@@ -1918,7 +1939,8 @@
           ],
           "description": "Display total file sizes"
         }
-      ]
+      ],
+      "priority": 85
     },
     {
       "name": "pull",
@@ -1929,7 +1951,8 @@
             "-a",
             "--all-tags"
           ],
-          "description": "Download all tagged images in the repository"
+          "description": "Download all tagged images in the repository",
+          "priority": 60
         },
         {
           "name": [
@@ -1962,7 +1985,8 @@
             "js_source": "function(t){return t[t.length-1]===\"\"?void 0:[\"docker\",\"search\",t[t.length-1],\"--format\",\"{{ json . }}\"]}"
           }
         ]
-      }
+      },
+      "priority": 80
     },
     {
       "name": "push",
@@ -1973,7 +1997,8 @@
             "-a",
             "--all-tags"
           ],
-          "description": "Push all tagged images in the repository"
+          "description": "Push all tagged images in the repository",
+          "priority": 60
         },
         {
           "name": [
@@ -1991,7 +2016,8 @@
       ],
       "args": {
         "name": "NAME[:TAG]"
-      }
+      },
+      "priority": 80
     },
     {
       "name": "rename",
@@ -2069,7 +2095,8 @@
             "-f",
             "--force"
           ],
-          "description": "Force the removal of a running container (uses SIGKILL)"
+          "description": "Force the removal of a running container (uses SIGKILL)",
+          "priority": 22
         },
         {
           "name": [
@@ -2108,7 +2135,8 @@
             ]
           }
         ]
-      }
+      },
+      "priority": 55
     },
     {
       "name": "rmi",
@@ -2119,7 +2147,8 @@
             "-f",
             "--force"
           ],
-          "description": "Force removal of the image"
+          "description": "Force removal of the image",
+          "priority": 22
         },
         {
           "name": [
@@ -2145,7 +2174,8 @@
             "_corrected_in": "v0.10.0"
           }
         ]
-      }
+      },
+      "priority": 50
     },
     {
       "name": "run",
@@ -2155,7 +2185,8 @@
           "name": [
             "-it"
           ],
-          "description": "Launch an interactive session"
+          "description": "Launch an interactive session",
+          "priority": 70
         },
         {
           "name": [
@@ -2174,7 +2205,8 @@
           "description": "Attach to STDIN, STDOUT or STDERR",
           "args": {
             "name": "list"
-          }
+          },
+          "priority": 60
         },
         {
           "name": [
@@ -2317,7 +2349,8 @@
             "-d",
             "--detach"
           ],
-          "description": "Run container in background and print container ID"
+          "description": "Run container in background and print container ID",
+          "priority": 75
         },
         {
           "name": [
@@ -2551,7 +2584,8 @@
             "-i",
             "--interactive"
           ],
-          "description": "Keep STDIN open even if not attached"
+          "description": "Keep STDIN open even if not attached",
+          "priority": 70
         },
         {
           "name": [
@@ -2819,7 +2853,8 @@
           "name": [
             "--privileged"
           ],
-          "description": "Give extended privileges to this container"
+          "description": "Give extended privileges to this container",
+          "priority": 35
         },
         {
           "name": [
@@ -3051,7 +3086,8 @@
         {
           "name": "command"
         }
-      ]
+      ],
+      "priority": 92
     },
     {
       "name": "save",
@@ -3084,7 +3120,8 @@
             "_corrected_in": "v0.10.0"
           }
         ]
-      }
+      },
+      "priority": 55
     },
     {
       "name": "search",
@@ -3265,7 +3302,8 @@
             "-a",
             "--attach"
           ],
-          "description": "Attach STDOUT/STDERR and forward signals"
+          "description": "Attach STDOUT/STDERR and forward signals",
+          "priority": 60
         },
         {
           "name": [
@@ -3281,7 +3319,8 @@
             "-i",
             "--interactive"
           ],
-          "description": "Attach container's STDIN"
+          "description": "Attach container's STDIN",
+          "priority": 70
         }
       ],
       "args": {
@@ -3305,7 +3344,8 @@
             ]
           }
         ]
-      }
+      },
+      "priority": 75
     },
     {
       "name": "stats",
@@ -3316,7 +3356,8 @@
             "-a",
             "--all"
           ],
-          "description": "Show all containers (default shows just running)"
+          "description": "Show all containers (default shows just running)",
+          "priority": 60
         },
         {
           "name": [
@@ -3397,14 +3438,16 @@
             ]
           }
         ]
-      }
+      },
+      "priority": 75
     },
     {
       "name": "tag",
       "description": "Create a tag TARGET_IMAGE that refers to SOURCE_IMAGE",
       "args": {
         "name": "SOURCE_IMAGE[:TAG] TARGET_IMAGE[:TAG]"
-      }
+      },
+      "priority": 60
     },
     {
       "name": "top",
@@ -3653,7 +3696,8 @@
             "name": "string"
           }
         }
-      ]
+      ],
+      "priority": 50
     },
     {
       "name": "wait",
@@ -3884,7 +3928,8 @@
                 "template": "folders"
               }
             ]
-          }
+          },
+          "priority": 90
         },
         {
           "name": "prune",
@@ -3895,7 +3940,8 @@
                 "-a",
                 "--all"
               ],
-              "description": "Remove all unused build cache, not just dangling ones"
+              "description": "Remove all unused build cache, not just dangling ones",
+              "priority": 60
             },
             {
               "name": [
@@ -3911,7 +3957,8 @@
                 "-f",
                 "--force"
               ],
-              "description": "Do not prompt for confirmation"
+              "description": "Do not prompt for confirmation",
+              "priority": 22
             },
             {
               "name": [
@@ -3956,7 +4003,8 @@
           "args": {
             "name": "file",
             "template": "filepaths"
-          }
+          },
+          "priority": 65
         },
         {
           "name": "inspect",
@@ -3981,7 +4029,8 @@
           "args": {
             "name": "CONFIG",
             "isVariadic": true
-          }
+          },
+          "priority": 75
         },
         {
           "name": "ls",
@@ -4020,7 +4069,8 @@
           "args": {
             "name": "CONFIG",
             "isVariadic": true
-          }
+          },
+          "priority": 55
         }
       ]
     },
@@ -4053,7 +4103,8 @@
               ],
               "description": "Proxy all received signals to the process (default true)"
             }
-          ]
+          ],
+          "priority": 55
         },
         {
           "name": "cp",
@@ -4064,7 +4115,8 @@
                 "-a",
                 "--archive"
               ],
-              "description": "Archive mode (copy all uid/gid information)"
+              "description": "Archive mode (copy all uid/gid information)",
+              "priority": 60
             },
             {
               "name": [
@@ -4099,7 +4151,8 @@
               "description": "Attach to STDIN, STDOUT or STDERR",
               "args": {
                 "name": "list"
-              }
+              },
+              "priority": 60
             },
             {
               "name": [
@@ -4460,7 +4513,8 @@
                 "-i",
                 "--interactive"
               ],
-              "description": "Keep STDIN open even if not attached"
+              "description": "Keep STDIN open even if not attached",
+              "priority": 70
             },
             {
               "name": [
@@ -4696,7 +4750,8 @@
               "name": [
                 "--privileged"
               ],
-              "description": "Give extended privileges to this container"
+              "description": "Give extended privileges to this container",
+              "priority": 35
             },
             {
               "name": [
@@ -4921,7 +4976,8 @@
             {
               "name": "command"
             }
-          ]
+          ],
+          "priority": 65
         },
         {
           "name": "diff",
@@ -4956,14 +5012,16 @@
               "name": [
                 "-it"
               ],
-              "description": "Launch an interactive session"
+              "description": "Launch an interactive session",
+              "priority": 70
             },
             {
               "name": [
                 "-d",
                 "--detach"
               ],
-              "description": "Detached mode: run command in the background"
+              "description": "Detached mode: run command in the background",
+              "priority": 75
             },
             {
               "name": [
@@ -4998,13 +5056,15 @@
                 "-i",
                 "--interactive"
               ],
-              "description": "Keep STDIN open even if not attached"
+              "description": "Keep STDIN open even if not attached",
+              "priority": 70
             },
             {
               "name": [
                 "--privileged"
               ],
-              "description": "Give extended privileges to the command"
+              "description": "Give extended privileges to the command",
+              "priority": 35
             },
             {
               "name": [
@@ -5059,7 +5119,8 @@
             {
               "name": "command"
             }
-          ]
+          ],
+          "priority": 88
         },
         {
           "name": "export",
@@ -5140,7 +5201,8 @@
                 ]
               }
             ]
-          }
+          },
+          "priority": 75
         },
         {
           "name": "kill",
@@ -5178,7 +5240,8 @@
                 ]
               }
             ]
-          }
+          },
+          "priority": 60
         },
         {
           "name": "logs",
@@ -5253,7 +5316,8 @@
                 ]
               }
             ]
-          }
+          },
+          "priority": 85
         },
         {
           "name": "ls",
@@ -5264,7 +5328,8 @@
                 "-a",
                 "--all"
               ],
-              "description": "Show all containers (default shows just running)"
+              "description": "Show all containers (default shows just running)",
+              "priority": 60
             },
             {
               "name": [
@@ -5397,7 +5462,8 @@
                 "-f",
                 "--force"
               ],
-              "description": "Do not prompt for confirmation"
+              "description": "Do not prompt for confirmation",
+              "priority": 22
             }
           ]
         },
@@ -5477,7 +5543,8 @@
                 "-f",
                 "--force"
               ],
-              "description": "Force the removal of a running container (uses SIGKILL)"
+              "description": "Force the removal of a running container (uses SIGKILL)",
+              "priority": 22
             },
             {
               "name": [
@@ -5516,7 +5583,8 @@
                 ]
               }
             ]
-          }
+          },
+          "priority": 55
         },
         {
           "name": "run",
@@ -5526,7 +5594,8 @@
               "name": [
                 "-it"
               ],
-              "description": "Launch an interactive session"
+              "description": "Launch an interactive session",
+              "priority": 70
             },
             {
               "name": [
@@ -5545,7 +5614,8 @@
               "description": "Attach to STDIN, STDOUT or STDERR",
               "args": {
                 "name": "list"
-              }
+              },
+              "priority": 60
             },
             {
               "name": [
@@ -5688,7 +5758,8 @@
                 "-d",
                 "--detach"
               ],
-              "description": "Run container in background and print container ID"
+              "description": "Run container in background and print container ID",
+              "priority": 75
             },
             {
               "name": [
@@ -5922,7 +5993,8 @@
                 "-i",
                 "--interactive"
               ],
-              "description": "Keep STDIN open even if not attached"
+              "description": "Keep STDIN open even if not attached",
+              "priority": 70
             },
             {
               "name": [
@@ -6190,7 +6262,8 @@
               "name": [
                 "--privileged"
               ],
-              "description": "Give extended privileges to this container"
+              "description": "Give extended privileges to this container",
+              "priority": 35
             },
             {
               "name": [
@@ -6422,7 +6495,8 @@
             {
               "name": "command"
             }
-          ]
+          ],
+          "priority": 92
         },
         {
           "name": "start",
@@ -6433,7 +6507,8 @@
                 "-a",
                 "--attach"
               ],
-              "description": "Attach STDOUT/STDERR and forward signals"
+              "description": "Attach STDOUT/STDERR and forward signals",
+              "priority": 60
             },
             {
               "name": [
@@ -6449,7 +6524,8 @@
                 "-i",
                 "--interactive"
               ],
-              "description": "Attach container's STDIN"
+              "description": "Attach container's STDIN",
+              "priority": 70
             }
           ],
           "args": {
@@ -6473,7 +6549,8 @@
                 ]
               }
             ]
-          }
+          },
+          "priority": 75
         },
         {
           "name": "stats",
@@ -6484,7 +6561,8 @@
                 "-a",
                 "--all"
               ],
-              "description": "Show all containers (default shows just running)"
+              "description": "Show all containers (default shows just running)",
+              "priority": 60
             },
             {
               "name": [
@@ -6565,7 +6643,8 @@
                 ]
               }
             ]
-          }
+          },
+          "priority": 75
         },
         {
           "name": "top",
@@ -6990,7 +7069,8 @@
                 "name": "stringToString"
               }
             }
-          ]
+          ],
+          "priority": 65
         },
         {
           "name": "export",
@@ -7094,7 +7174,8 @@
                 "_corrected_in": "v0.10.0"
               }
             ]
-          }
+          },
+          "priority": 75
         },
         {
           "name": "list",
@@ -7142,7 +7223,8 @@
                 "-f",
                 "--force"
               ],
-              "description": "Force removing current context"
+              "description": "Force removing current context",
+              "priority": 22
             },
             {
               "name": [
@@ -7169,7 +7251,8 @@
                 "_corrected_in": "v0.10.0"
               }
             ]
-          }
+          },
+          "priority": 55
         },
         {
           "name": "show",
@@ -7506,7 +7589,8 @@
                 "template": "folders"
               }
             ]
-          }
+          },
+          "priority": 90
         },
         {
           "name": "history",
@@ -7629,7 +7713,8 @@
                 "_corrected_in": "v0.10.0"
               }
             ]
-          }
+          },
+          "priority": 75
         },
         {
           "name": "load",
@@ -7651,7 +7736,8 @@
               ],
               "description": "Suppress the load output"
             }
-          ]
+          ],
+          "priority": 55
         },
         {
           "name": "ls",
@@ -7662,7 +7748,8 @@
                 "-a",
                 "--all"
               ],
-              "description": "Show all images (default hides intermediate images)"
+              "description": "Show all images (default hides intermediate images)",
+              "priority": 60
             },
             {
               "name": [
@@ -7716,7 +7803,8 @@
                 "-a",
                 "--all"
               ],
-              "description": "Remove all unused images, not just dangling ones"
+              "description": "Remove all unused images, not just dangling ones",
+              "priority": 60
             },
             {
               "name": [
@@ -7732,7 +7820,8 @@
                 "-f",
                 "--force"
               ],
-              "description": "Do not prompt for confirmation"
+              "description": "Do not prompt for confirmation",
+              "priority": 22
             }
           ]
         },
@@ -7745,7 +7834,8 @@
                 "-a",
                 "--all-tags"
               ],
-              "description": "Download all tagged images in the repository"
+              "description": "Download all tagged images in the repository",
+              "priority": 60
             },
             {
               "name": [
@@ -7778,7 +7868,8 @@
                 "js_source": "function(t){return t[t.length-1]===\"\"?void 0:[\"docker\",\"search\",t[t.length-1],\"--format\",\"{{ json . }}\"]}"
               }
             ]
-          }
+          },
+          "priority": 80
         },
         {
           "name": "push",
@@ -7789,7 +7880,8 @@
                 "-a",
                 "--all-tags"
               ],
-              "description": "Push all tagged images in the repository"
+              "description": "Push all tagged images in the repository",
+              "priority": 60
             },
             {
               "name": [
@@ -7807,7 +7899,8 @@
           ],
           "args": {
             "name": "NAME[:TAG]"
-          }
+          },
+          "priority": 80
         },
         {
           "name": "rm",
@@ -7818,7 +7911,8 @@
                 "-f",
                 "--force"
               ],
-              "description": "Force removal of the image"
+              "description": "Force removal of the image",
+              "priority": 22
             },
             {
               "name": [
@@ -7844,7 +7938,8 @@
                 "_corrected_in": "v0.10.0"
               }
             ]
-          }
+          },
+          "priority": 55
         },
         {
           "name": "save",
@@ -7877,16 +7972,19 @@
                 "_corrected_in": "v0.10.0"
               }
             ]
-          }
+          },
+          "priority": 55
         },
         {
           "name": "tag",
           "description": "Create a tag TARGET_IMAGE that refers to SOURCE_IMAGE",
           "args": {
             "name": "SOURCE_IMAGE[:TAG] TARGET_IMAGE[:TAG]"
-          }
+          },
+          "priority": 60
         }
-      ]
+      ],
+      "priority": 75
     },
     {
       "name": "network",
@@ -8034,7 +8132,8 @@
               "description": "Driver to manage the Network (default \"bridge\")",
               "args": {
                 "name": "string"
-              }
+              },
+              "priority": 75
             },
             {
               "name": [
@@ -8130,7 +8229,8 @@
           ],
           "args": {
             "name": "NETWORK"
-          }
+          },
+          "priority": 65
         },
         {
           "name": "disconnect",
@@ -8141,7 +8241,8 @@
                 "-f",
                 "--force"
               ],
-              "description": "Force the container to disconnect from a network"
+              "description": "Force the container to disconnect from a network",
+              "priority": 22
             }
           ],
           "args": [
@@ -8224,7 +8325,8 @@
                 "_corrected_in": "v0.10.0"
               }
             ]
-          }
+          },
+          "priority": 75
         },
         {
           "name": "ls",
@@ -8282,7 +8384,8 @@
                 "-f",
                 "--force"
               ],
-              "description": "Do not prompt for confirmation"
+              "description": "Do not prompt for confirmation",
+              "priority": 22
             }
           ]
         },
@@ -8306,9 +8409,11 @@
                 "_corrected_in": "v0.10.0"
               }
             ]
-          }
+          },
+          "priority": 55
         }
-      ]
+      ],
+      "priority": 65
     },
     {
       "name": "node",
@@ -8374,7 +8479,8 @@
                 "_corrected_in": "v0.10.0"
               }
             ]
-          }
+          },
+          "priority": 75
         },
         {
           "name": "ls",
@@ -8490,7 +8596,8 @@
                 "_corrected_in": "v0.10.0"
               }
             ]
-          }
+          },
+          "priority": 85
         },
         {
           "name": "rm",
@@ -8501,7 +8608,8 @@
                 "-f",
                 "--force"
               ],
-              "description": "Force remove a node from the swarm"
+              "description": "Force remove a node from the swarm",
+              "priority": 22
             }
           ],
           "args": {
@@ -8521,7 +8629,8 @@
                 "_corrected_in": "v0.10.0"
               }
             ]
-          }
+          },
+          "priority": 55
         },
         {
           "name": "update",
@@ -9094,7 +9203,8 @@
           ],
           "args": {
             "name": "string"
-          }
+          },
+          "priority": 90
         },
         {
           "name": "create",
@@ -9202,7 +9312,8 @@
           ],
           "args": {
             "name": "string"
-          }
+          },
+          "priority": 65
         },
         {
           "name": "du",
@@ -9294,7 +9405,8 @@
               ],
               "args": {
                 "name": "string"
-              }
+              },
+              "priority": 65
             },
             {
               "name": "inspect",
@@ -9318,7 +9430,8 @@
               ],
               "args": {
                 "name": "string"
-              }
+              },
+              "priority": 75
             }
           ],
           "args": {
@@ -9341,7 +9454,8 @@
           ],
           "args": {
             "name": "string"
-          }
+          },
+          "priority": 75
         },
         {
           "name": "install",
@@ -9363,7 +9477,8 @@
               "description": "Include internal/frontend images",
               "args": {
                 "name": "string"
-              }
+              },
+              "priority": 60
             },
             {
               "name": [
@@ -9382,7 +9497,8 @@
               "description": "Do not prompt for confirmation",
               "args": {
                 "name": "string"
-              }
+              },
+              "priority": 22
             },
             {
               "name": [
@@ -9428,7 +9544,8 @@
               "description": "Do not prompt for confirmation",
               "args": {
                 "name": "string"
-              }
+              },
+              "priority": 22
             },
             {
               "name": [
@@ -9451,14 +9568,16 @@
           ],
           "args": {
             "name": "string"
-          }
+          },
+          "priority": 55
         },
         {
           "name": "stop",
           "description": "Stop builder instance",
           "args": {
             "name": "string"
-          }
+          },
+          "priority": 75
         },
         {
           "name": "uninstall",
@@ -9493,7 +9612,8 @@
         },
         {
           "name": "version",
-          "description": "Show buildx version information"
+          "description": "Show buildx version information",
+          "priority": 50
         }
       ],
       "options": [
@@ -9531,7 +9651,8 @@
               "name": "PLUGIN-DATA-DIR",
               "template": "filepaths"
             }
-          ]
+          ],
+          "priority": 65
         },
         {
           "name": "disable",
@@ -9542,7 +9663,8 @@
                 "-f",
                 "--force"
               ],
-              "description": "Force the disable of an active plugin"
+              "description": "Force the disable of an active plugin",
+              "priority": 22
             }
           ],
           "args": {
@@ -9627,7 +9749,8 @@
                 "_corrected_in": "v0.10.0"
               }
             ]
-          }
+          },
+          "priority": 75
         },
         {
           "name": "install",
@@ -9722,7 +9845,8 @@
           ],
           "args": {
             "name": "PLUGIN:[TAG]"
-          }
+          },
+          "priority": 80
         },
         {
           "name": "rm",
@@ -9733,7 +9857,8 @@
                 "-f",
                 "--force"
               ],
-              "description": "Force the removal of an active plugin"
+              "description": "Force the removal of an active plugin",
+              "priority": 22
             }
           ],
           "args": {
@@ -9753,7 +9878,8 @@
                 "_corrected_in": "v0.10.0"
               }
             ]
-          }
+          },
+          "priority": 55
         },
         {
           "name": "set",
@@ -9846,7 +9972,8 @@
               "description": "Secret driver",
               "args": {
                 "name": "string"
-              }
+              },
+              "priority": 75
             },
             {
               "name": [
@@ -9876,7 +10003,8 @@
               "name": "SECRET",
               "template": "filepaths"
             }
-          ]
+          ],
+          "priority": 65
         },
         {
           "name": "inspect",
@@ -9916,7 +10044,8 @@
                 "_corrected_in": "v0.10.0"
               }
             ]
-          }
+          },
+          "priority": 75
         },
         {
           "name": "ls",
@@ -9970,7 +10099,8 @@
                 "_corrected_in": "v0.10.0"
               }
             ]
-          }
+          },
+          "priority": 55
         }
       ]
     },
@@ -10041,7 +10171,8 @@
                 "-d",
                 "--detach"
               ],
-              "description": "Exit immediately instead of waiting for the service to converge"
+              "description": "Exit immediately instead of waiting for the service to converge",
+              "priority": 75
             },
             {
               "name": [
@@ -10642,7 +10773,8 @@
               "name": "COMMAND",
               "isOptional": true
             }
-          ]
+          ],
+          "priority": 65
         },
         {
           "name": "inspect",
@@ -10682,7 +10814,8 @@
                 "_corrected_in": "v0.10.0"
               }
             ]
-          }
+          },
+          "priority": 75
         },
         {
           "name": "logs",
@@ -10768,7 +10901,8 @@
                 "_corrected_in": "v0.10.0"
               }
             ]
-          }
+          },
+          "priority": 85
         },
         {
           "name": "ls",
@@ -10862,7 +10996,8 @@
                 "_corrected_in": "v0.10.0"
               }
             ]
-          }
+          },
+          "priority": 85
         },
         {
           "name": "rm",
@@ -10884,7 +11019,8 @@
                 "_corrected_in": "v0.10.0"
               }
             ]
-          }
+          },
+          "priority": 55
         },
         {
           "name": "rollback",
@@ -10895,7 +11031,8 @@
                 "-d",
                 "--detach"
               ],
-              "description": "Exit immediately instead of waiting for the service to converge"
+              "description": "Exit immediately instead of waiting for the service to converge",
+              "priority": 75
             },
             {
               "name": [
@@ -10932,7 +11069,8 @@
                 "-d",
                 "--detach"
               ],
-              "description": "Exit immediately instead of waiting for the service to converge"
+              "description": "Exit immediately instead of waiting for the service to converge",
+              "priority": 75
             }
           ],
           "args": {
@@ -10947,19 +11085,8 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "Name",
-                    "description": "Image"
-                  },
-                  {
-                    "type": "suffix",
-                    "value": "="
-                  }
-                ],
+                "requires_js": true,
+                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.Name}=`,description:n.Image,icon:\"fig://icon?type=docker\"}))}",
                 "_corrected_in": "v0.10.0"
               }
             ]
@@ -11064,7 +11191,8 @@
                 "-d",
                 "--detach"
               ],
-              "description": "Exit immediately instead of waiting for the service to converge"
+              "description": "Exit immediately instead of waiting for the service to converge",
+              "priority": 75
             },
             {
               "name": [
@@ -11160,7 +11288,8 @@
               "name": [
                 "--force"
               ],
-              "description": "Force update even if no changes require it"
+              "description": "Force update even if no changes require it",
+              "priority": 22
             },
             {
               "name": [
@@ -11921,7 +12050,8 @@
                 "_corrected_in": "v0.10.0"
               }
             ]
-          }
+          },
+          "priority": 85
         },
         {
           "name": "rm",
@@ -11954,7 +12084,8 @@
                 "_corrected_in": "v0.10.0"
               }
             ]
-          }
+          },
+          "priority": 55
         },
         {
           "name": "services",
@@ -12058,7 +12189,8 @@
                 "-d",
                 "--detach"
               ],
-              "description": "Exit immediately instead of waiting for the root rotation to converge"
+              "description": "Exit immediately instead of waiting for the root rotation to converge",
+              "priority": 75
             },
             {
               "name": [
@@ -12312,7 +12444,8 @@
                 "-f",
                 "--force"
               ],
-              "description": "Force this node to leave the swarm, ignoring warnings"
+              "description": "Force this node to leave the swarm, ignoring warnings",
+              "priority": 22
             }
           ]
         },
@@ -12430,7 +12563,8 @@
                 "-a",
                 "--all"
               ],
-              "description": "Remove all unused images not just dangling ones"
+              "description": "Remove all unused images not just dangling ones",
+              "priority": 60
             },
             {
               "name": [
@@ -12446,7 +12580,8 @@
                 "-f",
                 "--force"
               ],
-              "description": "Do not prompt for confirmation"
+              "description": "Do not prompt for confirmation",
+              "priority": 22
             },
             {
               "name": [
@@ -12535,9 +12670,11 @@
                 "name": "string"
               }
             }
-          ]
+          ],
+          "priority": 55
         }
-      ]
+      ],
+      "priority": 60
     },
     {
       "name": "trust",
@@ -12557,7 +12694,8 @@
           "args": {
             "name": "IMAGE[:TAG]",
             "isVariadic": true
-          }
+          },
+          "priority": 75
         },
         {
           "name": "revoke",
@@ -12636,7 +12774,8 @@
               "description": "Specify volume driver name (default \"local\")",
               "args": {
                 "name": "string"
-              }
+              },
+              "priority": 75
             },
             {
               "name": [
@@ -12660,7 +12799,8 @@
           ],
           "args": {
             "name": "VOLUME"
-          }
+          },
+          "priority": 65
         },
         {
           "name": "inspect",
@@ -12694,7 +12834,8 @@
                 "_corrected_in": "v0.10.0"
               }
             ]
-          }
+          },
+          "priority": 75
         },
         {
           "name": "ls",
@@ -12746,7 +12887,8 @@
                 "-f",
                 "--force"
               ],
-              "description": "Do not prompt for confirmation"
+              "description": "Do not prompt for confirmation",
+              "priority": 22
             }
           ]
         },
@@ -12759,7 +12901,8 @@
                 "-f",
                 "--force"
               ],
-              "description": "Force the removal of one or more volumes"
+              "description": "Force the removal of one or more volumes",
+              "priority": 22
             }
           ],
           "args": {
@@ -12779,9 +12922,11 @@
                 "_corrected_in": "v0.10.0"
               }
             ]
-          }
+          },
+          "priority": 55
         }
-      ]
+      ],
+      "priority": 65
     },
     {
       "name": "compose",
@@ -12902,7 +13047,8 @@
                 "js_source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}"
               }
             ]
-          }
+          },
+          "priority": 90
         },
         {
           "name": "config",
@@ -13014,14 +13160,16 @@
               "name": [
                 "--all"
               ],
-              "description": "Copy to all the containers of the service"
+              "description": "Copy to all the containers of the service",
+              "priority": 60
             },
             {
               "name": [
                 "--archive",
                 "-a"
               ],
-              "description": "Archive mode (copy all uid/gid information)"
+              "description": "Archive mode (copy all uid/gid information)",
+              "priority": 60
             },
             {
               "name": [
@@ -13088,7 +13236,8 @@
                 "js_source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}"
               }
             ]
-          }
+          },
+          "priority": 65
         },
         {
           "name": "down",
@@ -13160,7 +13309,8 @@
                 "--detach",
                 "-d"
               ],
-              "description": "Detached mode: Run command in the background"
+              "description": "Detached mode: Run command in the background",
+              "priority": 75
             },
             {
               "name": [
@@ -13186,7 +13336,8 @@
                 "--interactive",
                 "-i"
               ],
-              "description": "Keep STDIN open even if not attached"
+              "description": "Keep STDIN open even if not attached",
+              "priority": 70
             },
             {
               "name": [
@@ -13199,7 +13350,8 @@
               "name": [
                 "--privileged"
               ],
-              "description": "Give extended privileges to the process"
+              "description": "Give extended privileges to the process",
+              "priority": 35
             },
             {
               "name": [
@@ -13244,7 +13396,8 @@
               "name": "command",
               "isVariadic": true
             }
-          ]
+          ],
+          "priority": 88
         },
         {
           "name": "images",
@@ -13268,7 +13421,8 @@
                 "js_source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}"
               }
             ]
-          }
+          },
+          "priority": 78
         },
         {
           "name": "kill",
@@ -13295,7 +13449,8 @@
                 "js_source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}"
               }
             ]
-          }
+          },
+          "priority": 60
         },
         {
           "name": "logs",
@@ -13370,7 +13525,8 @@
                 "js_source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}"
               }
             ]
-          }
+          },
+          "priority": 85
         },
         {
           "name": "ls",
@@ -13381,7 +13537,8 @@
                 "--all",
                 "-a"
               ],
-              "description": "Show all stopped Compose projects"
+              "description": "Show all stopped Compose projects",
+              "priority": 60
             },
             {
               "name": [
@@ -13488,7 +13645,8 @@
                 "--all",
                 "-a"
               ],
-              "description": "Show all stopped containers (including those created by the run command)"
+              "description": "Show all stopped containers (including those created by the run command)",
+              "priority": 60
             },
             {
               "name": [
@@ -13572,7 +13730,8 @@
                 "js_source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}"
               }
             ]
-          }
+          },
+          "priority": 85
         },
         {
           "name": "pull",
@@ -13620,7 +13779,8 @@
                 "js_source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}"
               }
             ]
-          }
+          },
+          "priority": 80
         },
         {
           "name": "push",
@@ -13643,7 +13803,8 @@
                 "js_source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}"
               }
             ]
-          }
+          },
+          "priority": 80
         },
         {
           "name": "restart",
@@ -13681,14 +13842,16 @@
                 "--all",
                 "-a"
               ],
-              "description": "Deprecated - no effect"
+              "description": "Deprecated - no effect",
+              "priority": 60
             },
             {
               "name": [
                 "--force",
                 "-f"
               ],
-              "description": "Don't ask to confirm removal"
+              "description": "Don't ask to confirm removal",
+              "priority": 22
             },
             {
               "name": [
@@ -13715,7 +13878,8 @@
                 "js_source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}"
               }
             ]
-          }
+          },
+          "priority": 55
         },
         {
           "name": "run",
@@ -13726,7 +13890,8 @@
                 "--detach",
                 "-d"
               ],
-              "description": "Run container in background and print container ID"
+              "description": "Run container in background and print container ID",
+              "priority": 75
             },
             {
               "name": [
@@ -13752,7 +13917,8 @@
                 "--interactive",
                 "-i"
               ],
-              "description": "Keep STDIN open even if not attached"
+              "description": "Keep STDIN open even if not attached",
+              "priority": 70
             },
             {
               "name": [
@@ -13872,7 +14038,8 @@
             {
               "name": "command"
             }
-          ]
+          ],
+          "priority": 92
         },
         {
           "name": "start",
@@ -13887,7 +14054,8 @@
                 "js_source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}"
               }
             ]
-          }
+          },
+          "priority": 75
         },
         {
           "name": "stop",
@@ -13914,7 +14082,8 @@
                 "js_source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}"
               }
             ]
-          }
+          },
+          "priority": 75
         },
         {
           "name": "top",
@@ -13988,7 +14157,8 @@
                 "--detach",
                 "-d"
               ],
-              "description": "Detached mode: Run containers in the background"
+              "description": "Detached mode: Run containers in the background",
+              "priority": 75
             },
             {
               "name": [
@@ -14126,7 +14296,8 @@
               ],
               "description": "Shows only Compose's version number"
             }
-          ]
+          ],
+          "priority": 50
         }
       ],
       "options": [
@@ -14233,7 +14404,8 @@
             "name": "workdir"
           }
         }
-      ]
+      ],
+      "priority": 88
     }
   ]
 }
