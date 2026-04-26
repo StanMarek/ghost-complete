@@ -97,6 +97,12 @@ impl Default for TriggerConfig {
 pub struct PopupConfig {
     pub max_visible: usize,
     pub borders: bool,
+    /// Maximum time (ms) the popup will block waiting for a higher-priority
+    /// async generator before painting whatever sync results we have. Set
+    /// to `0` to disable blocking entirely (paint immediately, merge async
+    /// later). Clamped to `[0, 300]` during normalization. Default: 80 ms,
+    /// chosen to stay below the human perception threshold for "instant".
+    pub render_block_ms: u16,
 }
 
 impl Default for PopupConfig {
@@ -104,6 +110,7 @@ impl Default for PopupConfig {
         Self {
             max_visible: 10,
             borders: false,
+            render_block_ms: 80,
         }
     }
 }
@@ -388,6 +395,7 @@ const MAX_VISIBLE_DEFAULT: usize = 10;
 const MAX_VISIBLE_UPPER: usize = 50;
 const MAX_RESULTS_UPPER: usize = 10_000;
 const MAX_RESULTS_DEFAULT: usize = 50;
+const RENDER_BLOCK_MS_UPPER: u16 = 300;
 
 impl GhostConfig {
     /// Clamp config values to sane bounds, logging warnings when clamping.
@@ -427,6 +435,14 @@ impl GhostConfig {
                 MAX_RESULTS_DEFAULT,
             );
             self.suggest.max_results = MAX_RESULTS_DEFAULT;
+        }
+        if self.popup.render_block_ms > RENDER_BLOCK_MS_UPPER {
+            tracing::warn!(
+                "popup.render_block_ms={} exceeds maximum {}, clamping",
+                self.popup.render_block_ms,
+                RENDER_BLOCK_MS_UPPER,
+            );
+            self.popup.render_block_ms = RENDER_BLOCK_MS_UPPER;
         }
     }
 
@@ -1251,5 +1267,27 @@ auto_trigger = false
         // Other trigger defaults preserved
         assert_eq!(config.trigger.auto_chars, vec![' ', '/', '-', '.']);
         assert_eq!(config.trigger.delay_ms, 150);
+    }
+
+    #[test]
+    fn render_block_ms_default_is_80() {
+        let cfg = PopupConfig::default();
+        assert_eq!(cfg.render_block_ms, 80);
+    }
+
+    #[test]
+    fn render_block_ms_clamps_above_300_during_normalize() {
+        let mut cfg = GhostConfig::default();
+        cfg.popup.render_block_ms = 500;
+        cfg.normalize();
+        assert_eq!(cfg.popup.render_block_ms, 300);
+    }
+
+    #[test]
+    fn render_block_ms_zero_is_allowed() {
+        let mut cfg = GhostConfig::default();
+        cfg.popup.render_block_ms = 0;
+        cfg.normalize();
+        assert_eq!(cfg.popup.render_block_ms, 0);
     }
 }

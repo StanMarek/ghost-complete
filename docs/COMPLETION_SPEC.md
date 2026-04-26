@@ -48,6 +48,7 @@ Ghost Complete uses a Fig-compatible JSON format for completion specs. Specs def
 |-------|------|----------|-------------|
 | `name` | string | Yes | Subcommand name |
 | `description` | string | No | Description shown in the popup |
+| `priority` | u8 | No | Rank override, see [Priority and ranking](#priority-and-ranking) |
 | `subcommands` | SubcommandSpec[] | No | Nested subcommands (recursive) |
 | `options` | OptionSpec[] | No | Flags specific to this subcommand |
 | `args` | ArgSpec[] | No | Positional argument definitions |
@@ -66,6 +67,7 @@ Ghost Complete uses a Fig-compatible JSON format for completion specs. Specs def
 |-------|------|----------|-------------|
 | `name` | string[] | Yes | Flag names (long and/or short forms) |
 | `description` | string | No | Description shown in the popup |
+| `priority` | u8 | No | Rank override, see [Priority and ranking](#priority-and-ranking) |
 | `args` | ArgSpec | No | If the flag takes a value, define it here |
 
 ### ArgSpec
@@ -283,6 +285,62 @@ When `cache_by_directory` is `false`, the cache key is the generator's script co
   ]
 }
 ```
+
+## Priority and ranking
+
+Suggestions sort by `(non-history-first, score-desc, priority-desc, alpha)`.
+Score is the fuzzy match score against the current word. Priority is an
+integer in `0..=100`; higher ranks earlier. Ties break alphabetically.
+
+History suggestions are partitioned to the bottom regardless of priority
+— frecency-boosted history can still outrank other history, but never
+outranks non-history.
+
+When a `SubcommandSpec` or `OptionSpec` sets `priority` explicitly, that
+value is used. Otherwise the engine falls back to a per-kind base:
+
+| Kind          | Base | Notes                                          |
+| ------------- | ---- | ---------------------------------------------- |
+| GitBranch     | 80   |                                                |
+| GitTag        | 75   |                                                |
+| GitRemote     | 70   |                                                |
+| Subcommand    | 70   |                                                |
+| ProviderValue | 70   | Generator output (npm, docker, kubectl, …)     |
+| EnvVar        | 50   |                                                |
+| Command       | 40   | `$PATH` binaries                               |
+| Flag          | 30   |                                                |
+| Directory     | 25   |                                                |
+| FilePath      | 20   |                                                |
+| History       | 10   |                                                |
+
+Override per-item only when the default ordering is wrong for a specific
+completion (for example, `git push origin main` setting `priority: 100`
+on the default branch). Mirrors Fig's
+[`Suggestion.priority`](https://fig.io/api/interfaces/Suggestion#priority)
+field, so upstream Fig-converter specs that already set it are honoured.
+
+## Suppression contract
+
+The popup runs providers in one of six contexts, classified per
+keystroke from `(current_word, in_redirect, word_index, spec_matched)`.
+Precedence is top-to-bottom — the first row that matches wins.
+
+| Context           | Triggered when                                    | Providers that run                  |
+| ----------------- | ------------------------------------------------- | ----------------------------------- |
+| `CommandPosition` | `word_index == 0`                                 | `$PATH` commands + history          |
+| `Redirect`        | after `>`, `>>`, `<`, `<<`, `<<<`                 | filesystem only                     |
+| `PathPrefix`      | current_word starts with `./`, `/`, `~/`, `../`   | filesystem + history — escape hatch |
+| `FlagPrefix`      | current_word starts with `-` or `--`              | spec flags + spec subcommands only  |
+| `SpecArg`         | spec matched + arg position resolved              | only what the spec declares         |
+| `UnspeccedArg`    | no spec at all                                    | filesystem + history (fallback)     |
+
+**Filesystem only enters the candidate set when the matched arg position
+explicitly declares `template: "filepaths"` or `template: "folders"`,
+OR when the user typed a path-prefix.**
+
+**Generators only run at arg positions where they are declared.** No
+spec field is required to opt out — the absence of a generator is the
+opt-out.
 
 ## Validation
 

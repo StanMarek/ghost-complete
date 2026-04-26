@@ -15,6 +15,7 @@ use crate::frecency::FrecencyDb;
 use crate::fuzzy;
 use crate::git;
 use crate::history::{HistoryProvider, DEFAULT_MAX_HISTORY_ENTRIES};
+use crate::priority;
 use crate::provider::Provider;
 use crate::providers::{self, ProviderCtx, ProviderKind};
 use crate::script::{run_script, substitute_template};
@@ -92,6 +93,155 @@ impl SyncResult {
     /// Note: script_generators may still be present even when this returns false.
     pub fn has_suggestions(&self) -> bool {
         !self.suggestions.is_empty()
+    }
+
+    /// True iff any pending async generator's kind base priority outranks
+    /// the highest-priority sync suggestion currently in `self.suggestions`.
+    ///
+    /// This is a conservative heuristic: git generators always conceptually
+    /// produce branches/tags (highest base priority 80), script and provider
+    /// generators produce ProviderValue (base 70). If the best sync item
+    /// already has priority ≥ the expected async priority, there is no point
+    /// waiting — the async results would not change the top of the list.
+    pub fn has_pending_high_priority(&self) -> bool {
+        let top_sync = self
+            .suggestions
+            .iter()
+            .map(crate::priority::effective)
+            .max()
+            .unwrap_or_else(|| crate::priority::Priority::new(0));
+
+        // Git generators produce GitBranch/GitTag — base priority 80.
+        let git_base = crate::types::SuggestionKind::GitBranch.base_priority();
+        // Script and provider generators produce ProviderValue — base priority 70.
+        let provider_base = crate::types::SuggestionKind::ProviderValue.base_priority();
+
+        (!self.git_generators.is_empty() && git_base > top_sync)
+            || (!self.script_generators.is_empty() && provider_base > top_sync)
+            || (!self.provider_generators.is_empty() && provider_base > top_sync)
+    }
+}
+
+#[cfg(test)]
+mod sync_result_tests {
+    use super::*;
+    use crate::types::{Suggestion, SuggestionKind};
+
+    #[test]
+    fn has_pending_high_priority_false_when_no_generators() {
+        let result = SyncResult {
+            suggestions: vec![],
+            script_generators: vec![],
+            git_generators: vec![],
+            provider_generators: vec![],
+        };
+        assert!(!result.has_pending_high_priority());
+    }
+
+    #[test]
+    fn has_pending_high_priority_true_when_git_pending_and_no_sync() {
+        let result = SyncResult {
+            suggestions: vec![],
+            script_generators: vec![],
+            git_generators: vec![crate::git::GitQueryKind::Branches],
+            provider_generators: vec![],
+        };
+        // No sync suggestions → top_sync = 0 < 80 (GitBranch base)
+        assert!(result.has_pending_high_priority());
+    }
+
+    #[test]
+    fn has_pending_high_priority_false_when_sync_already_outranks_git() {
+        let result = SyncResult {
+            suggestions: vec![Suggestion {
+                kind: SuggestionKind::GitBranch,
+                priority: None,
+                ..Default::default()
+            }],
+            script_generators: vec![],
+            git_generators: vec![crate::git::GitQueryKind::Branches],
+            provider_generators: vec![],
+        };
+        // top_sync = 80, git_base = 80 → NOT strictly greater → false
+        assert!(!result.has_pending_high_priority());
+    }
+
+    #[test]
+    fn has_pending_high_priority_true_when_git_pending_and_flags_only_in_sync() {
+        let result = SyncResult {
+            suggestions: vec![Suggestion {
+                kind: SuggestionKind::Flag,
+                priority: None,
+                ..Default::default()
+            }],
+            script_generators: vec![],
+            git_generators: vec![crate::git::GitQueryKind::Branches],
+            provider_generators: vec![],
+        };
+        // top_sync = 30 (Flag), git_base = 80 → 80 > 30 → true
+        assert!(result.has_pending_high_priority());
+    }
+
+    #[test]
+    fn has_pending_high_priority_true_when_provider_pending_and_flags_only_in_sync() {
+        let result = SyncResult {
+            suggestions: vec![Suggestion {
+                kind: SuggestionKind::Flag,
+                priority: None,
+                ..Default::default()
+            }],
+            script_generators: vec![],
+            git_generators: vec![],
+            provider_generators: vec![ProviderKind::DefaultsDomains],
+        };
+        // top_sync = 30 (Flag), provider_base = 70 (ProviderValue) → 70 > 30 → true
+        assert!(result.has_pending_high_priority());
+    }
+
+    fn empty_generator_spec() -> Arc<crate::specs::GeneratorSpec> {
+        Arc::new(crate::specs::GeneratorSpec {
+            generator_type: None,
+            script: None,
+            script_template: None,
+            transforms: vec![],
+            cache: None,
+            requires_js: false,
+            js_source: None,
+            corrected_in: None,
+            template: None,
+        })
+    }
+
+    #[test]
+    fn has_pending_high_priority_true_when_script_pending_and_flags_only_in_sync() {
+        let result = SyncResult {
+            suggestions: vec![Suggestion {
+                kind: SuggestionKind::Flag,
+                priority: None,
+                ..Default::default()
+            }],
+            script_generators: vec![empty_generator_spec()],
+            git_generators: vec![],
+            provider_generators: vec![],
+        };
+        // top_sync = 30 (Flag), provider_base = 70 (script → ProviderValue) → 70 > 30 → true
+        assert!(result.has_pending_high_priority());
+    }
+
+    #[test]
+    fn has_pending_high_priority_false_when_script_pending_but_sync_outranks() {
+        let result = SyncResult {
+            suggestions: vec![Suggestion {
+                kind: SuggestionKind::Subcommand,
+                priority: None,
+                ..Default::default()
+            }],
+            script_generators: vec![empty_generator_spec()],
+            git_generators: vec![],
+            provider_generators: vec![],
+        };
+        // top_sync = 70 (Subcommand), provider_base = 70 → NOT strictly greater → false
+        assert!(!result.has_pending_high_priority());
     }
 }
 
@@ -496,38 +646,54 @@ impl SuggestionEngine {
         cwd: &Path,
         buffer: &str,
     ) -> Result<SyncResult> {
-        // Command position: commands (history handled by rank_with_history).
-        if ctx.word_index == 0 {
-            return Ok(self.suggest_command_position(ctx, cwd, buffer));
+        use crate::context::{classify, ClassifyInput, Context};
+
+        let spec_matched = self.spec_for_ctx(ctx).is_some();
+        let context = classify(ClassifyInput {
+            current_word: &ctx.current_word,
+            in_redirect: ctx.in_redirect,
+            word_index: ctx.word_index,
+            spec_matched,
+        });
+
+        match context {
+            Context::CommandPosition => Ok(self.suggest_command_position(ctx, cwd, buffer)),
+            Context::Redirect => Ok(self.suggest_redirect(ctx, cwd, buffer)),
+            Context::PathPrefix => {
+                // PathPrefix is the explicit user-typed escape hatch — only
+                // filesystem candidates run, regardless of spec content.
+                // Env-var (`$VAR`) and ssh-host injections are deliberately
+                // absent: PathPrefix words start with `./`, `../`, `/`, or
+                // `~/` — none of those prefixes can collide with `$VAR` or
+                // an SSH host token, so neither augmentation has anything
+                // to add here.
+                Ok(self.suggest_filesystem_fallback(ctx, cwd, buffer, Vec::new(), "path"))
+            }
+            Context::FlagPrefix => Ok(self.suggest_flag_prefix(ctx, cwd, buffer)),
+            Context::SpecArg => {
+                // Env vars and ssh hosts are situational injections that augment
+                // (but do not replace) spec results — they're allowed inside
+                // SpecArg context.
+                let mut candidates = Vec::new();
+                self.extend_with_env_vars(ctx, cwd, &mut candidates);
+                self.extend_with_ssh_hosts(ctx, &mut candidates);
+                match self.try_suggest_from_spec(ctx, cwd, buffer, candidates) {
+                    Ok(result) => Ok(result),
+                    Err(_) => unreachable!(
+                        "spec_for_ctx returned Some in classify but try_suggest_from_spec \
+                         returned Err — alias_map / spec_store invariant violated"
+                    ),
+                }
+            }
+            Context::UnspeccedArg => {
+                // No spec at all — fall back to the historical behavior:
+                // filesystem + history + situational injections.
+                let mut candidates = Vec::new();
+                self.extend_with_env_vars(ctx, cwd, &mut candidates);
+                self.extend_with_ssh_hosts(ctx, &mut candidates);
+                Ok(self.suggest_filesystem_fallback(ctx, cwd, buffer, candidates, "fallback"))
+            }
         }
-
-        // Redirect: always filesystem.
-        if ctx.in_redirect {
-            return Ok(self.suggest_redirect(ctx, cwd, buffer));
-        }
-
-        // Contextual injectors populate the shared candidate set before
-        // spec/filesystem resolution runs.
-        let mut candidates = Vec::new();
-        self.extend_with_env_vars(ctx, cwd, &mut candidates);
-        self.extend_with_ssh_hosts(ctx, &mut candidates);
-
-        // Spec-driven completion takes priority over the path heuristic.
-        // On Err, try_suggest_from_spec hands the partially-populated
-        // candidates vec back so the caller can fall through.
-        let candidates = match self.try_suggest_from_spec(ctx, cwd, buffer, candidates) {
-            Ok(result) => return Ok(result),
-            Err(candidates) => candidates,
-        };
-
-        // Path-like current_word vs. plain fallback: same logic, different
-        // tracing label for debugging.
-        let label = if looks_like_path(&ctx.current_word) {
-            "path"
-        } else {
-            "fallback"
-        };
-        Ok(self.suggest_filesystem_fallback(ctx, cwd, buffer, candidates, label))
     }
 
     /// Complete the command name (`ctx.word_index == 0`). Pulls candidates
@@ -548,6 +714,23 @@ impl SuggestionEngine {
         }
         SyncResult {
             suggestions: self.rank_with_history(ctx, cwd, buffer, candidates, true),
+            script_generators: Vec::new(),
+            git_generators: Vec::new(),
+            provider_generators: Vec::new(),
+        }
+    }
+
+    /// Complete a flag-prefixed token (`-` or `--`). Returns spec-declared
+    /// flags + subcommands only — never filesystem, never history.
+    fn suggest_flag_prefix(&self, ctx: &CommandContext, cwd: &Path, buffer: &str) -> SyncResult {
+        let mut candidates = Vec::new();
+        if let Some(spec) = self.spec_for_ctx(ctx) {
+            let resolution = specs::resolve_spec(spec, ctx);
+            candidates.extend(resolution.subcommands);
+            candidates.extend(resolution.options);
+        }
+        SyncResult {
+            suggestions: self.rank_with_history(ctx, cwd, buffer, candidates, false),
             script_generators: Vec::new(),
             git_generators: Vec::new(),
             provider_generators: Vec::new(),
@@ -620,11 +803,29 @@ impl SuggestionEngine {
         );
     }
 
-    /// Attempt to resolve candidates from a loaded spec for this command.
+    /// Resolve the alias-aware spec for this command context, if any.
+    /// Centralizes the alias lookup + spec_store probe so callers don't
+    /// repeat it.
+    fn spec_for_ctx(&self, ctx: &CommandContext) -> Option<&specs::CompletionSpec> {
+        if !self.providers_specs {
+            return None;
+        }
+        let command = ctx.command.as_ref()?;
+        let resolved_owned = self.alias_map.get(command.as_str());
+        let resolved = resolved_owned.as_deref().unwrap_or(command.as_str());
+        self.spec_store.get(resolved)
+    }
+
+    /// Look up the spec for `ctx.command_name` and append its synchronous
+    /// completions (subcommands, options, templates, env-var/SSH-host
+    /// injections) to the candidate set.
     ///
-    /// Returns `Ok(SyncResult)` if a spec was found and handled. Returns
-    /// `Err(candidates)` — handing the partially-populated candidate vec
-    /// back — so the caller can fall through to filesystem completion.
+    /// By construction this is invoked only from the `Context::SpecArg` arm
+    /// of `suggest_sync`, which has already verified
+    /// `spec_for_ctx(...).is_some()` via the classifier. The `Err(candidates)`
+    /// arm therefore signals an internal invariant violation (`alias_map` and
+    /// `spec_store` mutation between classify and dispatch) and is converted
+    /// to `unreachable!` by the dispatcher.
     fn try_suggest_from_spec(
         &self,
         ctx: &CommandContext,
@@ -632,16 +833,7 @@ impl SuggestionEngine {
         buffer: &str,
         mut candidates: Vec<Suggestion>,
     ) -> std::result::Result<SyncResult, Vec<Suggestion>> {
-        if !self.providers_specs {
-            return Err(candidates);
-        }
-        let Some(command) = ctx.command.as_ref() else {
-            return Err(candidates);
-        };
-        // Resolve alias: if "g" is aliased to "git", look up "git" spec.
-        let resolved_owned = self.alias_map.get(command.as_str());
-        let resolved = resolved_owned.as_deref().unwrap_or(command.as_str());
-        let Some(spec) = self.spec_store.get(resolved) else {
+        let Some(spec) = self.spec_for_ctx(ctx) else {
             return Err(candidates);
         };
 
@@ -662,24 +854,13 @@ impl SuggestionEngine {
         // Suppress subcommands/options when:
         // 1. The preceding flag takes an argument (e.g. `curl -o <TAB>`)
         // 2. We're past `--` (end-of-flags separator) — only positional args
-        // 3. Native git ref generators are pending for a positional token.
-        //    Rendering flags/files before branch/tag results arrive makes
-        //    `git checkout <TAB>` look flag-first even though refs are the
-        //    primary completion target.
-        let defer_to_git_refs =
-            !git_generators.is_empty() && !ctx.is_flag && !looks_like_path(&ctx.current_word);
-        let suppress_commands = preceding_flag_has_args || past_double_dash || defer_to_git_refs;
+        let suppress_commands = preceding_flag_has_args || past_double_dash;
 
         if !suppress_commands {
             candidates.extend(subcommands);
             candidates.extend(options);
         }
 
-        // Add filesystem: folders-only or all filepaths. Runs even when
-        // deferring to git refs so `git checkout <file>` keeps completing
-        // paths while branches/tags are loading. The handler's empty-query
-        // merge re-sorts by kind priority (branches < tags < files), so
-        // branches still land at the top once generators resolve.
         if wants_folders_only && self.providers_filesystem {
             self.extend_with_folders(ctx, cwd, &mut candidates);
         } else if wants_filepaths && self.providers_filesystem {
@@ -695,12 +876,7 @@ impl SuggestionEngine {
             .filter(|g| !g.requires_js)
             .collect();
 
-        // When deferring to git refs, skip history: otherwise `rank_with_history`
-        // would fuzzy-match the buffer against the shell history and jam the
-        // last N `git checkout ...` invocations ahead of the branches that are
-        // about to arrive. Filesystem candidates stay in the pool so file-path
-        // checkouts still work during the async window.
-        let suggestions = self.rank_with_history(ctx, cwd, buffer, candidates, !defer_to_git_refs);
+        let suggestions = self.rank_with_history(ctx, cwd, buffer, candidates, true);
 
         Ok(SyncResult {
             suggestions,
@@ -781,6 +957,32 @@ impl SuggestionEngine {
         label: &'static str,
     ) -> SyncResult {
         if self.providers_filesystem {
+            // When typing a `../`-prefixed word, offer one more level of parent
+            // navigation (e.g. `../../`) so the user can chain upward without
+            // switching context. This applies the trailing-`../` portion of
+            // the parent-nav logic from `extend_with_folders`. The empty-word
+            // case (`cd <TAB>` injecting `../`) is intentionally NOT mirrored
+            // here — that path goes through SpecArg context, never reaches
+            // this fallback.
+            if ctx.current_word.ends_with("../") {
+                let parent_text = format!("{}../", &ctx.current_word);
+                let effective = cwd.join(&ctx.current_word);
+                let at_boundary = effective.canonicalize().ok().is_none_or(|resolved| {
+                    resolved == Path::new("/")
+                        || std::env::var("HOME")
+                            .ok()
+                            .is_some_and(|h| resolved == Path::new(&h))
+                });
+                if !at_boundary {
+                    candidates.push(Suggestion {
+                        text: parent_text,
+                        description: Some("Parent directory".to_string()),
+                        kind: SuggestionKind::Directory,
+                        source: SuggestionSource::Filesystem,
+                        ..Default::default()
+                    });
+                }
+            }
             match self.filesystem_provider.provide(ctx, cwd) {
                 Ok(fs) => candidates.extend(fs),
                 Err(e) => tracing::warn!("filesystem provider error ({label}): {e}"),
@@ -798,9 +1000,9 @@ impl SuggestionEngine {
     /// candidates with the full buffer, and append history results at the end.
     /// All suggestions receive a frecency bonus so frequently/recently accepted
     /// completions sort higher. When `include_history` is false, history is
-    /// skipped entirely — used for contexts where history entries would
-    /// outrank imminent async results (e.g. `git checkout <TAB>` waiting on
-    /// branch/tag generators).
+    /// skipped entirely — used by `suggest_flag_prefix`, where the user has
+    /// explicitly typed a flag dash and history entries (full command lines)
+    /// would create irrelevant noise.
     fn rank_with_history(
         &self,
         ctx: &CommandContext,
@@ -827,8 +1029,17 @@ impl SuggestionEngine {
             }
         }
 
-        // Apply frecency boost to ALL suggestions, then re-sort.
-        // Re-sort after frecency boost changes scores. Maintains history-comes-last partition.
+        // Apply frecency boost to ALL suggestions, then re-sort by
+        // (history-partition, score-desc, priority-desc, alpha).
+        //
+        // The explicit `a_hist` / `b_hist` partition is retained on purpose
+        // even though `priority::effective(History) == 10` would normally
+        // sink history to the bottom. Frecency can boost a heavily-used
+        // history entry's `score` well above non-history items, and
+        // because score is the primary sort key, a boosted history match
+        // could otherwise outrank domain content on the same query. The
+        // partition guarantees history never outranks non-history
+        // regardless of how aggressive frecency gets.
         self.frecency_db
             .boost_scores(&mut results, ctx.command.as_deref());
         results.sort_by(|a, b| {
@@ -837,7 +1048,7 @@ impl SuggestionEngine {
             a_hist
                 .cmp(&b_hist)
                 .then_with(|| b.score.cmp(&a.score))
-                .then_with(|| a.kind.sort_priority().cmp(&b.kind.sort_priority()))
+                .then_with(|| priority::effective(b).cmp(&priority::effective(a)))
                 .then_with(|| a.text.cmp(&b.text))
         });
 
@@ -860,10 +1071,6 @@ fn resolve_script_argv(gen: &GeneratorSpec, ctx: &CommandContext) -> Vec<String>
         return substitute_template(template, prev_token, current_token);
     }
     Vec::new()
-}
-
-fn looks_like_path(word: &str) -> bool {
-    word.contains('/') || word.starts_with('.') || word.starts_with('~')
 }
 
 #[cfg(test)]
@@ -959,7 +1166,9 @@ mod tests {
     }
 
     #[test]
-    fn test_git_checkout_waits_for_ref_generators_in_arg_position() {
+    fn test_git_checkout_dispatches_ref_generators_in_arg_position() {
+        // SpecArg dispatches generators in parallel with sync flags; priority
+        // sort lands branches above flags once they arrive.
         let engine = make_engine();
         let ctx = make_ctx(Some("git"), vec!["checkout"], "", 2);
         let results = engine
@@ -978,25 +1187,15 @@ mod tests {
                 .contains(&crate::git::GitQueryKind::Tags),
             "git checkout should dispatch tag generator: {results:?}"
         );
-        // Flags/subcommands must not leak through while refs are pending —
-        // filesystem and tempdir entries are allowed so `git checkout <file>`
-        // keeps working.
-        assert!(
-            !results
-                .suggestions
-                .iter()
-                .any(|s| matches!(s.kind, SuggestionKind::Flag | SuggestionKind::Subcommand)),
-            "flags/subcommands must be suppressed while branch/tag generators are pending: {:?}",
-            results.suggestions,
-        );
     }
 
     #[test]
-    fn test_git_checkout_suppresses_matching_history_while_refs_pending() {
-        // Regression for "history appears before branches on git checkout <TAB>":
-        // when native git ref generators are pending, the sync pass must not emit
-        // history entries that fuzzy-match the buffer. Otherwise the popup shows
-        // a history-only view for the few ms before branches arrive.
+    fn test_git_checkout_includes_history_in_arg_position() {
+        // SpecArg context always includes history (rank_with_history true).
+        // A discriminating current_word ("main") is used so the spec/fs
+        // candidates fuzzy-filter down and history can fit within
+        // max_results — an empty current_word floods the cap with flags
+        // and folders before the history append runs.
         let spec_store = SpecStore::load_from_dir(&spec_dir()).unwrap().store;
         let history = HistoryProvider::from_entries(vec![
             "git checkout main".into(),
@@ -1006,18 +1205,24 @@ mod tests {
         let commands = CommandsProvider::from_list(vec!["git".into()]);
         let engine = SuggestionEngine::with_providers(spec_store, history, commands);
 
-        let ctx = make_ctx(Some("git"), vec!["checkout"], "", 2);
+        let ctx = make_ctx(Some("git"), vec!["checkout"], "main", 2);
         let results = engine
-            .suggest_sync(&ctx, Path::new("/tmp"), "git checkout ")
+            .suggest_sync(&ctx, Path::new("/tmp"), "git checkout main")
             .unwrap();
 
+        // Presence is locked in here; ordering against incoming async
+        // branches is covered by the priority-sort tests above.
         assert!(
-            !results
+            results
                 .suggestions
                 .iter()
                 .any(|s| s.source == SuggestionSource::History),
-            "history must be suppressed while git ref generators are pending: {:?}",
-            results.suggestions
+            "SpecArg must include history matches: {:?}",
+            results
+                .suggestions
+                .iter()
+                .map(|s| (&s.text, &s.source))
+                .collect::<Vec<_>>()
         );
     }
 
@@ -1049,10 +1254,11 @@ mod tests {
 
     #[test]
     fn test_git_checkout_with_flag_prefix_still_shows_flags() {
-        // Locks in the `!ctx.is_flag` half of `defer_to_git_refs`. Typing `-`
-        // after `git checkout` is an explicit signal the user wants flags —
-        // the ref-deferral path must NOT swallow them. Branch/tag generators
-        // should still be dispatched in parallel so refs keep loading async.
+        // FlagPrefix context dispatches to suggest_flag_prefix which returns
+        // spec-declared flags and subcommands only — no filesystem, no git
+        // generators. When the user types `-` they have signalled they want
+        // flags; git ref generators are not dispatched in this path (they're
+        // dispatched when the user is in SpecArg context with an empty token).
         let engine = make_engine();
         let ctx = make_ctx(Some("git"), vec!["checkout"], "-", 2);
         let results = engine
@@ -1067,33 +1273,27 @@ mod tests {
             "flags must appear when current_word starts with '-': {:?}",
             results.suggestions,
         );
+        // FlagPrefix no longer dispatches git generators — flags are the
+        // explicit intent, and git refs are an async concern for SpecArg.
         assert!(
-            results
-                .git_generators
-                .contains(&crate::git::GitQueryKind::Branches),
-            "branch generator must still be dispatched even with flag prefix: {results:?}"
-        );
-        assert!(
-            results
-                .git_generators
-                .contains(&crate::git::GitQueryKind::Tags),
-            "tag generator must still be dispatched even with flag prefix: {results:?}"
+            results.git_generators.is_empty(),
+            "FlagPrefix should not dispatch git generators: {results:?}"
         );
     }
 
     #[test]
     fn test_git_checkout_with_path_like_word_does_not_defer_to_refs() {
-        // Locks in the `!looks_like_path(&ctx.current_word)` half of
-        // `defer_to_git_refs`. When the user has signalled a path
-        // (leading `.`, leading `~`, or embedded `/`), history must NOT be
-        // suppressed — otherwise `git checkout ./foo`, `git checkout ../bar`,
-        // `git checkout ~/baz`, and `git checkout src/main` would lose their
-        // matching history entries for the few ms before branches arrive.
+        // Path-prefixed words (starting with `./`, `../`, `~/`) route to the
+        // PathPrefix context which calls suggest_filesystem_fallback with
+        // include_history=true. Words that embed `/` but lack those prefixes
+        // (e.g. `src/main`) route to SpecArg where history is always included
+        // (rank_with_history is called with true). Either way, history must
+        // not be suppressed when the user has signalled a path — otherwise
+        // `git checkout ./foo` etc. would lose matching history entries.
         //
         // Filesystem is disabled on the engine so the assertion targets the
         // `include_history` branch directly — otherwise real-world filesystem
-        // entries for `../`, `~/`, etc. crowd out history via `max_results`
-        // saturation and obscure the signal we care about.
+        // entries crowd out history via `max_results` saturation.
         let path_markers = ["./", "../src", "~/proj", "src/main"];
 
         for marker in path_markers {
@@ -1146,6 +1346,23 @@ mod tests {
         assert!(
             results.iter().any(|s| s.text == "src/main.rs"),
             "expected 'src/main.rs' in results: {results:?}"
+        );
+    }
+
+    #[test]
+    fn test_path_prefix_dispatches_via_classifier() {
+        // Genuinely exercises the PathPrefix Context branch — `./foo` starts
+        // with `./` so `has_path_prefix` returns true and the classifier
+        // routes to PathPrefix instead of UnspeccedArg.
+        let engine = make_engine();
+        let tmp = tempfile::TempDir::new().unwrap();
+        std::fs::create_dir(tmp.path().join("foo")).unwrap();
+        std::fs::write(tmp.path().join("foo/bar.txt"), "").unwrap();
+        let ctx = make_ctx(Some("cat"), vec![], "./foo", 1);
+        let results = engine.suggest_sync(&ctx, tmp.path(), "cat ./foo").unwrap();
+        assert!(
+            results.iter().any(|s| s.text.contains("foo")),
+            "PathPrefix dispatch should yield filesystem entries: {results:?}"
         );
     }
 
@@ -1438,6 +1655,48 @@ mod tests {
         assert!(
             results.iter().any(|s| s.text == "../../"),
             "should offer ../../ when current_word is ../: {results:?}"
+        );
+    }
+
+    #[test]
+    fn test_path_prefix_chains_parent_dir_for_unspecced_command() {
+        use crate::context::{classify, ClassifyInput, Context};
+        // PathPrefix on an unspecced command should still offer the chained
+        // `../../` when the user is one level deep into the working tree.
+        let engine = make_engine();
+        let tmp = tempfile::TempDir::new().unwrap();
+        let sub = tmp.path().join("aaa").join("bbb");
+        std::fs::create_dir_all(&sub).unwrap();
+        let ctx = make_ctx(Some("unknown_cmd"), vec![], "../", 1);
+        assert_eq!(
+            classify(ClassifyInput {
+                current_word: "../",
+                in_redirect: false,
+                word_index: 1,
+                spec_matched: false,
+            }),
+            Context::PathPrefix
+        );
+        let results = engine.suggest_sync(&ctx, &sub, "unknown_cmd ../").unwrap();
+        assert!(
+            results.iter().any(|s| s.text == "../../"),
+            "PathPrefix should chain parent dir on unspecced commands: {results:?}"
+        );
+    }
+
+    #[test]
+    fn test_unspecced_path_prefix_no_chain_at_root() {
+        // Root has no parent — `../` chaining must not appear.
+        let engine = make_engine();
+        let ctx = make_ctx(Some("unknown_cmd"), vec![], "../", 1);
+        let results = engine
+            .suggest_sync(&ctx, Path::new("/"), "unknown_cmd ../")
+            .unwrap();
+        assert!(
+            !results
+                .iter()
+                .any(|s| s.text == "../" || s.text == "../../"),
+            "../ chaining should not appear at root: {results:?}"
         );
     }
 
@@ -2014,9 +2273,9 @@ mod tests {
     }
 
     #[test]
-    fn test_sort_priority_tiebreaker_with_equal_boosted_scores() {
+    fn test_priority_tiebreaker_with_equal_boosted_scores() {
         // When two suggestions have the same score after frecency boost,
-        // sort_priority should break the tie (GitBranch < Subcommand < Flag).
+        // effective priority should break the tie (GitBranch > Subcommand > Flag).
         let engine = make_engine();
         let ctx = make_ctx(Some("git"), vec![], "ch", 1);
         let results = engine
@@ -2028,14 +2287,16 @@ mod tests {
             .filter(|s| s.source != SuggestionSource::History)
             .collect();
 
-        // For any adjacent pair with equal scores, verify sort_priority ordering
+        // For any adjacent pair with equal scores, verify priority ordering (descending)
         for pair in non_hist.windows(2) {
             if pair[0].score == pair[1].score {
                 assert!(
-                    pair[0].kind.sort_priority() <= pair[1].kind.sort_priority(),
-                    "equal-score items should be ordered by sort_priority: {:?} (pri={}) before {:?} (pri={})",
-                    pair[0].text, pair[0].kind.sort_priority(),
-                    pair[1].text, pair[1].kind.sort_priority()
+                    priority::effective(pair[0]) >= priority::effective(pair[1]),
+                    "equal-score items should be ordered by priority desc: {:?} (pri={}) before {:?} (pri={})",
+                    pair[0].text,
+                    priority::effective(pair[0]).get(),
+                    pair[1].text,
+                    priority::effective(pair[1]).get()
                 );
             }
         }
@@ -2066,5 +2327,104 @@ mod tests {
                 verbose.score
             );
         }
+    }
+
+    // ---- helpers for Context-dispatch tests ----
+
+    /// Synthesise a `CommandContext` from a raw buffer string.
+    ///
+    /// Splits on spaces; trailing space means `current_word` is `""` at
+    /// `word_index == token_count`. Leading token is the command, remaining
+    /// tokens before the last are `args`, last token is `current_word`.
+    fn command_context_with(buffer: &str) -> CommandContext {
+        // Tokenise, preserving trailing empty slot for "ends with space".
+        let ends_with_space = buffer.ends_with(' ');
+        let tokens: Vec<&str> = buffer.split_whitespace().collect();
+        if tokens.is_empty() {
+            return make_ctx(None, vec![], "", 0);
+        }
+        let command = tokens[0];
+        if tokens.len() == 1 && !ends_with_space {
+            // "git" — still typing the command
+            return make_ctx(None, vec![], command, 0);
+        }
+        let (args_slice, current_word) = if ends_with_space {
+            // All tokens are completed args; current_word is blank.
+            (&tokens[1..], "")
+        } else {
+            // Last token is the word being typed.
+            (&tokens[1..tokens.len() - 1], *tokens.last().unwrap())
+        };
+        let word_index = 1 + args_slice.len();
+        make_ctx(Some(command), args_slice.to_vec(), current_word, word_index)
+    }
+
+    // ---- Context-dispatch contract tests ----
+
+    #[test]
+    fn suggest_sync_path_prefix_returns_filesystem_only() {
+        let engine = make_engine();
+        let ctx = command_context_with("git checkout ./");
+        let result = engine
+            .suggest_sync(&ctx, std::path::Path::new("/tmp"), "git checkout ./")
+            .unwrap();
+        assert!(
+            result.suggestions.iter().all(|s| matches!(
+                s.kind,
+                crate::types::SuggestionKind::FilePath | crate::types::SuggestionKind::Directory
+            )),
+            "PathPrefix context should yield only filesystem suggestions, got {:?}",
+            result
+                .suggestions
+                .iter()
+                .map(|s| &s.kind)
+                .collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn suggest_sync_flag_prefix_returns_flags_and_subcommands_only() {
+        let engine = make_engine();
+        let ctx = command_context_with("git checkout --");
+        let result = engine
+            .suggest_sync(&ctx, std::path::Path::new("/tmp"), "git checkout --")
+            .unwrap();
+        assert!(
+            result.suggestions.iter().all(|s| matches!(
+                s.kind,
+                crate::types::SuggestionKind::Flag | crate::types::SuggestionKind::Subcommand
+            )),
+            "FlagPrefix context should yield only Flag/Subcommand suggestions, got {:?}",
+            result
+                .suggestions
+                .iter()
+                .map(|s| &s.kind)
+                .collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn suggest_sync_spec_arg_does_not_inject_filesystem_when_spec_omits_template() {
+        // Use a spec with NO template at the positional arg (e.g. cargo run).
+        let engine = make_engine();
+        let ctx = command_context_with("cargo run ");
+        let result = engine
+            .suggest_sync(&ctx, std::path::Path::new("/tmp"), "cargo run ")
+            .unwrap();
+        let any_fs = result.suggestions.iter().any(|s| {
+            matches!(
+                s.kind,
+                crate::types::SuggestionKind::FilePath | crate::types::SuggestionKind::Directory
+            )
+        });
+        assert!(
+            !any_fs,
+            "spec without template should NOT inject fs, got {:?}",
+            result
+                .suggestions
+                .iter()
+                .map(|s| (&s.text, &s.kind))
+                .collect::<Vec<_>>()
+        );
     }
 }

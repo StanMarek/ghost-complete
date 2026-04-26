@@ -5,6 +5,7 @@ use std::sync::Arc;
 use anyhow::{Context, Result};
 use serde::Deserialize;
 
+use crate::priority::Priority;
 use crate::providers::{self, ProviderKind};
 use crate::transform::Transform;
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
@@ -234,6 +235,8 @@ pub struct SubcommandSpec {
     pub options: Vec<OptionSpec>,
     #[serde(default, deserialize_with = "deserialize_args_one_or_many")]
     pub args: Vec<ArgSpec>,
+    #[serde(default)]
+    pub priority: Option<Priority>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -242,6 +245,8 @@ pub struct OptionSpec {
     pub description: Option<String>,
     #[serde(default, deserialize_with = "deserialize_option_args")]
     pub args: Option<ArgSpec>,
+    #[serde(default)]
+    pub priority: Option<Priority>,
 }
 
 /// Deserialize template as either a single string or an array of strings.
@@ -542,6 +547,7 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
             description: s.description.clone(),
             kind: SuggestionKind::Subcommand,
             source: SuggestionSource::Spec,
+            priority: s.priority,
             ..Default::default()
         })
         .collect();
@@ -554,6 +560,7 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
                 description: o.description.clone(),
                 kind: SuggestionKind::Flag,
                 source: SuggestionSource::Spec,
+                priority: o.priority,
                 ..Default::default()
             })
         })
@@ -1476,6 +1483,7 @@ mod tests {
                 template: None,
                 suggestions: None,
             }),
+            priority: None,
         }];
         // Exact match
         assert!(find_option(&options, "--output").is_some());
@@ -1507,6 +1515,7 @@ mod tests {
                 } else {
                     None
                 },
+                priority: None,
             });
         }
 
@@ -1734,6 +1743,7 @@ mod tests {
                 subcommands: Vec::new(),
                 options: Vec::new(),
                 args: Vec::new(),
+                priority: None,
             });
             tail = &mut tail[0].subcommands;
         }
@@ -2007,6 +2017,58 @@ mod tests {
             msg.contains("transform") || msg.contains("unknown field"),
             "error should identify the offending unknown field: {msg}"
         );
+    }
+
+    #[test]
+    fn parses_priority_from_subcommand_spec() {
+        let json = r#"{
+            "name": "checkout",
+            "description": "switch branches",
+            "priority": 90
+        }"#;
+        let parsed: SubcommandSpec = serde_json::from_str(json).unwrap();
+        assert_eq!(parsed.priority, Some(Priority::new(90)));
+    }
+
+    #[test]
+    fn missing_priority_field_is_none() {
+        let json = r#"{
+            "name": "checkout",
+            "description": "switch branches"
+        }"#;
+        let parsed: SubcommandSpec = serde_json::from_str(json).unwrap();
+        assert_eq!(parsed.priority, None);
+    }
+
+    #[test]
+    fn subcommand_priority_propagates_to_suggestion() {
+        let json = r#"{
+            "name": "git",
+            "subcommands": [
+                { "name": "checkout", "priority": 95 }
+            ]
+        }"#;
+        let spec: CompletionSpec = serde_json::from_str(json).unwrap();
+        let ctx = CommandContext {
+            command: Some("git".into()),
+            args: vec![],
+            current_word: String::new(),
+            word_index: 1,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: None,
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
+        };
+        let resolution = resolve_spec(&spec, &ctx);
+        let checkout = resolution
+            .subcommands
+            .iter()
+            .find(|s| s.text == "checkout")
+            .expect("checkout subcommand should be present");
+        assert_eq!(checkout.priority, Some(Priority::new(95)));
     }
 
     #[test]
