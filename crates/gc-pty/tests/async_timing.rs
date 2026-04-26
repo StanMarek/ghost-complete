@@ -50,7 +50,7 @@ fn make_handler_with_delayed_rx(
     // Prime the handler as if spawn_generators already ran.
     // buffer_generation was incremented in prepare_trigger_with_block, but
     // for these tests we set spawned_generation manually to match.
-    handler.buffer_generation = 1;
+    handler.set_buffer_generation(1);
     handler.set_spawned_generation(1);
     // Prime dynamic_ctx so the staleness check in try_merge_dynamic passes.
     handler.prime_dynamic_ctx_for_empty_buffer();
@@ -398,7 +398,7 @@ async fn fast_async_with_typed_query_refilters_pool() {
     let async_items = vec![branch_suggestion("main"), branch_suggestion("feature-x")];
 
     let mut handler = make_test_handler(80);
-    handler.buffer_generation = 1;
+    handler.set_buffer_generation(1);
     handler.set_spawned_generation(1);
 
     // Drive the parser to a buffer whose live current_word is "main" so
@@ -458,7 +458,7 @@ async fn fast_async_with_typed_query_refilters_pool() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn empty_async_result_clears_loading_state() {
     let mut handler = make_test_handler(80);
-    handler.buffer_generation = 1;
+    handler.set_buffer_generation(1);
     handler.set_spawned_generation(1);
     handler.prime_dynamic_ctx_for_empty_buffer();
     handler.seed_dynamic_task_noop();
@@ -598,7 +598,7 @@ async fn prepare_trigger_returns_painted_when_block_ms_zero() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn stale_async_result_dropped_when_buffer_drifted() {
     let mut handler = make_test_handler(80);
-    handler.buffer_generation = 1;
+    handler.set_buffer_generation(1);
     handler.set_spawned_generation(1);
     // Pin the spawn-time context to `git checkout main`.
     handler.prime_dynamic_ctx_for_buffer("git checkout main", 17);
@@ -650,7 +650,7 @@ async fn stale_async_result_dropped_when_buffer_drifted() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn stale_generation_drops_async_result() {
     let mut handler = make_test_handler(80);
-    handler.buffer_generation = 5;
+    handler.set_buffer_generation(5);
     handler.set_spawned_generation(2);
     // Prime ctx for the SAME buffer the parser holds so the ctx-equality
     // check would otherwise pass — only the generation mismatch should
@@ -690,9 +690,9 @@ async fn stale_generation_drops_async_result() {
 
 // ── Test 10 ──────────────────────────────────────────────────────────────────
 
-/// The keystroke-cancel arm in `proxy.rs` (around line 859) calls
-/// `notify.notify_one()` after consuming a `notified()` permit so the outer
-/// debounce loop fires immediately instead of waiting on the next
+/// The keystroke-cancel arm of the bounded-block `select!` in `debounce_loop`
+/// calls `notify.notify_one()` after consuming a `notified()` permit so the
+/// outer debounce loop fires immediately instead of waiting on the next
 /// keystroke. This test mirrors that pattern in isolation: consume the
 /// permit, re-arm via `notify_one`, then `select!` the second `notified()`
 /// against a 50ms timeout — the second `notified()` must resolve.
@@ -704,7 +704,7 @@ async fn keystroke_cancel_rearms_notify_for_outer_loop() {
     let n_clone = Arc::clone(&notify);
 
     // Background task: consume the first permit, then re-arm. Mirrors the
-    // proxy.rs cancel arm at crates/gc-pty/src/proxy.rs:859.
+    // keystroke-cancel arm of the bounded-block `select!` in `debounce_loop`.
     let task = tokio::spawn(async move {
         // Initial notify so the first notified() resolves.
         n_clone.notify_one();
@@ -723,5 +723,74 @@ async fn keystroke_cancel_rearms_notify_for_outer_loop() {
     assert!(
         !timed_out,
         "the re-arm via notify_one() must let a follow-up notified() resolve before the 50ms timeout"
+    );
+}
+
+// ── Test 11 ──────────────────────────────────────────────────────────────────
+
+/// Write a minimal spec whose positional arg has ONLY a script generator —
+/// no flags on the subcommand, no template, no static suggestions. Resolving
+/// `mycmd <space>` produces an empty `sync_suggestions` plus a pending
+/// `script_generators` entry.
+fn write_test_script_spec(dir: &std::path::Path) {
+    use std::io::Write;
+    let path = dir.join("mycmd.json");
+    let spec = r#"{
+        "name": "mycmd",
+        "args": [
+            {
+                "name": "value",
+                "generators": [
+                    {
+                        "script": ["sleep", "10"],
+                        "transforms": ["split_lines", "filter_empty"]
+                    }
+                ]
+            }
+        ]
+    }"#;
+    let mut f = std::fs::File::create(&path).expect("create test script spec");
+    f.write_all(spec.as_bytes())
+        .expect("write test script spec");
+}
+
+/// Reorder regression: `prepare_trigger_with_block` must `dismiss()` BEFORE
+/// `spawn_generators()`. If dismiss ran after, it would abort the freshly-
+/// spawned task and drop the rx the generator just opened.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn dismiss_then_spawn_keeps_dynamic_rx_alive_when_visible_with_empty_sync() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    write_test_script_spec(tmp.path());
+    let mut handler = InputHandler::new(
+        &[tmp.path().to_path_buf()],
+        gc_terminal::TerminalProfile::for_ghostty(),
+    )
+    .expect("handler init failed")
+    .with_render_block_ms(0);
+
+    // Mark the popup visible as if a previous trigger had populated it.
+    handler.set_visible(true);
+
+    let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+    {
+        let mut p = parser.lock().unwrap();
+        p.state_mut()
+            .predict_command_buffer("mycmd ".to_string(), 6);
+    }
+
+    let mut render_buf = Vec::new();
+    let prepared = handler.prepare_trigger_with_block(&parser, &mut render_buf);
+
+    assert!(
+        matches!(prepared, gc_pty::handler::TriggerPrepared::Painted),
+        "render_block_ms=0 must short-circuit to Painted regardless of pending generators"
+    );
+    assert!(
+        handler.has_dynamic_rx(),
+        "spawn must outlive the dismiss — dynamic_rx should be Some after the reordered call"
+    );
+    assert!(
+        handler.has_dynamic_task(),
+        "spawn must outlive the dismiss — dynamic_task should be Some after the reordered call"
     );
 }

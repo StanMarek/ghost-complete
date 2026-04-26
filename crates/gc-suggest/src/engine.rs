@@ -816,11 +816,16 @@ impl SuggestionEngine {
         self.spec_store.get(resolved)
     }
 
-    /// Attempt to resolve candidates from a loaded spec for this command.
+    /// Look up the spec for `ctx.command_name` and append its synchronous
+    /// completions (subcommands, options, templates, env-var/SSH-host
+    /// injections) to the candidate set.
     ///
-    /// Returns `Ok(SyncResult)` if a spec was found and handled. Returns
-    /// `Err(candidates)` — handing the partially-populated candidate vec
-    /// back — so the caller can fall through to filesystem completion.
+    /// By construction this is invoked only from the `Context::SpecArg` arm
+    /// of `suggest_sync`, which has already verified
+    /// `spec_for_ctx(...).is_some()` via the classifier. The `Err(candidates)`
+    /// arm therefore signals an internal invariant violation (`alias_map` and
+    /// `spec_store` mutation between classify and dispatch) and is converted
+    /// to `unreachable!` by the dispatcher.
     fn try_suggest_from_spec(
         &self,
         ctx: &CommandContext,

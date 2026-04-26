@@ -224,11 +224,12 @@ pub struct InputHandler {
     dynamic_task: Option<tokio::task::JoinHandle<()>>,
     dynamic_notify: Arc<Notify>,
     /// Command context snapshot captured when generators were spawned.
-    /// Used by try_merge_dynamic to drop stale results when the user's
-    /// editing has changed WHICH generator would now apply. We compare
-    /// command + args (subcommand path) + preceding_flag + word_index.
-    /// `current_word` is also compared, but ONLY when a generator depends
-    /// on it literally (script_template with `{current_token}`); for
+    /// Consulted by `check_merge_staleness` (called from both
+    /// `try_merge_dynamic` and `apply_block_result`) to drop stale results
+    /// when the user's editing has changed WHICH generator would now apply.
+    /// We compare command + args (subcommand path) + preceding_flag +
+    /// word_index. `current_word` is also compared, but ONLY when a generator
+    /// depends on it literally (script_template with `{current_token}`); for
     /// generators that treat it as a fuzzy-filter prefix, typing more
     /// characters still lets results merge and re-rank.
     /// See `DynamicCtxSnapshot::capture` and `is_stale_against`.
@@ -239,22 +240,22 @@ pub struct InputHandler {
     /// Reset when a CPR sync corrects the parser's cursor position (new prompt).
     scroll_deficit: u16,
     /// Fingerprint (buffer hash + cursor offset) of the last trigger that
-    /// produced a visible popup. Used as an idempotency guard in
-    /// [`InputHandler::trigger`]: when a new trigger arrives with an
-    /// unchanged buffer AND the popup is still visible, we skip re-running
+    /// produced a visible popup. Used as an idempotency guard in the trigger
+    /// paths (`InputHandler::trigger` and `prepare_trigger_with_block`/
+    /// `apply_block_result`): when a new trigger arrives with an unchanged
+    /// buffer AND the popup is still visible, we skip re-running
     /// `suggest_sync` because (1) it would produce the same suggestions —
     /// wasted work, and (2) an empty-sync + no-generators result would
     /// silently dismiss a popup populated by a prior trigger's async merge.
     /// See the bug-repro test `test_trigger_idempotent_when_buffer_unchanged`.
     /// Reset by `dismiss()` so ESC-then-retrigger on the same buffer still works.
     last_trigger_fingerprint: Option<(u64, usize)>,
-    /// Monotonic generation counter incremented on each successful `trigger()`.
-    /// Snapshotted into `spawned_generation` at `spawn_generators` time and
-    /// incremented on every successful `trigger()`. `check_merge_staleness`
-    /// compares the two so completions whose spawn predates the current buffer
-    /// state are dropped without merging.
-    #[doc(hidden)]
-    pub buffer_generation: u64,
+    /// Monotonic counter ticked by both `trigger()` and
+    /// `prepare_trigger_with_block()` before the new sync pass runs.
+    /// `spawn_generators` snapshots it into `spawned_generation`;
+    /// `check_merge_staleness` compares the two so async results spawned for
+    /// an earlier buffer get dropped instead of merged.
+    buffer_generation: u64,
     /// Generation counter snapshotted at `spawn_generators` time.
     /// `try_merge_dynamic` compares this against `buffer_generation` to drop
     /// results from a task spawned for an earlier buffer state.
@@ -491,6 +492,16 @@ impl InputHandler {
     #[doc(hidden)]
     pub fn set_spawned_generation(&mut self, gen: u64) {
         self.spawned_generation = gen;
+    }
+
+    #[doc(hidden)]
+    pub fn set_buffer_generation(&mut self, gen: u64) {
+        self.buffer_generation = gen;
+    }
+
+    #[doc(hidden)]
+    pub fn set_visible(&mut self, visible: bool) {
+        self.visible = visible;
     }
 
     /// Prime `dynamic_ctx` to the "no context" state that matches an empty
@@ -1670,10 +1681,9 @@ fn build_env_snapshot(has_providers: bool) -> std::collections::HashMap<String, 
     }
 }
 
-/// Filter `incoming` so each kept item's `text` is unique relative to
-/// `existing` AND to anything kept earlier in the same batch. Returns the
-/// surviving items in their original order — caller appends or processes
-/// them however it likes.
+/// Two borrowed `HashSet<&str>`s (existing + per-batch) — keeping references
+/// rather than owned `String` keys avoids the `s.text.clone()` per dupe check
+/// that the previous owned-HashSet version paid on every dynamic merge.
 fn merge_dedup_against(existing: &[Suggestion], incoming: Vec<Suggestion>) -> Vec<Suggestion> {
     let keep: Vec<bool> = {
         let existing_set: HashSet<&str> = existing.iter().map(|s| s.text.as_str()).collect();
@@ -3072,5 +3082,33 @@ mod tests {
              snapshot had {} entries",
             snapshot.len()
         );
+    }
+
+    fn dedup_suggestion(text: &str) -> Suggestion {
+        Suggestion {
+            text: text.to_string(),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn merge_dedup_against_drops_text_duplicates_from_existing_pool() {
+        let existing = vec![dedup_suggestion("main")];
+        let incoming = vec![dedup_suggestion("main"), dedup_suggestion("dev")];
+        let kept = merge_dedup_against(&existing, incoming);
+        assert_eq!(kept.len(), 1);
+        assert_eq!(kept[0].text, "dev");
+    }
+
+    #[test]
+    fn merge_dedup_against_drops_duplicates_within_same_batch() {
+        let incoming = vec![
+            dedup_suggestion("main"),
+            dedup_suggestion("main"),
+            dedup_suggestion("dev"),
+        ];
+        let kept = merge_dedup_against(&[], incoming);
+        let texts: Vec<&str> = kept.iter().map(|s| s.text.as_str()).collect();
+        assert_eq!(texts, vec!["main", "dev"]);
     }
 }

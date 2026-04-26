@@ -340,7 +340,7 @@ describe('convertSpec', () => {
   });
 
   it('skips non-numeric subcommand priority', () => {
-    // The typeof === 'number' guard at static-converter.js:67 must drop
+    // The typeof === 'number' guard in convertSubcommand must drop
     // string and null priorities — only true JS numbers pass through.
     const stringResult = convertSpec({
       name: 'git',
@@ -385,7 +385,7 @@ describe('convertSpec', () => {
   });
 
   it('skips non-numeric option priority', () => {
-    // The typeof === 'number' guard at static-converter.js:112 must drop
+    // The typeof === 'number' guard in convertOption must drop
     // string and null priorities — only true JS numbers pass through.
     const stringResult = convertSpec({
       name: 'git',
