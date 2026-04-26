@@ -59,7 +59,8 @@
             "-D",
             "--save-dev"
           ],
-          "description": "Install the specified packages as devDependencies"
+          "description": "Install the specified packages as devDependencies",
+          "priority": 65
         },
         {
           "name": [
@@ -99,7 +100,8 @@
             "--global",
             "-g"
           ],
-          "description": "Install a package globally"
+          "description": "Install a package globally",
+          "priority": 60
         },
         {
           "name": [
@@ -128,7 +130,8 @@
             "js_source": "async(n,t,i)=>{let a=n[n.length-1];if(a===\"\")return[];let r=e&&e.length>0?`+keywords:${e.join(\",\")}`:\"\",d=[\"-s\",\"-H\",\"Accept: application/json\",r?`https://api.npms.io/v2/search?size=20&q=${a}${r}`:`https://api.npms.io/v2/search/suggestions?q=${a}&size=20`],l=[\"-s\",\"-H\",\"Accept: application/vnd.npm.install-v1+json\",`https://registry.npmjs.org/${a.slice(0,-1)}`],w=h=>t({command:\"curl\",args:h[h.length-1]===\"@\"?l:d}),u=a.startsWith(\"@\")?F(a)>1:a.includes(\"@\");try{let h=JSON.parse((await w(a)).stdout);if(u){let O=Object.entries(h[\"dist-tags\"]||{}).map(([A,q])=>({name:A,description:q}));return O.push(...Object.keys(h.versions).map(A=>({name:A})).reverse()),O}return(r?h.results:h).map(O=>({name:O.package.name,description:O.package.description}))}catch(h){return console.error({error:h}),[]}}"
           }
         ]
-      }
+      },
+      "priority": 90
     },
     {
       "name": "install",
@@ -143,7 +146,8 @@
             "js_source": "async(n,t,i)=>{let a=n[n.length-1];if(a===\"\")return[];let r=e&&e.length>0?`+keywords:${e.join(\",\")}`:\"\",d=[\"-s\",\"-H\",\"Accept: application/json\",r?`https://api.npms.io/v2/search?size=20&q=${a}${r}`:`https://api.npms.io/v2/search/suggestions?q=${a}&size=20`],l=[\"-s\",\"-H\",\"Accept: application/vnd.npm.install-v1+json\",`https://registry.npmjs.org/${a.slice(0,-1)}`],w=h=>t({command:\"curl\",args:h[h.length-1]===\"@\"?l:d}),u=a.startsWith(\"@\")?F(a)>1:a.includes(\"@\");try{let h=JSON.parse((await w(a)).stdout);if(u){let O=Object.entries(h[\"dist-tags\"]||{}).map(([A,q])=>({name:A,description:q}));return O.push(...Object.keys(h.versions).map(A=>({name:A})).reverse()),O}return(r?h.results:h).map(O=>({name:O.package.name,description:O.package.description}))}catch(h){return console.error({error:h}),[]}}"
           }
         ]
-      }
+      },
+      "priority": 92
     },
     {
       "name": "install-test",
@@ -202,7 +206,8 @@
             "-D",
             "--save-dev"
           ],
-          "description": "Only devDependencies are installed regardless of the NODE_ENV"
+          "description": "Only devDependencies are installed regardless of the NODE_ENV",
+          "priority": 65
         },
         {
           "name": [
@@ -220,7 +225,8 @@
           "name": [
             "--frozen-lockfile"
           ],
-          "description": "If true, pnpm doesn't generate a lockfile and fails to install if the lockfile is out of sync with the manifest / an update is needed or no lockfile is present"
+          "description": "If true, pnpm doesn't generate a lockfile and fails to install if the lockfile is out of sync with the manifest / an update is needed or no lockfile is present",
+          "priority": 60
         },
         {
           "name": [
@@ -258,7 +264,8 @@
           "name": [
             "--global"
           ],
-          "description": "Update global packages"
+          "description": "Update global packages",
+          "priority": 60
         },
         {
           "name": [
@@ -272,7 +279,8 @@
             "-D",
             "--save-dev"
           ],
-          "description": "Only update packages in devDependencies"
+          "description": "Only update packages in devDependencies",
+          "priority": 65
         },
         {
           "name": [
@@ -320,7 +328,8 @@
             "js_source": "function(e,n=[]){if(e.trim()===\"\")return[];try{let t=JSON.parse(e),i=t.dependencies??{},a=t.devDependencies,r=t.optionalDependencies??{};return Object.assign(i,a,r),Object.keys(i).filter(s=>!n.some(l=>l===s)).map(s=>({name:s,icon:\"\\u{1F4E6}\",description:i[s]?\"dependency\":r[s]?\"optionalDependency\":\"devDependency\"}))}catch(t){return console.error(t),[]}}"
           }
         ]
-      }
+      },
+      "priority": 78
     },
     {
       "name": "remove",
@@ -337,7 +346,8 @@
           "name": [
             "--global"
           ],
-          "description": "Remove a global package"
+          "description": "Remove a global package",
+          "priority": 60
         },
         {
           "name": [
@@ -351,7 +361,8 @@
             "-D",
             "--save-dev"
           ],
-          "description": "Only remove the dependency from devDependencies"
+          "description": "Only remove the dependency from devDependencies",
+          "priority": 65
         },
         {
           "name": [
@@ -386,7 +397,8 @@
             "js_source": "function(e,n=[]){if(e.trim()===\"\")return[];try{let t=JSON.parse(e),i=t.dependencies??{},a=t.devDependencies,r=t.optionalDependencies??{};return Object.assign(i,a,r),Object.keys(i).filter(s=>!n.some(l=>l===s)).map(s=>({name:s,icon:\"\\u{1F4E6}\",description:i[s]?\"dependency\":r[s]?\"optionalDependency\":\"devDependency\"}))}catch(t){return console.error(t),[]}}"
           }
         ]
-      }
+      },
+      "priority": 80
     },
     {
       "name": "link",
@@ -403,7 +415,8 @@
           "name": [
             "--global"
           ],
-          "description": "Links the specified package (<pkg>) from global node_modules to the node_nodules of package from where this command was executed or specified via --dir option"
+          "description": "Links the specified package (<pkg>) from global node_modules to the node_nodules of package from where this command was executed or specified via --dir option",
+          "priority": 60
         }
       ],
       "args": [
@@ -425,7 +438,8 @@
         {
           "template": "filepaths"
         }
-      ]
+      ],
+      "priority": 55
     },
     {
       "name": "unlink",
@@ -640,7 +654,8 @@
             "--dev",
             "-D"
           ],
-          "description": "Only audit dev dependencies"
+          "description": "Only audit dev dependencies",
+          "priority": 65
         },
         {
           "name": [
@@ -661,7 +676,8 @@
           ],
           "description": "If the registry responds with a non-200 status code, the process should exit with 0. So the process will fail only if the registry actually successfully responds with found vulnerabilities"
         }
-      ]
+      ],
+      "priority": 60
     },
     {
       "name": "list",
@@ -696,7 +712,8 @@
           "name": [
             "--global"
           ],
-          "description": "List packages in the global install directory instead of in the current project"
+          "description": "List packages in the global install directory instead of in the current project",
+          "priority": 60
         },
         {
           "name": [
@@ -712,7 +729,8 @@
             "--dev",
             "-D"
           ],
-          "description": "Only list dev dependencies"
+          "description": "Only list dev dependencies",
+          "priority": 65
         },
         {
           "name": [
@@ -738,7 +756,8 @@
             "template": "filepaths"
           }
         }
-      ]
+      ],
+      "priority": 72
     },
     {
       "name": "outdated",
@@ -761,7 +780,8 @@
           "name": [
             "--global"
           ],
-          "description": "List outdated global packages"
+          "description": "List outdated global packages",
+          "priority": 60
         },
         {
           "name": [
@@ -780,7 +800,8 @@
             "--dev",
             "-D"
           ],
-          "description": "Only list dev dependencies"
+          "description": "Only list dev dependencies",
+          "priority": 65
         },
         {
           "name": [
@@ -795,7 +816,8 @@
           ],
           "description": "Doesn't check optionalDependencies"
         }
-      ]
+      ],
+      "priority": 65
     },
     {
       "name": "why",
@@ -830,14 +852,16 @@
           "name": [
             "--global"
           ],
-          "description": "List packages in the global install directory instead of in the current project"
+          "description": "List packages in the global install directory instead of in the current project",
+          "priority": 60
         },
         {
           "name": [
             "--dev",
             "-D"
           ],
-          "description": "Only display the dependency tree for packages in devDependencies"
+          "description": "Only display the dependency tree for packages in devDependencies",
+          "priority": 65
         },
         {
           "name": [
@@ -932,7 +956,8 @@
             }
           }
         ]
-      }
+      },
+      "priority": 90
     },
     {
       "name": "exec",
@@ -977,15 +1002,18 @@
             "js_source": "function(e,n=[]){if(e.trim()===\"\")return[];try{let t=JSON.parse(e),i=t.dependencies??{},a=t.devDependencies,r=t.optionalDependencies??{};return Object.assign(i,a,r),Object.keys(i).filter(s=>!n.some(l=>l===s)).map(s=>({name:s,icon:\"\\u{1F4E6}\",description:i[s]?\"dependency\":r[s]?\"optionalDependency\":\"devDependency\"}))}catch(t){return console.error(t),[]}}"
           }
         ]
-      }
+      },
+      "priority": 75
     },
     {
       "name": "test",
-      "description": "Runs an arbitrary command specified in the package's test property of its scripts object.\nThe intended usage of the property is to specify a command that runs unit or integration testing for your program"
+      "description": "Runs an arbitrary command specified in the package's test property of its scripts object.\nThe intended usage of the property is to specify a command that runs unit or integration testing for your program",
+      "priority": 85
     },
     {
       "name": "start",
-      "description": "Runs an arbitrary command specified in the package's start property of its scripts object. If no start property is specified on the scripts object, it will attempt to run node server.js as a default, failing if neither are present.\nThe intended usage of the property is to specify a command that starts your program"
+      "description": "Runs an arbitrary command specified in the package's start property of its scripts object. If no start property is specified on the scripts object, it will attempt to run node server.js as a default, failing if neither are present.\nThe intended usage of the property is to specify a command that starts your program",
+      "priority": 88
     },
     {
       "name": "publish",
@@ -1004,7 +1032,8 @@
           "name": [
             "--dry-run"
           ],
-          "description": "Does everything a publish would do except actually publishing to the registry"
+          "description": "Does everything a publish would do except actually publishing to the registry",
+          "priority": 50
         },
         {
           "name": [
@@ -1039,7 +1068,8 @@
           "name": [
             "--force"
           ],
-          "description": "Try to publish packages even if their current version is already found in the registry"
+          "description": "Try to publish packages even if their current version is already found in the registry",
+          "priority": 20
         },
         {
           "name": [
@@ -1066,7 +1096,8 @@
             "type": "git_branches"
           }
         ]
-      }
+      },
+      "priority": 75
     },
     {
       "name": "recursive",
@@ -1129,7 +1160,8 @@
                 "-D",
                 "--save-dev"
               ],
-              "description": "Install the specified packages as devDependencies"
+              "description": "Install the specified packages as devDependencies",
+              "priority": 65
             },
             {
               "name": [
@@ -1169,7 +1201,8 @@
                 "--global",
                 "-g"
               ],
-              "description": "Install a package globally"
+              "description": "Install a package globally",
+              "priority": 60
             },
             {
               "name": [
@@ -1198,7 +1231,8 @@
                 "js_source": "async(n,t,i)=>{let a=n[n.length-1];if(a===\"\")return[];let r=e&&e.length>0?`+keywords:${e.join(\",\")}`:\"\",d=[\"-s\",\"-H\",\"Accept: application/json\",r?`https://api.npms.io/v2/search?size=20&q=${a}${r}`:`https://api.npms.io/v2/search/suggestions?q=${a}&size=20`],l=[\"-s\",\"-H\",\"Accept: application/vnd.npm.install-v1+json\",`https://registry.npmjs.org/${a.slice(0,-1)}`],w=h=>t({command:\"curl\",args:h[h.length-1]===\"@\"?l:d}),u=a.startsWith(\"@\")?F(a)>1:a.includes(\"@\");try{let h=JSON.parse((await w(a)).stdout);if(u){let O=Object.entries(h[\"dist-tags\"]||{}).map(([A,q])=>({name:A,description:q}));return O.push(...Object.keys(h.versions).map(A=>({name:A})).reverse()),O}return(r?h.results:h).map(O=>({name:O.package.name,description:O.package.description}))}catch(h){return console.error({error:h}),[]}}"
               }
             ]
-          }
+          },
+          "priority": 90
         },
         {
           "name": "install",
@@ -1213,7 +1247,8 @@
                 "js_source": "async(n,t,i)=>{let a=n[n.length-1];if(a===\"\")return[];let r=e&&e.length>0?`+keywords:${e.join(\",\")}`:\"\",d=[\"-s\",\"-H\",\"Accept: application/json\",r?`https://api.npms.io/v2/search?size=20&q=${a}${r}`:`https://api.npms.io/v2/search/suggestions?q=${a}&size=20`],l=[\"-s\",\"-H\",\"Accept: application/vnd.npm.install-v1+json\",`https://registry.npmjs.org/${a.slice(0,-1)}`],w=h=>t({command:\"curl\",args:h[h.length-1]===\"@\"?l:d}),u=a.startsWith(\"@\")?F(a)>1:a.includes(\"@\");try{let h=JSON.parse((await w(a)).stdout);if(u){let O=Object.entries(h[\"dist-tags\"]||{}).map(([A,q])=>({name:A,description:q}));return O.push(...Object.keys(h.versions).map(A=>({name:A})).reverse()),O}return(r?h.results:h).map(O=>({name:O.package.name,description:O.package.description}))}catch(h){return console.error({error:h}),[]}}"
               }
             ]
-          }
+          },
+          "priority": 92
         },
         {
           "name": "update",
@@ -1237,7 +1272,8 @@
               "name": [
                 "--global"
               ],
-              "description": "Update global packages"
+              "description": "Update global packages",
+              "priority": 60
             },
             {
               "name": [
@@ -1251,7 +1287,8 @@
                 "-D",
                 "--save-dev"
               ],
-              "description": "Only update packages in devDependencies"
+              "description": "Only update packages in devDependencies",
+              "priority": 65
             },
             {
               "name": [
@@ -1299,7 +1336,8 @@
                 "js_source": "function(e,n=[]){if(e.trim()===\"\")return[];try{let t=JSON.parse(e),i=t.dependencies??{},a=t.devDependencies,r=t.optionalDependencies??{};return Object.assign(i,a,r),Object.keys(i).filter(s=>!n.some(l=>l===s)).map(s=>({name:s,icon:\"\\u{1F4E6}\",description:i[s]?\"dependency\":r[s]?\"optionalDependency\":\"devDependency\"}))}catch(t){return console.error(t),[]}}"
               }
             ]
-          }
+          },
+          "priority": 78
         },
         {
           "name": "remove",
@@ -1316,7 +1354,8 @@
               "name": [
                 "--global"
               ],
-              "description": "Remove a global package"
+              "description": "Remove a global package",
+              "priority": 60
             },
             {
               "name": [
@@ -1330,7 +1369,8 @@
                 "-D",
                 "--save-dev"
               ],
-              "description": "Only remove the dependency from devDependencies"
+              "description": "Only remove the dependency from devDependencies",
+              "priority": 65
             },
             {
               "name": [
@@ -1365,7 +1405,8 @@
                 "js_source": "function(e,n=[]){if(e.trim()===\"\")return[];try{let t=JSON.parse(e),i=t.dependencies??{},a=t.devDependencies,r=t.optionalDependencies??{};return Object.assign(i,a,r),Object.keys(i).filter(s=>!n.some(l=>l===s)).map(s=>({name:s,icon:\"\\u{1F4E6}\",description:i[s]?\"dependency\":r[s]?\"optionalDependency\":\"devDependency\"}))}catch(t){return console.error(t),[]}}"
               }
             ]
-          }
+          },
+          "priority": 80
         },
         {
           "name": "unlink",
@@ -1488,7 +1529,8 @@
               "name": [
                 "--global"
               ],
-              "description": "List packages in the global install directory instead of in the current project"
+              "description": "List packages in the global install directory instead of in the current project",
+              "priority": 60
             },
             {
               "name": [
@@ -1504,7 +1546,8 @@
                 "--dev",
                 "-D"
               ],
-              "description": "Only list dev dependencies"
+              "description": "Only list dev dependencies",
+              "priority": 65
             },
             {
               "name": [
@@ -1530,7 +1573,8 @@
                 "template": "filepaths"
               }
             }
-          ]
+          ],
+          "priority": 72
         },
         {
           "name": "outdated",
@@ -1553,7 +1597,8 @@
               "name": [
                 "--global"
               ],
-              "description": "List outdated global packages"
+              "description": "List outdated global packages",
+              "priority": 60
             },
             {
               "name": [
@@ -1572,7 +1617,8 @@
                 "--dev",
                 "-D"
               ],
-              "description": "Only list dev dependencies"
+              "description": "Only list dev dependencies",
+              "priority": 65
             },
             {
               "name": [
@@ -1587,7 +1633,8 @@
               ],
               "description": "Doesn't check optionalDependencies"
             }
-          ]
+          ],
+          "priority": 65
         },
         {
           "name": "why",
@@ -1622,14 +1669,16 @@
               "name": [
                 "--global"
               ],
-              "description": "List packages in the global install directory instead of in the current project"
+              "description": "List packages in the global install directory instead of in the current project",
+              "priority": 60
             },
             {
               "name": [
                 "--dev",
                 "-D"
               ],
-              "description": "Only display the dependency tree for packages in devDependencies"
+              "description": "Only display the dependency tree for packages in devDependencies",
+              "priority": 65
             },
             {
               "name": [
@@ -1724,7 +1773,8 @@
                 }
               }
             ]
-          }
+          },
+          "priority": 90
         },
         {
           "name": "exec",
@@ -1769,11 +1819,13 @@
                 "js_source": "function(e,n=[]){if(e.trim()===\"\")return[];try{let t=JSON.parse(e),i=t.dependencies??{},a=t.devDependencies,r=t.optionalDependencies??{};return Object.assign(i,a,r),Object.keys(i).filter(s=>!n.some(l=>l===s)).map(s=>({name:s,icon:\"\\u{1F4E6}\",description:i[s]?\"dependency\":r[s]?\"optionalDependency\":\"devDependency\"}))}catch(t){return console.error(t),[]}}"
               }
             ]
-          }
+          },
+          "priority": 75
         },
         {
           "name": "test",
-          "description": "Runs an arbitrary command specified in the package's test property of its scripts object.\nThe intended usage of the property is to specify a command that runs unit or integration testing for your program"
+          "description": "Runs an arbitrary command specified in the package's test property of its scripts object.\nThe intended usage of the property is to specify a command that runs unit or integration testing for your program",
+          "priority": 85
         },
         {
           "name": "publish",
@@ -1792,7 +1844,8 @@
               "name": [
                 "--dry-run"
               ],
-              "description": "Does everything a publish would do except actually publishing to the registry"
+              "description": "Does everything a publish would do except actually publishing to the registry",
+              "priority": 50
             },
             {
               "name": [
@@ -1827,7 +1880,8 @@
               "name": [
                 "--force"
               ],
-              "description": "Try to publish packages even if their current version is already found in the registry"
+              "description": "Try to publish packages even if their current version is already found in the registry",
+              "priority": 20
             },
             {
               "name": [
@@ -1854,7 +1908,8 @@
                 "type": "git_branches"
               }
             ]
-          }
+          },
+          "priority": 75
         }
       ],
       "options": [
@@ -2010,7 +2065,8 @@
               ],
               "description": "Prevents creating a new side effect cache during install"
             }
-          ]
+          ],
+          "priority": 88
         },
         {
           "name": "stop",
@@ -2032,7 +2088,8 @@
         },
         {
           "name": "add",
-          "description": "Functionally equivalent to pnpm add,\nexcept this adds new packages to the store directly without modifying any projects or files outside of the store"
+          "description": "Functionally equivalent to pnpm add,\nexcept this adds new packages to the store directly without modifying any projects or files outside of the store",
+          "priority": 90
         },
         {
           "name": "prune",
@@ -2046,7 +2103,8 @@
     },
     {
       "name": "init",
-      "description": "Creates a basic package.json file in the current directory, if it doesn't exist already"
+      "description": "Creates a basic package.json file in the current directory, if it doesn't exist already",
+      "priority": 55
     },
     {
       "name": "doctor",

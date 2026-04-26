@@ -10,7 +10,8 @@
           "name": [
             "--force"
           ],
-          "description": "Overwrite existing files"
+          "description": "Overwrite existing files",
+          "priority": 20
         },
         {
           "name": [
@@ -28,7 +29,8 @@
           "name": [
             "--verbose"
           ],
-          "description": "Too many logs"
+          "description": "Too many logs",
+          "priority": 25
         },
         {
           "name": [
@@ -143,7 +145,8 @@
             }
           }
         ]
-      }
+      },
+      "priority": 90
     },
     {
       "name": "i",
@@ -173,7 +176,8 @@
             "-p",
             "--production"
           ],
-          "description": "Don't install devDependencies"
+          "description": "Don't install devDependencies",
+          "priority": 60
         },
         {
           "name": [
@@ -191,20 +195,23 @@
           "name": [
             "--dry-run"
           ],
-          "description": "Don't install anything"
+          "description": "Don't install anything",
+          "priority": 50
         },
         {
           "name": [
             "--frozen-lockfile"
           ],
-          "description": "Disallow changes to lockfile"
+          "description": "Disallow changes to lockfile",
+          "priority": 60
         },
         {
           "name": [
             "-f",
             "--force"
           ],
-          "description": "Always request the latest versions from the registry & reinstall all dependencies"
+          "description": "Always request the latest versions from the registry & reinstall all dependencies",
+          "priority": 20
         },
         {
           "name": [
@@ -232,14 +239,16 @@
           "name": [
             "--verbose"
           ],
-          "description": "Excessively verbose logging"
+          "description": "Excessively verbose logging",
+          "priority": 25
         },
         {
           "name": [
             "-g",
             "--global"
           ],
-          "description": "Install globally"
+          "description": "Install globally",
+          "priority": 60
         },
         {
           "name": [
@@ -330,7 +339,8 @@
           ],
           "description": "Install as optionalDependency"
         }
-      ]
+      ],
+      "priority": 90
     },
     {
       "name": "a",
@@ -360,7 +370,8 @@
             "-p",
             "--production"
           ],
-          "description": "Don't install devDependencies"
+          "description": "Don't install devDependencies",
+          "priority": 60
         },
         {
           "name": [
@@ -378,20 +389,23 @@
           "name": [
             "--dry-run"
           ],
-          "description": "Don't install anything"
+          "description": "Don't install anything",
+          "priority": 50
         },
         {
           "name": [
             "--frozen-lockfile"
           ],
-          "description": "Disallow changes to lockfile"
+          "description": "Disallow changes to lockfile",
+          "priority": 60
         },
         {
           "name": [
             "-f",
             "--force"
           ],
-          "description": "Always request the latest versions from the registry & reinstall all dependencies"
+          "description": "Always request the latest versions from the registry & reinstall all dependencies",
+          "priority": 20
         },
         {
           "name": [
@@ -419,14 +433,16 @@
           "name": [
             "--verbose"
           ],
-          "description": "Excessively verbose logging"
+          "description": "Excessively verbose logging",
+          "priority": 25
         },
         {
           "name": [
             "-g",
             "--global"
           ],
-          "description": "Install globally"
+          "description": "Install globally",
+          "priority": 60
         },
         {
           "name": [
@@ -557,7 +573,8 @@
             "-p",
             "--production"
           ],
-          "description": "Don't install devDependencies"
+          "description": "Don't install devDependencies",
+          "priority": 60
         },
         {
           "name": [
@@ -575,20 +592,23 @@
           "name": [
             "--dry-run"
           ],
-          "description": "Don't install anything"
+          "description": "Don't install anything",
+          "priority": 50
         },
         {
           "name": [
             "--frozen-lockfile"
           ],
-          "description": "Disallow changes to lockfile"
+          "description": "Disallow changes to lockfile",
+          "priority": 60
         },
         {
           "name": [
             "-f",
             "--force"
           ],
-          "description": "Always request the latest versions from the registry & reinstall all dependencies"
+          "description": "Always request the latest versions from the registry & reinstall all dependencies",
+          "priority": 20
         },
         {
           "name": [
@@ -616,14 +636,16 @@
           "name": [
             "--verbose"
           ],
-          "description": "Excessively verbose logging"
+          "description": "Excessively verbose logging",
+          "priority": 25
         },
         {
           "name": [
             "-g",
             "--global"
           ],
-          "description": "Install globally"
+          "description": "Install globally",
+          "priority": 60
         },
         {
           "name": [
@@ -724,7 +746,8 @@
             "js_source": "async function(e,n){if(!e.includes(\"-g\")&&!e.includes(\"--global\")){let{stdout:t}=await n({command:\"npm\",args:[\"prefix\"]}),{stdout:a}=await n({command:\"cat\",args:[`${t}/package.json`]}),i=JSON.parse(a),s=i.dependencies??{},o=i.devDependencies,c=i.optionalDependencies??{};return Object.assign(s,o,c),Object.keys(s).filter(p=>!e.some(r=>r===p)).map(p=>({name:p,icon:\"\\u{1F4E6}\",description:s[p]?\"dependency\":c[p]?\"optionalDependency\":\"devDependency\"}))}else{let{stdout:t}=await n({command:\"bash\",args:[\"-c\",\"ls -1 `npm root -g`\"]});return t.split(`\n`).map(a=>({name:a,icon:\"\\u{1F4E6}\",description:\"Global dependency\"}))}}"
           }
         ]
-      }
+      },
+      "priority": 78
     },
     {
       "name": "build",
@@ -1286,7 +1309,8 @@
             "js_source": "(g,w,x)=>Fe(this,void 0,void 0,function*(){var f;let{isDangerous:S,currentWorkingDirectory:N,searchTerm:k}=x,O=(f=(0,M.getCurrentInsertedDirectory)(c??N,k,x))!==null&&f!==void 0?f:\"/\";try{let ce=yield w({command:\"ls\",args:[\"-1ApL\"],cwd:O}),xe=me(ce.stdout.split(`\n`),[\".DS_Store\"]),pe=[];for(let W of xe)if(W){let Z=W.endsWith(\"/\")?\"folders\":\"filepaths\";(Z===\"filepaths\"&&p!==\"only\"||Z===\"folders\"&&p!==\"never\")&&pe.push({type:Z===\"filepaths\"?\"file\":\"folder\",name:W,insertValue:W,isDangerous:S,context:{templateType:Z}})}return h(y(pe))}catch{return[]}})"
           }
         ]
-      }
+      },
+      "priority": 88
     },
     {
       "name": "update",
@@ -1316,7 +1340,8 @@
             "-p",
             "--production"
           ],
-          "description": "Don't install devDependencies"
+          "description": "Don't install devDependencies",
+          "priority": 60
         },
         {
           "name": [
@@ -1334,20 +1359,23 @@
           "name": [
             "--dry-run"
           ],
-          "description": "Don't install anything"
+          "description": "Don't install anything",
+          "priority": 50
         },
         {
           "name": [
             "--frozen-lockfile"
           ],
-          "description": "Disallow changes to lockfile"
+          "description": "Disallow changes to lockfile",
+          "priority": 60
         },
         {
           "name": [
             "-f",
             "--force"
           ],
-          "description": "Always request the latest versions from the registry & reinstall all dependencies"
+          "description": "Always request the latest versions from the registry & reinstall all dependencies",
+          "priority": 20
         },
         {
           "name": [
@@ -1375,14 +1403,16 @@
           "name": [
             "--verbose"
           ],
-          "description": "Excessively verbose logging"
+          "description": "Excessively verbose logging",
+          "priority": 25
         },
         {
           "name": [
             "-g",
             "--global"
           ],
-          "description": "Install globally"
+          "description": "Install globally",
+          "priority": 60
         },
         {
           "name": [
@@ -1484,7 +1514,8 @@
             "js_source": "async function(e,n){if(!e.includes(\"-g\")&&!e.includes(\"--global\")){let{stdout:t}=await n({command:\"npm\",args:[\"prefix\"]}),{stdout:a}=await n({command:\"cat\",args:[`${t}/package.json`]}),i=JSON.parse(a),s=i.dependencies??{},o=i.devDependencies,c=i.optionalDependencies??{};return Object.assign(s,o,c),Object.keys(s).filter(p=>!e.some(r=>r===p)).map(p=>({name:p,icon:\"\\u{1F4E6}\",description:s[p]?\"dependency\":c[p]?\"optionalDependency\":\"devDependency\"}))}else{let{stdout:t}=await n({command:\"bash\",args:[\"-c\",\"ls -1 `npm root -g`\"]});return t.split(`\n`).map(a=>({name:a,icon:\"\\u{1F4E6}\",description:\"Global dependency\"}))}}"
           }
         ]
-      }
+      },
+      "priority": 78
     },
     {
       "name": "link",
@@ -1518,7 +1549,8 @@
             }
           }
         ]
-      }
+      },
+      "priority": 55
     },
     {
       "name": "unlink",
@@ -1534,7 +1566,8 @@
           ],
           "description": "Install the latest canary release"
         }
-      ]
+      ],
+      "priority": 78
     },
     {
       "name": "test",
@@ -2043,7 +2076,8 @@
             }
           }
         ]
-      }
+      },
+      "priority": 85
     },
     {
       "name": "pm",
@@ -2243,7 +2277,8 @@
             ]
           }
         ]
-      }
+      },
+      "priority": 75
     },
     {
       "name": "repl",
@@ -2260,7 +2295,8 @@
           ],
           "description": "Answer yes to all prompts"
         }
-      ]
+      ],
+      "priority": 55
     }
   ],
   "options": [

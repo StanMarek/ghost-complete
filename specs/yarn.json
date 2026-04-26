@@ -33,7 +33,8 @@
           "name": [
             "--verbose"
           ],
-          "description": "Output verbose messages on internal operations"
+          "description": "Output verbose messages on internal operations",
+          "priority": 25
         },
         {
           "name": [
@@ -94,7 +95,8 @@
           "name": [
             "--force"
           ],
-          "description": "Install and build packages even if they were built before, overwrite lockfile"
+          "description": "Install and build packages even if they were built before, overwrite lockfile",
+          "priority": 20
         },
         {
           "name": [
@@ -125,7 +127,8 @@
             "--prod",
             "--production"
           ],
-          "description": "Instruct Yarn to ignore NODE_ENV and take its production-or-not status from this flag instead"
+          "description": "Instruct Yarn to ignore NODE_ENV and take its production-or-not status from this flag instead",
+          "priority": 60
         },
         {
           "name": [
@@ -143,7 +146,8 @@
           "name": [
             "--frozen-lockfile"
           ],
-          "description": "Don't generate a lockfile and fail if an update is needed"
+          "description": "Don't generate a lockfile and fail if an update is needed",
+          "priority": 60
         },
         {
           "name": [
@@ -329,7 +333,8 @@
             "-D",
             "--dev"
           ],
-          "description": "Save package to your `devDependencies`"
+          "description": "Save package to your `devDependencies`",
+          "priority": 65
         },
         {
           "name": [
@@ -383,7 +388,8 @@
             "js_source": "async(n,i,s)=>{let a=n[n.length-1];if(a===\"\")return[];let o=e&&e.length>0?`+keywords:${e.join(\",\")}`:\"\",d=[\"-s\",\"-H\",\"Accept: application/json\",o?`https://api.npms.io/v2/search?size=20&q=${a}${o}`:`https://api.npms.io/v2/search/suggestions?q=${a}&size=20`],m=[\"-s\",\"-H\",\"Accept: application/vnd.npm.install-v1+json\",`https://registry.npmjs.org/${a.slice(0,-1)}`],y=h=>i({command:\"curl\",args:h[h.length-1]===\"@\"?m:d}),u=a.startsWith(\"@\")?C(a)>1:a.includes(\"@\");try{let h=JSON.parse((await y(a)).stdout);if(u){let b=Object.entries(h[\"dist-tags\"]||{}).map(([A,V])=>({name:A,description:V}));return b.push(...Object.keys(h.versions).map(A=>({name:A})).reverse()),b}return(o?h.results:h).map(b=>({name:b.package.name,description:b.package.description}))}catch(h){return console.error({error:h}),[]}}"
           }
         ]
-      }
+      },
+      "priority": 90
     },
     {
       "name": "audit",
@@ -438,7 +444,8 @@
           ],
           "description": "Output usage information"
         }
-      ]
+      ],
+      "priority": 60
     },
     {
       "name": "autoclean",
@@ -463,7 +470,8 @@
             "-f",
             "--force"
           ],
-          "description": "If a .yarnclean file exists, run the clean process"
+          "description": "If a .yarnclean file exists, run the clean process",
+          "priority": 20
         }
       ]
     },
@@ -486,7 +494,8 @@
       "subcommands": [
         {
           "name": "clean",
-          "description": "Clear global cache"
+          "description": "Clear global cache",
+          "priority": 55
         },
         {
           "name": "dir",
@@ -505,7 +514,8 @@
                 "name": "pattern"
               }
             }
-          ]
+          ],
+          "priority": 72
         }
       ],
       "options": [
@@ -536,7 +546,8 @@
           "name": [
             "--verbose"
           ],
-          "description": "Output verbose messages on internal operations"
+          "description": "Output verbose messages on internal operations",
+          "priority": 25
         },
         {
           "name": [
@@ -597,7 +608,8 @@
           "name": [
             "--force"
           ],
-          "description": "Install and build packages even if they were built before, overwrite lockfile"
+          "description": "Install and build packages even if they were built before, overwrite lockfile",
+          "priority": 20
         },
         {
           "name": [
@@ -628,7 +640,8 @@
             "--prod",
             "--production"
           ],
-          "description": "Instruct Yarn to ignore NODE_ENV and take its production-or-not status from this flag instead"
+          "description": "Instruct Yarn to ignore NODE_ENV and take its production-or-not status from this flag instead",
+          "priority": 60
         },
         {
           "name": [
@@ -646,7 +659,8 @@
           "name": [
             "--frozen-lockfile"
           ],
-          "description": "Don't generate a lockfile and fail if an update is needed"
+          "description": "Don't generate a lockfile and fail if an update is needed",
+          "priority": 60
         },
         {
           "name": [
@@ -842,7 +856,8 @@
                 "-g",
                 "--global"
               ],
-              "description": "Set global config"
+              "description": "Set global config",
+              "priority": 60
             }
           ]
         },
@@ -882,7 +897,8 @@
         },
         {
           "name": "list",
-          "description": "Displays the current configuration"
+          "description": "Displays the current configuration",
+          "priority": 72
         }
       ],
       "options": [
@@ -926,7 +942,8 @@
           "name": [
             "--verbose"
           ],
-          "description": "Output verbose messages on internal operations"
+          "description": "Output verbose messages on internal operations",
+          "priority": 25
         },
         {
           "name": [
@@ -987,7 +1004,8 @@
           "name": [
             "--force"
           ],
-          "description": "Install and build packages even if they were built before, overwrite lockfile"
+          "description": "Install and build packages even if they were built before, overwrite lockfile",
+          "priority": 20
         },
         {
           "name": [
@@ -1018,7 +1036,8 @@
             "--prod",
             "--production"
           ],
-          "description": "Instruct Yarn to ignore NODE_ENV and take its production-or-not status from this flag instead"
+          "description": "Instruct Yarn to ignore NODE_ENV and take its production-or-not status from this flag instead",
+          "priority": 60
         },
         {
           "name": [
@@ -1036,7 +1055,8 @@
           "name": [
             "--frozen-lockfile"
           ],
-          "description": "Don't generate a lockfile and fail if an update is needed"
+          "description": "Don't generate a lockfile and fail if an update is needed",
+          "priority": 60
         },
         {
           "name": [
@@ -1226,7 +1246,8 @@
             "js_source": "function(e){return e[e.length-1]===\"\"?void 0:[\"curl\",\"-s\",\"-H\",\"Accept: application/json\",`https://api.npms.io/v2/search?q=${\"create-\"+e[e.length-1]}&size=20`]}"
           }
         ]
-      }
+      },
+      "priority": 65
     },
     {
       "name": "exec",
@@ -1238,7 +1259,8 @@
           ],
           "description": "Output usage information"
         }
-      ]
+      ],
+      "priority": 75
     },
     {
       "name": "generate-lock-entry",
@@ -1287,7 +1309,8 @@
                 "js_source": "async(n,i,s)=>{let a=n[n.length-1];if(a===\"\")return[];let o=e&&e.length>0?`+keywords:${e.join(\",\")}`:\"\",d=[\"-s\",\"-H\",\"Accept: application/json\",o?`https://api.npms.io/v2/search?size=20&q=${a}${o}`:`https://api.npms.io/v2/search/suggestions?q=${a}&size=20`],m=[\"-s\",\"-H\",\"Accept: application/vnd.npm.install-v1+json\",`https://registry.npmjs.org/${a.slice(0,-1)}`],y=h=>i({command:\"curl\",args:h[h.length-1]===\"@\"?m:d}),u=a.startsWith(\"@\")?C(a)>1:a.includes(\"@\");try{let h=JSON.parse((await y(a)).stdout);if(u){let b=Object.entries(h[\"dist-tags\"]||{}).map(([A,V])=>({name:A,description:V}));return b.push(...Object.keys(h.versions).map(A=>({name:A})).reverse()),b}return(o?h.results:h).map(b=>({name:b.package.name,description:b.package.description}))}catch(h){return console.error({error:h}),[]}}"
               }
             ]
-          }
+          },
+          "priority": 90
         },
         {
           "name": "bin",
@@ -1299,11 +1322,13 @@
         },
         {
           "name": "ls",
-          "description": "List globally installed packages (deprecated)"
+          "description": "List globally installed packages (deprecated)",
+          "priority": 72
         },
         {
           "name": "list",
-          "description": "List globally installed packages"
+          "description": "List globally installed packages",
+          "priority": 72
         },
         {
           "name": "remove",
@@ -1336,7 +1361,8 @@
               "name": [
                 "--verbose"
               ],
-              "description": "Output verbose messages on internal operations"
+              "description": "Output verbose messages on internal operations",
+              "priority": 25
             },
             {
               "name": [
@@ -1397,7 +1423,8 @@
               "name": [
                 "--force"
               ],
-              "description": "Install and build packages even if they were built before, overwrite lockfile"
+              "description": "Install and build packages even if they were built before, overwrite lockfile",
+              "priority": 20
             },
             {
               "name": [
@@ -1428,7 +1455,8 @@
                 "--prod",
                 "--production"
               ],
-              "description": "Instruct Yarn to ignore NODE_ENV and take its production-or-not status from this flag instead"
+              "description": "Instruct Yarn to ignore NODE_ENV and take its production-or-not status from this flag instead",
+              "priority": 60
             },
             {
               "name": [
@@ -1446,7 +1474,8 @@
               "name": [
                 "--frozen-lockfile"
               ],
-              "description": "Don't generate a lockfile and fail if an update is needed"
+              "description": "Don't generate a lockfile and fail if an update is needed",
+              "priority": 60
             },
             {
               "name": [
@@ -1644,7 +1673,8 @@
                 "js_source": "async(e,n,i)=>{let{stdout:s}=await n({command:\"yarn\",args:[\"global\",\"dir\"]}),{stdout:a}=await n({command:\"cat\",args:[`${s.trim()}/package.json`]});if(a.trim()==\"\")return[];try{let o=JSON.parse(a),r=o.dependencies||{},d=o.devDependencies||{};return[...Object.keys(r),...Object.keys(d)].filter(u=>!e.includes(u)).map(u=>({name:u,icon:\"\\u{1F4E6}\"}))}catch{}return[]}"
               }
             ]
-          }
+          },
+          "priority": 80
         },
         {
           "name": "upgrade",
@@ -1677,7 +1707,8 @@
               "name": [
                 "--verbose"
               ],
-              "description": "Output verbose messages on internal operations"
+              "description": "Output verbose messages on internal operations",
+              "priority": 25
             },
             {
               "name": [
@@ -1738,7 +1769,8 @@
               "name": [
                 "--force"
               ],
-              "description": "Install and build packages even if they were built before, overwrite lockfile"
+              "description": "Install and build packages even if they were built before, overwrite lockfile",
+              "priority": 20
             },
             {
               "name": [
@@ -1769,7 +1801,8 @@
                 "--prod",
                 "--production"
               ],
-              "description": "Instruct Yarn to ignore NODE_ENV and take its production-or-not status from this flag instead"
+              "description": "Instruct Yarn to ignore NODE_ENV and take its production-or-not status from this flag instead",
+              "priority": 60
             },
             {
               "name": [
@@ -1787,7 +1820,8 @@
               "name": [
                 "--frozen-lockfile"
               ],
-              "description": "Don't generate a lockfile and fail if an update is needed"
+              "description": "Don't generate a lockfile and fail if an update is needed",
+              "priority": 60
             },
             {
               "name": [
@@ -2023,7 +2057,8 @@
               ],
               "description": "Output usage information"
             }
-          ]
+          ],
+          "priority": 78
         },
         {
           "name": "upgrade-interactive",
@@ -2066,7 +2101,8 @@
           "name": [
             "--verbose"
           ],
-          "description": "Output verbose messages on internal operations"
+          "description": "Output verbose messages on internal operations",
+          "priority": 25
         },
         {
           "name": [
@@ -2127,7 +2163,8 @@
           "name": [
             "--force"
           ],
-          "description": "Install and build packages even if they were built before, overwrite lockfile"
+          "description": "Install and build packages even if they were built before, overwrite lockfile",
+          "priority": 20
         },
         {
           "name": [
@@ -2158,7 +2195,8 @@
             "--prod",
             "--production"
           ],
-          "description": "Instruct Yarn to ignore NODE_ENV and take its production-or-not status from this flag instead"
+          "description": "Instruct Yarn to ignore NODE_ENV and take its production-or-not status from this flag instead",
+          "priority": 60
         },
         {
           "name": [
@@ -2176,7 +2214,8 @@
           "name": [
             "--frozen-lockfile"
           ],
-          "description": "Don't generate a lockfile and fail if an update is needed"
+          "description": "Don't generate a lockfile and fail if an update is needed",
+          "priority": 60
         },
         {
           "name": [
@@ -2384,7 +2423,8 @@
     },
     {
       "name": "info",
-      "description": "Show information about a package"
+      "description": "Show information about a package",
+      "priority": 65
     },
     {
       "name": "init",
@@ -2417,7 +2457,8 @@
           "name": [
             "--verbose"
           ],
-          "description": "Output verbose messages on internal operations"
+          "description": "Output verbose messages on internal operations",
+          "priority": 25
         },
         {
           "name": [
@@ -2478,7 +2519,8 @@
           "name": [
             "--force"
           ],
-          "description": "Install and build packages even if they were built before, overwrite lockfile"
+          "description": "Install and build packages even if they were built before, overwrite lockfile",
+          "priority": 20
         },
         {
           "name": [
@@ -2509,7 +2551,8 @@
             "--prod",
             "--production"
           ],
-          "description": "Instruct Yarn to ignore NODE_ENV and take its production-or-not status from this flag instead"
+          "description": "Instruct Yarn to ignore NODE_ENV and take its production-or-not status from this flag instead",
+          "priority": 60
         },
         {
           "name": [
@@ -2527,7 +2570,8 @@
           "name": [
             "--frozen-lockfile"
           ],
-          "description": "Don't generate a lockfile and fail if an update is needed"
+          "description": "Don't generate a lockfile and fail if an update is needed",
+          "priority": 60
         },
         {
           "name": [
@@ -2738,7 +2782,8 @@
           ],
           "description": "Output usage information"
         }
-      ]
+      ],
+      "priority": 55
     },
     {
       "name": "install",
@@ -2771,7 +2816,8 @@
           "name": [
             "--verbose"
           ],
-          "description": "Output verbose messages on internal operations"
+          "description": "Output verbose messages on internal operations",
+          "priority": 25
         },
         {
           "name": [
@@ -2832,7 +2878,8 @@
           "name": [
             "--force"
           ],
-          "description": "Install and build packages even if they were built before, overwrite lockfile"
+          "description": "Install and build packages even if they were built before, overwrite lockfile",
+          "priority": 20
         },
         {
           "name": [
@@ -2863,7 +2910,8 @@
             "--prod",
             "--production"
           ],
-          "description": "Instruct Yarn to ignore NODE_ENV and take its production-or-not status from this flag instead"
+          "description": "Instruct Yarn to ignore NODE_ENV and take its production-or-not status from this flag instead",
+          "priority": 60
         },
         {
           "name": [
@@ -2881,7 +2929,8 @@
           "name": [
             "--frozen-lockfile"
           ],
-          "description": "Don't generate a lockfile and fail if an update is needed"
+          "description": "Don't generate a lockfile and fail if an update is needed",
+          "priority": 60
         },
         {
           "name": [
@@ -3069,14 +3118,16 @@
           ],
           "description": "Output usage information"
         }
-      ]
+      ],
+      "priority": 92
     },
     {
       "name": "licenses",
       "subcommands": [
         {
           "name": "list",
-          "description": "List licenses for installed packages"
+          "description": "List licenses for installed packages",
+          "priority": 72
         },
         {
           "name": "generate-disclaimer",
@@ -3115,7 +3166,8 @@
           "name": [
             "--verbose"
           ],
-          "description": "Output verbose messages on internal operations"
+          "description": "Output verbose messages on internal operations",
+          "priority": 25
         },
         {
           "name": [
@@ -3176,7 +3228,8 @@
           "name": [
             "--force"
           ],
-          "description": "Install and build packages even if they were built before, overwrite lockfile"
+          "description": "Install and build packages even if they were built before, overwrite lockfile",
+          "priority": 20
         },
         {
           "name": [
@@ -3207,7 +3260,8 @@
             "--prod",
             "--production"
           ],
-          "description": "Instruct Yarn to ignore NODE_ENV and take its production-or-not status from this flag instead"
+          "description": "Instruct Yarn to ignore NODE_ENV and take its production-or-not status from this flag instead",
+          "priority": 60
         },
         {
           "name": [
@@ -3225,7 +3279,8 @@
           "name": [
             "--frozen-lockfile"
           ],
-          "description": "Don't generate a lockfile and fail if an update is needed"
+          "description": "Don't generate a lockfile and fail if an update is needed",
+          "priority": 60
         },
         {
           "name": [
@@ -3410,7 +3465,8 @@
       "args": {
         "name": "package",
         "isOptional": true
-      }
+      },
+      "priority": 55
     },
     {
       "name": "list",
@@ -3428,7 +3484,8 @@
           ],
           "description": "Filter the list of dependencies by the pattern"
         }
-      ]
+      ],
+      "priority": 72
     },
     {
       "name": "login",
@@ -3472,7 +3529,8 @@
           "name": [
             "--verbose"
           ],
-          "description": "Output verbose messages on internal operations"
+          "description": "Output verbose messages on internal operations",
+          "priority": 25
         },
         {
           "name": [
@@ -3533,7 +3591,8 @@
           "name": [
             "--force"
           ],
-          "description": "Install and build packages even if they were built before, overwrite lockfile"
+          "description": "Install and build packages even if they were built before, overwrite lockfile",
+          "priority": 20
         },
         {
           "name": [
@@ -3564,7 +3623,8 @@
             "--prod",
             "--production"
           ],
-          "description": "Instruct Yarn to ignore NODE_ENV and take its production-or-not status from this flag instead"
+          "description": "Instruct Yarn to ignore NODE_ENV and take its production-or-not status from this flag instead",
+          "priority": 60
         },
         {
           "name": [
@@ -3582,7 +3642,8 @@
           "name": [
             "--frozen-lockfile"
           ],
-          "description": "Don't generate a lockfile and fail if an update is needed"
+          "description": "Don't generate a lockfile and fail if an update is needed",
+          "priority": 60
         },
         {
           "name": [
@@ -3763,7 +3824,8 @@
           ],
           "description": "Output usage information"
         }
-      ]
+      ],
+      "priority": 65
     },
     {
       "name": "owner",
@@ -3774,14 +3836,16 @@
           "description": "Lists all of the owners of a package",
           "args": {
             "name": "package"
-          }
+          },
+          "priority": 72
         },
         {
           "name": "add",
           "description": "Adds the user as an owner of the package",
           "args": {
             "name": "package"
-          }
+          },
+          "priority": 90
         },
         {
           "name": "remove",
@@ -3793,7 +3857,8 @@
             {
               "name": "package"
             }
-          ]
+          ],
+          "priority": 80
         }
       ]
     },
@@ -3858,7 +3923,8 @@
           "name": [
             "--verbose"
           ],
-          "description": "Output verbose messages on internal operations"
+          "description": "Output verbose messages on internal operations",
+          "priority": 25
         },
         {
           "name": [
@@ -3919,7 +3985,8 @@
           "name": [
             "--force"
           ],
-          "description": "Install and build packages even if they were built before, overwrite lockfile"
+          "description": "Install and build packages even if they were built before, overwrite lockfile",
+          "priority": 20
         },
         {
           "name": [
@@ -3950,7 +4017,8 @@
             "--prod",
             "--production"
           ],
-          "description": "Instruct Yarn to ignore NODE_ENV and take its production-or-not status from this flag instead"
+          "description": "Instruct Yarn to ignore NODE_ENV and take its production-or-not status from this flag instead",
+          "priority": 60
         },
         {
           "name": [
@@ -3968,7 +4036,8 @@
           "name": [
             "--frozen-lockfile"
           ],
-          "description": "Don't generate a lockfile and fail if an update is needed"
+          "description": "Don't generate a lockfile and fail if an update is needed",
+          "priority": 60
         },
         {
           "name": [
@@ -4243,7 +4312,8 @@
       "args": {
         "name": "Tarball or Folder",
         "template": "folders"
-      }
+      },
+      "priority": 75
     },
     {
       "name": "remove",
@@ -4276,7 +4346,8 @@
           "name": [
             "--verbose"
           ],
-          "description": "Output verbose messages on internal operations"
+          "description": "Output verbose messages on internal operations",
+          "priority": 25
         },
         {
           "name": [
@@ -4337,7 +4408,8 @@
           "name": [
             "--force"
           ],
-          "description": "Install and build packages even if they were built before, overwrite lockfile"
+          "description": "Install and build packages even if they were built before, overwrite lockfile",
+          "priority": 20
         },
         {
           "name": [
@@ -4368,7 +4440,8 @@
             "--prod",
             "--production"
           ],
-          "description": "Instruct Yarn to ignore NODE_ENV and take its production-or-not status from this flag instead"
+          "description": "Instruct Yarn to ignore NODE_ENV and take its production-or-not status from this flag instead",
+          "priority": 60
         },
         {
           "name": [
@@ -4386,7 +4459,8 @@
           "name": [
             "--frozen-lockfile"
           ],
-          "description": "Don't generate a lockfile and fail if an update is needed"
+          "description": "Don't generate a lockfile and fail if an update is needed",
+          "priority": 60
         },
         {
           "name": [
@@ -4588,7 +4662,8 @@
             "js_source": "function(e,n=[]){if(e.trim()===\"\")return[];try{let i=JSON.parse(e),s=i.dependencies??{},a=i.devDependencies,o=i.optionalDependencies??{};return Object.assign(s,a,o),Object.keys(s).filter(r=>!n.some(m=>m===r)).map(r=>({name:r,icon:\"\\u{1F4E6}\",description:s[r]?\"dependency\":o[r]?\"optionalDependency\":\"devDependency\"}))}catch(i){return console.error(i),[]}}"
           }
         ]
-      }
+      },
+      "priority": 80
     },
     {
       "name": "run",
@@ -4621,7 +4696,8 @@
           "name": [
             "--verbose"
           ],
-          "description": "Output verbose messages on internal operations"
+          "description": "Output verbose messages on internal operations",
+          "priority": 25
         },
         {
           "name": [
@@ -4682,7 +4758,8 @@
           "name": [
             "--force"
           ],
-          "description": "Install and build packages even if they were built before, overwrite lockfile"
+          "description": "Install and build packages even if they were built before, overwrite lockfile",
+          "priority": 20
         },
         {
           "name": [
@@ -4713,7 +4790,8 @@
             "--prod",
             "--production"
           ],
-          "description": "Instruct Yarn to ignore NODE_ENV and take its production-or-not status from this flag instead"
+          "description": "Instruct Yarn to ignore NODE_ENV and take its production-or-not status from this flag instead",
+          "priority": 60
         },
         {
           "name": [
@@ -4731,7 +4809,8 @@
           "name": [
             "--frozen-lockfile"
           ],
-          "description": "Don't generate a lockfile and fail if an update is needed"
+          "description": "Don't generate a lockfile and fail if an update is needed",
+          "priority": 60
         },
         {
           "name": [
@@ -4942,7 +5021,8 @@
             }
           ]
         }
-      ]
+      ],
+      "priority": 90
     },
     {
       "name": "tag",
@@ -4957,7 +5037,8 @@
           "description": "Create a new team",
           "args": {
             "name": "<scope:team>"
-          }
+          },
+          "priority": 65
         },
         {
           "name": "destroy",
@@ -4976,21 +5057,24 @@
             {
               "name": "<user>"
             }
-          ]
+          ],
+          "priority": 90
         },
         {
           "name": "remove",
           "description": "Remove a user from a team they belong to",
           "args": {
             "name": "<scope:team> <user>"
-          }
+          },
+          "priority": 80
         },
         {
           "name": "list",
           "description": "If performed on an organization name, will return a list of existing teams under that organization. If performed on a team, it will instead return a list of all users belonging to that particular team",
           "args": {
             "name": "<scope>|<scope:team>"
-          }
+          },
+          "priority": 72
         }
       ]
     },
@@ -5032,7 +5116,8 @@
           "name": [
             "--verbose"
           ],
-          "description": "Output verbose messages on internal operations"
+          "description": "Output verbose messages on internal operations",
+          "priority": 25
         },
         {
           "name": [
@@ -5093,7 +5178,8 @@
           "name": [
             "--force"
           ],
-          "description": "Install and build packages even if they were built before, overwrite lockfile"
+          "description": "Install and build packages even if they were built before, overwrite lockfile",
+          "priority": 20
         },
         {
           "name": [
@@ -5124,7 +5210,8 @@
             "--prod",
             "--production"
           ],
-          "description": "Instruct Yarn to ignore NODE_ENV and take its production-or-not status from this flag instead"
+          "description": "Instruct Yarn to ignore NODE_ENV and take its production-or-not status from this flag instead",
+          "priority": 60
         },
         {
           "name": [
@@ -5142,7 +5229,8 @@
           "name": [
             "--frozen-lockfile"
           ],
-          "description": "Don't generate a lockfile and fail if an update is needed"
+          "description": "Don't generate a lockfile and fail if an update is needed",
+          "priority": 60
         },
         {
           "name": [
@@ -5394,7 +5482,8 @@
             "js_source": "function(e,n=[]){if(e.trim()===\"\")return[];try{let i=JSON.parse(e),s=i.dependencies??{},a=i.devDependencies,o=i.optionalDependencies??{};return Object.assign(s,a,o),Object.keys(s).filter(r=>!n.some(m=>m===r)).map(r=>({name:r,icon:\"\\u{1F4E6}\",description:s[r]?\"dependency\":o[r]?\"optionalDependency\":\"devDependency\"}))}catch(i){return console.error(i),[]}}"
           }
         ]
-      }
+      },
+      "priority": 78
     },
     {
       "name": "upgrade-interactive",
@@ -5439,7 +5528,8 @@
           "name": [
             "--verbose"
           ],
-          "description": "Output verbose messages on internal operations"
+          "description": "Output verbose messages on internal operations",
+          "priority": 25
         },
         {
           "name": [
@@ -5500,7 +5590,8 @@
           "name": [
             "--force"
           ],
-          "description": "Install and build packages even if they were built before, overwrite lockfile"
+          "description": "Install and build packages even if they were built before, overwrite lockfile",
+          "priority": 20
         },
         {
           "name": [
@@ -5531,7 +5622,8 @@
             "--prod",
             "--production"
           ],
-          "description": "Instruct Yarn to ignore NODE_ENV and take its production-or-not status from this flag instead"
+          "description": "Instruct Yarn to ignore NODE_ENV and take its production-or-not status from this flag instead",
+          "priority": 60
         },
         {
           "name": [
@@ -5549,7 +5641,8 @@
           "name": [
             "--frozen-lockfile"
           ],
-          "description": "Don't generate a lockfile and fail if an update is needed"
+          "description": "Don't generate a lockfile and fail if an update is needed",
+          "priority": 60
         },
         {
           "name": [
@@ -5866,7 +5959,8 @@
           "name": [
             "--verbose"
           ],
-          "description": "Output verbose messages on internal operations"
+          "description": "Output verbose messages on internal operations",
+          "priority": 25
         },
         {
           "name": [
@@ -5927,7 +6021,8 @@
           "name": [
             "--force"
           ],
-          "description": "Install and build packages even if they were built before, overwrite lockfile"
+          "description": "Install and build packages even if they were built before, overwrite lockfile",
+          "priority": 20
         },
         {
           "name": [
@@ -5958,7 +6053,8 @@
             "--prod",
             "--production"
           ],
-          "description": "Instruct Yarn to ignore NODE_ENV and take its production-or-not status from this flag instead"
+          "description": "Instruct Yarn to ignore NODE_ENV and take its production-or-not status from this flag instead",
+          "priority": 60
         },
         {
           "name": [
@@ -5976,7 +6072,8 @@
           "name": [
             "--frozen-lockfile"
           ],
-          "description": "Don't generate a lockfile and fail if an update is needed"
+          "description": "Don't generate a lockfile and fail if an update is needed",
+          "priority": 60
         },
         {
           "name": [
@@ -6333,13 +6430,15 @@
       "name": [
         "--force"
       ],
-      "description": "Install and build packages even if they were built before, overwrite lockfile"
+      "description": "Install and build packages even if they were built before, overwrite lockfile",
+      "priority": 20
     },
     {
       "name": [
         "--frozen-lockfile"
       ],
-      "description": "Don't generate a lockfile and fail if an update is needed"
+      "description": "Don't generate a lockfile and fail if an update is needed",
+      "priority": 60
     },
     {
       "name": [
@@ -6536,7 +6635,8 @@
         "--prod",
         "--production"
       ],
-      "args": {}
+      "args": {},
+      "priority": 60
     },
     {
       "name": [
@@ -6622,7 +6722,8 @@
       "name": [
         "--verbose"
       ],
-      "description": "Output verbose messages on internal operations"
+      "description": "Output verbose messages on internal operations",
+      "priority": 25
     },
     {
       "name": [
@@ -6683,7 +6784,8 @@
       "name": [
         "--force"
       ],
-      "description": "Install and build packages even if they were built before, overwrite lockfile"
+      "description": "Install and build packages even if they were built before, overwrite lockfile",
+      "priority": 20
     },
     {
       "name": [
@@ -6714,7 +6816,8 @@
         "--prod",
         "--production"
       ],
-      "description": "Instruct Yarn to ignore NODE_ENV and take its production-or-not status from this flag instead"
+      "description": "Instruct Yarn to ignore NODE_ENV and take its production-or-not status from this flag instead",
+      "priority": 60
     },
     {
       "name": [
@@ -6732,7 +6835,8 @@
       "name": [
         "--frozen-lockfile"
       ],
-      "description": "Don't generate a lockfile and fail if an update is needed"
+      "description": "Don't generate a lockfile and fail if an update is needed",
+      "priority": 60
     },
     {
       "name": [

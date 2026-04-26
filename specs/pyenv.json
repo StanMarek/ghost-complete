@@ -76,7 +76,8 @@
             "-f",
             "--force"
           ],
-          "description": "Install even if the version appears to be installed already"
+          "description": "Install even if the version appears to be installed already",
+          "priority": 20
         },
         {
           "name": [
@@ -97,7 +98,8 @@
             "-v",
             "--verbose"
           ],
-          "description": "Verbose mode: print compilation status to stdout"
+          "description": "Verbose mode: print compilation status to stdout",
+          "priority": 25
         },
         {
           "name": [
@@ -111,7 +113,8 @@
             "-g",
             "--debug"
           ],
-          "description": "Build a debug version"
+          "description": "Build a debug version",
+          "priority": 60
         }
       ],
       "args": {
@@ -130,7 +133,8 @@
             ]
           }
         ]
-      }
+      },
+      "priority": 92
     },
     {
       "name": "uninstall",
@@ -141,12 +145,14 @@
             "-f",
             "--force"
           ],
-          "description": "Attempt to remove the specified version without prompting for confirmation"
+          "description": "Attempt to remove the specified version without prompting for confirmation",
+          "priority": 20
         }
       ],
       "args": {
         "name": "version"
-      }
+      },
+      "priority": 78
     },
     {
       "name": "rehash",

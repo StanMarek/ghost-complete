@@ -7,7 +7,8 @@
       "description": "Performs a deployment (default)",
       "args": {
         "template": "folders"
-      }
+      },
+      "priority": 90
     },
     {
       "name": "dev",
@@ -90,7 +91,8 @@
           "args": {
             "name": "environment",
             "description": "Environment to list variables for"
-          }
+          },
+          "priority": 82
         }
       ]
     },
@@ -126,7 +128,8 @@
       "args": {
         "name": "project name",
         "description": "View deployments for specified project"
-      }
+      },
+      "priority": 82
     },
     {
       "name": "ls",
@@ -134,7 +137,8 @@
       "args": {
         "name": "project name",
         "description": "View deployments for specified project"
-      }
+      },
+      "priority": 82
     },
     {
       "name": "inspect",
@@ -146,11 +150,13 @@
     },
     {
       "name": "login",
-      "description": "Logs into your account or creates a new one"
+      "description": "Logs into your account or creates a new one",
+      "priority": 88
     },
     {
       "name": "logout",
-      "description": "Logs out of your account"
+      "description": "Logs out of your account",
+      "priority": 60
     },
     {
       "name": "switch",
@@ -198,7 +204,8 @@
       "args": {
         "name": "deployment url",
         "description": "URL of the deployment to remove"
-      }
+      },
+      "priority": 50
     },
     {
       "name": "domains",
@@ -206,7 +213,8 @@
       "subcommands": [
         {
           "name": "ls",
-          "description": "List all domains under an account"
+          "description": "List all domains under an account",
+          "priority": 82
         },
         {
           "name": "inspect",
@@ -270,7 +278,8 @@
             "description": "Domain to verify"
           }
         }
-      ]
+      ],
+      "priority": 60
     },
     {
       "name": "dns",
@@ -328,7 +337,8 @@
       "subcommands": [
         {
           "name": "ls",
-          "description": "List all certificates under an account"
+          "description": "List all certificates under an account",
+          "priority": 82
         },
         {
           "name": "issue",
@@ -390,7 +400,8 @@
       "subcommands": [
         {
           "name": "list",
-          "description": "List all secrets"
+          "description": "List all secrets",
+          "priority": 82
         },
         {
           "name": "add",
@@ -426,9 +437,11 @@
           "args": {
             "name": "secret name",
             "description": "Name of the seret to remove"
-          }
+          },
+          "priority": 50
         }
-      ]
+      ],
+      "priority": 65
     },
     {
       "name": "logs",
@@ -446,7 +459,8 @@
             "-f",
             "--follow"
           ],
-          "description": "Watch for additional logs output"
+          "description": "Watch for additional logs output",
+          "priority": 22
         },
         {
           "name": [
@@ -462,7 +476,8 @@
             "--output"
           ],
           "description": "Specifies format of logs output as 'short' or 'raw'",
-          "args": {}
+          "args": {},
+          "priority": 75
         },
         {
           "name": [
@@ -490,7 +505,8 @@
       "args": {
         "name": "deployment url",
         "description": "Get logs for specified deployment"
-      }
+      },
+      "priority": 88
     },
     {
       "name": "teams",
@@ -498,7 +514,8 @@
       "subcommands": [
         {
           "name": "list",
-          "description": "List all teams under an account"
+          "description": "List all teams under an account",
+          "priority": 82
         },
         {
           "name": "add",
@@ -546,7 +563,8 @@
         },
         {
           "name": "ls",
-          "description": "List custom domains that were assigned to deployments"
+          "description": "List custom domains that were assigned to deployments",
+          "priority": 82
         }
       ]
     },
@@ -565,7 +583,8 @@
       "subcommands": [
         {
           "name": "ls",
-          "description": "List all the payment methods of the active account"
+          "description": "List all the payment methods of the active account",
+          "priority": 82
         },
         {
           "name": "add",
@@ -644,7 +663,8 @@
         "-f",
         "--force"
       ],
-      "description": "Force a new deployment even if nothing has changed"
+      "description": "Force a new deployment even if nothing has changed",
+      "priority": 22
     },
     {
       "name": [

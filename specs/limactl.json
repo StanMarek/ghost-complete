@@ -212,7 +212,8 @@
             "-f",
             "--force"
           ],
-          "description": "Forcibly kill the processes"
+          "description": "Forcibly kill the processes",
+          "priority": 22
         }
       ],
       "args": {
@@ -250,7 +251,8 @@
           ],
           "description": "Debug mode"
         }
-      ]
+      ],
+      "priority": 55
     },
     {
       "name": "list",
@@ -397,7 +399,8 @@
                 "description": "~/.ssh/config format"
               }
             ]
-          }
+          },
+          "priority": 22
         }
       ],
       "args": {
@@ -460,7 +463,8 @@
             "js_source": "(p,h,S)=>he(this,void 0,void 0,function*(){var f;let{isDangerous:O,currentWorkingDirectory:b,searchTerm:m}=S,I=(f=(0,v.getCurrentInsertedDirectory)(c??b,m,S))!==null&&f!==void 0?f:\"/\";try{let q=yield h({command:\"ls\",args:[\"-1ApL\"],cwd:I}),ie=W(q.stdout.split(`\n`),[\".DS_Store\"]),$=[];for(let D of ie)if(D){let j=D.endsWith(\"/\")?\"folders\":\"filepaths\";(j===\"filepaths\"&&u!==\"only\"||j===\"folders\"&&u!==\"never\")&&$.push({type:j===\"filepaths\"?\"file\":\"folder\",name:D,insertValue:D,isDangerous:O,context:{templateType:j}})}return w(y($))}catch{return[]}})"
           }
         ]
-      }
+      },
+      "priority": 75
     },
     {
       "name": "stop",
@@ -484,7 +488,8 @@
             "-f",
             "--force"
           ],
-          "description": "Force stop the instance"
+          "description": "Force stop the instance",
+          "priority": 22
         }
       ],
       "args": {
@@ -502,7 +507,8 @@
             ]
           }
         ]
-      }
+      },
+      "priority": 75
     },
     {
       "name": "sudoers",

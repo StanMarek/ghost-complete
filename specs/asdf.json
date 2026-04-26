@@ -23,7 +23,8 @@
               "name": "git-url",
               "isOptional": true
             }
-          ]
+          ],
+          "priority": 90
         },
         {
           "name": "list",
@@ -47,7 +48,8 @@
               ],
               "description": "Show git refs"
             }
-          ]
+          ],
+          "priority": 72
         },
         {
           "name": "remove",
@@ -66,7 +68,8 @@
                 ]
               }
             ]
-          }
+          },
+          "priority": 80
         },
         {
           "name": "update",
@@ -88,7 +91,8 @@
               "name": "git-ref",
               "isOptional": true
             }
-          ]
+          ],
+          "priority": 78
         }
       ]
     },
@@ -215,7 +219,8 @@
             }
           ]
         }
-      ]
+      ],
+      "priority": 92
     },
     {
       "name": "uninstall",
@@ -246,7 +251,8 @@
             }
           ]
         }
-      ]
+      ],
+      "priority": 78
     },
     {
       "name": "current",
@@ -484,7 +490,8 @@
             ]
           }
         ]
-      }
+      },
+      "priority": 72
     },
     {
       "name": "list-all",
@@ -559,7 +566,8 @@
             "js_source": "async(r,e,i)=>{let{stdout:o}=await e({command:\"ls\",args:[\"-1\",`${i.environmentVariables.HOME}/.asdf/shims`]});return o.split(`\n`).map(m=>({name:`${m}`,description:\"Shim name\",priority:76,icon:\"fig://icon?type=command\",...n}))}"
           }
         ]
-      }
+      },
+      "priority": 75
     },
     {
       "name": "env",
@@ -576,7 +584,8 @@
     },
     {
       "name": "info",
-      "description": "Print os, shell and asdf debug information"
+      "description": "Print os, shell and asdf debug information",
+      "priority": 65
     },
     {
       "name": "reshim",
@@ -652,7 +661,8 @@
           ],
           "description": "Using HEAD commit"
         }
-      ]
+      ],
+      "priority": 78
     },
     {
       "name": "version",
