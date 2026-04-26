@@ -14,7 +14,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, copyFile, readFile, writeFile, stat } from 'node:fs/promises';
+import { mkdtemp, mkdir, copyFile, readFile, writeFile, stat, chmod, readdir } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
@@ -391,13 +391,57 @@ test('apply.mjs rejects heuristics referencing unknown spec names', async () => 
     0,
     `expected non-zero exit; stdout: ${res.stdout}, stderr: ${res.stderr}`
   );
-  // Both the legacy "writes-then-exits" path and the new "early-abort" path
-  // emit something matching /Unknown spec/. Substring match keeps the test
-  // stable across both behaviours.
+  // Defensive: match on stderr substring rather than exact phrasing.
   assert.match(
     res.stderr,
     /Unknown spec/,
     `expected "Unknown spec" in stderr, got: ${res.stderr}`
+  );
+});
+
+test('apply.mjs rejects heuristics that list the same spec in two families', async () => {
+  // A spec basename listed in multiple families is ambiguous: which family's
+  // rules apply? The Map-based build in loadHeuristics throws when a duplicate
+  // key is encountered. Pin the diagnostic so a future refactor that drops
+  // the throw or swaps the Map for an overwriting structure is caught.
+  const { run } = await makeSandbox({
+    heuristics: {
+      families: {
+        vcs: {
+          specs: ['git'],
+          subcommands: { add: 85 },
+          flags: {},
+        },
+        build_tool: {
+          specs: ['git'],
+          subcommands: {},
+          flags: {},
+        },
+      },
+    },
+    specs: {
+      'git.json': { name: 'git' },
+    },
+  });
+
+  const res = run();
+  assert.notEqual(
+    res.status,
+    0,
+    `expected non-zero exit; stdout: ${res.stdout}, stderr: ${res.stderr}`
+  );
+  // Defensive: match on a stable substring rather than the exact wording.
+  assert.match(
+    res.stderr,
+    /multiple families|listed in|two families/i,
+    `expected duplicate-family diagnostic in stderr, got: ${res.stderr}`
+  );
+  // The offending spec name must appear somewhere in the diagnostic so the
+  // operator can locate the duplicate without re-reading heuristics.json.
+  assert.match(
+    res.stderr,
+    /git/,
+    `expected offending spec name in stderr, got: ${res.stderr}`
   );
 });
 
@@ -456,13 +500,63 @@ test('apply.mjs leaves no .tmp file behind on a successful run', async () => {
   const res = run();
   assert.equal(res.status, 0, `stderr: ${res.stderr}`);
 
-  const { readdir } = await import('node:fs/promises');
   const entries = await readdir(specsDir);
   const stragglers = entries.filter((e) => e.endsWith('.tmp'));
   assert.deepEqual(
     stragglers,
     [],
     `expected no .tmp stragglers in specs/, got: ${stragglers.join(', ')}`
+  );
+});
+
+test('apply.mjs surfaces a per-spec error when atomic write/rename fails', async () => {
+  // Force the writeFile-then-rename atomic path to fail by chmod'ing the
+  // specs/ directory read-only after the spec file is laid out. writeFile
+  // to `<spec>.json.tmp` then fails with EACCES, exercising the catch block
+  // in processSpec. Asserts:
+  //   (a) non-zero exit (the failure must propagate, not be swallowed)
+  //   (b) stderr names the offending spec (per-spec error context)
+  //   (c) no `<spec>.json.tmp` straggler remains in specs/ — best-effort
+  //       cleanup must run regardless of cleanup-error outcome
+  const { run, specsDir } = await makeSandbox({
+    heuristics: cargoOnlyHeuristics(),
+    specs: {
+      'cargo.json': {
+        name: 'cargo',
+        subcommands: [{ name: 'install' }],
+        options: [{ name: ['--release'] }],
+      },
+    },
+  });
+
+  const originalMode = (await stat(specsDir)).mode;
+  await chmod(specsDir, 0o555);
+
+  let res;
+  try {
+    res = run();
+  } finally {
+    // Always restore perms so the mkdtemp sandbox can be cleaned up later.
+    await chmod(specsDir, originalMode);
+  }
+
+  assert.notEqual(
+    res.status,
+    0,
+    `expected non-zero exit when write/rename fails; stdout: ${res.stdout}, stderr: ${res.stderr}`
+  );
+  assert.match(
+    res.stderr,
+    /cargo\.json/,
+    `expected spec name in stderr for write failure, got: ${res.stderr}`
+  );
+
+  const entries = await readdir(specsDir);
+  const stragglers = entries.filter((e) => e.endsWith('.tmp'));
+  assert.deepEqual(
+    stragglers,
+    [],
+    `expected no .tmp stragglers after a failed write, got: ${stragglers.join(', ')}`
   );
 });
 

@@ -2,8 +2,12 @@
 //! `docs/superpowers/specs/2026-04-25-completion-ranking-and-suppression-design.md`.
 //!
 //! Each test feeds a canonical buffer into `SuggestionEngine::suggest_sync`
-//! and asserts the kind of the top results. Intentionally checks kinds (not
-//! exact text) so the tests survive spec content changes upstream.
+//! and asserts an invariant about the resulting suggestions — usually that
+//! certain kinds appear at the top, that filesystem entries are absent
+//! entirely (no fs leak under spec-driven contexts), or that priorities are
+//! honoured when they disagree with the alphabetical fallback. Intentionally
+//! checks kinds and ordinal positions (not exact text) so the tests survive
+//! spec content changes upstream.
 
 use std::path::{Path, PathBuf};
 

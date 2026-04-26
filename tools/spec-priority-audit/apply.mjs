@@ -15,7 +15,7 @@
  * Categorisation is by spec filename (e.g. `git.json` → vcs family). Each
  * family carries a per-subcommand and per-flag map of {name -> priority}.
  * Recursion descends into nested subcommands so e.g. `git remote add` picks
- * up the same `add: 90` bump as a top-level `add`.
+ * up the same `add: 85` bump as a top-level `add`.
  */
 
 import { readFile, writeFile, readdir, rename, unlink } from 'node:fs/promises';
@@ -120,7 +120,7 @@ function shouldSetFlag(currentPriority, newPriority) {
   return true;
 }
 
-function applySubcommandRules(subcommand, rules, stats) {
+function applySubcommandRules(subcommand, rules, stats, specName) {
   if (!subcommand || typeof subcommand !== 'object') return;
   const name = typeof subcommand.name === 'string' ? subcommand.name : null;
   if (name && Object.hasOwn(rules.subcommands, name)) {
@@ -130,17 +130,19 @@ function applySubcommandRules(subcommand, rules, stats) {
       stats.subcommandsBumped += 1;
     }
   }
-  for (const opt of subcommand.options ?? []) applyOptionRules(opt, rules, stats);
-  for (const sub of subcommand.subcommands ?? []) applySubcommandRules(sub, rules, stats);
+  for (const opt of subcommand.options ?? []) applyOptionRules(opt, rules, stats, specName);
+  for (const sub of subcommand.subcommands ?? []) applySubcommandRules(sub, rules, stats, specName);
 }
 
-function applyOptionRules(option, rules, stats) {
+function applyOptionRules(option, rules, stats, specName) {
   if (!option || typeof option !== 'object') return;
   const names = Array.isArray(option.name) ? option.name : [option.name];
   let bestPriority;
   for (const n of names) {
     if (typeof n !== 'string') {
-      console.warn(`schema drift: non-string option name encountered: ${JSON.stringify(n)}`);
+      console.warn(
+        `schema drift in ${specName}: non-string option name: ${JSON.stringify(n)}`
+      );
       continue;
     }
     if (Object.hasOwn(rules.flags, n)) {
@@ -173,8 +175,8 @@ async function processSpec(filePath, specName, rules, dryRun) {
       stats.subcommandsBumped += 1;
     }
   }
-  for (const opt of spec.options ?? []) applyOptionRules(opt, rules, stats);
-  for (const sub of spec.subcommands ?? []) applySubcommandRules(sub, rules, stats);
+  for (const opt of spec.options ?? []) applyOptionRules(opt, rules, stats, specName);
+  for (const sub of spec.subcommands ?? []) applySubcommandRules(sub, rules, stats, specName);
 
   if (!dryRun && (stats.subcommandsBumped > 0 || stats.flagsBumped > 0)) {
     const output = JSON.stringify(spec, null, 2) + '\n';
@@ -183,10 +185,12 @@ async function processSpec(filePath, specName, rules, dryRun) {
       await writeFile(tmp, output, 'utf8');
       await rename(tmp, filePath);
     } catch (err) {
+      // Best-effort cleanup: swallow ALL errors (incl. EBUSY/permission) so the
+      // original write/rename failure stays visible in the rethrow below.
       try {
         await unlink(tmp);
-      } catch (cleanupErr) {
-        if (cleanupErr.code !== 'ENOENT') throw cleanupErr;
+      } catch {
+        /* ignore */
       }
       throw new Error(`${specName}: ${err.message}`, { cause: err });
     }
