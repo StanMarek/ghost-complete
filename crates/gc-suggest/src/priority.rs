@@ -107,8 +107,9 @@ mod tests {
     /// Node script, the audit tool would silently emit redundant
     /// `priority: 70`/`priority: 30` entries on every spec it touches —
     /// noisy diffs and a corpus that no longer round-trips through
-    /// `apply.mjs`. This assertion forces a deliberate cross-language
-    /// update by failing CI when the bases drift.
+    /// `apply.mjs`. This is a runtime `assert_eq!` inside `#[test]`, so it
+    /// forces a deliberate cross-language update by failing the test suite
+    /// when the bases drift.
     #[test]
     fn subcommand_and_flag_bases_match_audit_tool_constants() {
         assert_eq!(

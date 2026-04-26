@@ -111,8 +111,10 @@ jobs:
           filters: |
             fig_converter:
               - 'tools/fig-converter/**'
+            spec_priority_audit:
+              - 'tools/spec-priority-audit/**'
       - name: Set up Node
-        if: steps.filter.outputs.fig_converter == 'true'
+        if: steps.filter.outputs.fig_converter == 'true' || steps.filter.outputs.spec_priority_audit == 'true'
         uses: actions/setup-node@v5
         with:
           node-version: "20"
@@ -124,6 +126,10 @@ jobs:
         if: steps.filter.outputs.fig_converter == 'true'
         run: npm run oracle:changed
         working-directory: tools/fig-converter
+      - name: Run spec-priority-audit tests
+        if: steps.filter.outputs.spec_priority_audit == 'true'
+        run: node --test apply.test.mjs
+        working-directory: tools/spec-priority-audit
 
   coverage-baseline-drift:
     name: Coverage baseline drift

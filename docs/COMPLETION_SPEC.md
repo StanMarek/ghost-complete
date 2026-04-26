@@ -326,9 +326,11 @@ Three layers stack to produce any explicit `priority` field:
    pipeline. Re-running the converter against a new
    `@withfig/autocomplete` release picks up Fig's hand-tuning.
 2. Heuristic bumps — applied by `tools/spec-priority-audit/apply.mjs`
-   from a curated `heuristics.json` ruleset (10 command families:
+   from a curated `heuristics.json` ruleset (11 command families:
    vcs, package_manager, container, kubernetes, cloud, build_tool,
-   ssh_remote, shell_builtin, http_tools, editor). Never overwrites
+   ssh_remote, shell_builtin, file_modifier, http_tools, editor).
+   `tools/spec-priority-audit/heuristics.json` is the canonical
+   source — keep this list in sync with it. Never overwrites
    existing values.
 3. Manual edits — case-by-case overrides in `specs/*.json` directly.
 

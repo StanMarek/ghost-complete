@@ -18,7 +18,7 @@
  * up the same `add: 90` bump as a top-level `add`.
  */
 
-import { readFile, writeFile, readdir, rename } from 'node:fs/promises';
+import { readFile, writeFile, readdir, rename, unlink } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { parseArgs } from 'node:util';
@@ -28,7 +28,7 @@ const REPO_ROOT = join(__dirname, '..', '..');
 const SPECS_DIR = join(REPO_ROOT, 'specs');
 const HEURISTICS_PATH = join(__dirname, 'heuristics.json');
 
-// Subcommand kind base = 70; option kind base = 30. Writing a value equal
+// Subcommand kind base = 70; flag kind base = 30. Writing a value equal
 // to the kind base is a no-op for ordering — the ranker can't tell them
 // apart from suggestions that omit `priority`. Skip those writes so the
 // emitted JSON stays minimal.
@@ -86,15 +86,22 @@ async function loadHeuristics() {
   validateHeuristics(parsed);
   const families = parsed.families;
 
-  // Build a fast lookup: specName -> { subcommands, flags }.
+  // Build a fast lookup: specName -> { subcommands, flags, family }.
   const specToRules = new Map();
   for (const [familyName, family] of Object.entries(families)) {
     if (familyName.startsWith('_')) continue;
     const rules = {
       subcommands: family.subcommands ?? {},
       flags: family.flags ?? {},
+      family: familyName,
     };
     for (const specName of family.specs) {
+      const existing = specToRules.get(specName);
+      if (existing) {
+        throw new Error(
+          `heuristics.json: spec "${specName}" listed in multiple families: "${existing.family}" and "${familyName}"`
+        );
+      }
       specToRules.set(specName, rules);
     }
   }
@@ -149,10 +156,15 @@ function applyOptionRules(option, rules, stats) {
   }
 }
 
-async function processSpec(filePath, rules, dryRun) {
+async function processSpec(filePath, specName, rules, dryRun) {
   const stats = { subcommandsBumped: 0, flagsBumped: 0 };
-  const raw = await readFile(filePath, 'utf8');
-  const spec = JSON.parse(raw);
+  let spec;
+  try {
+    const raw = await readFile(filePath, 'utf8');
+    spec = JSON.parse(raw);
+  } catch (err) {
+    throw new Error(`${specName}: ${err.message}`, { cause: err });
+  }
 
   if (rules.subcommands && Object.hasOwn(rules.subcommands, spec.name)) {
     const newPriority = rules.subcommands[spec.name];
@@ -167,8 +179,17 @@ async function processSpec(filePath, rules, dryRun) {
   if (!dryRun && (stats.subcommandsBumped > 0 || stats.flagsBumped > 0)) {
     const output = JSON.stringify(spec, null, 2) + '\n';
     const tmp = `${filePath}.tmp`;
-    await writeFile(tmp, output, 'utf8');
-    await rename(tmp, filePath);
+    try {
+      await writeFile(tmp, output, 'utf8');
+      await rename(tmp, filePath);
+    } catch (err) {
+      try {
+        await unlink(tmp);
+      } catch (cleanupErr) {
+        if (cleanupErr.code !== 'ENOENT') throw cleanupErr;
+      }
+      throw new Error(`${specName}: ${err.message}`, { cause: err });
+    }
   }
   return stats;
 }
@@ -179,17 +200,34 @@ async function main() {
 
   const specToRules = await loadHeuristics();
   const entries = await readdir(SPECS_DIR, { withFileTypes: true });
+
+  // Detect unknown spec names BEFORE any write: any heuristic spec with no
+  // matching file on disk is a bug in heuristics.json. Aborting first means
+  // the run is all-or-nothing — no partial-success-masquerading-as-failure.
+  const basenamesOnDisk = new Set();
+  for (const entry of entries) {
+    if (!entry.isFile() || !entry.name.endsWith('.json')) continue;
+    basenamesOnDisk.add(entry.name.slice(0, -5));
+  }
+  const unmatched = [];
+  for (const heuristicName of specToRules.keys()) {
+    if (!basenamesOnDisk.has(heuristicName)) unmatched.push(heuristicName);
+  }
+  if (unmatched.length > 0) {
+    console.error(`Unknown spec names in heuristics.json (no matching specs/<name>.json):`);
+    for (const name of unmatched) console.error(`  - ${name}`);
+    process.exit(1);
+  }
+
   const totals = { specsTouched: 0, subcommandsBumped: 0, flagsBumped: 0, specsConsidered: 0 };
-  const visited = new Set();
 
   for (const entry of entries) {
     if (!entry.isFile() || !entry.name.endsWith('.json')) continue;
     const specName = entry.name.slice(0, -5); // strip .json
     const rules = specToRules.get(specName);
     if (!rules) continue;
-    visited.add(specName);
     totals.specsConsidered += 1;
-    const stats = await processSpec(join(SPECS_DIR, entry.name), rules, dryRun);
+    const stats = await processSpec(join(SPECS_DIR, entry.name), entry.name, rules, dryRun);
     if (stats.subcommandsBumped > 0 || stats.flagsBumped > 0) {
       totals.specsTouched += 1;
       totals.subcommandsBumped += stats.subcommandsBumped;
@@ -200,20 +238,12 @@ async function main() {
     }
   }
 
-  const unmatched = [...specToRules.keys()].filter((name) => !visited.has(name));
-
   console.log('\n--- Audit Summary ---');
   console.log(`Specs in heuristic families: ${totals.specsConsidered}`);
   console.log(`Specs modified:              ${totals.specsTouched}`);
   console.log(`Subcommand priorities set:   ${totals.subcommandsBumped}`);
   console.log(`Flag priorities set:         ${totals.flagsBumped}`);
   if (dryRun) console.log('(dry-run: no files written)');
-
-  if (unmatched.length > 0) {
-    console.error(`\nUnknown spec names in heuristics.json (no matching specs/<name>.json):`);
-    for (const name of unmatched) console.error(`  - ${name}`);
-    process.exit(1);
-  }
 }
 
 main().catch((err) => {

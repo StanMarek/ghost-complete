@@ -1,4 +1,4 @@
-//! Golden snapshot tests for the 8 commands audited in
+//! Golden snapshot tests covering ranking + suppression invariants from
 //! `docs/superpowers/specs/2026-04-25-completion-ranking-and-suppression-design.md`.
 //!
 //! Each test feeds a canonical buffer into `SuggestionEngine::suggest_sync`
@@ -211,12 +211,14 @@ fn kubectl_get_no_filesystem_when_spec_provides_generators() {
     );
 }
 
-/// The audit pass set `cargo build` to priority 92 while `cargo check` keeps
-/// the default Subcommand base of 70. With an empty query the ranker has no
-/// fuzzy signal to lean on — only kind/priority. So even though `build`
-/// sorts after `check` alphabetically, the priority bump must put it first.
-/// If the heuristic-driven priorities ever get reverted or accidentally
-/// stripped, this test will catch the regression in spec ordering.
+/// The audit pass set `cargo run` to priority 92 and `cargo add` to 90.
+/// With an empty query the ranker has no fuzzy signal — only kind/priority,
+/// then alphabetical tiebreak. Alphabetically `add` precedes `run`, so if
+/// the priority plumbing were ever broken (both subcommands falling back to
+/// the Subcommand kind base of 70 with no override), `add` would land
+/// before `run`. Picking a pair where alphabetical order is REVERSED by
+/// priority means this assertion only passes when priorities are actually
+/// honoured end-to-end.
 #[test]
 fn cargo_high_priority_subcommand_outranks_alphabetical_neighbour() {
     let engine = build_engine();
@@ -231,13 +233,14 @@ fn cargo_high_priority_subcommand_outranks_alphabetical_neighbour() {
             .position(|s| s.text == name && s.kind == SuggestionKind::Subcommand)
     };
 
-    let build_pos = position("build").expect("`cargo build` subcommand should be suggested");
-    let check_pos = position("check").expect("`cargo check` subcommand should be suggested");
+    let run_pos = position("run").expect("`cargo run` subcommand should be suggested");
+    let add_pos = position("add").expect("`cargo add` subcommand should be suggested");
 
     assert!(
-        build_pos < check_pos,
-        "cargo build (priority 92) must rank before cargo check (no priority); \
-         got build at {build_pos}, check at {check_pos}: {:?}",
+        run_pos < add_pos,
+        "cargo run (priority 92) must rank before cargo add (priority 90); \
+         alphabetical fallback would put `add` first, so this only holds \
+         when priorities are honoured. got run at {run_pos}, add at {add_pos}: {:?}",
         result
             .suggestions
             .iter()

@@ -9,7 +9,8 @@ specs ship with a layer of explicit `priority` overrides on top of:
 2. **Heuristic bumps** — applied by `apply.mjs` against the curated
    `heuristics.json` ruleset. Maps each spec family (vcs / package
    manager / container / kubernetes / cloud / build tool / ssh / shell
-   builtin / http / editor) to a per-subcommand and per-flag table.
+   builtin / file modifier / http / editor) to a per-subcommand and
+   per-flag table.
 3. **Manual edits** — anywhere a maintainer needs to override a
    heuristic value or add a per-spec quirk.
 
