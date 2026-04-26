@@ -70,7 +70,8 @@
             "name": "starter"
           }
         }
-      ]
+      ],
+      "priority": 80
     },
     {
       "name": "dep",
@@ -235,7 +236,8 @@
                 "--all",
                 "-a"
               ],
-              "description": "Dump all (computed) values"
+              "description": "Dump all (computed) values",
+              "priority": 55
             },
             {
               "name": [
@@ -245,7 +247,8 @@
               "description": "Prints the output in the specified format. Allowed values: table, json, yaml",
               "args": {
                 "name": "output"
-              }
+              },
+              "priority": 75
             },
             {
               "name": [
@@ -258,7 +261,8 @@
             }
           ]
         }
-      ]
+      ],
+      "priority": 92
     },
     {
       "name": "hist",
@@ -281,7 +285,8 @@
           "description": "Prints the output in the specified format. Allowed values: table, json, yaml",
           "args": {
             "name": "output"
-          }
+          },
+          "priority": 75
         }
       ]
     },
@@ -410,7 +415,8 @@
           "description": "Prints the output in the specified format. Allowed values: table, json, yaml",
           "args": {
             "name": "output"
-          }
+          },
+          "priority": 75
         },
         {
           "name": [
@@ -630,14 +636,16 @@
             "--all",
             "-a"
           ],
-          "description": "Show all releases without any filter applied"
+          "description": "Show all releases without any filter applied",
+          "priority": 55
         },
         {
           "name": [
             "--all-namespaces",
             "-A"
           ],
-          "description": "List releases across all namespaces"
+          "description": "List releases across all namespaces",
+          "priority": 65
         },
         {
           "name": [
@@ -701,7 +709,8 @@
           "description": "Prints the output in the specified format. Allowed values: table, json, yaml",
           "args": {
             "name": "output"
-          }
+          },
+          "priority": 75
         },
         {
           "name": [
@@ -1191,7 +1200,8 @@
               "description": "Prints the output in the specified format. Allowed values: table, json, yaml",
               "args": {
                 "name": "output"
-              }
+              },
+              "priority": 75
             }
           ]
         },
@@ -1233,7 +1243,8 @@
           "name": [
             "--force"
           ],
-          "description": "Force resource update through delete/recreate if needed"
+          "description": "Force resource update through delete/recreate if needed",
+          "priority": 22
         },
         {
           "name": [
@@ -1323,7 +1334,8 @@
               "description": "Prints the output in the specified format. Allowed values: table, json, yaml",
               "args": {
                 "name": "output"
-              }
+              },
+              "priority": 75
             }
           ]
         },
@@ -1354,7 +1366,8 @@
               "description": "Prints the output in the specified format. Allowed values: table, json, yaml",
               "args": {
                 "name": "output"
-              }
+              },
+              "priority": 75
             },
             {
               "name": [
@@ -1937,7 +1950,8 @@
           "description": "Prints the output in the specified format. Allowed values: table, json, yaml",
           "args": {
             "name": "output"
-          }
+          },
+          "priority": 75
         },
         {
           "name": [
@@ -2449,7 +2463,8 @@
           "name": [
             "--force"
           ],
-          "description": "Force resource updates through a replacement strategy"
+          "description": "Force resource updates through a replacement strategy",
+          "priority": 22
         },
         {
           "name": [
@@ -2507,7 +2522,8 @@
           "description": "Prints the output in the specified format. Allowed values: table, json, yaml",
           "args": {
             "name": "output"
-          }
+          },
+          "priority": 75
         },
         {
           "name": [
@@ -2709,7 +2725,8 @@
             "name": "template"
           }
         }
-      ]
+      ],
+      "priority": 50
     },
     {
       "name": "help",
@@ -2739,7 +2756,8 @@
         },
         {
           "name": "create",
-          "description": "Create a new chart with the given name"
+          "description": "Create a new chart with the given name",
+          "priority": 80
         },
         {
           "name": "dep",
@@ -2787,7 +2805,8 @@
               "name": "values",
               "description": "Download the values file for a named release"
             }
-          ]
+          ],
+          "priority": 92
         },
         {
           "name": "hist",
@@ -2957,7 +2976,8 @@
         },
         {
           "name": "version",
-          "description": "Print the client version information"
+          "description": "Print the client version information",
+          "priority": 50
         }
       ]
     }
@@ -3122,7 +3142,8 @@
       "description": "Namespace scope for this request",
       "args": {
         "name": "namespace"
-      }
+      },
+      "priority": 78
     },
     {
       "name": [

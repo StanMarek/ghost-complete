@@ -38,7 +38,8 @@
             }
           ],
           "description": "Add a plugin from the plugin repo OR, add a Git repo as a plugin by specifying the name and repo url",
-          "name": "add"
+          "name": "add",
+          "priority": 90
         },
         {
           "description": "List installed plugins. Optionally show git urls and git-ref",
@@ -57,6 +58,7 @@
               ]
             }
           ],
+          "priority": 72,
           "subcommands": [
             {
               "description": "List plugins registered on asdf-plugins repository with URLs",
@@ -81,7 +83,8 @@
             "name": "name"
           },
           "description": "Remove plugin and package versions",
-          "name": "remove"
+          "name": "remove",
+          "priority": 80
         },
         {
           "args": [
@@ -103,7 +106,8 @@
                 "--all"
               ]
             }
-          ]
+          ],
+          "priority": 78
         }
       ]
     },
@@ -230,7 +234,8 @@
         }
       ],
       "description": "Install plugin at stated version, or all from .tools-versions",
-      "name": "install"
+      "name": "install",
+      "priority": 92
     },
     {
       "args": [
@@ -261,7 +266,8 @@
         }
       ],
       "description": "Remove a specific version of a package",
-      "name": "uninstall"
+      "name": "uninstall",
+      "priority": 78
     },
     {
       "args": {
@@ -466,6 +472,7 @@
       },
       "description": "List installed versions of a package",
       "name": "list",
+      "priority": 72,
       "subcommands": [
         {
           "args": [
@@ -496,7 +503,8 @@
             }
           ],
           "description": "List all available (remote) versions of a package",
-          "name": "all"
+          "name": "all",
+          "priority": 77
         }
       ]
     },
@@ -573,7 +581,8 @@
         "name": "command"
       },
       "description": "Executes the command shim for the current version",
-      "name": "exec"
+      "name": "exec",
+      "priority": 75
     },
     {
       "args": {
@@ -590,7 +599,8 @@
     },
     {
       "description": "Print os, shell and asdf debug information",
-      "name": "info"
+      "name": "info",
+      "priority": 65
     },
     {
       "args": [
@@ -666,7 +676,8 @@
             "--head"
           ]
         }
-      ]
+      ],
+      "priority": 78
     },
     {
       "description": "Version for asdf",

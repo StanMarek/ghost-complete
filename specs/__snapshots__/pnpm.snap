@@ -124,7 +124,8 @@
           "name": [
             "-D",
             "--save-dev"
-          ]
+          ],
+          "priority": 65
         },
         {
           "description": "Install the specified packages as optionalDependencies",
@@ -164,7 +165,8 @@
           "name": [
             "--global",
             "-g"
-          ]
+          ],
+          "priority": 60
         },
         {
           "description": "Only adds the new dependency if it is found in the workspace",
@@ -183,7 +185,8 @@
             "--filter"
           ]
         }
-      ]
+      ],
+      "priority": 90
     },
     {
       "args": {
@@ -198,7 +201,8 @@
         "name": "package"
       },
       "description": "Pnpm install is used to install all dependencies for a project.\nIn a CI environment, installation fails if a lockfile is present but needs an update.\nInside a workspace, pnpm install installs all dependencies in all the projects.\nIf you want to disable this behavior, set the recursive-install setting to false",
-      "name": "install"
+      "name": "install",
+      "priority": 92
     },
     {
       "description": "Runs pnpm install followed immediately by pnpm test. It takes exactly the same arguments as pnpm install",
@@ -257,7 +261,8 @@
           "name": [
             "-D",
             "--save-dev"
-          ]
+          ],
+          "priority": 65
         },
         {
           "description": "OptionalDependencies are not installed",
@@ -275,7 +280,8 @@
           "description": "If true, pnpm doesn't generate a lockfile and fails to install if the lockfile is out of sync with the manifest / an update is needed or no lockfile is present",
           "name": [
             "--frozen-lockfile"
-          ]
+          ],
+          "priority": 60
         },
         {
           "description": "Starts a store server in the background. The store server will keep running after installation is done. To stop the store server, run pnpm server stop",
@@ -329,7 +335,8 @@
           "description": "Update global packages",
           "name": [
             "--global"
-          ]
+          ],
+          "priority": 60
         },
         {
           "description": "Only update packages in dependencies and optionalDependencies",
@@ -343,7 +350,8 @@
           "name": [
             "-D",
             "--save-dev"
-          ]
+          ],
+          "priority": 65
         },
         {
           "description": "Don't update packages in optionalDependencies",
@@ -375,7 +383,8 @@
             "--filter"
           ]
         }
-      ]
+      ],
+      "priority": 78
     },
     {
       "args": {
@@ -407,7 +416,8 @@
           "description": "Remove a global package",
           "name": [
             "--global"
-          ]
+          ],
+          "priority": 60
         },
         {
           "description": "Only remove the dependency from dependencies",
@@ -421,7 +431,8 @@
           "name": [
             "-D",
             "--save-dev"
-          ]
+          ],
+          "priority": 65
         },
         {
           "description": "Only remove the dependency from optionalDependencies",
@@ -441,7 +452,8 @@
             "--filter"
           ]
         }
-      ]
+      ],
+      "priority": 80
     },
     {
       "args": [
@@ -478,9 +490,11 @@
           "description": "Links the specified package (<pkg>) from global node_modules to the node_nodules of package from where this command was executed or specified via --dir option",
           "name": [
             "--global"
-          ]
+          ],
+          "priority": 60
         }
-      ]
+      ],
+      "priority": 55
     },
     {
       "args": [
@@ -695,7 +709,8 @@
           "name": [
             "--dev",
             "-D"
-          ]
+          ],
+          "priority": 65
         },
         {
           "description": "Only audit production dependencies",
@@ -716,7 +731,8 @@
             "--ignore-registry-errors"
           ]
         }
-      ]
+      ],
+      "priority": 60
     },
     {
       "description": "This command will output all the versions of packages that are installed, as well as their dependencies, in a tree-structure.\nPositional arguments are name-pattern@version-range identifiers, which will limit the results to only the packages named. For example, pnpm list \"babel-*\" \"eslint-*\" semver@5",
@@ -751,7 +767,8 @@
           "description": "List packages in the global install directory instead of in the current project",
           "name": [
             "--global"
-          ]
+          ],
+          "priority": 60
         },
         {
           "args": {
@@ -767,7 +784,8 @@
           "name": [
             "--dev",
             "-D"
-          ]
+          ],
+          "priority": 65
         },
         {
           "description": "Only list production dependencies",
@@ -793,7 +811,8 @@
             "--filter"
           ]
         }
-      ]
+      ],
+      "priority": 72
     },
     {
       "description": "Checks for outdated packages. The check can be limited to a subset of the installed packages by providing arguments (patterns are supported)",
@@ -816,7 +835,8 @@
           "description": "List outdated global packages",
           "name": [
             "--global"
-          ]
+          ],
+          "priority": 60
         },
         {
           "description": "Prints the outdated dependencies in a list format instead of the default table. Good for small consoles",
@@ -835,7 +855,8 @@
           "name": [
             "--dev",
             "-D"
-          ]
+          ],
+          "priority": 65
         },
         {
           "description": "Only list production dependencies",
@@ -850,7 +871,8 @@
             "--no-optional"
           ]
         }
-      ]
+      ],
+      "priority": 65
     },
     {
       "args": {
@@ -900,14 +922,16 @@
           "description": "List packages in the global install directory instead of in the current project",
           "name": [
             "--global"
-          ]
+          ],
+          "priority": 60
         },
         {
           "description": "Only display the dependency tree for packages in devDependencies",
           "name": [
             "--dev",
             "-D"
-          ]
+          ],
+          "priority": 65
         },
         {
           "description": "Only display the dependency tree for packages in dependencies",
@@ -987,7 +1011,8 @@
             "--filter"
           ]
         }
-      ]
+      ],
+      "priority": 90
     },
     {
       "args": {
@@ -1032,15 +1057,18 @@
             "--filter"
           ]
         }
-      ]
+      ],
+      "priority": 75
     },
     {
       "description": "Runs an arbitrary command specified in the package's test property of its scripts object.\nThe intended usage of the property is to specify a command that runs unit or integration testing for your program",
-      "name": "test"
+      "name": "test",
+      "priority": 85
     },
     {
       "description": "Runs an arbitrary command specified in the package's start property of its scripts object. If no start property is specified on the scripts object, it will attempt to run node server.js as a default, failing if neither are present.\nThe intended usage of the property is to specify a command that starts your program",
-      "name": "start"
+      "name": "start",
+      "priority": 88
     },
     {
       "args": {
@@ -1067,7 +1095,8 @@
           "description": "Does everything a publish would do except actually publishing to the registry",
           "name": [
             "--dry-run"
-          ]
+          ],
+          "priority": 50
         },
         {
           "description": "Ignores any publish related lifecycle scripts (prepublishOnly, postpublish, and the like)",
@@ -1102,7 +1131,8 @@
           "description": "Try to publish packages even if their current version is already found in the registry",
           "name": [
             "--force"
-          ]
+          ],
+          "priority": 20
         },
         {
           "description": "Save the list of published packages to pnpm-publish-summary.json. Useful when some other tooling is used to report the list of published packages",
@@ -1121,7 +1151,8 @@
             "--filter"
           ]
         }
-      ]
+      ],
+      "priority": 75
     },
     {
       "description": "Runs a pnpm command recursively on all subdirectories in the package or every available workspace",
@@ -1260,7 +1291,8 @@
               "name": [
                 "-D",
                 "--save-dev"
-              ]
+              ],
+              "priority": 65
             },
             {
               "description": "Install the specified packages as optionalDependencies",
@@ -1300,7 +1332,8 @@
               "name": [
                 "--global",
                 "-g"
-              ]
+              ],
+              "priority": 60
             },
             {
               "description": "Only adds the new dependency if it is found in the workspace",
@@ -1319,7 +1352,8 @@
                 "--filter"
               ]
             }
-          ]
+          ],
+          "priority": 90
         },
         {
           "args": {
@@ -1334,7 +1368,8 @@
             "name": "package"
           },
           "description": "Pnpm install is used to install all dependencies for a project.\nIn a CI environment, installation fails if a lockfile is present but needs an update.\nInside a workspace, pnpm install installs all dependencies in all the projects.\nIf you want to disable this behavior, set the recursive-install setting to false",
-          "name": "install"
+          "name": "install",
+          "priority": 92
         },
         {
           "args": {
@@ -1374,7 +1409,8 @@
               "description": "Update global packages",
               "name": [
                 "--global"
-              ]
+              ],
+              "priority": 60
             },
             {
               "description": "Only update packages in dependencies and optionalDependencies",
@@ -1388,7 +1424,8 @@
               "name": [
                 "-D",
                 "--save-dev"
-              ]
+              ],
+              "priority": 65
             },
             {
               "description": "Don't update packages in optionalDependencies",
@@ -1420,7 +1457,8 @@
                 "--filter"
               ]
             }
-          ]
+          ],
+          "priority": 78
         },
         {
           "args": {
@@ -1452,7 +1490,8 @@
               "description": "Remove a global package",
               "name": [
                 "--global"
-              ]
+              ],
+              "priority": 60
             },
             {
               "description": "Only remove the dependency from dependencies",
@@ -1466,7 +1505,8 @@
               "name": [
                 "-D",
                 "--save-dev"
-              ]
+              ],
+              "priority": 65
             },
             {
               "description": "Only remove the dependency from optionalDependencies",
@@ -1486,7 +1526,8 @@
                 "--filter"
               ]
             }
-          ]
+          ],
+          "priority": 80
         },
         {
           "args": [
@@ -1609,7 +1650,8 @@
               "description": "List packages in the global install directory instead of in the current project",
               "name": [
                 "--global"
-              ]
+              ],
+              "priority": 60
             },
             {
               "args": {
@@ -1625,7 +1667,8 @@
               "name": [
                 "--dev",
                 "-D"
-              ]
+              ],
+              "priority": 65
             },
             {
               "description": "Only list production dependencies",
@@ -1651,7 +1694,8 @@
                 "--filter"
               ]
             }
-          ]
+          ],
+          "priority": 72
         },
         {
           "description": "Checks for outdated packages. The check can be limited to a subset of the installed packages by providing arguments (patterns are supported)",
@@ -1674,7 +1718,8 @@
               "description": "List outdated global packages",
               "name": [
                 "--global"
-              ]
+              ],
+              "priority": 60
             },
             {
               "description": "Prints the outdated dependencies in a list format instead of the default table. Good for small consoles",
@@ -1693,7 +1738,8 @@
               "name": [
                 "--dev",
                 "-D"
-              ]
+              ],
+              "priority": 65
             },
             {
               "description": "Only list production dependencies",
@@ -1708,7 +1754,8 @@
                 "--no-optional"
               ]
             }
-          ]
+          ],
+          "priority": 65
         },
         {
           "args": {
@@ -1758,14 +1805,16 @@
               "description": "List packages in the global install directory instead of in the current project",
               "name": [
                 "--global"
-              ]
+              ],
+              "priority": 60
             },
             {
               "description": "Only display the dependency tree for packages in devDependencies",
               "name": [
                 "--dev",
                 "-D"
-              ]
+              ],
+              "priority": 65
             },
             {
               "description": "Only display the dependency tree for packages in dependencies",
@@ -1845,7 +1894,8 @@
                 "--filter"
               ]
             }
-          ]
+          ],
+          "priority": 90
         },
         {
           "args": {
@@ -1890,11 +1940,13 @@
                 "--filter"
               ]
             }
-          ]
+          ],
+          "priority": 75
         },
         {
           "description": "Runs an arbitrary command specified in the package's test property of its scripts object.\nThe intended usage of the property is to specify a command that runs unit or integration testing for your program",
-          "name": "test"
+          "name": "test",
+          "priority": 85
         },
         {
           "args": {
@@ -1921,7 +1973,8 @@
               "description": "Does everything a publish would do except actually publishing to the registry",
               "name": [
                 "--dry-run"
-              ]
+              ],
+              "priority": 50
             },
             {
               "description": "Ignores any publish related lifecycle scripts (prepublishOnly, postpublish, and the like)",
@@ -1956,7 +2009,8 @@
               "description": "Try to publish packages even if their current version is already found in the registry",
               "name": [
                 "--force"
-              ]
+              ],
+              "priority": 20
             },
             {
               "description": "Save the list of published packages to pnpm-publish-summary.json. Useful when some other tooling is used to report the list of published packages",
@@ -1975,7 +2029,8 @@
                 "--filter"
               ]
             }
-          ]
+          ],
+          "priority": 75
         }
       ]
     },
@@ -2065,7 +2120,8 @@
                 "--ignore-upload-requests"
               ]
             }
-          ]
+          ],
+          "priority": 88
         },
         {
           "description": "Stops the store server",
@@ -2087,7 +2143,8 @@
         },
         {
           "description": "Functionally equivalent to pnpm add,\nexcept this adds new packages to the store directly without modifying any projects or files outside of the store",
-          "name": "add"
+          "name": "add",
+          "priority": 90
         },
         {
           "description": "Removes orphan packages from the store.\nPruning the store will save disk space, however may slow down future installations involving pruned packages.\nUltimately, it is a safe operation, however not recommended if you have orphaned packages from a package you intend to reinstall.\nPlease read the FAQ for more information on unreferenced packages and best practices.\nPlease note that this is prohibited when a store server is running",
@@ -2101,7 +2158,8 @@
     },
     {
       "description": "Creates a basic package.json file in the current directory, if it doesn't exist already",
-      "name": "init"
+      "name": "init",
+      "priority": 55
     },
     {
       "description": "Checks for known common issues with pnpm configuration",

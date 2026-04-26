@@ -23,7 +23,8 @@
       "description": "Causes sed to delay opening each file until a command containing the related ``w'' function is applied to a line of input",
       "name": [
         "-a"
-      ]
+      ],
+      "priority": 60
     },
     {
       "args": {
@@ -60,25 +61,29 @@
       "description": "Edits files in-place similarly to `-I`, but treats each file independently from other files.  In particular, line numbers in each file start at 1, the ``$'' address matches the last line of the current file, and address ranges are limited to the current file",
       "name": [
         "-i"
-      ]
+      ],
+      "priority": 65
     },
     {
       "description": "Makes output line buffered",
       "name": [
         "-l"
-      ]
+      ],
+      "priority": 65
     },
     {
       "description": "By default, each line of input is echoed to the standard output after all of the commands have been applied to it.  The `-n` option suppresses this behavior",
       "name": [
         "-n"
-      ]
+      ],
+      "priority": 65
     },
     {
       "description": "Same as `-E` for compatibility with GNU sed",
       "name": [
         "-r"
-      ]
+      ],
+      "priority": 70
     },
     {
       "description": "Makes output unbuffered",

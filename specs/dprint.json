@@ -4,11 +4,13 @@
   "subcommands": [
     {
       "name": "init",
-      "description": "Initializes a configuration file in the current directory"
+      "description": "Initializes a configuration file in the current directory",
+      "priority": 60
     },
     {
       "name": "fmt",
       "description": "Formats the source files and writes the result to the file system",
+      "priority": 76,
       "options": [
         {
           "name": [
@@ -73,6 +75,7 @@
     {
       "name": "check",
       "description": "Checks for any files that haven't been formatted",
+      "priority": 60,
       "options": [
         {
           "name": [
@@ -121,6 +124,7 @@
     {
       "name": "config",
       "description": "Functionality related to the configuration file",
+      "priority": 60,
       "subcommands": [
         {
           "name": "add",
@@ -245,7 +249,8 @@
     },
     {
       "name": "upgrade",
-      "description": "Upgrades the dprint executable"
+      "description": "Upgrades the dprint executable",
+      "priority": 55
     },
     {
       "name": "license",

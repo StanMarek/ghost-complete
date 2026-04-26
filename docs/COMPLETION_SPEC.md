@@ -319,6 +319,28 @@ on the default branch). Mirrors Fig's
 [`Suggestion.priority`](https://fig.io/api/interfaces/Suggestion#priority)
 field, so upstream Fig-converter specs that already set it are honoured.
 
+## Bundled spec priorities
+
+A subset of the 709 specs shipped in `specs/` carry curated `priority`
+values on the most-used subcommands and on dangerous flags — most
+specs rely entirely on the per-kind base values from the table above.
+Three layers stack to produce any explicit `priority` field:
+
+1. Upstream Fig priorities — preserved by the `tools/fig-converter/`
+   pipeline. Re-running the converter against a new
+   `@withfig/autocomplete` release picks up Fig's hand-tuning.
+2. Heuristic bumps — applied by `tools/spec-priority-audit/apply.mjs`
+   from a curated `heuristics.json` ruleset (11 command families:
+   vcs, package_manager, container, kubernetes, cloud, build_tool,
+   ssh_remote, shell_builtin, file_modifier, http_tools, editor).
+   `tools/spec-priority-audit/heuristics.json` is the canonical
+   source — keep this list in sync with it. Never overwrites
+   existing values.
+3. Manual edits — case-by-case overrides in `specs/*.json` directly.
+
+Re-running the audit script after editing `heuristics.json` is safe;
+it only writes where `priority` is missing.
+
 ## Suppression contract
 
 The popup runs providers in one of six contexts, classified per

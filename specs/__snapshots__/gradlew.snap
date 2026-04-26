@@ -61,7 +61,8 @@
       "description": "Build projects in parallel",
       "name": [
         "--parallel"
-      ]
+      ],
+      "priority": 65
     },
     {
       "description": "Disable parallel project execution",
@@ -136,7 +137,8 @@
       "name": [
         "-d",
         "--debug"
-      ]
+      ],
+      "priority": 65
     },
     {
       "description": "Set log level to warn",
@@ -201,7 +203,8 @@
       "name": [
         "-m",
         "--dry-run"
-      ]
+      ],
+      "priority": 50
     },
     {
       "description": "Configure the number of concurrent workers",
@@ -248,15 +251,18 @@
   "subcommands": [
     {
       "description": "Assemble and test the project",
-      "name": "build"
+      "name": "build",
+      "priority": 92
     },
     {
       "description": "Delete the build directory",
-      "name": "clean"
+      "name": "clean",
+      "priority": 65
     },
     {
       "description": "Run the unit tests",
-      "name": "test"
+      "name": "test",
+      "priority": 88
     },
     {
       "description": "Assemble the outputs of the project",
@@ -264,7 +270,8 @@
     },
     {
       "description": "Run all checks including tests",
-      "name": "check"
+      "name": "check",
+      "priority": 78
     },
     {
       "description": "Assemble a JAR archive of the main classes",
@@ -414,7 +421,8 @@
             "--package"
           ]
         }
-      ]
+      ],
+      "priority": 55
     },
     {
       "description": "Display help information about a task",

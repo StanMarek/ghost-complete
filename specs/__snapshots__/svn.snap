@@ -12,13 +12,15 @@
       "description": "Show help for svn",
       "name": [
         "--verbose"
-      ]
+      ],
+      "priority": 25
     },
     {
       "description": "Show help for svn",
       "name": [
         "--quiet"
-      ]
+      ],
+      "priority": 25
     }
   ],
   "subcommands": [
@@ -146,7 +148,8 @@
     },
     {
       "description": "Show the working tree status",
-      "name": "status"
+      "name": "status",
+      "priority": 92
     },
     {
       "description": "Show information about a local or remote item",
@@ -158,7 +161,8 @@
         "name": "repository"
       },
       "description": "Check out a working copy from a repository",
-      "name": "checkout"
+      "name": "checkout",
+      "priority": 88
     },
     {
       "description": "Commit to a repository",
@@ -172,7 +176,8 @@
           "name": [
             "-m",
             "--message"
-          ]
+          ],
+          "priority": 100
         },
         {
           "args": {
@@ -181,7 +186,8 @@
           "description": "Specify a username ARG",
           "name": [
             "--username"
-          ]
+          ],
+          "priority": 95
         },
         {
           "args": {
@@ -190,7 +196,8 @@
           "description": "Specify a password ARG",
           "name": [
             "--password"
-          ]
+          ],
+          "priority": 94
         },
         {
           "description": "Read password from stdin",
@@ -252,7 +259,8 @@
             "--config-option"
           ]
         }
-      ]
+      ],
+      "priority": 92
     }
   ]
 }

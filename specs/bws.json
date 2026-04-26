@@ -30,7 +30,8 @@
             "-h",
             "--help"
           ],
-          "description": "Display help for login command"
+          "description": "Display help for login command",
+          "priority": 49
         }
       ],
       "args": {
@@ -65,7 +66,8 @@
             "-h",
             "--help"
           ],
-          "description": "Display help for logout command"
+          "description": "Display help for logout command",
+          "priority": 49
         }
       ],
       "args": {
@@ -148,7 +150,8 @@
             "-h",
             "--help"
           ],
-          "description": "Access, manipulate and create projects"
+          "description": "Access, manipulate and create projects",
+          "priority": 49
         }
       ]
     },
@@ -248,7 +251,8 @@
             "-h",
             "--help"
           ],
-          "description": "Display help for unlock command"
+          "description": "Display help for unlock command",
+          "priority": 49
         }
       ]
     },
@@ -264,6 +268,7 @@
         "--output"
       ],
       "description": "Output format [default: json]",
+      "priority": 40,
       "args": {
         "name": "Format",
         "description": "Select output format",
@@ -301,6 +306,7 @@
         "--color"
       ],
       "description": "Use colors in the output [default: auto]",
+      "priority": 40,
       "args": {
         "name": "Color",
         "description": "Select output coloration scheme",
@@ -326,6 +332,7 @@
         "--access-token"
       ],
       "description": "Specify access token for the service account [env: BWS_ACCESS_TOKEN]",
+      "priority": 40,
       "args": {
         "name": "Access Token",
         "description": "Bitwarden Secrets Manager Access Token"
@@ -337,6 +344,7 @@
         "--config-file"
       ],
       "description": "Config file to use [default: ~/.bws.config]",
+      "priority": 40,
       "args": {
         "name": "Config File",
         "template": "filepaths"
@@ -348,6 +356,7 @@
         "--profile"
       ],
       "description": "Profile to use from the config file [env: BWS_PROFILE=]",
+      "priority": 40,
       "args": {
         "name": "Profile",
         "description": "User Profile to enable"
@@ -359,6 +368,7 @@
         "--server-url"
       ],
       "description": "Override the server URL from the config file [env: BWS_SERVER_URL=]",
+      "priority": 40,
       "args": {
         "name": "Server URL",
         "description": "URL of Bitwarden Secrets Manager server"
@@ -369,14 +379,16 @@
         "-h",
         "--help"
       ],
-      "description": "Print help"
+      "description": "Print help",
+      "priority": 49
     },
     {
       "name": [
         "-V",
         "--version"
       ],
-      "description": "Print version"
+      "description": "Print version",
+      "priority": 49
     }
   ]
 }

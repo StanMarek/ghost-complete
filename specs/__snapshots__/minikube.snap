@@ -270,7 +270,8 @@
           "description": "Force minikube to perform possibly dangerous operations",
           "name": [
             "--force"
-          ]
+          ],
+          "priority": 22
         },
         {
           "args": {
@@ -397,7 +398,8 @@
           "description": "Allow user prompts for more information",
           "name": [
             "--interactive"
-          ]
+          ],
+          "priority": 70
         },
         {
           "description": "Locations to fetch the minikube ISO from",
@@ -675,7 +677,8 @@
             "--wait-timeout"
           ]
         }
-      ]
+      ],
+      "priority": 75
     },
     {
       "description": "Gets the status of a local Kubernetes cluster",
@@ -737,7 +740,8 @@
           "description": "Set flag to stop all profiles (clusters)",
           "name": [
             "--all"
-          ]
+          ],
+          "priority": 60
         },
         {
           "description": "Output layout",
@@ -775,7 +779,8 @@
             "--schedule"
           ]
         }
-      ]
+      ],
+      "priority": 75
     },
     {
       "description": "Deletes a local Kubernetes cluster",
@@ -785,7 +790,8 @@
           "description": "Set flag to delete all profiles",
           "name": [
             "--all"
-          ]
+          ],
+          "priority": 60
         },
         {
           "description": "Set this flag to delete the '.minikube' folder from your user directory",
@@ -927,14 +933,17 @@
     {
       "description": "Manage images",
       "name": "image",
+      "priority": 75,
       "subcommands": [
         {
           "description": "Build a container image in minikube",
-          "name": "build"
+          "name": "build",
+          "priority": 90
         },
         {
           "description": "Load a image into minikube",
-          "name": "load"
+          "name": "load",
+          "priority": 55
         },
         {
           "description": "List images",
@@ -942,23 +951,28 @@
         },
         {
           "description": "Pull images",
-          "name": "pull"
+          "name": "pull",
+          "priority": 80
         },
         {
           "description": "Push images",
-          "name": "push"
+          "name": "push",
+          "priority": 80
         },
         {
           "description": "Remove one or more images",
-          "name": "rm"
+          "name": "rm",
+          "priority": 55
         },
         {
           "description": "Save a image from minikube",
-          "name": "save"
+          "name": "save",
+          "priority": 55
         },
         {
           "description": "Tag images",
-          "name": "tag"
+          "name": "tag",
+          "priority": 60
         }
       ]
     },
@@ -980,7 +994,8 @@
         },
         {
           "description": "List image names the addon w/ADDON_NAME used",
-          "name": "images"
+          "name": "images",
+          "priority": 78
         },
         {
           "description": "Lists all available minikube addons as well as their current statuses",
@@ -1211,11 +1226,13 @@
         },
         {
           "description": "Starts a node",
-          "name": "start"
+          "name": "start",
+          "priority": 75
         },
         {
           "description": "Stops a node in a cluster",
-          "name": "stop"
+          "name": "stop",
+          "priority": 75
         }
       ]
     },
@@ -1307,7 +1324,8 @@
             "--problems"
           ]
         }
-      ]
+      ],
+      "priority": 85
     },
     {
       "description": "Print current and latest version number",
@@ -1357,7 +1375,8 @@
             "--short"
           ]
         }
-      ]
+      ],
+      "priority": 50
     },
     {
       "description": "Add, remove, or list additional nodes",

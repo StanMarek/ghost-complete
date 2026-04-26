@@ -142,6 +142,7 @@
             "--database"
           ],
           "description": "Specifies the database to use. Default is \"default\"",
+          "priority": 51,
           "args": {
             "name": "DATABASE"
           }
@@ -236,6 +237,7 @@
             "--username"
           ],
           "description": "Specifies the login for the superuser",
+          "priority": 51,
           "args": {
             "name": "USERNAME"
           }
@@ -245,13 +247,15 @@
             "--noinput",
             "--no-input"
           ],
-          "description": "Tells Django to NOT prompt the user for input of any kind"
+          "description": "Tells Django to NOT prompt the user for input of any kind",
+          "priority": 51
         },
         {
           "name": [
             "--database"
           ],
           "description": "Specifies the database to use. Default is \"default\"",
+          "priority": 51,
           "args": {
             "name": "DATABASE"
           }
@@ -261,6 +265,7 @@
             "--email"
           ],
           "description": "Specifies the email for the superuser",
+          "priority": 51,
           "args": {
             "name": "EMAIL"
           }
@@ -269,7 +274,8 @@
           "name": [
             "--skip-checks"
           ],
-          "description": "Skip system checks"
+          "description": "Skip system checks",
+          "priority": 51
         },
         {
           "name": [
@@ -355,13 +361,15 @@
             "--noinput",
             "--no-input"
           ],
-          "description": "Tells Django to NOT prompt the user for input of any kind"
+          "description": "Tells Django to NOT prompt the user for input of any kind",
+          "priority": 51
         },
         {
           "name": [
             "--database"
           ],
           "description": "Nominates the database to use. Defaults to the \"default\" database",
+          "priority": 51,
           "args": {
             "name": "DATABASE"
           }
@@ -370,13 +378,15 @@
           "name": [
             "--include-stale-apps"
           ],
-          "description": "Deletes stale content types including ones from previously installed apps that have been removed from INSTALLED_APPS"
+          "description": "Deletes stale content types including ones from previously installed apps that have been removed from INSTALLED_APPS",
+          "priority": 51
         },
         {
           "name": [
             "--skip-checks"
           ],
-          "description": "Skip system checks"
+          "description": "Skip system checks",
+          "priority": 51
         },
         {
           "name": [
@@ -464,6 +474,7 @@
             "-t"
           ],
           "description": "Run only checks labeled with given tag",
+          "priority": 51,
           "args": {
             "name": "TAGS"
           }
@@ -472,19 +483,22 @@
           "name": [
             "--list-tags"
           ],
-          "description": "List available tags"
+          "description": "List available tags",
+          "priority": 51
         },
         {
           "name": [
             "--deploy"
           ],
-          "description": "Check deployment settings"
+          "description": "Check deployment settings",
+          "priority": 51
         },
         {
           "name": [
             "--fail-level"
           ],
           "description": "Message level that will cause the command to exit with a non-zero status. Default is ERROR",
+          "priority": 51,
           "args": {
             "name": "{CRITICAL,ERROR,WARNING,INFO,DEBUG}",
             "suggestions": [
@@ -511,6 +525,7 @@
             "--database"
           ],
           "description": "Run database related checks against these aliases",
+          "priority": 51,
           "args": {
             "name": "DATABASES"
           }
@@ -606,6 +621,7 @@
             "-l"
           ],
           "description": "Locale(s) to process (e.g. de_AT). Default is to process all. Can be used multiple times",
+          "priority": 51,
           "args": {
             "name": "LOCALE"
           }
@@ -616,6 +632,7 @@
             "-x"
           ],
           "description": "Locales to exclude. Default is none. Can be used multiple times",
+          "priority": 51,
           "args": {
             "name": "EXCLUDE"
           }
@@ -625,7 +642,8 @@
             "--use-fuzzy",
             "-f"
           ],
-          "description": "Use fuzzy translations"
+          "description": "Use fuzzy translations",
+          "priority": 51
         },
         {
           "name": [
@@ -633,6 +651,7 @@
             "-i"
           ],
           "description": "Ignore directories matching this glob-style pattern. Use multiple times to ignore more",
+          "priority": 51,
           "args": {
             "name": "PATTERN"
           }
@@ -722,6 +741,7 @@
             "--database"
           ],
           "description": "Nominates a database onto which the cache tables will be installed. Defaults to the \"default\" database",
+          "priority": 51,
           "args": {
             "name": "DATABASE"
           }
@@ -730,7 +750,8 @@
           "name": [
             "--dry-run"
           ],
-          "description": "Does not create the table, just prints the SQL that would be run"
+          "description": "Does not create the table, just prints the SQL that would be run",
+          "priority": 51
         },
         {
           "name": [
@@ -823,6 +844,7 @@
             "--database"
           ],
           "description": "Nominates a database onto which to open a shell",
+          "priority": 51,
           "args": {
             "name": "DATABASE"
           }
@@ -911,13 +933,15 @@
           "name": [
             "--all"
           ],
-          "description": "Display all settings, regardless of their value. In \"hash\" mode, default values are prefixed by \"###\""
+          "description": "Display all settings, regardless of their value. In \"hash\" mode, default values are prefixed by \"###\"",
+          "priority": 51
         },
         {
           "name": [
             "--default"
           ],
           "description": "The settings module to compare the current settings against. Leave empty to compare against Django's default settings",
+          "priority": 51,
           "args": {
             "name": "MODULE"
           }
@@ -927,6 +951,7 @@
             "--output"
           ],
           "description": "Selects the output format. 'hash' mode displays each changed setting, with the settings that don't appear in the defaults followed by ###. 'unified' mode prefixes the default setting with a minus sign, followed by the changed setting prefixed with a plus sign",
+          "priority": 51,
           "args": {
             "name": "{hash,unified}",
             "suggestions": [
@@ -1024,6 +1049,7 @@
             "--format"
           ],
           "description": "Specifies the output serialization format for fixtures",
+          "priority": 51,
           "args": {
             "name": "FORMAT"
           }
@@ -1033,6 +1059,7 @@
             "--indent"
           ],
           "description": "Specifies the indent level to use when pretty-printing output",
+          "priority": 51,
           "args": {
             "name": "INDENT"
           }
@@ -1042,6 +1069,7 @@
             "--database"
           ],
           "description": "Nominates a specific database to dump fixtures from. Defaults to the \"default\" database",
+          "priority": 51,
           "args": {
             "name": "DATABASE"
           }
@@ -1052,6 +1080,7 @@
             "--exclude"
           ],
           "description": "An app_label or app_label.ModelName to exclude (use multiple --exclude to exclude multiple apps/models)",
+          "priority": 51,
           "args": {
             "name": "EXCLUDE"
           }
@@ -1060,26 +1089,30 @@
           "name": [
             "--natural-foreign"
           ],
-          "description": "Use natural foreign keys if they are available"
+          "description": "Use natural foreign keys if they are available",
+          "priority": 51
         },
         {
           "name": [
             "--natural-primary"
           ],
-          "description": "Use natural primary keys if they are available"
+          "description": "Use natural primary keys if they are available",
+          "priority": 51
         },
         {
           "name": [
             "-a",
             "--all"
           ],
-          "description": "Use Django's base manager to dump all models stored in the database, including those that would otherwise be filtered or modified by a custom manager"
+          "description": "Use Django's base manager to dump all models stored in the database, including those that would otherwise be filtered or modified by a custom manager",
+          "priority": 51
         },
         {
           "name": [
             "--pks"
           ],
           "description": "Only dump objects with given primary keys. Accepts a comma-separated list of keys. This option only works when you specify one model",
+          "priority": 51,
           "args": {
             "name": "PRIMARY_KEYS"
           }
@@ -1090,6 +1123,7 @@
             "--output"
           ],
           "description": "Specifies file to which the output is written",
+          "priority": 51,
           "args": {
             "name": "OUTPUT"
           }
@@ -1098,7 +1132,8 @@
           "name": [
             "--skip-checks"
           ],
-          "description": "Skip system checks"
+          "description": "Skip system checks",
+          "priority": 51
         },
         {
           "name": [
@@ -1191,13 +1226,15 @@
             "--noinput",
             "--no-input"
           ],
-          "description": "Tells Django to NOT prompt the user for input of any kind"
+          "description": "Tells Django to NOT prompt the user for input of any kind",
+          "priority": 51
         },
         {
           "name": [
             "--database"
           ],
           "description": "Nominates a database to flush. Defaults to the \"default\" database",
+          "priority": 51,
           "args": {
             "name": "DATABASE"
           }
@@ -1206,7 +1243,8 @@
           "name": [
             "--skip-checks"
           ],
-          "description": "Skip system checks"
+          "description": "Skip system checks",
+          "priority": 51
         },
         {
           "name": [
@@ -1293,6 +1331,7 @@
             "--database"
           ],
           "description": "Nominates a database to introspect. Defaults to using the \"default\" database",
+          "priority": 51,
           "args": {
             "name": "DATABASE"
           }
@@ -1301,13 +1340,15 @@
           "name": [
             "--include-partitions"
           ],
-          "description": "Also output models for partition tables"
+          "description": "Also output models for partition tables",
+          "priority": 51
         },
         {
           "name": [
             "--include-views"
           ],
-          "description": "Also output models for database views"
+          "description": "Also output models for database views",
+          "priority": 51
         },
         {
           "name": [
@@ -1400,6 +1441,7 @@
             "--database"
           ],
           "description": "Nominates a specific database to load fixtures into. Defaults to the \"default\" database",
+          "priority": 51,
           "args": {
             "name": "DATABASE"
           }
@@ -1409,6 +1451,7 @@
             "--app"
           ],
           "description": "Only look for fixtures in the specified app",
+          "priority": 51,
           "args": {
             "name": "APP_LABEL"
           }
@@ -1418,7 +1461,8 @@
             "--ignorenonexistent",
             "-i"
           ],
-          "description": "Ignores entries in the serialized data for fields that do not currently exist on the model"
+          "description": "Ignores entries in the serialized data for fields that do not currently exist on the model",
+          "priority": 51
         },
         {
           "name": [
@@ -1426,6 +1470,7 @@
             "--exclude"
           ],
           "description": "An app_label or app_label.ModelName to exclude. Can be used multiple times",
+          "priority": 51,
           "args": {
             "name": "EXCLUDE"
           }
@@ -1435,6 +1480,7 @@
             "--format"
           ],
           "description": "Format of serialized data when reading from stdin",
+          "priority": 51,
           "args": {
             "name": "FORMAT"
           }
@@ -1443,7 +1489,8 @@
           "name": [
             "--skip-checks"
           ],
-          "description": "Skip system checks"
+          "description": "Skip system checks",
+          "priority": 51
         },
         {
           "name": [
@@ -1536,6 +1583,7 @@
             "-l"
           ],
           "description": "Creates or updates the message files for the given locale(s) (e.g. pt_BR). Can be used multiple times",
+          "priority": 51,
           "args": {
             "name": "LOCALE"
           }
@@ -1546,6 +1594,7 @@
             "-x"
           ],
           "description": "Locales to exclude. Default is none. Can be used multiple times",
+          "priority": 51,
           "args": {
             "name": "EXCLUDE"
           }
@@ -1556,6 +1605,7 @@
             "-d"
           ],
           "description": "The domain of the message files (default: \"django\")",
+          "priority": 51,
           "args": {
             "name": "DOMAIN"
           }
@@ -1565,7 +1615,8 @@
             "--all",
             "-a"
           ],
-          "description": "Updates the message files for all existing locales"
+          "description": "Updates the message files for all existing locales",
+          "priority": 51
         },
         {
           "name": [
@@ -1573,6 +1624,7 @@
             "-e"
           ],
           "description": "The file extension(s) to examine (default: \"html,txt,py\", or \"js\" if the domain is \"djangojs\"). Separate multiple extensions with commas, or use -e multiple times",
+          "priority": 51,
           "args": {
             "name": "EXTENSIONS"
           }
@@ -1582,7 +1634,8 @@
             "--symlinks",
             "-s"
           ],
-          "description": "Follows symlinks to directories when examining source code and templates for translation strings"
+          "description": "Follows symlinks to directories when examining source code and templates for translation strings",
+          "priority": 51
         },
         {
           "name": [
@@ -1590,6 +1643,7 @@
             "-i"
           ],
           "description": "Ignore files or directories matching this glob-style pattern. Use multiple times to ignore more",
+          "priority": 51,
           "args": {
             "name": "PATTERN"
           }
@@ -1598,25 +1652,29 @@
           "name": [
             "--no-default-ignore"
           ],
-          "description": "Don't ignore the common glob-style patterns 'CVS', '.*', '*~' and '*.pyc'"
+          "description": "Don't ignore the common glob-style patterns 'CVS', '.*', '*~' and '*.pyc'",
+          "priority": 51
         },
         {
           "name": [
             "--no-wrap"
           ],
-          "description": "Don't break long message lines into several lines"
+          "description": "Don't break long message lines into several lines",
+          "priority": 51
         },
         {
           "name": [
             "--no-location"
           ],
-          "description": "Don't write '#: filename:line' lines"
+          "description": "Don't write '#: filename:line' lines",
+          "priority": 51
         },
         {
           "name": [
             "--add-location"
           ],
           "description": "[{full,file,never}] Controls '#: filename:line' lines. If the option is 'full' (the default if not given), the lines include both file name and line number. If it's 'file', the line number is omitted. If it's 'never', the lines are suppressed (same as --no-location). --add-location requires gettext 0.19 or newer",
+          "priority": 51,
           "args": {
             "name": "location",
             "isOptional": true,
@@ -1640,13 +1698,15 @@
           "name": [
             "--no-obsolete"
           ],
-          "description": "Remove obsolete message strings"
+          "description": "Remove obsolete message strings",
+          "priority": 51
         },
         {
           "name": [
             "--keep-pot"
           ],
-          "description": "Keep .pot file after making messages. Useful when debugging"
+          "description": "Keep .pot file after making messages. Useful when debugging",
+          "priority": 51
         },
         {
           "name": [
@@ -1732,26 +1792,30 @@
           "name": [
             "--dry-run"
           ],
-          "description": "Just show what migrations would be made; don't actually write them"
+          "description": "Just show what migrations would be made; don't actually write them",
+          "priority": 51
         },
         {
           "name": [
             "--merge"
           ],
-          "description": "Enable fixing of migration conflicts"
+          "description": "Enable fixing of migration conflicts",
+          "priority": 51
         },
         {
           "name": [
             "--empty"
           ],
-          "description": "Create an empty migration"
+          "description": "Create an empty migration",
+          "priority": 51
         },
         {
           "name": [
             "--noinput",
             "--no-input"
           ],
-          "description": "Tells Django to NOT prompt the user for input of any kind"
+          "description": "Tells Django to NOT prompt the user for input of any kind",
+          "priority": 51
         },
         {
           "name": [
@@ -1759,6 +1823,7 @@
             "--name"
           ],
           "description": "Use this name for migration file(s)",
+          "priority": 51,
           "args": {
             "name": "NAME"
           }
@@ -1767,19 +1832,22 @@
           "name": [
             "--no-header"
           ],
-          "description": "Do not add header comments to new migration file(s)"
+          "description": "Do not add header comments to new migration file(s)",
+          "priority": 51
         },
         {
           "name": [
             "--check"
           ],
-          "description": "Exit with a non-zero status if model changes are missing migrations"
+          "description": "Exit with a non-zero status if model changes are missing migrations",
+          "priority": 51
         },
         {
           "name": [
             "--skip-checks"
           ],
-          "description": "Skip system checks"
+          "description": "Skip system checks",
+          "priority": 51
         },
         {
           "name": [
@@ -1872,13 +1940,15 @@
             "--noinput",
             "--no-input"
           ],
-          "description": "Tells Django to NOT prompt the user for input of any kind"
+          "description": "Tells Django to NOT prompt the user for input of any kind",
+          "priority": 51
         },
         {
           "name": [
             "--database"
           ],
           "description": "Nominates a database to synchronize. Defaults to the \"default\" database",
+          "priority": 51,
           "args": {
             "name": "DATABASE"
           }
@@ -1887,37 +1957,43 @@
           "name": [
             "--fake"
           ],
-          "description": "Mark migrations as run without actually running them"
+          "description": "Mark migrations as run without actually running them",
+          "priority": 51
         },
         {
           "name": [
             "--fake-initial"
           ],
-          "description": "Detect if tables already exist and fake-apply initial migrations if so. Make sure that the current database schema matches your initial migration before using this flag. Django will only check for an existing table name"
+          "description": "Detect if tables already exist and fake-apply initial migrations if so. Make sure that the current database schema matches your initial migration before using this flag. Django will only check for an existing table name",
+          "priority": 51
         },
         {
           "name": [
             "--plan"
           ],
-          "description": "Shows a list of the migration actions that will be performed"
+          "description": "Shows a list of the migration actions that will be performed",
+          "priority": 51
         },
         {
           "name": [
             "--run-syncdb"
           ],
-          "description": "Creates tables for apps without migrations"
+          "description": "Creates tables for apps without migrations",
+          "priority": 51
         },
         {
           "name": [
             "--check"
           ],
-          "description": "Exits with a non-zero status if unapplied migrations exist"
+          "description": "Exits with a non-zero status if unapplied migrations exist",
+          "priority": 51
         },
         {
           "name": [
             "--skip-checks"
           ],
-          "description": "Skip system checks"
+          "description": "Skip system checks",
+          "priority": 51
         },
         {
           "name": [
@@ -2015,19 +2091,22 @@
           "name": [
             "--managers"
           ],
-          "description": "Send a test email to the addresses specified in settings.MANAGERS"
+          "description": "Send a test email to the addresses specified in settings.MANAGERS",
+          "priority": 51
         },
         {
           "name": [
             "--admins"
           ],
-          "description": "Send a test email to the addresses specified in settings.ADMINS"
+          "description": "Send a test email to the addresses specified in settings.ADMINS",
+          "priority": 51
         },
         {
           "name": [
             "--skip-checks"
           ],
-          "description": "Skip system checks"
+          "description": "Skip system checks",
+          "priority": 51
         },
         {
           "name": [
@@ -2119,7 +2198,8 @@
           "name": [
             "--no-startup"
           ],
-          "description": "When using plain Python, ignore the PYTHONSTARTUP environment variable and ~/.pythonrc.py script"
+          "description": "When using plain Python, ignore the PYTHONSTARTUP environment variable and ~/.pythonrc.py script",
+          "priority": 51
         },
         {
           "name": [
@@ -2127,6 +2207,7 @@
             "--interface"
           ],
           "description": "Specify an interactive interpreter interface. Available options: \"ipython\", \"bpython\", and \"python\"",
+          "priority": 51,
           "args": {
             "name": "{ipython,bpython,python}",
             "suggestions": [
@@ -2148,6 +2229,7 @@
             "--command"
           ],
           "description": "Instead of opening an interactive shell, run a command as Django and exit",
+          "priority": 51,
           "args": {
             "name": "COMMAND"
           }
@@ -2237,6 +2319,7 @@
             "--database"
           ],
           "description": "Nominates a database to synchronize. Defaults to the \"default\" database",
+          "priority": 51,
           "args": {
             "name": "DATABASE"
           }
@@ -2246,20 +2329,23 @@
             "--list",
             "-l"
           ],
-          "description": "Shows a list of all migrations and which are applied. With a verbosity level of 2 or above, the applied datetimes will be included"
+          "description": "Shows a list of all migrations and which are applied. With a verbosity level of 2 or above, the applied datetimes will be included",
+          "priority": 51
         },
         {
           "name": [
             "--plan",
             "-p"
           ],
-          "description": "Shows all migrations in the order they will be applied. With a verbosity level of 2 or above all direct migration dependencies and reverse dependencies (run_before) will be included"
+          "description": "Shows all migrations in the order they will be applied. With a verbosity level of 2 or above all direct migration dependencies and reverse dependencies (run_before) will be included",
+          "priority": 51
         },
         {
           "name": [
             "--skip-checks"
           ],
-          "description": "Skip system checks"
+          "description": "Skip system checks",
+          "priority": 51
         },
         {
           "name": [
@@ -2352,6 +2438,7 @@
             "--database"
           ],
           "description": "Nominates a database to print the SQL for. Defaults to the \"default\" database",
+          "priority": 51,
           "args": {
             "name": "DATABASE"
           }
@@ -2360,7 +2447,8 @@
           "name": [
             "--skip-checks"
           ],
-          "description": "Skip system checks"
+          "description": "Skip system checks",
+          "priority": 51
         },
         {
           "name": [
@@ -2447,6 +2535,7 @@
             "--database"
           ],
           "description": "Nominates a database to create SQL for. Defaults to the \"default\" database",
+          "priority": 51,
           "args": {
             "name": "DATABASE"
           }
@@ -2455,13 +2544,15 @@
           "name": [
             "--backwards"
           ],
-          "description": "Creates SQL to unapply the migration, rather than to apply it"
+          "description": "Creates SQL to unapply the migration, rather than to apply it",
+          "priority": 51
         },
         {
           "name": [
             "--skip-checks"
           ],
-          "description": "Skip system checks"
+          "description": "Skip system checks",
+          "priority": 51
         },
         {
           "name": [
@@ -2558,6 +2649,7 @@
             "--database"
           ],
           "description": "Nominates a database to print the SQL for. Defaults to the \"default\" database",
+          "priority": 51,
           "args": {
             "name": "DATABASE"
           }
@@ -2566,7 +2658,8 @@
           "name": [
             "--skip-checks"
           ],
-          "description": "Skip system checks"
+          "description": "Skip system checks",
+          "priority": 51
         },
         {
           "name": [
@@ -2657,20 +2750,23 @@
           "name": [
             "--no-optimize"
           ],
-          "description": "Do not try to optimize the squashed operations"
+          "description": "Do not try to optimize the squashed operations",
+          "priority": 51
         },
         {
           "name": [
             "--noinput",
             "--no-input"
           ],
-          "description": "Tells Django to NOT prompt the user for input of any kind"
+          "description": "Tells Django to NOT prompt the user for input of any kind",
+          "priority": 51
         },
         {
           "name": [
             "--squashed-name"
           ],
           "description": "Sets the name of the new squashed migration",
+          "priority": 51,
           "args": {
             "name": "SQUASHED_NAME"
           }
@@ -2679,13 +2775,15 @@
           "name": [
             "--no-header"
           ],
-          "description": "Do not add a header comment to the new squashed migration"
+          "description": "Do not add a header comment to the new squashed migration",
+          "priority": 51
         },
         {
           "name": [
             "--skip-checks"
           ],
-          "description": "Skip system checks"
+          "description": "Skip system checks",
+          "priority": 51
         },
         {
           "name": [
@@ -2787,6 +2885,7 @@
             "--template"
           ],
           "description": "The path or URL to load the template from",
+          "priority": 51,
           "args": {
             "name": "TEMPLATE"
           }
@@ -2797,6 +2896,7 @@
             "-e"
           ],
           "description": "The file extension(s) to render (default: \"py\"). Separate multiple extensions with commas, or use -e multiple times",
+          "priority": 51,
           "args": {
             "name": "EXTENSIONS"
           }
@@ -2807,6 +2907,7 @@
             "-n"
           ],
           "description": "The file name(s) to render. Separate multiple file names with commas, or use -n multiple times",
+          "priority": 51,
           "args": {
             "name": "FILES"
           }
@@ -2907,6 +3008,7 @@
             "--template"
           ],
           "description": "The path or URL to load the template from",
+          "priority": 51,
           "args": {
             "name": "TEMPLATE"
           }
@@ -2917,6 +3019,7 @@
             "-e"
           ],
           "description": "The file extension(s) to render (default: \"py\"). Separate multiple extensions with commas, or use -e multiple times",
+          "priority": 51,
           "args": {
             "name": "EXTENSIONS"
           }
@@ -2927,6 +3030,7 @@
             "-n"
           ],
           "description": "The file name(s) to render. Separate multiple file names with commas, or use -n multiple times",
+          "priority": 51,
           "args": {
             "name": "FILES"
           }
@@ -3027,19 +3131,22 @@
             "--noinput",
             "--no-input"
           ],
-          "description": "Tells Django to NOT prompt the user for input of any kind"
+          "description": "Tells Django to NOT prompt the user for input of any kind",
+          "priority": 51
         },
         {
           "name": [
             "--failfast"
           ],
-          "description": "Tells Django to stop running the test suite after first failed test"
+          "description": "Tells Django to stop running the test suite after first failed test",
+          "priority": 51
         },
         {
           "name": [
             "--testrunner"
           ],
           "description": "Tells Django to use specified test runner class instead of the one specified by the TEST_RUNNER setting",
+          "priority": 51,
           "args": {
             "name": "TESTRUNNER"
           }
@@ -3050,6 +3157,7 @@
             "--top-level-directory"
           ],
           "description": "Top level of project for unittest discovery",
+          "priority": 51,
           "args": {
             "name": "TOP_LEVEL",
             "template": "folders"
@@ -3061,6 +3169,7 @@
             "--pattern"
           ],
           "description": "The test matching pattern. Defaults to test*.py",
+          "priority": 51,
           "args": {
             "name": "PATTERN"
           }
@@ -3069,33 +3178,38 @@
           "name": [
             "--keepdb"
           ],
-          "description": "Preserves the test DB between runs"
+          "description": "Preserves the test DB between runs",
+          "priority": 51
         },
         {
           "name": [
             "-r",
             "--reverse"
           ],
-          "description": "Reverses test cases order"
+          "description": "Reverses test cases order",
+          "priority": 51
         },
         {
           "name": [
             "--debug-mode"
           ],
-          "description": "Sets settings.DEBUG to True"
+          "description": "Sets settings.DEBUG to True",
+          "priority": 51
         },
         {
           "name": [
             "-d",
             "--debug-sql"
           ],
-          "description": "Prints logged SQL queries on failure"
+          "description": "Prints logged SQL queries on failure",
+          "priority": 51
         },
         {
           "name": [
             "--parallel"
           ],
           "description": "Run tests using up to N parallel processes",
+          "priority": 51,
           "args": {
             "name": "[N]"
           }
@@ -3105,6 +3219,7 @@
             "--tag"
           ],
           "description": "Run only tests with the specified tag. Can be used multiple times",
+          "priority": 51,
           "args": {
             "name": "TAGS"
           }
@@ -3114,6 +3229,7 @@
             "--exclude-tag"
           ],
           "description": "Do not run tests with the specified tag. Can be used multiple times",
+          "priority": 51,
           "args": {
             "name": "EXCLUDE_TAGS"
           }
@@ -3122,20 +3238,23 @@
           "name": [
             "--pdb"
           ],
-          "description": "Runs a debugger (pdb, or ipdb if installed) on error or failure"
+          "description": "Runs a debugger (pdb, or ipdb if installed) on error or failure",
+          "priority": 51
         },
         {
           "name": [
             "-b",
             "--buffer"
           ],
-          "description": "Discard output from passing tests"
+          "description": "Discard output from passing tests",
+          "priority": 51
         },
         {
           "name": [
             "-k"
           ],
           "description": "Only run test methods and classes that match the pattern or substring. Can be used multiple times. Same as unittest -k option",
+          "priority": 51,
           "args": {
             "name": "TEST_NAME_PATTERNS"
           }
@@ -3230,13 +3349,15 @@
             "--noinput",
             "--no-input"
           ],
-          "description": "Tells Django to NOT prompt the user for input of any kind"
+          "description": "Tells Django to NOT prompt the user for input of any kind",
+          "priority": 51
         },
         {
           "name": [
             "--addrport"
           ],
           "description": "Port number or ipaddr:port to run the server on",
+          "priority": 51,
           "args": {
             "name": "ADDRPORT"
           }
@@ -3246,7 +3367,8 @@
             "--ipv6",
             "-6"
           ],
-          "description": "Tells Django to use an IPv6 address"
+          "description": "Tells Django to use an IPv6 address",
+          "priority": 51
         },
         {
           "name": [
@@ -3336,7 +3458,8 @@
           "name": [
             "--skip-checks"
           ],
-          "description": "Skip system checks"
+          "description": "Skip system checks",
+          "priority": 51
         },
         {
           "name": [
@@ -3422,7 +3545,8 @@
           "name": [
             "--skip-checks"
           ],
-          "description": "Skip system checks"
+          "description": "Skip system checks",
+          "priority": 51
         },
         {
           "name": [
@@ -3509,13 +3633,15 @@
             "--noinput",
             "--no-input"
           ],
-          "description": "Do NOT prompt the user for input of any kind"
+          "description": "Do NOT prompt the user for input of any kind",
+          "priority": 51
         },
         {
           "name": [
             "--no-post-process"
           ],
-          "description": "Do NOT post process collected files"
+          "description": "Do NOT post process collected files",
+          "priority": 51
         },
         {
           "name": [
@@ -3523,6 +3649,7 @@
             "--ignore"
           ],
           "description": "Ignore files or directories matching this glob-style pattern. Use multiple times to ignore more",
+          "priority": 51,
           "args": {
             "name": "PATTERN"
           }
@@ -3532,33 +3659,38 @@
             "-n",
             "--dry-run"
           ],
-          "description": "Do everything except modify the filesystem"
+          "description": "Do everything except modify the filesystem",
+          "priority": 51
         },
         {
           "name": [
             "-c",
             "--clear"
           ],
-          "description": "Clear the existing files using the storage before trying to copy or link the original file"
+          "description": "Clear the existing files using the storage before trying to copy or link the original file",
+          "priority": 51
         },
         {
           "name": [
             "-l",
             "--link"
           ],
-          "description": "Create a symbolic link to each file instead of copying"
+          "description": "Create a symbolic link to each file instead of copying",
+          "priority": 51
         },
         {
           "name": [
             "--no-default-ignore"
           ],
-          "description": "Don't ignore the common private glob-style patterns (defaults to 'CVS', '.*' and '*~')"
+          "description": "Don't ignore the common private glob-style patterns (defaults to 'CVS', '.*' and '*~')",
+          "priority": 51
         },
         {
           "name": [
             "--skip-checks"
           ],
-          "description": "Skip system checks"
+          "description": "Skip system checks",
+          "priority": 51
         },
         {
           "name": [
@@ -3644,13 +3776,15 @@
           "name": [
             "--first"
           ],
-          "description": "Only return the first match for each static file"
+          "description": "Only return the first match for each static file",
+          "priority": 51
         },
         {
           "name": [
             "--skip-checks"
           ],
-          "description": "Skip system checks"
+          "description": "Skip system checks",
+          "priority": 51
         },
         {
           "name": [
@@ -3741,31 +3875,36 @@
             "--ipv6",
             "-6"
           ],
-          "description": "Tells Django to use an IPv6 address"
+          "description": "Tells Django to use an IPv6 address",
+          "priority": 51
         },
         {
           "name": [
             "--nothreading"
           ],
-          "description": "Tells Django to NOT use threading"
+          "description": "Tells Django to NOT use threading",
+          "priority": 51
         },
         {
           "name": [
             "--noreload"
           ],
-          "description": "Tells Django to NOT use the auto-reloader"
+          "description": "Tells Django to NOT use the auto-reloader",
+          "priority": 51
         },
         {
           "name": [
             "--nostatic"
           ],
-          "description": "Tells Django to NOT automatically serve static files at STATIC_URL"
+          "description": "Tells Django to NOT automatically serve static files at STATIC_URL",
+          "priority": 51
         },
         {
           "name": [
             "--insecure"
           ],
-          "description": "Allows serving static files even if DEBUG is False"
+          "description": "Allows serving static files even if DEBUG is False",
+          "priority": 51
         },
         {
           "name": [

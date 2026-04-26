@@ -154,4 +154,31 @@ mod tests {
     fn priority_deserialize_rejects_float() {
         assert!(serde_json::from_str::<Priority>("1.5").is_err());
     }
+
+    /// Pin the documented kind-base values for `Subcommand` and `Flag`.
+    /// `tools/spec-priority-audit/apply.mjs` hard-codes these as
+    /// `SUBCOMMAND_KIND_BASE = 70` and `FLAG_KIND_BASE = 30` so that it can
+    /// skip writing values equal to the kind base (a no-op for ranking).
+    /// If anyone changes either constant in this crate without updating the
+    /// Node script, the audit tool would silently emit redundant
+    /// `priority: 70`/`priority: 30` entries on every spec it touches —
+    /// noisy diffs and a corpus that no longer round-trips through
+    /// `apply.mjs`. This is a runtime `assert_eq!` inside `#[test]`, so it
+    /// forces a deliberate cross-language update by failing the test suite
+    /// when the bases drift.
+    #[test]
+    fn subcommand_and_flag_bases_match_audit_tool_constants() {
+        assert_eq!(
+            SuggestionKind::Subcommand.base_priority().get(),
+            70,
+            "if you change this, update SUBCOMMAND_KIND_BASE in \
+             tools/spec-priority-audit/apply.mjs"
+        );
+        assert_eq!(
+            SuggestionKind::Flag.base_priority().get(),
+            30,
+            "if you change this, update FLAG_KIND_BASE in \
+             tools/spec-priority-audit/apply.mjs"
+        );
+    }
 }
