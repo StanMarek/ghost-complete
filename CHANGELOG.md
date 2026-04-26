@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.10.0-beta.1] - 2026-04-25
+## [0.10.0] - 2026-04-26
 
 ### Corrected
 
@@ -74,6 +74,46 @@ silently changed behaviour.
   ~47 MB to ~28.42 MB — no behaviour change, on-disk `specs/*.json`
   remain pretty-printed; only the binary-embedded copies are minified.
   Adds `serde_json` under `[build-dependencies]`.
+- **Priority-based ranking** — new `priority` field (`0..=100`) parsed on
+  `Subcommand` and `Option` spec entries; the `SuggestionKind` base table
+  (Subcommand=70, Flag=30, History=10, etc.) is the implicit default. Bundled
+  specs ship priority values harvested from upstream Fig (3,248 lines across
+  67 specs via converter re-run) plus heuristic bumps across 101 specs (918
+  subcommand and 1,265 flag values) covering 11 families: vcs, package_manager,
+  container, kubernetes, cloud, build_tool, ssh_remote, shell_builtin,
+  file_modifier, http_tools, editor.
+- **Cursor-context classifier** — new `Context` enum (`PathPrefix`, `FlagPrefix`,
+  `Redirect`, `GitCheckout`, `Cd`, `SpecArg`, ...) routes `suggest_sync` based on
+  what the user is typing. Replaces the unconditional filesystem fallback —
+  `defer_to_git_refs` and the always-on fs branch are removed.
+- **Bounded-block render (`popup.render_block_ms`)** — new config field
+  (default 80ms, clamped to ≤200ms) races a high-priority async generator
+  (git refs, provider values) against `tokio::time::sleep` before the first
+  paint. When the generator wins, branches/values land in the same frame as
+  flags; when it doesn't, the sync paint goes out and results merge on
+  arrival. Implemented via `prepare_trigger_with_block` + `apply_block_result`
+  two-phase split that releases the `std::sync::Mutex` before awaiting,
+  with monotonic `buffer_generation` + `spawned_generation` counters
+  defending against stale completions arriving after the user types more
+  characters.
+- **`tools/spec-priority-audit/`** — heuristics-driven priority injection for
+  ~109 commonly-used specs across 11 families. Idempotent (never overwrites
+  existing priorities), schema-validated at heuristic load time, atomic
+  per-spec writes via temp+rename, duplicate-family guard, schema-drift
+  warnings. 16 black-box Node subprocess tests gated in CI alongside the
+  fig-converter tests.
+- **`z` (zoxide) spec fleshed out** — replaces the `{"name":"z"}` stub with
+  a variadic `keywords` arg backed by a `zoxide query --list` script
+  generator (60s TTL, global cache), a folders template fallback, and
+  static suggestions for `-` and `~`.
+- **`fig-converter` preserves the `priority` field** — converter now writes
+  `priority` on `Subcommand` and `Option` entries when present in upstream
+  Fig sources. `typeof number` guard drops malformed values (string, null)
+  rather than emitting them into converted JSON.
+- **`bench/priority_sort` Criterion group** — two cases on a 10k-candidate
+  mixed-kind pool with explicit priority overrides every 50th item:
+  `empty_query_10k` ~735µs, `fuzzy_query_10k` ~631µs. Both well under the
+  `<1ms / 10k-candidate` target.
 
 ### Changed
 
@@ -82,6 +122,21 @@ silently changed behaviour.
   cases: `(baseline)` for single-row bootstrap (no prior release to
   compare against), `(unchanged)` when a metric matches the previous
   release exactly, and signed `(+N)` / `(-N)` deltas otherwise.
+- **Suggestion sort tuple** — primary keys are now
+  `(history_bucket, score, priority, alpha)`. `priority` (`0..=100`) is the
+  new tiebreaker between fuzzy-score-equal candidates; the explicit history
+  partition stays as the first key so frecency boosts can't push history
+  above domain content. `SuggestionKind::sort_priority` removed in favor of
+  `priority::effective(...)`.
+- **Ranking dispatch** — `suggest_sync` now branches off
+  `Context::classify(...)` (6-context dispatch) instead of running an
+  unconditional filesystem fallback. Specs that drive args via generators
+  or omit a `filepaths` template no longer leak filesystem candidates.
+- **Bundled spec priorities (manual)** — `cargo build/run/test` bumped to
+  92/90/90 (the daily-driver Rust workflow, not `install`); `cargo install`
+  dropped to 75; `docker compose` bumped 82→88 (multi-container dev is
+  daily for many users); dangerous flags (`--force`, `--hard`, `--rm-all`)
+  demoted to 20–25 so they sink below safer alternatives.
 
 ### Fixed
 
@@ -89,6 +144,29 @@ silently changed behaviour.
   pipeline; the trailing `=` (required by `docker service scale SERVICE=N`
   syntax) is now produced by the `suffix` transform. Previously surfaced as
   `requires_js` and did not complete.
+- **Filesystem leakage on argument completion** — `git checkout`,
+  `cargo run`, `npm install`, `docker run`, `kubectl get`, `ssh`, and `cd`
+  no longer surface stray plain-file suggestions when the spec drives args
+  via generators or omits a `filepaths` template. Locked in by 8 golden
+  snapshot tests in `gc-suggest`.
+- **`apply_block_result` re-ranks against actual `current_word`** — the
+  merge step previously called `fuzzy::rank("", all, max_visible * 5)`
+  regardless of typed query. Two latent bugs: irrelevant items merged when
+  current_word was non-empty, and high-priority items past alphabetic
+  position ~50 were silently dropped on empty queries. Now mirrors
+  `try_merge_dynamic`'s empty-vs-non-empty branch.
+- **Container/cloud `-f` cross-semantic bug** — heuristic iter 1 wrongly
+  bumped `-f` (`--format`/`--filename`/`--follow` in container/cloud
+  contexts) to priority 22 alongside `--force`. Iter 2 surgically reverts
+  86 entries across docker (44), podman (26), netlify (7), supabase (2),
+  minikube (2), limactl (1), vercel (1), wrangler (1), firebase (1).
+- **Three review-loop iterations on PR #85** addressed 60+ findings:
+  `Priority(u8)` Deserialize clamps to `0..=100` on both ends (negative
+  inputs no longer abort whole-spec parse); dismiss-then-spawn ordering
+  fixed on the visible-popup empty-sync path; orphan `dynamic_task` aborted
+  on Phase 2 keystroke cancel; spec-priority-audit gains pre-write
+  unknown-spec abort, schema-drift warnings, and best-effort tmp cleanup
+  on rename failure.
 
 ## [0.9.1] - 2026-04-20
 
@@ -463,7 +541,7 @@ silently changed behaviour.
 - **Shell integration** for zsh (full), bash (Ctrl+/), and fish (Ctrl+/)
 - **`validate-specs` subcommand** with colored output and item counts
 
-[0.10.0-beta.1]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.10.0-beta.1
+[0.10.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.10.0
 [0.9.1]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.9.1
 [0.9.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.9.0
 [0.8.2]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.8.2
