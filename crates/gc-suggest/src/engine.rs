@@ -1205,8 +1205,8 @@ mod tests {
             .suggest_sync(&ctx, Path::new("/tmp"), "git checkout main")
             .unwrap();
 
-        // Presence is locked in here; ordering vs incoming async branches
-        // is Task 9's domain.
+        // Presence is locked in here; ordering against incoming async
+        // branches is covered by the priority-sort tests above.
         assert!(
             results
                 .suggestions
@@ -1654,7 +1654,8 @@ mod tests {
     }
 
     #[test]
-    fn test_unspecced_path_prefix_chains_parent_dir() {
+    fn test_path_prefix_chains_parent_dir_for_unspecced_command() {
+        use crate::context::{classify, ClassifyInput, Context};
         // PathPrefix on an unspecced command should still offer the chained
         // `../../` when the user is one level deep into the working tree.
         let engine = make_engine();
@@ -1662,6 +1663,15 @@ mod tests {
         let sub = tmp.path().join("aaa").join("bbb");
         std::fs::create_dir_all(&sub).unwrap();
         let ctx = make_ctx(Some("unknown_cmd"), vec![], "../", 1);
+        assert_eq!(
+            classify(ClassifyInput {
+                current_word: "../",
+                in_redirect: false,
+                word_index: 1,
+                spec_matched: false,
+            }),
+            Context::PathPrefix
+        );
         let results = engine.suggest_sync(&ctx, &sub, "unknown_cmd ../").unwrap();
         assert!(
             results.iter().any(|s| s.text == "../../"),

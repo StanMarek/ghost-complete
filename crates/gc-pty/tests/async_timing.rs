@@ -37,9 +37,9 @@ fn make_test_handler(render_block_ms: u64) -> InputHandler {
 /// Build a visible handler with `render_block_ms` configured and a
 /// pre-seeded `dynamic_rx` that delivers `async_items` after `delay`.
 ///
-/// Returns `(handler, rx, sender_task)`. The `sender_task` is a
-/// `JoinHandle<()>` for the background tokio task that sends after the
-/// delay; it is awaited in the test to ensure clean shutdown.
+/// Returns `(handler, sender_task)`. The handler owns the dynamic_rx
+/// channel (primed via `restore_dynamic_rx`); the `sender_task` is awaited
+/// in the test to ensure clean shutdown.
 fn make_handler_with_delayed_rx(
     render_block_ms: u64,
     async_items: Vec<Suggestion>,
@@ -587,5 +587,141 @@ async fn prepare_trigger_returns_painted_when_block_ms_zero() {
     assert!(
         matches!(prepared, gc_pty::handler::TriggerPrepared::Painted),
         "render_block_ms=0 must short-circuit to Painted regardless of pending generators"
+    );
+}
+
+// ── Test 8 ───────────────────────────────────────────────────────────────────
+
+/// `apply_block_result` must drop async results when the live buffer no
+/// longer matches the spawn-time context. The Stale arm of `MergeFreshness`
+/// returns without merging and without stamping the trigger fingerprint.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn stale_async_result_dropped_when_buffer_drifted() {
+    let mut handler = make_test_handler(80);
+    handler.buffer_generation = 1;
+    handler.set_spawned_generation(1);
+    // Pin the spawn-time context to `git checkout main`.
+    handler.prime_dynamic_ctx_for_buffer("git checkout main", 17);
+
+    // Drive the parser to a different command. The staleness check compares
+    // command/args/preceding_flag/word_index — `git status` differs from
+    // `git checkout main` on args, so the result must be dropped.
+    let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+    {
+        let mut p = parser.lock().unwrap();
+        p.state_mut()
+            .predict_command_buffer("git status".to_string(), 10);
+    }
+
+    let mut render_buf = Vec::new();
+    handler.apply_block_result(
+        &parser,
+        &mut render_buf,
+        Some(vec![branch_suggestion("main")]),
+        None,
+        Vec::new(),
+        0,
+        0,
+        24,
+        80,
+        (0xfeed_face_u64, 5),
+        "main",
+    );
+
+    assert!(
+        !handler
+            .current_suggestions()
+            .iter()
+            .any(|s| s.text == "main"),
+        "stale buffer drift must drop async branches"
+    );
+    assert!(
+        handler.last_trigger_fingerprint().is_none(),
+        "Stale arm must NOT stamp the trigger fingerprint"
+    );
+}
+
+// ── Test 9 ───────────────────────────────────────────────────────────────────
+
+/// `apply_block_result` must drop async results when `spawned_generation`
+/// no longer matches `buffer_generation`, even if the spawn-time context
+/// would otherwise still match the live buffer. Proves the generation
+/// guard fires before the ctx-equality check.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn stale_generation_drops_async_result() {
+    let mut handler = make_test_handler(80);
+    handler.buffer_generation = 5;
+    handler.set_spawned_generation(2);
+    // Prime ctx for the SAME buffer the parser holds so the ctx-equality
+    // check would otherwise pass — only the generation mismatch should
+    // trigger the drop.
+    handler.prime_dynamic_ctx_for_buffer("git checkout main", 17);
+
+    let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+    {
+        let mut p = parser.lock().unwrap();
+        p.state_mut()
+            .predict_command_buffer("git checkout main".to_string(), 17);
+    }
+
+    let mut render_buf = Vec::new();
+    handler.apply_block_result(
+        &parser,
+        &mut render_buf,
+        Some(vec![branch_suggestion("main")]),
+        None,
+        Vec::new(),
+        0,
+        0,
+        24,
+        80,
+        (0, 0),
+        "main",
+    );
+
+    assert!(
+        !handler
+            .current_suggestions()
+            .iter()
+            .any(|s| s.text == "main"),
+        "generation mismatch must drop async branches before the ctx-equality check"
+    );
+}
+
+// ── Test 10 ──────────────────────────────────────────────────────────────────
+
+/// The keystroke-cancel arm in `proxy.rs` (around line 859) calls
+/// `notify.notify_one()` after consuming a `notified()` permit so the outer
+/// debounce loop fires immediately instead of waiting on the next
+/// keystroke. This test mirrors that pattern in isolation: consume the
+/// permit, re-arm via `notify_one`, then `select!` the second `notified()`
+/// against a 50ms timeout — the second `notified()` must resolve.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn keystroke_cancel_rearms_notify_for_outer_loop() {
+    use tokio::sync::Notify;
+
+    let notify = Arc::new(Notify::new());
+    let n_clone = Arc::clone(&notify);
+
+    // Background task: consume the first permit, then re-arm. Mirrors the
+    // proxy.rs cancel arm at crates/gc-pty/src/proxy.rs:859.
+    let task = tokio::spawn(async move {
+        // Initial notify so the first notified() resolves.
+        n_clone.notify_one();
+        n_clone.notified().await;
+        n_clone.notify_one();
+    });
+
+    // Wait for the task to consume + re-arm before we race notified() vs timeout.
+    task.await.unwrap();
+
+    let timed_out = tokio::select! {
+        _ = notify.notified() => false,
+        _ = tokio::time::sleep(Duration::from_millis(50)) => true,
+    };
+
+    assert!(
+        !timed_out,
+        "the re-arm via notify_one() must let a follow-up notified() resolve before the 50ms timeout"
     );
 }

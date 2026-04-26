@@ -30,8 +30,11 @@ impl<'de> Deserialize<'de> for Priority {
     where
         D: Deserializer<'de>,
     {
-        let raw = u8::deserialize(deserializer)?;
-        Ok(Priority::new(raw))
+        // Accept the full signed integer range so a stray negative or >255
+        // value in a spec doesn't abort parsing of the entire CompletionSpec.
+        let raw = i64::deserialize(deserializer)?;
+        let clamped = raw.clamp(0, 100) as u8;
+        Ok(Priority::new(clamped))
     }
 }
 
@@ -126,5 +129,29 @@ mod tests {
         assert_eq!(p.get(), 100);
         let p: Priority = serde_json::from_str("75").unwrap();
         assert_eq!(p.get(), 75);
+    }
+
+    #[test]
+    fn priority_deserialize_clamps_negative() {
+        let p: Priority = serde_json::from_str("-5").unwrap();
+        assert_eq!(p.get(), 0);
+        let p: Priority = serde_json::from_str("-9999").unwrap();
+        assert_eq!(p.get(), 0);
+    }
+
+    #[test]
+    fn priority_deserialize_clamps_oversized_via_i64() {
+        let p: Priority = serde_json::from_str("300").unwrap();
+        assert_eq!(p.get(), 100);
+    }
+
+    #[test]
+    fn priority_deserialize_rejects_string() {
+        assert!(serde_json::from_str::<Priority>("\"high\"").is_err());
+    }
+
+    #[test]
+    fn priority_deserialize_rejects_float() {
+        assert!(serde_json::from_str::<Priority>("1.5").is_err());
     }
 }

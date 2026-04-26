@@ -357,9 +357,10 @@ describe('convertSpec', () => {
 
   it('passes out-of-range subcommand priority through (caller validates)', () => {
     // Contract: the converter only checks `typeof === 'number'`. Range
-    // validation (0–100 clamp, etc.) is the Rust deserializer's job —
-    // see SuggestionPriority::deserialize, which clamps on receive.
-    // Negative and >100 values therefore round-trip unchanged here.
+    // validation belongs to Priority::deserialize in
+    // crates/gc-suggest/src/priority.rs — out-of-range values are clamped
+    // to 0..=100 on both ends. Negative and >100 values therefore
+    // round-trip unchanged here.
     const negative = convertSpec({
       name: 'git',
       subcommands: [{ name: 'foo', description: 'x', priority: -5 }],
@@ -401,9 +402,10 @@ describe('convertSpec', () => {
 
   it('passes out-of-range option priority through (caller validates)', () => {
     // Contract: the converter only checks `typeof === 'number'`. Range
-    // validation (0–100 clamp, etc.) is the Rust deserializer's job —
-    // see SuggestionPriority::deserialize, which clamps on receive.
-    // Negative and >100 values therefore round-trip unchanged here.
+    // validation belongs to Priority::deserialize in
+    // crates/gc-suggest/src/priority.rs — out-of-range values are clamped
+    // to 0..=100 on both ends. Negative and >100 values therefore
+    // round-trip unchanged here.
     const negative = convertSpec({
       name: 'git',
       options: [{ name: '--flag', description: 'x', priority: -5 }],

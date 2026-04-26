@@ -249,10 +249,10 @@ pub struct InputHandler {
     /// Reset by `dismiss()` so ESC-then-retrigger on the same buffer still works.
     last_trigger_fingerprint: Option<(u64, usize)>,
     /// Monotonic generation counter incremented on each successful `trigger()`.
-    /// Passed to async generator tasks so stale completions can be dropped when
-    /// the user has typed more characters by the time the task completes.
-    /// A completion message whose `generation` does not equal the current value
-    /// is silently discarded by `try_merge_dynamic`.
+    /// Snapshotted into `spawned_generation` at `spawn_generators` time and
+    /// incremented on every successful `trigger()`. `check_merge_staleness`
+    /// compares the two so completions whose spawn predates the current buffer
+    /// state are dropped without merging.
     #[doc(hidden)]
     pub buffer_generation: u64,
     /// Generation counter snapshotted at `spawn_generators` time.
@@ -449,12 +449,9 @@ impl InputHandler {
         self.auto_trigger
     }
 
-    // The `restore_dynamic_rx`, `has_dynamic_rx`, `take_dynamic_rx`,
-    // `current_suggestions`, `set_spawned_generation`,
-    // `prime_dynamic_ctx_for_empty_buffer`, and `has_dynamic_task` accessors
-    // below are `#[doc(hidden)] pub` only so integration tests can simulate
-    // generator drift / drive the rx channel directly. They are not part of
-    // the supported API.
+    // The #[doc(hidden)] pub accessors below exist solely so integration tests
+    // can simulate generator drift / drive the rx channel directly. They are
+    // not part of the supported API.
 
     /// Restore a channel receiver that was taken out for an awaited bounded-block
     /// window but was not consumed (e.g. due to keystroke cancellation). This
@@ -822,8 +819,6 @@ impl InputHandler {
         self.dynamic_rx = None;
         self.dynamic_ctx = None;
 
-        // Advance the generation counter so any in-flight async task's
-        // completion can be identified as stale and dropped.
         self.buffer_generation = self.buffer_generation.wrapping_add(1);
 
         let sync_result = self.engine.suggest_sync(&ctx, &cwd, &buffer);
@@ -968,6 +963,14 @@ impl InputHandler {
 
         let sync_suggestions = result.suggestions;
 
+        // Dismiss any stale popup BEFORE spawning generators. `dismiss()`
+        // aborts `dynamic_task` and clears `dynamic_rx`, which would close
+        // the channel a freshly-spawned generator writes to and leave Phase
+        // 2 awaiting a dead receiver.
+        if sync_suggestions.is_empty() && self.visible {
+            self.dismiss(stdout);
+        }
+
         // Spawn generators (consumes script/git/provider vecs).
         if has_async {
             self.spawn_generators(
@@ -989,8 +992,6 @@ impl InputHandler {
                     self.overlay.reset();
                     self.visible = true;
                     self.render_at(stdout, cursor_row, cursor_col, screen_rows, screen_cols);
-                } else if self.visible {
-                    self.dismiss(stdout);
                 }
 
                 return TriggerPrepared::NeedsBlock {
@@ -1014,8 +1015,6 @@ impl InputHandler {
             self.visible = true;
             self.render_at(stdout, cursor_row, cursor_col, screen_rows, screen_cols);
             self.last_trigger_fingerprint = Some(fingerprint);
-        } else if !has_async && self.visible {
-            self.dismiss(stdout);
         }
 
         TriggerPrepared::Painted
@@ -1092,15 +1091,8 @@ impl InputHandler {
         };
 
         let mut all = sync_suggestions;
-        {
-            use std::collections::HashSet;
-            let existing: HashSet<String> = all.iter().map(|s| s.text.clone()).collect();
-            let new_items: Vec<_> = async_results
-                .into_iter()
-                .filter(|s| !existing.contains(&s.text))
-                .collect();
-            all.extend(new_items);
-        }
+        let extras = merge_dedup_against(&all, async_results);
+        all.extend(extras);
         // Mirror try_merge_dynamic: rank against the LIVE query so a
         // user keystroke during the bounded wait re-filters the pool
         // instead of ranking against the stale spawn-time word. When the
@@ -1167,8 +1159,6 @@ impl InputHandler {
                 .is_some_and(|tpl| tpl.iter().any(|part| part.contains("{current_token}")))
         });
         self.dynamic_ctx = Some(DynamicCtxSnapshot::capture(ctx, uses_current_word));
-        // Snapshot the generation at spawn time so try_merge_dynamic can drop
-        // results from a task spawned for an earlier buffer state.
         self.spawned_generation = self.buffer_generation;
         let (tx, rx) = mpsc::channel::<Vec<Suggestion>>(1);
         self.dynamic_rx = Some(rx);
@@ -1328,30 +1318,8 @@ impl InputHandler {
                     self.overlay.reset();
                 }
 
-                // Merge: add dynamic results, dedup by text. Two borrowed
-                // HashSets avoid the two s.text.clone() calls the previous
-                // owned-HashSet<String> version required per dupe check.
-                let filtered: Vec<Suggestion> = {
-                    let existing: HashSet<&str> =
-                        self.suggestions.iter().map(|s| s.text.as_str()).collect();
-                    dynamic_results
-                        .into_iter()
-                        .filter(|s| !existing.contains(s.text.as_str()))
-                        .collect()
-                };
-                let deduped: Vec<Suggestion> = {
-                    let mut seen: HashSet<&str> = HashSet::with_capacity(filtered.len());
-                    let keep: Vec<bool> = filtered
-                        .iter()
-                        .map(|s| seen.insert(s.text.as_str()))
-                        .collect();
-                    filtered
-                        .into_iter()
-                        .zip(keep)
-                        .filter_map(|(s, k)| if k { Some(s) } else { None })
-                        .collect()
-                };
-                self.suggestions.extend(deduped);
+                let extras = merge_dedup_against(&self.suggestions, dynamic_results);
+                self.suggestions.extend(extras);
                 let merged = std::mem::take(&mut self.suggestions);
                 // Merge-time rank: when the user has a non-empty query, filter
                 // the pool to matches sorted by relevance and cap at
@@ -1700,6 +1668,26 @@ fn build_env_snapshot(has_providers: bool) -> std::collections::HashMap<String, 
     } else {
         std::collections::HashMap::new()
     }
+}
+
+/// Filter `incoming` so each kept item's `text` is unique relative to
+/// `existing` AND to anything kept earlier in the same batch. Returns the
+/// surviving items in their original order — caller appends or processes
+/// them however it likes.
+fn merge_dedup_against(existing: &[Suggestion], incoming: Vec<Suggestion>) -> Vec<Suggestion> {
+    let keep: Vec<bool> = {
+        let existing_set: HashSet<&str> = existing.iter().map(|s| s.text.as_str()).collect();
+        let mut batch_seen: HashSet<&str> = HashSet::with_capacity(incoming.len());
+        incoming
+            .iter()
+            .map(|s| !existing_set.contains(s.text.as_str()) && batch_seen.insert(s.text.as_str()))
+            .collect()
+    };
+    incoming
+        .into_iter()
+        .zip(keep)
+        .filter_map(|(s, k)| if k { Some(s) } else { None })
+        .collect()
 }
 
 #[cfg(test)]
@@ -3035,6 +3023,23 @@ mod tests {
                 "trigger() must clear or replace stale dynamic_ctx"
             );
         }
+    }
+
+    #[tokio::test]
+    async fn test_abort_dynamic_task_and_clear_ctx_clears_both_fields() {
+        let mut handler = make_handler();
+        handler.dynamic_task = Some(tokio::spawn(async {
+            tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+        }));
+        handler.dynamic_ctx = Some(DynamicCtxSnapshot::capture(
+            &ctx("git", &["checkout"], None, 2, ""),
+            false,
+        ));
+
+        handler.abort_dynamic_task_and_clear_ctx();
+
+        assert!(handler.dynamic_task.is_none());
+        assert!(handler.dynamic_ctx.is_none());
     }
 
     #[test]
