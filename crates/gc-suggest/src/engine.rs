@@ -109,13 +109,12 @@ impl SyncResult {
             .iter()
             .map(crate::priority::effective)
             .max()
-            .unwrap_or(0);
+            .unwrap_or_else(|| crate::priority::Priority::new(0));
 
         // Git generators produce GitBranch/GitTag — base priority 80.
-        let git_base = crate::priority::base_for_kind(crate::types::SuggestionKind::GitBranch);
+        let git_base = crate::types::SuggestionKind::GitBranch.base_priority();
         // Script and provider generators produce ProviderValue — base priority 70.
-        let provider_base =
-            crate::priority::base_for_kind(crate::types::SuggestionKind::ProviderValue);
+        let provider_base = crate::types::SuggestionKind::ProviderValue.base_priority();
 
         (!self.git_generators.is_empty() && git_base > top_sync)
             || (!self.script_generators.is_empty() && provider_base > top_sync)
@@ -197,6 +196,52 @@ mod sync_result_tests {
         };
         // top_sync = 30 (Flag), provider_base = 70 (ProviderValue) → 70 > 30 → true
         assert!(result.has_pending_high_priority());
+    }
+
+    fn empty_generator_spec() -> Arc<crate::specs::GeneratorSpec> {
+        Arc::new(crate::specs::GeneratorSpec {
+            generator_type: None,
+            script: None,
+            script_template: None,
+            transforms: vec![],
+            cache: None,
+            requires_js: false,
+            js_source: None,
+            corrected_in: None,
+            template: None,
+        })
+    }
+
+    #[test]
+    fn has_pending_high_priority_true_when_script_pending_and_flags_only_in_sync() {
+        let result = SyncResult {
+            suggestions: vec![Suggestion {
+                kind: SuggestionKind::Flag,
+                priority: None,
+                ..Default::default()
+            }],
+            script_generators: vec![empty_generator_spec()],
+            git_generators: vec![],
+            provider_generators: vec![],
+        };
+        // top_sync = 30 (Flag), provider_base = 70 (script → ProviderValue) → 70 > 30 → true
+        assert!(result.has_pending_high_priority());
+    }
+
+    #[test]
+    fn has_pending_high_priority_false_when_script_pending_but_sync_outranks() {
+        let result = SyncResult {
+            suggestions: vec![Suggestion {
+                kind: SuggestionKind::Subcommand,
+                priority: None,
+                ..Default::default()
+            }],
+            script_generators: vec![empty_generator_spec()],
+            git_generators: vec![],
+            provider_generators: vec![],
+        };
+        // top_sync = 70 (Subcommand), provider_base = 70 → NOT strictly greater → false
+        assert!(!result.has_pending_high_priority());
     }
 }
 
@@ -617,6 +662,11 @@ impl SuggestionEngine {
             Context::PathPrefix => {
                 // PathPrefix is the explicit user-typed escape hatch — only
                 // filesystem candidates run, regardless of spec content.
+                // Env-var (`$VAR`) and ssh-host injections are deliberately
+                // absent: PathPrefix words start with `./`, `../`, `/`, or
+                // `~/` — none of those prefixes can collide with `$VAR` or
+                // an SSH host token, so neither augmentation has anything
+                // to add here.
                 Ok(self.suggest_filesystem_fallback(ctx, cwd, buffer, Vec::new(), "path"))
             }
             Context::FlagPrefix => Ok(self.suggest_flag_prefix(ctx, cwd, buffer)),
@@ -629,19 +679,10 @@ impl SuggestionEngine {
                 self.extend_with_ssh_hosts(ctx, &mut candidates);
                 match self.try_suggest_from_spec(ctx, cwd, buffer, candidates) {
                     Ok(result) => Ok(result),
-                    // Defensive arm: classify() saw spec_matched == true via
-                    // spec_for_ctx, and the spec store does not change after
-                    // construction, so this Err is unreachable in normal
-                    // operation. Retained as a guard against future refactors
-                    // that might break that invariant. Even if it fires, do
-                    // NOT leak filesystem — the spec author opted into
-                    // spec-driven completion.
-                    Err(candidates) => Ok(SyncResult {
-                        suggestions: self.rank_with_history(ctx, cwd, buffer, candidates, true),
-                        script_generators: Vec::new(),
-                        git_generators: Vec::new(),
-                        provider_generators: Vec::new(),
-                    }),
+                    Err(_) => unreachable!(
+                        "spec_for_ctx returned Some in classify but try_suggest_from_spec \
+                         returned Err — alias_map / spec_store invariant violated"
+                    ),
                 }
             }
             Context::UnspeccedArg => {
@@ -775,11 +816,16 @@ impl SuggestionEngine {
         self.spec_store.get(resolved)
     }
 
-    /// Attempt to resolve candidates from a loaded spec for this command.
+    /// Look up the spec for `ctx.command_name` and append its synchronous
+    /// completions (subcommands, options, templates, env-var/SSH-host
+    /// injections) to the candidate set.
     ///
-    /// Returns `Ok(SyncResult)` if a spec was found and handled. Returns
-    /// `Err(candidates)` — handing the partially-populated candidate vec
-    /// back — so the caller can fall through to filesystem completion.
+    /// By construction this is invoked only from the `Context::SpecArg` arm
+    /// of `suggest_sync`, which has already verified
+    /// `spec_for_ctx(...).is_some()` via the classifier. The `Err(candidates)`
+    /// arm therefore signals an internal invariant violation (`alias_map` and
+    /// `spec_store` mutation between classify and dispatch) and is converted
+    /// to `unreachable!` by the dispatcher.
     fn try_suggest_from_spec(
         &self,
         ctx: &CommandContext,
@@ -1121,11 +1167,8 @@ mod tests {
 
     #[test]
     fn test_git_checkout_dispatches_ref_generators_in_arg_position() {
-        // SpecArg context dispatches git_generators alongside sync candidates.
-        // Flags/subcommands ARE now included in the sync pass — the priority
-        // sort (Task 3) ensures branches/tags rank above flags once they arrive
-        // via the async merge. The old `defer_to_git_refs` suppression of flags
-        // has been replaced by Context-dispatch + priority ranking.
+        // SpecArg dispatches generators in parallel with sync flags; priority
+        // sort lands branches above flags once they arrive.
         let engine = make_engine();
         let ctx = make_ctx(Some("git"), vec!["checkout"], "", 2);
         let results = engine
@@ -1149,8 +1192,6 @@ mod tests {
     #[test]
     fn test_git_checkout_includes_history_in_arg_position() {
         // SpecArg context always includes history (rank_with_history true).
-        // The old `defer_to_git_refs` suppression of history has been removed;
-        // ordering is now handled by priority sort + Task 9 bounded wait.
         // A discriminating current_word ("main") is used so the spec/fs
         // candidates fuzzy-filter down and history can fit within
         // max_results — an empty current_word floods the cap with flags
@@ -1169,8 +1210,8 @@ mod tests {
             .suggest_sync(&ctx, Path::new("/tmp"), "git checkout main")
             .unwrap();
 
-        // Presence is locked in here; ordering vs incoming async branches
-        // is Task 9's domain.
+        // Presence is locked in here; ordering against incoming async
+        // branches is covered by the priority-sort tests above.
         assert!(
             results
                 .suggestions
@@ -1305,6 +1346,23 @@ mod tests {
         assert!(
             results.iter().any(|s| s.text == "src/main.rs"),
             "expected 'src/main.rs' in results: {results:?}"
+        );
+    }
+
+    #[test]
+    fn test_path_prefix_dispatches_via_classifier() {
+        // Genuinely exercises the PathPrefix Context branch — `./foo` starts
+        // with `./` so `has_path_prefix` returns true and the classifier
+        // routes to PathPrefix instead of UnspeccedArg.
+        let engine = make_engine();
+        let tmp = tempfile::TempDir::new().unwrap();
+        std::fs::create_dir(tmp.path().join("foo")).unwrap();
+        std::fs::write(tmp.path().join("foo/bar.txt"), "").unwrap();
+        let ctx = make_ctx(Some("cat"), vec![], "./foo", 1);
+        let results = engine.suggest_sync(&ctx, tmp.path(), "cat ./foo").unwrap();
+        assert!(
+            results.iter().any(|s| s.text.contains("foo")),
+            "PathPrefix dispatch should yield filesystem entries: {results:?}"
         );
     }
 
@@ -1597,6 +1655,48 @@ mod tests {
         assert!(
             results.iter().any(|s| s.text == "../../"),
             "should offer ../../ when current_word is ../: {results:?}"
+        );
+    }
+
+    #[test]
+    fn test_path_prefix_chains_parent_dir_for_unspecced_command() {
+        use crate::context::{classify, ClassifyInput, Context};
+        // PathPrefix on an unspecced command should still offer the chained
+        // `../../` when the user is one level deep into the working tree.
+        let engine = make_engine();
+        let tmp = tempfile::TempDir::new().unwrap();
+        let sub = tmp.path().join("aaa").join("bbb");
+        std::fs::create_dir_all(&sub).unwrap();
+        let ctx = make_ctx(Some("unknown_cmd"), vec![], "../", 1);
+        assert_eq!(
+            classify(ClassifyInput {
+                current_word: "../",
+                in_redirect: false,
+                word_index: 1,
+                spec_matched: false,
+            }),
+            Context::PathPrefix
+        );
+        let results = engine.suggest_sync(&ctx, &sub, "unknown_cmd ../").unwrap();
+        assert!(
+            results.iter().any(|s| s.text == "../../"),
+            "PathPrefix should chain parent dir on unspecced commands: {results:?}"
+        );
+    }
+
+    #[test]
+    fn test_unspecced_path_prefix_no_chain_at_root() {
+        // Root has no parent — `../` chaining must not appear.
+        let engine = make_engine();
+        let ctx = make_ctx(Some("unknown_cmd"), vec![], "../", 1);
+        let results = engine
+            .suggest_sync(&ctx, Path::new("/"), "unknown_cmd ../")
+            .unwrap();
+        assert!(
+            !results
+                .iter()
+                .any(|s| s.text == "../" || s.text == "../../"),
+            "../ chaining should not appear at root: {results:?}"
         );
     }
 
@@ -2194,9 +2294,9 @@ mod tests {
                     priority::effective(pair[0]) >= priority::effective(pair[1]),
                     "equal-score items should be ordered by priority desc: {:?} (pri={}) before {:?} (pri={})",
                     pair[0].text,
-                    priority::effective(pair[0]),
+                    priority::effective(pair[0]).get(),
                     pair[1].text,
-                    priority::effective(pair[1])
+                    priority::effective(pair[1]).get()
                 );
             }
         }
@@ -2259,7 +2359,7 @@ mod tests {
         make_ctx(Some(command), args_slice.to_vec(), current_word, word_index)
     }
 
-    // ---- Step 1 failing tests ----
+    // ---- Context-dispatch contract tests ----
 
     #[test]
     fn suggest_sync_path_prefix_returns_filesystem_only() {

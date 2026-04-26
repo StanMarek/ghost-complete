@@ -288,9 +288,13 @@ When `cache_by_directory` is `false`, the cache key is the generator's script co
 
 ## Priority and ranking
 
-Suggestions sort by `(score-desc, priority-desc, alpha)`. Score is the
-fuzzy match score against the current word. Priority is an integer in
-`0..=100`; higher ranks earlier. Ties break alphabetically.
+Suggestions sort by `(non-history-first, score-desc, priority-desc, alpha)`.
+Score is the fuzzy match score against the current word. Priority is an
+integer in `0..=100`; higher ranks earlier. Ties break alphabetically.
+
+History suggestions are partitioned to the bottom regardless of priority
+— frecency-boosted history can still outrank other history, but never
+outranks non-history.
 
 When a `SubcommandSpec` or `OptionSpec` sets `priority` explicitly, that
 value is used. Otherwise the engine falls back to a per-kind base:
@@ -346,8 +350,8 @@ Precedence is top-to-bottom — the first row that matches wins.
 | Context           | Triggered when                                    | Providers that run                  |
 | ----------------- | ------------------------------------------------- | ----------------------------------- |
 | `CommandPosition` | `word_index == 0`                                 | `$PATH` commands + history          |
-| `Redirect`        | after `>`, `>>`, `<`, `\|`                        | filesystem only                     |
-| `PathPrefix`      | current_word starts with `./`, `/`, `~/`, `../`   | filesystem only — escape hatch      |
+| `Redirect`        | after `>`, `>>`, `<`, `<<`, `<<<`                 | filesystem only                     |
+| `PathPrefix`      | current_word starts with `./`, `/`, `~/`, `../`   | filesystem + history — escape hatch |
 | `FlagPrefix`      | current_word starts with `-` or `--`              | spec flags + spec subcommands only  |
 | `SpecArg`         | spec matched + arg position resolved              | only what the spec declares         |
 | `UnspeccedArg`    | no spec at all                                    | filesystem + history (fallback)     |

@@ -1,4 +1,7 @@
-//! Golden snapshot tests covering ranking + suppression invariants from
+//! Golden snapshot tests for the high-traffic commands covered by the
+//! ranking + suppression contract: `git checkout`, `cargo run`, `cd`,
+//! `git checkout ./`, `git checkout --`, `npm install`, `docker run`,
+//! `ssh`, and `kubectl get`. Invariants are documented in
 //! `docs/superpowers/specs/2026-04-25-completion-ranking-and-suppression-design.md`.
 //!
 //! Each test feeds a canonical buffer into `SuggestionEngine::suggest_sync`
@@ -15,6 +18,7 @@ use gc_buffer::parse_command_context;
 use gc_suggest::commands::CommandsProvider;
 use gc_suggest::history::HistoryProvider;
 use gc_suggest::specs::SpecStore;
+use gc_suggest::types::Suggestion;
 use gc_suggest::{SuggestionEngine, SuggestionKind};
 
 fn spec_dir() -> PathBuf {
@@ -53,6 +57,28 @@ fn git_checkout_no_query_ranks_branches_first() {
             || !result.git_generators.is_empty(),
         "branches should be either visible or pending"
     );
+}
+
+#[test]
+fn git_branch_priority_outranks_flag_priority() {
+    // GitBranch base 80 > Flag base 30 — branches must sort above flags
+    // when both share the empty-query path.
+    let items = vec![
+        Suggestion {
+            text: "--force".to_string(),
+            kind: SuggestionKind::Flag,
+            priority: None,
+            ..Default::default()
+        },
+        Suggestion {
+            text: "main".to_string(),
+            kind: SuggestionKind::GitBranch,
+            priority: None,
+            ..Default::default()
+        },
+    ];
+    let result = gc_suggest::fuzzy::rank("", items, 50);
+    assert_eq!(result[0].kind, SuggestionKind::GitBranch);
 }
 
 #[test]

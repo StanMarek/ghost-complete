@@ -138,6 +138,11 @@ mod tests {
     }
 
     #[test]
+    fn bare_single_dash_is_flag_prefix() {
+        assert_eq!(classify(input("-", 1, false, true)), Context::FlagPrefix);
+    }
+
+    #[test]
     fn flag_prefix_beats_spec_arg() {
         assert_eq!(
             classify(input("--branch", 1, false, true)),

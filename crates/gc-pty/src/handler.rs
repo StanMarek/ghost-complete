@@ -154,6 +154,18 @@ impl DynamicCtxSnapshot {
     }
 }
 
+/// Outcome of the staleness check shared by `try_merge_dynamic` and
+/// `apply_block_result`.
+enum MergeFreshness {
+    /// Spawn-time context still matches the live buffer; merge with the
+    /// returned live `current_word`.
+    Fresh { current_word: String },
+    /// Buffer drifted — drop the results and repaint.
+    Stale,
+    /// Parser lock was poisoned; caller should bail without rendering.
+    PoisonedLock,
+}
+
 /// Result of `InputHandler::prepare_trigger_with_block`.
 ///
 /// When a high-priority async generator is pending and `render_block_ms > 0`,
@@ -212,11 +224,12 @@ pub struct InputHandler {
     dynamic_task: Option<tokio::task::JoinHandle<()>>,
     dynamic_notify: Arc<Notify>,
     /// Command context snapshot captured when generators were spawned.
-    /// Used by try_merge_dynamic to drop stale results when the user's
-    /// editing has changed WHICH generator would now apply. We compare
-    /// command + args (subcommand path) + preceding_flag + word_index.
-    /// `current_word` is also compared, but ONLY when a generator depends
-    /// on it literally (script_template with `{current_token}`); for
+    /// Consulted by `check_merge_staleness` (called from both
+    /// `try_merge_dynamic` and `apply_block_result`) to drop stale results
+    /// when the user's editing has changed WHICH generator would now apply.
+    /// We compare command + args (subcommand path) + preceding_flag +
+    /// word_index. `current_word` is also compared, but ONLY when a generator
+    /// depends on it literally (script_template with `{current_token}`); for
     /// generators that treat it as a fuzzy-filter prefix, typing more
     /// characters still lets results merge and re-rank.
     /// See `DynamicCtxSnapshot::capture` and `is_stale_against`.
@@ -227,25 +240,22 @@ pub struct InputHandler {
     /// Reset when a CPR sync corrects the parser's cursor position (new prompt).
     scroll_deficit: u16,
     /// Fingerprint (buffer hash + cursor offset) of the last trigger that
-    /// produced a visible popup. Used as an idempotency guard in
-    /// [`InputHandler::trigger`]: when a new trigger arrives with an
-    /// unchanged buffer AND the popup is still visible, we skip re-running
+    /// produced a visible popup. Used as an idempotency guard in the trigger
+    /// paths (`InputHandler::trigger` and `prepare_trigger_with_block`/
+    /// `apply_block_result`): when a new trigger arrives with an unchanged
+    /// buffer AND the popup is still visible, we skip re-running
     /// `suggest_sync` because (1) it would produce the same suggestions —
     /// wasted work, and (2) an empty-sync + no-generators result would
     /// silently dismiss a popup populated by a prior trigger's async merge.
     /// See the bug-repro test `test_trigger_idempotent_when_buffer_unchanged`.
     /// Reset by `dismiss()` so ESC-then-retrigger on the same buffer still works.
     last_trigger_fingerprint: Option<(u64, usize)>,
-    /// Monotonic generation counter incremented on each successful `trigger()`.
-    /// Passed to async generator tasks so stale completions can be dropped when
-    /// the user has typed more characters by the time the task completes.
-    /// A completion message whose `generation` does not equal the current value
-    /// is silently discarded by `try_merge_dynamic`.
-    ///
-    /// Public only so integration tests can simulate generation drift; not part
-    /// of the supported API.
-    #[doc(hidden)]
-    pub buffer_generation: u64,
+    /// Monotonic counter ticked by both `trigger()` and
+    /// `prepare_trigger_with_block()` before the new sync pass runs.
+    /// `spawn_generators` snapshots it into `spawned_generation`;
+    /// `check_merge_staleness` compares the two so async results spawned for
+    /// an earlier buffer get dropped instead of merged.
+    buffer_generation: u64,
     /// Generation counter snapshotted at `spawn_generators` time.
     /// `try_merge_dynamic` compares this against `buffer_generation` to drop
     /// results from a task spawned for an earlier buffer state.
@@ -440,50 +450,88 @@ impl InputHandler {
         self.auto_trigger
     }
 
+    // The #[doc(hidden)] pub accessors below exist solely so integration tests
+    // can simulate generator drift / drive the rx channel directly. They are
+    // not part of the supported API.
+
     /// Restore a channel receiver that was taken out for an awaited bounded-block
     /// window but was not consumed (e.g. due to keystroke cancellation). This
     /// allows `dynamic_merge_loop` to pick up the result when the generator
     /// eventually completes.
+    #[doc(hidden)]
     pub fn restore_dynamic_rx(&mut self, rx: mpsc::Receiver<Vec<Suggestion>>) {
         self.dynamic_rx = Some(rx);
     }
 
     /// Returns whether the `dynamic_rx` channel is set (a generator is pending).
-    /// Public only for integration tests; not part of the supported API.
     #[doc(hidden)]
     pub fn has_dynamic_rx(&self) -> bool {
         self.dynamic_rx.is_some()
     }
 
+    /// Returns whether `dynamic_task` is set (a generator task handle is owned).
+    #[doc(hidden)]
+    pub fn has_dynamic_task(&self) -> bool {
+        self.dynamic_task.is_some()
+    }
+
     /// Takes the `dynamic_rx` channel out of the handler, leaving `None`.
-    /// Public only for integration tests that need to drive the channel
-    /// directly; the production debounce loop uses `prepare_trigger_with_block`,
-    /// which returns the `rx` inline. Not part of the supported API.
     #[doc(hidden)]
     pub fn take_dynamic_rx(&mut self) -> Option<mpsc::Receiver<Vec<Suggestion>>> {
         self.dynamic_rx.take()
     }
 
     /// Returns the current suggestions slice (read-only).
-    /// Public only for integration tests; not part of the supported API.
     #[doc(hidden)]
     pub fn current_suggestions(&self) -> &[Suggestion] {
         &self.suggestions
     }
 
-    /// Set the `spawned_generation` field. Used in tests to simulate that
-    /// `spawn_generators` ran for the current `buffer_generation`.
+    /// Set the `spawned_generation` field, simulating a `spawn_generators` run
+    /// for the current `buffer_generation`.
     #[doc(hidden)]
     pub fn set_spawned_generation(&mut self, gen: u64) {
         self.spawned_generation = gen;
     }
 
+    #[doc(hidden)]
+    pub fn set_buffer_generation(&mut self, gen: u64) {
+        self.buffer_generation = gen;
+    }
+
+    #[doc(hidden)]
+    pub fn set_visible(&mut self, visible: bool) {
+        self.visible = visible;
+    }
+
     /// Prime `dynamic_ctx` to the "no context" state that matches an empty
-    /// buffer. Used in integration tests that bypass `spawn_generators`.
+    /// buffer, bypassing `spawn_generators`.
     #[doc(hidden)]
     pub fn prime_dynamic_ctx_for_empty_buffer(&mut self) {
         let base_ctx = gc_buffer::parse_command_context("", 0);
         self.dynamic_ctx = Some(DynamicCtxSnapshot::capture(&base_ctx, false));
+    }
+
+    /// Prime `dynamic_ctx` from an arbitrary buffer + cursor so tests can
+    /// drive the staleness check against a non-empty live buffer.
+    #[doc(hidden)]
+    pub fn prime_dynamic_ctx_for_buffer(&mut self, buffer: &str, cursor: usize) {
+        let base_ctx = gc_buffer::parse_command_context(buffer, cursor);
+        self.dynamic_ctx = Some(DynamicCtxSnapshot::capture(&base_ctx, false));
+    }
+
+    /// Seed `dynamic_task` with a no-op spawn handle so tests can verify
+    /// abort/clear semantics without spinning up a real generator.
+    #[doc(hidden)]
+    pub fn seed_dynamic_task_noop(&mut self) {
+        self.dynamic_task = Some(tokio::spawn(async {}));
+    }
+
+    /// Read the last trigger fingerprint so tests can assert `apply_block_result`
+    /// stamped it on success / left it untouched on stale.
+    #[doc(hidden)]
+    pub fn last_trigger_fingerprint(&self) -> Option<(u64, usize)> {
+        self.last_trigger_fingerprint
     }
 
     /// Process a single key event. Returns the raw bytes to forward to the PTY,
@@ -782,8 +830,6 @@ impl InputHandler {
         self.dynamic_rx = None;
         self.dynamic_ctx = None;
 
-        // Advance the generation counter so any in-flight async task's
-        // completion can be identified as stale and dropped.
         self.buffer_generation = self.buffer_generation.wrapping_add(1);
 
         let sync_result = self.engine.suggest_sync(&ctx, &cwd, &buffer);
@@ -928,6 +974,14 @@ impl InputHandler {
 
         let sync_suggestions = result.suggestions;
 
+        // Dismiss any stale popup BEFORE spawning generators. `dismiss()`
+        // aborts `dynamic_task` and clears `dynamic_rx`, which would close
+        // the channel a freshly-spawned generator writes to and leave Phase
+        // 2 awaiting a dead receiver.
+        if sync_suggestions.is_empty() && self.visible {
+            self.dismiss(stdout);
+        }
+
         // Spawn generators (consumes script/git/provider vecs).
         if has_async {
             self.spawn_generators(
@@ -949,8 +1003,6 @@ impl InputHandler {
                     self.overlay.reset();
                     self.visible = true;
                     self.render_at(stdout, cursor_row, cursor_col, screen_rows, screen_cols);
-                } else if self.visible {
-                    self.dismiss(stdout);
                 }
 
                 return TriggerPrepared::NeedsBlock {
@@ -974,8 +1026,6 @@ impl InputHandler {
             self.visible = true;
             self.render_at(stdout, cursor_row, cursor_col, screen_rows, screen_cols);
             self.last_trigger_fingerprint = Some(fingerprint);
-        } else if !has_async && self.visible {
-            self.dismiss(stdout);
         }
 
         TriggerPrepared::Painted
@@ -986,7 +1036,8 @@ impl InputHandler {
     ///
     /// `maybe_async` is `Some(Vec<Suggestion>)` if the generator completed
     /// within the window, or `None` if the timeout fired (in which case the
-    /// caller should restore `rx` to `self.dynamic_rx` first).
+    /// caller should restore `rx` via `rx_on_timeout` so `dynamic_merge_loop`
+    /// can deliver the late result).
     #[allow(clippy::too_many_arguments)] // all args are genuinely independent
     pub fn apply_block_result(
         &mut self,
@@ -1002,66 +1053,88 @@ impl InputHandler {
         fingerprint: (u64, usize),
         current_word: &str,
     ) {
+        let was_timeout = rx_on_timeout.is_some();
         if let Some(rx) = rx_on_timeout {
-            // Timeout fired: restore rx so dynamic_merge_loop can deliver results.
             self.dynamic_rx = Some(rx);
         }
 
-        match maybe_async {
-            Some(async_results) if !async_results.is_empty() => {
-                // Generator completed within the window.
-                self.dynamic_task = None;
-                self.dynamic_ctx = None;
-
-                let mut all = sync_suggestions;
-                {
-                    use std::collections::HashSet;
-                    let existing: HashSet<String> = all.iter().map(|s| s.text.clone()).collect();
-                    let new_items: Vec<_> = async_results
-                        .into_iter()
-                        .filter(|s| !existing.contains(&s.text))
-                        .collect();
-                    all.extend(new_items);
-                }
-                // Mirror try_merge_dynamic: when the user has typed nothing
-                // we keep the full pool sorted by priority (truncating with
-                // an empty query would alphabetically evict high-value
-                // candidates from large dynamic pools — see the long
-                // comment in try_merge_dynamic). When they have typed, fuzzy
-                // rank against the query and cap at max_visible * 5.
-                all = if current_word.is_empty() {
-                    all.sort_by(|a, b| {
-                        gc_suggest::priority::effective(b)
-                            .cmp(&gc_suggest::priority::effective(a))
-                            .then_with(|| a.text.cmp(&b.text))
-                    });
-                    all
-                } else {
-                    gc_suggest::fuzzy::rank(current_word, all, self.max_visible * 5)
-                };
-
-                self.suggestions = all;
-                self.overlay.reset();
-                self.visible = true;
-                self.render_at(stdout, cursor_row, cursor_col, screen_rows, screen_cols);
-                self.last_trigger_fingerprint = Some(fingerprint);
-            }
-            Some(_) | None => {
-                // Generator returned empty (Some([])) or timeout (None with rx restored).
-                // Sync-only was already painted in prepare_trigger_with_block.
-                // If timeout: dynamic_merge_loop will merge later.
-                // If empty: clear loading indicator.
-                if maybe_async.is_some() {
-                    // Empty result: no more async incoming
-                    self.dynamic_task = None;
-                    self.dynamic_ctx = None;
-                    if self.visible {
-                        self.render(parser, stdout);
-                    }
-                }
-                self.last_trigger_fingerprint = Some(fingerprint);
-            }
+        if was_timeout {
+            // Sync-only was already painted in prepare_trigger_with_block;
+            // dynamic_merge_loop will merge the late result.
+            self.last_trigger_fingerprint = Some(fingerprint);
+            return;
         }
+
+        // Generator finished (sent results, sent empty, or disconnected).
+        // Cleanup the task handle now; `check_merge_staleness` clears
+        // `dynamic_ctx` after it consults it, so leave that alone here.
+        self.dynamic_task = None;
+
+        let async_results = match maybe_async {
+            Some(items) if !items.is_empty() => items,
+            _ => {
+                // Generator returned nothing. Clear ctx and repaint to clear
+                // the loading indicator (mirrors try_merge_dynamic's
+                // Disconnected arm).
+                self.dynamic_ctx = None;
+                if self.visible {
+                    self.render(parser, stdout);
+                }
+                self.last_trigger_fingerprint = Some(fingerprint);
+                return;
+            }
+        };
+
+        // Re-check that the buffer hasn't drifted while we were awaiting
+        // the generator. The captured `cursor_row` / `cursor_col` /
+        // `current_word` / `fingerprint` are all from the spawn site
+        // ~block_ms ago; merging against a freshly-typed buffer would rank
+        // the wrong query and paint at the wrong cursor row.
+        let live_word = match self.check_merge_staleness(parser) {
+            MergeFreshness::Fresh { current_word } => current_word,
+            MergeFreshness::Stale => {
+                if self.visible {
+                    self.render(parser, stdout);
+                }
+                return;
+            }
+            MergeFreshness::PoisonedLock => return,
+        };
+
+        let mut all = sync_suggestions;
+        let extras = merge_dedup_against(&all, async_results);
+        all.extend(extras);
+        // Mirror try_merge_dynamic: rank against the LIVE query so a
+        // user keystroke during the bounded wait re-filters the pool
+        // instead of ranking against the stale spawn-time word. When the
+        // user has typed nothing we keep the full pool sorted by priority
+        // (truncating with an empty query would alphabetically evict
+        // high-value candidates from large dynamic pools — see the long
+        // comment in try_merge_dynamic). When they have typed, fuzzy rank
+        // against the query and cap at max_visible * 5.
+        all = if live_word.is_empty() {
+            all.sort_by(|a, b| {
+                gc_suggest::priority::effective(b)
+                    .cmp(&gc_suggest::priority::effective(a))
+                    .then_with(|| a.text.cmp(&b.text))
+            });
+            all
+        } else {
+            gc_suggest::fuzzy::rank(&live_word, all, self.max_visible * 5)
+        };
+
+        self.suggestions = all;
+        self.overlay.reset();
+        self.visible = true;
+        // Render against the live cursor/screen geometry: when the buffer
+        // drifted (live_word differs from spawn-time current_word) the
+        // captured cursor row is no longer where the prompt sits.
+        if live_word == current_word {
+            self.render_at(stdout, cursor_row, cursor_col, screen_rows, screen_cols);
+        } else {
+            self.render(parser, stdout);
+        }
+        self.last_trigger_fingerprint = Some(fingerprint);
     }
 
     /// Spawn an async task to run pre-resolved generators (script + git).
@@ -1097,8 +1170,6 @@ impl InputHandler {
                 .is_some_and(|tpl| tpl.iter().any(|part| part.contains("{current_token}")))
         });
         self.dynamic_ctx = Some(DynamicCtxSnapshot::capture(ctx, uses_current_word));
-        // Snapshot the generation at spawn time so try_merge_dynamic can drop
-        // results from a task spawned for an earlier buffer state.
         self.spawned_generation = self.buffer_generation;
         let (tx, rx) = mpsc::channel::<Vec<Suggestion>>(1);
         self.dynamic_rx = Some(rx);
@@ -1161,6 +1232,52 @@ impl InputHandler {
         self.dynamic_task = Some(handle);
     }
 
+    /// Re-acquire parser state and verify that an in-flight generator's
+    /// spawn-time context still matches the user's current buffer.
+    ///
+    /// On `Fresh`, the caller proceeds with the merge and uses the returned
+    /// live `current_word`. On `Stale`, the caller drops the results and
+    /// repaints to clear the loading indicator. On `PoisonedLock`, the caller
+    /// returns without re-rendering — the next `parser.lock()` would just
+    /// log-and-skip again.
+    fn check_merge_staleness(&mut self, parser: &Arc<Mutex<TerminalParser>>) -> MergeFreshness {
+        let current_ctx = {
+            let p = match parser.lock() {
+                Ok(p) => p,
+                Err(e) => {
+                    tracing::warn!(
+                        "parser lock poisoned during dynamic merge re-rank: {e} — \
+                         disabling dynamic_rx"
+                    );
+                    self.dynamic_rx = None;
+                    self.dynamic_ctx = None;
+                    self.dynamic_task = None;
+                    return MergeFreshness::PoisonedLock;
+                }
+            };
+            let state = p.state();
+            let buffer = state.command_buffer().unwrap_or("");
+            let cursor = state.buffer_cursor();
+            parse_command_context(buffer, cursor)
+        };
+        let current_word = current_ctx.current_word.clone();
+
+        if self.spawned_generation != self.buffer_generation {
+            self.dynamic_ctx = None;
+            return MergeFreshness::Stale;
+        }
+
+        let stale = match &self.dynamic_ctx {
+            Some(spawned) => spawned.is_stale_against(&current_ctx),
+            None => true,
+        };
+        self.dynamic_ctx = None;
+        if stale {
+            return MergeFreshness::Stale;
+        }
+        MergeFreshness::Fresh { current_word }
+    }
+
     /// Check for pending dynamic (script generator) results and merge them
     /// into the current suggestions. Returns `true` if the popup was updated.
     pub fn try_merge_dynamic(
@@ -1188,67 +1305,22 @@ impl InputHandler {
                 // handled by the Disconnected arm below (tx is dropped
                 // without sending). See the regression test
                 // `test_try_merge_dynamic_disconnected_rerenders_to_clear_loading`.
-                // Parse the current buffer context and verify it still matches
-                // what the generators were spawned against. If the user's
-                // editing changed WHICH generator would apply (different
-                // command, subcommand, flag, or word position), or if a
-                // current_word-dependent generator's input changed, the
-                // results are stale and must be dropped.
-                let current_ctx = {
-                    let p = match parser.lock() {
-                        Ok(p) => p,
-                        Err(e) => {
-                            // Skip the render call on the poisoned path:
-                            // render() would acquire the same poisoned lock
-                            // and log-and-return as a no-op, so repainting
-                            // here adds nothing. We clear dynamic state so
-                            // the next try_merge_dynamic call starts fresh
-                            // and return false to signal "no merge happened".
-                            tracing::warn!(
-                                "parser lock poisoned during dynamic merge re-rank: {e} — \
-                                 disabling dynamic_rx"
-                            );
-                            self.dynamic_rx = None;
-                            self.dynamic_ctx = None;
-                            self.dynamic_task = None;
-                            return false;
+                let current_word = match self.check_merge_staleness(parser) {
+                    MergeFreshness::Fresh { current_word } => current_word,
+                    MergeFreshness::Stale => {
+                        // Don't merge. If the popup is visible from the
+                        // mixed static+async path, static suggestions stay
+                        // but we must repaint so the loading indicator
+                        // clears (same reasoning as the empty-results
+                        // branch above). If not visible (async-only path),
+                        // nothing happens.
+                        if self.visible {
+                            self.render(parser, stdout);
                         }
-                    };
-                    let state = p.state();
-                    let buffer = state.command_buffer().unwrap_or("");
-                    let cursor = state.buffer_cursor();
-                    parse_command_context(buffer, cursor)
-                };
-                let current_word = current_ctx.current_word.clone();
-
-                // Generation staleness check: if the buffer_generation has
-                // advanced past the generation at spawn time, the user has
-                // typed more characters and this result is stale.
-                if self.spawned_generation != self.buffer_generation {
-                    self.dynamic_ctx = None;
-                    if self.visible {
-                        self.render(parser, stdout);
+                        return false;
                     }
-                    return false;
-                }
-
-                // Staleness check: snapshotted context must still match.
-                let stale = match &self.dynamic_ctx {
-                    Some(spawned) => spawned.is_stale_against(&current_ctx),
-                    None => true,
+                    MergeFreshness::PoisonedLock => return false,
                 };
-                self.dynamic_ctx = None;
-                if stale {
-                    // Don't merge stale results. If popup is visible from
-                    // the mixed static+async path, static suggestions stay
-                    // but we must repaint so the loading indicator clears
-                    // (same reasoning as the empty-results branch above).
-                    // If not visible (async-only path), nothing happens.
-                    if self.visible {
-                        self.render(parser, stdout);
-                    }
-                    return false;
-                }
 
                 // Activate popup if it wasn't visible yet (async-only path:
                 // no static suggestions, generators produced the results).
@@ -1257,30 +1329,8 @@ impl InputHandler {
                     self.overlay.reset();
                 }
 
-                // Merge: add dynamic results, dedup by text. Two borrowed
-                // HashSets avoid the two s.text.clone() calls the previous
-                // owned-HashSet<String> version required per dupe check.
-                let filtered: Vec<Suggestion> = {
-                    let existing: HashSet<&str> =
-                        self.suggestions.iter().map(|s| s.text.as_str()).collect();
-                    dynamic_results
-                        .into_iter()
-                        .filter(|s| !existing.contains(s.text.as_str()))
-                        .collect()
-                };
-                let deduped: Vec<Suggestion> = {
-                    let mut seen: HashSet<&str> = HashSet::with_capacity(filtered.len());
-                    let keep: Vec<bool> = filtered
-                        .iter()
-                        .map(|s| seen.insert(s.text.as_str()))
-                        .collect();
-                    filtered
-                        .into_iter()
-                        .zip(keep)
-                        .filter_map(|(s, k)| if k { Some(s) } else { None })
-                        .collect()
-                };
-                self.suggestions.extend(deduped);
+                let extras = merge_dedup_against(&self.suggestions, dynamic_results);
+                self.suggestions.extend(extras);
                 let merged = std::mem::take(&mut self.suggestions);
                 // Merge-time rank: when the user has a non-empty query, filter
                 // the pool to matches sorted by relevance and cap at
@@ -1562,6 +1612,18 @@ impl InputHandler {
         }
     }
 
+    /// Abort any in-flight dynamic generator task and clear the spawn-time
+    /// context snapshot. Used by the keystroke-cancel arm of the bounded-block
+    /// debounce path: the rx was already dropped, so without aborting the task
+    /// here it would burn CPU/IO and its eventual results would be silently
+    /// discarded by `try_merge_dynamic` (rx is None).
+    pub fn abort_dynamic_task_and_clear_ctx(&mut self) {
+        if let Some(handle) = self.dynamic_task.take() {
+            handle.abort();
+        }
+        self.dynamic_ctx = None;
+    }
+
     /// Flush unsaved frecency records to disk. Call on proxy shutdown.
     pub fn flush_frecency(&self) {
         self.engine.flush_frecency();
@@ -1617,6 +1679,25 @@ fn build_env_snapshot(has_providers: bool) -> std::collections::HashMap<String, 
     } else {
         std::collections::HashMap::new()
     }
+}
+
+/// Two borrowed `HashSet<&str>`s (existing + per-batch) — keeping references
+/// rather than owned `String` keys avoids the `s.text.clone()` per dupe check
+/// that the previous owned-HashSet version paid on every dynamic merge.
+fn merge_dedup_against(existing: &[Suggestion], incoming: Vec<Suggestion>) -> Vec<Suggestion> {
+    let keep: Vec<bool> = {
+        let existing_set: HashSet<&str> = existing.iter().map(|s| s.text.as_str()).collect();
+        let mut batch_seen: HashSet<&str> = HashSet::with_capacity(incoming.len());
+        incoming
+            .iter()
+            .map(|s| !existing_set.contains(s.text.as_str()) && batch_seen.insert(s.text.as_str()))
+            .collect()
+    };
+    incoming
+        .into_iter()
+        .zip(keep)
+        .filter_map(|(s, k)| if k { Some(s) } else { None })
+        .collect()
 }
 
 #[cfg(test)]
@@ -2954,6 +3035,23 @@ mod tests {
         }
     }
 
+    #[tokio::test]
+    async fn test_abort_dynamic_task_and_clear_ctx_clears_both_fields() {
+        let mut handler = make_handler();
+        handler.dynamic_task = Some(tokio::spawn(async {
+            tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+        }));
+        handler.dynamic_ctx = Some(DynamicCtxSnapshot::capture(
+            &ctx("git", &["checkout"], None, 2, ""),
+            false,
+        ));
+
+        handler.abort_dynamic_task_and_clear_ctx();
+
+        assert!(handler.dynamic_task.is_none());
+        assert!(handler.dynamic_ctx.is_none());
+    }
+
     #[test]
     fn build_env_snapshot_empty_when_no_providers() {
         // When no provider is scheduled this pass, the caller pays
@@ -2984,5 +3082,33 @@ mod tests {
              snapshot had {} entries",
             snapshot.len()
         );
+    }
+
+    fn dedup_suggestion(text: &str) -> Suggestion {
+        Suggestion {
+            text: text.to_string(),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn merge_dedup_against_drops_text_duplicates_from_existing_pool() {
+        let existing = vec![dedup_suggestion("main")];
+        let incoming = vec![dedup_suggestion("main"), dedup_suggestion("dev")];
+        let kept = merge_dedup_against(&existing, incoming);
+        assert_eq!(kept.len(), 1);
+        assert_eq!(kept[0].text, "dev");
+    }
+
+    #[test]
+    fn merge_dedup_against_drops_duplicates_within_same_batch() {
+        let incoming = vec![
+            dedup_suggestion("main"),
+            dedup_suggestion("main"),
+            dedup_suggestion("dev"),
+        ];
+        let kept = merge_dedup_against(&[], incoming);
+        let texts: Vec<&str> = kept.iter().map(|s| s.text.as_str()).collect();
+        assert_eq!(texts, vec!["main", "dev"]);
     }
 }
