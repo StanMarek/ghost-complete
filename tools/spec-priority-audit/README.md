@@ -16,13 +16,22 @@ specs ship with a layer of explicit `priority` overrides on top of:
 ## Sequencing
 
 If you ever re-run the Fig converter and the heuristic together, do
-them in this order:
+them in this order. All commands assume the repo root is your starting
+working directory.
 
 ```bash
-# 1. Refresh from upstream Fig
-npm --prefix tools/fig-converter run convert -- --output specs
+# 1. Refresh from upstream Fig.
+#    cd into the converter so `--output ../../specs` resolves to the
+#    repo-root specs/ directory. (Mirrors docs/PROVIDERS.md.) Using
+#    `npm --prefix tools/fig-converter` here would silently write to
+#    tools/fig-converter/specs/ instead — npm sets the script's cwd
+#    to the --prefix directory, and the converter resolves --output
+#    against that cwd.
+cd tools/fig-converter && npm run convert -- --output ../../specs && cd ../..
 
-# 2. Apply heuristic on top (never overwrites converter output)
+# 2. Apply heuristic on top. Never overwrites existing priority
+#    values, whatever the source (converter, manual, or a previous
+#    heuristic run).
 node tools/spec-priority-audit/apply.mjs
 
 # 3. Hand-tune anything specific

@@ -9,7 +9,7 @@
  * over the heuristic. The script is idempotent: a second run is a no-op.
  *
  * Usage:
- *   node tools/spec-priority-audit/apply.mjs           # writes specs/*.json
+ *   node tools/spec-priority-audit/apply.mjs           # writes specs/*.json that gained a new priority value
  *   node tools/spec-priority-audit/apply.mjs --dry-run # report only, no writes
  *
  * Categorisation is by spec filename (e.g. `git.json` → vcs family). Each
@@ -18,7 +18,7 @@
  * up the same `add: 90` bump as a top-level `add`.
  */
 
-import { readFile, writeFile, readdir } from 'node:fs/promises';
+import { readFile, writeFile, readdir, rename } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { parseArgs } from 'node:util';
@@ -35,10 +35,56 @@ const HEURISTICS_PATH = join(__dirname, 'heuristics.json');
 const SUBCOMMAND_KIND_BASE = 70;
 const FLAG_KIND_BASE = 30;
 
+function isPlainObject(v) {
+  return v !== null && typeof v === 'object' && !Array.isArray(v);
+}
+
+function validatePriority(value, family, kind, key) {
+  if (!Number.isInteger(value) || value < 0 || value > 100) {
+    throw new Error(
+      `heuristics.json: family "${family}" ${kind} "${key}" has invalid priority ${JSON.stringify(value)} (expected integer in [0, 100])`
+    );
+  }
+}
+
+function validateHeuristics(parsed) {
+  if (!isPlainObject(parsed)) {
+    throw new Error('heuristics.json: top-level value must be an object');
+  }
+  if (!isPlainObject(parsed.families)) {
+    throw new Error('heuristics.json: "families" must be an object');
+  }
+  for (const [familyName, family] of Object.entries(parsed.families)) {
+    if (familyName.startsWith('_')) continue;
+    if (!isPlainObject(family)) {
+      throw new Error(`heuristics.json: family "${familyName}" must be an object`);
+    }
+    if (!Array.isArray(family.specs)) {
+      throw new Error(`heuristics.json: family "${familyName}" specs must be an array`);
+    }
+    for (const s of family.specs) {
+      if (typeof s !== 'string') {
+        throw new Error(`heuristics.json: family "${familyName}" specs must contain only strings`);
+      }
+    }
+    for (const scope of ['subcommands', 'flags']) {
+      const map = family[scope];
+      if (map === undefined) continue;
+      if (!isPlainObject(map)) {
+        throw new Error(`heuristics.json: family "${familyName}" ${scope} must be an object`);
+      }
+      for (const [key, value] of Object.entries(map)) {
+        validatePriority(value, familyName, scope, key);
+      }
+    }
+  }
+}
+
 async function loadHeuristics() {
   const raw = await readFile(HEURISTICS_PATH, 'utf8');
   const parsed = JSON.parse(raw);
-  const families = parsed.families ?? {};
+  validateHeuristics(parsed);
+  const families = parsed.families;
 
   // Build a fast lookup: specName -> { subcommands, flags }.
   const specToRules = new Map();
@@ -48,7 +94,7 @@ async function loadHeuristics() {
       subcommands: family.subcommands ?? {},
       flags: family.flags ?? {},
     };
-    for (const specName of family.specs ?? []) {
+    for (const specName of family.specs) {
       specToRules.set(specName, rules);
     }
   }
@@ -86,7 +132,11 @@ function applyOptionRules(option, rules, stats) {
   const names = Array.isArray(option.name) ? option.name : [option.name];
   let bestPriority;
   for (const n of names) {
-    if (typeof n === 'string' && Object.hasOwn(rules.flags, n)) {
+    if (typeof n !== 'string') {
+      console.warn(`schema drift: non-string option name encountered: ${JSON.stringify(n)}`);
+      continue;
+    }
+    if (Object.hasOwn(rules.flags, n)) {
       const candidate = rules.flags[n];
       if (bestPriority === undefined || candidate < bestPriority) {
         bestPriority = candidate;
@@ -116,7 +166,9 @@ async function processSpec(filePath, rules, dryRun) {
 
   if (!dryRun && (stats.subcommandsBumped > 0 || stats.flagsBumped > 0)) {
     const output = JSON.stringify(spec, null, 2) + '\n';
-    await writeFile(filePath, output, 'utf8');
+    const tmp = `${filePath}.tmp`;
+    await writeFile(tmp, output, 'utf8');
+    await rename(tmp, filePath);
   }
   return stats;
 }
@@ -128,12 +180,14 @@ async function main() {
   const specToRules = await loadHeuristics();
   const entries = await readdir(SPECS_DIR, { withFileTypes: true });
   const totals = { specsTouched: 0, subcommandsBumped: 0, flagsBumped: 0, specsConsidered: 0 };
+  const visited = new Set();
 
   for (const entry of entries) {
     if (!entry.isFile() || !entry.name.endsWith('.json')) continue;
     const specName = entry.name.slice(0, -5); // strip .json
     const rules = specToRules.get(specName);
     if (!rules) continue;
+    visited.add(specName);
     totals.specsConsidered += 1;
     const stats = await processSpec(join(SPECS_DIR, entry.name), rules, dryRun);
     if (stats.subcommandsBumped > 0 || stats.flagsBumped > 0) {
@@ -146,12 +200,20 @@ async function main() {
     }
   }
 
+  const unmatched = [...specToRules.keys()].filter((name) => !visited.has(name));
+
   console.log('\n--- Audit Summary ---');
   console.log(`Specs in heuristic families: ${totals.specsConsidered}`);
   console.log(`Specs modified:              ${totals.specsTouched}`);
   console.log(`Subcommand priorities set:   ${totals.subcommandsBumped}`);
   console.log(`Flag priorities set:         ${totals.flagsBumped}`);
   if (dryRun) console.log('(dry-run: no files written)');
+
+  if (unmatched.length > 0) {
+    console.error(`\nUnknown spec names in heuristics.json (no matching specs/<name>.json):`);
+    for (const name of unmatched) console.error(`  - ${name}`);
+    process.exit(1);
+  }
 }
 
 main().catch((err) => {

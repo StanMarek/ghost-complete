@@ -317,8 +317,10 @@ field, so upstream Fig-converter specs that already set it are honoured.
 
 ## Bundled spec priorities
 
-The 709 specs shipped in `specs/` carry curated `priority` values on
-the most-used subcommands and on dangerous flags. Three layers stack:
+A subset of the 709 specs shipped in `specs/` carry curated `priority`
+values on the most-used subcommands and on dangerous flags — most
+specs rely entirely on the per-kind base values from the table above.
+Three layers stack to produce any explicit `priority` field:
 
 1. Upstream Fig priorities — preserved by the `tools/fig-converter/`
    pipeline. Re-running the converter against a new

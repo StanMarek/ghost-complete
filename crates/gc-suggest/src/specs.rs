@@ -2071,6 +2071,98 @@ mod tests {
     }
 
     #[test]
+    fn nested_subcommand_priority_propagates_to_suggestion() {
+        // `git remote add` lives two levels deep in the spec. The audit
+        // tool's recursion is supposed to bump nested subcommands too;
+        // verify the override actually surfaces through `resolve_spec`
+        // when the cursor lands at the nested completion site.
+        let json = r#"{
+            "name": "git",
+            "subcommands": [
+                {
+                    "name": "remote",
+                    "priority": 72,
+                    "subcommands": [
+                        { "name": "add", "priority": 85 },
+                        { "name": "rm" }
+                    ]
+                }
+            ]
+        }"#;
+        let spec: CompletionSpec = serde_json::from_str(json).unwrap();
+        let ctx = CommandContext {
+            command: Some("git".into()),
+            args: vec!["remote".into()],
+            current_word: String::new(),
+            word_index: 2,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: None,
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
+        };
+        let resolution = resolve_spec(&spec, &ctx);
+        let add = resolution
+            .subcommands
+            .iter()
+            .find(|s| s.text == "add")
+            .expect("nested `add` subcommand should be present");
+        assert_eq!(add.priority, Some(85));
+        let rm = resolution
+            .subcommands
+            .iter()
+            .find(|s| s.text == "rm")
+            .expect("nested `rm` subcommand should be present");
+        // Sibling without an explicit priority must still report None so
+        // the ranker can fall back to the kind base.
+        assert_eq!(rm.priority, None);
+    }
+
+    #[test]
+    fn option_priority_propagates_to_every_alias() {
+        // Multi-alias options collapse into one OptionSpec but one Suggestion
+        // per alias. `priority` should ride along on every alias so the
+        // ranker scores `-r` and `--recursive` identically.
+        let json = r#"{
+            "name": "rsync",
+            "options": [
+                { "name": ["-r", "--recursive"], "priority": 70 }
+            ]
+        }"#;
+        let spec: CompletionSpec = serde_json::from_str(json).unwrap();
+        let ctx = CommandContext {
+            command: Some("rsync".into()),
+            args: vec![],
+            current_word: String::new(),
+            word_index: 1,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: None,
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
+        };
+        let resolution = resolve_spec(&spec, &ctx);
+        let r = resolution
+            .options
+            .iter()
+            .find(|s| s.text == "-r")
+            .expect("`-r` flag suggestion should be present");
+        let recursive = resolution
+            .options
+            .iter()
+            .find(|s| s.text == "--recursive")
+            .expect("`--recursive` flag suggestion should be present");
+        assert_eq!(r.priority, Some(70));
+        assert_eq!(recursive.priority, Some(70));
+        assert_eq!(r.kind, SuggestionKind::Flag);
+        assert_eq!(recursive.kind, SuggestionKind::Flag);
+    }
+
+    #[test]
     fn test_generator_spec_accepts_all_declared_fields() {
         // Companion to the deny_unknown_fields test above: ensure every
         // field currently on `GeneratorSpec` still deserializes cleanly

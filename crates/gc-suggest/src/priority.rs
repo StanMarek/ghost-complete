@@ -98,4 +98,30 @@ mod tests {
             assert!(p <= 100, "{k:?} base priority {p} out of range");
         }
     }
+
+    /// Pin the documented kind-base values for `Subcommand` and `Flag`.
+    /// `tools/spec-priority-audit/apply.mjs` hard-codes these as
+    /// `SUBCOMMAND_KIND_BASE = 70` and `FLAG_KIND_BASE = 30` so that it can
+    /// skip writing values equal to the kind base (a no-op for ranking).
+    /// If anyone changes either constant in this crate without updating the
+    /// Node script, the audit tool would silently emit redundant
+    /// `priority: 70`/`priority: 30` entries on every spec it touches —
+    /// noisy diffs and a corpus that no longer round-trips through
+    /// `apply.mjs`. This assertion forces a deliberate cross-language
+    /// update by failing CI when the bases drift.
+    #[test]
+    fn subcommand_and_flag_bases_match_audit_tool_constants() {
+        assert_eq!(
+            base_for_kind(SuggestionKind::Subcommand),
+            70,
+            "if you change this, update SUBCOMMAND_KIND_BASE in \
+             tools/spec-priority-audit/apply.mjs"
+        );
+        assert_eq!(
+            base_for_kind(SuggestionKind::Flag),
+            30,
+            "if you change this, update FLAG_KIND_BASE in \
+             tools/spec-priority-audit/apply.mjs"
+        );
+    }
 }

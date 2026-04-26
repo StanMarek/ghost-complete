@@ -210,3 +210,38 @@ fn kubectl_get_no_filesystem_when_spec_provides_generators() {
             .collect::<Vec<_>>()
     );
 }
+
+/// The audit pass set `cargo build` to priority 92 while `cargo check` keeps
+/// the default Subcommand base of 70. With an empty query the ranker has no
+/// fuzzy signal to lean on — only kind/priority. So even though `build`
+/// sorts after `check` alphabetically, the priority bump must put it first.
+/// If the heuristic-driven priorities ever get reverted or accidentally
+/// stripped, this test will catch the regression in spec ordering.
+#[test]
+fn cargo_high_priority_subcommand_outranks_alphabetical_neighbour() {
+    let engine = build_engine();
+    let buffer = "cargo ";
+    let ctx = ctx_from(buffer);
+    let result = engine.suggest_sync(&ctx, &tmp_cwd(), buffer).unwrap();
+
+    let position = |name: &str| {
+        result
+            .suggestions
+            .iter()
+            .position(|s| s.text == name && s.kind == SuggestionKind::Subcommand)
+    };
+
+    let build_pos = position("build").expect("`cargo build` subcommand should be suggested");
+    let check_pos = position("check").expect("`cargo check` subcommand should be suggested");
+
+    assert!(
+        build_pos < check_pos,
+        "cargo build (priority 92) must rank before cargo check (no priority); \
+         got build at {build_pos}, check at {check_pos}: {:?}",
+        result
+            .suggestions
+            .iter()
+            .map(|s| (&s.text, s.kind, s.priority))
+            .collect::<Vec<_>>()
+    );
+}
