@@ -1,3 +1,5 @@
+use crate::priority::Priority;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
 pub enum SuggestionKind {
     Command,
@@ -37,6 +39,26 @@ impl SuggestionKind {
             Self::ProviderValue => "provider",
         }
     }
+
+    /// Base priority for this `SuggestionKind` when the suggestion does
+    /// not declare its own. Numbers chosen so that branches > generator
+    /// output > flags > filesystem, with comfortable headroom for spec
+    /// overrides.
+    pub fn base_priority(self) -> Priority {
+        Priority::new(match self {
+            Self::GitBranch => 80,
+            Self::GitTag => 75,
+            Self::GitRemote => 70,
+            Self::Subcommand => 70,
+            Self::ProviderValue => 70,
+            Self::EnvVar => 50,
+            Self::Command => 40,
+            Self::Flag => 30,
+            Self::Directory => 25,
+            Self::FilePath => 20,
+            Self::History => 10,
+        })
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
@@ -64,9 +86,9 @@ pub struct Suggestion {
     pub score: u32,
     pub match_indices: Vec<u32>,
     /// Spec-declared rank hint, range 0..=100. When `None`, falls back to
-    /// the kind's base priority (see `crate::priority::base_for_kind`).
+    /// the kind's base priority (see `SuggestionKind::base_priority`).
     /// Higher values rank earlier in the popup.
-    pub priority: Option<u8>,
+    pub priority: Option<Priority>,
 }
 
 impl Default for Suggestion {
@@ -94,7 +116,6 @@ impl Default for Suggestion {
 #[cfg(test)]
 mod kind_invariants {
     use super::*;
-    use crate::priority::base_for_kind;
 
     // Pin the behavioral contracts for `ProviderValue` + the neutral
     // `Suggestion::default()`. Silent drift in any of these values would
@@ -104,7 +125,7 @@ mod kind_invariants {
     #[test]
     fn provider_value_contract() {
         assert_eq!(SuggestionKind::ProviderValue.key_tag(), "provider");
-        assert_eq!(base_for_kind(SuggestionKind::ProviderValue), 70);
+        assert_eq!(SuggestionKind::ProviderValue.base_priority().get(), 70);
         assert_eq!(Suggestion::default().kind, SuggestionKind::ProviderValue);
         assert_eq!(Suggestion::default().source, SuggestionSource::Provider);
     }

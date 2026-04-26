@@ -6,6 +6,7 @@ use gc_buffer::{CommandContext, QuoteState};
 use gc_suggest::commands::CommandsProvider;
 use gc_suggest::fuzzy;
 use gc_suggest::history::HistoryProvider;
+use gc_suggest::priority::Priority;
 use gc_suggest::specs;
 use gc_suggest::transform::{self, NamedTransform, ParameterizedTransform, Transform};
 use gc_suggest::types::{Suggestion, SuggestionKind};
@@ -215,7 +216,11 @@ fn priority_sort_benchmarks(c: &mut Criterion) {
             3 => SuggestionKind::Subcommand,
             _ => SuggestionKind::ProviderValue,
         };
-        let priority = if i % 50 == 0 { Some(95) } else { None };
+        let priority = if i % 50 == 0 {
+            Some(Priority::new(95))
+        } else {
+            None
+        };
         suggestions.push(Suggestion {
             text: format!("item-{i:05}"),
             kind,

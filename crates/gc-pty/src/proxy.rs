@@ -844,9 +844,19 @@ async fn debounce_loop(
                     (None, Some(rx))
                 }
                 _ = notify.notified() => {
-                    // Keystroke supersedes — drop rx and let the next
-                    // trigger cycle abort the in-flight task and spawn fresh.
+                    // Keystroke supersedes. Abort the orphaned generator
+                    // task (its results would land in a None rx and be
+                    // silently discarded), then re-arm the notify so the
+                    // outer loop re-fires immediately against the fresh
+                    // buffer instead of waiting for the next keystroke.
                     drop(rx);
+                    match handler.lock() {
+                        Ok(mut h) => h.abort_dynamic_task_and_clear_ctx(),
+                        Err(e) => tracing::warn!(
+                            "handler mutex poisoned during keystroke-cancel cleanup: {e}"
+                        ),
+                    }
+                    notify.notify_one();
                     continue;
                 }
             };

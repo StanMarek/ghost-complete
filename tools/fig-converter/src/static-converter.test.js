@@ -328,4 +328,92 @@ describe('convertSpec', () => {
     assert.equal(result.options[0].priority, 5);
     assert.equal(result.options[1].priority, undefined);
   });
+
+  it('preserves subcommand priority: 0 as a valid value', () => {
+    // typeof 0 === 'number' is true, so priority 0 must pass through
+    // (not be filtered as falsy). 0 is a meaningful "lowest" priority.
+    const result = convertSpec({
+      name: 'git',
+      subcommands: [{ name: 'never', description: 'low priority', priority: 0 }],
+    });
+    assert.equal(result.subcommands[0].priority, 0);
+  });
+
+  it('skips non-numeric subcommand priority', () => {
+    // The typeof === 'number' guard at static-converter.js:67 must drop
+    // string and null priorities — only true JS numbers pass through.
+    const stringResult = convertSpec({
+      name: 'git',
+      subcommands: [{ name: 'foo', description: 'x', priority: '95' }],
+    });
+    assert.equal(stringResult.subcommands[0].priority, undefined);
+
+    const nullResult = convertSpec({
+      name: 'git',
+      subcommands: [{ name: 'foo', description: 'x', priority: null }],
+    });
+    assert.equal(nullResult.subcommands[0].priority, undefined);
+  });
+
+  it('passes out-of-range subcommand priority through (caller validates)', () => {
+    // Contract: the converter only checks `typeof === 'number'`. Range
+    // validation (0–100 clamp, etc.) is the Rust deserializer's job —
+    // see SuggestionPriority::deserialize, which clamps on receive.
+    // Negative and >100 values therefore round-trip unchanged here.
+    const negative = convertSpec({
+      name: 'git',
+      subcommands: [{ name: 'foo', description: 'x', priority: -5 }],
+    });
+    assert.equal(negative.subcommands[0].priority, -5);
+
+    const oversized = convertSpec({
+      name: 'git',
+      subcommands: [{ name: 'foo', description: 'x', priority: 300 }],
+    });
+    assert.equal(oversized.subcommands[0].priority, 300);
+  });
+
+  it('preserves option priority: 0 as a valid value', () => {
+    // typeof 0 === 'number' is true, so priority 0 must pass through
+    // (not be filtered as falsy). 0 is a meaningful "lowest" priority.
+    const result = convertSpec({
+      name: 'git',
+      options: [{ name: '--low', description: 'low priority', priority: 0 }],
+    });
+    assert.equal(result.options[0].priority, 0);
+  });
+
+  it('skips non-numeric option priority', () => {
+    // The typeof === 'number' guard at static-converter.js:112 must drop
+    // string and null priorities — only true JS numbers pass through.
+    const stringResult = convertSpec({
+      name: 'git',
+      options: [{ name: '--flag', description: 'x', priority: '5' }],
+    });
+    assert.equal(stringResult.options[0].priority, undefined);
+
+    const nullResult = convertSpec({
+      name: 'git',
+      options: [{ name: '--flag', description: 'x', priority: null }],
+    });
+    assert.equal(nullResult.options[0].priority, undefined);
+  });
+
+  it('passes out-of-range option priority through (caller validates)', () => {
+    // Contract: the converter only checks `typeof === 'number'`. Range
+    // validation (0–100 clamp, etc.) is the Rust deserializer's job —
+    // see SuggestionPriority::deserialize, which clamps on receive.
+    // Negative and >100 values therefore round-trip unchanged here.
+    const negative = convertSpec({
+      name: 'git',
+      options: [{ name: '--flag', description: 'x', priority: -5 }],
+    });
+    assert.equal(negative.options[0].priority, -5);
+
+    const oversized = convertSpec({
+      name: 'git',
+      options: [{ name: '--flag', description: 'x', priority: 300 }],
+    });
+    assert.equal(oversized.options[0].priority, 300);
+  });
 });

@@ -308,44 +308,57 @@ async fn keystroke_during_wait_cancels_block() {
         kn_clone.notify_one();
     });
 
+    // Seed dynamic_task with a noop handle so we can assert the production
+    // cancel code aborts and clears it.
+    handler.seed_dynamic_task_noop();
+    assert!(
+        handler.has_dynamic_task(),
+        "setup: dynamic_task must be seeded before exercising the cancel path"
+    );
+
     let start = Instant::now();
     let timeout_dur = Duration::from_millis(80);
 
     // Three-way select mirrors the debounce_loop Phase 2 in proxy.rs.
-    // AsyncCompleted and Timeout are panic cases so we don't need to inspect
-    // their payloads in the happy-path assertions — use () to silence
-    // dead_code lints.
+    // Only the keystroke-cancellation arm is the happy path here; the other
+    // arms exist as panic guards.
     #[derive(Debug)]
     enum Outcome {
-        AsyncCompleted(()),
-        Timeout(()),
-        KeystrokeCancelled(mpsc::Receiver<Vec<Suggestion>>),
+        AsyncCompleted,
+        Timeout,
+        KeystrokeCancelled,
     }
 
     let outcome = {
         let mut rx = rx;
         tokio::select! {
-            _maybe_result = rx.recv() => Outcome::AsyncCompleted(()),
-            _ = tokio::time::sleep(timeout_dur) => Outcome::Timeout(()),
-            _ = keystroke_notify.notified() => Outcome::KeystrokeCancelled(rx),
+            _maybe_result = rx.recv() => Outcome::AsyncCompleted,
+            _ = tokio::time::sleep(timeout_dur) => Outcome::Timeout,
+            _ = keystroke_notify.notified() => {
+                drop(rx);
+                Outcome::KeystrokeCancelled
+            }
         }
     };
 
     let elapsed = start.elapsed();
 
     match outcome {
-        Outcome::KeystrokeCancelled(returned_rx) => {
+        Outcome::KeystrokeCancelled => {
             // The block was cancelled at ~30 ms.
             assert!(
                 elapsed < Duration::from_millis(70),
                 "keystroke cancellation should fire around 30 ms, elapsed: {:?}",
                 elapsed
             );
-            // Restore rx in the handler so dynamic_merge_loop can use it later.
-            handler.restore_dynamic_rx(returned_rx);
+            // Mirror the production cancel arm in proxy.rs: abort the orphan
+            // generator task and clear dynamic_ctx so the next trigger starts
+            // clean. (Production also calls notify.notify_one() to re-arm the
+            // outer debounce loop; we assert state, not scheduling, here.)
+            handler.abort_dynamic_task_and_clear_ctx();
             assert!(
-                handler.has_dynamic_rx(),
-                "dynamic_rx should be restored after keystroke cancellation"
+                !handler.has_dynamic_task(),
+                "abort_dynamic_task_and_clear_ctx must clear dynamic_task so the orphan generator's results don't land in a None rx"
             );
             // No apply_block_result was called — no paint for the old buffer.
             // The suggestions remain at sync-only state (no branches merged).
@@ -357,10 +370,10 @@ async fn keystroke_during_wait_cancels_block() {
                 "no GitBranch suggestions should have been merged after keystroke cancellation"
             );
         }
-        Outcome::Timeout(()) => {
+        Outcome::Timeout => {
             panic!("expected keystroke cancellation at ~30 ms, but timeout fired at ~80 ms");
         }
-        Outcome::AsyncCompleted(()) => {
+        Outcome::AsyncCompleted => {
             panic!(
                 "expected keystroke cancellation, but async generator completed (it should take 200 ms)"
             );
@@ -371,5 +384,208 @@ async fn keystroke_during_wait_cancels_block() {
     sender_task.abort();
     let _ = sender_task.await;
 
-    let _ = sync_suggestions; // suppress unused warning
+    drop(sync_suggestions);
+}
+
+// ── Test 4 ───────────────────────────────────────────────────────────────────
+
+/// Generator returns within the block window AND the user has typed a
+/// non-empty current_word. `apply_block_result` must rank the merged pool
+/// against the live query so candidates that don't match get dropped.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn fast_async_with_typed_query_refilters_pool() {
+    let sync_suggestions = vec![flag_suggestion("--main"), flag_suggestion("--zzz")];
+    let async_items = vec![branch_suggestion("main"), branch_suggestion("feature-x")];
+
+    let mut handler = make_test_handler(80);
+    handler.buffer_generation = 1;
+    handler.set_spawned_generation(1);
+
+    // Drive the parser to a buffer whose live current_word is "main" so
+    // `apply_block_result`'s staleness check sees a fresh, matching query.
+    let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+    {
+        let mut p = parser.lock().unwrap();
+        p.state_mut()
+            .predict_command_buffer("git checkout main".to_string(), 17);
+    }
+    handler.prime_dynamic_ctx_for_buffer("git checkout main", 17);
+
+    let mut render_buf = Vec::new();
+    handler.apply_block_result(
+        &parser,
+        &mut render_buf,
+        Some(async_items),
+        None,
+        sync_suggestions,
+        0,
+        0,
+        24,
+        80,
+        (0, 0),
+        "main",
+    );
+
+    let texts: Vec<String> = handler
+        .current_suggestions()
+        .iter()
+        .map(|s| s.text.clone())
+        .collect();
+    assert!(
+        texts.contains(&"main".to_string()),
+        "branch 'main' should pass the 'main' query, got: {texts:?}"
+    );
+    assert!(
+        texts.contains(&"--main".to_string()),
+        "flag '--main' should pass the 'main' query, got: {texts:?}"
+    );
+    assert!(
+        !texts.contains(&"--zzz".to_string()),
+        "flag '--zzz' must be filtered out by the 'main' query, got: {texts:?}"
+    );
+    assert!(
+        !texts.contains(&"feature-x".to_string()),
+        "branch 'feature-x' must be filtered out by the 'main' query, got: {texts:?}"
+    );
+}
+
+// ── Test 5 ───────────────────────────────────────────────────────────────────
+
+/// Generator returned `Some(vec![])` within the block window (the empty-pool
+/// case the `Some([])` arm has to handle). `apply_block_result` must clear
+/// `dynamic_task` and `dynamic_rx`, and stamp the trigger fingerprint so the
+/// idempotency guard short-circuits the next identical trigger.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn empty_async_result_clears_loading_state() {
+    let mut handler = make_test_handler(80);
+    handler.buffer_generation = 1;
+    handler.set_spawned_generation(1);
+    handler.prime_dynamic_ctx_for_empty_buffer();
+    handler.seed_dynamic_task_noop();
+    assert!(
+        handler.has_dynamic_task(),
+        "setup: dynamic_task must be seeded before apply_block_result"
+    );
+
+    let parser = make_parser();
+    let mut render_buf = Vec::new();
+    let fp = (0xdead_beef_u64, 7_usize);
+
+    handler.apply_block_result(
+        &parser,
+        &mut render_buf,
+        Some(Vec::new()),
+        None,
+        Vec::new(),
+        0,
+        0,
+        24,
+        80,
+        fp,
+        "",
+    );
+
+    assert!(
+        !handler.has_dynamic_rx(),
+        "empty async result must clear dynamic_rx"
+    );
+    assert!(
+        !handler.has_dynamic_task(),
+        "empty async result must clear dynamic_task"
+    );
+    assert_eq!(
+        handler.last_trigger_fingerprint(),
+        Some(fp),
+        "empty async result must still stamp the trigger fingerprint"
+    );
+}
+
+// ── Tests 6 & 7 ──────────────────────────────────────────────────────────────
+//
+// `prepare_trigger_with_block` should return `NeedsBlock` when sync results
+// only contain low-priority candidates AND a high-priority generator (e.g.
+// git_branches) is pending — but only when `render_block_ms > 0`. With
+// render_block_ms == 0 the bounded-block window is disabled and the function
+// must return `Painted` immediately so dynamic_merge_loop handles the result.
+
+/// Write a minimal git spec into a temporary directory so the engine resolves
+/// `git checkout <TAB>` to a SyncResult containing `git_generators=[Branches]`.
+fn write_test_git_spec(dir: &std::path::Path) {
+    use std::io::Write;
+    let path = dir.join("git.json");
+    let spec = r#"{
+        "name": "git",
+        "subcommands": [
+            {
+                "name": "checkout",
+                "options": [
+                    { "name": ["-q", "--quiet"], "description": "Quiet" }
+                ],
+                "args": [
+                    {
+                        "name": "branch",
+                        "generators": [{ "type": "git_branches" }]
+                    }
+                ]
+            }
+        ]
+    }"#;
+    let mut f = std::fs::File::create(&path).expect("create test git spec");
+    f.write_all(spec.as_bytes()).expect("write test git spec");
+}
+
+fn make_handler_with_git_spec(render_block_ms: u64) -> (InputHandler, tempfile::TempDir) {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    write_test_git_spec(tmp.path());
+    let handler = InputHandler::new(
+        &[tmp.path().to_path_buf()],
+        gc_terminal::TerminalProfile::for_ghostty(),
+    )
+    .expect("handler init failed")
+    .with_render_block_ms(render_block_ms);
+    (handler, tmp)
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn prepare_trigger_returns_needs_block_when_branch_generator_pending() {
+    let (mut handler, _tmp) = make_handler_with_git_spec(80);
+
+    let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+    {
+        let mut p = parser.lock().unwrap();
+        p.state_mut()
+            .predict_command_buffer("git checkout ".to_string(), 13);
+    }
+
+    let mut render_buf = Vec::new();
+    let prepared = handler.prepare_trigger_with_block(&parser, &mut render_buf);
+
+    match prepared {
+        gc_pty::handler::TriggerPrepared::NeedsBlock { block_ms, .. } => {
+            assert_eq!(block_ms, 80, "block_ms must echo render_block_ms");
+        }
+        gc_pty::handler::TriggerPrepared::Painted => {
+            panic!("expected NeedsBlock for git checkout with branches generator, got Painted")
+        }
+    }
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn prepare_trigger_returns_painted_when_block_ms_zero() {
+    let (mut handler, _tmp) = make_handler_with_git_spec(0);
+
+    let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+    {
+        let mut p = parser.lock().unwrap();
+        p.state_mut()
+            .predict_command_buffer("git checkout ".to_string(), 13);
+    }
+
+    let mut render_buf = Vec::new();
+    let prepared = handler.prepare_trigger_with_block(&parser, &mut render_buf);
+
+    assert!(
+        matches!(prepared, gc_pty::handler::TriggerPrepared::Painted),
+        "render_block_ms=0 must short-circuit to Painted regardless of pending generators"
+    );
 }

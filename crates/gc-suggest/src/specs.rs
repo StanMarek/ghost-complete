@@ -5,6 +5,7 @@ use std::sync::Arc;
 use anyhow::{Context, Result};
 use serde::Deserialize;
 
+use crate::priority::Priority;
 use crate::providers::{self, ProviderKind};
 use crate::transform::Transform;
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
@@ -235,7 +236,7 @@ pub struct SubcommandSpec {
     #[serde(default, deserialize_with = "deserialize_args_one_or_many")]
     pub args: Vec<ArgSpec>,
     #[serde(default)]
-    pub priority: Option<u8>,
+    pub priority: Option<Priority>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -245,7 +246,7 @@ pub struct OptionSpec {
     #[serde(default, deserialize_with = "deserialize_option_args")]
     pub args: Option<ArgSpec>,
     #[serde(default)]
-    pub priority: Option<u8>,
+    pub priority: Option<Priority>,
 }
 
 /// Deserialize template as either a single string or an array of strings.
@@ -2026,7 +2027,7 @@ mod tests {
             "priority": 90
         }"#;
         let parsed: SubcommandSpec = serde_json::from_str(json).unwrap();
-        assert_eq!(parsed.priority, Some(90));
+        assert_eq!(parsed.priority, Some(Priority::new(90)));
     }
 
     #[test]
@@ -2067,7 +2068,7 @@ mod tests {
             .iter()
             .find(|s| s.text == "checkout")
             .expect("checkout subcommand should be present");
-        assert_eq!(checkout.priority, Some(95));
+        assert_eq!(checkout.priority, Some(Priority::new(95)));
     }
 
     #[test]
