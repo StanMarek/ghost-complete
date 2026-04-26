@@ -85,15 +85,18 @@
           "description": "Create a new namespace",
           "args": {
             "name": "namespace"
-          }
+          },
+          "priority": 72
         },
         {
           "name": "delete",
-          "description": "Delete namespace"
+          "description": "Delete namespace",
+          "priority": 50
         },
         {
           "name": "list",
-          "description": "List all namespaces on your Cloudflare account"
+          "description": "List all namespaces on your Cloudflare account",
+          "priority": 82
         }
       ],
       "options": [
@@ -165,14 +168,16 @@
           "args": {
             "name": "key",
             "description": "Key whose value to delete"
-          }
+          },
+          "priority": 50
         },
         {
           "name": "get",
           "description": "Get a key's value from a namespace",
           "args": {
             "name": "key"
-          }
+          },
+          "priority": 82
         },
         {
           "name": "help",
@@ -180,7 +185,8 @@
         },
         {
           "name": "list",
-          "description": "List all keys in a namespace. Produces JSON output"
+          "description": "List all keys in a namespace. Produces JSON output",
+          "priority": 82
         },
         {
           "name": "put",
@@ -236,7 +242,8 @@
           "description": "Delete multiple keys and their values from a namespace",
           "args": {
             "name": "keys"
-          }
+          },
+          "priority": 50
         },
         {
           "name": "help",
@@ -297,11 +304,13 @@
           "description": "Delete a route by ID",
           "args": {
             "name": "routeId"
-          }
+          },
+          "priority": 50
         },
         {
           "name": "list",
-          "description": "List all routes associated with a zone (outputs json)"
+          "description": "List all routes associated with a zone (outputs json)",
+          "priority": 82
         }
       ],
       "options": [
@@ -350,11 +359,13 @@
           "description": "Delete a secret variable from a script",
           "args": {
             "name": "secret"
-          }
+          },
+          "priority": 50
         },
         {
           "name": "list",
-          "description": "List all secrets for a script"
+          "description": "List all secrets for a script",
+          "priority": 82
         },
         {
           "name": "put",
@@ -776,7 +787,8 @@
           ],
           "description": "Do not verify provided credentials before writing out Wrangler config file"
         }
-      ]
+      ],
+      "priority": 65
     },
     {
       "name": "subdomain",
@@ -977,7 +989,8 @@
           ],
           "description": "Toggle verbose output (when applicable)"
         }
-      ]
+      ],
+      "priority": 88
     },
     {
       "name": "report",

@@ -81,15 +81,18 @@
           "subcommands": [
             {
               "description": "Create a branch",
-              "name": "create"
+              "name": "create",
+              "priority": 72
             },
             {
               "description": "Delete a branch",
-              "name": "delete"
+              "name": "delete",
+              "priority": 50
             },
             {
               "description": "List branches",
-              "name": "list"
+              "name": "list",
+              "priority": 82
             },
             {
               "description": "Switch the active branch",
@@ -325,7 +328,8 @@
                 "--project-ref"
               ]
             }
-          ]
+          ],
+          "priority": 50
         },
         {
           "description": "Deploy a Function to Supabase",
@@ -346,7 +350,8 @@
                 "--project-ref"
               ]
             }
-          ]
+          ],
+          "priority": 90
         },
         {
           "description": "Create a new Function locally",
@@ -440,7 +445,8 @@
     },
     {
       "description": "Authenticate using an access token",
-      "name": "login"
+      "name": "login",
+      "priority": 88
     },
     {
       "description": "Manage database migration scripts",
@@ -481,7 +487,8 @@
                 "--db-url"
               ]
             }
-          ]
+          ],
+          "priority": 82
         },
         {
           "args": {
@@ -512,7 +519,8 @@
               "description": "Version status to update",
               "name": [
                 "--status"
-              ]
+              ],
+              "priority": 100
             },
             {
               "args": {
@@ -605,13 +613,15 @@
       "subcommands": [
         {
           "description": "List all organizations",
-          "name": "list"
+          "name": "list",
+          "priority": 82
         }
       ]
     },
     {
       "description": "Manage Supabase projects",
       "name": "projects",
+      "priority": 78,
       "subcommands": [
         {
           "description": "Create a project on Supabase",
@@ -658,23 +668,28 @@
               "description": "Select a region close to you for the best performance",
               "name": [
                 "--region"
-              ]
+              ],
+              "priority": 65
             }
-          ]
+          ],
+          "priority": 72
         },
         {
           "description": "List all Supabase projects",
-          "name": "list"
+          "name": "list",
+          "priority": 82
         }
       ]
     },
     {
       "description": "Manage Supabase secrets",
       "name": "secrets",
+      "priority": 65,
       "subcommands": [
         {
           "description": "List all secrets on Supabase",
-          "name": "list"
+          "name": "list",
+          "priority": 82
         },
         {
           "description": "Set a secret(s) on Supabase",
@@ -704,7 +719,8 @@
     },
     {
       "description": "Show status of local Supabase containers",
-      "name": "status"
+      "name": "status",
+      "priority": 80
     },
     {
       "description": "Stop all local Supabase containers",
@@ -746,15 +762,18 @@
               "subcommands": [
                 {
                   "description": "Create a branch",
-                  "name": "create"
+                  "name": "create",
+                  "priority": 72
                 },
                 {
                   "description": "Delete a branch",
-                  "name": "delete"
+                  "name": "delete",
+                  "priority": 50
                 },
                 {
                   "description": "List branches",
-                  "name": "list"
+                  "name": "list",
+                  "priority": 82
                 },
                 {
                   "description": "Switch the active branch",
@@ -800,11 +819,13 @@
           "subcommands": [
             {
               "description": "Delete a Function from Supabase",
-              "name": "delete"
+              "name": "delete",
+              "priority": 50
             },
             {
               "description": "Deploy a Function to Supabase",
-              "name": "deploy"
+              "name": "deploy",
+              "priority": 90
             },
             {
               "description": "Create a new Function locally",
@@ -842,7 +863,8 @@
         },
         {
           "description": "Authenticate using an access token",
-          "name": "login"
+          "name": "login",
+          "priority": 88
         },
         {
           "description": "Manage database migration scripts",
@@ -850,7 +872,8 @@
           "subcommands": [
             {
               "description": "List local and remote migrations",
-              "name": "list"
+              "name": "list",
+              "priority": 82
             },
             {
               "description": "Create an empty migration script",
@@ -864,31 +887,37 @@
           "subcommands": [
             {
               "description": "List all organizations",
-              "name": "list"
+              "name": "list",
+              "priority": 82
             }
           ]
         },
         {
           "description": "Manage Supabase projects",
           "name": "projects",
+          "priority": 78,
           "subcommands": [
             {
               "description": "Create a project on Supabase",
-              "name": "create"
+              "name": "create",
+              "priority": 72
             },
             {
               "description": "List all Supabase projects",
-              "name": "list"
+              "name": "list",
+              "priority": 82
             }
           ]
         },
         {
           "description": "Manage Supabase secrets",
           "name": "secrets",
+          "priority": 65,
           "subcommands": [
             {
               "description": "List all secrets on Supabase",
-              "name": "list"
+              "name": "list",
+              "priority": 82
             },
             {
               "description": "Set a secret(s) on Supabase",
@@ -906,7 +935,8 @@
         },
         {
           "description": "Show status of local Supabase containers",
-          "name": "status"
+          "name": "status",
+          "priority": 80
         },
         {
           "description": "Stop all local Supabase containers",

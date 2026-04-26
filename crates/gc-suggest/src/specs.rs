@@ -5,6 +5,7 @@ use std::sync::Arc;
 use anyhow::{Context, Result};
 use serde::Deserialize;
 
+use crate::priority::Priority;
 use crate::providers::{self, ProviderKind};
 use crate::transform::Transform;
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
@@ -234,6 +235,8 @@ pub struct SubcommandSpec {
     pub options: Vec<OptionSpec>,
     #[serde(default, deserialize_with = "deserialize_args_one_or_many")]
     pub args: Vec<ArgSpec>,
+    #[serde(default)]
+    pub priority: Option<Priority>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -242,6 +245,8 @@ pub struct OptionSpec {
     pub description: Option<String>,
     #[serde(default, deserialize_with = "deserialize_option_args")]
     pub args: Option<ArgSpec>,
+    #[serde(default)]
+    pub priority: Option<Priority>,
 }
 
 /// Deserialize template as either a single string or an array of strings.
@@ -542,6 +547,7 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
             description: s.description.clone(),
             kind: SuggestionKind::Subcommand,
             source: SuggestionSource::Spec,
+            priority: s.priority,
             ..Default::default()
         })
         .collect();
@@ -554,6 +560,7 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
                 description: o.description.clone(),
                 kind: SuggestionKind::Flag,
                 source: SuggestionSource::Spec,
+                priority: o.priority,
                 ..Default::default()
             })
         })
@@ -1476,6 +1483,7 @@ mod tests {
                 template: None,
                 suggestions: None,
             }),
+            priority: None,
         }];
         // Exact match
         assert!(find_option(&options, "--output").is_some());
@@ -1507,6 +1515,7 @@ mod tests {
                 } else {
                     None
                 },
+                priority: None,
             });
         }
 
@@ -1734,6 +1743,7 @@ mod tests {
                 subcommands: Vec::new(),
                 options: Vec::new(),
                 args: Vec::new(),
+                priority: None,
             });
             tail = &mut tail[0].subcommands;
         }
@@ -2007,6 +2017,150 @@ mod tests {
             msg.contains("transform") || msg.contains("unknown field"),
             "error should identify the offending unknown field: {msg}"
         );
+    }
+
+    #[test]
+    fn parses_priority_from_subcommand_spec() {
+        let json = r#"{
+            "name": "checkout",
+            "description": "switch branches",
+            "priority": 90
+        }"#;
+        let parsed: SubcommandSpec = serde_json::from_str(json).unwrap();
+        assert_eq!(parsed.priority, Some(Priority::new(90)));
+    }
+
+    #[test]
+    fn missing_priority_field_is_none() {
+        let json = r#"{
+            "name": "checkout",
+            "description": "switch branches"
+        }"#;
+        let parsed: SubcommandSpec = serde_json::from_str(json).unwrap();
+        assert_eq!(parsed.priority, None);
+    }
+
+    #[test]
+    fn subcommand_priority_propagates_to_suggestion() {
+        let json = r#"{
+            "name": "git",
+            "subcommands": [
+                { "name": "checkout", "priority": 95 }
+            ]
+        }"#;
+        let spec: CompletionSpec = serde_json::from_str(json).unwrap();
+        let ctx = CommandContext {
+            command: Some("git".into()),
+            args: vec![],
+            current_word: String::new(),
+            word_index: 1,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: None,
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
+        };
+        let resolution = resolve_spec(&spec, &ctx);
+        let checkout = resolution
+            .subcommands
+            .iter()
+            .find(|s| s.text == "checkout")
+            .expect("checkout subcommand should be present");
+        assert_eq!(checkout.priority, Some(Priority::new(95)));
+    }
+
+    #[test]
+    fn nested_subcommand_priority_propagates_to_suggestion() {
+        // `git remote add` lives two levels deep in the spec. The audit
+        // tool's recursion is supposed to bump nested subcommands too;
+        // verify the override actually surfaces through `resolve_spec`
+        // when the cursor lands at the nested completion site.
+        let json = r#"{
+            "name": "git",
+            "subcommands": [
+                {
+                    "name": "remote",
+                    "priority": 72,
+                    "subcommands": [
+                        { "name": "add", "priority": 85 },
+                        { "name": "rm" }
+                    ]
+                }
+            ]
+        }"#;
+        let spec: CompletionSpec = serde_json::from_str(json).unwrap();
+        let ctx = CommandContext {
+            command: Some("git".into()),
+            args: vec!["remote".into()],
+            current_word: String::new(),
+            word_index: 2,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: None,
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
+        };
+        let resolution = resolve_spec(&spec, &ctx);
+        let add = resolution
+            .subcommands
+            .iter()
+            .find(|s| s.text == "add")
+            .expect("nested `add` subcommand should be present");
+        assert_eq!(add.priority, Some(Priority::new(85)));
+        let rm = resolution
+            .subcommands
+            .iter()
+            .find(|s| s.text == "rm")
+            .expect("nested `rm` subcommand should be present");
+        // Sibling without an explicit priority must still report None so
+        // the ranker can fall back to the kind base.
+        assert_eq!(rm.priority, None);
+    }
+
+    #[test]
+    fn option_priority_propagates_to_every_alias() {
+        // Multi-alias options collapse into one OptionSpec but one Suggestion
+        // per alias. `priority` should ride along on every alias so the
+        // ranker scores `-r` and `--recursive` identically.
+        let json = r#"{
+            "name": "rsync",
+            "options": [
+                { "name": ["-r", "--recursive"], "priority": 70 }
+            ]
+        }"#;
+        let spec: CompletionSpec = serde_json::from_str(json).unwrap();
+        let ctx = CommandContext {
+            command: Some("rsync".into()),
+            args: vec![],
+            current_word: String::new(),
+            word_index: 1,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: None,
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
+        };
+        let resolution = resolve_spec(&spec, &ctx);
+        let r = resolution
+            .options
+            .iter()
+            .find(|s| s.text == "-r")
+            .expect("`-r` flag suggestion should be present");
+        let recursive = resolution
+            .options
+            .iter()
+            .find(|s| s.text == "--recursive")
+            .expect("`--recursive` flag suggestion should be present");
+        assert_eq!(r.priority, Some(Priority::new(70)));
+        assert_eq!(recursive.priority, Some(Priority::new(70)));
+        assert_eq!(r.kind, SuggestionKind::Flag);
+        assert_eq!(recursive.kind, SuggestionKind::Flag);
     }
 
     #[test]

@@ -64,7 +64,8 @@
             "-v",
             "--verbose"
           ],
-          "description": "Report archived files on stderr"
+          "description": "Report archived files on stderr",
+          "priority": 25
         },
         {
           "name": [
@@ -173,7 +174,8 @@
             "-f",
             "--show-name"
           ],
-          "description": "Show original filename (Default: auto)"
+          "description": "Show original filename (Default: auto)",
+          "priority": 18
         },
         {
           "name": [
@@ -337,7 +339,8 @@
       "args": {
         "name": "file",
         "template": "filepaths"
-      }
+      },
+      "priority": 65
     },
     {
       "name": "commit",
@@ -364,7 +367,8 @@
             "-a",
             "--all"
           ],
-          "description": "Stage all modified and deleted paths"
+          "description": "Stage all modified and deleted paths",
+          "priority": 35
         },
         {
           "name": [
@@ -380,7 +384,8 @@
             "-v",
             "--verbose"
           ],
-          "description": "Show unified diff of all file changes"
+          "description": "Show unified diff of all file changes",
+          "priority": 25
         },
         {
           "name": [
@@ -702,7 +707,8 @@
             "-q",
             "--quiet"
           ],
-          "description": "Suppress commit summary message"
+          "description": "Suppress commit summary message",
+          "priority": 25
         },
         {
           "name": [
@@ -751,7 +757,8 @@
         "template": "filepaths",
         "isVariadic": true,
         "isOptional": true
-      }
+      },
+      "priority": 92
     },
     {
       "name": "config",
@@ -850,7 +857,8 @@
           "args": {
             "name": "config-file",
             "template": "filepaths"
-          }
+          },
+          "priority": 18
         },
         {
           "name": [
@@ -3632,7 +3640,8 @@
         {
           "name": "value"
         }
-      ]
+      ],
+      "priority": 55
     },
     {
       "name": "rebase",
@@ -3890,14 +3899,16 @@
             "-q",
             "--quiet"
           ],
-          "description": "Be quiet. Implies --no-stat"
+          "description": "Be quiet. Implies --no-stat",
+          "priority": 25
         },
         {
           "name": [
             "-v",
             "--verbose"
           ],
-          "description": "Be verbose. Implies --stat"
+          "description": "Be verbose. Implies --stat",
+          "priority": 25
         },
         {
           "name": [
@@ -3939,7 +3950,8 @@
             "--force-rebase",
             "-f"
           ],
-          "description": "Individually replay all rebased commits instead of fast-forwarding over the unchanged ones. This ensures that the entire history of the rebased branch is composed of new commits. You may find this helpful after reverting a topic branch merge, as this option recreates the topic branch with fresh commits so it can be remerged successfully without needing to 'revert the reversion' (see the revert-a-faulty-merge How-To for details)"
+          "description": "Individually replay all rebased commits instead of fast-forwarding over the unchanged ones. This ensures that the entire history of the rebased branch is composed of new commits. You may find this helpful after reverting a topic branch merge, as this option recreates the topic branch with fresh commits so it can be remerged successfully without needing to 'revert the reversion' (see the revert-a-faulty-merge How-To for details)",
+          "priority": 18
         },
         {
           "name": [
@@ -4091,7 +4103,8 @@
             }
           ]
         }
-      ]
+      ],
+      "priority": 78
     },
     {
       "name": "add",
@@ -4109,14 +4122,16 @@
             "-v",
             "--verbose"
           ],
-          "description": "Be verbose"
+          "description": "Be verbose",
+          "priority": 25
         },
         {
           "name": [
             "-f",
             "--force"
           ],
-          "description": "Allow adding otherwise ignored files"
+          "description": "Allow adding otherwise ignored files",
+          "priority": 18
         },
         {
           "name": [
@@ -4152,7 +4167,8 @@
             "--all",
             "--no-ignore-removal"
           ],
-          "description": "Update the index not only where the working tree has a file matching <pathspec> but also where the index already has an entry. This adds, modifies, and removes index entries to match the working tree"
+          "description": "Update the index not only where the working tree has a file matching <pathspec> but also where the index already has an entry. This adds, modifies, and removes index entries to match the working tree",
+          "priority": 35
         },
         {
           "name": [
@@ -4257,7 +4273,8 @@
             "template": "folders"
           }
         ]
-      }
+      },
+      "priority": 85
     },
     {
       "name": "stage",
@@ -4275,14 +4292,16 @@
             "-v",
             "--verbose"
           ],
-          "description": "Be verbose"
+          "description": "Be verbose",
+          "priority": 25
         },
         {
           "name": [
             "-f",
             "--force"
           ],
-          "description": "Allow adding otherwise ignored files"
+          "description": "Allow adding otherwise ignored files",
+          "priority": 18
         },
         {
           "name": [
@@ -4318,7 +4337,8 @@
             "--all",
             "--no-ignore-removal"
           ],
-          "description": "Update the index not only where the working tree has a file matching <pathspec> but also where the index already has an entry. This adds, modifies, and removes index entries to match the working tree"
+          "description": "Update the index not only where the working tree has a file matching <pathspec> but also where the index already has an entry. This adds, modifies, and removes index entries to match the working tree",
+          "priority": 35
         },
         {
           "name": [
@@ -4420,7 +4440,8 @@
             "js_source": "(e,t)=>{let i=D(e);if(i.startsWith(\"fatal:\"))return[];let o=i.split(`\n`).map(s=>{let c=[\"M\",\"A\"].includes(s.charAt(0));s=s.trim();let l=s.split(\" \");return{working:l[0],file:l.slice(1).join(\" \").trim(),alreadyAdded:c}}),a=i.split(`\n`).map(s=>s.slice(0,s.lastIndexOf(\"/\")+1).trim().split(\" \").slice(1).join(\" \").trim()),r=[];if(a.length>=2){let s=a[0],c=1;for(let l=1;l<a.length;l++)a[l].includes(s)&&l+1!==a.length?c++:(c>=2&&r.push(s),c=1),s=a[l]}return o=o.filter(s=>{let c=s.file.replace(/^\"|\"$/g,\"\");return!t.some(l=>l===c||l.endsWith(\"*\")&&c.startsWith(l.slice(0,-1))||l.startsWith(\"*\")&&c.endsWith(l.slice(1)))}),[...r.map(s=>({name:s+\"*\",description:\"Wildcard\",icon:\"fig://icon?type=asterisk\"})),...o.map(s=>{let c=s.file.replace(/^\"|\"$/g,\"\"),l=\"\";try{l=c.split(\".\").slice(-1)[0]}catch{}c.endsWith(\"/\")&&(l=\"folder\");let d=s.alreadyAdded?50:100;return{name:c,icon:`fig://icon?type=${l}&color=ff0000&badge=${s.working}`,description:\"Changed file\",priority:d}})]}"
           }
         ]
-      }
+      },
+      "priority": 85
     },
     {
       "name": "status",
@@ -4438,7 +4459,8 @@
             "-v",
             "--verbose"
           ],
-          "description": "Be verbose"
+          "description": "Be verbose",
+          "priority": 25
         },
         {
           "name": [
@@ -4617,7 +4639,8 @@
             "js_source": "(e,t)=>{let i=D(e);if(i.startsWith(\"fatal:\"))return[];let o=i.split(`\n`).map(s=>{let c=[\"M\",\"A\"].includes(s.charAt(0));s=s.trim();let l=s.split(\" \");return{working:l[0],file:l.slice(1).join(\" \").trim(),alreadyAdded:c}}),a=i.split(`\n`).map(s=>s.slice(0,s.lastIndexOf(\"/\")+1).trim().split(\" \").slice(1).join(\" \").trim()),r=[];if(a.length>=2){let s=a[0],c=1;for(let l=1;l<a.length;l++)a[l].includes(s)&&l+1!==a.length?c++:(c>=2&&r.push(s),c=1),s=a[l]}return o=o.filter(s=>{let c=s.file.replace(/^\"|\"$/g,\"\");return!t.some(l=>l===c||l.endsWith(\"*\")&&c.startsWith(l.slice(0,-1))||l.startsWith(\"*\")&&c.endsWith(l.slice(1)))}),[...r.map(s=>({name:s+\"*\",description:\"Wildcard\",icon:\"fig://icon?type=asterisk\"})),...o.map(s=>{let c=s.file.replace(/^\"|\"$/g,\"\"),l=\"\";try{l=c.split(\".\").slice(-1)[0]}catch{}c.endsWith(\"/\")&&(l=\"folder\");let d=s.alreadyAdded?50:100;return{name:c,icon:`fig://icon?type=${l}&color=ff0000&badge=${s.working}`,description:\"Changed file\",priority:d}})]}"
           }
         ]
-      }
+      },
+      "priority": 92
     },
     {
       "name": "clean",
@@ -4634,7 +4657,8 @@
             "-f",
             "--force"
           ],
-          "description": "If the Git configuration variable clean.requireForce is not set to false, git clean will refuse to delete files or directories unless given -f or -i"
+          "description": "If the Git configuration variable clean.requireForce is not set to false, git clean will refuse to delete files or directories unless given -f or -i",
+          "priority": 18
         },
         {
           "name": [
@@ -4655,7 +4679,8 @@
             "-q",
             "--quiet"
           ],
-          "description": "Be quiet, only report errors, but not the files that are successfully removed"
+          "description": "Be quiet, only report errors, but not the files that are successfully removed",
+          "priority": 25
         },
         {
           "name": [
@@ -4704,7 +4729,8 @@
             "_corrected_in": "v0.10.0"
           }
         ]
-      }
+      },
+      "priority": 65
     },
     {
       "name": "ls-remote",
@@ -4718,13 +4744,15 @@
           "name": [
             "--all"
           ],
-          "description": "Push all branches (i.e. refs under refs/heads/); cannot be used with other <refspec>"
+          "description": "Push all branches (i.e. refs under refs/heads/); cannot be used with other <refspec>",
+          "priority": 35
         },
         {
           "name": [
             "--prune"
           ],
-          "description": "Remove remote branches that don't have a local counterpart"
+          "description": "Remove remote branches that don't have a local counterpart",
+          "priority": 25
         },
         {
           "name": [
@@ -4807,7 +4835,8 @@
             "-f",
             "--force"
           ],
-          "description": "Usually, the command refuses to update a remote ref that is not an ancestor of the local ref used to overwrite it. Also, when --force-with-lease option is used, the command refuses to update a remote ref whose current value does not match what is expected. This flag disables these checks, and can cause the remote repository to lose commits; use it with care"
+          "description": "Usually, the command refuses to update a remote ref that is not an ancestor of the local ref used to overwrite it. Also, when --force-with-lease option is used, the command refuses to update a remote ref whose current value does not match what is expected. This flag disables these checks, and can cause the remote repository to lose commits; use it with care",
+          "priority": 18
         },
         {
           "name": [
@@ -4842,14 +4871,16 @@
             "-q",
             "--quiet"
           ],
-          "description": "Suppress all output, including the listing of updated refs, unless an error occurs. Progress is not reported to the standard error stream"
+          "description": "Suppress all output, including the listing of updated refs, unless an error occurs. Progress is not reported to the standard error stream",
+          "priority": 25
         },
         {
           "name": [
             "-v",
             "--verbose"
           ],
-          "description": "Run verbosely"
+          "description": "Run verbosely",
+          "priority": 25
         },
         {
           "name": [
@@ -4967,7 +4998,8 @@
             }
           ]
         }
-      ]
+      ],
+      "priority": 90
     },
     {
       "name": "pull",
@@ -5277,14 +5309,16 @@
             "-q",
             "--quiet"
           ],
-          "description": "Operate quietly. Implies --no-progress"
+          "description": "Operate quietly. Implies --no-progress",
+          "priority": 25
         },
         {
           "name": [
             "-v",
             "--verbose"
           ],
-          "description": "Be verbose"
+          "description": "Be verbose",
+          "priority": 25
         },
         {
           "name": [
@@ -5308,7 +5342,8 @@
           "name": [
             "--all"
           ],
-          "description": "Fetch all remotes"
+          "description": "Fetch all remotes",
+          "priority": 35
         },
         {
           "name": [
@@ -5404,7 +5439,8 @@
             "-f",
             "--force"
           ],
-          "description": "This option overrides that check"
+          "description": "This option overrides that check",
+          "priority": 18
         },
         {
           "name": [
@@ -5418,7 +5454,8 @@
             "-p",
             "--prune"
           ],
-          "description": "Before fetching, remove any remote-tracking references that no longer exist on the remote"
+          "description": "Before fetching, remove any remote-tracking references that no longer exist on the remote",
+          "priority": 25
         },
         {
           "name": [
@@ -5563,7 +5600,8 @@
             }
           ]
         }
-      ]
+      ],
+      "priority": 90
     },
     {
       "name": "diff",
@@ -5661,7 +5699,8 @@
             "js_source": "function(e){return e.includes(\"--staged\")||e.includes(\"--cached\")?[\"bash\",\"-c\",\"git --no-optional-locks status --short | sed -ne '/^M /p' -e '/A /p'\"]:[\"bash\",\"-c\",\"git --no-optional-locks status --short | sed -ne '/M /p' -e '/A /p'\"]}"
           }
         ]
-      }
+      },
+      "priority": 85
     },
     {
       "name": "reset",
@@ -5683,7 +5722,8 @@
           "name": [
             "--hard"
           ],
-          "description": "⚠️WARNING: you will lose all uncommitted changes in addition to the changes introduced in the last commit"
+          "description": "⚠️WARNING: you will lose all uncommitted changes in addition to the changes introduced in the last commit",
+          "priority": 15
         },
         {
           "name": [
@@ -5708,7 +5748,8 @@
             "-q",
             "--quiet"
           ],
-          "description": "Be quiet, only report errors"
+          "description": "Be quiet, only report errors",
+          "priority": 25
         },
         {
           "name": [
@@ -5794,7 +5835,8 @@
             "type": "git_branches"
           }
         ]
-      }
+      },
+      "priority": 75
     },
     {
       "name": "log",
@@ -5815,7 +5857,8 @@
             "-q",
             "--quiet"
           ],
-          "description": "Suppress diff output"
+          "description": "Suppress diff output",
+          "priority": 25
         },
         {
           "name": [
@@ -5925,7 +5968,8 @@
             }
           ]
         }
-      ]
+      ],
+      "priority": 82
     },
     {
       "name": "remote",
@@ -5957,7 +6001,8 @@
               "name": [
                 "-f"
               ],
-              "description": "Git fetch <name> is run immediately after the remote information is set up"
+              "description": "Git fetch <name> is run immediately after the remote information is set up",
+              "priority": 18
             },
             {
               "name": [
@@ -5995,7 +6040,8 @@
             {
               "name": "repository url"
             }
-          ]
+          ],
+          "priority": 85
         },
         {
           "name": "set-head",
@@ -6100,7 +6146,8 @@
               "name": [
                 "--all"
               ],
-              "description": "All URLs for the remote will be listed"
+              "description": "All URLs for the remote will be listed",
+              "priority": 35
             }
           ],
           "args": {
@@ -6208,7 +6255,8 @@
               "name": [
                 "-p",
                 "--prune"
-              ]
+              ],
+              "priority": 25
             }
           ],
           "args": [
@@ -6231,9 +6279,11 @@
             "-v",
             "--verbose"
           ],
-          "description": "Be a little more verbose and show remote url after name. NOTE: This must be placed between remote and subcommand"
+          "description": "Be a little more verbose and show remote url after name. NOTE: This must be placed between remote and subcommand",
+          "priority": 25
         }
-      ]
+      ],
+      "priority": 72
     },
     {
       "name": "fetch",
@@ -6243,7 +6293,8 @@
           "name": [
             "--all"
           ],
-          "description": "Fetch all remotes"
+          "description": "Fetch all remotes",
+          "priority": 35
         },
         {
           "name": [
@@ -6351,7 +6402,8 @@
             "-f",
             "--force"
           ],
-          "description": "This option overrides that check"
+          "description": "This option overrides that check",
+          "priority": 18
         },
         {
           "name": [
@@ -6397,7 +6449,8 @@
             "-p",
             "--prune"
           ],
-          "description": "Before fetching, remove any remote-tracking references that no longer exist on the remote"
+          "description": "Before fetching, remove any remote-tracking references that no longer exist on the remote",
+          "priority": 25
         },
         {
           "name": [
@@ -6520,14 +6573,16 @@
             "-q",
             "--quiet"
           ],
-          "description": "Pass --quiet to git-fetch-pack and silence any other internally used git commands. Progress is not reported to the standard error stream"
+          "description": "Pass --quiet to git-fetch-pack and silence any other internally used git commands. Progress is not reported to the standard error stream",
+          "priority": 25
         },
         {
           "name": [
             "-v",
             "--verbose"
           ],
-          "description": "Be verbose"
+          "description": "Be verbose",
+          "priority": 25
         },
         {
           "name": [
@@ -6601,7 +6656,8 @@
           "name": "refspec",
           "isOptional": true
         }
-      ]
+      ],
+      "priority": 80
     },
     {
       "name": "stash",
@@ -6637,14 +6693,16 @@
                 "-a",
                 "--all"
               ],
-              "description": "All ignored and untracked files are also stashed"
+              "description": "All ignored and untracked files are also stashed",
+              "priority": 35
             },
             {
               "name": [
                 "-q",
                 "--quiet"
               ],
-              "description": "Quiet, suppress feedback messages"
+              "description": "Quiet, suppress feedback messages",
+              "priority": 25
             },
             {
               "name": [
@@ -6667,7 +6725,8 @@
               ],
               "description": "Separates pathsec from options for disambiguation purposes"
             }
-          ]
+          ],
+          "priority": 90
         },
         {
           "name": "show",
@@ -6725,14 +6784,16 @@
                 "-a",
                 "--all"
               ],
-              "description": "All ignored and untracked files are also stashed"
+              "description": "All ignored and untracked files are also stashed",
+              "priority": 35
             },
             {
               "name": [
                 "-q",
                 "--quiet"
               ],
-              "description": "Quiet, suppress feedback messages"
+              "description": "Quiet, suppress feedback messages",
+              "priority": 25
             }
           ],
           "args": {
@@ -6755,7 +6816,8 @@
                 "-q",
                 "--quiet"
               ],
-              "description": "Quiet, suppress feedback messages"
+              "description": "Quiet, suppress feedback messages",
+              "priority": 25
             }
           ],
           "args": {
@@ -6794,7 +6856,8 @@
                 "-q",
                 "--quiet"
               ],
-              "description": "Quiet, suppress feedback messages"
+              "description": "Quiet, suppress feedback messages",
+              "priority": 25
             }
           ],
           "args": {
@@ -6839,7 +6902,8 @@
                 "-q",
                 "--quiet"
               ],
-              "description": "Quiet, suppress feedback messages"
+              "description": "Quiet, suppress feedback messages",
+              "priority": 25
             }
           ],
           "args": {
@@ -6899,7 +6963,8 @@
                 }
               ]
             }
-          ]
+          ],
+          "priority": 82
         },
         {
           "name": "create",
@@ -6928,7 +6993,8 @@
                 "-q",
                 "--quiet"
               ],
-              "description": "Quiet, suppress feedback messages"
+              "description": "Quiet, suppress feedback messages",
+              "priority": 25
             }
           ],
           "args": [
@@ -6953,7 +7019,8 @@
             }
           ]
         }
-      ]
+      ],
+      "priority": 78
     },
     {
       "name": "reflog",
@@ -6969,9 +7036,11 @@
           "name": [
             "--all"
           ],
-          "description": "Show all refs"
+          "description": "Show all refs",
+          "priority": 35
         }
-      ]
+      ],
+      "priority": 60
     },
     {
       "name": "clone",
@@ -7032,14 +7101,16 @@
             "-q",
             "--quiet"
           ],
-          "description": "Operate quietly. Progress is not reported to the standard error stream"
+          "description": "Operate quietly. Progress is not reported to the standard error stream",
+          "priority": 25
         },
         {
           "name": [
             "-v",
             "--verbose"
           ],
-          "description": "Run verbosely. Does not affect the reporting of progress status to the standard error stream"
+          "description": "Run verbosely. Does not affect the reporting of progress status to the standard error stream",
+          "priority": 25
         },
         {
           "name": [
@@ -7250,7 +7321,8 @@
           "template": "folders",
           "isOptional": true
         }
-      ]
+      ],
+      "priority": 72
     },
     {
       "name": "init",
@@ -7261,7 +7333,8 @@
             "-q",
             "--quiet"
           ],
-          "description": "Only print error and warning messages"
+          "description": "Only print error and warning messages",
+          "priority": 25
         },
         {
           "name": [
@@ -7363,7 +7436,8 @@
       "args": {
         "name": "directory",
         "isOptional": true
-      }
+      },
+      "priority": 60
     },
     {
       "name": "mv",
@@ -7374,7 +7448,8 @@
             "-f",
             "--force"
           ],
-          "description": "Force renaming or moving of a file even if the target exists"
+          "description": "Force renaming or moving of a file even if the target exists",
+          "priority": 18
         },
         {
           "name": [
@@ -7394,7 +7469,8 @@
             "-v",
             "--verbose"
           ],
-          "description": "Report the names of files as they are moved"
+          "description": "Report the names of files as they are moved",
+          "priority": 25
         }
       ],
       "args": [
@@ -7431,7 +7507,8 @@
             "-f",
             "--force"
           ],
-          "description": "Override the up-to-date check"
+          "description": "Override the up-to-date check",
+          "priority": 18
         },
         {
           "name": [
@@ -7814,7 +7891,8 @@
                 "_corrected_in": "v0.10.0"
               }
             ]
-          }
+          },
+          "priority": 75
         },
         {
           "name": "visualize",
@@ -7830,7 +7908,8 @@
         },
         {
           "name": "log",
-          "description": "Show bisect log"
+          "description": "Show bisect log",
+          "priority": 82
         },
         {
           "name": "run",
@@ -7872,7 +7951,8 @@
             "-a",
             "--all"
           ],
-          "description": "List both remote-tracking and local branches"
+          "description": "List both remote-tracking and local branches",
+          "priority": 35
         },
         {
           "name": [
@@ -8006,7 +8086,8 @@
             "-f",
             "--force"
           ],
-          "description": "Force creation, move/rename, deletion"
+          "description": "Force creation, move/rename, deletion",
+          "priority": 18
         },
         {
           "name": [
@@ -8090,14 +8171,16 @@
             "-v",
             "--verbose"
           ],
-          "description": "Shows sha1 and commit subject line for each head, along with relationship to upstream branch when in list mode. If given twice, prints the path of the linked worktree and the name of the upstream branch"
+          "description": "Shows sha1 and commit subject line for each head, along with relationship to upstream branch when in list mode. If given twice, prints the path of the linked worktree and the name of the upstream branch",
+          "priority": 25
         },
         {
           "name": [
             "-q",
             "--quiet"
           ],
-          "description": "Suppress non-error messages"
+          "description": "Suppress non-error messages",
+          "priority": 25
         },
         {
           "name": [
@@ -8275,7 +8358,8 @@
           ],
           "description": "Turns off branch colors"
         }
-      ]
+      ],
+      "priority": 82
     },
     {
       "name": "checkout",
@@ -8286,7 +8370,8 @@
             "-q",
             "--quiet"
           ],
-          "description": "Quiet, suppress feedback messages"
+          "description": "Quiet, suppress feedback messages",
+          "priority": 25
         },
         {
           "name": [
@@ -8305,7 +8390,8 @@
             "-f",
             "--force"
           ],
-          "description": "When switching branches, proceed even if the index or the working tree differs from HEAD. This is used to throw away local changes"
+          "description": "When switching branches, proceed even if the index or the working tree differs from HEAD. This is used to throw away local changes",
+          "priority": 18
         },
         {
           "name": [
@@ -8519,7 +8605,8 @@
           "isVariadic": true,
           "isOptional": true
         }
-      ]
+      ],
+      "priority": 88
     },
     {
       "name": "cherry-pick",
@@ -8779,7 +8866,8 @@
             "_corrected_in": "v0.10.0"
           }
         ]
-      }
+      },
+      "priority": 65
     },
     {
       "name": "submodule",
@@ -8803,7 +8891,8 @@
                 "-f",
                 "--force"
               ],
-              "description": "Allow adding an otherwise ignored submodule path"
+              "description": "Allow adding an otherwise ignored submodule path",
+              "priority": 18
             },
             {
               "name": [
@@ -8851,7 +8940,8 @@
               "template": "filepaths",
               "isOptional": true
             }
-          ]
+          ],
+          "priority": 85
         },
         {
           "name": "status",
@@ -8881,7 +8971,8 @@
             "template": "filepaths",
             "isVariadic": true,
             "isOptional": true
-          }
+          },
+          "priority": 92
         },
         {
           "name": "init",
@@ -8899,7 +8990,8 @@
             "template": "filepaths",
             "isVariadic": true,
             "isOptional": true
-          }
+          },
+          "priority": 60
         },
         {
           "name": "deinit",
@@ -8910,13 +9002,15 @@
                 "-f",
                 "--force"
               ],
-              "description": "The submodule’s working tree will be removed even if it contains local modifications"
+              "description": "The submodule’s working tree will be removed even if it contains local modifications",
+              "priority": 18
             },
             {
               "name": [
                 "--all"
               ],
-              "description": "Unregister all submodules in the working tree"
+              "description": "Unregister all submodules in the working tree",
+              "priority": 35
             },
             {
               "name": [
@@ -8972,7 +9066,8 @@
                 "-f",
                 "--force"
               ],
-              "description": "Throw away local changes in submodules when switching to a different commit; and always run a checkout operation in the submodule, even if the commit listed in the index of the containing repository matches the commit checked out in the submodule"
+              "description": "Throw away local changes in submodules when switching to a different commit; and always run a checkout operation in the submodule, even if the commit listed in the index of the containing repository matches the commit checked out in the submodule",
+              "priority": 18
             },
             {
               "name": [
@@ -9213,7 +9308,8 @@
             "-q",
             "--quiet"
           ],
-          "description": "Only print error messages"
+          "description": "Only print error messages",
+          "priority": 25
         },
         {
           "name": [
@@ -9221,7 +9317,8 @@
           ],
           "description": "The commit stored in the index is used instead"
         }
-      ]
+      ],
+      "priority": 50
     },
     {
       "name": "merge",
@@ -9492,14 +9589,16 @@
             "-q",
             "--quiet"
           ],
-          "description": "Operate quietly. Implies --no-progress"
+          "description": "Operate quietly. Implies --no-progress",
+          "priority": 25
         },
         {
           "name": [
             "-v",
             "--verbose"
           ],
-          "description": "Be verbose"
+          "description": "Be verbose",
+          "priority": 25
         },
         {
           "name": [
@@ -9609,7 +9708,8 @@
             "type": "git_branches"
           }
         ]
-      }
+      },
+      "priority": 82
     },
     {
       "name": "mergetool",
@@ -9719,7 +9819,8 @@
             "type": "git_tags"
           }
         ]
-      }
+      },
+      "priority": 72
     },
     {
       "name": "restore",
@@ -9761,7 +9862,8 @@
             "-q",
             "--quiet"
           ],
-          "description": "Quiet, suppress feedback messages"
+          "description": "Quiet, suppress feedback messages",
+          "priority": 25
         },
         {
           "name": [
@@ -9888,7 +9990,8 @@
             "js_source": "(e,t)=>{let i=D(e);if(i.startsWith(\"fatal:\"))return[];let o=i.split(`\n`).map(s=>{let c=[\"M\",\"A\"].includes(s.charAt(0));s=s.trim();let l=s.split(\" \");return{working:l[0],file:l.slice(1).join(\" \").trim(),alreadyAdded:c}}),a=i.split(`\n`).map(s=>s.slice(0,s.lastIndexOf(\"/\")+1).trim().split(\" \").slice(1).join(\" \").trim()),r=[];if(a.length>=2){let s=a[0],c=1;for(let l=1;l<a.length;l++)a[l].includes(s)&&l+1!==a.length?c++:(c>=2&&r.push(s),c=1),s=a[l]}return o=o.filter(s=>{let c=s.file.replace(/^\"|\"$/g,\"\");return!t.some(l=>l===c||l.endsWith(\"*\")&&c.startsWith(l.slice(0,-1))||l.startsWith(\"*\")&&c.endsWith(l.slice(1)))}),[...r.map(s=>({name:s+\"*\",description:\"Wildcard\",icon:\"fig://icon?type=asterisk\"})),...o.map(s=>{let c=s.file.replace(/^\"|\"$/g,\"\"),l=\"\";try{l=c.split(\".\").slice(-1)[0]}catch{}c.endsWith(\"/\")&&(l=\"folder\");let d=s.alreadyAdded?50:100;return{name:c,icon:`fig://icon?type=${l}&color=ff0000&badge=${s.working}`,description:\"Changed file\",priority:d}})]}"
           }
         ]
-      }
+      },
+      "priority": 80
     },
     {
       "name": "switch",
@@ -9976,7 +10079,8 @@
             "-f",
             "--force"
           ],
-          "description": "An alias for --discard-changes"
+          "description": "An alias for --discard-changes",
+          "priority": 18
         },
         {
           "name": [
@@ -10013,7 +10117,8 @@
             "-q",
             "--quiet"
           ],
-          "description": "Quiet, suppress feedback messages"
+          "description": "Quiet, suppress feedback messages",
+          "priority": 25
         },
         {
           "name": [
@@ -10145,7 +10250,8 @@
             }
           ]
         }
-      ]
+      ],
+      "priority": 88
     },
     {
       "name": "worktree",
@@ -10160,7 +10266,8 @@
                 "-f",
                 "--force"
               ],
-              "description": "By default, add refuses to create a new working tree when <commit-ish> is a branch name and is already checked out by another working tree, or if <path> is already assigned to some working tree but is missing (for instance, if <path> was deleted manually). This option overrides these safeguards. To add a missing but locked working tree path, specify --force twice"
+              "description": "By default, add refuses to create a new working tree when <commit-ish> is a branch name and is already checked out by another working tree, or if <path> is already assigned to some working tree but is missing (for instance, if <path> was deleted manually). This option overrides these safeguards. To add a missing but locked working tree path, specify --force twice",
+              "priority": 18
             },
             {
               "name": [
@@ -10191,7 +10298,8 @@
                 "name": "new-branch"
               }
             }
-          ]
+          ],
+          "priority": 85
         },
         {
           "name": "list",
@@ -10208,7 +10316,8 @@
                 "-v",
                 "--verbose"
               ],
-              "description": "With list, output additional information about worktrees (see below)"
+              "description": "With list, output additional information about worktrees (see below)",
+              "priority": 25
             },
             {
               "name": [
@@ -10249,7 +10358,8 @@
                 "-f",
                 "--force"
               ],
-              "description": "Move refuses to move a locked working tree unless --force is specified twice. If the destination is already assigned to some other working tree but is missing (for instance, if <new-path> was deleted manually), then --force allows the move to proceed; use --force twice if the destination is locked"
+              "description": "Move refuses to move a locked working tree unless --force is specified twice. If the destination is already assigned to some other working tree but is missing (for instance, if <new-path> was deleted manually), then --force allows the move to proceed; use --force twice if the destination is locked",
+              "priority": 18
             }
           ],
           "args": [
@@ -10279,7 +10389,8 @@
                 "-v",
                 "--verbose"
               ],
-              "description": "With prune, report all removals"
+              "description": "With prune, report all removals",
+              "priority": 25
             },
             {
               "name": [
@@ -10301,7 +10412,8 @@
                 "-f",
                 "--force"
               ],
-              "description": "Remove refuses to remove an unclean working tree unless --force is used. To remove a locked working tree, specify --force twice"
+              "description": "Remove refuses to remove an unclean working tree unless --force is used. To remove a locked working tree, specify --force twice",
+              "priority": 18
             }
           ],
           "args": {
@@ -10325,7 +10437,8 @@
             "description": "Working trees can be identified by path, either relative or absolute"
           }
         }
-      ]
+      ],
+      "priority": 60
     },
     {
       "name": "apply",
@@ -10518,7 +10631,8 @@
             "-v",
             "--verbose"
           ],
-          "description": "Be verbose"
+          "description": "Be verbose",
+          "priority": 25
         },
         {
           "name": [
@@ -10673,7 +10787,8 @@
           "name": [
             "--verbose"
           ],
-          "description": "Log details about the incoming connections and requested files"
+          "description": "Log details about the incoming connections and requested files",
+          "priority": 25
         },
         {
           "name": [

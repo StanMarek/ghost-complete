@@ -34,6 +34,7 @@ impl Provider for EnvProvider {
                 source: SuggestionSource::Env,
                 score: 0,
                 match_indices: Vec::new(),
+                priority: None,
             })
             .collect();
 

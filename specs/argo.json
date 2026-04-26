@@ -10,7 +10,8 @@
           "description": "Delete a workflow in the archive",
           "args": {
             "name": "UID"
-          }
+          },
+          "priority": 60
         },
         {
           "name": "get",
@@ -24,12 +25,14 @@
               "description": "Output format. One of: json|yaml|wide (default \"wide\")",
               "args": {
                 "name": "string"
-              }
+              },
+              "priority": 75
             }
           ],
           "args": {
             "name": "UID"
-          }
+          },
+          "priority": 92
         },
         {
           "name": "list",
@@ -59,7 +62,8 @@
               "description": "Output format. One of: json|yaml|wide (default \"wide\")",
               "args": {
                 "name": "string"
-              }
+              },
+              "priority": 75
             },
             {
               "name": [
@@ -139,7 +143,8 @@
               "description": "Output format. One of: name|json|yaml|wide",
               "args": {
                 "name": "string"
-              }
+              },
+              "priority": 75
             },
             {
               "name": [
@@ -175,13 +180,15 @@
                 "--wait",
                 "-w"
               ],
-              "description": "Wait for the workflow to complete only works when a single workflow is resubmitted"
+              "description": "Wait for the workflow to complete only works when a single workflow is resubmitted",
+              "priority": 70
             },
             {
               "name": [
                 "--watch"
               ],
-              "description": "Watch the workflow until it completes only works when a single workflow is resubmitted"
+              "description": "Watch the workflow until it completes only works when a single workflow is resubmitted",
+              "priority": 70
             }
           ],
           "args": {
@@ -231,7 +238,8 @@
               "description": "Output format. One of: name|json|yaml|wide",
               "args": {
                 "name": "string"
-              }
+              },
+              "priority": 75
             },
             {
               "name": [
@@ -264,13 +272,15 @@
                 "--wait",
                 "-w"
               ],
-              "description": "Wait for the workflow to complete only works when a single workflow is retried"
+              "description": "Wait for the workflow to complete only works when a single workflow is retried",
+              "priority": 70
             },
             {
               "name": [
                 "--watch"
               ],
-              "description": "Watch the workflow until it completes only works when a single workflow is retried"
+              "description": "Watch the workflow until it completes only works when a single workflow is retried",
+              "priority": 70
             }
           ],
           "args": {
@@ -287,7 +297,8 @@
           "name": "token",
           "description": "Print the auth token"
         }
-      ]
+      ],
+      "priority": 60
     },
     {
       "name": "cluster-template",
@@ -312,7 +323,8 @@
               "description": "Output format. One of: name|json|yaml|wide",
               "args": {
                 "name": "string"
-              }
+              },
+              "priority": 75
             },
             {
               "name": [
@@ -323,7 +335,8 @@
           ],
           "args": {
             "name": "files"
-          }
+          },
+          "priority": 80
         },
         {
           "name": "delete",
@@ -333,7 +346,8 @@
               "name": [
                 "--all"
               ],
-              "description": "Delete all cluster workflow templates"
+              "description": "Delete all cluster workflow templates",
+              "priority": 55
             },
             {
               "name": [
@@ -345,7 +359,8 @@
           ],
           "args": {
             "name": "WORKFLOW_TEMPLATE"
-          }
+          },
+          "priority": 60
         },
         {
           "name": "get",
@@ -366,7 +381,8 @@
               "description": "Output format. One of: json|yaml|wide",
               "args": {
                 "name": "string"
-              }
+              },
+              "priority": 75
             }
           ],
           "args": [
@@ -376,7 +392,8 @@
             {
               "name": "WORKFLOW_TEMPLATE"
             }
-          ]
+          ],
+          "priority": 92
         },
         {
           "name": "lint",
@@ -397,7 +414,8 @@
               "description": "Linting results output format. One of: pretty|simple (default \"pretty\")",
               "args": {
                 "name": "string"
-              }
+              },
+              "priority": 75
             },
             {
               "name": [
@@ -429,7 +447,8 @@
               "description": "Output format. One of: wide|name",
               "args": {
                 "name": "string"
-              }
+              },
+              "priority": 75
             }
           ]
         }
@@ -568,7 +587,8 @@
               "description": "Output format. One of: name|json|yaml|wide",
               "args": {
                 "name": "string"
-              }
+              },
+              "priority": 75
             },
             {
               "name": [
@@ -617,7 +637,8 @@
           ],
           "args": {
             "name": "FILE1 FILE2..."
-          }
+          },
+          "priority": 80
         },
         {
           "name": "delete",
@@ -627,7 +648,8 @@
               "name": [
                 "--all"
               ],
-              "description": "Delete all cron workflows"
+              "description": "Delete all cron workflows",
+              "priority": 55
             },
             {
               "name": [
@@ -639,7 +661,8 @@
           ],
           "args": {
             "name": "[CRON_WORKFLOW... | --all]"
-          }
+          },
+          "priority": 60
         },
         {
           "name": "get",
@@ -660,12 +683,14 @@
               "description": "Output format. One of: json|yaml|wide",
               "args": {
                 "name": "string"
-              }
+              },
+              "priority": 75
             }
           ],
           "args": {
             "name": "CRON_WORKFLOW"
-          }
+          },
+          "priority": 92
         },
         {
           "name": "lint",
@@ -686,7 +711,8 @@
               "description": "Linting results output format. One of: pretty|simple (default \"pretty\")",
               "args": {
                 "name": "string"
-              }
+              },
+              "priority": 75
             },
             {
               "name": [
@@ -708,7 +734,8 @@
                 "--all-namespaces",
                 "-A"
               ],
-              "description": "Show workflows from all namespaces"
+              "description": "Show workflows from all namespaces",
+              "priority": 65
             },
             {
               "name": [
@@ -764,7 +791,8 @@
               "description": "Output format. One of: name|wide|yaml|json",
               "args": {
                 "name": "string"
-              }
+              },
+              "priority": 75
             },
             {
               "name": [
@@ -849,14 +877,16 @@
           "name": [
             "--all"
           ],
-          "description": "Delete all workflows"
+          "description": "Delete all workflows",
+          "priority": 55
         },
         {
           "name": [
             "--all-namespaces",
             "-A"
           ],
-          "description": "Delete workflows from all namespaces"
+          "description": "Delete workflows from all namespaces",
+          "priority": 65
         },
         {
           "name": [
@@ -883,7 +913,8 @@
           "name": [
             "--force"
           ],
-          "description": "Force delete workflows by removing finalizers"
+          "description": "Force delete workflows by removing finalizers",
+          "priority": 22
         },
         {
           "name": [
@@ -929,7 +960,8 @@
       ],
       "args": {
         "name": "WORKFLOW"
-      }
+      },
+      "priority": 60
     },
     {
       "name": "executor-plugin",
@@ -984,7 +1016,8 @@
           "description": "Output format. One of: json|yaml|short|wide",
           "args": {
             "name": "string"
-          }
+          },
+          "priority": 75
         },
         {
           "name": [
@@ -998,7 +1031,8 @@
       ],
       "args": {
         "name": "WORKFLOW"
-      }
+      },
+      "priority": 92
     },
     {
       "name": "help",
@@ -1038,7 +1072,8 @@
           "description": "Linting results output format. One of: pretty|simple (default \"pretty\")",
           "args": {
             "name": "string"
-          }
+          },
+          "priority": 75
         },
         {
           "name": [
@@ -1060,7 +1095,8 @@
             "--all-namespaces",
             "-A"
           ],
-          "description": "Show workflows from all namespaces"
+          "description": "Show workflows from all namespaces",
+          "priority": 65
         },
         {
           "name": [
@@ -1116,7 +1152,8 @@
           "description": "Output format. One of: name|wide|yaml|json",
           "args": {
             "name": "string"
-          }
+          },
+          "priority": 75
         },
         {
           "name": [
@@ -1271,7 +1308,8 @@
           "name": "POD",
           "isOptional": true
         }
-      ]
+      ],
+      "priority": 88
     },
     {
       "name": "node",
@@ -1375,7 +1413,8 @@
           "description": "Output format. One of: name|json|yaml|wide",
           "args": {
             "name": "string"
-          }
+          },
+          "priority": 75
         },
         {
           "name": [
@@ -1411,13 +1450,15 @@
             "--wait",
             "-w"
           ],
-          "description": "Wait for the workflow to complete - only works when a single workflow is resubmitted"
+          "description": "Wait for the workflow to complete - only works when a single workflow is resubmitted",
+          "priority": 70
         },
         {
           "name": [
             "--watch"
           ],
-          "description": "Watch the workflow until it completes - only works when a single workflow is resubmitted"
+          "description": "Watch the workflow until it completes - only works when a single workflow is resubmitted",
+          "priority": 70
         }
       ],
       "args": {
@@ -1497,7 +1538,8 @@
           "description": "Output format. One of: name|json|yaml|wide",
           "args": {
             "name": "string"
-          }
+          },
+          "priority": 75
         },
         {
           "name": [
@@ -1530,13 +1572,15 @@
             "--wait",
             "-w"
           ],
-          "description": "Wait for the workflow to complete only works when a single workflow is retried"
+          "description": "Wait for the workflow to complete only works when a single workflow is retried",
+          "priority": 70
         },
         {
           "name": [
             "--watch"
           ],
-          "description": "Watch the workflow until it completes only works when a single workflow is retried"
+          "description": "Watch the workflow until it completes only works when a single workflow is retried",
+          "priority": 70
         }
       ],
       "args": {
@@ -1849,7 +1893,8 @@
           "description": "Output format. One of: name|json|yaml|wide",
           "args": {
             "name": "string"
-          }
+          },
+          "priority": 75
         },
         {
           "name": [
@@ -1924,13 +1969,15 @@
             "-w",
             "--wait"
           ],
-          "description": "Wait for the workflow to complete"
+          "description": "Wait for the workflow to complete",
+          "priority": 70
         },
         {
           "name": [
             "--watch"
           ],
-          "description": "Watch the workflow until it completes"
+          "description": "Watch the workflow until it completes",
+          "priority": 70
         }
       ],
       "args": {
@@ -1981,7 +2028,8 @@
               "description": "Output format. One of: name|json|yaml|wide",
               "args": {
                 "name": "string"
-              }
+              },
+              "priority": 75
             },
             {
               "name": [
@@ -1997,7 +2045,8 @@
             {
               "name": "FILE2..."
             }
-          ]
+          ],
+          "priority": 80
         },
         {
           "name": "delete",
@@ -2007,7 +2056,8 @@
               "name": [
                 "--all"
               ],
-              "description": "Delete all workflow templates"
+              "description": "Delete all workflow templates",
+              "priority": 55
             },
             {
               "name": [
@@ -2019,7 +2069,8 @@
           ],
           "args": {
             "name": "WORKFLOW_TEMPLATE"
-          }
+          },
+          "priority": 60
         },
         {
           "name": "get",
@@ -2040,12 +2091,14 @@
               "description": "Output format. One of: json|yaml|wide",
               "args": {
                 "name": "string"
-              }
+              },
+              "priority": 75
             }
           ],
           "args": {
             "name": "WORKFLOW_TEMPLATE"
-          }
+          },
+          "priority": 92
         },
         {
           "name": "lint",
@@ -2066,7 +2119,8 @@
               "description": "Linting results output format. One of: pretty|simple (default \"pretty\")",
               "args": {
                 "name": "string"
-              }
+              },
+              "priority": 75
             },
             {
               "name": [
@@ -2093,7 +2147,8 @@
                 "--all-namespaces",
                 "-A"
               ],
-              "description": "Show workflows from all namespaces"
+              "description": "Show workflows from all namespaces",
+              "priority": 65
             },
             {
               "name": [
@@ -2110,7 +2165,8 @@
               "description": "Output format. One of: wide|name",
               "args": {
                 "name": "string"
-              }
+              },
+              "priority": 75
             }
           ]
         }
@@ -2183,7 +2239,8 @@
           ],
           "description": "Print just the version number"
         }
-      ]
+      ],
+      "priority": 50
     },
     {
       "name": "wait",
@@ -2205,7 +2262,8 @@
       ],
       "args": {
         "name": "[WORKFLOW...]"
-      }
+      },
+      "priority": 60
     },
     {
       "name": "watch",
@@ -2414,7 +2472,8 @@
       "description": "If present the namespace scope for this CLI request",
       "args": {
         "name": "string"
-      }
+      },
+      "priority": 78
     },
     {
       "name": [

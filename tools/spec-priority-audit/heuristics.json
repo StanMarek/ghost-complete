@@ -1,0 +1,147 @@
+{
+  "_comment": "Curated priority overrides for bundled completion specs. The audit script (apply.mjs) categorises each spec by filename, walks subcommands+options, and assigns priority where missing. Existing priority values (from upstream Fig conversion) are NEVER overwritten. Values are 0-100, higher ranks earlier. The kind base for a Subcommand is 70 and a Flag is 30, so any value equal to the base is pruned from this file — it would be a no-op write.",
+
+  "families": {
+    "vcs": {
+      "specs": ["git", "svn"],
+      "subcommands": {
+        "status": 92, "commit": 92, "push": 90, "pull": 90, "checkout": 88, "switch": 88,
+        "add": 85, "stage": 85, "diff": 85, "log": 82, "branch": 82, "merge": 82,
+        "fetch": 80, "stash": 78, "rebase": 78, "reset": 75, "remote": 72, "tag": 72,
+        "clone": 72, "init": 60, "config": 55, "restore": 80, "revert": 65,
+        "cherry-pick": 65, "blame": 65, "reflog": 60, "worktree": 60, "submodule": 50
+      },
+      "flags": {
+        "--force": 18, "-f": 18, "--hard": 15, "--prune": 25,
+        "--all": 35, "--verbose": 25, "--quiet": 25
+      }
+    },
+
+    "package_manager": {
+      "specs": ["npm", "yarn", "pnpm", "bun", "pip", "pip3", "pipenv", "poetry", "uv", "cargo", "gem", "composer", "go", "brew", "asdf", "nvm", "rbenv", "pyenv"],
+      "subcommands": {
+        "install": 92, "i": 90, "add": 90, "remove": 80, "rm": 78, "uninstall": 78,
+        "run": 90, "start": 88, "build": 88, "test": 85, "dev": 85, "watch": 80,
+        "publish": 75, "update": 78, "upgrade": 78, "list": 72, "ls": 72,
+        "info": 65, "show": 65, "outdated": 65, "audit": 60, "init": 55, "link": 55,
+        "exec": 75, "x": 75, "create": 65, "fmt": 65, "clean": 55,
+        "doc": 55, "bench": 65
+      },
+      "flags": {
+        "--force": 20, "-f": 20, "--global": 60, "-g": 60, "--save-dev": 65, "-D": 65,
+        "--frozen-lockfile": 60, "--production": 60, "--dry-run": 50, "--verbose": 25,
+        "--quiet": 25, "--no-install-recommends": 35
+      }
+    },
+
+    "container": {
+      "specs": ["docker", "podman", "lima", "limactl", "minikube", "kind"],
+      "subcommands": {
+        "run": 92, "build": 90, "exec": 88, "ps": 85, "logs": 85, "compose": 82,
+        "pull": 80, "push": 80, "images": 78, "image": 75, "inspect": 75,
+        "stop": 75, "start": 75, "kill": 60, "rm": 55, "rmi": 50,
+        "network": 65, "volume": 65, "system": 60, "info": 55, "version": 50,
+        "tag": 60, "save": 55, "load": 55, "create": 65, "attach": 55
+      },
+      "flags": {
+        "--rm-all": 18, "--force": 22, "--privileged": 35, "--all": 60,
+        "-a": 60, "--detach": 75, "-d": 75, "--interactive": 70, "-it": 70
+      }
+    },
+
+    "kubernetes": {
+      "specs": ["kubectl", "kubectx", "kubens", "helm", "k9s", "argo"],
+      "subcommands": {
+        "get": 92, "describe": 88, "apply": 88, "create": 80, "delete": 60, "edit": 75,
+        "logs": 88, "exec": 85, "port-forward": 80, "rollout": 75, "scale": 75,
+        "config": 65, "cluster-info": 60, "cordon": 55, "drain": 55, "top": 65,
+        "expose": 60, "label": 60, "annotate": 55, "patch": 60, "wait": 60,
+        "namespace": 75, "context": 80, "use-context": 80, "version": 50, "auth": 60
+      },
+      "flags": {
+        "--force": 22, "--cascade": 35, "--all": 55,
+        "--all-namespaces": 65, "-A": 65, "--output": 75, "-o": 75,
+        "--namespace": 78, "-n": 78, "--watch": 70, "-w": 70
+      }
+    },
+
+    "cloud": {
+      "specs": ["oci", "doctl", "vercel", "netlify", "fly", "flyctl", "railway", "wrangler", "supabase", "amplify", "firebase", "appwrite"],
+      "subcommands": {
+        "list": 82, "ls": 82, "get": 82, "describe": 78, "show": 75,
+        "create": 72, "deploy": 90, "delete": 50, "remove": 50,
+        "login": 88, "logout": 60, "config": 65, "status": 80, "logs": 88,
+        "open": 75, "secrets": 65, "domains": 60,
+        "apps": 78, "app": 78, "projects": 78, "project": 78
+      },
+      "flags": {
+        "--force": 22, "--profile": 75,
+        "--region": 65, "--output": 75, "-o": 75
+      }
+    },
+
+    "build_tool": {
+      "specs": ["make", "cmake", "bazel", "gradle", "gradlew", "ant", "mvn", "rake", "just", "task"],
+      "subcommands": {
+        "build": 92, "test": 88, "run": 85, "compile": 80, "install": 75,
+        "clean": 65, "watch": 75, "check": 78,
+        "doc": 60, "release": 78,
+        "verify": 65, "init": 55, "new": 60, "version": 50
+      },
+      "flags": {
+        "--release": 78, "--debug": 65, "--force": 25, "-f": 25,
+        "--parallel": 65, "-j": 65,
+        "--dry-run": 50
+      }
+    },
+
+    "ssh_remote": {
+      "specs": ["ssh", "scp", "rsync", "sftp", "mosh", "ssh-keygen"],
+      "subcommands": {},
+      "flags": {
+        "--force": 25, "-f": 25,
+        "--port": 70, "-p": 70, "--identity": 65, "-i": 65, "--recursive": 75, "-r": 75,
+        "--archive": 75, "-a": 75, "--delete": 35, "--dry-run": 50, "-n": 50
+      }
+    },
+
+    "shell_builtin": {
+      "specs": ["ls", "cat", "tail", "head", "grep", "rg", "fd", "find", "sed", "sort", "uniq", "wc", "tr", "cut", "tar", "zip", "unzip", "ps", "kill", "pkill", "top", "htop", "mkdir", "touch", "df", "du", "uname", "echo", "which", "whereis"],
+      "subcommands": {},
+      "flags": {
+        "--recursive": 70, "-r": 70, "-R": 70,
+        "--all": 60, "-a": 60, "--long": 65, "-l": 65, "--human-readable": 65, "-h": 65,
+        "--ignore-case": 65, "-i": 65, "--invert-match": 50, "--line-number": 65, "-n": 65
+      }
+    },
+
+    "file_modifier": {
+      "specs": ["mv", "cp", "rm", "ln", "chmod", "chown"],
+      "subcommands": {},
+      "flags": {
+        "--force": 22, "-f": 22
+      }
+    },
+
+    "http_tools": {
+      "specs": ["curl", "wget", "http"],
+      "subcommands": {},
+      "flags": {
+        "--data": 75, "-d": 75, "--header": 78, "-H": 78, "--request": 80, "-X": 80,
+        "--output": 75, "-o": 75, "--silent": 50, "-s": 50, "--verbose": 35, "-v": 35,
+        "--include": 65, "-i": 65, "--location": 70, "-L": 70,
+        "--user-agent": 60, "-A": 60
+      }
+    },
+
+    "editor": {
+      "specs": ["vim", "nvim", "emacs", "code", "code-insiders", "subl", "nano", "hx", "zed"],
+      "subcommands": {},
+      "flags": {
+        "--diff": 70, "-d": 70, "--readonly": 60, "-R": 60, "--version": 50,
+        "--help": 50, "-h": 50, "--wait": 65, "--new-window": 60,
+        "--reuse-window": 65, "--goto": 70, "-g": 70
+      }
+    }
+  }
+}

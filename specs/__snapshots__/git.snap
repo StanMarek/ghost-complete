@@ -235,7 +235,8 @@
           "name": [
             "-v",
             "--verbose"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Set compression level",
@@ -318,7 +319,8 @@
           "name": [
             "-f",
             "--show-name"
-          ]
+          ],
+          "priority": 18
         },
         {
           "description": "Show original linenumber (Default: off)",
@@ -478,7 +480,8 @@
             "--abbrev"
           ]
         }
-      ]
+      ],
+      "priority": 65
     },
     {
       "args": {
@@ -511,7 +514,8 @@
           "name": [
             "-a",
             "--all"
-          ]
+          ],
+          "priority": 35
         },
         {
           "args": {
@@ -527,7 +531,8 @@
           "name": [
             "-v",
             "--verbose"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Use the interactive patch selection interface to chose which changes to commi",
@@ -849,7 +854,8 @@
           "name": [
             "-q",
             "--quiet"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Do not create a commit, but show a list of paths that are to be committed, pa",
@@ -892,7 +898,8 @@
             "--"
           ]
         }
-      ]
+      ],
+      "priority": 92
     },
     {
       "args": [
@@ -3612,7 +3619,8 @@
           "name": [
             "-f",
             "--file"
-          ]
+          ],
+          "priority": 18
         },
         {
           "args": {
@@ -3773,7 +3781,8 @@
             "--default"
           ]
         }
-      ]
+      ],
+      "priority": 55
     },
     {
       "args": [
@@ -4057,14 +4066,16 @@
           "name": [
             "-q",
             "--quiet"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Be verbose. Implies --stat",
           "name": [
             "-v",
             "--verbose"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Show a diffstat of what changed upstream since the last rebase. The diffstat is also controlled by the configuration option rebase.stat",
@@ -4106,7 +4117,8 @@
             "--no-ff",
             "--force-rebase",
             "-f"
-          ]
+          ],
+          "priority": 18
         },
         {
           "description": "Use reflog to find a better common ancestor between <upstream> and <branch> when calculating which commits have been introduced by <branch>. When --fork-point is active, fork_point will be used instead of <upstream> to calculate the set of commits to rebase, where fork_point is the result of git merge-base --fork-point <upstream> <branch> command (see git-merge-base[1]). If fork_point ends up being empty, the <upstream> will be used as a fallback. If <upstream> is given on the command line, then the default is --no-fork-point, otherwise the default is --fork-point. If your branch was based on <upstream> but <upstream> was rewound and your branch contains commits which were dropped, this option can be used with --keep-base in order to drop those commits from your branch",
@@ -4232,7 +4244,8 @@
             "--no-reschedule-failed-exec"
           ]
         }
-      ]
+      ],
+      "priority": 78
     },
     {
       "args": {
@@ -4270,14 +4283,16 @@
           "name": [
             "-v",
             "--verbose"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Allow adding otherwise ignored files",
           "name": [
             "-f",
             "--force"
-          ]
+          ],
+          "priority": 18
         },
         {
           "description": "Add modified contents in the working tree interactively to the index. Optional path arguments may be supplied to limit operation to a subset of the working tree. See “Interactive mode” for details",
@@ -4313,7 +4328,8 @@
             "-A",
             "--all",
             "--no-ignore-removal"
-          ]
+          ],
+          "priority": 35
         },
         {
           "description": "Update the index by adding new files that are unknown to the index and files modified in the working tree, but ignore files that have been removed from the working tree. This option is a no-op when no <pathspec> is used",
@@ -4398,7 +4414,8 @@
             "--"
           ]
         }
-      ]
+      ],
+      "priority": 85
     },
     {
       "args": {
@@ -4433,14 +4450,16 @@
           "name": [
             "-v",
             "--verbose"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Allow adding otherwise ignored files",
           "name": [
             "-f",
             "--force"
-          ]
+          ],
+          "priority": 18
         },
         {
           "description": "Add modified contents in the working tree interactively to the index. Optional path arguments may be supplied to limit operation to a subset of the working tree. See “Interactive mode” for details",
@@ -4476,7 +4495,8 @@
             "-A",
             "--all",
             "--no-ignore-removal"
-          ]
+          ],
+          "priority": 35
         },
         {
           "description": "Update the index by adding new files that are unknown to the index and files modified in the working tree, but ignore files that have been removed from the working tree. This option is a no-op when no <pathspec> is used",
@@ -4561,7 +4581,8 @@
             "--"
           ]
         }
-      ]
+      ],
+      "priority": 85
     },
     {
       "args": {
@@ -4596,7 +4617,8 @@
           "name": [
             "-v",
             "--verbose"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Show branch information",
@@ -4758,7 +4780,8 @@
             "--find-renames"
           ]
         }
-      ]
+      ],
+      "priority": 92
     },
     {
       "args": {
@@ -4779,7 +4802,8 @@
           "name": [
             "-f",
             "--force"
-          ]
+          ],
+          "priority": 18
         },
         {
           "description": "Show what would be done and clean files interactively",
@@ -4800,7 +4824,8 @@
           "name": [
             "-q",
             "--quiet"
-          ]
+          ],
+          "priority": 25
         },
         {
           "args": {
@@ -4845,7 +4870,8 @@
         "name": "commit"
       },
       "description": "Create new commit that undoes all of the changes made in <commit>, then apply it to the current branch",
-      "name": "revert"
+      "name": "revert",
+      "priority": 65
     },
     {
       "description": "List references in a remote repository",
@@ -4879,13 +4905,15 @@
           "description": "Push all branches (i.e. refs under refs/heads/); cannot be used with other <refspec>",
           "name": [
             "--all"
-          ]
+          ],
+          "priority": 35
         },
         {
           "description": "Remove remote branches that don't have a local counterpart",
           "name": [
             "--prune"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Instead of naming each ref to push, specifies that all refs under refs/ be mirrored to the remote repository",
@@ -4968,7 +4996,8 @@
           "name": [
             "-f",
             "--force"
-          ]
+          ],
+          "priority": 18
         },
         {
           "args": {
@@ -5003,14 +5032,16 @@
           "name": [
             "-q",
             "--quiet"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Run verbosely",
           "name": [
             "-v",
             "--verbose"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Progress status is reported on the standard error stream by default when it is attached to a terminal, unless -q is specified. This flag forces progress status even if the standard error stream is not directed to a terminal",
@@ -5108,7 +5139,8 @@
             "--force-with-lease"
           ]
         }
-      ]
+      ],
+      "priority": 90
     },
     {
       "args": [
@@ -5438,14 +5470,16 @@
           "name": [
             "-q",
             "--quiet"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Be verbose",
           "name": [
             "-v",
             "--verbose"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Automatically create a temporary stash entry before the operation begins, and apply it after the operation ends. This means that you can run the operation on a dirty worktree. However, use with care: the final stash application after a successful merge might result in non-trivial conflicts",
@@ -5469,7 +5503,8 @@
           "description": "Fetch all remotes",
           "name": [
             "--all"
-          ]
+          ],
+          "priority": 35
         },
         {
           "description": "Append ref names and object names of fetched refs to the existing contents of .git/FETCH_HEAD",
@@ -5565,7 +5600,8 @@
           "name": [
             "-f",
             "--force"
-          ]
+          ],
+          "priority": 18
         },
         {
           "description": "Keep downloaded pack",
@@ -5579,7 +5615,8 @@
           "name": [
             "-p",
             "--prune"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Before fetching, remove any local tags that no longer exist on the remote if --prune is enabled",
@@ -5704,7 +5741,8 @@
             "--ipv6"
           ]
         }
-      ]
+      ],
+      "priority": 90
     },
     {
       "args": {
@@ -5802,7 +5840,8 @@
             "--"
           ]
         }
-      ]
+      ],
+      "priority": 85
     },
     {
       "args": {
@@ -5871,7 +5910,8 @@
           "description": "⚠️WARNING: you will lose all uncommitted changes in addition to the changes introduced in the last commit",
           "name": [
             "--hard"
-          ]
+          ],
+          "priority": 15
         },
         {
           "description": "Keep the changes in your working tree but not on the index",
@@ -5896,7 +5936,8 @@
           "name": [
             "-q",
             "--quiet"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Inverse of --quiet",
@@ -5935,7 +5976,8 @@
             "--patch"
           ]
         }
-      ]
+      ],
+      "priority": 75
     },
     {
       "args": [
@@ -6014,7 +6056,8 @@
           "name": [
             "-q",
             "--quiet"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Check the validity of a signed commit",
@@ -6066,7 +6109,8 @@
             "--author"
           ]
         }
-      ]
+      ],
+      "priority": 82
     },
     {
       "description": "Manage remote repository",
@@ -6077,9 +6121,11 @@
           "name": [
             "-v",
             "--verbose"
-          ]
+          ],
+          "priority": 25
         }
       ],
+      "priority": 72,
       "subcommands": [
         {
           "args": [
@@ -6115,7 +6161,8 @@
               "description": "Git fetch <name> is run immediately after the remote information is set up",
               "name": [
                 "-f"
-              ]
+              ],
+              "priority": 18
             },
             {
               "description": "Git fetch <name> imports every tag from the remote repository",
@@ -6145,7 +6192,8 @@
                 "--mirror"
               ]
             }
-          ]
+          ],
+          "priority": 85
         },
         {
           "args": [
@@ -6258,7 +6306,8 @@
               "description": "All URLs for the remote will be listed",
               "name": [
                 "--all"
-              ]
+              ],
+              "priority": 35
             }
           ]
         },
@@ -6370,7 +6419,8 @@
               "name": [
                 "-p",
                 "--prune"
-              ]
+              ],
+              "priority": 25
             }
           ]
         }
@@ -6408,7 +6458,8 @@
           "description": "Fetch all remotes",
           "name": [
             "--all"
-          ]
+          ],
+          "priority": 35
         },
         {
           "description": "Append ref names and object names of fetched refs to the existing contents of .git/FETCH_HEAD",
@@ -6516,7 +6567,8 @@
           "name": [
             "-f",
             "--force"
-          ]
+          ],
+          "priority": 18
         },
         {
           "description": "Keep downloaded pack",
@@ -6562,7 +6614,8 @@
           "name": [
             "-p",
             "--prune"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Before fetching, remove any local tags that no longer exist on the remote if --prune is enabled",
@@ -6685,14 +6738,16 @@
           "name": [
             "-q",
             "--quiet"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Be verbose",
           "name": [
             "-v",
             "--verbose"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Progress status is reported on the standard error stream by default when it is attached to a terminal, unless -q is specified",
@@ -6742,11 +6797,13 @@
             "--stdin"
           ]
         }
-      ]
+      ],
+      "priority": 80
     },
     {
       "description": "Temporarily stores all the modified tracked files",
       "name": "stash",
+      "priority": 78,
       "subcommands": [
         {
           "description": "Save your local modifications to a new stash entry and roll them back to HEAD",
@@ -6778,14 +6835,16 @@
               "name": [
                 "-a",
                 "--all"
-              ]
+              ],
+              "priority": 35
             },
             {
               "description": "Quiet, suppress feedback messages",
               "name": [
                 "-q",
                 "--quiet"
-              ]
+              ],
+              "priority": 25
             },
             {
               "args": {
@@ -6808,7 +6867,8 @@
                 "--"
               ]
             }
-          ]
+          ],
+          "priority": 90
         },
         {
           "args": {
@@ -6870,14 +6930,16 @@
               "name": [
                 "-a",
                 "--all"
-              ]
+              ],
+              "priority": 35
             },
             {
               "description": "Quiet, suppress feedback messages",
               "name": [
                 "-q",
                 "--quiet"
-              ]
+              ],
+              "priority": 25
             }
           ]
         },
@@ -6918,7 +6980,8 @@
               "name": [
                 "-q",
                 "--quiet"
-              ]
+              ],
+              "priority": 25
             }
           ]
         },
@@ -6957,7 +7020,8 @@
               "name": [
                 "-q",
                 "--quiet"
-              ]
+              ],
+              "priority": 25
             }
           ]
         },
@@ -7002,7 +7066,8 @@
               "name": [
                 "-q",
                 "--quiet"
-              ]
+              ],
+              "priority": 25
             }
           ]
         },
@@ -7040,7 +7105,8 @@
             }
           ],
           "description": "Creates and checks out a new branch named",
-          "name": "branch"
+          "name": "branch",
+          "priority": 82
         },
         {
           "args": {
@@ -7090,7 +7156,8 @@
               "name": [
                 "-q",
                 "--quiet"
-              ]
+              ],
+              "priority": 25
             }
           ]
         }
@@ -7110,9 +7177,11 @@
           "description": "Show all refs",
           "name": [
             "--all"
-          ]
+          ],
+          "priority": 35
         }
-      ]
+      ],
+      "priority": 60
     },
     {
       "args": [
@@ -7185,14 +7254,16 @@
           "name": [
             "-q",
             "--quiet"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Run verbosely. Does not affect the reporting of progress status to the standard error stream",
           "name": [
             "-v",
             "--verbose"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Progress status is reported on the standard error stream by default when it is attached to a terminal, unless --quiet is specified. This flag forces progress status even if the standard error stream is not directed to a terminal",
@@ -7391,7 +7462,8 @@
             "--separate-git-dir"
           ]
         }
-      ]
+      ],
+      "priority": 72
     },
     {
       "args": {
@@ -7406,7 +7478,8 @@
           "name": [
             "-q",
             "--quiet"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Create a bare repository",
@@ -7504,7 +7577,8 @@
             "--shared"
           ]
         }
-      ]
+      ],
+      "priority": 60
     },
     {
       "args": [
@@ -7527,7 +7601,8 @@
           "name": [
             "-f",
             "--force"
-          ]
+          ],
+          "priority": 18
         },
         {
           "description": "Skip move or rename actions which would lead to an error condition",
@@ -7547,7 +7622,8 @@
           "name": [
             "-v",
             "--verbose"
-          ]
+          ],
+          "priority": 25
         }
       ]
     },
@@ -7593,7 +7669,8 @@
           "name": [
             "-f",
             "--force"
-          ]
+          ],
+          "priority": 18
         },
         {
           "description": "Don’t actually remove any file(s). Instead, just show if they exist in the index and would otherwise be removed by the command",
@@ -7962,7 +8039,8 @@
             ]
           },
           "description": "Finish bisection search and go back to commit",
-          "name": "reset"
+          "name": "reset",
+          "priority": 75
         },
         {
           "description": "See the currently remaining suspects in gitk",
@@ -7978,7 +8056,8 @@
         },
         {
           "description": "Show bisect log",
-          "name": "log"
+          "name": "log",
+          "priority": 82
         },
         {
           "args": {
@@ -8013,7 +8092,8 @@
           "name": [
             "-a",
             "--all"
-          ]
+          ],
+          "priority": 35
         },
         {
           "args": {
@@ -8147,7 +8227,8 @@
           "name": [
             "-f",
             "--force"
-          ]
+          ],
+          "priority": 18
         },
         {
           "args": {
@@ -8231,14 +8312,16 @@
           "name": [
             "-v",
             "--verbose"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Suppress non-error messages",
           "name": [
             "-q",
             "--quiet"
-          ]
+          ],
+          "priority": 25
         },
         {
           "args": {
@@ -8416,7 +8499,8 @@
             "--no-color"
           ]
         }
-      ]
+      ],
+      "priority": 82
     },
     {
       "args": [
@@ -8465,7 +8549,8 @@
           "name": [
             "-q",
             "--quiet"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Progress status is reported on the standard error stream by default when it is attached to a terminal, unless --quiet is specified. This flag enables progress reporting even if not attached to a terminal, regardless of --quiet",
@@ -8484,7 +8569,8 @@
           "name": [
             "-f",
             "--force"
-          ]
+          ],
+          "priority": 18
         },
         {
           "description": "When checking out paths from the index, check out stage #2 (ours) for unmerged paths",
@@ -8660,7 +8746,8 @@
             "--pathspec-file-nul"
           ]
         }
-      ]
+      ],
+      "priority": 88
     },
     {
       "args": {
@@ -8920,7 +9007,8 @@
             "--no-rerere-autoupdate"
           ]
         }
-      ]
+      ],
+      "priority": 65
     },
     {
       "description": "Initialize, update or inspect submodules",
@@ -8931,7 +9019,8 @@
           "name": [
             "-q",
             "--quiet"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "The commit stored in the index is used instead",
@@ -8940,6 +9029,7 @@
           ]
         }
       ],
+      "priority": 50,
       "subcommands": [
         {
           "args": [
@@ -8969,7 +9059,8 @@
               "name": [
                 "-f",
                 "--force"
-              ]
+              ],
+              "priority": 18
             },
             {
               "args": {
@@ -9007,7 +9098,8 @@
                 "--"
               ]
             }
-          ]
+          ],
+          "priority": 85
         },
         {
           "args": {
@@ -9037,7 +9129,8 @@
                 "--"
               ]
             }
-          ]
+          ],
+          "priority": 92
         },
         {
           "args": {
@@ -9055,7 +9148,8 @@
                 "--"
               ]
             }
-          ]
+          ],
+          "priority": 60
         },
         {
           "args": {
@@ -9072,13 +9166,15 @@
               "name": [
                 "-f",
                 "--force"
-              ]
+              ],
+              "priority": 18
             },
             {
               "description": "Unregister all submodules in the working tree",
               "name": [
                 "--all"
-              ]
+              ],
+              "priority": 35
             },
             {
               "description": "End of subcommand options",
@@ -9134,7 +9230,8 @@
               "name": [
                 "-f",
                 "--force"
-              ]
+              ],
+              "priority": 18
             },
             {
               "description": "The commit recorded in the superproject will be checked out in the submodule on a detached HEAD",
@@ -9649,14 +9746,16 @@
           "name": [
             "-q",
             "--quiet"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Be verbose",
           "name": [
             "-v",
             "--verbose"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Turn progress on/off explicitly. If neither is specified, progress is shown if standard error is connected to a terminal. Note that not all merge strategies may support progress reporting",
@@ -9750,7 +9849,8 @@
             "--continue"
           ]
         }
-      ]
+      ],
+      "priority": 82
     },
     {
       "description": "Open the git tool to fix conflicts",
@@ -9860,7 +9960,8 @@
             "--points-at"
           ]
         }
-      ]
+      ],
+      "priority": 72
     },
     {
       "args": {
@@ -9919,7 +10020,8 @@
           "name": [
             "-q",
             "--quiet"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Progress status is reported on the standard error stream by default when it is attached to a terminal",
@@ -10029,7 +10131,8 @@
             "--"
           ]
         }
-      ]
+      ],
+      "priority": 80
     },
     {
       "args": [
@@ -10151,7 +10254,8 @@
           "name": [
             "-f",
             "--force"
-          ]
+          ],
+          "priority": 18
         },
         {
           "description": "Proceed even if the index or the working tree differs from HEAD. Both the index and working tree are restored to match the switching target",
@@ -10188,7 +10292,8 @@
           "name": [
             "-q",
             "--quiet"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Progress status is reported on the standard error stream by default when it is attached to a terminal",
@@ -10286,11 +10391,13 @@
             "--no-recurse-submodules"
           ]
         }
-      ]
+      ],
+      "priority": 88
     },
     {
       "description": "Manage multiple working trees",
       "name": "worktree",
+      "priority": 60,
       "subcommands": [
         {
           "description": "Create <path> and checkout <commit-ish> into it",
@@ -10301,7 +10408,8 @@
               "name": [
                 "-f",
                 "--force"
-              ]
+              ],
+              "priority": 18
             },
             {
               "description": "With add, detach HEAD in the new working tree. See \"DETACHED HEAD\" in git-checkout[1]",
@@ -10332,7 +10440,8 @@
                 "-B"
               ]
             }
-          ]
+          ],
+          "priority": 85
         },
         {
           "description": "List details of each working tree",
@@ -10349,7 +10458,8 @@
               "name": [
                 "-v",
                 "--verbose"
-              ]
+              ],
+              "priority": 25
             },
             {
               "args": {
@@ -10400,7 +10510,8 @@
               "name": [
                 "-f",
                 "--force"
-              ]
+              ],
+              "priority": 18
             }
           ]
         },
@@ -10420,7 +10531,8 @@
               "name": [
                 "-v",
                 "--verbose"
-              ]
+              ],
+              "priority": 25
             },
             {
               "args": {
@@ -10446,7 +10558,8 @@
               "name": [
                 "-f",
                 "--force"
-              ]
+              ],
+              "priority": 18
             }
           ]
         },
@@ -10663,7 +10776,8 @@
           "name": [
             "-v",
             "--verbose"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Tolerate incorrectly detected missing new-line at the end of file",
@@ -10819,7 +10933,8 @@
           "description": "Log details about the incoming connections and requested files",
           "name": [
             "--verbose"
-          ]
+          ],
+          "priority": 25
         },
         {
           "description": "Detach from the shell. Implies --syslog",

@@ -270,7 +270,8 @@
           "name": [
             "--force"
           ],
-          "description": "Force minikube to perform possibly dangerous operations"
+          "description": "Force minikube to perform possibly dangerous operations",
+          "priority": 22
         },
         {
           "name": [
@@ -397,7 +398,8 @@
           "name": [
             "--interactive"
           ],
-          "description": "Allow user prompts for more information"
+          "description": "Allow user prompts for more information",
+          "priority": 70
         },
         {
           "name": [
@@ -675,7 +677,8 @@
           ],
           "description": "Max time to wait per Kubernetes or host to be healthy"
         }
-      ]
+      ],
+      "priority": 75
     },
     {
       "name": "status",
@@ -737,7 +740,8 @@
           "name": [
             "--all"
           ],
-          "description": "Set flag to stop all profiles (clusters)"
+          "description": "Set flag to stop all profiles (clusters)",
+          "priority": 60
         },
         {
           "name": [
@@ -775,7 +779,8 @@
           ],
           "description": "Set flag to stop cluster after a set amount of time"
         }
-      ]
+      ],
+      "priority": 75
     },
     {
       "name": "delete",
@@ -785,7 +790,8 @@
           "name": [
             "--all"
           ],
-          "description": "Set flag to delete all profiles"
+          "description": "Set flag to delete all profiles",
+          "priority": 60
         },
         {
           "name": [
@@ -930,11 +936,13 @@
       "subcommands": [
         {
           "name": "build",
-          "description": "Build a container image in minikube"
+          "description": "Build a container image in minikube",
+          "priority": 90
         },
         {
           "name": "load",
-          "description": "Load a image into minikube"
+          "description": "Load a image into minikube",
+          "priority": 55
         },
         {
           "name": "ls",
@@ -942,25 +950,31 @@
         },
         {
           "name": "pull",
-          "description": "Pull images"
+          "description": "Pull images",
+          "priority": 80
         },
         {
           "name": "push",
-          "description": "Push images"
+          "description": "Push images",
+          "priority": 80
         },
         {
           "name": "rm",
-          "description": "Remove one or more images"
+          "description": "Remove one or more images",
+          "priority": 55
         },
         {
           "name": "save",
-          "description": "Save a image from minikube"
+          "description": "Save a image from minikube",
+          "priority": 55
         },
         {
           "name": "tag",
-          "description": "Tag images"
+          "description": "Tag images",
+          "priority": 60
         }
-      ]
+      ],
+      "priority": 75
     },
     {
       "name": "addons",
@@ -980,7 +994,8 @@
         },
         {
           "name": "images",
-          "description": "List image names the addon w/ADDON_NAME used"
+          "description": "List image names the addon w/ADDON_NAME used",
+          "priority": 78
         },
         {
           "name": "list",
@@ -1211,11 +1226,13 @@
         },
         {
           "name": "start",
-          "description": "Starts a node"
+          "description": "Starts a node",
+          "priority": 75
         },
         {
           "name": "stop",
-          "description": "Stops a node in a cluster"
+          "description": "Stops a node in a cluster",
+          "priority": 75
         }
       ]
     },
@@ -1307,7 +1324,8 @@
           ],
           "description": "Show only log entries which point to known problems"
         }
-      ]
+      ],
+      "priority": 85
     },
     {
       "name": "update-check",
@@ -1357,7 +1375,8 @@
             ]
           }
         }
-      ]
+      ],
+      "priority": 50
     },
     {
       "name": "options",

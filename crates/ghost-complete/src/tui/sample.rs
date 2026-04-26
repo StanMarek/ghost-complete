@@ -9,6 +9,7 @@ pub fn sample_suggestions() -> Vec<Suggestion> {
             source: SuggestionSource::Spec,
             score: 100,
             match_indices: vec![0, 1, 2], // "che" highlighted
+            priority: None,
         },
         Suggestion {
             text: "commit".to_string(),
@@ -17,6 +18,7 @@ pub fn sample_suggestions() -> Vec<Suggestion> {
             source: SuggestionSource::Spec,
             score: 95,
             match_indices: vec![0, 1],
+            priority: None,
         },
         Suggestion {
             text: "--force".to_string(),
@@ -25,6 +27,7 @@ pub fn sample_suggestions() -> Vec<Suggestion> {
             source: SuggestionSource::Spec,
             score: 80,
             match_indices: vec![],
+            priority: None,
         },
         Suggestion {
             text: "src/main.rs".to_string(),
@@ -33,6 +36,7 @@ pub fn sample_suggestions() -> Vec<Suggestion> {
             source: SuggestionSource::Filesystem,
             score: 70,
             match_indices: vec![4, 5, 6, 7],
+            priority: None,
         },
         Suggestion {
             text: "target/".to_string(),
@@ -41,6 +45,7 @@ pub fn sample_suggestions() -> Vec<Suggestion> {
             source: SuggestionSource::Filesystem,
             score: 60,
             match_indices: vec![],
+            priority: None,
         },
         Suggestion {
             text: "feature/config-tui".to_string(),
@@ -49,6 +54,7 @@ pub fn sample_suggestions() -> Vec<Suggestion> {
             source: SuggestionSource::Git,
             score: 50,
             match_indices: vec![8, 9, 10, 11, 12, 13],
+            priority: None,
         },
         Suggestion {
             text: "cargo build --release".to_string(),
@@ -57,6 +63,7 @@ pub fn sample_suggestions() -> Vec<Suggestion> {
             source: SuggestionSource::History,
             score: 40,
             match_indices: vec![],
+            priority: None,
         },
         Suggestion {
             text: "push".to_string(),
@@ -65,6 +72,7 @@ pub fn sample_suggestions() -> Vec<Suggestion> {
             source: SuggestionSource::Spec,
             score: 90,
             match_indices: vec![],
+            priority: None,
         },
         Suggestion {
             text: "merge".to_string(),
@@ -73,6 +81,7 @@ pub fn sample_suggestions() -> Vec<Suggestion> {
             source: SuggestionSource::Spec,
             score: 85,
             match_indices: vec![],
+            priority: None,
         },
         Suggestion {
             text: "rebase".to_string(),
@@ -81,6 +90,7 @@ pub fn sample_suggestions() -> Vec<Suggestion> {
             source: SuggestionSource::Spec,
             score: 82,
             match_indices: vec![],
+            priority: None,
         },
         Suggestion {
             text: "stash".to_string(),
@@ -89,6 +99,7 @@ pub fn sample_suggestions() -> Vec<Suggestion> {
             source: SuggestionSource::Spec,
             score: 78,
             match_indices: vec![],
+            priority: None,
         },
         Suggestion {
             text: "--verbose".to_string(),
@@ -97,6 +108,7 @@ pub fn sample_suggestions() -> Vec<Suggestion> {
             source: SuggestionSource::Spec,
             score: 75,
             match_indices: vec![],
+            priority: None,
         },
         Suggestion {
             text: "Cargo.toml".to_string(),
@@ -105,6 +117,7 @@ pub fn sample_suggestions() -> Vec<Suggestion> {
             source: SuggestionSource::Filesystem,
             score: 65,
             match_indices: vec![],
+            priority: None,
         },
         Suggestion {
             text: "README.md".to_string(),
@@ -113,6 +126,7 @@ pub fn sample_suggestions() -> Vec<Suggestion> {
             source: SuggestionSource::Filesystem,
             score: 62,
             match_indices: vec![],
+            priority: None,
         },
         Suggestion {
             text: "$HOME".to_string(),
@@ -121,6 +135,7 @@ pub fn sample_suggestions() -> Vec<Suggestion> {
             source: SuggestionSource::Spec,
             score: 55,
             match_indices: vec![],
+            priority: None,
         },
         Suggestion {
             text: "v0.7.0".to_string(),
@@ -129,6 +144,7 @@ pub fn sample_suggestions() -> Vec<Suggestion> {
             source: SuggestionSource::Git,
             score: 45,
             match_indices: vec![],
+            priority: None,
         },
     ]
 }

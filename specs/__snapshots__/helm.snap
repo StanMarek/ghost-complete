@@ -161,7 +161,8 @@
       "name": [
         "--namespace",
         "-n"
-      ]
+      ],
+      "priority": 78
     },
     {
       "description": "If true, only write logs to their native severity level (vs also writing to each lower severity level)",
@@ -316,7 +317,8 @@
             "-p"
           ]
         }
-      ]
+      ],
+      "priority": 80
     },
     {
       "description": "Manage a chart's dependencies",
@@ -402,6 +404,7 @@
     {
       "description": "Download extended information of a named release",
       "name": "get",
+      "priority": 92,
       "subcommands": [
         {
           "description": "Download all information for a named release",
@@ -481,7 +484,8 @@
               "name": [
                 "--all",
                 "-a"
-              ]
+              ],
+              "priority": 55
             },
             {
               "args": {
@@ -491,7 +495,8 @@
               "name": [
                 "--output",
                 "-o"
-              ]
+              ],
+              "priority": 75
             },
             {
               "args": {
@@ -527,7 +532,8 @@
           "name": [
             "--output",
             "-o"
-          ]
+          ],
+          "priority": 75
         }
       ]
     },
@@ -656,7 +662,8 @@
           "name": [
             "--output",
             "-o"
-          ]
+          ],
+          "priority": 75
         },
         {
           "description": "Pass credentials to all domains",
@@ -876,14 +883,16 @@
           "name": [
             "--all",
             "-a"
-          ]
+          ],
+          "priority": 55
         },
         {
           "description": "List releases across all namespaces",
           "name": [
             "--all-namespaces",
             "-A"
-          ]
+          ],
+          "priority": 65
         },
         {
           "description": "Sort by release date",
@@ -947,7 +956,8 @@
           "name": [
             "--output",
             "-o"
-          ]
+          ],
+          "priority": 75
         },
         {
           "description": "Show pending releases",
@@ -1437,7 +1447,8 @@
               "name": [
                 "--output",
                 "-o"
-              ]
+              ],
+              "priority": 75
             }
           ]
         },
@@ -1479,7 +1490,8 @@
           "description": "Force resource update through delete/recreate if needed",
           "name": [
             "--force"
-          ]
+          ],
+          "priority": 22
         },
         {
           "args": {
@@ -1569,7 +1581,8 @@
               "name": [
                 "--output",
                 "-o"
-              ]
+              ],
+              "priority": 75
             }
           ]
         },
@@ -1600,7 +1613,8 @@
               "name": [
                 "--output",
                 "-o"
-              ]
+              ],
+              "priority": 75
             },
             {
               "description": "Use regular expressions for searching repositories you have added",
@@ -2183,7 +2197,8 @@
           "name": [
             "--output",
             "-o"
-          ]
+          ],
+          "priority": 75
         },
         {
           "args": {
@@ -2695,7 +2710,8 @@
           "description": "Force resource updates through a replacement strategy",
           "name": [
             "--force"
-          ]
+          ],
+          "priority": 22
         },
         {
           "args": {
@@ -2753,7 +2769,8 @@
           "name": [
             "--output",
             "-o"
-          ]
+          ],
+          "priority": 75
         },
         {
           "description": "Pass credentials to all domains",
@@ -2955,7 +2972,8 @@
             "--template"
           ]
         }
-      ]
+      ],
+      "priority": 50
     },
     {
       "description": "Help about any command",
@@ -2985,7 +3003,8 @@
         },
         {
           "description": "Create a new chart with the given name",
-          "name": "create"
+          "name": "create",
+          "priority": 80
         },
         {
           "description": "Manage a chart's dependencies",
@@ -3012,6 +3031,7 @@
         {
           "description": "Download extended information of a named release",
           "name": "get",
+          "priority": 92,
           "subcommands": [
             {
               "description": "Download all information for a named release",
@@ -3203,7 +3223,8 @@
         },
         {
           "description": "Print the client version information",
-          "name": "version"
+          "name": "version",
+          "priority": 50
         }
       ]
     }

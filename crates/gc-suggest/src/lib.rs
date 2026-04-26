@@ -6,6 +6,7 @@
 pub mod alias;
 pub mod cache;
 pub mod commands;
+pub mod context;
 pub mod embedded;
 mod engine;
 mod env;
@@ -16,6 +17,7 @@ pub mod git;
 pub mod history;
 pub mod json_path;
 pub mod pipeline;
+pub mod priority;
 mod provider;
 pub mod providers;
 pub mod script;

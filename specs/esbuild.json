@@ -6,13 +6,15 @@
       "name": [
         "--bundle"
       ],
-      "description": "Bundle all dependencies into the output files"
+      "description": "Bundle all dependencies into the output files",
+      "priority": 51
     },
     {
       "name": [
         "--define"
       ],
       "description": "Replace variable names with a literal value, eg. --define:DEBUG=true",
+      "priority": 51,
       "args": {
         "name": "name=value"
       }
@@ -22,6 +24,7 @@
         "--external"
       ],
       "description": "Exclude modules from the build",
+      "priority": 51,
       "args": {
         "name": "module specifier"
       }
@@ -31,6 +34,7 @@
         "--format"
       ],
       "description": "The output format",
+      "priority": 51,
       "args": {
         "name": "format",
         "suggestions": [
@@ -51,6 +55,7 @@
         "--loader"
       ],
       "description": "For a given file extension, specify a loader",
+      "priority": 51,
       "args": {
         "name": "loaders",
         "generators": [
@@ -65,13 +70,15 @@
       "name": [
         "--minify"
       ],
-      "description": "Minify the output (sets all the --minify-* options)"
+      "description": "Minify the output (sets all the --minify-* options)",
+      "priority": 51
     },
     {
       "name": [
         "--outdir"
       ],
       "description": "The output directory for multiple entrypoints",
+      "priority": 51,
       "args": {
         "name": "path",
         "template": "folders"
@@ -82,6 +89,7 @@
         "--outfile"
       ],
       "description": "The output file for one entrypoint",
+      "priority": 51,
       "args": {
         "name": "path",
         "template": "filepaths"
@@ -92,6 +100,7 @@
         "--platform"
       ],
       "description": "The platform target",
+      "priority": 51,
       "args": {
         "name": "name",
         "suggestions": [
@@ -112,6 +121,7 @@
         "--serve"
       ],
       "description": "Start a local HTTP server on this host:port",
+      "priority": 51,
       "args": {
         "name": "[address:]port",
         "isOptional": true
@@ -121,13 +131,15 @@
       "name": [
         "--splitting"
       ],
-      "description": "Enable code splitting"
+      "description": "Enable code splitting",
+      "priority": 51
     },
     {
       "name": [
         "--target"
       ],
       "description": "Set the environment target. Can be a particular ES version or browser version, eg. chrome101",
+      "priority": 51,
       "args": {
         "name": "target",
         "generators": [
@@ -143,6 +155,7 @@
         "--watch"
       ],
       "description": "Rebuild on file system changes",
+      "priority": 51,
       "args": {
         "name": "forever",
         "isOptional": true,
@@ -631,6 +644,7 @@
         "--sourcemap"
       ],
       "description": "Generate source maps?",
+      "priority": 51,
       "args": {
         "name": "options",
         "isOptional": true,

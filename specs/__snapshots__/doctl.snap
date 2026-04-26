@@ -32,7 +32,8 @@
       "name": [
         "-o",
         "--output"
-      ]
+      ],
+      "priority": 75
     },
     {
       "description": "Show a log of network activity while performing a command",
@@ -99,7 +100,8 @@
       "name": "1-click",
       "subcommands": [
         {
-          "name": "list"
+          "name": "list",
+          "priority": 82
         }
       ]
     },
@@ -109,7 +111,8 @@
       "subcommands": [
         {
           "description": "Retrieve account profile details",
-          "name": "get"
+          "name": "get",
+          "priority": 82
         },
         {
           "description": "Retrieve your API usage and the remaining quota",
@@ -120,10 +123,12 @@
     {
       "description": "Display commands for working with apps",
       "name": "apps",
+      "priority": 78,
       "subcommands": [
         {
           "description": "Create an app",
-          "name": "create"
+          "name": "create",
+          "priority": 72
         },
         {
           "description": "Create a deployment",
@@ -131,11 +136,13 @@
         },
         {
           "description": "Deletes an app",
-          "name": "delete"
+          "name": "delete",
+          "priority": 50
         },
         {
           "description": "Get an app",
-          "name": "get"
+          "name": "get",
+          "priority": 82
         },
         {
           "description": "Get a deployment",
@@ -143,7 +150,8 @@
         },
         {
           "description": "List all apps",
-          "name": "list"
+          "name": "list",
+          "priority": 82
         },
         {
           "description": "List alerts on an app",
@@ -159,7 +167,8 @@
         },
         {
           "description": "Get logs",
-          "name": "logs"
+          "name": "logs",
+          "priority": 88
         },
         {
           "description": "Propose an app spec",
@@ -193,11 +202,13 @@
         },
         {
           "description": "List available authentication contexts",
-          "name": "list"
+          "name": "list",
+          "priority": 82
         },
         {
           "description": "Remove authentication contexts",
-          "name": "remove"
+          "name": "remove",
+          "priority": 50
         },
         {
           "description": "Switches between authentication contexts",
@@ -211,7 +222,8 @@
       "subcommands": [
         {
           "description": "Retrieve your account balance",
-          "name": "get"
+          "name": "get",
+          "priority": 82
         }
       ]
     },
@@ -221,7 +233,8 @@
       "subcommands": [
         {
           "description": "Retrieve a paginated billing history for a user",
-          "name": "list"
+          "name": "list",
+          "priority": 82
         }
       ]
     },
@@ -325,7 +338,8 @@
         },
         {
           "description": "Create a database cluster",
-          "name": "create"
+          "name": "create",
+          "priority": 72
         },
         {
           "description": "Display commands for managing individual databases within a cluster",
@@ -333,7 +347,8 @@
         },
         {
           "description": "Delete a database cluster",
-          "name": "delete"
+          "name": "delete",
+          "priority": 50
         },
         {
           "description": "Display commands to manage firewall rules (called `trusted sources` in the control panel) for database clusters",
@@ -341,11 +356,13 @@
         },
         {
           "description": "Get details for a database cluster",
-          "name": "get"
+          "name": "get",
+          "priority": 82
         },
         {
           "description": "List your database clusters",
-          "name": "list"
+          "name": "list",
+          "priority": 82
         },
         {
           "description": "Display commands for scheduling automatic maintenance on your database cluster",
@@ -387,11 +404,13 @@
         },
         {
           "description": "Retrieve a list of all the items on an invoice",
-          "name": "get"
+          "name": "get",
+          "priority": 82
         },
         {
           "description": "List all of the invoices for your account",
-          "name": "list"
+          "name": "list",
+          "priority": 82
         },
         {
           "description": "Download a PDF file of an invoice",
@@ -434,22 +453,27 @@
     {
       "description": "Manage projects and assign resources to them",
       "name": "projects",
+      "priority": 78,
       "subcommands": [
         {
           "description": "Create a new project",
-          "name": "create"
+          "name": "create",
+          "priority": 72
         },
         {
           "description": "Delete the specified project",
-          "name": "delete"
+          "name": "delete",
+          "priority": 50
         },
         {
           "description": "Retrieve details for a specific project",
-          "name": "get"
+          "name": "get",
+          "priority": 82
         },
         {
           "description": "List existing projects",
-          "name": "list"
+          "name": "list",
+          "priority": 82
         },
         {
           "description": "Manage resources assigned to a project",
@@ -467,11 +491,13 @@
       "subcommands": [
         {
           "description": "Create a private container registry",
-          "name": "create"
+          "name": "create",
+          "priority": 72
         },
         {
           "description": "Delete a container registry",
-          "name": "delete"
+          "name": "delete",
+          "priority": 50
         },
         {
           "description": "Generate a docker auth configuration for a registry",
@@ -483,7 +509,8 @@
         },
         {
           "description": "Retrieve details about a container registry",
-          "name": "get"
+          "name": "get",
+          "priority": 82
         },
         {
           "description": "Generate a Kubernetes secret manifest for a registry",
@@ -491,11 +518,13 @@
         },
         {
           "description": "Log in Docker to a container registry",
-          "name": "login"
+          "name": "login",
+          "priority": 88
         },
         {
           "description": "Log out Docker from a container registry",
-          "name": "logout"
+          "name": "logout",
+          "priority": 60
         },
         {
           "description": "List available container registry options",
@@ -513,19 +542,23 @@
       "subcommands": [
         {
           "description": "Create a new VPC",
-          "name": "create"
+          "name": "create",
+          "priority": 72
         },
         {
           "description": "Permanently delete a VPC",
-          "name": "delete"
+          "name": "delete",
+          "priority": 50
         },
         {
           "description": "Retrieve a VPC",
-          "name": "get"
+          "name": "get",
+          "priority": 82
         },
         {
           "description": "List VPCs",
-          "name": "list"
+          "name": "list",
+          "priority": 82
         },
         {
           "description": "Update a VPC's configuration",

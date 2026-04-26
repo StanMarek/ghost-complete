@@ -5,7 +5,7 @@
 //! for popup navigation.
 
 mod config_watch;
-mod handler;
+pub mod handler;
 pub mod input;
 mod proxy;
 mod resize;

@@ -80,9 +80,11 @@
                     "js_source": "t=>{let o=JSON.parse(t);return Object.entries(o).sort(([n,i],[s,r])=>n==\"personal\"?-1:s==\"personal\"?1:i.localeCompare(r)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
                   }
                 ]
-              }
+              },
+              "priority": 75
             }
-          ]
+          ],
+          "priority": 72
         },
         {
           "name": "destroy",
@@ -99,7 +101,8 @@
         },
         {
           "name": "list",
-          "description": "List applications"
+          "description": "List applications",
+          "priority": 82
         },
         {
           "name": "move",
@@ -125,7 +128,8 @@
                     "js_source": "t=>{let o=JSON.parse(t);return Object.entries(o).sort(([n,i],[s,r])=>n==\"personal\"?-1:s==\"personal\"?1:i.localeCompare(r)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
                   }
                 ]
-              }
+              },
+              "priority": 75
             },
             {
               "name": [
@@ -173,7 +177,8 @@
                 "template": "filepaths"
               }
             }
-          ]
+          ],
+          "priority": 75
         },
         {
           "name": "releases",
@@ -229,7 +234,8 @@
                 "-f",
                 "--force"
               ],
-              "description": "Will issue a restart against each Machine even if there are errors. ( Machines only )"
+              "description": "Will issue a restart against each Machine even if there are errors. ( Machines only )",
+              "priority": 22
             },
             {
               "name": [
@@ -254,7 +260,8 @@
             ]
           }
         }
-      ]
+      ],
+      "priority": 78
     },
     {
       "name": "auth",
@@ -302,11 +309,13 @@
                 "name": "password"
               }
             }
-          ]
+          ],
+          "priority": 88
         },
         {
           "name": "logout",
-          "description": "Logs out the currently logged in user"
+          "description": "Logs out the currently logged in user",
+          "priority": 60
         },
         {
           "name": "signup",
@@ -480,7 +489,8 @@
                 "template": "filepaths"
               }
             }
-          ]
+          ],
+          "priority": 75
         },
         {
           "name": "standard",
@@ -599,7 +609,8 @@
                 "template": "filepaths"
               }
             }
-          ]
+          ],
+          "priority": 82
         }
       ]
     },
@@ -644,7 +655,8 @@
                 "template": "filepaths"
               }
             }
-          ]
+          ],
+          "priority": 72
         },
         {
           "name": "check",
@@ -722,7 +734,8 @@
                 "template": "filepaths"
               }
             }
-          ]
+          ],
+          "priority": 82
         },
         {
           "name": "delete",
@@ -768,7 +781,8 @@
               ],
               "description": "Accept all confirmations"
             }
-          ]
+          ],
+          "priority": 50
         },
         {
           "name": "show",
@@ -807,7 +821,8 @@
                 "template": "filepaths"
               }
             }
-          ]
+          ],
+          "priority": 75
         }
       ],
       "options": [
@@ -866,7 +881,8 @@
                   "description": "The organization to add the handler to",
                   "args": {
                     "name": "organization"
-                  }
+                  },
+                  "priority": 75
                 },
                 {
                   "name": [
@@ -877,15 +893,18 @@
                     "name": "type"
                   }
                 }
-              ]
+              ],
+              "priority": 72
             },
             {
               "name": "delete",
-              "description": "Delete a health check handler"
+              "description": "Delete a health check handler",
+              "priority": 50
             },
             {
               "name": "list",
-              "description": "List health check handlers"
+              "description": "List health check handlers",
+              "priority": 82
             }
           ]
         },
@@ -935,7 +954,8 @@
                 "template": "filepaths"
               }
             }
-          ]
+          ],
+          "priority": 82
         }
       ]
     },
@@ -1188,7 +1208,8 @@
             "template": "filepaths"
           }
         }
-      ]
+      ],
+      "priority": 65
     },
     {
       "name": "create",
@@ -1238,9 +1259,11 @@
                 "js_source": "t=>{let o=JSON.parse(t);return Object.entries(o).sort(([n,i],[s,r])=>n==\"personal\"?-1:s==\"personal\"?1:i.localeCompare(r)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
               }
             ]
-          }
+          },
+          "priority": 75
         }
-      ]
+      ],
+      "priority": 72
     },
     {
       "name": "curl",
@@ -1469,7 +1492,8 @@
           "description": "The region to operate on",
           "args": {
             "name": "region"
-          }
+          },
+          "priority": 65
         },
         {
           "name": [
@@ -1486,7 +1510,8 @@
             "name": "strategy"
           }
         }
-      ]
+      ],
+      "priority": 90
     },
     {
       "name": "destroy",
@@ -1558,7 +1583,8 @@
                 "js_source": "t=>{let o=JSON.parse(t);return Object.entries(o).sort(([n,i],[s,r])=>n==\"personal\"?-1:s==\"personal\"?1:i.localeCompare(r)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
               }
             ]
-          }
+          },
+          "priority": 75
         },
         {
           "name": [
@@ -1590,7 +1616,8 @@
         },
         {
           "name": "list",
-          "description": "List DNS records"
+          "description": "List DNS records",
+          "priority": 82
         }
       ]
     },
@@ -1643,7 +1670,8 @@
               "name": [
                 "--force"
               ],
-              "description": "Send diagnostics even if we can't find your local Fly.io app"
+              "description": "Send diagnostics even if we can't find your local Fly.io app",
+              "priority": 22
             }
           ]
         }
@@ -1694,7 +1722,8 @@
         },
         {
           "name": "list",
-          "description": "List domains"
+          "description": "List domains",
+          "priority": 82
         },
         {
           "name": "register",
@@ -1702,9 +1731,11 @@
         },
         {
           "name": "show",
-          "description": "Show domain"
+          "description": "Show domain",
+          "priority": 75
         }
-      ]
+      ],
+      "priority": 60
     },
     {
       "name": "history",
@@ -1786,7 +1817,8 @@
                 "template": "filepaths"
               }
             }
-          ]
+          ],
+          "priority": 75
         },
         {
           "name": "update",
@@ -1942,7 +1974,8 @@
               "description": "The region where the address should be allocated",
               "args": {
                 "name": "region"
-              }
+              },
+              "priority": 65
             }
           ]
         },
@@ -1990,7 +2023,8 @@
               "description": "The region where the address should be allocated",
               "args": {
                 "name": "region"
-              }
+              },
+              "priority": 65
             }
           ]
         },
@@ -2031,7 +2065,8 @@
                 "template": "filepaths"
               }
             }
-          ]
+          ],
+          "priority": 82
         },
         {
           "name": "private",
@@ -2240,7 +2275,8 @@
           "description": "The region to launch the new app in",
           "args": {
             "name": "region"
-          }
+          },
+          "priority": 65
         },
         {
           "name": [
@@ -2305,9 +2341,11 @@
           "description": "The region to operate on",
           "args": {
             "name": "region"
-          }
+          },
+          "priority": 65
         }
-      ]
+      ],
+      "priority": 88
     },
     {
       "name": "machines",
@@ -2387,7 +2425,8 @@
                     "js_source": "t=>{let o=JSON.parse(t);return Object.entries(o).sort(([n,i],[s,r])=>n==\"personal\"?-1:s==\"personal\"?1:i.localeCompare(r)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
                   }
                 ]
-              }
+              },
+              "priority": 75
             },
             {
               "name": [
@@ -2397,7 +2436,8 @@
               "description": "The region to operate on",
               "args": {
                 "name": "region"
-              }
+              },
+              "priority": 65
             }
           ]
         },
@@ -2484,7 +2524,8 @@
               ],
               "description": "Only list machine ids"
             }
-          ]
+          ],
+          "priority": 82
         },
         {
           "name": "rm",
@@ -2528,7 +2569,8 @@
                 "--force",
                 "-f"
               ],
-              "description": "Force kill machine if it's running"
+              "description": "Force kill machine if it's running",
+              "priority": 22
             }
           ]
         },
@@ -2739,7 +2781,8 @@
               "description": "The region to operate on",
               "args": {
                 "name": "region"
-              }
+              },
+              "priority": 65
             },
             {
               "name": [
@@ -2839,7 +2882,8 @@
                 "template": "filepaths"
               }
             }
-          ]
+          ],
+          "priority": 80
         },
         {
           "name": "stop",
@@ -2964,7 +3008,8 @@
                 "js_source": "t=>{let o=JSON.parse(t);return Object.entries(o).sort(([n,i],[s,r])=>n==\"personal\"?-1:s==\"personal\"?1:i.localeCompare(r)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
               }
             ]
-          }
+          },
+          "priority": 75
         },
         {
           "name": [
@@ -3012,7 +3057,8 @@
             "template": "filepaths"
           }
         }
-      ]
+      ],
+      "priority": 75
     },
     {
       "name": "orgs",
@@ -3024,7 +3070,8 @@
           "subcommands": [
             {
               "name": "show",
-              "description": "Show details about an organization's remote builder image"
+              "description": "Show details about an organization's remote builder image",
+              "priority": 75
             },
             {
               "name": "update",
@@ -3034,7 +3081,8 @@
         },
         {
           "name": "create",
-          "description": "Create an organization"
+          "description": "Create an organization",
+          "priority": 72
         },
         {
           "name": "delete",
@@ -3047,7 +3095,8 @@
               ],
               "description": "Accept all confirmations"
             }
-          ]
+          ],
+          "priority": 50
         },
         {
           "name": "invite",
@@ -3055,15 +3104,18 @@
         },
         {
           "name": "list",
-          "description": "Lists organizations for current user"
+          "description": "Lists organizations for current user",
+          "priority": 82
         },
         {
           "name": "remove",
-          "description": "Remove a user from an organization"
+          "description": "Remove a user from an organization",
+          "priority": 50
         },
         {
           "name": "show",
-          "description": "Show information about an organization"
+          "description": "Show information about an organization",
+          "priority": 75
         }
       ]
     },
@@ -3144,7 +3196,8 @@
                 "js_source": "t=>{let o=JSON.parse(t);return Object.entries(o).sort(([n,i],[s,r])=>n==\"personal\"?-1:s==\"personal\"?1:i.localeCompare(r)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
               }
             ]
-          }
+          },
+          "priority": 75
         },
         {
           "name": [
@@ -3168,7 +3221,8 @@
         },
         {
           "name": "status",
-          "description": "Show current platform status"
+          "description": "Show current platform status",
+          "priority": 80
         },
         {
           "name": "vm-sizes",
@@ -3376,7 +3430,8 @@
               "description": "The region to launch the new app in",
               "args": {
                 "name": "region"
-              }
+              },
+              "priority": 65
             },
             {
               "name": [
@@ -3405,7 +3460,8 @@
                 "name": "volume-size"
               }
             }
-          ]
+          ],
+          "priority": 72
         },
         {
           "name": "db",
@@ -3448,7 +3504,8 @@
                     "template": "filepaths"
                   }
                 }
-              ]
+              ],
+              "priority": 82
             }
           ]
         },
@@ -3502,7 +3559,8 @@
         },
         {
           "name": "list",
-          "description": "List postgres clusters"
+          "description": "List postgres clusters",
+          "priority": 82
         },
         {
           "name": "users",
@@ -3545,7 +3603,8 @@
                     "template": "filepaths"
                   }
                 }
-              ]
+              ],
+              "priority": 82
             }
           ]
         }
@@ -3608,7 +3667,8 @@
                 "js_source": "t=>{let o=JSON.parse(t);return Object.entries(o).sort(([n,i],[s,r])=>n==\"personal\"?-1:s==\"personal\"?1:i.localeCompare(r)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
               }
             ]
-          }
+          },
+          "priority": 75
         },
         {
           "name": [
@@ -3747,7 +3807,8 @@
                 "template": "filepaths"
               }
             }
-          ]
+          ],
+          "priority": 82
         },
         {
           "name": "remove",
@@ -3795,7 +3856,8 @@
                 "name": "group"
               }
             }
-          ]
+          ],
+          "priority": 50
         },
         {
           "name": "set",
@@ -4072,7 +4134,8 @@
                 "template": "filepaths"
               }
             }
-          ]
+          ],
+          "priority": 75
         },
         {
           "name": "vm",
@@ -4254,7 +4317,8 @@
                 "template": "filepaths"
               }
             }
-          ]
+          ],
+          "priority": 82
         },
         {
           "name": "set",
@@ -4381,7 +4445,8 @@
             "template": "filepaths"
           }
         }
-      ]
+      ],
+      "priority": 65
     },
     {
       "name": "ssh",
@@ -4449,7 +4514,8 @@
               "description": "Region to create WireGuard connection in",
               "args": {
                 "name": "region"
-              }
+              },
+              "priority": 65
             },
             {
               "name": [
@@ -4495,7 +4561,8 @@
                 "--overwrite",
                 "-o"
               ],
-              "description": "Overwrite existing SSH keys in same location, if we generated them"
+              "description": "Overwrite existing SSH keys in same location, if we generated them",
+              "priority": 75
             },
             {
               "name": [
@@ -4620,7 +4687,8 @@
           ],
           "description": "Refresh details"
         }
-      ]
+      ],
+      "priority": 80
     },
     {
       "name": "suspend",
@@ -4688,7 +4756,8 @@
           "description": "The region to launch the new app in",
           "args": {
             "name": "region"
-          }
+          },
+          "priority": 65
         }
       ]
     },
@@ -4794,7 +4863,8 @@
                 "template": "filepaths"
               }
             }
-          ]
+          ],
+          "priority": 80
         },
         {
           "name": "stop",
@@ -4892,7 +4962,8 @@
               "description": "The region to operate on",
               "args": {
                 "name": "region"
-              }
+              },
+              "priority": 65
             },
             {
               "name": [
@@ -4910,7 +4981,8 @@
                 "name": "size"
               }
             }
-          ]
+          ],
+          "priority": 72
         },
         {
           "name": "delete",
@@ -4923,7 +4995,8 @@
               ],
               "description": "Accept all confirmations"
             }
-          ]
+          ],
+          "priority": 50
         },
         {
           "name": "list",
@@ -4962,11 +5035,13 @@
                 "template": "filepaths"
               }
             }
-          ]
+          ],
+          "priority": 82
         },
         {
           "name": "show",
-          "description": "Show details of an app's volume"
+          "description": "Show details of an app's volume",
+          "priority": 75
         },
         {
           "name": "snaps",
@@ -4974,7 +5049,8 @@
           "subcommands": [
             {
               "name": "list",
-              "description": "List snapshots"
+              "description": "List snapshots",
+              "priority": 82
             }
           ]
         }
@@ -4986,15 +5062,18 @@
       "subcommands": [
         {
           "name": "create",
-          "description": "Add a WireGuard peer connection"
+          "description": "Add a WireGuard peer connection",
+          "priority": 72
         },
         {
           "name": "list",
-          "description": "List all WireGuard peer connections"
+          "description": "List all WireGuard peer connections",
+          "priority": 82
         },
         {
           "name": "remove",
-          "description": "Remove a WireGuard peer connection"
+          "description": "Remove a WireGuard peer connection",
+          "priority": 50
         },
         {
           "name": "reset",
@@ -5002,7 +5081,8 @@
         },
         {
           "name": "status",
-          "description": "Get status a WireGuard peer connection"
+          "description": "Get status a WireGuard peer connection",
+          "priority": 80
         },
         {
           "name": "token",
@@ -5010,15 +5090,18 @@
           "subcommands": [
             {
               "name": "create",
-              "description": "Create a new WireGuard token"
+              "description": "Create a new WireGuard token",
+              "priority": 72
             },
             {
               "name": "delete",
-              "description": "Delete a WireGuard token; token is name:<name> or token:<token>"
+              "description": "Delete a WireGuard token; token is name:<name> or token:<token>",
+              "priority": 50
             },
             {
               "name": "list",
-              "description": "List all WireGuard tokens"
+              "description": "List all WireGuard tokens",
+              "priority": 82
             },
             {
               "name": "start",
@@ -5076,7 +5159,8 @@
           "subcommands": [
             {
               "name": "create",
-              "description": "Create a new application"
+              "description": "Create a new application",
+              "priority": 72
             },
             {
               "name": "destroy",
@@ -5084,7 +5168,8 @@
             },
             {
               "name": "list",
-              "description": "List applications"
+              "description": "List applications",
+              "priority": 82
             },
             {
               "name": "move",
@@ -5092,7 +5177,8 @@
             },
             {
               "name": "open",
-              "description": "Open browser to current deployed application"
+              "description": "Open browser to current deployed application",
+              "priority": 75
             },
             {
               "name": "releases",
@@ -5102,7 +5188,8 @@
               "name": "restart",
               "description": "Restart an application"
             }
-          ]
+          ],
+          "priority": 78
         },
         {
           "name": "auth",
@@ -5114,11 +5201,13 @@
             },
             {
               "name": "login",
-              "description": "Log in a user"
+              "description": "Log in a user",
+              "priority": 88
             },
             {
               "name": "logout",
-              "description": "Logs out the currently logged in user"
+              "description": "Logs out the currently logged in user",
+              "priority": 60
             },
             {
               "name": "signup",
@@ -5152,7 +5241,8 @@
             },
             {
               "name": "show",
-              "description": "Show current autoscaling configuration"
+              "description": "Show current autoscaling configuration",
+              "priority": 75
             },
             {
               "name": "standard",
@@ -5166,7 +5256,8 @@
           "subcommands": [
             {
               "name": "list",
-              "description": "List builds"
+              "description": "List builds",
+              "priority": 82
             }
           ]
         },
@@ -5176,7 +5267,8 @@
           "subcommands": [
             {
               "name": "create",
-              "description": "Add a certificate for an app"
+              "description": "Add a certificate for an app",
+              "priority": 72
             },
             {
               "name": "check",
@@ -5184,15 +5276,18 @@
             },
             {
               "name": "list",
-              "description": "List certificates for an app"
+              "description": "List certificates for an app",
+              "priority": 82
             },
             {
               "name": "delete",
-              "description": "Removes a certificate from an app"
+              "description": "Removes a certificate from an app",
+              "priority": 50
             },
             {
               "name": "show",
-              "description": "Shows certificate information"
+              "description": "Shows certificate information",
+              "priority": 75
             }
           ]
         },
@@ -5206,21 +5301,25 @@
               "subcommands": [
                 {
                   "name": "create",
-                  "description": "Create a health check handler"
+                  "description": "Create a health check handler",
+                  "priority": 72
                 },
                 {
                   "name": "delete",
-                  "description": "Delete a health check handler"
+                  "description": "Delete a health check handler",
+                  "priority": 50
                 },
                 {
                   "name": "list",
-                  "description": "List health check handlers"
+                  "description": "List health check handlers",
+                  "priority": 82
                 }
               ]
             },
             {
               "name": "list",
-              "description": "List app health checks"
+              "description": "List app health checks",
+              "priority": 82
             }
           ]
         },
@@ -5266,11 +5365,13 @@
               "name": "validate",
               "description": "Validate an app's config file"
             }
-          ]
+          ],
+          "priority": 65
         },
         {
           "name": "create",
-          "description": "Create a new application"
+          "description": "Create a new application",
+          "priority": 72
         },
         {
           "name": "curl",
@@ -5288,7 +5389,8 @@
         },
         {
           "name": "deploy",
-          "description": "Deploy Fly applications"
+          "description": "Deploy Fly applications",
+          "priority": 90
         },
         {
           "name": "destroy",
@@ -5312,7 +5414,8 @@
             },
             {
               "name": "list",
-              "description": "List DNS records"
+              "description": "List DNS records",
+              "priority": 82
             }
           ]
         },
@@ -5340,7 +5443,8 @@
             },
             {
               "name": "list",
-              "description": "List domains"
+              "description": "List domains",
+              "priority": 82
             },
             {
               "name": "register",
@@ -5348,9 +5452,11 @@
             },
             {
               "name": "show",
-              "description": "Show domain"
+              "description": "Show domain",
+              "priority": 75
             }
-          ]
+          ],
+          "priority": 60
         },
         {
           "name": "history",
@@ -5362,7 +5468,8 @@
           "subcommands": [
             {
               "name": "show",
-              "description": "Show image details"
+              "description": "Show image details",
+              "priority": 75
             },
             {
               "name": "update",
@@ -5388,7 +5495,8 @@
             },
             {
               "name": "list",
-              "description": "List allocated IP addresses"
+              "description": "List allocated IP addresses",
+              "priority": 82
             },
             {
               "name": "private",
@@ -5410,17 +5518,20 @@
           "subcommands": [
             {
               "name": "apps",
-              "description": "Lists all your apps"
+              "description": "Lists all your apps",
+              "priority": 78
             },
             {
               "name": "orgs",
               "description": "List all your organizations"
             }
-          ]
+          ],
+          "priority": 82
         },
         {
           "name": "logs",
-          "description": "View app logs"
+          "description": "View app logs",
+          "priority": 88
         },
         {
           "name": "machines",
@@ -5436,7 +5547,8 @@
             },
             {
               "name": "list",
-              "description": "List Fly machines"
+              "description": "List Fly machines",
+              "priority": 82
             },
             {
               "name": "rm",
@@ -5452,7 +5564,8 @@
             },
             {
               "name": "status",
-              "description": "Show current status of a running machine"
+              "description": "Show current status of a running machine",
+              "priority": 80
             },
             {
               "name": "stop",
@@ -5470,7 +5583,8 @@
         },
         {
           "name": "open",
-          "description": "Open browser to current deployed application"
+          "description": "Open browser to current deployed application",
+          "priority": 75
         },
         {
           "name": "orgs",
@@ -5482,7 +5596,8 @@
               "subcommands": [
                 {
                   "name": "show",
-                  "description": "Show details about an organization's remote builder image"
+                  "description": "Show details about an organization's remote builder image",
+                  "priority": 75
                 },
                 {
                   "name": "update",
@@ -5492,11 +5607,13 @@
             },
             {
               "name": "create",
-              "description": "Create an organization"
+              "description": "Create an organization",
+              "priority": 72
             },
             {
               "name": "delete",
-              "description": "Delete an organization"
+              "description": "Delete an organization",
+              "priority": 50
             },
             {
               "name": "invite",
@@ -5504,15 +5621,18 @@
             },
             {
               "name": "list",
-              "description": "Lists organizations for current user"
+              "description": "Lists organizations for current user",
+              "priority": 82
             },
             {
               "name": "remove",
-              "description": "Remove a user from an organization"
+              "description": "Remove a user from an organization",
+              "priority": 50
             },
             {
               "name": "show",
-              "description": "Show information about an organization"
+              "description": "Show information about an organization",
+              "priority": 75
             }
           ]
         },
@@ -5530,7 +5650,8 @@
             },
             {
               "name": "status",
-              "description": "Show current platform status"
+              "description": "Show current platform status",
+              "priority": 80
             },
             {
               "name": "vm-sizes",
@@ -5552,7 +5673,8 @@
             },
             {
               "name": "create",
-              "description": "Create a postgres cluster"
+              "description": "Create a postgres cluster",
+              "priority": 72
             },
             {
               "name": "db",
@@ -5560,7 +5682,8 @@
               "subcommands": [
                 {
                   "name": "list",
-                  "description": "List databases in a cluster"
+                  "description": "List databases in a cluster",
+                  "priority": 82
                 }
               ]
             },
@@ -5570,7 +5693,8 @@
             },
             {
               "name": "list",
-              "description": "List postgres clusters"
+              "description": "List postgres clusters",
+              "priority": 82
             },
             {
               "name": "users",
@@ -5578,7 +5702,8 @@
               "subcommands": [
                 {
                   "name": "list",
-                  "description": "List users in a cluster"
+                  "description": "List users in a cluster",
+                  "priority": 82
                 }
               ]
             }
@@ -5602,11 +5727,13 @@
             },
             {
               "name": "list",
-              "description": "Shows the list of regions the app is allowed to run in"
+              "description": "Shows the list of regions the app is allowed to run in",
+              "priority": 82
             },
             {
               "name": "remove",
-              "description": "Prevent the app from running in the provided regions"
+              "description": "Prevent the app from running in the provided regions",
+              "priority": 50
             },
             {
               "name": "set",
@@ -5640,7 +5767,8 @@
             },
             {
               "name": "show",
-              "description": "Show current resources"
+              "description": "Show current resources",
+              "priority": 75
             },
             {
               "name": "vm",
@@ -5658,7 +5786,8 @@
             },
             {
               "name": "list",
-              "description": "Lists the secrets available to the app"
+              "description": "Lists the secrets available to the app",
+              "priority": 82
             },
             {
               "name": "set",
@@ -5668,7 +5797,8 @@
               "name": "unset",
               "description": "Remove encrypted secrets from an app"
             }
-          ]
+          ],
+          "priority": 65
         },
         {
           "name": "ssh",
@@ -5700,7 +5830,8 @@
               "name": "instance",
               "description": "Show instance status"
             }
-          ]
+          ],
+          "priority": 80
         },
         {
           "name": "suspend",
@@ -5730,7 +5861,8 @@
             },
             {
               "name": "status",
-              "description": "Show a VM's status"
+              "description": "Show a VM's status",
+              "priority": 80
             },
             {
               "name": "stop",
@@ -5744,19 +5876,23 @@
           "subcommands": [
             {
               "name": "create",
-              "description": "Create new volume for app"
+              "description": "Create new volume for app",
+              "priority": 72
             },
             {
               "name": "delete",
-              "description": "Delete a volume from the app"
+              "description": "Delete a volume from the app",
+              "priority": 50
             },
             {
               "name": "list",
-              "description": "List the volumes for app"
+              "description": "List the volumes for app",
+              "priority": 82
             },
             {
               "name": "show",
-              "description": "Show details of an app's volume"
+              "description": "Show details of an app's volume",
+              "priority": 75
             },
             {
               "name": "snaps",
@@ -5764,7 +5900,8 @@
               "subcommands": [
                 {
                   "name": "list",
-                  "description": "List snapshots"
+                  "description": "List snapshots",
+                  "priority": 82
                 }
               ]
             }
@@ -5776,15 +5913,18 @@
           "subcommands": [
             {
               "name": "create",
-              "description": "Add a WireGuard peer connection"
+              "description": "Add a WireGuard peer connection",
+              "priority": 72
             },
             {
               "name": "list",
-              "description": "List all WireGuard peer connections"
+              "description": "List all WireGuard peer connections",
+              "priority": 82
             },
             {
               "name": "remove",
-              "description": "Remove a WireGuard peer connection"
+              "description": "Remove a WireGuard peer connection",
+              "priority": 50
             },
             {
               "name": "reset",
@@ -5792,7 +5932,8 @@
             },
             {
               "name": "status",
-              "description": "Get status a WireGuard peer connection"
+              "description": "Get status a WireGuard peer connection",
+              "priority": 80
             },
             {
               "name": "token",
@@ -5800,15 +5941,18 @@
               "subcommands": [
                 {
                   "name": "create",
-                  "description": "Create a new WireGuard token"
+                  "description": "Create a new WireGuard token",
+                  "priority": 72
                 },
                 {
                   "name": "delete",
-                  "description": "Delete a WireGuard token; token is name:<name> or token:<token>"
+                  "description": "Delete a WireGuard token; token is name:<name> or token:<token>",
+                  "priority": 50
                 },
                 {
                   "name": "list",
-                  "description": "List all WireGuard tokens"
+                  "description": "List all WireGuard tokens",
+                  "priority": 82
                 },
                 {
                   "name": "start",

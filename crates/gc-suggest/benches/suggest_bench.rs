@@ -6,9 +6,10 @@ use gc_buffer::{CommandContext, QuoteState};
 use gc_suggest::commands::CommandsProvider;
 use gc_suggest::fuzzy;
 use gc_suggest::history::HistoryProvider;
+use gc_suggest::priority::Priority;
 use gc_suggest::specs;
 use gc_suggest::transform::{self, NamedTransform, ParameterizedTransform, Transform};
-use gc_suggest::types::Suggestion;
+use gc_suggest::types::{Suggestion, SuggestionKind};
 use gc_suggest::SpecStore;
 use gc_suggest::SuggestionEngine;
 
@@ -205,6 +206,39 @@ fn engine_benchmarks(c: &mut Criterion) {
     group.finish();
 }
 
+fn priority_sort_benchmarks(c: &mut Criterion) {
+    let mut suggestions = Vec::with_capacity(10_000);
+    for i in 0..10_000 {
+        let kind = match i % 5 {
+            0 => SuggestionKind::GitBranch,
+            1 => SuggestionKind::Flag,
+            2 => SuggestionKind::FilePath,
+            3 => SuggestionKind::Subcommand,
+            _ => SuggestionKind::ProviderValue,
+        };
+        let priority = if i % 50 == 0 {
+            Some(Priority::new(95))
+        } else {
+            None
+        };
+        suggestions.push(Suggestion {
+            text: format!("item-{i:05}"),
+            kind,
+            priority,
+            ..Default::default()
+        });
+    }
+
+    let mut group = c.benchmark_group("priority_sort");
+    group.bench_function("empty_query_10k", |b| {
+        b.iter(|| fuzzy::rank("", suggestions.clone(), fuzzy::DEFAULT_MAX_RESULTS));
+    });
+    group.bench_function("fuzzy_query_10k", |b| {
+        b.iter(|| fuzzy::rank("item-007", suggestions.clone(), fuzzy::DEFAULT_MAX_RESULTS));
+    });
+    group.finish();
+}
+
 criterion_group!(
     benches,
     fuzzy_benchmarks,
@@ -212,5 +246,6 @@ criterion_group!(
     resolution_benchmarks,
     transform_benchmarks,
     engine_benchmarks,
+    priority_sort_benchmarks,
 );
 criterion_main!(benches);
