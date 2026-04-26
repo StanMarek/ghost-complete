@@ -5,6 +5,7 @@
     {
       "name": "init",
       "description": "Configure project for Qodana",
+      "priority": 100,
       "options": [
         {
           "name": [
@@ -22,6 +23,7 @@
     {
       "name": "scan",
       "description": "Scan a project with Qodana",
+      "priority": 99,
       "options": [
         {
           "name": [
@@ -194,7 +196,8 @@
             "-s",
             "--save-report"
           ],
-          "description": "Generate HTML report (default true)"
+          "description": "Generate HTML report (default true)",
+          "priority": 99
         },
         {
           "name": [
@@ -216,7 +219,8 @@
             "-w",
             "--show-report"
           ],
-          "description": "Serve HTML report on port"
+          "description": "Serve HTML report on port",
+          "priority": 100
         },
         {
           "name": [
@@ -268,6 +272,7 @@
     {
       "name": "show",
       "description": "Show Qodana report",
+      "priority": 98,
       "options": [
         {
           "name": [
@@ -282,6 +287,7 @@
             "--port"
           ],
           "description": "Specify port to serve report at (default 8080)",
+          "priority": 100,
           "args": {
             "name": "int"
           }
@@ -313,6 +319,7 @@
     {
       "name": "view",
       "description": "View SARIF files in CLI",
+      "priority": 97,
       "options": [
         {
           "name": [
@@ -334,7 +341,8 @@
         "-h",
         "--help"
       ],
-      "description": "Show help page for command"
+      "description": "Show help page for command",
+      "priority": 1
     },
     {
       "name": [

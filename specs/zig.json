@@ -99,25 +99,29 @@
           "name": [
             "-fdarling"
           ],
-          "description": "Integration with system-installed Darling to execute macOS programs on Linux hosts"
+          "description": "Integration with system-installed Darling to execute macOS programs on Linux hosts",
+          "priority": 25
         },
         {
           "name": [
             "-fno-fdarling"
           ],
-          "description": "No integration with system-installed Darling to execute macOS programs on Linux hosts"
+          "description": "No integration with system-installed Darling to execute macOS programs on Linux hosts",
+          "priority": 25
         },
         {
           "name": [
             "-fqemu"
           ],
-          "description": "Integration with system-installed QEMU to execute foreign-architecture programs on Linux host"
+          "description": "Integration with system-installed QEMU to execute foreign-architecture programs on Linux host",
+          "priority": 25
         },
         {
           "name": [
             "-fno-qemu"
           ],
-          "description": "No integration with system-installed QEMU to execute foreign-architecture programs on Linux host"
+          "description": "No integration with system-installed QEMU to execute foreign-architecture programs on Linux host",
+          "priority": 25
         },
         {
           "name": [
@@ -133,37 +137,43 @@
           "name": [
             "-frosetta"
           ],
-          "description": "Rely on Rosetta to execute x86_64 programs on ARM64 macOS hosts"
+          "description": "Rely on Rosetta to execute x86_64 programs on ARM64 macOS hosts",
+          "priority": 25
         },
         {
           "name": [
             "-fno-rosetta"
           ],
-          "description": "Don't rely on Rosetta to execute x86_64 programs on ARM64 macOS hosts"
+          "description": "Don't rely on Rosetta to execute x86_64 programs on ARM64 macOS hosts",
+          "priority": 25
         },
         {
           "name": [
             "-fwasmtime"
           ],
-          "description": "Integration with system-installed wasmtime to execute WASI binaries"
+          "description": "Integration with system-installed wasmtime to execute WASI binaries",
+          "priority": 25
         },
         {
           "name": [
             "-fno-wasmtime"
           ],
-          "description": "No integration with system-installed wasmtime to execute WASI binaries"
+          "description": "No integration with system-installed wasmtime to execute WASI binaries",
+          "priority": 25
         },
         {
           "name": [
             "-fwine"
           ],
-          "description": "Integration with system-installed Wine to execute Windows programs on Linux hosts"
+          "description": "Integration with system-installed Wine to execute Windows programs on Linux hosts",
+          "priority": 25
         },
         {
           "name": [
             "-fno-wine"
           ],
-          "description": "No integration with system-installed Wine to execute Windows programs on Linux hosts"
+          "description": "No integration with system-installed Wine to execute Windows programs on Linux hosts",
+          "priority": 25
         },
         {
           "name": [
@@ -267,31 +277,36 @@
           "name": [
             "-fstage1"
           ],
-          "description": "Force using bootstrap compiler as the codegen backend"
+          "description": "Force using bootstrap compiler as the codegen backend",
+          "priority": 20
         },
         {
           "name": [
             "-fno-stage1"
           ],
-          "description": "Prevent using bootstrap compiler as the codegen backend"
+          "description": "Prevent using bootstrap compiler as the codegen backend",
+          "priority": 20
         },
         {
           "name": [
             "-freference-trace"
           ],
-          "description": "How many lines of reference trace should be shown per compile error"
+          "description": "How many lines of reference trace should be shown per compile error",
+          "priority": 20
         },
         {
           "name": [
             "-fno-reference-trace"
           ],
-          "description": "Disable reference trace"
+          "description": "Disable reference trace",
+          "priority": 20
         },
         {
           "name": [
             "--build-file"
           ],
           "description": "Override path to build.zig",
+          "priority": 20,
           "args": {
             "template": "filepaths"
           }
@@ -301,6 +316,7 @@
             "--cache-dir"
           ],
           "description": "Override path to local Zig cache directory",
+          "priority": 20,
           "args": {
             "template": "folders"
           }
@@ -310,6 +326,7 @@
             "--global-cache-dir"
           ],
           "description": "Override path to global Zig cache directory",
+          "priority": 20,
           "args": {
             "template": "folders"
           }
@@ -319,6 +336,7 @@
             "--zig-lib-dir"
           ],
           "description": "Override path to Zig lib directory",
+          "priority": 20,
           "args": {
             "template": "folders"
           }
@@ -327,37 +345,43 @@
           "name": [
             "--verbose-link"
           ],
-          "description": "Enable compiler debug output for linking"
+          "description": "Enable compiler debug output for linking",
+          "priority": 20
         },
         {
           "name": [
             "--verbose-air"
           ],
-          "description": "Enable compiler debug output for Zig AIR"
+          "description": "Enable compiler debug output for Zig AIR",
+          "priority": 20
         },
         {
           "name": [
             "--verbose-llvm-ir"
           ],
-          "description": "Enable compiler debug output for LLVM IR"
+          "description": "Enable compiler debug output for LLVM IR",
+          "priority": 20
         },
         {
           "name": [
             "--verbose-cimport"
           ],
-          "description": "Enable compiler debug output for C imports"
+          "description": "Enable compiler debug output for C imports",
+          "priority": 20
         },
         {
           "name": [
             "--verbose-cc"
           ],
-          "description": "Enable compiler debug output for C compilation"
+          "description": "Enable compiler debug output for C compilation",
+          "priority": 20
         },
         {
           "name": [
             "--verbose-llvm-cpu-features"
           ],
-          "description": "Enable compiler debug output for LLVM CPU features"
+          "description": "Enable compiler debug output for LLVM CPU features",
+          "priority": 20
         }
       ]
     },
@@ -573,6 +597,7 @@
             "--cache-dir"
           ],
           "description": "Override path to local Zig cache directory",
+          "priority": 20,
           "args": {
             "template": "folders"
           }
@@ -582,6 +607,7 @@
             "--global-cache-dir"
           ],
           "description": "Override path to global Zig cache directory",
+          "priority": 20,
           "args": {
             "template": "folders"
           }
@@ -591,6 +617,7 @@
             "--zig-lib-dir"
           ],
           "description": "Override path to Zig lib directory",
+          "priority": 20,
           "args": {
             "template": "folders"
           }
@@ -882,25 +909,29 @@
           "name": [
             "-fstage1"
           ],
-          "description": "Force using bootstrap compiler as the codegen backend"
+          "description": "Force using bootstrap compiler as the codegen backend",
+          "priority": 20
         },
         {
           "name": [
             "-fno-stage1"
           ],
-          "description": "Prevent using bootstrap compiler as the codegen backend"
+          "description": "Prevent using bootstrap compiler as the codegen backend",
+          "priority": 20
         },
         {
           "name": [
             "-freference-trace"
           ],
-          "description": "How many lines of reference trace should be shown per compile error"
+          "description": "How many lines of reference trace should be shown per compile error",
+          "priority": 20
         },
         {
           "name": [
             "-fno-reference-trace"
           ],
-          "description": "Disable reference trace"
+          "description": "Disable reference trace",
+          "priority": 20
         },
         {
           "name": [
@@ -1786,6 +1817,7 @@
             "--cache-dir"
           ],
           "description": "Override path to local Zig cache directory",
+          "priority": 20,
           "args": {
             "template": "folders"
           }
@@ -1795,6 +1827,7 @@
             "--global-cache-dir"
           ],
           "description": "Override path to global Zig cache directory",
+          "priority": 20,
           "args": {
             "template": "folders"
           }
@@ -1804,6 +1837,7 @@
             "--zig-lib-dir"
           ],
           "description": "Override path to Zig lib directory",
+          "priority": 20,
           "args": {
             "template": "folders"
           }
@@ -2095,25 +2129,29 @@
           "name": [
             "-fstage1"
           ],
-          "description": "Force using bootstrap compiler as the codegen backend"
+          "description": "Force using bootstrap compiler as the codegen backend",
+          "priority": 20
         },
         {
           "name": [
             "-fno-stage1"
           ],
-          "description": "Prevent using bootstrap compiler as the codegen backend"
+          "description": "Prevent using bootstrap compiler as the codegen backend",
+          "priority": 20
         },
         {
           "name": [
             "-freference-trace"
           ],
-          "description": "How many lines of reference trace should be shown per compile error"
+          "description": "How many lines of reference trace should be shown per compile error",
+          "priority": 20
         },
         {
           "name": [
             "-fno-reference-trace"
           ],
-          "description": "Disable reference trace"
+          "description": "Disable reference trace",
+          "priority": 20
         },
         {
           "name": [
@@ -2999,6 +3037,7 @@
             "--cache-dir"
           ],
           "description": "Override path to local Zig cache directory",
+          "priority": 20,
           "args": {
             "template": "folders"
           }
@@ -3008,6 +3047,7 @@
             "--global-cache-dir"
           ],
           "description": "Override path to global Zig cache directory",
+          "priority": 20,
           "args": {
             "template": "folders"
           }
@@ -3017,6 +3057,7 @@
             "--zig-lib-dir"
           ],
           "description": "Override path to Zig lib directory",
+          "priority": 20,
           "args": {
             "template": "folders"
           }
@@ -3308,25 +3349,29 @@
           "name": [
             "-fstage1"
           ],
-          "description": "Force using bootstrap compiler as the codegen backend"
+          "description": "Force using bootstrap compiler as the codegen backend",
+          "priority": 20
         },
         {
           "name": [
             "-fno-stage1"
           ],
-          "description": "Prevent using bootstrap compiler as the codegen backend"
+          "description": "Prevent using bootstrap compiler as the codegen backend",
+          "priority": 20
         },
         {
           "name": [
             "-freference-trace"
           ],
-          "description": "How many lines of reference trace should be shown per compile error"
+          "description": "How many lines of reference trace should be shown per compile error",
+          "priority": 20
         },
         {
           "name": [
             "-fno-reference-trace"
           ],
-          "description": "Disable reference trace"
+          "description": "Disable reference trace",
+          "priority": 20
         },
         {
           "name": [
@@ -4279,6 +4324,7 @@
             "--cache-dir"
           ],
           "description": "Override path to local Zig cache directory",
+          "priority": 20,
           "args": {
             "template": "folders"
           }
@@ -4288,6 +4334,7 @@
             "--global-cache-dir"
           ],
           "description": "Override path to global Zig cache directory",
+          "priority": 20,
           "args": {
             "template": "folders"
           }
@@ -4297,6 +4344,7 @@
             "--zig-lib-dir"
           ],
           "description": "Override path to Zig lib directory",
+          "priority": 20,
           "args": {
             "template": "folders"
           }
@@ -4588,25 +4636,29 @@
           "name": [
             "-fstage1"
           ],
-          "description": "Force using bootstrap compiler as the codegen backend"
+          "description": "Force using bootstrap compiler as the codegen backend",
+          "priority": 20
         },
         {
           "name": [
             "-fno-stage1"
           ],
-          "description": "Prevent using bootstrap compiler as the codegen backend"
+          "description": "Prevent using bootstrap compiler as the codegen backend",
+          "priority": 20
         },
         {
           "name": [
             "-freference-trace"
           ],
-          "description": "How many lines of reference trace should be shown per compile error"
+          "description": "How many lines of reference trace should be shown per compile error",
+          "priority": 20
         },
         {
           "name": [
             "-fno-reference-trace"
           ],
-          "description": "Disable reference trace"
+          "description": "Disable reference trace",
+          "priority": 20
         },
         {
           "name": [
@@ -5492,6 +5544,7 @@
             "--cache-dir"
           ],
           "description": "Override path to local Zig cache directory",
+          "priority": 20,
           "args": {
             "template": "folders"
           }
@@ -5501,6 +5554,7 @@
             "--global-cache-dir"
           ],
           "description": "Override path to global Zig cache directory",
+          "priority": 20,
           "args": {
             "template": "folders"
           }
@@ -5510,6 +5564,7 @@
             "--zig-lib-dir"
           ],
           "description": "Override path to Zig lib directory",
+          "priority": 20,
           "args": {
             "template": "folders"
           }
@@ -5801,25 +5856,29 @@
           "name": [
             "-fstage1"
           ],
-          "description": "Force using bootstrap compiler as the codegen backend"
+          "description": "Force using bootstrap compiler as the codegen backend",
+          "priority": 20
         },
         {
           "name": [
             "-fno-stage1"
           ],
-          "description": "Prevent using bootstrap compiler as the codegen backend"
+          "description": "Prevent using bootstrap compiler as the codegen backend",
+          "priority": 20
         },
         {
           "name": [
             "-freference-trace"
           ],
-          "description": "How many lines of reference trace should be shown per compile error"
+          "description": "How many lines of reference trace should be shown per compile error",
+          "priority": 20
         },
         {
           "name": [
             "-fno-reference-trace"
           ],
-          "description": "Disable reference trace"
+          "description": "Disable reference trace",
+          "priority": 20
         },
         {
           "name": [
@@ -6705,6 +6764,7 @@
             "--cache-dir"
           ],
           "description": "Override path to local Zig cache directory",
+          "priority": 20,
           "args": {
             "template": "folders"
           }
@@ -6714,6 +6774,7 @@
             "--global-cache-dir"
           ],
           "description": "Override path to global Zig cache directory",
+          "priority": 20,
           "args": {
             "template": "folders"
           }
@@ -6723,6 +6784,7 @@
             "--zig-lib-dir"
           ],
           "description": "Override path to Zig lib directory",
+          "priority": 20,
           "args": {
             "template": "folders"
           }
@@ -7014,25 +7076,29 @@
           "name": [
             "-fstage1"
           ],
-          "description": "Force using bootstrap compiler as the codegen backend"
+          "description": "Force using bootstrap compiler as the codegen backend",
+          "priority": 20
         },
         {
           "name": [
             "-fno-stage1"
           ],
-          "description": "Prevent using bootstrap compiler as the codegen backend"
+          "description": "Prevent using bootstrap compiler as the codegen backend",
+          "priority": 20
         },
         {
           "name": [
             "-freference-trace"
           ],
-          "description": "How many lines of reference trace should be shown per compile error"
+          "description": "How many lines of reference trace should be shown per compile error",
+          "priority": 20
         },
         {
           "name": [
             "-fno-reference-trace"
           ],
-          "description": "Disable reference trace"
+          "description": "Disable reference trace",
+          "priority": 20
         },
         {
           "name": [

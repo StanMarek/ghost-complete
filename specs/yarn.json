@@ -6181,8 +6181,13 @@
               "--depth=0",
               "--json"
             ],
-            "requires_js": true,
-            "js_source": "e=>{if(e.trim()==\"\")return[];try{return JSON.parse(e).data.trees.map(s=>({name:s.name.split(\"@\")[0],icon:\"\\u{1F4E6}\"}))}catch{}return[]}"
+            "transforms": [
+              {
+                "type": "json_extract_array",
+                "path": "data.trees",
+                "item_name": "name"
+              }
+            ]
           }
         ]
       }

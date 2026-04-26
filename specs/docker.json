@@ -10947,19 +10947,8 @@
                   "--format",
                   "{{ json . }}"
                 ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "type": "json_extract",
-                    "name": "Name",
-                    "description": "Image"
-                  },
-                  {
-                    "type": "suffix",
-                    "value": "="
-                  }
-                ],
+                "requires_js": true,
+                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.Name}=`,description:n.Image,icon:\"fig://icon?type=docker\"}))}",
                 "_corrected_in": "v0.10.0"
               }
             ]
