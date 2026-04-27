@@ -172,10 +172,6 @@ fn print_shell_blocks(init_path: &Path, script_path: &Path) {
     println!("    \x1b[36m{indented_shell}\x1b[0m\n");
 }
 
-/// Render the post-install next-steps summary.
-///
-/// Caller's responsibility to skip in dry-run — `install_to` short-circuits
-/// before either call-site reaches this helper, so no internal guard.
 fn post_install_summary(config_dir: &Path, wrote_zshrc: bool) -> String {
     use std::fmt::Write as _;
     let mut out = String::new();
@@ -208,7 +204,7 @@ fn post_install_summary(config_dir: &Path, wrote_zshrc: bool) -> String {
     .unwrap();
     writeln!(
         out,
-        "  3. Try it:                \x1b[1mcd /tmp && git \x1b[0m\x1b[2m<space>\x1b[0m"
+        "  3. Try it:                \x1b[1mcd /tmp && git \x1b[0m\x1b[2m[space]\x1b[0m"
     )
     .unwrap();
     writeln!(
@@ -232,7 +228,7 @@ fn post_install_summary(config_dir: &Path, wrote_zshrc: bool) -> String {
     .unwrap();
     writeln!(
         out,
-        "  Specs:   {}/  ({} specs)",
+        "  Specs:   {}/  ({} completion specs)",
         sanitize_path(&config_dir.join("specs")),
         EMBEDDED_SPECS.len()
     )
@@ -1159,7 +1155,11 @@ mod tests {
 
     #[test]
     fn test_post_install_summary_contains_all_sections() {
-        let summary = post_install_summary(Path::new("/tmp/cfg"), true);
+        // Use a distinctive directory so we can also assert the helper
+        // interpolates `config_dir` into the rendered paths rather than
+        // hardcoding them.
+        let config_dir = Path::new("/tmp/gc-test-xyz");
+        let summary = post_install_summary(config_dir, true);
         for token in [
             "ghost-complete installed successfully",
             "doctor",
@@ -1169,12 +1169,19 @@ mod tests {
             "config.toml",
             "specs",
             "source ~/.zshrc",
+            "/tmp/gc-test-xyz/config.toml",
+            "/tmp/gc-test-xyz/specs",
         ] {
             assert!(
                 summary.contains(token),
                 "missing token: {token}\n--- summary ---\n{summary}"
             );
         }
+        let count_token = format!("({} completion specs)", EMBEDDED_SPECS.len());
+        assert!(
+            summary.contains(&count_token),
+            "missing spec count `{count_token}`\n--- summary ---\n{summary}"
+        );
     }
 
     #[test]
