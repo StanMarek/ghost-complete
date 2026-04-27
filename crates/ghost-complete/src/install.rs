@@ -404,9 +404,6 @@ fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()>
                 sanitize_path(zshrc_path)
             );
             print_shell_blocks(&init_path, &script_path);
-            println!(
-                "  \x1b[32m\u{2713}\x1b[0m  Installation complete (manual shell configuration required)."
-            );
             print!("\n{}", post_install_summary(config_dir, false));
         }
         Err(e) => {
