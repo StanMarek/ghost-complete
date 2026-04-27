@@ -1,15 +1,18 @@
 # Oracle Error Dispositions — Phase 0 Correctness Audit
 
+> **Pre-T7 snapshot.** The numeric totals and the per-shape breakdowns below describe the 8-fixture pre-T7 baseline. Phase 4 T7 added 18 more fixtures (totals after that pass: pass=559, fail=5, oracle_error=474), which moved many shapes between dispositions. The shape-level rationales here remain valid as documentation of *why* a given shape was or was not fixturable, but the counts no longer reflect the live oracle. For current state, see `../docs/oracle-results.md` (which is regenerated from `../docs/oracle-results.json` on each run) and the §6 blocker analysis there for the post-T7 unaddressable ceiling.
+
 _Phase 0 exit requires every `oracle_error` in `docs/oracle-results.json` to have an explicit disposition here. Grouped dispositions are marked with `## Auto-disposition:`._
 
-_Canonical machine-readable data: `../../docs/oracle-results.json`._
+_Canonical machine-readable data: `../../docs/oracle-results.json` (current). Numbers in this file are pre-T7 and intentionally not regenerated — see notice above._
 
-## Summary
+## Summary (pre-T7 baseline)
 
 - Safe-subset size: **1038**
-- Outcome totals: pass=439, fail=1, oracle_error=598
-- Shapes fixtured (8): `empty-2`, `empty`, `entries-sort-map`, `parse-map-2`, `parse-map-3`, `parse-map`, `split-map`, `unknown-3`
-- Every `oracle_error` in this run has class `missing_fixture` (no `js_exception`, `js_timeout`, `rust_exception`, or `source_missing` observed).
+- Outcome totals (pre-T7, 8 fixtures): pass=439, fail=1, oracle_error=598
+- Outcome totals (post-T7, 26 fixtures, for reference): pass=559, fail=5, oracle_error=474
+- Shapes fixtured at the time this file was written (8): `empty-2`, `empty`, `entries-sort-map`, `parse-map-2`, `parse-map-3`, `parse-map`, `split-map`, `unknown-3`
+- Every `oracle_error` in the pre-T7 run had class `missing_fixture` (no `js_exception`, `js_timeout`, `rust_exception`, or `source_missing` observed).
 
 ## Auto-disposition: missing_fixture
 

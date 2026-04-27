@@ -232,7 +232,7 @@ silently changed behaviour.
 
 - **`SIGTERM` / `SIGHUP` no longer skip frecency flush** — PTY proxy now registers `SIGTERM` and `SIGHUP` listeners alongside `SIGWINCH` and breaks out to the existing cleanup block. Previously external `kill` or terminal hangup aborted tokio tasks before `flush_frecency()` / `config_watcher_handle.shutdown()` could run, losing accumulated frecency state on every non-EOF exit.
 - **`RUST_LOG` now respected; empty `$SHELL` treated as missing** — `init_tracing` prefers `RUST_LOG` and falls back to `--log-level` only when the env var is unset or invalid. `resolve_default_shell` falls back to `/bin/zsh` when `$SHELL` is empty (previously propagated a cryptic `ENOENT` from the PTY spawn).
-- Documentation drift: `docs/IMPLEMENTATION_PLAN.md` references now point to `docs/ARCHITECTURE.md`; MSRV documented as `1.75` corrected to `1.86`; crate count documented as `7` corrected to `8`; `theme.border` field added to the config table; spec counts synced to `709` specs / `184` requires_js.
+- Documentation drift: `docs/IMPLEMENTATION_PLAN.md` references now point to `docs/ARCHITECTURE.md`; MSRV documented as `1.75` corrected to `1.86`; crate count documented as `7` corrected to `8`; `theme.border` field added to the config table; spec counts synced to `709` specs / `180` requires_js.
 - `rust_out` stray binary removed from repo root and added to `.gitignore`.
 - Prior audit docs (`AUDIT_FINDINGS.md`, `AUDIT_RESOLUTION_PLAN.md`) marked archived.
 

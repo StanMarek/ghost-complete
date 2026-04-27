@@ -22,7 +22,7 @@ Inspired by the [Fig](https://fig.io) autocomplete experience. Built from scratc
 
 Ghost Complete is under active development. Contributions and bug reports are welcome.
 
-- **9 supported terminals on macOS:** Ghostty, Kitty, WezTerm, Alacritty, Rio, iTerm2, Terminal.app, Zed, and VSCode (incl. VSCodium, Cursor, Windsurf, Positron) — all work out of the box with no additional configuration.
+- **9 supported terminals on macOS:** Ghostty, Kitty, WezTerm, Alacritty, Rio, iTerm2, Terminal.app, Zed, and VSCode (incl. VSCodium, Cursor, Windsurf, Positron, Trae) — all work out of the box with no additional configuration.
 - **zsh is the primary shell.** Bash and fish support manual trigger only (Ctrl+/).
 - **macOS only.** No Linux or Windows support planned at this time.
 - **Pre-1.0.** Config format, spec format, and behavior may change between releases.
@@ -31,7 +31,7 @@ Found a bug? [Open an issue](https://github.com/StanMarek/ghost-complete/issues)
 
 ## Requirements
 
-- **Terminal:** [Ghostty](https://ghostty.org), [Kitty](https://sw.kovidgoyal.net/kitty/), [WezTerm](https://wezfurlong.org/wezterm/), [Alacritty](https://alacritty.org), [Rio](https://raphamorim.io/rio/), [iTerm2](https://iterm2.com), or Terminal.app
+- **Terminal:** [Ghostty](https://ghostty.org), [Kitty](https://sw.kovidgoyal.net/kitty/), [WezTerm](https://wezfurlong.org/wezterm/), [Alacritty](https://alacritty.org), [Rio](https://raphamorim.io/rio/), [iTerm2](https://iterm2.com), Terminal.app, [Zed](https://zed.dev), or [VSCode](https://code.visualstudio.com) (and forks: VSCodium, Cursor, Windsurf, Positron, Trae)
 - **OS:** macOS
 - **Shell:** zsh (primary), bash and fish (Ctrl+/ trigger only)
 - **Rust:** 1.86+ (for building from source)

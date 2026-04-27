@@ -193,10 +193,12 @@ Transforms process the raw stdout of a script generator into individual suggesti
 | `take(n)` | Keep only the first N lines |
 | `regex_extract(pattern, name_group, desc_group?)` | Extract suggestion name (and optional description) via regex capture groups |
 | `json_extract(name_field, desc_field?)` | Parse each line as JSON and extract fields |
+| `json_extract_array(path, item_name?, item_description?, split_on?, split_index?)` | Terminal transform: parse the entire output as JSON and emit one suggestion per element of the array at `path`. Cannot follow a split transform; only `suffix` may follow it. |
 | `column_extract(column, desc_column?)` | Extract whitespace-separated columns by position (0-indexed) |
-| `error_guard(starts_with\|contains)` | Return empty results if stdout matches the given error pattern |
+| `error_guard(starts_with?, contains?)` | Return empty results if stdout matches an error pattern. Both fields are optional and may be supplied together — a match against either fires the guard. |
+| `suffix(value)` | Append a fixed literal to each suggestion's text |
 
-**Ordering rules:** Transforms are validated at spec load time. A splitting transform (`split_lines` or `split_on`) must appear before any per-line transforms like `trim`, `filter_empty`, or `dedup`. Placing a per-line transform before a splitter is a validation error.
+**Ordering rules:** Transforms are validated at spec load time. A splitting transform (`split_lines` or `split_on`) must appear before any per-line transforms like `trim`, `filter_empty`, or `dedup`. Placing a per-line transform before a splitter is a validation error. `json_extract_array` is terminal — it must not appear after a splitter, and only `suffix` may appear after it.
 
 ### Cache
 

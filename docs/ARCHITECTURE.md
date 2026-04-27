@@ -77,20 +77,15 @@ The workspace contains 8 crates under `crates/`:
 ```
 ghost-complete ──► gc-pty ──► gc-parser
                      │    ──► gc-buffer
-                     │    ──► gc-suggest
-                     │    ──► gc-overlay
                      │    ──► gc-config
                      │    ──► gc-terminal
-                     │
-                     ├── gc-parser (VT parsing)
-                     ├── gc-buffer (command context)
-                     ├── gc-suggest (suggestions)
-                     ├── gc-overlay (rendering)
-                     ├── gc-config (configuration)
-                     └── gc-terminal (terminal detection)
+                     │    ──► gc-suggest ──► gc-buffer
+                     │                  └─► gc-config
+                     │    ──► gc-overlay ──► gc-suggest
+                     │                  └─► gc-terminal
 ```
 
-`gc-overlay`, `gc-parser`, `gc-suggest`, `gc-buffer`, and `gc-config` are independent of each other — only `gc-pty` ties them together.
+`gc-parser`, `gc-buffer`, `gc-config`, and `gc-terminal` are leaf crates with no other `gc-*` dependencies. `gc-suggest` depends on `gc-buffer` and `gc-config`. `gc-overlay` depends on `gc-suggest` and `gc-terminal`. `gc-pty` depends on every other crate and ties them all together.
 
 ## Key Design Decisions
 
@@ -139,15 +134,17 @@ The overlay and parser crates are strategy-driven — they query the profile for
 
 ## Proxy Task Architecture
 
-The PTY proxy runs three concurrent tokio tasks:
+The PTY proxy runs four concurrent worker tasks plus a main coordination loop:
 
-| Task | Role | Channel |
-|------|------|---------|
-| **Task A** (stdin reader) | Reads user keystrokes, intercepts popup navigation when visible, forwards to shell PTY | stdin → PTY master |
-| **Task B** (PTY reader) | Reads shell output, runs VT parser, detects triggers, renders popup, forwards to stdout | PTY master → stdout |
-| **Task D** (debounce timer) | Waits for typing pauses, fires delayed suggestion triggers | `tokio::sync::Notify` |
+| Task | Spawn type | Role |
+|------|-----------|------|
+| **Task A** (stdin reader) | `spawn_blocking` | Reads user keystrokes, intercepts popup navigation when visible, forwards to shell PTY |
+| **Task B** (PTY reader) | `spawn_blocking` | Reads shell output, runs VT parser, detects triggers, renders popup, forwards to stdout |
+| **Task C** (debounce timer) | `tokio::spawn` (only when `delay_ms > 0`) | Waits for typing pauses, fires delayed suggestion triggers |
+| **Task D** (merge loop) | `tokio::spawn` | Drains async generator results from an `mpsc` channel and merges them into the visible popup |
+| **Main loop** | `tokio::select!` | Waits on `SIGWINCH`, `SIGTERM`, `SIGHUP`, child exit, and the shutdown channel |
 
-Task B notifies Task D via `Notify` when the buffer is dirty but no immediate trigger fired. Task D resets its timer on each notification and fires a trigger after `delay_ms` (default 150ms) of inactivity.
+Task B notifies Task C via `tokio::sync::Notify` when the buffer is dirty but no immediate trigger fired. Task C resets its timer on each notification and fires a trigger after `delay_ms` (default 150ms) of inactivity. Task D consumes results posted by per-generator tasks so async output can land in an idle shell without waiting for the next keystroke.
 
 ## Completion Spec Architecture
 

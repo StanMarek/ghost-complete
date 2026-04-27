@@ -4,6 +4,8 @@
 **Branch:** `feature/phase-1-spike`
 **Status:** DONE — §1.6 exit deliverable
 
+> **See also:** `spike-recount-decision.md` (2026-04-22) — the qualifying-candidate count cited as **36** in §6 / §10 was reduced to **28** the next day after the T4 `authKeywords` heuristic was tightened. Treat that recount as the current authoritative number.
+
 ---
 
 ## §1 Executive Summary

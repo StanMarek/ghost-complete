@@ -30,10 +30,12 @@ Controls the popup appearance.
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `max_visible` | integer | `10` | Maximum number of suggestions shown at once |
+| `borders` | bool | `false` | Draw a border around the popup |
 
 ```toml
 [popup]
 max_visible = 10
+borders = false
 ```
 
 Popup width is calculated automatically from suggestion content, clamped between 20 and 60 columns.
@@ -46,14 +48,16 @@ Controls the suggestion engine behavior.
 |-------|------|---------|-------------|
 | `max_results` | integer | `50` | Maximum total candidates to consider |
 | `max_history_results` | integer | `5` | Maximum history entries shown in popup. Set to `0` to disable history. |
+| `generator_timeout_ms` | integer | `5000` | Per-invocation timeout (milliseconds) for script and git generators. |
 
 ```toml
 [suggest]
 max_results = 50
 max_history_results = 5
+generator_timeout_ms = 5000
 ```
 
-Shell history loads up to 10,000 entries. Script generators timeout after 5 seconds.
+Shell history loads up to 10,000 entries.
 
 ### `[suggest.providers]`
 
@@ -80,7 +84,7 @@ Override default file paths.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `spec_dirs` | string[] | `[]` | Additional directories to load completion specs from. When set, replaces the default `~/.config/ghost-complete/specs/`. Supports `~` expansion. |
+| `spec_dirs` | string[] | `[]` | Directories to load completion specs from. Supports `~` expansion. When empty, the loader auto-detects in this order: `~/.config/ghost-complete/specs/`, then `<exe-dir>/specs`, then `./specs`, then the embedded specs in the binary. When set, the configured directories are used instead — but if all of them are missing or unreadable, the loader falls back to the same auto-detection chain. |
 
 ```toml
 [paths]
@@ -140,12 +144,12 @@ match_highlight = "underline"
 
 #### Presets
 
-| Preset | Selected | Description | Match Highlight | Item Text | Scrollbar |
-|--------|----------|-------------|-----------------|-----------|-----------|
-| `dark` | `reverse` | `dim` | `bold` | *(none)* | `dim` |
-| `light` | `fg:#1e1e2e bg:#dce0e8 bold` | `fg:#6c6f85` | `fg:#d20f39 bold` | *(none)* | `fg:#9ca0b0` |
-| `catppuccin` | `fg:#cdd6f4 bg:#585b70 bold` | `fg:#6c7086` | `fg:#f9e2af bold` | *(none)* | `fg:#585b70` |
-| `material-darker` | `fg:#eeffff bg:#424242 bold` | `fg:#616161` | `fg:#ffcb6b bold` | *(none)* | `fg:#424242` |
+| Preset | Selected | Description | Match Highlight | Item Text | Scrollbar | Border |
+|--------|----------|-------------|-----------------|-----------|-----------|--------|
+| `dark` | `reverse` | `dim` | `bold` | *(none)* | `dim` | `dim` |
+| `light` | `fg:#1e1e2e bg:#dce0e8 bold` | `fg:#6c6f85` | `fg:#d20f39 bold` | *(none)* | `fg:#9ca0b0` | `fg:#9ca0b0` |
+| `catppuccin` | `fg:#cdd6f4 bg:#585b70 bold` | `fg:#6c7086` | `fg:#f9e2af bold` | *(none)* | `fg:#585b70` | `fg:#585b70` |
+| `material-darker` | `fg:#eeffff bg:#424242 bold` | `fg:#616161` | `fg:#ffcb6b bold` | *(none)* | `fg:#424242` | `fg:#424242` |
 
 All presets leave `item_text` unstyled (default terminal foreground). Override it to colorize non-selected items.
 

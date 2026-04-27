@@ -143,7 +143,7 @@ _Canonical machine-readable data: [oracle-results.json](./oracle-results.json)_
 | fail | 0 | 0.0% |
 | oracle_error | 719 | 69.3% |
 
-**Post-T7** (26 fixtures - 18 new authored in this task):
+**Post-T7** (30 fixture files in `correctness-audit/fixtures/`; 18 newly authored in this task on top of the 8 pre-T7 baseline + 4 pre-existing helpers):
 
 | Outcome | Count | % of safe subset |
 |---------|-------|-------------------|
