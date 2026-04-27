@@ -176,18 +176,26 @@ fn post_install_summary(config_dir: &Path, wrote_zshrc: bool) -> String {
     use std::fmt::Write as _;
     let mut out = String::new();
 
-    writeln!(
-        out,
-        "\x1b[32m\u{2713}\x1b[0m  ghost-complete installed successfully!"
-    )
-    .unwrap();
+    if wrote_zshrc {
+        writeln!(
+            out,
+            "\x1b[32m\u{2713}\x1b[0m  ghost-complete installed successfully!"
+        )
+        .unwrap();
+    } else {
+        writeln!(
+            out,
+            "\x1b[33m\u{26a0}\x1b[0m  ghost-complete partially installed (manual .zshrc step required)"
+        )
+        .unwrap();
+    }
     writeln!(out).unwrap();
 
     writeln!(out, "\x1b[1mNext steps:\x1b[0m").unwrap();
     if wrote_zshrc {
         writeln!(
             out,
-            "  1. Restart your shell:    \x1b[1msource ~/.zshrc\x1b[0m"
+            "  1. Reload your shell:     \x1b[1msource ~/.zshrc\x1b[0m"
         )
         .unwrap();
     } else {
@@ -204,7 +212,7 @@ fn post_install_summary(config_dir: &Path, wrote_zshrc: bool) -> String {
     .unwrap();
     writeln!(
         out,
-        "  3. Try it:                \x1b[1mcd /tmp && git \x1b[0m\x1b[2m[space]\x1b[0m"
+        "  3. Try it:                \x1b[1mcd /tmp && git\x1b[0m\x1b[2m  (then type a space)\x1b[0m"
     )
     .unwrap();
     writeln!(
@@ -1192,6 +1200,17 @@ mod tests {
             !summary.contains("source ~/.zshrc"),
             "manual-fallback summary must not instruct user to source a file \
              they didn't write to:\n{summary}"
+        );
+        // Headline must reflect the partial-install state — a green-check
+        // "installed successfully" headline would contradict the prior
+        // permission-denied warning the user just saw on screen.
+        assert!(
+            summary.contains("partially installed"),
+            "manual-fallback headline must signal the degraded state:\n{summary}"
+        );
+        assert!(
+            !summary.contains("installed successfully"),
+            "manual-fallback summary must not claim success:\n{summary}"
         );
     }
 
