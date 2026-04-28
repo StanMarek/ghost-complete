@@ -20,9 +20,7 @@ use serde::{Deserialize, Serialize};
 /// Cache file name (inside the state directory).
 const ALIAS_CACHE_FILE: &str = "aliases-cache.json";
 
-/// On-disk schema version for the alias cache. Bump whenever the shape
-/// of `CachedAliases` changes incompatibly. A mismatch on load returns
-/// `None`, forcing regeneration. See `load_alias_cache`.
+/// On-disk schema version; bump on incompatible CachedAliases changes.
 const CURRENT_ALIAS_CACHE_VERSION: u32 = 2;
 
 /// Source dotfiles whose mtimes invalidate the alias cache. If any exists
@@ -313,8 +311,6 @@ impl AliasStore {
         *guard = map;
     }
 
-    /// Builder-style alias install for non-test callers (integration tests,
-    /// benches, future API consumers). Replaces the current map atomically.
     #[doc(hidden)]
     pub fn install(&self, map: HashMap<String, Vec<String>>) {
         let mut guard = self.inner.write().unwrap_or_else(|e| e.into_inner());
@@ -359,9 +355,7 @@ pub fn parse_aliases(output: &str) -> HashMap<String, Vec<String>> {
             Some(toks) if !toks.is_empty() => toks,
             Some(_) => continue, // shlex parsed but produced nothing — empty value
             None => {
-                // Malformed value (e.g. unbalanced quote). Keep every
-                // whitespace-separated token so the user still sees the
-                // alias's general intent rather than dropping the line.
+                // Malformed shlex parse: keep raw whitespace tokens so the alias still surfaces partially.
                 tracing::debug!("shlex failed to parse alias value for {alias_name:?}: {value:?}");
                 let fallback: Vec<String> = value.split_whitespace().map(String::from).collect();
                 if fallback.is_empty() {
@@ -575,9 +569,6 @@ alias ll='ls -la'
 
     #[test]
     fn test_parse_double_quoted_with_inner_spaces() {
-        // shlex must collapse the inner double-quoted run into a single
-        // token: this is the difference between resolving a `git commit
-        // -m "wip"` alias correctly versus dropping the message.
         let output = "commit='git commit -m \"wip commit\"'\n";
         let aliases = parse_aliases(output);
         assert_eq!(
@@ -588,8 +579,6 @@ alias ll='ls -la'
 
     #[test]
     fn test_parse_escaped_space() {
-        // POSIX `\ ` joins two whitespace-separated chunks into a single
-        // token. shlex respects the backslash; split_whitespace would not.
         let output = "gx='git foo\\ bar'\n";
         let aliases = parse_aliases(output);
         assert_eq!(aliases.get("gx"), Some(&token_vec(&["git", "foo bar"])));
@@ -597,10 +586,6 @@ alias ll='ls -la'
 
     #[test]
     fn test_parse_falls_back_on_unbalanced_quote() {
-        // Malformed value: the unbalanced double-quote makes shlex return
-        // None. The fallback must keep every whitespace-separated token
-        // (not just the first), and the unaffected sibling alias must
-        // still load.
         let output = "broken=git \"open\nok=ls\n";
         let aliases = parse_aliases(output);
         assert_eq!(

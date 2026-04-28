@@ -10,9 +10,7 @@ use gc_suggest::history::HistoryProvider;
 use gc_suggest::types::SuggestionSource;
 use gc_suggest::{SpecStore, SuggestionEngine};
 
-/// Path to the workspace's `specs/` directory. Cargo runs integration
-/// tests with `CARGO_MANIFEST_DIR` set to the crate root, so we walk up
-/// two levels to reach the workspace root.
+/// CARGO_MANIFEST_DIR is the crate root, so walk up two levels to the workspace specs/.
 fn workspace_specs_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../specs")
 }
@@ -47,17 +45,12 @@ fn make_engine(aliases: HashMap<String, Vec<String>>) -> SuggestionEngine {
 
 #[test]
 fn alias_gco_resolves_to_git_checkout_branches() {
-    // `alias gco='git checkout'` is the canonical failure case. Without
-    // expansion, `gco main` lands on git's top-level subcommand list and
-    // never reaches the checkout subtree's git_branches generator.
     let aliases = HashMap::from([(
         "gco".to_string(),
         vec!["git".to_string(), "checkout".to_string()],
     )]);
     let engine = make_engine(aliases);
 
-    // Cursor sits on `main` after `gco `: command="gco", args=[],
-    // current_word="main", word_index=1.
     let ctx = ctx_with("gco", vec![], "main", 1);
     let result = engine
         .suggest_sync(&ctx, Path::new("/tmp"), "gco main")
@@ -192,5 +185,59 @@ fn alias_dev_to_ssh_walks_ssh_spec_subtree() {
     assert!(
         texts.iter().any(|t| *t == "-p" || *t == "-l"),
         "alias dev=ssh must surface ssh option flags like -p/-l; got {texts:?}",
+    );
+}
+
+#[test]
+fn alias_gco_flag_prefix_walks_git_checkout_options() {
+    // alias gco='git checkout': typing `gco -<TAB>` must surface git checkout's
+    // flag set (e.g. -b, -B, -t, --track), not git's top-level flags
+    // (--git-dir, --exec-path, --no-pager).
+    let aliases = HashMap::from([(
+        "gco".to_string(),
+        vec!["git".to_string(), "checkout".to_string()],
+    )]);
+    let engine = make_engine(aliases);
+
+    let ctx = ctx_with("gco", vec![], "-", 1);
+    let result = engine
+        .suggest_sync(&ctx, Path::new("/tmp"), "gco -")
+        .expect("suggest_sync must succeed");
+
+    let texts: Vec<&str> = result.suggestions.iter().map(|s| s.text.as_str()).collect();
+    let has_checkout_flag = texts
+        .iter()
+        .any(|t| matches!(*t, "-b" | "-B" | "-t" | "--track"));
+    assert!(
+        has_checkout_flag,
+        "alias gco='git checkout' must surface git checkout flags (-b/-B/-t/--track); got {texts:?}",
+    );
+    let has_top_level_only = texts
+        .iter()
+        .any(|t| matches!(*t, "--git-dir" | "--exec-path" | "--no-pager"));
+    assert!(
+        !has_top_level_only,
+        "alias gco='git checkout' must not leak git's top-level flags; got {texts:?}",
+    );
+}
+
+#[test]
+fn alias_to_unknown_command_does_not_leak_alias_name_spec() {
+    // alias git=somecmd-with-no-spec must NOT resolve to git's spec.
+    let aliases = HashMap::from([("git".to_string(), vec!["somecmd-with-no-spec".to_string()])]);
+    let engine = make_engine(aliases);
+
+    let ctx = ctx_with("git", vec![], "foo", 1);
+    let result = engine
+        .suggest_sync(&ctx, Path::new("/tmp"), "git foo")
+        .expect("suggest_sync must succeed");
+
+    let texts: Vec<&str> = result.suggestions.iter().map(|s| s.text.as_str()).collect();
+    let has_git_subcommand = texts
+        .iter()
+        .any(|t| matches!(*t, "checkout" | "rebase" | "branch" | "commit"));
+    assert!(
+        !has_git_subcommand,
+        "alias to an unknown spec must not leak git's subcommands; got {texts:?}",
     );
 }
