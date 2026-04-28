@@ -27,6 +27,38 @@ _gc_urlencode_path() {
     printf '%s' "$encoded"
 }
 
+# Percent-encode a command-line buffer for OSC 7772 transport.
+#
+# STRICTER alphabet than _gc_urlencode_path: only [a-zA-Z0-9._~/-] and the
+# literal space pass through. Everything else — including ';', '%', '\',
+# all control bytes (0x00-0x1F, 0x7F) and high bytes (0x80-0xFF) — gets
+# `%XX`-encoded. This is non-negotiable: any unencoded ';' would split
+# the OSC parameter list and silently truncate the buffer at the parser;
+# any unencoded BEL (0x07) or ESC+ST (0x1B 0x5C) would terminate the OSC
+# envelope mid-payload; an unencoded ESC could smuggle a nested escape
+# sequence into the parser's state machine. See ADR 0003.
+#
+# Do NOT widen the allow-list. If a future use case wants more characters
+# unencoded, weigh it against the cost of re-introducing the original
+# truncation/smuggling bug class and reject it anyway.
+_gc_urlencode_buffer() {
+    local input="$1" encoded="" i ch hex
+    local LC_ALL=C  # byte-level iteration so multi-byte UTF-8 round-trips
+    for (( i = 1; i <= ${#input}; i++ )); do
+        ch="${input[$i]}"
+        case "$ch" in
+            ' '|[a-zA-Z0-9._~/-])
+                encoded+="$ch"
+                ;;
+            *)
+                printf -v hex '%%%02X' "'$ch"
+                encoded+="$hex"
+                ;;
+        esac
+    done
+    printf '%s' "$encoded"
+}
+
 # True when the host terminal natively parses OSC 133 for its own prompt
 # tracking (or emits its own proprietary markers on top, like VSCode's
 # OSC 633). In those terminals our OSC 7771 fallback is redundant — the
@@ -75,10 +107,21 @@ _gc_osc7_precmd() {
     add-zsh-hook -d precmd _gc_osc7_precmd
 }
 
-# Report current command buffer to the proxy via custom OSC 7770.
+# Report current command buffer to the proxy via OSC 7772 (secure framing).
 # Fires after every buffer modification (typing, deletion, cursor movement, paste).
+#
+# Do NOT inline `$BUFFER` raw into the OSC payload. See ADR 0003.
+# Raw bytes corrupt the OSC envelope when `$BUFFER` contains `;`, `\a`,
+# or `\e`: vte splits OSC params on `;`, BEL terminates the envelope, and
+# embedded `\e]…\a` smuggles a nested OSC into the parser's state machine.
+#
+# The legacy OSC 7770 emission is gone. The parser still accepts 7770
+# during the deprecation window but logs a one-shot warn! to nudge the
+# user (or distro packager) towards a fresh shell integration.
 _gc_report_buffer() {
-    printf '\e]7770;%d;%s\a' "$CURSOR" "$BUFFER"
+    local encoded
+    encoded="$(_gc_urlencode_buffer "$BUFFER")"
+    printf '\e]7772;%d;%s\a' "$CURSOR" "$encoded"
 }
 
 # Chain into the existing zle-line-pre-redraw widget without using

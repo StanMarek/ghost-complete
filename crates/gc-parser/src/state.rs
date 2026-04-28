@@ -46,6 +46,13 @@ pub struct TerminalState {
     cwd_dirty: bool,
     cursor_sync_requested: bool,
     cpr_synced: bool,
+    /// One-shot guard so the deprecation warning for the legacy OSC 7770
+    /// raw-framing path fires at most once per `TerminalState` instance.
+    /// Subsequent legacy dispatches downgrade to a `trace!` line so a stale
+    /// shell does not spam the proxy log on every keystroke. Production
+    /// currently constructs a single parser per proxy session, so this is
+    /// effectively per-process. See ADR 0003.
+    legacy_osc7770_warned: bool,
     /// FIFO queue of pending CPR requests in send-order.
     ///
     /// Terminals respond to `CSI 6n` requests in the same order they
@@ -77,8 +84,23 @@ impl TerminalState {
             cwd_dirty: false,
             cursor_sync_requested: false,
             cpr_synced: false,
+            legacy_osc7770_warned: false,
             cpr_queue: VecDeque::new(),
             next_cpr_id: 0,
+        }
+    }
+
+    /// Returns true the first time it is called per `TerminalState`,
+    /// false thereafter. Used by the OSC 7770 (legacy) dispatch to log a
+    /// one-shot deprecation warning while downgrading repeated hits to
+    /// `trace!` to avoid spamming the log when a stale shell is talking
+    /// to a new binary. Idempotent after first call. See ADR 0003.
+    pub(crate) fn check_and_set_legacy_osc7770_warned(&mut self) -> bool {
+        if self.legacy_osc7770_warned {
+            false
+        } else {
+            self.legacy_osc7770_warned = true;
+            true
         }
     }
 
@@ -590,5 +612,27 @@ mod tests {
         assert_eq!(dropped, 1);
         assert_eq!(state.cpr_queue_len(), 1);
         assert_eq!(state.claim_next_cpr(), Some(CprOwner::Shell));
+    }
+
+    #[test]
+    fn check_and_set_legacy_osc7770_warned_is_one_shot() {
+        let mut s = TerminalState::new(24, 80);
+        assert!(
+            s.check_and_set_legacy_osc7770_warned(),
+            "first call returns true"
+        );
+        assert!(
+            !s.check_and_set_legacy_osc7770_warned(),
+            "second call returns false"
+        );
+        assert!(
+            !s.check_and_set_legacy_osc7770_warned(),
+            "third call still false"
+        );
+        s.update_dimensions(48, 120);
+        assert!(
+            !s.check_and_set_legacy_osc7770_warned(),
+            "resize must not reset"
+        );
     }
 }

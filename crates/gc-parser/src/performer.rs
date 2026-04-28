@@ -216,9 +216,87 @@ impl Perform for TerminalState {
                     }
                 }
             }
-            // OSC 7770 — Ghost Complete buffer report
-            b"7770" => {
+            // OSC 7772 — Ghost Complete buffer report (percent-encoded, secure framing).
+            //
+            // See `docs/adr/0003-osc7772-buffer-framing.md`. Replaces the
+            // raw 7770 framing whose `;`/`\a`/`\e` bytes silently
+            // truncated buffers and could smuggle nested OSC sequences.
+            //
+            //   params[0] = "7772"
+            //   params[1] = cursor position (decimal char count)
+            //   params[2] = percent-encoded UTF-8 buffer
+            //
+            // Anything malformed (bad cursor int, bad escape, non-UTF-8
+            // payload) drops the frame (logs a `tracing::warn!`; prior
+            // buffer state untouched).
+            b"7772" => {
                 if params.len() < 3 {
+                    // The production zsh emitter always emits 3 params (even
+                    // for an empty buffer); short params indicate a buggy
+                    // emitter or hostile input. Sibling rejection arms below
+                    // (cursor-parse, percent-decode, UTF-8) all `warn!`, so
+                    // RUST_LOG=warn operators see broken-shell conditions.
+                    tracing::warn!(
+                        params_len = params.len(),
+                        "OSC 7772 — missing payload param, dropping frame"
+                    );
+                    return;
+                }
+                let cursor = match std::str::from_utf8(params[1])
+                    .ok()
+                    .and_then(|s| s.parse::<usize>().ok())
+                {
+                    Some(c) => c,
+                    None => {
+                        tracing::warn!(
+                            "OSC 7772 — invalid cursor position, skipping buffer update"
+                        );
+                        return;
+                    }
+                };
+                let decoded = match percent_decode_buffer(params[2]) {
+                    Some(bytes) => bytes,
+                    None => {
+                        tracing::warn!("OSC 7772 — malformed percent escape in payload, skipping");
+                        return;
+                    }
+                };
+                let buffer = match String::from_utf8(decoded) {
+                    Ok(s) => s,
+                    Err(_) => {
+                        tracing::warn!(
+                            "OSC 7772 — invalid UTF-8 after decode, skipping buffer update"
+                        );
+                        return;
+                    }
+                };
+                tracing::debug!(cursor, "OSC 7772 — buffer update");
+                self.set_command_buffer(buffer, cursor);
+            }
+            // OSC 7770 — Ghost Complete buffer report (LEGACY raw framing).
+            //
+            // DEPRECATED: this path is structurally unsafe. vte splits OSC
+            // params on `;`, so a buffer like `if true; then` is silently
+            // truncated at the first semicolon, and embedded `\a` / `\e]`
+            // bytes can prematurely terminate the OSC envelope or smuggle
+            // a nested OSC into the parser. New shell integrations emit
+            // OSC 7772 (percent-encoded) instead. See ADR 0003.
+            //
+            // Decoding/state-update logic is unchanged; only logging now
+            // flags the legacy framing (one-shot `warn!` on first hit per
+            // parser instance, `trace!` thereafter). Slated for removal at
+            // v0.12.0.
+            b"7770" => {
+                if self.check_and_set_legacy_osc7770_warned() {
+                    tracing::warn!(
+                        "OSC 7770 (legacy raw framing) received — upgrade your shell \
+                         integration. See docs/adr/0003-osc7772-buffer-framing.md."
+                    );
+                } else {
+                    tracing::trace!("OSC 7770 (legacy) — buffer update");
+                }
+                if params.len() < 3 {
+                    tracing::debug!("OSC 7770 — short params, dropping");
                     return;
                 }
                 let cursor = match std::str::from_utf8(params[1])
@@ -240,7 +318,6 @@ impl Perform for TerminalState {
                         return;
                     }
                 };
-                tracing::debug!(cursor, "OSC 7770 — buffer update");
                 self.set_command_buffer(buffer, cursor);
             }
             // OSC 7 — current working directory
@@ -349,6 +426,35 @@ fn percent_decode_path(input: &str) -> PathBuf {
     }
     use std::os::unix::ffi::OsStrExt;
     PathBuf::from(std::ffi::OsStr::from_bytes(&bytes))
+}
+
+/// Percent-decode an OSC 7772 buffer payload.
+///
+/// Returns `None` on:
+///   - invalid hex digit in `%XX`
+///   - truncated `%` at end of input
+///
+/// This is intentionally STRICTER than [`percent_decode_path`]: a buffer
+/// payload should round-trip exactly, so any malformed escape is a
+/// transport error and the whole frame is dropped. The OSC 7 path
+/// (filesystem URIs) instead preserves malformed bytes literally because
+/// "best-effort partial CWD" is a sensible degradation, but for command
+/// buffers the only safe action is to ignore the report.
+fn percent_decode_buffer(input: &[u8]) -> Option<Vec<u8>> {
+    let mut out = Vec::with_capacity(input.len());
+    let mut iter = input.iter().copied();
+    while let Some(b) = iter.next() {
+        if b == b'%' {
+            let hi = iter.next()?;
+            let lo = iter.next()?;
+            let h = hex_val(hi)?;
+            let l = hex_val(lo)?;
+            out.push((h << 4) | l);
+        } else {
+            out.push(b);
+        }
+    }
+    Some(out)
 }
 
 fn hex_val(b: u8) -> Option<u8> {
@@ -949,6 +1055,44 @@ mod tests {
         );
     }
 
+    // -- percent_decode_buffer (strict: rejects malformed escapes) --
+
+    #[test]
+    fn percent_decode_buffer_empty() {
+        assert_eq!(percent_decode_buffer(b""), Some(Vec::new()));
+    }
+
+    #[test]
+    fn percent_decode_buffer_no_encoding() {
+        assert_eq!(percent_decode_buffer(b"abc xyz"), Some(b"abc xyz".to_vec()));
+    }
+
+    #[test]
+    fn percent_decode_buffer_single_escape() {
+        assert_eq!(percent_decode_buffer(b"%20"), Some(b" ".to_vec()));
+    }
+
+    #[test]
+    fn percent_decode_buffer_mixed() {
+        // `if true; then` with `;` encoded.
+        assert_eq!(
+            percent_decode_buffer(b"if true%3B then"),
+            Some(b"if true; then".to_vec())
+        );
+    }
+
+    #[test]
+    fn percent_decode_buffer_invalid_hex_rejected() {
+        assert_eq!(percent_decode_buffer(b"ab%zz"), None);
+        assert_eq!(percent_decode_buffer(b"ab%2g"), None);
+    }
+
+    #[test]
+    fn percent_decode_buffer_truncated_rejected() {
+        assert_eq!(percent_decode_buffer(b"ab%"), None);
+        assert_eq!(percent_decode_buffer(b"ab%2"), None);
+    }
+
     // -- OSC 7770 buffer cursor clamping --
 
     #[test]
@@ -985,7 +1129,33 @@ mod tests {
         assert_eq!(result, expected);
     }
 
-    // -- OSC 7770 UTF-8 rejection --
+    // -- OSC 7770 legacy framing tests --
+
+    // LEGACY: this test pins the OSC 7770 truncation bug deliberately —
+    // the parser still accepts the 7770 framing for one deprecation cycle
+    // even though it is structurally broken. Slated for `#[ignore]` at
+    // v0.11.0 and deletion at v0.12.0, once stale shells have been pushed
+    // to the OSC 7772 framing. See ADR 0003 and
+    // `osc7772_regression_pin_canonical_bug_witness` below for the positive
+    // case the new framing fixes.
+    //
+    // vte splits OSC parameters on `;`, so a buffer like `if true; then`
+    // becomes a 4-param OSC: `params[2] = "if true"`, `params[3] = " then"`.
+    // The 7770 dispatch arm only reads `params[2]`, silently truncating
+    // the buffer at the first semicolon.
+    #[test]
+    fn osc7770_legacy_truncates_on_semicolon_documented() {
+        let mut p = make_parser();
+        p.process_bytes(b"\x1b]7770;14;if true; then\x07");
+        assert_eq!(
+            p.state().command_buffer(),
+            Some("if true"),
+            "legacy OSC 7770 truncates at first ';' — see ADR 0003"
+        );
+        // Cursor was 14 (one past the end of the full 13-char buffer);
+        // clamped to the truncated buffer length 7.
+        assert_eq!(p.state().buffer_cursor(), 7);
+    }
 
     #[test]
     fn test_osc7770_invalid_utf8_rejected() {
@@ -1049,5 +1219,280 @@ mod tests {
         let mut p = make_parser();
         p.process_bytes(b"\x1b[?6n");
         assert_eq!(p.state().cpr_queue_len(), 0);
+    }
+
+    // -- OSC 7772 buffer reporting (secure framing) --
+    //
+    // These tests own the canonical encoding contract. `encode_for_test`
+    // is the spec the production zsh emitter MUST match byte-for-byte.
+    // The decoder under test (`percent_decode_buffer`) MUST invert it
+    // exactly. Any divergence between encoder allow-list and decoder
+    // semantics shows up here first.
+
+    /// Encode a byte slice for OSC 7772 transport. The allow-list mirrors
+    /// `_gc_urlencode_buffer` in `shell/ghost-complete.zsh`:
+    ///   unreserved bytes:  `[A-Za-z0-9._~/-]` and ` ` (literal space)
+    ///   everything else  → `%XX` (uppercase hex)
+    /// In particular `;`, `\x07`, `\x1B`, `%`, `\\`, `\x00`, control bytes,
+    /// `0x7F`, and `0x80`–`0xFF` are all encoded.
+    fn encode_for_test(input: &[u8]) -> Vec<u8> {
+        const HEX: &[u8; 16] = b"0123456789ABCDEF";
+        let mut out = Vec::with_capacity(input.len());
+        for &b in input {
+            let safe = matches!(b,
+                b'a'..=b'z'
+                    | b'A'..=b'Z'
+                    | b'0'..=b'9'
+                    | b'.' | b'_' | b'~' | b'/' | b'-' | b' '
+            );
+            if safe {
+                out.push(b);
+            } else {
+                out.push(b'%');
+                out.push(HEX[(b >> 4) as usize]);
+                out.push(HEX[(b & 0x0F) as usize]);
+            }
+        }
+        out
+    }
+
+    /// Wrap an already-encoded payload in the OSC 7772 envelope.
+    fn build_osc7772(buffer: &[u8], cursor_chars: usize) -> Vec<u8> {
+        let mut env = Vec::with_capacity(buffer.len() * 3 + 16);
+        env.extend_from_slice(b"\x1b]7772;");
+        env.extend_from_slice(cursor_chars.to_string().as_bytes());
+        env.push(b';');
+        env.extend_from_slice(&encode_for_test(buffer));
+        env.push(0x07);
+        env
+    }
+
+    fn assert_roundtrips(buffer: &str) {
+        let mut p = make_parser();
+        let cursor = buffer.chars().count();
+        p.process_bytes(&build_osc7772(buffer.as_bytes(), cursor));
+        assert_eq!(p.state().command_buffer(), Some(buffer));
+        assert_eq!(p.state().buffer_cursor(), cursor);
+    }
+
+    #[test]
+    fn osc7772_roundtrips_semicolon() {
+        assert_roundtrips("if true; then");
+    }
+
+    // Pre-OSC-7772 framing truncated this buffer at the first `;`,
+    // surfacing as wrong completion candidates the moment a user typed
+    // any composite statement (see ADR 0003 §Context). Asserting
+    // whole-buffer reconstruction here keeps that regression visible —
+    // if this ever fails, the encoder/decoder contract has drifted and
+    // `cargo test` is the loud failure.
+    #[test]
+    fn osc7772_regression_pin_canonical_bug_witness() {
+        assert_roundtrips("if true; then echo a; fi");
+    }
+
+    #[test]
+    fn osc7772_roundtrips_bel() {
+        assert_roundtrips("x\x07y");
+    }
+
+    #[test]
+    fn osc7772_roundtrips_esc() {
+        assert_roundtrips("\x1b[31m");
+    }
+
+    #[test]
+    fn osc7772_roundtrips_nul() {
+        assert_roundtrips("a\x00b");
+    }
+
+    #[test]
+    fn osc7772_roundtrips_embedded_st() {
+        assert_roundtrips("foo\x1b\\bar");
+    }
+
+    #[test]
+    fn osc7772_roundtrips_long_8k() {
+        // Deterministic 8 KiB ASCII pattern that exercises every byte the
+        // emitter must encode (`;`, `%`, `\\`, control bytes) plus the
+        // allowed unreserved alphabet. `cycle()` keeps the test offline
+        // and reproducible without pulling a PRNG dependency.
+        let pattern: &[u8] = b"a;b\\c%d e/f.g_h~i-j0 1\x07 \x1b2.3_4-5/6~7 8 9";
+        let buf: Vec<u8> = pattern.iter().cycle().take(8192).copied().collect();
+        let s = std::str::from_utf8(&buf).expect("ASCII fixture is valid UTF-8");
+        assert_roundtrips(s);
+    }
+
+    #[test]
+    fn osc7772_roundtrips_utf8_cjk() {
+        assert_roundtrips("日本語");
+    }
+
+    #[test]
+    fn osc7772_roundtrips_empty() {
+        let mut p = make_parser();
+        p.process_bytes(&build_osc7772(b"", 0));
+        assert_eq!(p.state().command_buffer(), Some(""));
+        assert_eq!(p.state().buffer_cursor(), 0);
+    }
+
+    #[test]
+    fn osc7772_roundtrips_already_encoded_alphabet() {
+        // The user typed the literal characters `abc%20def`. The encoder
+        // must encode `%` as `%25` so the decoder yields back `abc%20def`,
+        // not `abc def`. This pins "the decoder runs exactly once."
+        assert_roundtrips("abc%20def");
+    }
+
+    #[test]
+    fn osc7772_rejects_invalid_percent_escape() {
+        let mut p = make_parser();
+        // Establish a known-good prior buffer state.
+        p.process_bytes(&build_osc7772(b"prior", 5));
+        assert_eq!(p.state().command_buffer(), Some("prior"));
+        // Drain the dirty flag so the next assertion measures only the
+        // rejected frame's effect on it. This pin is canonical for the
+        // rejection family — gc-pty uses `take_buffer_dirty()` to gate
+        // suggestion recomputes; a regression that flagged dirty on a
+        // dropped frame would silently fire spurious recomputes.
+        assert!(p.state_mut().take_buffer_dirty());
+        // `%zz` has invalid hex digits — the whole frame must be rejected.
+        p.process_bytes(b"\x1b]7772;3;ab%zz\x07");
+        assert_eq!(
+            p.state().command_buffer(),
+            Some("prior"),
+            "invalid percent escape must leave state untouched"
+        );
+        assert_eq!(p.state().buffer_cursor(), 5);
+        assert!(
+            !p.state_mut().take_buffer_dirty(),
+            "rejected frame must not flip the buffer-dirty flag"
+        );
+        // Recovery path: a subsequent valid frame must still apply. A
+        // regression that latched a 'parser broken' bit would not be
+        // caught without this assertion.
+        p.process_bytes(&build_osc7772(b"after", 5));
+        assert_eq!(p.state().command_buffer(), Some("after"));
+        assert_eq!(p.state().buffer_cursor(), 5);
+    }
+
+    #[test]
+    fn osc7772_rejects_truncated_percent() {
+        let mut p = make_parser();
+        p.process_bytes(&build_osc7772(b"prior", 5));
+        p.process_bytes(b"\x1b]7772;2;ab%\x07");
+        assert_eq!(p.state().command_buffer(), Some("prior"));
+        assert_eq!(p.state().buffer_cursor(), 5);
+    }
+
+    #[test]
+    fn osc7772_rejects_invalid_utf8_after_decode() {
+        let mut p = make_parser();
+        p.process_bytes(&build_osc7772(b"prior", 5));
+        // Bytes 0xFF 0xFE 0x80 are decoded successfully but are not valid
+        // UTF-8. Mirror the legacy 7770 path: silently drop, no replace
+        // characters, no buffer mutation.
+        p.process_bytes(b"\x1b]7772;3;%FF%FE%80\x07");
+        assert_eq!(p.state().command_buffer(), Some("prior"));
+        assert_eq!(p.state().buffer_cursor(), 5);
+    }
+
+    #[test]
+    fn osc7772_security_no_nested_osc7_dispatch() {
+        // Defense in depth: a buffer whose decoded value LOOKS like an
+        // OSC 7 (`\e]7;file:///etc/passwd\a`) must NOT update CWD. The
+        // decoded bytes go straight into `set_command_buffer`; they never
+        // re-enter the VTE state machine.
+        let mut p = make_parser();
+        assert_eq!(p.state().cwd(), None);
+        let smuggled = b"\x1b]7;file:///etc/passwd\x07";
+        let cursor = std::str::from_utf8(smuggled).unwrap().chars().count();
+        p.process_bytes(&build_osc7772(smuggled, cursor));
+        assert_eq!(
+            p.state().cwd(),
+            None,
+            "OSC 7772 payload must not re-enter the VTE state machine"
+        );
+        // The buffer itself reconstructs byte-for-byte.
+        assert_eq!(
+            p.state().command_buffer(),
+            Some(std::str::from_utf8(smuggled).unwrap())
+        );
+    }
+
+    #[test]
+    fn osc7772_does_not_disturb_terminal_cursor() {
+        let mut p = make_parser();
+        p.process_bytes(b"hello");
+        let before = p.state().cursor_position();
+        p.process_bytes(&build_osc7772(b"if true; then", 13));
+        p.process_bytes(b" world");
+        assert_eq!(p.state().cursor_position(), (before.0, before.1 + 6));
+        assert_eq!(p.state().command_buffer(), Some("if true; then"));
+    }
+
+    #[test]
+    fn osc7772_rejects_non_numeric_cursor() {
+        let mut p = make_parser();
+        p.process_bytes(&build_osc7772(b"prior", 5));
+        p.process_bytes(b"\x1b]7772;notanumber;abc\x07");
+        assert_eq!(p.state().command_buffer(), Some("prior"));
+        assert_eq!(p.state().buffer_cursor(), 5);
+    }
+
+    #[test]
+    fn osc7772_rejects_negative_cursor() {
+        let mut p = make_parser();
+        p.process_bytes(&build_osc7772(b"prior", 5));
+        p.process_bytes(b"\x1b]7772;-1;abc\x07");
+        assert_eq!(p.state().command_buffer(), Some("prior"));
+        assert_eq!(p.state().buffer_cursor(), 5);
+    }
+
+    #[test]
+    fn osc7772_rejects_missing_params() {
+        let mut p = make_parser();
+        p.process_bytes(&build_osc7772(b"prior", 5));
+        p.process_bytes(b"\x1b]7772;5\x07");
+        assert_eq!(p.state().command_buffer(), Some("prior"));
+        assert_eq!(p.state().buffer_cursor(), 5);
+        p.process_bytes(b"\x1b]7772\x07");
+        assert_eq!(p.state().command_buffer(), Some("prior"));
+        assert_eq!(p.state().buffer_cursor(), 5);
+    }
+
+    #[test]
+    fn osc7772_cursor_clamped_to_buffer_length() {
+        let mut p = make_parser();
+        p.process_bytes(&build_osc7772(b"abc", 9999));
+        assert_eq!(p.state().command_buffer(), Some("abc"));
+        assert_eq!(p.state().buffer_cursor(), 3);
+    }
+
+    #[test]
+    fn osc7772_cursor_zero_valid() {
+        let mut p = make_parser();
+        p.process_bytes(&build_osc7772(b"hello", 0));
+        assert_eq!(p.state().buffer_cursor(), 0);
+    }
+
+    #[test]
+    fn osc7770_legacy_dispatch_continues_after_warn_flag_flips() {
+        // Three legacy frames in a row with DIFFERENT cursor/buffer values
+        // and per-frame assertions: the one-shot warn flag flips on the
+        // first, but state updates must continue for every dispatch. A
+        // regression that silently dropped frames 1 or 2 would slip past a
+        // final-only assertion (frame 3 happens to leave the same end
+        // state); per-frame pins catch the silent drop.
+        let mut p = make_parser();
+        p.process_bytes(b"\x1b]7770;2;ab\x07");
+        assert_eq!(p.state().command_buffer(), Some("ab"));
+        assert_eq!(p.state().buffer_cursor(), 2);
+        p.process_bytes(b"\x1b]7770;4;abcd\x07");
+        assert_eq!(p.state().command_buffer(), Some("abcd"));
+        assert_eq!(p.state().buffer_cursor(), 4);
+        p.process_bytes(b"\x1b]7770;6;abcdef\x07");
+        assert_eq!(p.state().command_buffer(), Some("abcdef"));
+        assert_eq!(p.state().buffer_cursor(), 6);
     }
 }

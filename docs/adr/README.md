@@ -30,6 +30,7 @@ that, it probably belongs in `docs/ARCHITECTURE.md` instead.
 | -------------------------------------------- | -------------------------------------- | -------- |
 | [0001](0001-pty-proxy-vs-plugin.md)          | PTY proxy over shell plugin            | Accepted |
 | [0002](0002-vte-vs-vt100.md)                 | Parser-only VT tracking via `vte`      | Accepted |
+| [0003](0003-osc7772-buffer-framing.md)       | OSC 7772 percent-encoded buffer framing | Accepted |
 
 When you add a new ADR, append a row to this index and bump the next `NNNN`.
 
