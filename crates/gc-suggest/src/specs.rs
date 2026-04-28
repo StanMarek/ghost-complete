@@ -314,6 +314,24 @@ pub enum SuggestionEntry {
     Object(SuggestionObject),
 }
 
+impl SuggestionEntry {
+    /// Returns true if this entry has no usable name.
+    ///
+    /// Covers both the empty-array case (`name: []`) and the blank-string case
+    /// (`name: ""` or whitespace-only).  For an Object with any empty/whitespace
+    /// name the whole entry is dropped — this is conservative but correct for
+    /// the specs we know about.  If a future spec legitimately uses
+    /// `["valid", ""]` with an intentional empty alias, loosen this check then.
+    fn is_empty_name(&self) -> bool {
+        match self {
+            SuggestionEntry::Plain(s) => s.trim().is_empty(),
+            SuggestionEntry::Object(o) => {
+                o.name.is_empty() || o.name.iter().any(|n| n.trim().is_empty())
+            }
+        }
+    }
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct SuggestionObject {
     #[serde(default, deserialize_with = "deserialize_name_one_or_many")]
@@ -855,6 +873,23 @@ fn validate_arg_generators(arg_spec: &mut ArgSpec, spec_name: &str, warnings: &m
         tracing::warn!(
             "{spec_name}: removed {} generator(s) with invalid transform pipelines",
             original_len - arg_spec.generators.len()
+        );
+    }
+
+    let original_suggestions_len = arg_spec.suggestions.len();
+    arg_spec.suggestions.retain(|entry| {
+        if entry.is_empty_name() {
+            warnings.push(format!(
+                "suggestion in {spec_name} has empty name; dropping"
+            ));
+            return false;
+        }
+        true
+    });
+    if arg_spec.suggestions.len() < original_suggestions_len {
+        tracing::warn!(
+            "{spec_name}: removed {} suggestion(s) with empty names",
+            original_suggestions_len - arg_spec.suggestions.len()
         );
     }
 }
@@ -2336,7 +2371,11 @@ mod tests {
             SuggestionEntry::Plain(s) => assert_eq!(s, "ok"),
             _ => panic!("expected Plain(\"ok\")"),
         }
-        assert_eq!(warnings.len(), 2, "expected two warnings (one per empty entry)");
+        assert_eq!(
+            warnings.len(),
+            2,
+            "expected two warnings (one per empty entry)"
+        );
         for w in &warnings {
             assert!(
                 w.contains('x'),
