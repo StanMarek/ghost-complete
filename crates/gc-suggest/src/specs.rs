@@ -708,21 +708,26 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
         }
     }
 
-    // Also check positional arg specs at the resolved position
-    for arg_spec in current_args {
-        collect_generators(
-            &arg_spec.generators,
-            &mut native_generators,
-            &mut provider_generators,
-            &mut script_generators,
-            &mut wants_filepaths,
-            &mut wants_folders_only,
-        );
-        collect_static_suggestions(&arg_spec.suggestions, &mut static_suggestions);
-        match arg_spec.template.as_deref() {
-            Some("filepaths") => wants_filepaths = true,
-            Some("folders") => wants_folders_only = true,
-            _ => {}
+    // Check positional arg specs at the resolved position, but only when
+    // not filling a flag argument. When `preceding_flag_has_args` is true,
+    // the user is supplying the flag's value — positional arg specs are
+    // irrelevant and their suggestions would pollute the candidate set.
+    if !preceding_flag_has_args {
+        for arg_spec in current_args {
+            collect_generators(
+                &arg_spec.generators,
+                &mut native_generators,
+                &mut provider_generators,
+                &mut script_generators,
+                &mut wants_filepaths,
+                &mut wants_folders_only,
+            );
+            collect_static_suggestions(&arg_spec.suggestions, &mut static_suggestions);
+            match arg_spec.template.as_deref() {
+                Some("filepaths") => wants_filepaths = true,
+                Some("folders") => wants_folders_only = true,
+                _ => {}
+            }
         }
     }
 

@@ -881,7 +881,7 @@ impl SuggestionEngine {
             wants_folders_only,
             preceding_flag_has_args,
             past_double_dash,
-            ..
+            static_suggestions,
         } = specs::resolve_spec(spec, resolve_ctx.as_ref());
 
         let git_generators = self.git_generators_from(&native_generators);
@@ -895,6 +895,11 @@ impl SuggestionEngine {
             candidates.extend(subcommands);
             candidates.extend(options);
         }
+
+        // Static `args.suggestions` are values for an arg position, not commands —
+        // they MUST surface even when `suppress_commands` is true (preceding flag
+        // has args, or past `--`). Keep this extend OUTSIDE the suppression guard.
+        candidates.extend(static_suggestions);
 
         if wants_folders_only && self.providers_filesystem {
             self.extend_with_folders(ctx, cwd, &mut candidates);
