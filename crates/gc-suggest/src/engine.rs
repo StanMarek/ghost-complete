@@ -7,6 +7,7 @@ use gc_buffer::CommandContext;
 use tokio::sync::Semaphore;
 
 use crate::alias::AliasStore;
+use crate::alias_expand::expand_alias_for_spec;
 use crate::cache::{CacheKey, GeneratorCache};
 use crate::commands::CommandsProvider;
 use crate::env::EnvProvider;
@@ -781,17 +782,18 @@ impl SuggestionEngine {
         let Some(cache) = self.ssh_host_cache.as_ref() else {
             return;
         };
-        let Some(cmd) = ctx.command.as_ref() else {
+        if ctx.command.is_none() {
             return;
+        }
+        // Resolve `alias dev='ssh prod.example.com'` so typing `dev <TAB>`
+        // gates ssh-host injection on the alias's true target. The
+        // expander returns `None` only when `word_index == 0` (typing the
+        // alias name itself) — we already bail on that below — so the
+        // explicit `Some(_)` branch is the alias-or-pass-through path.
+        let resolved_cmd: String = match expand_alias_for_spec(ctx, &self.alias_map) {
+            Some(exp) => exp.resolved_command.into_owned(),
+            None => return,
         };
-        // Task 5 swaps this for `expand_alias_for_spec`; in the meantime,
-        // peel the head token off the resolved Vec so behaviour matches
-        // the pre-Task-2 `Option<String>` shape.
-        let resolved_owned = self
-            .alias_map
-            .get(cmd.as_str())
-            .and_then(|tokens| tokens.into_iter().next());
-        let resolved_cmd = resolved_owned.as_deref().unwrap_or(cmd.as_str());
         if resolved_cmd != "ssh" || ctx.word_index == 0 || ctx.is_flag {
             return;
         }
@@ -817,14 +819,18 @@ impl SuggestionEngine {
             return None;
         }
         let command = ctx.command.as_ref()?;
-        // Task 5 routes this through `expand_alias_for_spec`; for now keep
-        // single-token semantics by peeling the head off the resolved Vec.
-        let resolved_owned = self
-            .alias_map
-            .get(command.as_str())
-            .and_then(|tokens| tokens.into_iter().next());
-        let resolved = resolved_owned.as_deref().unwrap_or(command.as_str());
-        self.spec_store.get(resolved)
+        // Walk the alias map first so multi-word aliases land the right
+        // spec — `gco='git checkout'` should resolve to git's spec, not
+        // attempt a literal `gco` lookup.
+        if let Some(expanded) = expand_alias_for_spec(ctx, &self.alias_map) {
+            if let Some(spec) = self.spec_store.get(expanded.resolved_command.as_ref()) {
+                return Some(spec);
+            }
+        }
+        // Fall through: an alias whose head doesn't have a spec, or
+        // word_index == 0 (typing the alias name itself) — try the
+        // literal command name so `git` itself still resolves.
+        self.spec_store.get(command.as_str())
     }
 
     /// Look up the spec for `ctx.command_name` and append its synchronous
@@ -848,6 +854,34 @@ impl SuggestionEngine {
             return Err(candidates);
         };
 
+        // For multi-word aliases (`alias gco='git checkout'`) we need to
+        // walk the spec tree as if the user had typed the expansion —
+        // otherwise `git checkout`'s args are lost and branch generators
+        // never fire. Build a synthetic ctx with the alias-tail prepended
+        // to args; current_word and the rest of the cursor metadata stay
+        // pinned to the literal buffer so fuzzy ranking, filesystem
+        // injection, and history-keyed scoring keep seeing what the user
+        // actually typed (`gco mybr`, not `git checkout mybr`).
+        //
+        // `resolve_spec` only consumes `args` and `preceding_flag` for
+        // the walk, so the `word_index`/`current_word` mismatch on the
+        // synthetic ctx is intentional and safe.
+        let synthetic_ctx;
+        let resolve_ctx: &CommandContext =
+            match expand_alias_for_spec(ctx, &self.alias_map) {
+                Some(exp) if matches!(exp.effective_args, std::borrow::Cow::Owned(_)) => {
+                    synthetic_ctx = CommandContext {
+                        command: Some(exp.resolved_command.into_owned()),
+                        args: exp.effective_args.into_owned(),
+                        ..ctx.clone()
+                    };
+                    &synthetic_ctx
+                }
+                // No alias hit (or borrowed pass-through) — reuse the
+                // original ctx and skip the per-keystroke clone.
+                _ => ctx,
+            };
+
         let specs::SpecResolution {
             subcommands,
             options,
@@ -858,7 +892,7 @@ impl SuggestionEngine {
             wants_folders_only,
             preceding_flag_has_args,
             past_double_dash,
-        } = specs::resolve_spec(spec, ctx);
+        } = specs::resolve_spec(spec, resolve_ctx);
 
         let git_generators = self.git_generators_from(&native_generators);
 
