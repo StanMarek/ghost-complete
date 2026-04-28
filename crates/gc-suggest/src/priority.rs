@@ -63,8 +63,10 @@ mod tests {
             SuggestionKind::ProviderValue.base_priority()
         );
         assert!(
-            SuggestionKind::ProviderValue.base_priority() > SuggestionKind::EnvVar.base_priority()
+            SuggestionKind::ProviderValue.base_priority()
+                > SuggestionKind::EnumValue.base_priority()
         );
+        assert!(SuggestionKind::EnumValue.base_priority() > SuggestionKind::EnvVar.base_priority());
         assert!(SuggestionKind::EnvVar.base_priority() > SuggestionKind::Command.base_priority());
         assert!(SuggestionKind::Command.base_priority() > SuggestionKind::Flag.base_priority());
         assert!(SuggestionKind::Flag.base_priority() > SuggestionKind::Directory.base_priority());
@@ -72,10 +74,6 @@ mod tests {
             SuggestionKind::Directory.base_priority() > SuggestionKind::FilePath.base_priority()
         );
         assert!(SuggestionKind::FilePath.base_priority() > SuggestionKind::History.base_priority());
-        assert!(
-            SuggestionKind::Subcommand.base_priority() > SuggestionKind::EnumValue.base_priority()
-        );
-        assert!(SuggestionKind::EnumValue.base_priority() > SuggestionKind::Flag.base_priority());
     }
 
     #[test]

@@ -304,8 +304,9 @@ pub struct ArgSpec {
 }
 
 /// Static suggestion entry — either a plain string shorthand or a full object.
-/// Mirrors the Fig schema; reserved fields (insertValue, displayName,
-/// replaceValue, icon, isDangerous) deserialize-but-not-honored in v1.
+/// Mirrors the Fig schema. Fields not present in [`SuggestionObject`] (insertValue,
+/// displayName, replaceValue, icon, isDangerous) are silently ignored by serde; v2
+/// may add them.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(untagged)]
 pub enum SuggestionEntry {
@@ -2296,8 +2297,7 @@ mod tests {
         //   "d\u001b"     -> parsed as "d\x1b"    -> sanitized to "d"
         //   "pl\u001bain" -> parsed as "pl\x1bain"-> sanitized to "plain"
         let json = "{\"name\":\"x\",\"args\":{\"name\":\"y\",\"suggestions\":[{\"name\":\"ev\\u001bil\",\"description\":\"d\\u001b\"},\"pl\\u001bain\"]}}";
-        let mut spec = parse_spec_checked_and_sanitized(json).unwrap();
-        let _ = validate_spec_generators(&mut spec);
+        let spec = parse_spec_checked_and_sanitized(json).unwrap();
         let arg = &spec.args[0];
         match &arg.suggestions[0] {
             SuggestionEntry::Object(o) => {
