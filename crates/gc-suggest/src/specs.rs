@@ -2779,12 +2779,55 @@ mod tests {
     }
 
     #[test]
+    fn suggestion_object_ignores_reserved_fig_fields() {
+        // Reserved Fig fields not modeled on `SuggestionObject` must remain
+        // silently ignored by serde. A future `#[serde(deny_unknown_fields)]`
+        // would otherwise break parsing of real bundled specs that carry
+        // `insertValue`, `displayName`, `replaceValue`, `icon`,
+        // `isDangerous`, or `deprecated`.
+        let json = r#"{
+            "name": "x",
+            "args": {
+                "name": "y",
+                "suggestions": [{
+                    "name": "a",
+                    "description": "desc",
+                    "insertValue": "a ",
+                    "displayName": "Alpha",
+                    "replaceValue": "alpha",
+                    "icon": "fig://icon?type=string",
+                    "isDangerous": true,
+                    "deprecated": true
+                }]
+            }
+        }"#;
+        let mut spec = parse_spec_checked_and_sanitized(json).unwrap();
+        let warnings = validate_spec_generators(&mut spec);
+        assert_eq!(
+            spec.args[0].suggestions.len(),
+            1,
+            "entry with reserved fields should parse and survive validation"
+        );
+        match &spec.args[0].suggestions[0] {
+            SuggestionEntry::Object(o) => {
+                assert_eq!(o.name, vec!["a".to_string()]);
+                assert_eq!(o.description.as_deref(), Some("desc"));
+            }
+            _ => panic!("expected Object"),
+        }
+        assert!(
+            warnings.is_empty(),
+            "reserved Fig fields must not produce warnings, got: {warnings:?}"
+        );
+    }
+
+    #[test]
     fn embedded_specs_under_memory_budget() {
-        // Measured baseline: ~37.5 MB (37,536,540 bytes) on 709 specs as of
-        // v0.10.0 (2026-04-28). The `estimated_heap_bytes` walk covers the
-        // whole `CompletionSpec` tree (js_source, transforms, descriptions,
-        // etc.). 64 MiB (67,108,864 bytes) gives ~1.78x headroom for spec
-        // corpus growth before requiring a deliberate budget raise.
+        // Measured baseline: ~37.5 MB (37,536,540 bytes), measured 2026-04-28
+        // on 709 specs. The `estimated_heap_bytes` walk covers the whole
+        // `CompletionSpec` tree (js_source, transforms, descriptions, etc.).
+        // 64 MiB (67,108,864 bytes) gives ~1.78x headroom for spec corpus
+        // growth before requiring a deliberate budget raise.
         const BUDGET_BYTES: usize = 64 * 1024 * 1024;
         let spec_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../specs");
         let store = SpecStore::load_from_dir(&spec_dir).unwrap().store;
@@ -2804,11 +2847,11 @@ mod tests {
 
     #[test]
     fn preceding_flag_args_suppress_positional_static_and_generators() {
-        // ADR 0004 calls out the `if !preceding_flag_has_args` guard on
-        // positional-arg collection as a plan-deviation bug fix:
-        // `pip install -r ` previously mixed `-r`'s `template: filepaths`
-        // with the positional package-name generators. Pulling the guard
-        // would silently re-introduce the bug; this test pins it.
+        // Invariant: filling a flag's argument must not also collect
+        // positional-arg generators or static suggestions. Mixing them
+        // produces wrong candidates (e.g. for templated flags like
+        // `-r filepaths`, where positional package-name generators would
+        // otherwise leak in alongside the file completions).
         let spec: CompletionSpec = serde_json::from_str(
             r#"{
                 "name": "pip",

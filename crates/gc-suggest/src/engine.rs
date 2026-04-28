@@ -2500,7 +2500,6 @@ mod tests {
     #[test]
     fn tar_atime_preserve_returns_replace_system() {
         let engine = make_engine();
-        // --atime-preserve lives under `tar c` (the create subcommand).
         let ctx = CommandContext {
             command: Some("tar".into()),
             args: vec!["c".into(), "--atime-preserve".into()],
@@ -2578,6 +2577,8 @@ mod tests {
         let tmp = tempfile::TempDir::new().unwrap();
         let spec_json = r#"{
             "name": "myfake",
+            "subcommands": [{"name": "sub"}],
+            "options": [{"name": ["--flag"]}],
             "args": [{
                 "name": "value",
                 "suggestions": ["alpha", "beta"]

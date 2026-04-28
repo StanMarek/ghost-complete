@@ -94,6 +94,10 @@ surface even when the user is filling a flag argument or past `--`.
 
 ### Neutral
 
+- **Visibility note.** `SuggestionEntry`, `SuggestionObject`, every field on
+  both, and `ArgSpec.suggestions` ship as `pub(crate)` (the Decision block
+  above shows `pub` for schema clarity); the source-level docstrings carry
+  the rationale.
 - **`insertValue`, `displayName`, `replaceValue`, `icon`, `isDangerous`.**
   Deserialized but ignored in v1 — the engine has no cursor-positioning
   insertion API to honor `insertValue`. Tracked separately for v2.
