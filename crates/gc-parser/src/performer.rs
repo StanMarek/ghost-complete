@@ -351,6 +351,40 @@ fn percent_decode_path(input: &str) -> PathBuf {
     PathBuf::from(std::ffi::OsStr::from_bytes(&bytes))
 }
 
+/// Percent-decode an OSC 7772 buffer payload.
+///
+/// Returns `None` on:
+///   - invalid hex digit in `%XX`
+///   - truncated `%` at end of input
+///
+/// This is intentionally STRICTER than [`percent_decode_path`]: a buffer
+/// payload should round-trip exactly, so any malformed escape is a
+/// transport error and the whole frame is dropped. The OSC 7 path
+/// (filesystem URIs) instead preserves malformed bytes literally because
+/// "best-effort partial CWD" is a sensible degradation, but for command
+/// buffers the only safe action is to ignore the report.
+//
+// `dead_code` is allowed during this commit only — Task 4 wires the
+// OSC 7772 dispatch arm to call this helper and the attribute is
+// removed there.
+#[allow(dead_code)]
+fn percent_decode_buffer(input: &[u8]) -> Option<Vec<u8>> {
+    let mut out = Vec::with_capacity(input.len());
+    let mut iter = input.iter().copied();
+    while let Some(b) = iter.next() {
+        if b == b'%' {
+            let hi = iter.next()?;
+            let lo = iter.next()?;
+            let h = hex_val(hi)?;
+            let l = hex_val(lo)?;
+            out.push((h << 4) | l);
+        } else {
+            out.push(b);
+        }
+    }
+    Some(out)
+}
+
 fn hex_val(b: u8) -> Option<u8> {
     match b {
         b'0'..=b'9' => Some(b - b'0'),
@@ -947,6 +981,47 @@ mod tests {
             percent_decode_path("/100%25done"),
             PathBuf::from("/100%done")
         );
+    }
+
+    // -- percent_decode_buffer (strict: rejects malformed escapes) --
+
+    #[test]
+    fn percent_decode_buffer_empty() {
+        assert_eq!(percent_decode_buffer(b""), Some(Vec::new()));
+    }
+
+    #[test]
+    fn percent_decode_buffer_no_encoding() {
+        assert_eq!(
+            percent_decode_buffer(b"abc xyz"),
+            Some(b"abc xyz".to_vec())
+        );
+    }
+
+    #[test]
+    fn percent_decode_buffer_single_escape() {
+        assert_eq!(percent_decode_buffer(b"%20"), Some(b" ".to_vec()));
+    }
+
+    #[test]
+    fn percent_decode_buffer_mixed() {
+        // `if true; then` with `;` encoded.
+        assert_eq!(
+            percent_decode_buffer(b"if true%3B then"),
+            Some(b"if true; then".to_vec())
+        );
+    }
+
+    #[test]
+    fn percent_decode_buffer_invalid_hex_rejected() {
+        assert_eq!(percent_decode_buffer(b"ab%zz"), None);
+        assert_eq!(percent_decode_buffer(b"ab%2g"), None);
+    }
+
+    #[test]
+    fn percent_decode_buffer_truncated_rejected() {
+        assert_eq!(percent_decode_buffer(b"ab%"), None);
+        assert_eq!(percent_decode_buffer(b"ab%2"), None);
     }
 
     // -- OSC 7770 buffer cursor clamping --
