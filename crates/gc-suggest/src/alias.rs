@@ -345,6 +345,14 @@ impl AliasStore {
 /// aliases like `gco='git checkout'` into the correct subcommand subtree
 /// rather than dropping every token after the first.
 ///
+/// The value is tokenised with [`shlex::split`] so quoted segments and
+/// escaped spaces survive intact (`commit='git commit -m "wip commit"'`
+/// → `["git", "commit", "-m", "wip commit"]`). When `shlex` rejects the
+/// value (typically an unbalanced quote in a malformed user config) we
+/// fall back to `split_whitespace`, keeping **every** whitespace-separated
+/// token rather than dropping the line — a single corrupt entry should
+/// not silently strip the rest of the user's aliases.
+///
 /// Note: bash function-style aliases (`function name() { ... }`) are not
 /// recognised; only the `alias name=value` form is parsed.
 pub fn parse_aliases(output: &str) -> HashMap<String, Vec<String>> {
@@ -379,14 +387,26 @@ pub fn parse_aliases(output: &str) -> HashMap<String, Vec<String>> {
             value = &value[1..value.len() - 1];
         }
 
-        // Extract the first word (the command name). Task 3 replaces this
-        // with `shlex::split` to keep every token in the alias value.
-        let command = value.split_whitespace().next().unwrap_or("");
-        if command.is_empty() {
-            continue;
-        }
+        let tokens = match shlex::split(value) {
+            Some(toks) if !toks.is_empty() => toks,
+            Some(_) => continue, // shlex parsed but produced nothing — empty value
+            None => {
+                // Malformed value (e.g. unbalanced quote). Keep every
+                // whitespace-separated token so the user still sees the
+                // alias's general intent rather than dropping the line.
+                tracing::debug!(
+                    "shlex failed to parse alias value for {alias_name:?}: {value:?}"
+                );
+                let fallback: Vec<String> =
+                    value.split_whitespace().map(String::from).collect();
+                if fallback.is_empty() {
+                    continue;
+                }
+                fallback
+            }
+        };
 
-        map.insert(alias_name.to_string(), vec![command.to_string()]);
+        map.insert(alias_name.to_string(), tokens);
     }
 
     map
@@ -514,11 +534,9 @@ k=kubectl
 ll='ls -la'
 ";
         let aliases = parse_aliases(output);
-        // Task 2 stores a single-token vec; Task 3 swaps in shlex tokenization
-        // and lifts `ll` to a multi-token vector.
         assert_eq!(aliases.get("g"), Some(&token_vec(&["git"])));
         assert_eq!(aliases.get("k"), Some(&token_vec(&["kubectl"])));
-        assert_eq!(aliases.get("ll"), Some(&token_vec(&["ls"])));
+        assert_eq!(aliases.get("ll"), Some(&token_vec(&["ls", "-la"])));
     }
 
     #[test]
@@ -531,7 +549,7 @@ alias ll='ls -la'
         let aliases = parse_aliases(output);
         assert_eq!(aliases.get("g"), Some(&token_vec(&["git"])));
         assert_eq!(aliases.get("k"), Some(&token_vec(&["kubectl"])));
-        assert_eq!(aliases.get("ll"), Some(&token_vec(&["ls"])));
+        assert_eq!(aliases.get("ll"), Some(&token_vec(&["ls", "-la"])));
     }
 
     #[test]
@@ -555,12 +573,62 @@ alias ll='ls -la'
     }
 
     #[test]
-    fn test_parse_complex_value_extracts_first_word() {
-        // Task 2 keeps the single-token semantics — Task 3 generalises this
-        // to the full token vector via shlex.
+    fn test_parse_complex_value_keeps_full_tokens() {
         let output = "glog='git log --oneline --graph'\n";
         let aliases = parse_aliases(output);
-        assert_eq!(aliases.get("glog"), Some(&token_vec(&["git"])));
+        assert_eq!(
+            aliases.get("glog"),
+            Some(&token_vec(&["git", "log", "--oneline", "--graph"]))
+        );
+    }
+
+    #[test]
+    fn test_parse_double_quoted_with_inner_spaces() {
+        // shlex must collapse the inner double-quoted run into a single
+        // token: this is the difference between resolving a `git commit
+        // -m "wip"` alias correctly versus dropping the message.
+        let output = "commit='git commit -m \"wip commit\"'\n";
+        let aliases = parse_aliases(output);
+        assert_eq!(
+            aliases.get("commit"),
+            Some(&token_vec(&["git", "commit", "-m", "wip commit"]))
+        );
+    }
+
+    #[test]
+    fn test_parse_escaped_space() {
+        // POSIX `\ ` joins two whitespace-separated chunks into a single
+        // token. shlex respects the backslash; split_whitespace would not.
+        let output = "gx='git foo\\ bar'\n";
+        let aliases = parse_aliases(output);
+        assert_eq!(aliases.get("gx"), Some(&token_vec(&["git", "foo bar"])));
+    }
+
+    #[test]
+    fn test_parse_falls_back_on_unbalanced_quote() {
+        // Malformed value: the unbalanced double-quote makes shlex return
+        // None. The fallback must keep every whitespace-separated token
+        // (not just the first), and the unaffected sibling alias must
+        // still load.
+        let output = "broken=git \"open\nok=ls\n";
+        let aliases = parse_aliases(output);
+        assert_eq!(
+            aliases.get("broken"),
+            Some(&token_vec(&["git", "\"open"])),
+            "fallback must preserve every token, not just the first"
+        );
+        assert_eq!(
+            aliases.get("ok"),
+            Some(&token_vec(&["ls"])),
+            "a single corrupt alias must not drop later entries"
+        );
+    }
+
+    #[test]
+    fn test_parse_single_word_unchanged() {
+        let output = "ll=ls\n";
+        let aliases = parse_aliases(output);
+        assert_eq!(aliases.get("ll"), Some(&token_vec(&["ls"])));
     }
 
     #[test]
