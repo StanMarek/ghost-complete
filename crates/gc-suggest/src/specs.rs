@@ -740,9 +740,33 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
     }
 }
 
+/// Map Fig `Suggestion.type` strings to `SuggestionKind`.
+/// Per SPEC.md §"type mapping": subcommand/option/file/folder map to their
+/// equivalents; "arg", "special", "shortcut", "mixin", "auto-execute", and
+/// missing/unknown all fall back to `EnumValue`. Unknown strings emit a
+/// warning via `tracing` so misconfigured specs surface but don't break
+/// loading.
+fn suggestion_kind_from_type(s: Option<&str>) -> SuggestionKind {
+    match s {
+        Some("subcommand") => SuggestionKind::Subcommand,
+        Some("option") => SuggestionKind::Flag,
+        Some("file") => SuggestionKind::FilePath,
+        Some("folder") => SuggestionKind::Directory,
+        Some("arg") | Some("special") | Some("shortcut") | Some("mixin") | Some("auto-execute")
+        | None => SuggestionKind::EnumValue,
+        Some(other) => {
+            tracing::warn!(
+                suggestion_type = %other,
+                "unknown Fig suggestion `type`; falling back to EnumValue"
+            );
+            SuggestionKind::EnumValue
+        }
+    }
+}
+
 /// Lift static `SuggestionEntry` values into ranked-pool `Suggestion`s.
 /// Plain strings become `EnumValue`; objects use their declared `type` →
-/// `SuggestionKind` mapping (Step 12 refines via `suggestion_kind_from_type`).
+/// `SuggestionKind` mapping via `suggestion_kind_from_type`.
 /// Aliases in `name: ["a", "b"]` emit one `Suggestion` per alias (no dedup —
 /// `nucleo` handles duplicates transparently).
 fn collect_static_suggestions(entries: &[SuggestionEntry], out: &mut Vec<Suggestion>) {
@@ -759,11 +783,12 @@ fn collect_static_suggestions(entries: &[SuggestionEntry], out: &mut Vec<Suggest
                 });
             }
             SuggestionEntry::Object(obj) => {
+                let kind = suggestion_kind_from_type(obj.kind.as_deref());
                 for name in &obj.name {
                     out.push(Suggestion {
                         text: name.clone(),
                         description: obj.description.clone(),
-                        kind: SuggestionKind::EnumValue, // Step 12 will refine via obj.kind
+                        kind,
                         source: SuggestionSource::Spec,
                         priority: obj.priority,
                         ..Default::default()
