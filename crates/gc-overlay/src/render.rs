@@ -482,6 +482,7 @@ pub(crate) fn kind_icon(kind: SuggestionKind) -> char {
         SuggestionKind::History => '\u{F1DA}',    // nf-fa-history
         SuggestionKind::EnvVar => '$',
         SuggestionKind::ProviderValue => '\u{F0AD}', // nf-fa-wrench — dynamic arg value from a native provider
+        SuggestionKind::EnumValue => '\u{F0CB}',     // nf-fa-list_ol — enumerated arg value
     }
 }
 
