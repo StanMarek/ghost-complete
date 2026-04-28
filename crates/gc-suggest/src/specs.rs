@@ -2424,4 +2424,31 @@ mod tests {
             .collect();
         assert_eq!(names, vec!["visible", "plain-also-visible"]);
     }
+
+    #[test]
+    fn test_resolve_static_suggestions_positional() {
+        let spec: CompletionSpec = serde_json::from_str(
+            r#"{"name":"foo","args":[{"name":"fmt","suggestions":["a","b"]}]}"#
+        ).unwrap();
+        let ctx = CommandContext {
+            command: Some("foo".into()),
+            args: vec![],
+            current_word: String::new(),
+            word_index: 1,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: None,
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
+        };
+        let res = resolve_spec(&spec, &ctx);
+        assert_eq!(res.static_suggestions.len(), 2);
+        let texts: Vec<&str> = res.static_suggestions.iter().map(|s| s.text.as_str()).collect();
+        assert!(texts.contains(&"a"));
+        assert!(texts.contains(&"b"));
+        assert!(res.static_suggestions.iter().all(|s| s.kind == crate::types::SuggestionKind::EnumValue));
+        assert!(res.static_suggestions.iter().all(|s| s.source == crate::types::SuggestionSource::Spec));
+    }
 }
