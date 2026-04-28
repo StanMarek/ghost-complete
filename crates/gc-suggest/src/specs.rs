@@ -2311,4 +2311,37 @@ mod tests {
             _ => panic!("expected Plain"),
         }
     }
+
+    #[test]
+    fn empty_suggestion_names_are_pruned_with_warning() {
+        let json = r#"{
+            "name": "x",
+            "args": {
+                "name": "y",
+                "suggestions": [
+                    {"name": []},
+                    {"name": ""},
+                    "ok"
+                ]
+            }
+        }"#;
+        let mut spec = parse_spec_checked_and_sanitized(json).unwrap();
+        let warnings = validate_spec_generators(&mut spec);
+        assert_eq!(
+            spec.args[0].suggestions.len(),
+            1,
+            "only 'ok' should survive pruning"
+        );
+        match &spec.args[0].suggestions[0] {
+            SuggestionEntry::Plain(s) => assert_eq!(s, "ok"),
+            _ => panic!("expected Plain(\"ok\")"),
+        }
+        assert_eq!(warnings.len(), 2, "expected two warnings (one per empty entry)");
+        for w in &warnings {
+            assert!(
+                w.contains('x'),
+                "warning should contain the spec name 'x', got: {w}"
+            );
+        }
+    }
 }
