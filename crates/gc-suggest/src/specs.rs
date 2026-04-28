@@ -549,6 +549,11 @@ pub fn parse_spec_checked_and_sanitized(contents: &str) -> Result<CompletionSpec
 pub struct SpecResolution {
     pub subcommands: Vec<Suggestion>,
     pub options: Vec<Suggestion>,
+    /// Static enum-like suggestions from `args.suggestions` blocks at the
+    /// resolved arg position. Populated by `collect_static_suggestions`.
+    /// Surfaces via the engine candidate set unconditionally — these are
+    /// values, not commands, so suppression flags do NOT apply.
+    pub static_suggestions: Vec<Suggestion>,
     pub native_generators: Vec<String>,
     /// Native providers resolved from the spec (e.g.
     /// `arduino_cli_boards`). The engine dispatches these asynchronously
@@ -670,6 +675,7 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
     let mut script_generators = Vec::new();
     let mut wants_filepaths = false;
     let mut wants_folders_only = false;
+    let mut static_suggestions: Vec<Suggestion> = Vec::new();
 
     // If the preceding token was a flag that takes an argument, check
     // the option's arg spec for templates/generators instead of the
@@ -692,6 +698,7 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
                     &mut wants_filepaths,
                     &mut wants_folders_only,
                 );
+                collect_static_suggestions(&arg_spec.suggestions, &mut static_suggestions);
                 match arg_spec.template.as_deref() {
                     Some("filepaths") => wants_filepaths = true,
                     Some("folders") => wants_folders_only = true,
@@ -711,6 +718,7 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
             &mut wants_filepaths,
             &mut wants_folders_only,
         );
+        collect_static_suggestions(&arg_spec.suggestions, &mut static_suggestions);
         match arg_spec.template.as_deref() {
             Some("filepaths") => wants_filepaths = true,
             Some("folders") => wants_folders_only = true,
@@ -721,6 +729,7 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
     SpecResolution {
         subcommands: subcommand_suggestions,
         options: option_suggestions,
+        static_suggestions,
         native_generators,
         provider_generators,
         script_generators,
@@ -728,6 +737,40 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
         wants_folders_only,
         preceding_flag_has_args,
         past_double_dash: past_positional && ctx.args.iter().any(|a| a == "--"),
+    }
+}
+
+/// Lift static `SuggestionEntry` values into ranked-pool `Suggestion`s.
+/// Plain strings become `EnumValue`; objects use their declared `type` →
+/// `SuggestionKind` mapping (Step 12 refines via `suggestion_kind_from_type`).
+/// Aliases in `name: ["a", "b"]` emit one `Suggestion` per alias (no dedup —
+/// `nucleo` handles duplicates transparently).
+fn collect_static_suggestions(entries: &[SuggestionEntry], out: &mut Vec<Suggestion>) {
+    for entry in entries {
+        match entry {
+            SuggestionEntry::Plain(text) => {
+                out.push(Suggestion {
+                    text: text.clone(),
+                    description: None,
+                    kind: SuggestionKind::EnumValue,
+                    source: SuggestionSource::Spec,
+                    priority: None,
+                    ..Default::default()
+                });
+            }
+            SuggestionEntry::Object(obj) => {
+                for name in &obj.name {
+                    out.push(Suggestion {
+                        text: name.clone(),
+                        description: obj.description.clone(),
+                        kind: SuggestionKind::EnumValue, // Step 12 will refine via obj.kind
+                        source: SuggestionSource::Spec,
+                        priority: obj.priority,
+                        ..Default::default()
+                    });
+                }
+            }
+        }
     }
 }
 
@@ -2428,8 +2471,9 @@ mod tests {
     #[test]
     fn test_resolve_static_suggestions_positional() {
         let spec: CompletionSpec = serde_json::from_str(
-            r#"{"name":"foo","args":[{"name":"fmt","suggestions":["a","b"]}]}"#
-        ).unwrap();
+            r#"{"name":"foo","args":[{"name":"fmt","suggestions":["a","b"]}]}"#,
+        )
+        .unwrap();
         let ctx = CommandContext {
             command: Some("foo".into()),
             args: vec![],
@@ -2445,10 +2489,20 @@ mod tests {
         };
         let res = resolve_spec(&spec, &ctx);
         assert_eq!(res.static_suggestions.len(), 2);
-        let texts: Vec<&str> = res.static_suggestions.iter().map(|s| s.text.as_str()).collect();
+        let texts: Vec<&str> = res
+            .static_suggestions
+            .iter()
+            .map(|s| s.text.as_str())
+            .collect();
         assert!(texts.contains(&"a"));
         assert!(texts.contains(&"b"));
-        assert!(res.static_suggestions.iter().all(|s| s.kind == crate::types::SuggestionKind::EnumValue));
-        assert!(res.static_suggestions.iter().all(|s| s.source == crate::types::SuggestionSource::Spec));
+        assert!(res
+            .static_suggestions
+            .iter()
+            .all(|s| s.kind == crate::types::SuggestionKind::EnumValue));
+        assert!(res
+            .static_suggestions
+            .iter()
+            .all(|s| s.source == crate::types::SuggestionSource::Spec));
     }
 }

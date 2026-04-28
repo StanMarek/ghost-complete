@@ -874,6 +874,7 @@ impl SuggestionEngine {
         let specs::SpecResolution {
             subcommands,
             options,
+            static_suggestions: _static_suggestions,
             native_generators,
             provider_generators,
             script_generators,
