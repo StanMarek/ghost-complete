@@ -2522,4 +2522,45 @@ mod tests {
         );
         assert!(texts.contains(&"system"), "expected `system` in {texts:?}");
     }
+
+    #[test]
+    fn static_suggestions_coexist_with_native_generators() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let spec_json = r#"{
+            "name": "myfake",
+            "args": [{
+                "name": "ref",
+                "generators": [{"type": "git_branches"}],
+                "suggestions": ["HEAD"]
+            }]
+        }"#;
+        std::fs::write(tmp.path().join("myfake.json"), spec_json).unwrap();
+
+        let spec_store = SpecStore::load_from_dir(tmp.path()).unwrap().store;
+        let history = HistoryProvider::from_entries(vec![]);
+        let commands = CommandsProvider::from_list(vec!["myfake".into()]);
+        let engine = SuggestionEngine::with_providers(spec_store, history, commands);
+
+        let ctx = CommandContext {
+            command: Some("myfake".into()),
+            args: vec![],
+            current_word: String::new(),
+            word_index: 1,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: None,
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: QuoteState::None,
+            is_first_segment: true,
+        };
+        let results = engine
+            .suggest_sync(&ctx, Path::new("/tmp"), "myfake ")
+            .unwrap();
+        let texts: Vec<&str> = results.iter().map(|s| s.text.as_str()).collect();
+        assert!(
+            texts.contains(&"HEAD"),
+            "static suggestion `HEAD` must surface alongside the git_branches generator: {texts:?}"
+        );
+    }
 }
