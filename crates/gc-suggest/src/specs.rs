@@ -2186,4 +2186,31 @@ mod tests {
         assert_eq!(gen.corrected_in.as_deref(), Some("v0.10.0"));
         assert_eq!(gen.template.as_deref(), Some("filepaths"));
     }
+
+    #[test]
+    fn static_suggestions_deserialize_plain_and_object() {
+        let spec: CompletionSpec = serde_json::from_str(
+            r#"{
+            "name": "x",
+            "args": {
+                "name": "y",
+                "suggestions": ["plain", {"name": "obj", "description": "d"}]
+            }
+        }"#,
+        )
+        .unwrap();
+        let arg = &spec.args[0];
+        assert_eq!(arg.suggestions.len(), 2);
+        match &arg.suggestions[0] {
+            SuggestionEntry::Plain(s) => assert_eq!(s, "plain"),
+            _ => panic!("expected Plain"),
+        }
+        match &arg.suggestions[1] {
+            SuggestionEntry::Object(o) => {
+                assert_eq!(o.name, vec!["obj".to_string()]);
+                assert_eq!(o.description.as_deref(), Some("d"));
+            }
+            _ => panic!("expected Object"),
+        }
+    }
 }
