@@ -4,9 +4,11 @@
 //! `shell/ghost-complete.zsh`, calls `_gc_report_buffer` with the fixture
 //! bytes set as `$BUFFER`, captures stdout, and feeds the bytes through
 //! `gc_parser::TerminalParser`. The reconstructed buffer must equal the
-//! input. The OSC-injection fixture additionally asserts CWD did NOT
-//! change — proving the decoded bytes never re-entered the VTE state
-//! machine. See ADR 0003.
+//! input. Every fixture asserts CWD did not change before/after the
+//! round-trip; this invariant is meaningful only for the OSC-injection
+//! fixture (others have no embedded OSC 7), but all fixtures share the
+//! same assertion path — proving the decoded bytes never re-entered
+//! the VTE state machine. See ADR 0003.
 //!
 //! Silently skipped on local dev systems without `zsh` on PATH; panics
 //! under CI (`CI` env var set) to fail loud if zsh is missing in a
@@ -108,6 +110,11 @@ fn assert_roundtrips(label: &str, fixture: &[u8]) {
         actual,
         Some(expected),
         "[{label}] reconstruction failed; raw zsh stdout = {stdout:02X?}"
+    );
+    assert_eq!(
+        p.state().buffer_cursor(),
+        cursor,
+        "[{label}] buffer cursor not preserved through real-zsh round-trip"
     );
     assert_eq!(
         p.state().cwd().cloned(),

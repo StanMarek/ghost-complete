@@ -1280,12 +1280,12 @@ mod tests {
         assert_roundtrips("if true; then");
     }
 
-    // The canonical bug witness from the SPEC. Pre-OSC-7772 framing
-    // truncated this buffer at the first `;`, surfacing as wrong
-    // completion candidates the moment a user typed any composite
-    // statement. Asserting whole-buffer reconstruction here keeps that
-    // regression visible — if this ever fails, the encoder/decoder
-    // contract has drifted and `cargo test` is the loud failure.
+    // Pre-OSC-7772 framing truncated this buffer at the first `;`,
+    // surfacing as wrong completion candidates the moment a user typed
+    // any composite statement (see ADR 0003 §Context). Asserting
+    // whole-buffer reconstruction here keeps that regression visible —
+    // if this ever fails, the encoder/decoder contract has drifted and
+    // `cargo test` is the loud failure.
     #[test]
     fn osc7772_regression_pin_canonical_bug_witness() {
         assert_roundtrips("if true; then echo a; fi");

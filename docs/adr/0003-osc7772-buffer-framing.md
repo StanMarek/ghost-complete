@@ -27,10 +27,16 @@ Two more failure modes compound the problem:
   The parser sees a short, "valid" OSC for everything before the BEL.
 - **Embedded `\x1b]…\a` or `\x1b\\` (ST)** does not just terminate the
   outer envelope; it **smuggles a nested escape sequence into the parser's
-  state machine**. The OSC 7770 path is the only place the proxy ingests
-  fully attacker-controlled bytes (user typing or pasting). A user who
-  pasted text crafted to look like an OSC 7 (CWD update) would see the
-  proxy's view of the working directory shift mid-line — silently.
+  state machine**. OSC 7770 is the only path where the user did NOT opt
+  in to having their bytes parsed as escapes — typing or pasting at the
+  prompt feeds `$BUFFER` to the proxy with no intent to invoke any
+  escape semantics. Other parser inputs (shell stdout from commands the
+  user ran, including `cat <evil>`) are also attacker-controllable in
+  practice, but the user opted in by running the command; defending
+  those is a separate trust-model choice (full output sanitiser), out
+  of scope here. A user who pasted text crafted to look like an OSC 7
+  (CWD update) would see the proxy's view of the working directory
+  shift mid-line — silently.
 
 The threat model is byte-level corruption / smuggling, not eavesdropping;
 this is a local-process side channel between the user's shell and our
@@ -120,7 +126,7 @@ We percent-encode `$BUFFER` in the zsh emitter and bump the OSC number to
 | User typing at prompt | Untrusted in payload bytes; trusted in intent | `$BUFFER` may contain any byte zsh permits in a line |
 | Pasted text from clipboard | Untrusted | Same surface; can include `\x1b…\a` crafted to escape framing |
 | Hostile shell snippet (`.zshrc` injection) | Out of scope | A user with hostile `.zshrc` already owns the proxy |
-| Network / file content displayed by shell | Out of scope | Shell output flows through `gc-parser` separately and is already sanitised |
+| Network / file content displayed by shell | Trusted by deliberate scope | Shell output flows through the same `gc-parser` state machine, so a `cat <evil>` whose bytes contain `\e]7;…\a` would update the proxy's CWD; the user opted in by running the command. Defending against this requires a full output sanitiser, out of scope for the buffer-reporting framing |
 
 Concrete attacker capability denied by this ADR: a user types
 `\e]7;file:///etc\a` at the prompt, expecting the proxy to update its CWD.
