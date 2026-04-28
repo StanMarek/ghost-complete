@@ -266,10 +266,29 @@ impl Perform for TerminalState {
                 tracing::debug!(cursor, "OSC 7772 — buffer update");
                 self.set_command_buffer(buffer, cursor);
             }
-            // OSC 7770 — Ghost Complete buffer report
+            // OSC 7770 — Ghost Complete buffer report (LEGACY raw framing).
+            //
+            // DEPRECATED: this path is structurally unsafe. vte splits OSC
+            // params on `;`, so a buffer like `if true; then` is silently
+            // truncated at the first semicolon, and embedded `\a` / `\e]`
+            // bytes can prematurely terminate the OSC envelope or smuggle
+            // a nested OSC into the parser. New shell integrations emit
+            // OSC 7772 (percent-encoded) instead. See ADR 0003.
+            //
+            // Behaviour is intentionally unchanged from prior releases:
+            // first hit per process logs a one-shot `warn!`, subsequent
+            // hits drop to `trace!`. Slated for removal at v(N+2).
             b"7770" => {
                 if params.len() < 3 {
                     return;
+                }
+                if self.check_and_set_legacy_osc7770_warned() {
+                    tracing::warn!(
+                        "OSC 7770 (legacy raw framing) received — upgrade your shell \
+                         integration. See docs/adr/0003-osc7772-buffer-framing.md."
+                    );
+                } else {
+                    tracing::trace!("OSC 7770 (legacy) — buffer update");
                 }
                 let cursor = match std::str::from_utf8(params[1])
                     .ok()
@@ -290,7 +309,6 @@ impl Perform for TerminalState {
                         return;
                     }
                 };
-                tracing::debug!(cursor, "OSC 7770 — buffer update");
                 self.set_command_buffer(buffer, cursor);
             }
             // OSC 7 — current working directory

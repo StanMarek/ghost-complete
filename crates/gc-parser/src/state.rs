@@ -46,6 +46,12 @@ pub struct TerminalState {
     cwd_dirty: bool,
     cursor_sync_requested: bool,
     cpr_synced: bool,
+    /// One-shot guard so the deprecation warning for the legacy OSC 7770
+    /// raw-framing path fires at most once per process. Subsequent legacy
+    /// dispatches downgrade to a `trace!` line so a stale shell does not
+    /// spam the proxy log on every keystroke. Reset only by process exit
+    /// — there is no API to clear it. See ADR 0003.
+    legacy_osc7770_warned: bool,
     /// FIFO queue of pending CPR requests in send-order.
     ///
     /// Terminals respond to `CSI 6n` requests in the same order they
@@ -77,8 +83,23 @@ impl TerminalState {
             cwd_dirty: false,
             cursor_sync_requested: false,
             cpr_synced: false,
+            legacy_osc7770_warned: false,
             cpr_queue: VecDeque::new(),
             next_cpr_id: 0,
+        }
+    }
+
+    /// Returns true the first time it is called per `TerminalState`,
+    /// false thereafter. Used by the OSC 7770 (legacy) dispatch to log a
+    /// one-shot deprecation warning while downgrading repeated hits to
+    /// `trace!` to avoid spamming the log when a stale shell is talking
+    /// to a new binary. Idempotent after first call. See ADR 0003.
+    pub(crate) fn check_and_set_legacy_osc7770_warned(&mut self) -> bool {
+        if self.legacy_osc7770_warned {
+            false
+        } else {
+            self.legacy_osc7770_warned = true;
+            true
         }
     }
 
