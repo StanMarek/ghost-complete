@@ -129,9 +129,22 @@ fn sanitize_opt(text: &mut Option<String>) {
     }
 }
 
+fn sanitize_suggestion_object(obj: &mut SuggestionObject) {
+    sanitize_opt(&mut obj.description);
+    for n in &mut obj.name {
+        sanitize_string(n);
+    }
+}
+
 fn sanitize_arg_spec(arg: &mut ArgSpec) {
     sanitize_opt(&mut arg.name);
     sanitize_opt(&mut arg.description);
+    for entry in &mut arg.suggestions {
+        match entry {
+            SuggestionEntry::Plain(s) => sanitize_string(s),
+            SuggestionEntry::Object(obj) => sanitize_suggestion_object(obj),
+        }
+    }
 }
 
 fn sanitize_option_spec(opt: &mut OptionSpec) {
@@ -2271,6 +2284,31 @@ mod tests {
                 assert_eq!(o.description.as_deref(), Some("d"));
             }
             _ => panic!("expected Object"),
+        }
+    }
+
+    #[test]
+    fn sanitize_strips_control_chars_in_suggestion_name() {
+        // The JSON uses \u001b (the valid JSON unicode escape for ESC = 0x1B).
+        // serde_json parses \u001b into an actual ESC byte inside the Rust
+        // String; sanitize_string then strips it because ESC is a control char.
+        //   "ev\u001bil"  -> parsed as "ev\x1bil" -> sanitized to "evil"
+        //   "d\u001b"     -> parsed as "d\x1b"    -> sanitized to "d"
+        //   "pl\u001bain" -> parsed as "pl\x1bain"-> sanitized to "plain"
+        let json = "{\"name\":\"x\",\"args\":{\"name\":\"y\",\"suggestions\":[{\"name\":\"ev\\u001bil\",\"description\":\"d\\u001b\"},\"pl\\u001bain\"]}}";
+        let mut spec = parse_spec_checked_and_sanitized(json).unwrap();
+        let _ = validate_spec_generators(&mut spec);
+        let arg = &spec.args[0];
+        match &arg.suggestions[0] {
+            SuggestionEntry::Object(o) => {
+                assert_eq!(o.name[0], "evil");
+                assert_eq!(o.description.as_deref(), Some("d"));
+            }
+            _ => panic!("expected Object"),
+        }
+        match &arg.suggestions[1] {
+            SuggestionEntry::Plain(s) => assert_eq!(s, "plain"),
+            _ => panic!("expected Plain"),
         }
     }
 }
