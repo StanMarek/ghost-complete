@@ -190,9 +190,7 @@ fn alias_dev_to_ssh_walks_ssh_spec_subtree() {
 
 #[test]
 fn alias_gco_flag_prefix_walks_git_checkout_options() {
-    // alias gco='git checkout': typing `gco -<TAB>` must surface git checkout's
-    // flag set (e.g. -b, -B, -t, --track), not git's top-level flags
-    // (--git-dir, --exec-path, --no-pager).
+    // gco -<TAB> must surface git checkout's flags, not git's top-level flags.
     let aliases = HashMap::from([(
         "gco".to_string(),
         vec!["git".to_string(), "checkout".to_string()],

@@ -630,18 +630,14 @@ impl SuggestionEngine {
         if !self.providers_specs || ctx.word_index == 0 || ctx.in_redirect {
             return Ok(Vec::new());
         }
-
-        let command = match &ctx.command {
-            Some(c) => c,
-            None => return Ok(Vec::new()),
+        if ctx.command.is_none() {
+            return Ok(Vec::new());
+        }
+        let Some(spec) = self.spec_for_ctx(ctx) else {
+            return Ok(Vec::new());
         };
-
-        let spec = match self.spec_store.get(command) {
-            Some(s) => s,
-            None => return Ok(Vec::new()),
-        };
-
-        let resolution = specs::resolve_spec(spec, ctx);
+        let resolve_ctx = self.resolve_ctx_for_spec_walk(ctx);
+        let resolution = specs::resolve_spec(spec, resolve_ctx.as_ref());
         let generators: Vec<_> = resolution
             .script_generators
             .into_iter()
@@ -738,9 +734,7 @@ impl SuggestionEngine {
     fn suggest_flag_prefix(&self, ctx: &CommandContext, cwd: &Path, buffer: &str) -> SyncResult {
         let mut candidates = Vec::new();
         if let Some(spec) = self.spec_for_ctx(ctx) {
-            // Pivot to the alias target's frame so a multi-word alias like
-            // `gco='git checkout'` walks into `git checkout`'s option set,
-            // not `git`'s top-level flags.
+            // Walk the alias target's spec subtree, not the literal alias name's.
             let resolve_ctx = self.resolve_ctx_for_spec_walk(ctx);
             let resolution = specs::resolve_spec(spec, resolve_ctx.as_ref());
             candidates.extend(resolution.subcommands);
@@ -823,12 +817,7 @@ impl SuggestionEngine {
         );
     }
 
-    /// Pivot a `CommandContext` into the alias target's frame for spec walks.
-    /// When the alias actually expanded, return an owned synthetic ctx with
-    /// `command` and `args` rewritten to the resolved head + effective args
-    /// so `resolve_spec` walks into the correct subcommand subtree (e.g.
-    /// `gco -<TAB>` lands inside `git checkout`, not `git`'s top-level
-    /// options). Otherwise return the original ctx borrow.
+    /// Pivot ctx onto the alias target so spec walks land in the right subcommand.
     fn resolve_ctx_for_spec_walk<'a>(
         &self,
         ctx: &'a CommandContext,
@@ -853,10 +842,7 @@ impl SuggestionEngine {
         if !self.providers_specs {
             return None;
         }
-        // `expand_alias_for_spec` returns `Cow::Borrowed(ctx.command)` when no
-        // alias fires, so a single lookup covers both the aliased and
-        // unaliased paths and avoids leaking the literal alias-name spec when
-        // the alias target has no spec of its own.
+        // expand_alias_for_spec covers both aliased and unaliased paths in one lookup.
         let expanded = expand_alias_for_spec(ctx, &self.alias_map)?;
         self.spec_store.get(expanded.resolved_command.as_ref())
     }
