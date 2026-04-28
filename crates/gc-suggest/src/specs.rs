@@ -1009,76 +1009,104 @@ fn validate_arg_generators(arg_spec: &mut ArgSpec, spec_name: &str, warnings: &m
 
 /// Approximate heap bytes owned by `spec`.
 ///
-/// Sums `capacity()` for every heap-allocated `String` and `Vec` in the spec
-/// tree. Uses capacities (not lengths) because that's what the allocator
-/// reserved — a String that grew to capacity 64 but only has 12 bytes of
-/// content still holds 64 bytes of heap. This is the right unit for memory
-/// budget regression tests.
+/// Sums `len()` for every heap-allocated `String` and `capacity()` for every
+/// `Vec` in the spec tree. Length (not capacity) is the stable proxy for
+/// content size — capacities vary by allocator and serde's internal
+/// `String::reserve` calls, which would make the metric noisy across runs.
+/// For regression detection, content size is the right signal.
 ///
 /// The walk is iterative to avoid recursion-depth issues on deeply nested
 /// specs. Accuracy is approximate; the goal is a stable number that detects
 /// large regressions, not a byte-perfect heap profiler reading.
+// `pub` (not `pub(crate)`) is required because the criterion bench is a
+// separate compilation unit linked against the gc-suggest cdylib boundary.
 pub fn estimated_heap_bytes(spec: &CompletionSpec) -> usize {
-    fn string_heap(s: &str) -> usize {
-        s.len() // capacity not available on &str; use len as proxy for owned strings
-    }
+    use crate::transform::{ParameterizedTransform, Transform};
+
     fn opt_string_heap(s: &Option<String>) -> usize {
-        s.as_deref().map(string_heap).unwrap_or(0)
+        s.as_deref().map(str::len).unwrap_or(0)
+    }
+    fn transform_heap(t: &Transform) -> usize {
+        match t {
+            // Named transforms carry no heap-owned strings (they're Copy enums).
+            Transform::Named(_) => 0,
+            Transform::Parameterized(p) => match p {
+                ParameterizedTransform::SplitOn { delimiter } => delimiter.len(),
+                ParameterizedTransform::ErrorGuard {
+                    starts_with,
+                    contains,
+                } => opt_string_heap(starts_with) + opt_string_heap(contains),
+                ParameterizedTransform::Suffix { value } => value.len(),
+                ParameterizedTransform::JsonExtractArray { split_on, .. } => {
+                    opt_string_heap(split_on)
+                }
+                // Skip the compiled regex (not heap-walkable cleanly) and
+                // JsonPath/usize-only variants (heap is negligible or
+                // structurally fixed).
+                ParameterizedTransform::Skip { .. }
+                | ParameterizedTransform::Take { .. }
+                | ParameterizedTransform::RegexExtract { .. }
+                | ParameterizedTransform::JsonExtract { .. }
+                | ParameterizedTransform::ColumnExtract { .. } => 0,
+            },
+        }
     }
     fn suggestion_entry_heap(entry: &SuggestionEntry) -> usize {
         match entry {
-            SuggestionEntry::Plain(s) => s.capacity(),
+            SuggestionEntry::Plain(s) => s.len(),
             SuggestionEntry::Object(obj) => {
-                let names: usize = obj.name.iter().map(|n| n.capacity()).sum();
+                let names: usize = obj.name.iter().map(|n| n.len()).sum();
                 let names_vec = obj.name.capacity() * std::mem::size_of::<String>();
-                let desc = obj.description.as_ref().map(|s| s.capacity()).unwrap_or(0);
-                let kind = obj.kind.as_ref().map(|s| s.capacity()).unwrap_or(0);
+                let desc = opt_string_heap(&obj.description);
+                let kind = opt_string_heap(&obj.kind);
                 names + names_vec + desc + kind
             }
         }
     }
+    fn generator_heap(g: &GeneratorSpec) -> usize {
+        let gt = opt_string_heap(&g.generator_type);
+        let script: usize = g
+            .script
+            .as_ref()
+            .map(|v| {
+                v.capacity() * std::mem::size_of::<String>()
+                    + v.iter().map(|s| s.len()).sum::<usize>()
+            })
+            .unwrap_or(0);
+        let script_tmpl: usize = g
+            .script_template
+            .as_ref()
+            .map(|v| {
+                v.capacity() * std::mem::size_of::<String>()
+                    + v.iter().map(|s| s.len()).sum::<usize>()
+            })
+            .unwrap_or(0);
+        // 180 specs carry inline JS source; this is the largest single field.
+        let js = opt_string_heap(&g.js_source);
+        let tmpl = opt_string_heap(&g.template);
+        let transforms_vec = g.transforms.capacity() * std::mem::size_of::<Transform>();
+        let transforms_inner: usize = g.transforms.iter().map(transform_heap).sum();
+        gt + script + script_tmpl + js + tmpl + transforms_vec + transforms_inner
+    }
     fn arg_spec_heap(arg: &ArgSpec) -> usize {
         let name = opt_string_heap(&arg.name);
         let desc = opt_string_heap(&arg.description);
-        let gens = arg.generators.capacity() * std::mem::size_of::<GeneratorSpec>()
-            + arg
-                .generators
-                .iter()
-                .map(|g| {
-                    let gt = g.generator_type.as_ref().map(|s| s.capacity()).unwrap_or(0);
-                    let script: usize = g
-                        .script
-                        .as_ref()
-                        .map(|v| {
-                            v.capacity() * std::mem::size_of::<String>()
-                                + v.iter().map(|s| s.capacity()).sum::<usize>()
-                        })
-                        .unwrap_or(0);
-                    let script_tmpl: usize = g
-                        .script_template
-                        .as_ref()
-                        .map(|v| {
-                            v.capacity() * std::mem::size_of::<String>()
-                                + v.iter().map(|s| s.capacity()).sum::<usize>()
-                        })
-                        .unwrap_or(0);
-                    gt + script + script_tmpl
-                })
-                .sum::<usize>();
-        let tmpl = arg.template.as_ref().map(|s| s.capacity()).unwrap_or(0);
+        let gens_vec = arg.generators.capacity() * std::mem::size_of::<GeneratorSpec>();
+        let gens: usize = arg.generators.iter().map(generator_heap).sum();
+        let tmpl = opt_string_heap(&arg.template);
         let sugg_vec = arg.suggestions.capacity() * std::mem::size_of::<SuggestionEntry>();
         let sugg: usize = arg.suggestions.iter().map(suggestion_entry_heap).sum();
-        name + desc + gens + tmpl + sugg_vec + sugg
+        name + desc + gens_vec + gens + tmpl + sugg_vec + sugg
     }
     fn option_spec_heap(opt: &OptionSpec) -> usize {
-        let names: usize = opt.name.iter().map(|n| n.capacity()).sum();
+        let names: usize = opt.name.iter().map(|n| n.len()).sum();
         let names_vec = opt.name.capacity() * std::mem::size_of::<String>();
         let desc = opt_string_heap(&opt.description);
         let args = opt.args.as_ref().map(arg_spec_heap).unwrap_or(0);
         names + names_vec + desc + args
     }
 
-    let mut total = spec.name.capacity()
+    let mut total = spec.name.len()
         + opt_string_heap(&spec.description)
         + spec.args.capacity() * std::mem::size_of::<ArgSpec>()
         + spec.args.iter().map(arg_spec_heap).sum::<usize>()
@@ -1089,7 +1117,7 @@ pub fn estimated_heap_bytes(spec: &CompletionSpec) -> usize {
     // Walk subcommands iteratively
     let mut stack: Vec<&SubcommandSpec> = spec.subcommands.iter().collect();
     while let Some(sub) = stack.pop() {
-        total += sub.name.capacity();
+        total += sub.name.len();
         total += opt_string_heap(&sub.description);
         total += sub.args.capacity() * std::mem::size_of::<ArgSpec>();
         total += sub.args.iter().map(arg_spec_heap).sum::<usize>();
@@ -2734,6 +2762,12 @@ mod tests {
 
     #[test]
     fn embedded_specs_under_memory_budget() {
+        // Measured baseline: ~37.5 MB (37,536,540 bytes) on 709 specs as of
+        // v0.10.0 (2026-04-28). SPEC §Memory budget estimated 8 MB for
+        // suggestions alone; the full CompletionSpec tree walk is much larger
+        // because it covers js_source, transforms, descriptions, etc. across
+        // all 709 specs. 64 MiB (67,108,864 bytes) gives ~1.78x headroom for
+        // spec corpus growth before requiring a deliberate budget raise.
         const BUDGET_BYTES: usize = 64 * 1024 * 1024;
         let spec_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../specs");
         let store = SpecStore::load_from_dir(&spec_dir).unwrap().store;

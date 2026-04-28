@@ -48,10 +48,21 @@ fn arb_object_entry() -> impl Strategy<Value = serde_json::Value> {
         })
 }
 
+fn arb_dirty_plain() -> impl Strategy<Value = serde_json::Value> {
+    prop_oneof![
+        Just(serde_json::Value::String("\u{001b}[31mred".to_string())),
+        Just(serde_json::Value::String("tab\there".to_string())),
+        // whitespace-only → empty-name pruning
+        Just(serde_json::Value::String("   ".to_string())),
+        Just(serde_json::Value::String("\u{0000}null".to_string())),
+    ]
+}
+
 fn arb_entry() -> impl Strategy<Value = serde_json::Value> {
     prop_oneof![
         "[a-zA-Z][a-zA-Z0-9]{0,8}".prop_map(serde_json::Value::String),
         arb_object_entry(),
+        arb_dirty_plain(),
     ]
 }
 
