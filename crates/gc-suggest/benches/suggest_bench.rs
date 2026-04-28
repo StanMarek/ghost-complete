@@ -203,6 +203,40 @@ fn engine_benchmarks(c: &mut Criterion) {
         });
     });
 
+    // Two cases isolate alias expansion overhead vs the no-alias subcommand bench.
+    let (alias_engine, alias_tmp) = setup_engine_and_dir();
+    let mut alias_map = std::collections::HashMap::with_capacity(100);
+    alias_map.insert("g".to_string(), vec!["git".to_string()]);
+    alias_map.insert(
+        "gco".to_string(),
+        vec!["git".to_string(), "checkout".to_string()],
+    );
+    for i in 0..98 {
+        alias_map.insert(
+            format!("alias_{i}"),
+            vec![format!("cmd_{i}"), format!("sub_{i}")],
+        );
+    }
+    let alias_engine = alias_engine.with_aliases(alias_map);
+
+    let alias_ctx_single = make_ctx(Some("g"), vec![], "ch", 1);
+    group.bench_function("alias_hit_single", |b| {
+        b.iter(|| {
+            alias_engine
+                .suggest_sync(&alias_ctx_single, alias_tmp.path(), "g ch")
+                .unwrap()
+        });
+    });
+
+    let alias_ctx_multi = make_ctx(Some("gco"), vec![], "m", 1);
+    group.bench_function("alias_hit_multi", |b| {
+        b.iter(|| {
+            alias_engine
+                .suggest_sync(&alias_ctx_multi, alias_tmp.path(), "gco m")
+                .unwrap()
+        });
+    });
+
     group.finish();
 }
 

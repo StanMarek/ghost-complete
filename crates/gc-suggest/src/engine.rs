@@ -7,6 +7,7 @@ use gc_buffer::CommandContext;
 use tokio::sync::Semaphore;
 
 use crate::alias::AliasStore;
+use crate::alias_expand::expand_alias_for_spec;
 use crate::cache::{CacheKey, GeneratorCache};
 use crate::commands::CommandsProvider;
 use crate::env::EnvProvider;
@@ -342,6 +343,18 @@ impl SuggestionEngine {
         }
     }
 
+    #[doc(hidden)]
+    pub fn with_aliases(self, map: std::collections::HashMap<String, Vec<String>>) -> Self {
+        self.alias_map.install(map);
+        self
+    }
+
+    #[doc(hidden)]
+    pub fn with_ssh_host_cache_path(mut self, path: std::path::PathBuf) -> Self {
+        self.ssh_host_cache = Some(SshHostCache::new(path));
+        self
+    }
+
     /// Record an accepted completion for frecency scoring.
     /// `command` scopes the key so `--help` under `git` doesn't boost `docker`.
     /// `kind` scopes it further so a branch `main` doesn't boost a file `main`.
@@ -617,18 +630,14 @@ impl SuggestionEngine {
         if !self.providers_specs || ctx.word_index == 0 || ctx.in_redirect {
             return Ok(Vec::new());
         }
-
-        let command = match &ctx.command {
-            Some(c) => c,
-            None => return Ok(Vec::new()),
+        if ctx.command.is_none() {
+            return Ok(Vec::new());
+        }
+        let Some(spec) = self.spec_for_ctx(ctx) else {
+            return Ok(Vec::new());
         };
-
-        let spec = match self.spec_store.get(command) {
-            Some(s) => s,
-            None => return Ok(Vec::new()),
-        };
-
-        let resolution = specs::resolve_spec(spec, ctx);
+        let resolve_ctx = self.resolve_ctx_for_spec_walk(ctx);
+        let resolution = specs::resolve_spec(spec, resolve_ctx.as_ref());
         let generators: Vec<_> = resolution
             .script_generators
             .into_iter()
@@ -725,7 +734,9 @@ impl SuggestionEngine {
     fn suggest_flag_prefix(&self, ctx: &CommandContext, cwd: &Path, buffer: &str) -> SyncResult {
         let mut candidates = Vec::new();
         if let Some(spec) = self.spec_for_ctx(ctx) {
-            let resolution = specs::resolve_spec(spec, ctx);
+            // Walk the alias target's spec subtree, not the literal alias name's.
+            let resolve_ctx = self.resolve_ctx_for_spec_walk(ctx);
+            let resolution = specs::resolve_spec(spec, resolve_ctx.as_ref());
             candidates.extend(resolution.subcommands);
             candidates.extend(resolution.options);
         }
@@ -781,11 +792,14 @@ impl SuggestionEngine {
         let Some(cache) = self.ssh_host_cache.as_ref() else {
             return;
         };
-        let Some(cmd) = ctx.command.as_ref() else {
+        if ctx.command.is_none() {
             return;
+        }
+        // Use the alias's resolved head so `alias dev=ssh` still triggers ssh-host injection.
+        let resolved_cmd: String = match expand_alias_for_spec(ctx, &self.alias_map) {
+            Some(exp) => exp.resolved_command.into_owned(),
+            None => return,
         };
-        let resolved_owned = self.alias_map.get(cmd.as_str());
-        let resolved_cmd = resolved_owned.as_deref().unwrap_or(cmd.as_str());
         if resolved_cmd != "ssh" || ctx.word_index == 0 || ctx.is_flag {
             return;
         }
@@ -803,6 +817,24 @@ impl SuggestionEngine {
         );
     }
 
+    /// Pivot ctx onto the alias target so spec walks land in the right subcommand.
+    fn resolve_ctx_for_spec_walk<'a>(
+        &self,
+        ctx: &'a CommandContext,
+    ) -> std::borrow::Cow<'a, CommandContext> {
+        match expand_alias_for_spec(ctx, &self.alias_map) {
+            Some(exp) if exp.aliased => {
+                let synthetic = CommandContext {
+                    command: Some(exp.resolved_command.into_owned()),
+                    args: exp.effective_args.into_owned(),
+                    ..ctx.clone()
+                };
+                std::borrow::Cow::Owned(synthetic)
+            }
+            _ => std::borrow::Cow::Borrowed(ctx),
+        }
+    }
+
     /// Resolve the alias-aware spec for this command context, if any.
     /// Centralizes the alias lookup + spec_store probe so callers don't
     /// repeat it.
@@ -810,10 +842,9 @@ impl SuggestionEngine {
         if !self.providers_specs {
             return None;
         }
-        let command = ctx.command.as_ref()?;
-        let resolved_owned = self.alias_map.get(command.as_str());
-        let resolved = resolved_owned.as_deref().unwrap_or(command.as_str());
-        self.spec_store.get(resolved)
+        // expand_alias_for_spec covers both aliased and unaliased paths in one lookup.
+        let expanded = expand_alias_for_spec(ctx, &self.alias_map)?;
+        self.spec_store.get(expanded.resolved_command.as_ref())
     }
 
     /// Look up the spec for `ctx.command_name` and append its synchronous
@@ -837,6 +868,9 @@ impl SuggestionEngine {
             return Err(candidates);
         };
 
+        // Synthetic ctx: spec walk uses the expansion; ranking/history stay on the literal buffer.
+        let resolve_ctx = self.resolve_ctx_for_spec_walk(ctx);
+
         let specs::SpecResolution {
             subcommands,
             options,
@@ -847,7 +881,7 @@ impl SuggestionEngine {
             wants_folders_only,
             preceding_flag_has_args,
             past_double_dash,
-        } = specs::resolve_spec(spec, ctx);
+        } = specs::resolve_spec(spec, resolve_ctx.as_ref());
 
         let git_generators = self.git_generators_from(&native_generators);
 

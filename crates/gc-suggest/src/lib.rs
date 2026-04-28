@@ -4,6 +4,7 @@
 //! Fig-compatible JSON specs) and fuzzy-ranks results with `nucleo`.
 
 pub mod alias;
+pub(crate) mod alias_expand;
 pub mod cache;
 pub mod commands;
 pub mod context;

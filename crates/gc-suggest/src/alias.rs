@@ -20,6 +20,9 @@ use serde::{Deserialize, Serialize};
 /// Cache file name (inside the state directory).
 const ALIAS_CACHE_FILE: &str = "aliases-cache.json";
 
+/// On-disk schema version; bump on incompatible CachedAliases changes.
+const CURRENT_ALIAS_CACHE_VERSION: u32 = 2;
+
 /// Source dotfiles whose mtimes invalidate the alias cache. If any exists
 /// with an mtime newer than the cache file, we regenerate. Includes every
 /// file the load paths in [`load_shell_aliases`] actually consult:
@@ -67,11 +70,14 @@ struct SourceFingerprint {
 
 #[derive(Serialize, Deserialize)]
 struct CachedAliases {
+    /// Bump on incompatible CachedAliases shape changes; mismatch forces regeneration.
+    #[serde(default)]
+    format_version: u32,
     /// Maps each watched source file (by basename) to its fingerprint at
     /// the time of capture. On load, we compare the current fingerprint
     /// against the stored value: any difference invalidates.
     source_mtimes: HashMap<String, SourceFingerprint>,
-    aliases: HashMap<String, String>,
+    aliases: HashMap<String, Vec<String>>,
 }
 
 /// Resolve the state directory path for `aliases-cache.json`. Mirrors the
@@ -171,11 +177,14 @@ fn collect_source_mtimes(home: &Path) -> HashMap<String, SourceFingerprint> {
 }
 
 /// Attempt to load the alias map from the on-disk cache. Returns `None`
-/// when the cache is missing, unreadable, malformed, or stale w.r.t. any
-/// watched source file.
-fn load_alias_cache(home: &Path, cache_path: &Path) -> Option<HashMap<String, String>> {
+/// when the cache is missing, unreadable, malformed, stale w.r.t. any
+/// watched source file, or written by a different schema version.
+fn load_alias_cache(home: &Path, cache_path: &Path) -> Option<HashMap<String, Vec<String>>> {
     let contents = std::fs::read_to_string(cache_path).ok()?;
     let cached: CachedAliases = serde_json::from_str(&contents).ok()?;
+    if cached.format_version != CURRENT_ALIAS_CACHE_VERSION {
+        return None;
+    }
     let current = collect_source_mtimes(home);
     // Any watched file newer than the cache record means regenerate.
     // Also regenerate if a file disappeared or appeared since we cached.
@@ -188,7 +197,7 @@ fn load_alias_cache(home: &Path, cache_path: &Path) -> Option<HashMap<String, St
 /// Write the alias map plus the current source mtimes to the cache file.
 /// Uses atomic write (tmp + rename). Best-effort: any failure is logged
 /// at debug and ignored.
-fn save_alias_cache(home: &Path, cache_path: &Path, aliases: &HashMap<String, String>) {
+fn save_alias_cache(home: &Path, cache_path: &Path, aliases: &HashMap<String, Vec<String>>) {
     if aliases.is_empty() {
         // Don't cache empty results — next startup retries from scratch.
         return;
@@ -202,6 +211,7 @@ fn save_alias_cache(home: &Path, cache_path: &Path, aliases: &HashMap<String, St
         return;
     }
     let payload = CachedAliases {
+        format_version: CURRENT_ALIAS_CACHE_VERSION,
         source_mtimes: collect_source_mtimes(home),
         aliases: aliases.clone(),
     };
@@ -244,7 +254,7 @@ fn save_alias_cache(home: &Path, cache_path: &Path, aliases: &HashMap<String, St
 /// to swap in the populated map.
 #[derive(Clone, Default)]
 pub struct AliasStore {
-    inner: Arc<RwLock<HashMap<String, String>>>,
+    inner: Arc<RwLock<HashMap<String, Vec<String>>>>,
 }
 
 impl AliasStore {
@@ -277,10 +287,8 @@ impl AliasStore {
         Self::default()
     }
 
-    /// Look up an alias and return the resolved command name. Returns `None`
-    /// if the alias isn't known *or* if the background loader hasn't filled
-    /// the store yet.
-    pub fn get(&self, name: &str) -> Option<String> {
+    /// Returns the full token vector for `name`, or None if absent or loader still pending.
+    pub fn get(&self, name: &str) -> Option<Vec<String>> {
         let guard = self.inner.read().unwrap_or_else(|e| e.into_inner());
         guard.get(name).cloned()
     }
@@ -298,20 +306,20 @@ impl AliasStore {
     /// what the background loader does on completion. Crate-private so
     /// production code keeps using `load_async`.
     #[cfg(test)]
-    pub(crate) fn populate(&self, map: HashMap<String, String>) {
+    pub(crate) fn populate(&self, map: HashMap<String, Vec<String>>) {
+        let mut guard = self.inner.write().unwrap_or_else(|e| e.into_inner());
+        *guard = map;
+    }
+
+    #[doc(hidden)]
+    pub fn install(&self, map: HashMap<String, Vec<String>>) {
         let mut guard = self.inner.write().unwrap_or_else(|e| e.into_inner());
         *guard = map;
     }
 }
 
-/// Parse shell alias definitions into a map from alias name to resolved command.
-///
-/// Supports the output format of `alias` in zsh/bash:
-/// - zsh: `name=value` or `name='value'`
-/// - bash: `alias name='value'` or `alias name="value"`
-///
-/// Only extracts the first word of the resolved value (the command name).
-pub fn parse_aliases(output: &str) -> HashMap<String, String> {
+/// Parse zsh/bash `alias` output into name -> token-vector pairs; full tokens preserved via shlex.
+pub fn parse_aliases(output: &str) -> HashMap<String, Vec<String>> {
     let mut map = HashMap::new();
 
     for line in output.lines() {
@@ -343,13 +351,21 @@ pub fn parse_aliases(output: &str) -> HashMap<String, String> {
             value = &value[1..value.len() - 1];
         }
 
-        // Extract the first word (the command name)
-        let command = value.split_whitespace().next().unwrap_or("");
-        if command.is_empty() {
-            continue;
-        }
+        let tokens = match shlex::split(value) {
+            Some(toks) if !toks.is_empty() => toks,
+            Some(_) => continue, // shlex parsed but produced nothing — empty value
+            None => {
+                // Malformed shlex parse: keep raw whitespace tokens so the alias still surfaces partially.
+                tracing::debug!("shlex failed to parse alias value for {alias_name:?}: {value:?}");
+                let fallback: Vec<String> = value.split_whitespace().map(String::from).collect();
+                if fallback.is_empty() {
+                    continue;
+                }
+                fallback
+            }
+        };
 
-        map.insert(alias_name.to_string(), command.to_string());
+        map.insert(alias_name.to_string(), tokens);
     }
 
     map
@@ -362,7 +378,7 @@ pub fn parse_aliases(output: &str) -> HashMap<String, String> {
 /// within the <100ms startup budget. Uses `zsh -c` (not `-ic`) to avoid
 /// loading the full interactive config which can take 200-400ms with
 /// oh-my-zsh/plugins.
-pub fn load_shell_aliases() -> HashMap<String, String> {
+pub fn load_shell_aliases() -> HashMap<String, Vec<String>> {
     let home = dirs::home_dir();
     let cache_path = alias_cache_path();
 
@@ -461,6 +477,11 @@ pub fn load_shell_aliases() -> HashMap<String, String> {
 }
 
 #[cfg(test)]
+fn token_vec(tokens: &[&str]) -> Vec<String> {
+    tokens.iter().map(|s| (*s).to_string()).collect()
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -472,9 +493,9 @@ k=kubectl
 ll='ls -la'
 ";
         let aliases = parse_aliases(output);
-        assert_eq!(aliases.get("g"), Some(&"git".to_string()));
-        assert_eq!(aliases.get("k"), Some(&"kubectl".to_string()));
-        assert_eq!(aliases.get("ll"), Some(&"ls".to_string()));
+        assert_eq!(aliases.get("g"), Some(&token_vec(&["git"])));
+        assert_eq!(aliases.get("k"), Some(&token_vec(&["kubectl"])));
+        assert_eq!(aliases.get("ll"), Some(&token_vec(&["ls", "-la"])));
     }
 
     #[test]
@@ -485,16 +506,16 @@ alias k='kubectl'
 alias ll='ls -la'
 ";
         let aliases = parse_aliases(output);
-        assert_eq!(aliases.get("g"), Some(&"git".to_string()));
-        assert_eq!(aliases.get("k"), Some(&"kubectl".to_string()));
-        assert_eq!(aliases.get("ll"), Some(&"ls".to_string()));
+        assert_eq!(aliases.get("g"), Some(&token_vec(&["git"])));
+        assert_eq!(aliases.get("k"), Some(&token_vec(&["kubectl"])));
+        assert_eq!(aliases.get("ll"), Some(&token_vec(&["ls", "-la"])));
     }
 
     #[test]
     fn test_parse_double_quoted() {
         let output = "alias g=\"git\"\n";
         let aliases = parse_aliases(output);
-        assert_eq!(aliases.get("g"), Some(&"git".to_string()));
+        assert_eq!(aliases.get("g"), Some(&token_vec(&["git"])));
     }
 
     #[test]
@@ -505,16 +526,85 @@ alias ll='ls -la'
     }
 
     #[test]
+    fn test_parse_empty_quoted_value_skipped() {
+        let output = "alias x=''\nalias y=\"\"\nalias z=' '\n";
+        let aliases = parse_aliases(output);
+        assert!(!aliases.contains_key("x"));
+        assert!(!aliases.contains_key("y"));
+        assert!(!aliases.contains_key("z"));
+    }
+
+    #[test]
+    fn test_parse_quoted_value_with_padding_trimmed() {
+        let output = "alias k=' kubectl '\n";
+        let aliases = parse_aliases(output);
+        assert_eq!(aliases.get("k"), Some(&token_vec(&["kubectl"])));
+    }
+
+    #[test]
+    fn test_parse_keeps_dollar_var_as_literal_token() {
+        let output = "k='kubectl --context $CTX'\n";
+        let aliases = parse_aliases(output);
+        assert_eq!(
+            aliases.get("k"),
+            Some(&token_vec(&["kubectl", "--context", "$CTX"]))
+        );
+    }
+
+    #[test]
     fn test_parse_empty_output() {
         let aliases = parse_aliases("");
         assert!(aliases.is_empty());
     }
 
     #[test]
-    fn test_parse_complex_value_extracts_first_word() {
+    fn test_parse_complex_value_keeps_full_tokens() {
         let output = "glog='git log --oneline --graph'\n";
         let aliases = parse_aliases(output);
-        assert_eq!(aliases.get("glog"), Some(&"git".to_string()));
+        assert_eq!(
+            aliases.get("glog"),
+            Some(&token_vec(&["git", "log", "--oneline", "--graph"]))
+        );
+    }
+
+    #[test]
+    fn test_parse_double_quoted_with_inner_spaces() {
+        let output = "commit='git commit -m \"wip commit\"'\n";
+        let aliases = parse_aliases(output);
+        assert_eq!(
+            aliases.get("commit"),
+            Some(&token_vec(&["git", "commit", "-m", "wip commit"]))
+        );
+    }
+
+    #[test]
+    fn test_parse_escaped_space() {
+        let output = "gx='git foo\\ bar'\n";
+        let aliases = parse_aliases(output);
+        assert_eq!(aliases.get("gx"), Some(&token_vec(&["git", "foo bar"])));
+    }
+
+    #[test]
+    fn test_parse_falls_back_on_unbalanced_quote() {
+        let output = "broken=git \"open\nok=ls\n";
+        let aliases = parse_aliases(output);
+        assert_eq!(
+            aliases.get("broken"),
+            Some(&token_vec(&["git", "\"open"])),
+            "fallback must preserve every token, not just the first"
+        );
+        assert_eq!(
+            aliases.get("ok"),
+            Some(&token_vec(&["ls"])),
+            "a single corrupt alias must not drop later entries"
+        );
+    }
+
+    #[test]
+    fn test_parse_single_word_unchanged() {
+        let output = "ll=ls\n";
+        let aliases = parse_aliases(output);
+        assert_eq!(aliases.get("ll"), Some(&token_vec(&["ls"])));
     }
 
     #[test]
@@ -535,13 +625,13 @@ alias ll='ls -la'
         assert_eq!(store.get("gco"), None);
 
         let mut map = HashMap::new();
-        map.insert("gco".to_string(), "git".to_string());
-        map.insert("k".to_string(), "kubectl".to_string());
+        map.insert("gco".to_string(), token_vec(&["git", "checkout"]));
+        map.insert("k".to_string(), token_vec(&["kubectl"]));
         store.populate(map);
 
         assert_eq!(store.len(), 2);
-        assert_eq!(store.get("gco"), Some("git".to_string()));
-        assert_eq!(store.get("k"), Some("kubectl".to_string()));
+        assert_eq!(store.get("gco"), Some(token_vec(&["git", "checkout"])));
+        assert_eq!(store.get("k"), Some(token_vec(&["kubectl"])));
         assert_eq!(store.get("not-an-alias"), None);
     }
 
@@ -552,8 +642,8 @@ alias ll='ls -la'
         // would observe divergent state once the loader fills.
         let store = AliasStore::empty();
         let store2 = store.clone();
-        store.populate(HashMap::from([("g".to_string(), "git".to_string())]));
-        assert_eq!(store2.get("g"), Some("git".to_string()));
+        store.populate(HashMap::from([("g".to_string(), token_vec(&["git"]))]));
+        assert_eq!(store2.get("g"), Some(token_vec(&["git"])));
     }
 
     #[test]
@@ -566,8 +656,8 @@ alias ll='ls -la'
         let cache_path = home.path().join("aliases-cache.json");
 
         let mut aliases = HashMap::new();
-        aliases.insert("g".to_string(), "git".to_string());
-        aliases.insert("k".to_string(), "kubectl".to_string());
+        aliases.insert("g".to_string(), token_vec(&["git"]));
+        aliases.insert("k".to_string(), token_vec(&["kubectl"]));
         save_alias_cache(home.path(), &cache_path, &aliases);
         assert!(cache_path.exists(), "cache file must be written");
 
@@ -613,7 +703,7 @@ alias ll='ls -la'
         let cache_path = home.path().join("aliases-cache.json");
 
         let mut aliases = HashMap::new();
-        aliases.insert("g".to_string(), "git".to_string());
+        aliases.insert("g".to_string(), token_vec(&["git"]));
         save_alias_cache(home.path(), &cache_path, &aliases);
         assert!(load_alias_cache(home.path(), &cache_path).is_some());
 
@@ -653,7 +743,7 @@ alias ll='ls -la'
         let cache_path = home.path().join("aliases-cache.json");
 
         let mut aliases = HashMap::new();
-        aliases.insert("g".to_string(), "git".to_string());
+        aliases.insert("g".to_string(), token_vec(&["git"]));
         save_alias_cache(home.path(), &cache_path, &aliases);
         assert!(load_alias_cache(home.path(), &cache_path).is_some());
 
@@ -691,7 +781,7 @@ alias ll='ls -la'
 
         let cache_path = home.path().join("aliases-cache.json");
         let mut aliases = HashMap::new();
-        aliases.insert("g".to_string(), "git".to_string());
+        aliases.insert("g".to_string(), token_vec(&["git"]));
         save_alias_cache(home.path(), &cache_path, &aliases);
         assert!(load_alias_cache(home.path(), &cache_path).is_some());
 
@@ -720,7 +810,7 @@ alias ll='ls -la'
         let cache_path = home.path().join("aliases-cache.json");
 
         let mut aliases = HashMap::new();
-        aliases.insert("g".to_string(), "git".to_string());
+        aliases.insert("g".to_string(), token_vec(&["git"]));
         save_alias_cache(home.path(), &cache_path, &aliases);
         assert!(load_alias_cache(home.path(), &cache_path).is_some());
 
@@ -775,7 +865,7 @@ alias ll='ls -la'
 
         let cache_path = home.path().join("aliases-cache.json");
         let mut aliases = HashMap::new();
-        aliases.insert("g".to_string(), "git".to_string());
+        aliases.insert("g".to_string(), token_vec(&["git"]));
         save_alias_cache(home.path(), &cache_path, &aliases);
         assert!(load_alias_cache(home.path(), &cache_path).is_some());
 
@@ -797,7 +887,7 @@ alias ll='ls -la'
         let cache_path = home.path().join("aliases-cache.json");
 
         let mut aliases = HashMap::new();
-        aliases.insert("g".to_string(), "git".to_string());
+        aliases.insert("g".to_string(), token_vec(&["git"]));
         save_alias_cache(home.path(), &cache_path, &aliases);
 
         assert!(cache_path.exists(), "cache file must be written");
@@ -828,7 +918,7 @@ alias ll='ls -la'
         std::os::unix::fs::symlink(&victim, &predictable).unwrap();
 
         let mut aliases = HashMap::new();
-        aliases.insert("g".to_string(), "git".to_string());
+        aliases.insert("g".to_string(), token_vec(&["git"]));
         save_alias_cache(home.path(), &cache_path, &aliases);
 
         assert_eq!(
@@ -839,6 +929,40 @@ alias ll='ls -la'
         assert!(
             cache_path.exists(),
             "cache must still be written to its real path"
+        );
+    }
+
+    #[test]
+    fn alias_cache_rejects_old_format_version() {
+        // Pre-v2 cache (no format_version) must be rejected — silent deserialise would land empty Vecs.
+        let home = tempfile::tempdir().unwrap();
+        std::fs::write(home.path().join(".zshrc"), b"# empty\n").unwrap();
+        let cache_path = home.path().join("aliases-cache.json");
+
+        // Hand-craft a v1-shaped payload: no format_version, plain string values.
+        let legacy = serde_json::json!({
+            "source_mtimes": {
+                ".zshrc": { "secs": 0, "nanos": 0, "len": 0 },
+            },
+            "aliases": { "g": "git" },
+        });
+        std::fs::write(&cache_path, legacy.to_string()).unwrap();
+
+        assert!(
+            load_alias_cache(home.path(), &cache_path).is_none(),
+            "v1 cache (missing format_version) must be rejected on load"
+        );
+
+        // Sanity: an explicit older version is also rejected.
+        let stale = serde_json::json!({
+            "format_version": 1u32,
+            "source_mtimes": {},
+            "aliases": {},
+        });
+        std::fs::write(&cache_path, stale.to_string()).unwrap();
+        assert!(
+            load_alias_cache(home.path(), &cache_path).is_none(),
+            "format_version != CURRENT_ALIAS_CACHE_VERSION must be rejected"
         );
     }
 
@@ -857,7 +981,7 @@ alias ll='ls -la'
             handles.push(std::thread::spawn(move || {
                 for i in 0..20 {
                     let mut aliases = HashMap::new();
-                    aliases.insert(format!("k_{t}_{i}"), "cmd".to_string());
+                    aliases.insert(format!("k_{t}_{i}"), token_vec(&["cmd"]));
                     save_alias_cache(home.path(), &cache_path, &aliases);
                 }
             }));
