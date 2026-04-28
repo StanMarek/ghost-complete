@@ -394,11 +394,8 @@ pub fn parse_aliases(output: &str) -> HashMap<String, Vec<String>> {
                 // Malformed value (e.g. unbalanced quote). Keep every
                 // whitespace-separated token so the user still sees the
                 // alias's general intent rather than dropping the line.
-                tracing::debug!(
-                    "shlex failed to parse alias value for {alias_name:?}: {value:?}"
-                );
-                let fallback: Vec<String> =
-                    value.split_whitespace().map(String::from).collect();
+                tracing::debug!("shlex failed to parse alias value for {alias_name:?}: {value:?}");
+                let fallback: Vec<String> = value.split_whitespace().map(String::from).collect();
                 if fallback.is_empty() {
                     continue;
                 }
@@ -666,10 +663,7 @@ alias ll='ls -la'
         // would observe divergent state once the loader fills.
         let store = AliasStore::empty();
         let store2 = store.clone();
-        store.populate(HashMap::from([(
-            "g".to_string(),
-            token_vec(&["git"]),
-        )]));
+        store.populate(HashMap::from([("g".to_string(), token_vec(&["git"]))]));
         assert_eq!(store2.get("g"), Some(token_vec(&["git"])));
     }
 

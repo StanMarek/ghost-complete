@@ -87,10 +87,7 @@ fn alias_chained_gcb_resolves_to_git_checkout_b() {
     // walk must still pick the correct subtree without crashing or
     // attempting to look up `gcb` directly).
     let aliases = HashMap::from([
-        (
-            "gcb".to_string(),
-            vec!["gco".to_string(), "-b".to_string()],
-        ),
+        ("gcb".to_string(), vec!["gco".to_string(), "-b".to_string()]),
         (
             "gco".to_string(),
             vec!["git".to_string(), "checkout".to_string()],

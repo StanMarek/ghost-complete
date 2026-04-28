@@ -117,7 +117,12 @@ mod tests {
     use super::*;
     use crate::alias::AliasStore;
 
-    fn ctx(command: Option<&str>, args: &[&str], current_word: &str, word_index: usize) -> CommandContext {
+    fn ctx(
+        command: Option<&str>,
+        args: &[&str],
+        current_word: &str,
+        word_index: usize,
+    ) -> CommandContext {
         CommandContext {
             command: command.map(String::from),
             args: args.iter().map(|s| (*s).to_string()).collect(),

@@ -886,20 +886,19 @@ impl SuggestionEngine {
         // the walk, so the `word_index`/`current_word` mismatch on the
         // synthetic ctx is intentional and safe.
         let synthetic_ctx;
-        let resolve_ctx: &CommandContext =
-            match expand_alias_for_spec(ctx, &self.alias_map) {
-                Some(exp) if matches!(exp.effective_args, std::borrow::Cow::Owned(_)) => {
-                    synthetic_ctx = CommandContext {
-                        command: Some(exp.resolved_command.into_owned()),
-                        args: exp.effective_args.into_owned(),
-                        ..ctx.clone()
-                    };
-                    &synthetic_ctx
-                }
-                // No alias hit (or borrowed pass-through) — reuse the
-                // original ctx and skip the per-keystroke clone.
-                _ => ctx,
-            };
+        let resolve_ctx: &CommandContext = match expand_alias_for_spec(ctx, &self.alias_map) {
+            Some(exp) if matches!(exp.effective_args, std::borrow::Cow::Owned(_)) => {
+                synthetic_ctx = CommandContext {
+                    command: Some(exp.resolved_command.into_owned()),
+                    args: exp.effective_args.into_owned(),
+                    ..ctx.clone()
+                };
+                &synthetic_ctx
+            }
+            // No alias hit (or borrowed pass-through) — reuse the
+            // original ctx and skip the per-keystroke clone.
+            _ => ctx,
+        };
 
         let specs::SpecResolution {
             subcommands,
