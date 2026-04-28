@@ -172,6 +172,86 @@ fn print_shell_blocks(init_path: &Path, script_path: &Path) {
     println!("    \x1b[36m{indented_shell}\x1b[0m\n");
 }
 
+fn post_install_summary(config_dir: &Path, wrote_zshrc: bool) -> String {
+    use std::fmt::Write as _;
+    let mut out = String::new();
+
+    if wrote_zshrc {
+        writeln!(
+            out,
+            "\x1b[32m\u{2713}\x1b[0m  ghost-complete installed successfully!"
+        )
+        .unwrap();
+    } else {
+        writeln!(
+            out,
+            "\x1b[33m\u{26a0}\x1b[0m  ghost-complete partially installed (manual .zshrc step required)"
+        )
+        .unwrap();
+    }
+    writeln!(out).unwrap();
+
+    writeln!(out, "\x1b[1mNext steps:\x1b[0m").unwrap();
+    if wrote_zshrc {
+        writeln!(
+            out,
+            "  1. Reload your shell:     \x1b[1msource ~/.zshrc\x1b[0m"
+        )
+        .unwrap();
+    } else {
+        writeln!(
+            out,
+            "  1. Restart your shell after pasting the blocks above."
+        )
+        .unwrap();
+    }
+    writeln!(
+        out,
+        "  2. Verify the install:    \x1b[1mghost-complete doctor\x1b[0m"
+    )
+    .unwrap();
+    writeln!(
+        out,
+        "  3. Try it:                \x1b[1mcd /tmp && git\x1b[0m\x1b[2m  (then type a space)\x1b[0m"
+    )
+    .unwrap();
+    writeln!(
+        out,
+        "  4. Manual trigger:        \x1b[1mCtrl+/\x1b[0m  (if the popup doesn't appear)"
+    )
+    .unwrap();
+    writeln!(
+        out,
+        "  5. Customize:             \x1b[1mghost-complete config edit\x1b[0m"
+    )
+    .unwrap();
+    writeln!(out).unwrap();
+
+    writeln!(out, "\x1b[1mFiles installed:\x1b[0m").unwrap();
+    writeln!(
+        out,
+        "  Config:  {}",
+        sanitize_path(&config_dir.join("config.toml"))
+    )
+    .unwrap();
+    writeln!(
+        out,
+        "  Specs:   {}/  ({} completion specs)",
+        sanitize_path(&config_dir.join("specs")),
+        EMBEDDED_SPECS.len()
+    )
+    .unwrap();
+    writeln!(out).unwrap();
+
+    writeln!(
+        out,
+        "Docs: https://github.com/StanMarek/ghost-complete#readme"
+    )
+    .unwrap();
+
+    out
+}
+
 fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()> {
     // 1. Write zsh shell scripts
     let shell_dir = config_dir.join("shell");
@@ -316,8 +396,7 @@ fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()>
     match fs::write(zshrc_path, &new_zshrc) {
         Ok(()) => {
             println!("  Updated {}", sanitize_path(zshrc_path));
-            println!("\nghost-complete installed successfully!");
-            println!("Restart your shell or run: source ~/.zshrc");
+            print!("\n{}", post_install_summary(config_dir, true));
         }
         Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
             println!(
@@ -325,9 +404,7 @@ fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()>
                 sanitize_path(zshrc_path)
             );
             print_shell_blocks(&init_path, &script_path);
-            println!(
-                "  \x1b[32m\u{2713}\x1b[0m  Installation complete (manual shell configuration required)."
-            );
+            print!("\n{}", post_install_summary(config_dir, false));
         }
         Err(e) => {
             return Err(anyhow::anyhow!(
@@ -1079,5 +1156,77 @@ mod tests {
         // Specs and config should still be there (retained)
         assert!(config.join("specs").exists());
         assert!(config.join("config.toml").exists());
+    }
+
+    #[test]
+    fn test_post_install_summary_contains_all_sections() {
+        // Use a distinctive directory so we can also assert the helper
+        // interpolates `config_dir` into the rendered paths rather than
+        // hardcoding them.
+        let config_dir = Path::new("/tmp/gc-test-xyz");
+        let summary = post_install_summary(config_dir, true);
+        for token in [
+            "ghost-complete installed successfully",
+            "doctor",
+            "Ctrl+/",
+            "config edit",
+            "git",
+            "config.toml",
+            "specs",
+            "source ~/.zshrc",
+            "/tmp/gc-test-xyz/config.toml",
+            "/tmp/gc-test-xyz/specs",
+        ] {
+            assert!(
+                summary.contains(token),
+                "missing token: {token}\n--- summary ---\n{summary}"
+            );
+        }
+        let count_token = format!("({} completion specs)", EMBEDDED_SPECS.len());
+        assert!(
+            summary.contains(&count_token),
+            "missing spec count `{count_token}`\n--- summary ---\n{summary}"
+        );
+    }
+
+    #[test]
+    fn test_post_install_summary_manual_fallback_omits_source_zshrc() {
+        let summary = post_install_summary(Path::new("/tmp/cfg"), false);
+        assert!(summary.contains("after pasting the blocks above"));
+        assert!(
+            !summary.contains("source ~/.zshrc"),
+            "manual-fallback summary must not instruct user to source a file \
+             they didn't write to:\n{summary}"
+        );
+        // Headline must reflect the partial-install state — a green-check
+        // "installed successfully" headline would contradict the prior
+        // permission-denied warning the user just saw on screen.
+        assert!(
+            summary.contains("partially installed"),
+            "manual-fallback headline must signal the degraded state:\n{summary}"
+        );
+        assert!(
+            !summary.contains("installed successfully"),
+            "manual-fallback summary must not claim success:\n{summary}"
+        );
+    }
+
+    #[test]
+    fn test_post_install_summary_uses_sanitized_paths() {
+        // Pin the sanitization invariant. We can't blanket-assert
+        // `!contains('\x1b')` because the helper intentionally emits ANSI
+        // sigils (green check, bolds, dim placeholder); instead pin both
+        // directions — the path's raw sequence is gone, the sanitised form
+        // is present.
+        let hostile = Path::new("/tmp/\x1b[31mevil");
+        let summary = post_install_summary(hostile, true);
+        assert!(
+            summary.contains("/tmp/[31mevil"),
+            "expected sanitised hostile path in summary: {summary:?}"
+        );
+        assert!(
+            !summary.contains("\x1b[31m"),
+            "raw ESC sequence from hostile path leaked: {summary:?}"
+        );
     }
 }
