@@ -343,6 +343,25 @@ impl SuggestionEngine {
         }
     }
 
+    /// Builder hook for integration tests / benches: install a fixed
+    /// alias map without going through the background loader. Hidden from
+    /// public docs because production code should always use
+    /// [`Self::with_providers`] which spawns the loader.
+    #[doc(hidden)]
+    pub fn with_aliases(self, map: std::collections::HashMap<String, Vec<String>>) -> Self {
+        self.alias_map.install(map);
+        self
+    }
+
+    /// Builder hook for integration tests / benches: point the SSH host
+    /// cache at a deterministic config path (fed by the test fixture)
+    /// instead of `~/.ssh/config`.
+    #[doc(hidden)]
+    pub fn with_ssh_host_cache_path(mut self, path: std::path::PathBuf) -> Self {
+        self.ssh_host_cache = Some(SshHostCache::new(path));
+        self
+    }
+
     /// Record an accepted completion for frecency scoring.
     /// `command` scopes the key so `--help` under `git` doesn't boost `docker`.
     /// `kind` scopes it further so a branch `main` doesn't boost a file `main`.
