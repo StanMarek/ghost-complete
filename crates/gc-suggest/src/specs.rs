@@ -284,9 +284,69 @@ pub struct ArgSpec {
     pub generators: Vec<GeneratorSpec>,
     #[serde(default, deserialize_with = "deserialize_template")]
     pub template: Option<String>,
-    /// Static suggestions — accepted from specs but not yet used at runtime.
+    /// Static suggestions — plain string or full object entries from the spec's
+    /// `args.suggestions` field.
+    #[serde(default, deserialize_with = "deserialize_suggestions_one_or_many")]
+    pub suggestions: Vec<SuggestionEntry>,
+}
+
+/// Static suggestion entry — either a plain string shorthand or a full object.
+/// Mirrors the Fig schema; reserved fields (insertValue, displayName,
+/// replaceValue, icon, isDangerous) deserialize-but-not-honored in v1.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(untagged)]
+pub enum SuggestionEntry {
+    Plain(String),
+    Object(SuggestionObject),
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct SuggestionObject {
+    #[serde(default, deserialize_with = "deserialize_name_one_or_many")]
+    pub name: Vec<String>,
+    pub description: Option<String>,
+    #[serde(rename = "type")]
+    pub kind: Option<String>,
+    pub priority: Option<Priority>,
     #[serde(default)]
-    pub suggestions: Option<serde_json::Value>,
+    pub hidden: bool,
+}
+
+fn deserialize_name_one_or_many<'de, D>(d: D) -> std::result::Result<Vec<String>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum OneOrMany {
+        One(String),
+        Many(Vec<String>),
+    }
+    match OneOrMany::deserialize(d)? {
+        OneOrMany::One(s) => Ok(vec![s]),
+        OneOrMany::Many(v) => Ok(v),
+    }
+}
+
+fn deserialize_suggestions_one_or_many<'de, D>(
+    d: D,
+) -> std::result::Result<Vec<SuggestionEntry>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    // Fig allows the suggestions field to be either an array (canonical) or
+    // a single entry. Mirror the existing `deserialize_args_one_or_many`
+    // pattern so a malformed/single-entry spec still loads.
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum OneOrMany {
+        One(SuggestionEntry),
+        Many(Vec<SuggestionEntry>),
+    }
+    match OneOrMany::deserialize(d)? {
+        OneOrMany::One(s) => Ok(vec![s]),
+        OneOrMany::Many(v) => Ok(v),
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -1481,7 +1541,7 @@ mod tests {
                 description: None,
                 generators: vec![],
                 template: None,
-                suggestions: None,
+                suggestions: vec![],
             }),
             priority: None,
         }];
@@ -1510,7 +1570,7 @@ mod tests {
                         description: None,
                         generators: vec![],
                         template: None,
-                        suggestions: None,
+                        suggestions: vec![],
                     })
                 } else {
                     None
