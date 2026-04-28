@@ -675,7 +675,7 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
     let mut script_generators = Vec::new();
     let mut wants_filepaths = false;
     let mut wants_folders_only = false;
-    let mut static_suggestions: Vec<Suggestion> = Vec::new();
+    let mut static_suggestions = Vec::new();
 
     // If the preceding token was a flag that takes an argument, check
     // the option's arg spec for templates/generators instead of the
@@ -743,9 +743,10 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
 /// Map Fig `Suggestion.type` strings to `SuggestionKind`.
 /// Per SPEC.md §"type mapping": subcommand/option/file/folder map to their
 /// equivalents; "arg", "special", "shortcut", "mixin", "auto-execute", and
-/// missing/unknown all fall back to `EnumValue`. Unknown strings emit a
-/// warning via `tracing` so misconfigured specs surface but don't break
-/// loading.
+/// missing/unknown all fall back to `EnumValue`. This runs on the keystroke
+/// hot path via `resolve_spec`, so it MUST stay a pure mapping with no
+/// logging — `validate_arg_generators` already warns once at load time about
+/// unknown type strings (see `is_known_suggestion_type`).
 fn suggestion_kind_from_type(s: Option<&str>) -> SuggestionKind {
     match s {
         Some("subcommand") => SuggestionKind::Subcommand,
@@ -754,14 +755,26 @@ fn suggestion_kind_from_type(s: Option<&str>) -> SuggestionKind {
         Some("folder") => SuggestionKind::Directory,
         Some("arg") | Some("special") | Some("shortcut") | Some("mixin") | Some("auto-execute")
         | None => SuggestionKind::EnumValue,
-        Some(other) => {
-            tracing::warn!(
-                suggestion_type = %other,
-                "unknown Fig suggestion `type`; falling back to EnumValue"
-            );
-            SuggestionKind::EnumValue
-        }
+        Some(_) => SuggestionKind::EnumValue, // load-time validation already warned
     }
+}
+
+/// Set of Fig `Suggestion.type` strings recognized by `suggestion_kind_from_type`.
+/// Kept in sync with that function; used at load time by `validate_arg_generators`
+/// to warn once per unknown type string instead of warning on every keystroke.
+fn is_known_suggestion_type(s: &str) -> bool {
+    matches!(
+        s,
+        "subcommand"
+            | "option"
+            | "file"
+            | "folder"
+            | "arg"
+            | "special"
+            | "shortcut"
+            | "mixin"
+            | "auto-execute"
+    )
 }
 
 /// Lift static `SuggestionEntry` values into ranked-pool `Suggestion`s.
@@ -970,6 +983,22 @@ fn validate_arg_generators(arg_spec: &mut ArgSpec, spec_name: &str, warnings: &m
             "{spec_name}: removed {} suggestion(s) (empty name or hidden)",
             original_suggestions_len - arg_spec.suggestions.len()
         );
+    }
+
+    // Surface unknown `type` strings once at load time. `suggestion_kind_from_type`
+    // is on the keystroke hot path and must stay silent — emitting the warning
+    // here means each unknown type shows up once per spec load instead of once
+    // per keystroke. The entry itself is kept; `EnumValue` is a safe fallback.
+    for entry in &arg_spec.suggestions {
+        if let SuggestionEntry::Object(obj) = entry {
+            if let Some(type_str) = &obj.kind {
+                if !is_known_suggestion_type(type_str) {
+                    warnings.push(format!(
+                        "suggestion in {spec_name} has unknown `type` \"{type_str}\"; falling back to EnumValue"
+                    ));
+                }
+            }
+        }
     }
 }
 
@@ -2546,6 +2575,9 @@ mod tests {
                 {"name":"defaulted"},
                 {"name":"argish","type":"arg"},
                 {"name":"specialish","type":"special"},
+                {"name":"sh","type":"shortcut"},
+                {"name":"mx","type":"mixin"},
+                {"name":"ae","type":"auto-execute"},
                 {"name":"unknown","type":"made_up_xyz"}
             ]}]
         }"#,
@@ -2577,6 +2609,26 @@ mod tests {
         assert_eq!(by_text["defaulted"], SuggestionKind::EnumValue);
         assert_eq!(by_text["argish"], SuggestionKind::EnumValue);
         assert_eq!(by_text["specialish"], SuggestionKind::EnumValue);
+        assert_eq!(by_text["sh"], SuggestionKind::EnumValue);
+        assert_eq!(by_text["mx"], SuggestionKind::EnumValue);
+        assert_eq!(by_text["ae"], SuggestionKind::EnumValue);
         assert_eq!(by_text["unknown"], SuggestionKind::EnumValue);
+    }
+
+    #[test]
+    fn unknown_suggestion_type_warns_at_load_time() {
+        let json = r#"{"name":"x","args":{"name":"y","suggestions":[
+            {"name":"a","type":"made_up_xyz"},
+            {"name":"b","type":"file"}
+        ]}}"#;
+        let mut spec = parse_spec_checked_and_sanitized(json).unwrap();
+        let warnings = validate_spec_generators(&mut spec);
+        assert!(warnings.iter().any(|w| w.contains("made_up_xyz")));
+        assert!(!warnings.iter().any(|w| w.contains("\"file\"")));
+        assert_eq!(
+            spec.args[0].suggestions.len(),
+            2,
+            "unknown-type entry should NOT be dropped"
+        );
     }
 }

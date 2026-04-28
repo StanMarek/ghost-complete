@@ -874,7 +874,6 @@ impl SuggestionEngine {
         let specs::SpecResolution {
             subcommands,
             options,
-            static_suggestions: _static_suggestions,
             native_generators,
             provider_generators,
             script_generators,
@@ -882,6 +881,7 @@ impl SuggestionEngine {
             wants_folders_only,
             preceding_flag_has_args,
             past_double_dash,
+            ..
         } = specs::resolve_spec(spec, resolve_ctx.as_ref());
 
         let git_generators = self.git_generators_from(&native_generators);
