@@ -1125,15 +1125,17 @@ mod tests {
 
     // -- OSC 7770 UTF-8 rejection --
 
-    // Legacy framing — bug-by-design; see ADR 0003.
+    // LEGACY: this test pins the OSC 7770 truncation bug deliberately —
+    // the parser still accepts the 7770 framing for one deprecation cycle
+    // even though it is structurally broken. Slated for `#[ignore]` at
+    // v(N+1) and deletion at v(N+2), once stale shells have been pushed
+    // to the OSC 7772 framing. See ADR 0003 and `osc7772_regression_pin_*`
+    // below for the positive case the new framing fixes.
     //
-    // The pre-OSC-7772 emitter interpolated `$BUFFER` raw into the OSC
-    // payload, and vte splits OSC parameters on `;`. So a buffer like
-    // `if true; then` becomes a 4-param OSC: `params[2] = "if true"`,
-    // `params[3] = " then"`. The 7770 dispatch arm only reads `params[2]`,
-    // silently truncating the buffer at the first semicolon. This test
-    // pins the broken behaviour so changes to the legacy path stay
-    // observable until 7770 is removed in v(N+2).
+    // vte splits OSC parameters on `;`, so a buffer like `if true; then`
+    // becomes a 4-param OSC: `params[2] = "if true"`, `params[3] = " then"`.
+    // The 7770 dispatch arm only reads `params[2]`, silently truncating
+    // the buffer at the first semicolon.
     #[test]
     fn osc7770_legacy_truncates_on_semicolon_documented() {
         let mut p = make_parser();
@@ -1268,6 +1270,17 @@ mod tests {
     #[test]
     fn osc7772_roundtrips_semicolon() {
         assert_roundtrips("if true; then");
+    }
+
+    // The canonical bug witness from the SPEC. Pre-OSC-7772 framing
+    // truncated this buffer at the first `;`, surfacing as wrong
+    // completion candidates the moment a user typed any composite
+    // statement. Asserting whole-buffer reconstruction here keeps that
+    // regression visible — if this ever fails, the encoder/decoder
+    // contract has drifted and `cargo test` is the loud failure.
+    #[test]
+    fn osc7772_regression_pin_canonical_bug_witness() {
+        assert_roundtrips("if true; then echo a; fi");
     }
 
     #[test]
