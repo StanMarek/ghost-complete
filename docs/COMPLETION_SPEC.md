@@ -87,6 +87,49 @@ Ghost Complete uses a Fig-compatible JSON format for completion specs. Specs def
 | `description` | string | No | Description of the argument |
 | `template` | string | No | Built-in template: `"filepaths"` or `"folders"` |
 | `generators` | GeneratorSpec[] | No | Dynamic generators for values |
+| `suggestions` | SuggestionEntry[] | No | Static enum-like candidates, see below |
+
+#### Static suggestions
+
+Specs may declare a fixed list of completion candidates for an arg position via the `suggestions` field. Each entry is either a plain string (shorthand) or a `SuggestionObject` with metadata.
+
+```json
+{
+  "name": "format",
+  "suggestions": [
+    "tar",
+    {
+      "name": ["json", "j"],
+      "description": "JSON output",
+      "type": "arg",
+      "priority": 80,
+      "hidden": false
+    }
+  ]
+}
+```
+
+| Field | Type | Required | Behavior |
+|-------|------|----------|----------|
+| `name` | `string \| string[]` | Yes | Each alias becomes its own ranked candidate |
+| `description` | `string` | No | Forwarded to the candidate's description |
+| `type` | `string` | No | Maps to `SuggestionKind` (see table below). Default: `EnumValue` |
+| `priority` | `0..=100` | No | Per-item priority override |
+| `hidden` | bool | No | When true, entry is dropped at load time |
+
+**`type` mapping:**
+
+| Fig `type` | `SuggestionKind` |
+|------------|------------------|
+| `"subcommand"` | `Subcommand` |
+| `"option"` | `Flag` |
+| `"file"` | `FilePath` |
+| `"folder"` | `Directory` |
+| `"arg"`, `"special"`, `"shortcut"`, `"mixin"`, `"auto-execute"`, missing | `EnumValue` |
+
+Unknown `type` strings emit a load-time warning (visible via `ghost-complete validate-specs`) and fall back to `EnumValue`. Static suggestions surface in the candidate pool *unconditionally* — they are values for an arg slot, not commands, and are not affected by the suppression rules that hide subcommands and options when the user is filling in a flag's argument or has passed `--`.
+
+Mirrors Fig's [`Suggestion`](https://fig.io/api/interfaces/Suggestion) interface (subset). Reserved fields (`insertValue`, `displayName`, `replaceValue`, `icon`, `isDangerous`) are silently ignored by the deserializer; v2 may surface them.
 
 ### GeneratorSpec
 
@@ -308,6 +351,7 @@ value is used. Otherwise the engine falls back to a per-kind base:
 | GitRemote     | 70   |                                                |
 | Subcommand    | 70   |                                                |
 | ProviderValue | 70   | Generator output (npm, docker, kubectl, …)     |
+| EnumValue     | 65   | Static `args.suggestions` enum-like values        |
 | EnvVar        | 50   |                                                |
 | Command       | 40   | `$PATH` binaries                               |
 | Flag          | 30   |                                                |
