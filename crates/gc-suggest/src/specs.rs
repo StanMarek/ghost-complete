@@ -1007,6 +1007,101 @@ fn validate_arg_generators(arg_spec: &mut ArgSpec, spec_name: &str, warnings: &m
     }
 }
 
+/// Approximate heap bytes owned by `spec`.
+///
+/// Sums `capacity()` for every heap-allocated `String` and `Vec` in the spec
+/// tree. Uses capacities (not lengths) because that's what the allocator
+/// reserved — a String that grew to capacity 64 but only has 12 bytes of
+/// content still holds 64 bytes of heap. This is the right unit for memory
+/// budget regression tests.
+///
+/// The walk is iterative to avoid recursion-depth issues on deeply nested
+/// specs. Accuracy is approximate; the goal is a stable number that detects
+/// large regressions, not a byte-perfect heap profiler reading.
+pub fn estimated_heap_bytes(spec: &CompletionSpec) -> usize {
+    fn string_heap(s: &str) -> usize {
+        s.len() // capacity not available on &str; use len as proxy for owned strings
+    }
+    fn opt_string_heap(s: &Option<String>) -> usize {
+        s.as_deref().map(string_heap).unwrap_or(0)
+    }
+    fn suggestion_entry_heap(entry: &SuggestionEntry) -> usize {
+        match entry {
+            SuggestionEntry::Plain(s) => s.capacity(),
+            SuggestionEntry::Object(obj) => {
+                let names: usize = obj.name.iter().map(|n| n.capacity()).sum();
+                let names_vec = obj.name.capacity() * std::mem::size_of::<String>();
+                let desc = obj.description.as_ref().map(|s| s.capacity()).unwrap_or(0);
+                let kind = obj.kind.as_ref().map(|s| s.capacity()).unwrap_or(0);
+                names + names_vec + desc + kind
+            }
+        }
+    }
+    fn arg_spec_heap(arg: &ArgSpec) -> usize {
+        let name = opt_string_heap(&arg.name);
+        let desc = opt_string_heap(&arg.description);
+        let gens = arg.generators.capacity() * std::mem::size_of::<GeneratorSpec>()
+            + arg
+                .generators
+                .iter()
+                .map(|g| {
+                    let gt = g.generator_type.as_ref().map(|s| s.capacity()).unwrap_or(0);
+                    let script: usize = g
+                        .script
+                        .as_ref()
+                        .map(|v| {
+                            v.capacity() * std::mem::size_of::<String>()
+                                + v.iter().map(|s| s.capacity()).sum::<usize>()
+                        })
+                        .unwrap_or(0);
+                    let script_tmpl: usize = g
+                        .script_template
+                        .as_ref()
+                        .map(|v| {
+                            v.capacity() * std::mem::size_of::<String>()
+                                + v.iter().map(|s| s.capacity()).sum::<usize>()
+                        })
+                        .unwrap_or(0);
+                    gt + script + script_tmpl
+                })
+                .sum::<usize>();
+        let tmpl = arg.template.as_ref().map(|s| s.capacity()).unwrap_or(0);
+        let sugg_vec = arg.suggestions.capacity() * std::mem::size_of::<SuggestionEntry>();
+        let sugg: usize = arg.suggestions.iter().map(suggestion_entry_heap).sum();
+        name + desc + gens + tmpl + sugg_vec + sugg
+    }
+    fn option_spec_heap(opt: &OptionSpec) -> usize {
+        let names: usize = opt.name.iter().map(|n| n.capacity()).sum();
+        let names_vec = opt.name.capacity() * std::mem::size_of::<String>();
+        let desc = opt_string_heap(&opt.description);
+        let args = opt.args.as_ref().map(arg_spec_heap).unwrap_or(0);
+        names + names_vec + desc + args
+    }
+
+    let mut total = spec.name.capacity()
+        + opt_string_heap(&spec.description)
+        + spec.args.capacity() * std::mem::size_of::<ArgSpec>()
+        + spec.args.iter().map(arg_spec_heap).sum::<usize>()
+        + spec.options.capacity() * std::mem::size_of::<OptionSpec>()
+        + spec.options.iter().map(option_spec_heap).sum::<usize>()
+        + spec.subcommands.capacity() * std::mem::size_of::<SubcommandSpec>();
+
+    // Walk subcommands iteratively
+    let mut stack: Vec<&SubcommandSpec> = spec.subcommands.iter().collect();
+    while let Some(sub) = stack.pop() {
+        total += sub.name.capacity();
+        total += opt_string_heap(&sub.description);
+        total += sub.args.capacity() * std::mem::size_of::<ArgSpec>();
+        total += sub.args.iter().map(arg_spec_heap).sum::<usize>();
+        total += sub.options.capacity() * std::mem::size_of::<OptionSpec>();
+        total += sub.options.iter().map(option_spec_heap).sum::<usize>();
+        total += sub.subcommands.capacity() * std::mem::size_of::<SubcommandSpec>();
+        stack.extend(sub.subcommands.iter());
+    }
+
+    total
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -2634,6 +2729,25 @@ mod tests {
             spec.args[0].suggestions.len(),
             2,
             "unknown-type entry should NOT be dropped"
+        );
+    }
+
+    #[test]
+    fn embedded_specs_under_memory_budget() {
+        const BUDGET_BYTES: usize = 64 * 1024 * 1024;
+        let spec_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../specs");
+        let store = SpecStore::load_from_dir(&spec_dir).unwrap().store;
+        let total: usize = store.iter().map(|(_, s)| estimated_heap_bytes(s)).sum();
+        assert!(
+            total < BUDGET_BYTES,
+            "embedded specs heap {} bytes exceeds budget {} bytes — investigate before raising the limit",
+            total,
+            BUDGET_BYTES
+        );
+        eprintln!(
+            "INFO: embedded specs estimated heap: {} bytes ({} KB)",
+            total,
+            total / 1024
         );
     }
 }

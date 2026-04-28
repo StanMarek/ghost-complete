@@ -273,6 +273,22 @@ fn priority_sort_benchmarks(c: &mut Criterion) {
     group.finish();
 }
 
+fn memory_benchmarks(c: &mut Criterion) {
+    let spec_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../specs");
+    let mut group = c.benchmark_group("memory");
+    group.bench_function("embedded_specs_heap_walk", |b| {
+        let store = SpecStore::load_from_dir(&spec_dir).unwrap().store;
+        b.iter(|| {
+            let total: usize = store
+                .iter()
+                .map(|(_, s)| specs::estimated_heap_bytes(s))
+                .sum();
+            std::hint::black_box(total)
+        });
+    });
+    group.finish();
+}
+
 criterion_group!(
     benches,
     fuzzy_benchmarks,
@@ -281,5 +297,6 @@ criterion_group!(
     transform_benchmarks,
     engine_benchmarks,
     priority_sort_benchmarks,
+    memory_benchmarks,
 );
 criterion_main!(benches);
