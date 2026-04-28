@@ -47,10 +47,11 @@ pub struct TerminalState {
     cursor_sync_requested: bool,
     cpr_synced: bool,
     /// One-shot guard so the deprecation warning for the legacy OSC 7770
-    /// raw-framing path fires at most once per process. Subsequent legacy
-    /// dispatches downgrade to a `trace!` line so a stale shell does not
-    /// spam the proxy log on every keystroke. Reset only by process exit
-    /// — there is no API to clear it. See ADR 0003.
+    /// raw-framing path fires at most once per `TerminalState` instance.
+    /// Subsequent legacy dispatches downgrade to a `trace!` line so a stale
+    /// shell does not spam the proxy log on every keystroke. Production
+    /// currently constructs a single parser per proxy session, so this is
+    /// effectively per-process. See ADR 0003.
     legacy_osc7770_warned: bool,
     /// FIFO queue of pending CPR requests in send-order.
     ///
@@ -611,5 +612,27 @@ mod tests {
         assert_eq!(dropped, 1);
         assert_eq!(state.cpr_queue_len(), 1);
         assert_eq!(state.claim_next_cpr(), Some(CprOwner::Shell));
+    }
+
+    #[test]
+    fn check_and_set_legacy_osc7770_warned_is_one_shot() {
+        let mut s = TerminalState::new(24, 80);
+        assert!(
+            s.check_and_set_legacy_osc7770_warned(),
+            "first call returns true"
+        );
+        assert!(
+            !s.check_and_set_legacy_osc7770_warned(),
+            "second call returns false"
+        );
+        assert!(
+            !s.check_and_set_legacy_osc7770_warned(),
+            "third call still false"
+        );
+        s.update_dimensions(48, 120);
+        assert!(
+            !s.check_and_set_legacy_osc7770_warned(),
+            "resize must not reset"
+        );
     }
 }

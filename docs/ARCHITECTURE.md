@@ -225,5 +225,5 @@ See [ADR 0003](adr/0003-osc7772-buffer-framing.md).
 OSC 7770 (the prior raw framing) is accepted by the parser as a deprecated
 read-only path for one release: the first hit per process logs a one-shot
 `tracing::warn!` and subsequent hits drop to `trace!`. The 7770 dispatch
-arm is scheduled for `#[ignore]` in v(N+1) and removal in v(N+2). New
+arm is scheduled for `#[ignore]` in v0.11.0 and removal in v0.12.0. New
 shell integrations only emit 7772.

@@ -227,10 +227,14 @@ impl Perform for TerminalState {
             //   params[2] = percent-encoded UTF-8 buffer
             //
             // Anything malformed (bad cursor int, bad escape, non-UTF-8
-            // payload) drops the frame silently and leaves prior state
-            // untouched.
+            // payload) drops the frame (logs a `tracing::warn!`; prior
+            // buffer state untouched).
             b"7772" => {
                 if params.len() < 3 {
+                    tracing::debug!(
+                        params_len = params.len(),
+                        "OSC 7772 — missing payload param, dropping frame"
+                    );
                     return;
                 }
                 let cursor = match std::str::from_utf8(params[1])
@@ -273,13 +277,11 @@ impl Perform for TerminalState {
             // a nested OSC into the parser. New shell integrations emit
             // OSC 7772 (percent-encoded) instead. See ADR 0003.
             //
-            // Behaviour is intentionally unchanged from prior releases:
-            // first hit per process logs a one-shot `warn!`, subsequent
-            // hits drop to `trace!`. Slated for removal at v(N+2).
+            // Decoding/state-update logic is unchanged; only logging now
+            // flags the legacy framing (one-shot `warn!` on first hit per
+            // parser instance, `trace!` thereafter). Slated for removal at
+            // v0.12.0.
             b"7770" => {
-                if params.len() < 3 {
-                    return;
-                }
                 if self.check_and_set_legacy_osc7770_warned() {
                     tracing::warn!(
                         "OSC 7770 (legacy raw framing) received — upgrade your shell \
@@ -287,6 +289,10 @@ impl Perform for TerminalState {
                     );
                 } else {
                     tracing::trace!("OSC 7770 (legacy) — buffer update");
+                }
+                if params.len() < 3 {
+                    tracing::debug!("OSC 7770 — short params, dropping");
+                    return;
                 }
                 let cursor = match std::str::from_utf8(params[1])
                     .ok()
@@ -1123,7 +1129,7 @@ mod tests {
     // LEGACY: this test pins the OSC 7770 truncation bug deliberately —
     // the parser still accepts the 7770 framing for one deprecation cycle
     // even though it is structurally broken. Slated for `#[ignore]` at
-    // v(N+1) and deletion at v(N+2), once stale shells have been pushed
+    // v0.11.0 and deletion at v0.12.0, once stale shells have been pushed
     // to the OSC 7772 framing. See ADR 0003 and `osc7772_regression_pin_*`
     // below for the positive case the new framing fixes.
     //
@@ -1140,7 +1146,8 @@ mod tests {
             Some("if true"),
             "legacy OSC 7770 truncates at first ';' — see ADR 0003"
         );
-        // Cursor was 14 (end of full buffer); clamped to truncated length 7.
+        // Cursor was 14 (one past the end of the full 13-char buffer);
+        // clamped to the truncated buffer length 7.
         assert_eq!(p.state().buffer_cursor(), 7);
     }
 
@@ -1389,5 +1396,70 @@ mod tests {
             p.state().command_buffer(),
             Some(std::str::from_utf8(smuggled).unwrap())
         );
+    }
+
+    #[test]
+    fn osc7772_does_not_disturb_terminal_cursor() {
+        let mut p = make_parser();
+        p.process_bytes(b"hello");
+        let before = p.state().cursor_position();
+        p.process_bytes(&build_osc7772(b"if true; then", 13));
+        p.process_bytes(b" world");
+        assert_eq!(p.state().cursor_position(), (before.0, before.1 + 6));
+        assert_eq!(p.state().command_buffer(), Some("if true; then"));
+    }
+
+    #[test]
+    fn osc7772_rejects_non_numeric_cursor() {
+        let mut p = make_parser();
+        p.process_bytes(&build_osc7772(b"prior", 5));
+        p.process_bytes(b"\x1b]7772;notanumber;abc\x07");
+        assert_eq!(p.state().command_buffer(), Some("prior"));
+        assert_eq!(p.state().buffer_cursor(), 5);
+    }
+
+    #[test]
+    fn osc7772_rejects_negative_cursor() {
+        let mut p = make_parser();
+        p.process_bytes(&build_osc7772(b"prior", 5));
+        p.process_bytes(b"\x1b]7772;-1;abc\x07");
+        assert_eq!(p.state().command_buffer(), Some("prior"));
+    }
+
+    #[test]
+    fn osc7772_rejects_missing_params() {
+        let mut p = make_parser();
+        p.process_bytes(&build_osc7772(b"prior", 5));
+        p.process_bytes(b"\x1b]7772;5\x07");
+        assert_eq!(p.state().command_buffer(), Some("prior"));
+        p.process_bytes(b"\x1b]7772\x07");
+        assert_eq!(p.state().command_buffer(), Some("prior"));
+    }
+
+    #[test]
+    fn osc7772_cursor_clamped_to_buffer_length() {
+        let mut p = make_parser();
+        p.process_bytes(&build_osc7772(b"abc", 9999));
+        assert_eq!(p.state().command_buffer(), Some("abc"));
+        assert_eq!(p.state().buffer_cursor(), 3);
+    }
+
+    #[test]
+    fn osc7772_cursor_zero_valid() {
+        let mut p = make_parser();
+        p.process_bytes(&build_osc7772(b"hello", 0));
+        assert_eq!(p.state().buffer_cursor(), 0);
+    }
+
+    #[test]
+    fn osc7770_legacy_dispatch_continues_after_warn_flag_flips() {
+        // Three legacy frames in a row: the one-shot warn flag flips on
+        // the first, but state updates must continue for every dispatch.
+        let mut p = make_parser();
+        p.process_bytes(b"\x1b]7770;1;a\x07");
+        p.process_bytes(b"\x1b]7770;2;ab\x07");
+        p.process_bytes(b"\x1b]7770;3;abc\x07");
+        assert_eq!(p.state().command_buffer(), Some("abc"));
+        assert_eq!(p.state().buffer_cursor(), 3);
     }
 }

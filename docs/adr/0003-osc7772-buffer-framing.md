@@ -53,12 +53,12 @@ We percent-encode `$BUFFER` in the zsh emitter and bump the OSC number to
 - **Decoder behaviour.** `crates/gc-parser/src/performer.rs::percent_decode_buffer`
   rejects (returns `None`) on any invalid hex digit or truncated `%`; the
   whole frame is dropped. Decoded payload is then `String::from_utf8`-validated.
-  Any failure path drops the frame silently via `tracing::warn!` — prior
-  buffer state is preserved.
+  Any failure path drops the frame (logs a `tracing::warn!`; prior buffer
+  state untouched).
 - **Migration.** OSC 7770 stays in the parser as a deprecated, read-only
   legacy path for one minor release. First hit per process logs a one-shot
   `tracing::warn!`; subsequent hits drop to `trace!`. The 7770 dispatch is
-  scheduled for `#[ignore]` in v(N+1) and deletion in v(N+2). The zsh
+  scheduled for `#[ignore]` in v0.11.0 and deletion in v0.12.0. The zsh
   emitter only writes 7772.
 
 ## Consequences
@@ -82,8 +82,9 @@ We percent-encode `$BUFFER` in the zsh emitter and bump the OSC number to
   passthrough mode.
 - **Performance.** Encoder is one zsh string-concatenation loop using the
   same idiom as `_gc_urlencode_path`; decoder is ~25 lines of pure Rust.
-  Bench `osc7772_decode/1024` runs at ~3.6 µs on a developer laptop —
-  well under the <100 µs/keystroke budget.
+  Both run well under the per-keystroke budget. The decoder bench lives in
+  `crates/gc-parser/benches/parser_bench.rs` (`osc7772_decode` group) for
+  reproducibility.
 
 ### Negative
 
@@ -93,10 +94,11 @@ We percent-encode `$BUFFER` in the zsh emitter and bump the OSC number to
   single payload parameter, and the `std`-feature OSC raw buffer grows
   unbounded.
 - **One shell-side encode loop.** Every keystroke pays a per-byte loop in
-  zsh. Profiling shows ~30 µs for a 100-byte buffer — invisible next to
-  the existing keystroke→suggestion budget.
+  zsh. Encoder cost is well under the per-keystroke budget for typical
+  interactive `$BUFFER` sizes — invisible next to the existing
+  keystroke→suggestion budget.
 - **A deprecation cycle.** The parser keeps two OSC arms (`7770` legacy +
-  `7772`) for one release. Net code grew ~50 lines until v(N+2) deletes
+  `7772`) for one release. Net code grew ~50 lines until v0.12.0 deletes
   the legacy arm.
 
 ### Neutral
@@ -144,7 +146,6 @@ state machine never sees the inner escape.
 
 ## References
 
-- `docs/plans/ux-2-osc7770-framing/SPEC.md` — original problem analysis
 - `crates/gc-parser/src/performer.rs` — OSC 7772 dispatch + `percent_decode_buffer`
 - `shell/ghost-complete.zsh` — `_gc_urlencode_buffer`, `_gc_report_buffer`
 - `crates/gc-parser/tests/osc7772_proptest.rs` — proptest round-trip

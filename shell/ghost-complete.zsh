@@ -121,6 +121,11 @@ _gc_osc7_precmd() {
 _gc_report_buffer() {
     local encoded
     encoded="$(_gc_urlencode_buffer "$BUFFER")"
+    # Abort if the encoder failed: emitting a partially-encoded payload
+    # would defeat the framing guarantee the parser-side strict decoder
+    # relies on. The parser logs and drops malformed frames anyway, but
+    # don't even put one on the wire.
+    [[ $? -eq 0 ]] || return 0
     printf '\e]7772;%d;%s\a' "$CURSOR" "$encoded"
 }
 

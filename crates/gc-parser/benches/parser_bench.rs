@@ -109,10 +109,11 @@ fn parser_benchmarks(c: &mut Criterion) {
 }
 
 fn osc7772_decode_benchmarks(c: &mut Criterion) {
-    // Mixed alphabet: half the bytes are safe ASCII (pass-through), half
-    // require percent-encoding. Realistic for shells that contain a
-    // sprinkling of `;`, `|`, `&`, etc. Use a deterministic pattern so
-    // bench runs are comparable across machines and revisions.
+    // Realistic shell-line alphabet: mostly safe ASCII (pass-through) with
+    // a sprinkling of `;`, `|`, `&` that get percent-encoded. Roughly 10%
+    // of bytes are encoded, matching typical interactive $BUFFER content.
+    // Deterministic pattern so bench runs are comparable across machines
+    // and revisions.
     let pattern: &[u8] = b"echo a; ls -la | grep -v test && cd /tmp ";
     let make_buffer =
         |size: usize| -> Vec<u8> { pattern.iter().cycle().take(size).copied().collect() };

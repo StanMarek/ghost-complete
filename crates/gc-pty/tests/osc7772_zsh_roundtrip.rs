@@ -117,7 +117,12 @@ fn assert_roundtrips(label: &str, fixture: &[u8]) {
 #[test]
 fn osc7772_real_zsh_roundtrip() {
     if !zsh_available() {
-        eprintln!("skipping osc7772_real_zsh_roundtrip: zsh not on PATH");
+        if std::env::var_os("CI").is_some() {
+            panic!(
+                "zsh not on PATH but running under CI — install zsh or mark this test #[ignore] explicitly"
+            );
+        }
+        eprintln!("skipping osc7772_real_zsh_roundtrip: zsh not on PATH (local dev)");
         return;
     }
 
@@ -134,4 +139,12 @@ fn osc7772_real_zsh_roundtrip() {
     // round-trip the `cwd` MUST remain unchanged — the decoded bytes go
     // straight to `set_command_buffer`, not back through the VTE parser.
     assert_roundtrips("osc7 smuggle attempt", b"\x1b]7;file:///etc/passwd\x07");
+
+    // Additional ADR-threat-model fixtures verified against the real zsh
+    // emitter: NUL byte, ESC+ST envelope terminator, already-percent-
+    // encoded text (round-trip-once invariant), and the empty buffer.
+    assert_roundtrips("embedded NUL", b"a\x00b");
+    assert_roundtrips("embedded ESC+ST", b"foo\x1b\\bar");
+    assert_roundtrips("all-encoded percent", b"abc%20def");
+    assert_roundtrips("empty buffer", b"");
 }
