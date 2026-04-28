@@ -87,7 +87,7 @@ Ghost Complete uses a Fig-compatible JSON format for completion specs. Specs def
 | `description` | string | No | Description of the argument |
 | `template` | string | No | Built-in template: `"filepaths"` or `"folders"` |
 | `generators` | GeneratorSpec[] | No | Dynamic generators for values |
-| `suggestions` | SuggestionEntry[] | No | Static enum-like candidates, see below |
+| `suggestions` | SuggestionEntry \| SuggestionEntry[] | No | Static enum-like candidates, see below. Accepts either a single entry or an array; the array form is canonical |
 
 #### Static suggestions
 

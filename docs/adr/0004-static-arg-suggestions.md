@@ -65,8 +65,10 @@ surface even when the user is filling a flag argument or past `--`.
   `Value` enum + heap-allocated `Map`/`Number`/`Array` per node) and rejects
   malformed shapes at deserialize time instead of at first-use.
 - **Documented priority slot.** `EnumValue` at 65 is pinned by
-  `priority::base_priorities_are_in_documented_order` and
-  `docs/COMPLETION_SPEC.md`; future drift requires a deliberate test edit.
+  `types::kind_invariants::enum_value_contract` (exact value) and
+  `priority::base_priorities_are_in_documented_order` (relative ordering against
+  neighbours), with `docs/COMPLETION_SPEC.md` as the human-readable reference.
+  Future drift requires a deliberate test edit.
 - **Memory budget gate.** A new test `embedded_specs_under_memory_budget`
   walks the full `CompletionSpec` heap (including `args.suggestions`) and
   asserts the total stays under 64 MiB. Regression detection without external

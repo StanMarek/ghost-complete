@@ -2335,4 +2335,9 @@ mod tests {
         assert_eq!(layout.width, 0);
         assert_eq!(layout.height, 0);
     }
+
+    #[test]
+    fn kind_icon_returns_documented_glyph_for_enum_value() {
+        assert_eq!(kind_icon(SuggestionKind::EnumValue), '\u{F0CB}');
+    }
 }

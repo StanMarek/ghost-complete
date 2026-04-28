@@ -20,9 +20,9 @@ pub enum SuggestionKind {
     /// values with the same text from a different provider.
     ProviderValue,
     /// Static enum-style value declared in `args.suggestions` inside a spec.
-    /// Sits between `Subcommand`/`ProviderValue` (70) and `Command` (40) so enum
-    /// values surface above generic commands and flags but below subcommands and
-    /// dynamic provider results.
+    /// Sits between `Subcommand`/`ProviderValue` (70) and `EnvVar` (50) so enum
+    /// values surface above environment variables, generic $PATH commands, and
+    /// flags but below subcommands and dynamic provider results.
     EnumValue,
 }
 

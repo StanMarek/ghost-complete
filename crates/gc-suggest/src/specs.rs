@@ -299,17 +299,25 @@ pub struct ArgSpec {
     pub template: Option<String>,
     /// Static suggestions — plain string or full object entries from the spec's
     /// `args.suggestions` field.
+    ///
+    /// `pub(crate)` because `SuggestionEntry` itself is `pub(crate)` —
+    /// external consumers (`ghost-complete::status`/`doctor`) only inspect
+    /// `args` and `generators`, never `suggestions`.
     #[serde(default, deserialize_with = "deserialize_suggestions_one_or_many")]
-    pub suggestions: Vec<SuggestionEntry>,
+    pub(crate) suggestions: Vec<SuggestionEntry>,
 }
 
 /// Static suggestion entry — either a plain string shorthand or a full object.
 /// Mirrors the Fig schema. Fields not present in [`SuggestionObject`] (insertValue,
 /// displayName, replaceValue, icon, isDangerous) are silently ignored by serde; v2
 /// may add them.
+///
+/// `pub(crate)` to keep external callers from constructing entries that bypass
+/// the `validate_arg_generators` invariant pass (empty names / hidden entries
+/// are stripped there before any keystroke ever sees them).
 #[derive(Debug, Clone, Deserialize)]
 #[serde(untagged)]
-pub enum SuggestionEntry {
+pub(crate) enum SuggestionEntry {
     Plain(String),
     Object(SuggestionObject),
 }
@@ -339,15 +347,15 @@ impl SuggestionEntry {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct SuggestionObject {
+pub(crate) struct SuggestionObject {
     #[serde(default, deserialize_with = "deserialize_name_one_or_many")]
-    pub name: Vec<String>,
-    pub description: Option<String>,
+    pub(crate) name: Vec<String>,
+    pub(crate) description: Option<String>,
     #[serde(rename = "type")]
-    pub kind: Option<String>,
-    pub priority: Option<Priority>,
+    pub(crate) kind: Option<String>,
+    pub(crate) priority: Option<Priority>,
     #[serde(default)]
-    pub hidden: bool,
+    pub(crate) hidden: bool,
 }
 
 fn deserialize_name_one_or_many<'de, D>(d: D) -> std::result::Result<Vec<String>, D::Error>
@@ -746,7 +754,8 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
 }
 
 /// Map Fig `Suggestion.type` strings to `SuggestionKind`.
-/// Per SPEC.md §"type mapping": subcommand/option/file/folder map to their
+/// Per `docs/COMPLETION_SPEC.md` ("type mapping" table under
+/// `Static suggestions`): subcommand/option/file/folder map to their
 /// equivalents; "arg", "special", "shortcut", "mixin", "auto-execute", and
 /// missing/unknown all fall back to `EnumValue`. This runs on the keystroke
 /// hot path via `resolve_spec`, so it MUST stay a pure mapping with no
@@ -789,6 +798,15 @@ fn is_known_suggestion_type(s: &str) -> bool {
 /// `nucleo` handles duplicates transparently).
 fn collect_static_suggestions(entries: &[SuggestionEntry], out: &mut Vec<Suggestion>) {
     for entry in entries {
+        // Defensive guard: `validate_arg_generators` already prunes empty-name
+        // and hidden entries at load time, but `collect_static_suggestions`
+        // is the last stop before the popup. Re-checking here means that a
+        // future caller who skips validation (or a code path that resolves
+        // an unvalidated `CompletionSpec`) cannot leak empty-text or hidden
+        // entries into the ranked candidate set.
+        if entry.is_empty_name() || entry.is_hidden() {
+            continue;
+        }
         match entry {
             SuggestionEntry::Plain(text) => {
                 out.push(Suggestion {
@@ -2763,11 +2781,10 @@ mod tests {
     #[test]
     fn embedded_specs_under_memory_budget() {
         // Measured baseline: ~37.5 MB (37,536,540 bytes) on 709 specs as of
-        // v0.10.0 (2026-04-28). SPEC §Memory budget estimated 8 MB for
-        // suggestions alone; the full CompletionSpec tree walk is much larger
-        // because it covers js_source, transforms, descriptions, etc. across
-        // all 709 specs. 64 MiB (67,108,864 bytes) gives ~1.78x headroom for
-        // spec corpus growth before requiring a deliberate budget raise.
+        // v0.10.0 (2026-04-28). The `estimated_heap_bytes` walk covers the
+        // whole `CompletionSpec` tree (js_source, transforms, descriptions,
+        // etc.). 64 MiB (67,108,864 bytes) gives ~1.78x headroom for spec
+        // corpus growth before requiring a deliberate budget raise.
         const BUDGET_BYTES: usize = 64 * 1024 * 1024;
         let spec_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../specs");
         let store = SpecStore::load_from_dir(&spec_dir).unwrap().store;
@@ -2783,5 +2800,229 @@ mod tests {
             total,
             total / 1024
         );
+    }
+
+    #[test]
+    fn preceding_flag_args_suppress_positional_static_and_generators() {
+        // ADR 0004 calls out the `if !preceding_flag_has_args` guard on
+        // positional-arg collection as a plan-deviation bug fix:
+        // `pip install -r ` previously mixed `-r`'s `template: filepaths`
+        // with the positional package-name generators. Pulling the guard
+        // would silently re-introduce the bug; this test pins it.
+        let spec: CompletionSpec = serde_json::from_str(
+            r#"{
+                "name": "pip",
+                "subcommands": [{
+                    "name": "install",
+                    "options": [{
+                        "name": ["-r"],
+                        "args": { "name": "file", "template": "filepaths" }
+                    }],
+                    "args": [{
+                        "name": "pkg",
+                        "suggestions": ["pos1", "pos2"],
+                        "generators": [{"type": "git_branches"}]
+                    }]
+                }]
+            }"#,
+        )
+        .unwrap();
+        let ctx = CommandContext {
+            command: Some("pip".into()),
+            args: vec!["install".into(), "-r".into()],
+            current_word: String::new(),
+            word_index: 3,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: Some("-r".into()),
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
+        };
+        let res = resolve_spec(&spec, &ctx);
+        assert!(res.preceding_flag_has_args);
+        assert!(
+            res.static_suggestions.is_empty(),
+            "positional static suggestions must NOT leak when filling a flag arg: {:?}",
+            res.static_suggestions
+        );
+        assert!(
+            res.native_generators.is_empty(),
+            "positional native generators must NOT leak when filling a flag arg: {:?}",
+            res.native_generators
+        );
+        assert!(res.wants_filepaths);
+    }
+
+    #[test]
+    fn static_suggestion_priority_field_round_trips() {
+        // `collect_static_suggestions` copies `obj.priority` into the
+        // resulting Suggestion. Pin the round-trip so a regression that
+        // drops or replaces the priority field is caught.
+        let spec: CompletionSpec = serde_json::from_str(
+            r#"{
+                "name": "foo",
+                "args": [{
+                    "name": "x",
+                    "suggestions": [
+                        {"name": "x", "priority": 90},
+                        {"name": "y"}
+                    ]
+                }]
+            }"#,
+        )
+        .unwrap();
+        let ctx = CommandContext {
+            command: Some("foo".into()),
+            args: vec![],
+            current_word: String::new(),
+            word_index: 1,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: None,
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
+        };
+        let res = resolve_spec(&spec, &ctx);
+        let by_text: HashMap<String, Option<Priority>> = res
+            .static_suggestions
+            .iter()
+            .map(|s| (s.text.clone(), s.priority))
+            .collect();
+        assert_eq!(by_text["x"], Some(Priority::new(90)));
+        assert_eq!(by_text["y"], None);
+    }
+
+    #[test]
+    fn static_suggestions_accept_singular_string_and_object() {
+        // Fig schema permits `suggestions` as a singular form (string or
+        // object) as well as an array. Likewise `name` inside a
+        // SuggestionObject. Exercise the One arm of every OneOrMany so a
+        // regression that only kept the Many path is caught.
+        let plain: CompletionSpec =
+            serde_json::from_str(r#"{"name":"a","args":{"name":"x","suggestions":"foo"}}"#)
+                .unwrap();
+        assert_eq!(plain.args[0].suggestions.len(), 1);
+        match &plain.args[0].suggestions[0] {
+            SuggestionEntry::Plain(s) => assert_eq!(s, "foo"),
+            _ => panic!("expected Plain singular"),
+        }
+
+        let obj: CompletionSpec = serde_json::from_str(
+            r#"{"name":"a","args":{"name":"x","suggestions":{"name":"bar"}}}"#,
+        )
+        .unwrap();
+        assert_eq!(obj.args[0].suggestions.len(), 1);
+        match &obj.args[0].suggestions[0] {
+            SuggestionEntry::Object(o) => assert_eq!(o.name, vec!["bar".to_string()]),
+            _ => panic!("expected Object singular"),
+        }
+
+        let str_name: CompletionSpec = serde_json::from_str(
+            r#"{"name":"a","args":{"name":"x","suggestions":[{"name":"singlestr"}]}}"#,
+        )
+        .unwrap();
+        match &str_name.args[0].suggestions[0] {
+            SuggestionEntry::Object(o) => {
+                assert_eq!(o.name, vec!["singlestr".to_string()]);
+            }
+            _ => panic!("expected Object with singular name"),
+        }
+    }
+
+    #[test]
+    fn option_arg_static_suggestions_emit_one_per_alias() {
+        // `collect_static_suggestions` is invoked from both the positional
+        // and the preceding_flag paths. Cover the latter with a multi-alias
+        // name array — a regression that emitted only the first alias on
+        // the option-arg path (vs the positional path) wouldn't be caught
+        // by the existing tests.
+        let spec: CompletionSpec = serde_json::from_str(
+            r#"{
+                "name": "fmt",
+                "options": [{
+                    "name": ["--format"],
+                    "args": {
+                        "name": "kind",
+                        "suggestions": [
+                            {"name": ["json", "j"], "description": "JSON output"}
+                        ]
+                    }
+                }]
+            }"#,
+        )
+        .unwrap();
+        let ctx = CommandContext {
+            command: Some("fmt".into()),
+            args: vec!["--format".into()],
+            current_word: String::new(),
+            word_index: 2,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: Some("--format".into()),
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
+        };
+        let res = resolve_spec(&spec, &ctx);
+        assert_eq!(res.static_suggestions.len(), 2);
+        for s in &res.static_suggestions {
+            assert_eq!(s.description.as_deref(), Some("JSON output"));
+            assert_eq!(s.kind, SuggestionKind::EnumValue);
+        }
+        let texts: Vec<&str> = res
+            .static_suggestions
+            .iter()
+            .map(|s| s.text.as_str())
+            .collect();
+        assert!(texts.contains(&"json"));
+        assert!(texts.contains(&"j"));
+    }
+
+    #[test]
+    fn pure_control_char_suggestion_name_pruned_after_sanitize() {
+        // The combined sanitize → validate pipeline must drop entries whose
+        // names sanitize down to empty strings. A regression that runs
+        // validation before sanitize, or skips the post-sanitize empty
+        // check, would leak an empty-text suggestion to the popup.
+        let json = "{\"name\":\"x\",\"args\":{\"name\":\"y\",\"suggestions\":[{\"name\":\"\\u0001\\u0002\"},\"ok\"]}}";
+        let mut spec = parse_spec_checked_and_sanitized(json).unwrap();
+        let _ = validate_spec_generators(&mut spec);
+        assert_eq!(spec.args[0].suggestions.len(), 1);
+        match &spec.args[0].suggestions[0] {
+            SuggestionEntry::Plain(s) => assert_eq!(s, "ok"),
+            _ => panic!("expected Plain(\"ok\") to be the sole survivor"),
+        }
+    }
+
+    #[test]
+    fn duplicate_suggestion_names_emit_both_entries() {
+        // `collect_static_suggestions` documents "no dedup — nucleo handles
+        // duplicates transparently". Pin that contract so a future change
+        // that introduces dedup at the spec layer is caught.
+        let spec: CompletionSpec = serde_json::from_str(
+            r#"{"name":"d","args":[{"name":"x","suggestions":["foo","foo"]}]}"#,
+        )
+        .unwrap();
+        let ctx = CommandContext {
+            command: Some("d".into()),
+            args: vec![],
+            current_word: String::new(),
+            word_index: 1,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: None,
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
+        };
+        let res = resolve_spec(&spec, &ctx);
+        assert_eq!(res.static_suggestions.len(), 2);
+        assert!(res.static_suggestions.iter().all(|s| s.text == "foo"));
     }
 }

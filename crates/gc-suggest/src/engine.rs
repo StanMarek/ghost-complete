@@ -2468,8 +2468,7 @@ mod tests {
         );
     }
 
-    // Depends on specs/git.json: archive subcommand, --format option, suggestions: [tar, zip].
-    // If this test breaks, check whether the spec was modified before suspecting the engine.
+    // End-to-end: depends on specs/git.json declaring `archive --format` suggestions [tar, zip].
     #[test]
     fn git_archive_format_returns_tar_zip() {
         let engine = make_engine();
@@ -2497,8 +2496,7 @@ mod tests {
         assert!(texts.contains(&"zip"), "expected `zip` in {texts:?}");
     }
 
-    // Depends on specs/tar.json: `c` subcommand, --atime-preserve option, suggestions: [replace, system].
-    // If this test breaks, check whether the spec was modified before suspecting the engine.
+    // End-to-end: depends on specs/tar.json declaring `c --atime-preserve` suggestions [replace, system].
     #[test]
     fn tar_atime_preserve_returns_replace_system() {
         let engine = make_engine();
@@ -2572,6 +2570,57 @@ mod tests {
                 .contains(&crate::git::GitQueryKind::Branches),
             "git_branches generator must be dispatched alongside static suggestions: {:?}",
             results.git_generators
+        );
+    }
+
+    #[test]
+    fn static_suggestions_surface_past_double_dash() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let spec_json = r#"{
+            "name": "myfake",
+            "args": [{
+                "name": "value",
+                "suggestions": ["alpha", "beta"]
+            }]
+        }"#;
+        std::fs::write(tmp.path().join("myfake.json"), spec_json).unwrap();
+
+        let spec_store = SpecStore::load_from_dir(tmp.path()).unwrap().store;
+        let history = HistoryProvider::from_entries(vec![]);
+        let commands = CommandsProvider::from_list(vec!["myfake".into()]);
+        let engine = SuggestionEngine::with_providers(spec_store, history, commands);
+
+        let ctx = CommandContext {
+            command: Some("myfake".into()),
+            args: vec!["--".into()],
+            current_word: String::new(),
+            word_index: 2,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: None,
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: QuoteState::None,
+            is_first_segment: true,
+        };
+        let results = engine
+            .suggest_sync(&ctx, Path::new("/tmp"), "myfake -- ")
+            .unwrap();
+        assert!(
+            results.iter().any(|s| s.text == "alpha"),
+            "static suggestion `alpha` must surface past `--`: {:?}",
+            results.suggestions
+        );
+        assert!(
+            results
+                .iter()
+                .all(|s| s.kind != SuggestionKind::Subcommand && s.kind != SuggestionKind::Flag),
+            "no Subcommand/Flag entries must leak past `--`: {:?}",
+            results
+                .suggestions
+                .iter()
+                .map(|s| (&s.text, &s.kind))
+                .collect::<Vec<_>>()
         );
     }
 }
