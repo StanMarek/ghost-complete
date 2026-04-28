@@ -2505,4 +2505,53 @@ mod tests {
             .iter()
             .all(|s| s.source == crate::types::SuggestionSource::Spec));
     }
+
+    #[test]
+    fn test_static_suggestion_type_field_maps_to_kind() {
+        use crate::types::SuggestionKind;
+
+        let spec: CompletionSpec = serde_json::from_str(
+            r#"{
+            "name":"foo",
+            "args":[{"name":"x","suggestions":[
+                {"name":"sub","type":"subcommand"},
+                {"name":"opt","type":"option"},
+                {"name":"file","type":"file"},
+                {"name":"folder","type":"folder"},
+                {"name":"defaulted"},
+                {"name":"argish","type":"arg"},
+                {"name":"specialish","type":"special"},
+                {"name":"unknown","type":"made_up_xyz"}
+            ]}]
+        }"#,
+        )
+        .unwrap();
+        let ctx = CommandContext {
+            command: Some("foo".into()),
+            args: vec![],
+            current_word: String::new(),
+            word_index: 1,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: None,
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
+        };
+        let res = resolve_spec(&spec, &ctx);
+        let by_text: std::collections::HashMap<String, SuggestionKind> = res
+            .static_suggestions
+            .into_iter()
+            .map(|s| (s.text, s.kind))
+            .collect();
+        assert_eq!(by_text["sub"], SuggestionKind::Subcommand);
+        assert_eq!(by_text["opt"], SuggestionKind::Flag);
+        assert_eq!(by_text["file"], SuggestionKind::FilePath);
+        assert_eq!(by_text["folder"], SuggestionKind::Directory);
+        assert_eq!(by_text["defaulted"], SuggestionKind::EnumValue);
+        assert_eq!(by_text["argish"], SuggestionKind::EnumValue);
+        assert_eq!(by_text["specialish"], SuggestionKind::EnumValue);
+        assert_eq!(by_text["unknown"], SuggestionKind::EnumValue);
+    }
 }
