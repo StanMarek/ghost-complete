@@ -482,6 +482,7 @@ pub(crate) fn kind_icon(kind: SuggestionKind) -> char {
         SuggestionKind::History => '\u{F1DA}',    // nf-fa-history
         SuggestionKind::EnvVar => '$',
         SuggestionKind::ProviderValue => '\u{F0AD}', // nf-fa-wrench — dynamic arg value from a native provider
+        SuggestionKind::EnumValue => '\u{F0CB}',     // nf-fa-list_ol — enumerated arg value
     }
 }
 
@@ -2333,5 +2334,10 @@ mod tests {
         );
         assert_eq!(layout.width, 0);
         assert_eq!(layout.height, 0);
+    }
+
+    #[test]
+    fn kind_icon_returns_documented_glyph_for_enum_value() {
+        assert_eq!(kind_icon(SuggestionKind::EnumValue), '\u{F0CB}');
     }
 }

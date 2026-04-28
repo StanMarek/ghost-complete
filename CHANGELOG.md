@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Surface static `args.suggestions` from completion specs as runtime
+  candidates. New `SuggestionKind::EnumValue` (base priority 65) ranks them
+  between subcommands (70) and environment variables (50). Affects ~54%
+  of bundled specs; e.g. `git archive --format=` now suggests `tar`/`zip`,
+  `tar --atime-preserve` suggests `replace`/`system`. See
+  [ADR 0004](docs/adr/0004-static-arg-suggestions.md).
+
 ## [0.10.0] - 2026-04-26
 
 ### Corrected

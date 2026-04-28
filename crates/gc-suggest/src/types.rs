@@ -19,6 +19,11 @@ pub enum SuggestionKind {
     /// bucket so accepting one provider's value does not boost unrelated
     /// values with the same text from a different provider.
     ProviderValue,
+    /// Static enum-style value declared in `args.suggestions` inside a spec.
+    /// Sits between `Subcommand`/`ProviderValue` (70) and `EnvVar` (50) so enum
+    /// values surface above environment variables, generic $PATH commands, and
+    /// flags but below subcommands and dynamic provider results.
+    EnumValue,
 }
 
 impl SuggestionKind {
@@ -37,6 +42,7 @@ impl SuggestionKind {
             Self::History => "hist",
             Self::EnvVar => "env",
             Self::ProviderValue => "provider",
+            Self::EnumValue => "enum",
         }
     }
 
@@ -53,6 +59,7 @@ impl SuggestionKind {
             Self::ProviderValue => 70,
             Self::EnvVar => 50,
             Self::Command => 40,
+            Self::EnumValue => 65,
             Self::Flag => 30,
             Self::Directory => 25,
             Self::FilePath => 20,
@@ -134,5 +141,11 @@ mod kind_invariants {
     fn suggestion_priority_defaults_to_none() {
         let s = Suggestion::default();
         assert_eq!(s.priority, None);
+    }
+
+    #[test]
+    fn enum_value_contract() {
+        assert_eq!(SuggestionKind::EnumValue.key_tag(), "enum");
+        assert_eq!(SuggestionKind::EnumValue.base_priority().get(), 65);
     }
 }

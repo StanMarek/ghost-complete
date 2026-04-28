@@ -881,6 +881,7 @@ impl SuggestionEngine {
             wants_folders_only,
             preceding_flag_has_args,
             past_double_dash,
+            static_suggestions,
         } = specs::resolve_spec(spec, resolve_ctx.as_ref());
 
         let git_generators = self.git_generators_from(&native_generators);
@@ -894,6 +895,11 @@ impl SuggestionEngine {
             candidates.extend(subcommands);
             candidates.extend(options);
         }
+
+        // Static `args.suggestions` are values for an arg position, not commands —
+        // they MUST surface even when `suppress_commands` is true (preceding flag
+        // has args, or past `--`). Keep this extend OUTSIDE the suppression guard.
+        candidates.extend(static_suggestions);
 
         if wants_folders_only && self.providers_filesystem {
             self.extend_with_folders(ctx, cwd, &mut candidates);
@@ -2455,6 +2461,163 @@ mod tests {
             !any_fs,
             "spec without template should NOT inject fs, got {:?}",
             result
+                .suggestions
+                .iter()
+                .map(|s| (&s.text, &s.kind))
+                .collect::<Vec<_>>()
+        );
+    }
+
+    // End-to-end: depends on specs/git.json declaring `archive --format` suggestions [tar, zip].
+    #[test]
+    fn git_archive_format_returns_tar_zip() {
+        let engine = make_engine();
+        let ctx = CommandContext {
+            command: Some("git".into()),
+            args: vec!["archive".into(), "--format=".into()],
+            current_word: String::new(),
+            word_index: 3,
+            is_flag: false,
+            is_long_flag: false,
+            // `find_option` strips the `=value` suffix internally, so passing
+            // `--format=` (with trailing `=`) or `--format` both resolve to the
+            // archive subcommand's `--format` option.
+            preceding_flag: Some("--format=".into()),
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: QuoteState::None,
+            is_first_segment: true,
+        };
+        let results = engine
+            .suggest_sync(&ctx, Path::new("/tmp"), "git archive --format=")
+            .unwrap();
+        let texts: Vec<&str> = results.iter().map(|s| s.text.as_str()).collect();
+        assert!(texts.contains(&"tar"), "expected `tar` in {texts:?}");
+        assert!(texts.contains(&"zip"), "expected `zip` in {texts:?}");
+    }
+
+    // End-to-end: depends on specs/tar.json declaring `c --atime-preserve` suggestions [replace, system].
+    #[test]
+    fn tar_atime_preserve_returns_replace_system() {
+        let engine = make_engine();
+        let ctx = CommandContext {
+            command: Some("tar".into()),
+            args: vec!["c".into(), "--atime-preserve".into()],
+            current_word: String::new(),
+            word_index: 3,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: Some("--atime-preserve".into()),
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: QuoteState::None,
+            is_first_segment: true,
+        };
+        let results = engine
+            .suggest_sync(&ctx, Path::new("/tmp"), "tar c --atime-preserve ")
+            .unwrap();
+        let texts: Vec<&str> = results.iter().map(|s| s.text.as_str()).collect();
+        assert!(
+            texts.contains(&"replace"),
+            "expected `replace` in {texts:?}"
+        );
+        assert!(texts.contains(&"system"), "expected `system` in {texts:?}");
+    }
+
+    #[test]
+    fn static_suggestions_coexist_with_native_generators() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let spec_json = r#"{
+            "name": "myfake",
+            "args": [{
+                "name": "ref",
+                "generators": [{"type": "git_branches"}],
+                "suggestions": ["HEAD"]
+            }]
+        }"#;
+        std::fs::write(tmp.path().join("myfake.json"), spec_json).unwrap();
+
+        let spec_store = SpecStore::load_from_dir(tmp.path()).unwrap().store;
+        let history = HistoryProvider::from_entries(vec![]);
+        let commands = CommandsProvider::from_list(vec!["myfake".into()]);
+        let engine = SuggestionEngine::with_providers(spec_store, history, commands);
+
+        let ctx = CommandContext {
+            command: Some("myfake".into()),
+            args: vec![],
+            current_word: String::new(),
+            word_index: 1,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: None,
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: QuoteState::None,
+            is_first_segment: true,
+        };
+        let results = engine
+            .suggest_sync(&ctx, Path::new("/tmp"), "myfake ")
+            .unwrap();
+        let texts: Vec<&str> = results.iter().map(|s| s.text.as_str()).collect();
+        assert!(
+            texts.contains(&"HEAD"),
+            "static suggestion `HEAD` must surface alongside the git_branches generator: {texts:?}"
+        );
+        assert!(
+            results
+                .git_generators
+                .contains(&crate::git::GitQueryKind::Branches),
+            "git_branches generator must be dispatched alongside static suggestions: {:?}",
+            results.git_generators
+        );
+    }
+
+    #[test]
+    fn static_suggestions_surface_past_double_dash() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let spec_json = r#"{
+            "name": "myfake",
+            "subcommands": [{"name": "sub"}],
+            "options": [{"name": ["--flag"]}],
+            "args": [{
+                "name": "value",
+                "suggestions": ["alpha", "beta"]
+            }]
+        }"#;
+        std::fs::write(tmp.path().join("myfake.json"), spec_json).unwrap();
+
+        let spec_store = SpecStore::load_from_dir(tmp.path()).unwrap().store;
+        let history = HistoryProvider::from_entries(vec![]);
+        let commands = CommandsProvider::from_list(vec!["myfake".into()]);
+        let engine = SuggestionEngine::with_providers(spec_store, history, commands);
+
+        let ctx = CommandContext {
+            command: Some("myfake".into()),
+            args: vec!["--".into()],
+            current_word: String::new(),
+            word_index: 2,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: None,
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: QuoteState::None,
+            is_first_segment: true,
+        };
+        let results = engine
+            .suggest_sync(&ctx, Path::new("/tmp"), "myfake -- ")
+            .unwrap();
+        assert!(
+            results.iter().any(|s| s.text == "alpha"),
+            "static suggestion `alpha` must surface past `--`: {:?}",
+            results.suggestions
+        );
+        assert!(
+            results
+                .iter()
+                .all(|s| s.kind != SuggestionKind::Subcommand && s.kind != SuggestionKind::Flag),
+            "no Subcommand/Flag entries must leak past `--`: {:?}",
+            results
                 .suggestions
                 .iter()
                 .map(|s| (&s.text, &s.kind))
