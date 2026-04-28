@@ -2462,4 +2462,31 @@ mod tests {
                 .collect::<Vec<_>>()
         );
     }
+
+    #[test]
+    fn git_archive_format_returns_tar_zip() {
+        let engine = make_engine();
+        let ctx = CommandContext {
+            command: Some("git".into()),
+            args: vec!["archive".into(), "--format=".into()],
+            current_word: String::new(),
+            word_index: 3,
+            is_flag: false,
+            is_long_flag: false,
+            // `find_option` strips the `=value` suffix internally, so passing
+            // `--format=` (with trailing `=`) or `--format` both resolve to the
+            // archive subcommand's `--format` option.
+            preceding_flag: Some("--format=".into()),
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: QuoteState::None,
+            is_first_segment: true,
+        };
+        let results = engine
+            .suggest_sync(&ctx, Path::new("/tmp"), "git archive --format=")
+            .unwrap();
+        let texts: Vec<&str> = results.iter().map(|s| s.text.as_str()).collect();
+        assert!(texts.contains(&"tar"), "expected `tar` in {texts:?}");
+        assert!(texts.contains(&"zip"), "expected `zip` in {texts:?}");
+    }
 }
