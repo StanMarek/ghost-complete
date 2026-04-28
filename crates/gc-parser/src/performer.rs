@@ -216,6 +216,56 @@ impl Perform for TerminalState {
                     }
                 }
             }
+            // OSC 7772 — Ghost Complete buffer report (percent-encoded, secure framing).
+            //
+            // See `docs/adr/0003-osc7772-buffer-framing.md`. Replaces the
+            // raw 7770 framing whose `;`/`\a`/`\e` bytes silently
+            // truncated buffers and could smuggle nested OSC sequences.
+            //
+            //   params[0] = "7772"
+            //   params[1] = cursor position (decimal char count)
+            //   params[2] = percent-encoded UTF-8 buffer
+            //
+            // Anything malformed (bad cursor int, bad escape, non-UTF-8
+            // payload) drops the frame silently and leaves prior state
+            // untouched.
+            b"7772" => {
+                if params.len() < 3 {
+                    return;
+                }
+                let cursor = match std::str::from_utf8(params[1])
+                    .ok()
+                    .and_then(|s| s.parse::<usize>().ok())
+                {
+                    Some(c) => c,
+                    None => {
+                        tracing::warn!(
+                            "OSC 7772 — invalid cursor position, skipping buffer update"
+                        );
+                        return;
+                    }
+                };
+                let decoded = match percent_decode_buffer(params[2]) {
+                    Some(bytes) => bytes,
+                    None => {
+                        tracing::warn!(
+                            "OSC 7772 — malformed percent escape in payload, skipping"
+                        );
+                        return;
+                    }
+                };
+                let buffer = match String::from_utf8(decoded) {
+                    Ok(s) => s,
+                    Err(_) => {
+                        tracing::warn!(
+                            "OSC 7772 — invalid UTF-8 after decode, skipping buffer update"
+                        );
+                        return;
+                    }
+                };
+                tracing::debug!(cursor, "OSC 7772 — buffer update");
+                self.set_command_buffer(buffer, cursor);
+            }
             // OSC 7770 — Ghost Complete buffer report
             b"7770" => {
                 if params.len() < 3 {
@@ -363,11 +413,6 @@ fn percent_decode_path(input: &str) -> PathBuf {
 /// (filesystem URIs) instead preserves malformed bytes literally because
 /// "best-effort partial CWD" is a sensible degradation, but for command
 /// buffers the only safe action is to ignore the report.
-//
-// `dead_code` is allowed during this commit only — Task 4 wires the
-// OSC 7772 dispatch arm to call this helper and the attribute is
-// removed there.
-#[allow(dead_code)]
 fn percent_decode_buffer(input: &[u8]) -> Option<Vec<u8>> {
     let mut out = Vec::with_capacity(input.len());
     let mut iter = input.iter().copied();
