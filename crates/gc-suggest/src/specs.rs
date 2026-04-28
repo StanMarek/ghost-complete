@@ -899,7 +899,7 @@ fn validate_arg_generators(arg_spec: &mut ArgSpec, spec_name: &str, warnings: &m
     });
     if arg_spec.suggestions.len() < original_suggestions_len {
         tracing::warn!(
-            "{spec_name}: removed {} suggestion(s) with empty names",
+            "{spec_name}: removed {} suggestion(s) (empty name or hidden)",
             original_suggestions_len - arg_spec.suggestions.len()
         );
     }
@@ -2409,7 +2409,11 @@ mod tests {
             }
         }"#;
         let mut spec = parse_spec_checked_and_sanitized(json).unwrap();
-        let _warnings = validate_spec_generators(&mut spec);
+        let warnings = validate_spec_generators(&mut spec);
+        assert!(
+            warnings.is_empty(),
+            "hidden entries should be dropped silently"
+        );
         let names: Vec<&str> = spec.args[0]
             .suggestions
             .iter()
