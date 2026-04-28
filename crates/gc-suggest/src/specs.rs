@@ -1036,8 +1036,9 @@ fn validate_arg_generators(arg_spec: &mut ArgSpec, spec_name: &str, warnings: &m
 /// The walk is iterative to avoid recursion-depth issues on deeply nested
 /// specs. Accuracy is approximate; the goal is a stable number that detects
 /// large regressions, not a byte-perfect heap profiler reading.
-// `pub` (not `pub(crate)`) is required because the criterion bench is a
-// separate compilation unit linked against the gc-suggest cdylib boundary.
+// `pub` (not `pub(crate)`): the criterion bench is a separate Cargo target
+// in `benches/` and links to gc-suggest as an external consumer, so
+// `pub(crate)` items would not be visible to it.
 pub fn estimated_heap_bytes(spec: &CompletionSpec) -> usize {
     use crate::transform::{ParameterizedTransform, Transform};
 
