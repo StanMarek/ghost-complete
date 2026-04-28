@@ -987,6 +987,28 @@ mod tests {
 
     // -- OSC 7770 UTF-8 rejection --
 
+    // Legacy framing — bug-by-design; see ADR 0003.
+    //
+    // The pre-OSC-7772 emitter interpolated `$BUFFER` raw into the OSC
+    // payload, and vte splits OSC parameters on `;`. So a buffer like
+    // `if true; then` becomes a 4-param OSC: `params[2] = "if true"`,
+    // `params[3] = " then"`. The 7770 dispatch arm only reads `params[2]`,
+    // silently truncating the buffer at the first semicolon. This test
+    // pins the broken behaviour so changes to the legacy path stay
+    // observable until 7770 is removed in v(N+2).
+    #[test]
+    fn osc7770_legacy_truncates_on_semicolon_documented() {
+        let mut p = make_parser();
+        p.process_bytes(b"\x1b]7770;14;if true; then\x07");
+        assert_eq!(
+            p.state().command_buffer(),
+            Some("if true"),
+            "legacy OSC 7770 truncates at first ';' — see ADR 0003"
+        );
+        // Cursor was 14 (end of full buffer); clamped to truncated length 7.
+        assert_eq!(p.state().buffer_cursor(), 7);
+    }
+
     #[test]
     fn test_osc7770_invalid_utf8_rejected() {
         let mut p = make_parser();
