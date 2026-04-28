@@ -289,11 +289,40 @@ fn memory_benchmarks(c: &mut Criterion) {
     group.finish();
 }
 
+fn static_suggestion_resolution_benchmarks(c: &mut Criterion) {
+    let spec_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../specs");
+    let store = SpecStore::load_from_dir(&spec_dir).unwrap().store;
+    let tar_spec = store.get("tar").expect("tar spec must exist");
+
+    // tar c --atime-preserve <TAB> — exercises preceding_flag path with
+    // static suggestions populated.
+    let ctx = CommandContext {
+        command: Some("tar".into()),
+        args: vec!["c".into(), "--atime-preserve".into()],
+        current_word: String::new(),
+        word_index: 3,
+        is_flag: false,
+        is_long_flag: false,
+        preceding_flag: Some("--atime-preserve".into()),
+        in_pipe: false,
+        in_redirect: false,
+        quote_state: QuoteState::None,
+        is_first_segment: true,
+    };
+
+    let mut group = c.benchmark_group("spec_resolution");
+    group.bench_function("with_static_suggestions_tar", |b| {
+        b.iter(|| specs::resolve_spec(tar_spec, &ctx));
+    });
+    group.finish();
+}
+
 criterion_group!(
     benches,
     fuzzy_benchmarks,
     spec_benchmarks,
     resolution_benchmarks,
+    static_suggestion_resolution_benchmarks,
     transform_benchmarks,
     engine_benchmarks,
     priority_sort_benchmarks,
