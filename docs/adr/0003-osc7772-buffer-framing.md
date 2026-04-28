@@ -103,10 +103,15 @@ We percent-encode `$BUFFER` in the zsh emitter and bump the OSC number to
 
 ### Neutral
 
-- bash/fish integrations are unchanged. They emit no buffer report today
-  per `CLAUDE.md` ("Bash/fish scripts exist but are not actively tested")
-  so there is no equivalent corruption to fix. If they grow a buffer
-  reporter later, it MUST emit OSC 7772 from day one.
+- bash/fish integrations still emit raw OSC 7770
+  (`shell/ghost-complete.bash` `_gc_report_buffer` interpolates
+  `$READLINE_LINE`; `shell/ghost-complete.fish` `_gc_report_buffer`
+  interpolates `commandline`) and inherit the same `;` / `\a` / `\e`
+  truncation and smuggling bug class. They are explicitly out of scope
+  for this PR — per `CLAUDE.md` these scripts are not actively tested —
+  but they MUST be migrated to OSC 7772 before the v0.12.0 deletion of
+  the legacy 7770 dispatch arm. Otherwise their buffer reporting breaks
+  entirely the moment the legacy parser path goes away.
 
 ## Threat Model
 
@@ -130,9 +135,10 @@ state machine never sees the inner escape.
   inside vte before our handler runs. The framing layer is owned by vte;
   we cannot bypass its delimiter rules.
 - **Base64.** Rejected on cost. zsh has no builtin base64; spawning
-  `base64(1)` per keystroke is a ~1–3 ms fork-exec, blowing the <100 µs
-  emitter budget by ~30×. Also fragile on minimal images (alpine, busybox)
-  where `base64(1)` is not in the default toolchain.
+  `base64(1)` per keystroke adds a fork-exec on every redraw, dwarfing
+  the in-process zsh encoding loop and visible against the
+  keystroke→suggestion budget. Also fragile on minimal images (alpine,
+  busybox) where `base64(1)` is not in the default toolchain.
 - **DCS (Device Control String) sideband.** Rejected. vte's DCS hook
   surface is narrower than OSC, multiplexers (tmux, screen) handle DCS
   passthrough less consistently, and the framing problem is identical

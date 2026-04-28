@@ -47,16 +47,20 @@ fn build_osc7772(buffer: &[u8], cursor_chars: usize) -> Vec<u8> {
 }
 
 proptest! {
-    /// Any valid UTF-8 string of up to 4096 Unicode code points must
-    /// round-trip exactly. `proptest` regex `.{0,4096}` generates Unicode
-    /// scalar values; the resulting Rust `String` is by definition valid
-    /// UTF-8.
+    /// Any valid non-newline-containing UTF-8 string of up to 4096 code
+    /// points must round-trip exactly. `proptest`'s `.{0,4096}` regex
+    /// generates arbitrary Unicode scalar values except `\n` (regex `.`
+    /// excludes newline by default); the resulting Rust `String` is valid
+    /// UTF-8 by construction. Both `command_buffer()` and `buffer_cursor()`
+    /// are asserted so a regression that writes a fixed (or zero) cursor
+    /// while preserving the buffer cannot slip past this property.
     #[test]
     fn osc7772_roundtrips_arbitrary_utf8(s in ".{0,4096}") {
         let mut p = TerminalParser::new(24, 80);
         let env = build_osc7772(s.as_bytes(), s.chars().count());
         p.process_bytes(&env);
         prop_assert_eq!(p.state().command_buffer(), Some(s.as_str()));
+        prop_assert_eq!(p.state().buffer_cursor(), s.chars().count());
     }
 
     /// Arbitrary byte vectors that are NOT valid UTF-8 must be silently

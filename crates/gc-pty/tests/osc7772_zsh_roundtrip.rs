@@ -8,7 +8,9 @@
 //! change — proving the decoded bytes never re-entered the VTE state
 //! machine. See ADR 0003.
 //!
-//! Skipped silently on systems without `zsh` on PATH (e.g. Alpine CI).
+//! Silently skipped on local dev systems without `zsh` on PATH; panics
+//! under CI (`CI` env var set) to fail loud if zsh is missing in a
+//! controlled environment.
 
 use std::path::PathBuf;
 use std::process::Command;

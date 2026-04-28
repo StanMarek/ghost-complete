@@ -231,7 +231,12 @@ impl Perform for TerminalState {
             // buffer state untouched).
             b"7772" => {
                 if params.len() < 3 {
-                    tracing::debug!(
+                    // The production zsh emitter always emits 3 params (even
+                    // for an empty buffer); short params indicate a buggy
+                    // emitter or hostile input. Sibling rejection arms below
+                    // (cursor-parse, percent-decode, UTF-8) all `warn!`, so
+                    // RUST_LOG=warn operators see broken-shell conditions.
+                    tracing::warn!(
                         params_len = params.len(),
                         "OSC 7772 — missing payload param, dropping frame"
                     );
@@ -1124,14 +1129,15 @@ mod tests {
         assert_eq!(result, expected);
     }
 
-    // -- OSC 7770 UTF-8 rejection --
+    // -- OSC 7770 legacy framing tests --
 
     // LEGACY: this test pins the OSC 7770 truncation bug deliberately —
     // the parser still accepts the 7770 framing for one deprecation cycle
     // even though it is structurally broken. Slated for `#[ignore]` at
     // v0.11.0 and deletion at v0.12.0, once stale shells have been pushed
-    // to the OSC 7772 framing. See ADR 0003 and `osc7772_regression_pin_*`
-    // below for the positive case the new framing fixes.
+    // to the OSC 7772 framing. See ADR 0003 and
+    // `osc7772_regression_pin_canonical_bug_witness` below for the positive
+    // case the new framing fixes.
     //
     // vte splits OSC parameters on `;`, so a buffer like `if true; then`
     // becomes a 4-param OSC: `params[2] = "if true"`, `params[3] = " then"`.
@@ -1344,6 +1350,12 @@ mod tests {
         // Establish a known-good prior buffer state.
         p.process_bytes(&build_osc7772(b"prior", 5));
         assert_eq!(p.state().command_buffer(), Some("prior"));
+        // Drain the dirty flag so the next assertion measures only the
+        // rejected frame's effect on it. This pin is canonical for the
+        // rejection family — gc-pty uses `take_buffer_dirty()` to gate
+        // suggestion recomputes; a regression that flagged dirty on a
+        // dropped frame would silently fire spurious recomputes.
+        assert!(p.state_mut().take_buffer_dirty());
         // `%zz` has invalid hex digits — the whole frame must be rejected.
         p.process_bytes(b"\x1b]7772;3;ab%zz\x07");
         assert_eq!(
@@ -1351,6 +1363,16 @@ mod tests {
             Some("prior"),
             "invalid percent escape must leave state untouched"
         );
+        assert_eq!(p.state().buffer_cursor(), 5);
+        assert!(
+            !p.state_mut().take_buffer_dirty(),
+            "rejected frame must not flip the buffer-dirty flag"
+        );
+        // Recovery path: a subsequent valid frame must still apply. A
+        // regression that latched a 'parser broken' bit would not be
+        // caught without this assertion.
+        p.process_bytes(&build_osc7772(b"after", 5));
+        assert_eq!(p.state().command_buffer(), Some("after"));
         assert_eq!(p.state().buffer_cursor(), 5);
     }
 
@@ -1424,6 +1446,7 @@ mod tests {
         p.process_bytes(&build_osc7772(b"prior", 5));
         p.process_bytes(b"\x1b]7772;-1;abc\x07");
         assert_eq!(p.state().command_buffer(), Some("prior"));
+        assert_eq!(p.state().buffer_cursor(), 5);
     }
 
     #[test]
@@ -1432,8 +1455,10 @@ mod tests {
         p.process_bytes(&build_osc7772(b"prior", 5));
         p.process_bytes(b"\x1b]7772;5\x07");
         assert_eq!(p.state().command_buffer(), Some("prior"));
+        assert_eq!(p.state().buffer_cursor(), 5);
         p.process_bytes(b"\x1b]7772\x07");
         assert_eq!(p.state().command_buffer(), Some("prior"));
+        assert_eq!(p.state().buffer_cursor(), 5);
     }
 
     #[test]
@@ -1453,13 +1478,21 @@ mod tests {
 
     #[test]
     fn osc7770_legacy_dispatch_continues_after_warn_flag_flips() {
-        // Three legacy frames in a row: the one-shot warn flag flips on
-        // the first, but state updates must continue for every dispatch.
+        // Three legacy frames in a row with DIFFERENT cursor/buffer values
+        // and per-frame assertions: the one-shot warn flag flips on the
+        // first, but state updates must continue for every dispatch. A
+        // regression that silently dropped frames 1 or 2 would slip past a
+        // final-only assertion (frame 3 happens to leave the same end
+        // state); per-frame pins catch the silent drop.
         let mut p = make_parser();
-        p.process_bytes(b"\x1b]7770;1;a\x07");
         p.process_bytes(b"\x1b]7770;2;ab\x07");
-        p.process_bytes(b"\x1b]7770;3;abc\x07");
-        assert_eq!(p.state().command_buffer(), Some("abc"));
-        assert_eq!(p.state().buffer_cursor(), 3);
+        assert_eq!(p.state().command_buffer(), Some("ab"));
+        assert_eq!(p.state().buffer_cursor(), 2);
+        p.process_bytes(b"\x1b]7770;4;abcd\x07");
+        assert_eq!(p.state().command_buffer(), Some("abcd"));
+        assert_eq!(p.state().buffer_cursor(), 4);
+        p.process_bytes(b"\x1b]7770;6;abcdef\x07");
+        assert_eq!(p.state().command_buffer(), Some("abcdef"));
+        assert_eq!(p.state().buffer_cursor(), 6);
     }
 }
