@@ -199,3 +199,31 @@ Shell integration scripts in `shell/` emit semantic prompt markers:
 Both are emitted simultaneously by the integration scripts, so the parser can use whichever the terminal supports.
 
 Without shell integration, features are limited — prompt boundary detection falls back to heuristics, and manual trigger (Ctrl+/) is the only way to invoke completions.
+
+### Buffer Reporting (OSC 7772)
+
+The shell integration reports the live edit buffer to the proxy after every
+ZLE redraw via OSC 7772:
+
+```
+\e]7772;<cursor>;<percent-encoded-utf8-buffer>\a
+```
+
+- **`<cursor>`** is a decimal codepoint count (zsh `$CURSOR`).
+- **`<percent-encoded-utf8-buffer>`** uses a deliberately small allow-list:
+  bytes in `[A-Za-z0-9._~/-]` and the literal space pass through; every
+  other byte (including `;`, `\a` (BEL), `\x1b` (ESC), `\\`, `%`, all
+  `<0x20` controls, `0x7F`, and `0x80`–`0xFF`) is encoded as `%XX`.
+  UTF-8 multibyte sequences are encoded byte-by-byte.
+
+The narrow alphabet is non-negotiable: any unencoded `;` would split the
+OSC parameter list and silently truncate the buffer at the parser; any
+unencoded BEL would terminate the envelope mid-payload; an unencoded ESC
+could smuggle a nested escape sequence into the parser's state machine.
+See [ADR 0003](adr/0003-osc7772-buffer-framing.md).
+
+OSC 7770 (the prior raw framing) is accepted by the parser as a deprecated
+read-only path for one release: the first hit per process logs a one-shot
+`tracing::warn!` and subsequent hits drop to `trace!`. The 7770 dispatch
+arm is scheduled for `#[ignore]` in v(N+1) and removal in v(N+2). New
+shell integrations only emit 7772.
