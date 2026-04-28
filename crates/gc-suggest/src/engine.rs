@@ -784,7 +784,13 @@ impl SuggestionEngine {
         let Some(cmd) = ctx.command.as_ref() else {
             return;
         };
-        let resolved_owned = self.alias_map.get(cmd.as_str());
+        // Task 5 swaps this for `expand_alias_for_spec`; in the meantime,
+        // peel the head token off the resolved Vec so behaviour matches
+        // the pre-Task-2 `Option<String>` shape.
+        let resolved_owned = self
+            .alias_map
+            .get(cmd.as_str())
+            .and_then(|tokens| tokens.into_iter().next());
         let resolved_cmd = resolved_owned.as_deref().unwrap_or(cmd.as_str());
         if resolved_cmd != "ssh" || ctx.word_index == 0 || ctx.is_flag {
             return;
@@ -811,7 +817,12 @@ impl SuggestionEngine {
             return None;
         }
         let command = ctx.command.as_ref()?;
-        let resolved_owned = self.alias_map.get(command.as_str());
+        // Task 5 routes this through `expand_alias_for_spec`; for now keep
+        // single-token semantics by peeling the head off the resolved Vec.
+        let resolved_owned = self
+            .alias_map
+            .get(command.as_str())
+            .and_then(|tokens| tokens.into_iter().next());
         let resolved = resolved_owned.as_deref().unwrap_or(command.as_str());
         self.spec_store.get(resolved)
     }
