@@ -203,17 +203,7 @@ fn engine_benchmarks(c: &mut Criterion) {
         });
     });
 
-    // Alias expansion overhead. We bench two cases so the delta isolates
-    // the cost of `expand_alias_for_spec` + synthetic-ctx construction
-    // (everything else — spec walk, candidate ranking, filesystem
-    // probing — is held constant against `subcommand_with_spec`).
-    //
-    // Both cases land on the same git top-level subcommand subtree:
-    //   * `subcommand_with_spec` types `git ch<TAB>`.
-    //   * `alias_hit_single` types `g ch<TAB>` with `alias g=git`.
-    //   * `alias_hit_multi` types `gco m<TAB>` with `alias gco='git
-    //     checkout'`. (Different subtree but exercises the multi-word
-    //     expansion code path including the synthetic-ctx clone.)
+    // Two cases isolate alias expansion overhead vs the no-alias subcommand bench.
     let (alias_engine, alias_tmp) = setup_engine_and_dir();
     let mut alias_map = std::collections::HashMap::with_capacity(100);
     alias_map.insert("g".to_string(), vec!["git".to_string()]);

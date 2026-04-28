@@ -343,19 +343,14 @@ impl SuggestionEngine {
         }
     }
 
-    /// Builder hook for integration tests / benches: install a fixed
-    /// alias map without going through the background loader. Hidden from
-    /// public docs because production code should always use
-    /// [`Self::with_providers`] which spawns the loader.
+    /// Test/bench builder hook to install a fixed alias map.
     #[doc(hidden)]
     pub fn with_aliases(self, map: std::collections::HashMap<String, Vec<String>>) -> Self {
         self.alias_map.install(map);
         self
     }
 
-    /// Builder hook for integration tests / benches: point the SSH host
-    /// cache at a deterministic config path (fed by the test fixture)
-    /// instead of `~/.ssh/config`.
+    /// Test/bench builder hook to redirect ssh-host lookups at a fixed config file.
     #[doc(hidden)]
     pub fn with_ssh_host_cache_path(mut self, path: std::path::PathBuf) -> Self {
         self.ssh_host_cache = Some(SshHostCache::new(path));
@@ -804,11 +799,7 @@ impl SuggestionEngine {
         if ctx.command.is_none() {
             return;
         }
-        // Resolve `alias dev='ssh prod.example.com'` so typing `dev <TAB>`
-        // gates ssh-host injection on the alias's true target. The
-        // expander returns `None` only when `word_index == 0` (typing the
-        // alias name itself) — we already bail on that below — so the
-        // explicit `Some(_)` branch is the alias-or-pass-through path.
+        // Use the alias's resolved head so `alias dev=ssh` still triggers ssh-host injection.
         let resolved_cmd: String = match expand_alias_for_spec(ctx, &self.alias_map) {
             Some(exp) => exp.resolved_command.into_owned(),
             None => return,
@@ -838,17 +829,13 @@ impl SuggestionEngine {
             return None;
         }
         let command = ctx.command.as_ref()?;
-        // Walk the alias map first so multi-word aliases land the right
-        // spec — `gco='git checkout'` should resolve to git's spec, not
-        // attempt a literal `gco` lookup.
+        // Alias head -> spec, so multi-word aliases land their target's spec subtree.
         if let Some(expanded) = expand_alias_for_spec(ctx, &self.alias_map) {
             if let Some(spec) = self.spec_store.get(expanded.resolved_command.as_ref()) {
                 return Some(spec);
             }
         }
-        // Fall through: an alias whose head doesn't have a spec, or
-        // word_index == 0 (typing the alias name itself) — try the
-        // literal command name so `git` itself still resolves.
+        // Fall through: literal lookup so unaliased commands still resolve.
         self.spec_store.get(command.as_str())
     }
 
@@ -873,21 +860,10 @@ impl SuggestionEngine {
             return Err(candidates);
         };
 
-        // For multi-word aliases (`alias gco='git checkout'`) we need to
-        // walk the spec tree as if the user had typed the expansion —
-        // otherwise `git checkout`'s args are lost and branch generators
-        // never fire. Build a synthetic ctx with the alias-tail prepended
-        // to args; current_word and the rest of the cursor metadata stay
-        // pinned to the literal buffer so fuzzy ranking, filesystem
-        // injection, and history-keyed scoring keep seeing what the user
-        // actually typed (`gco mybr`, not `git checkout mybr`).
-        //
-        // `resolve_spec` only consumes `args` and `preceding_flag` for
-        // the walk, so the `word_index`/`current_word` mismatch on the
-        // synthetic ctx is intentional and safe.
+        // Synthetic ctx: spec walk uses the expansion; ranking/history stay on the literal buffer.
         let synthetic_ctx;
         let resolve_ctx: &CommandContext = match expand_alias_for_spec(ctx, &self.alias_map) {
-            Some(exp) if matches!(exp.effective_args, std::borrow::Cow::Owned(_)) => {
+            Some(exp) if exp.aliased => {
                 synthetic_ctx = CommandContext {
                     command: Some(exp.resolved_command.into_owned()),
                     args: exp.effective_args.into_owned(),
@@ -895,8 +871,6 @@ impl SuggestionEngine {
                 };
                 &synthetic_ctx
             }
-            // No alias hit (or borrowed pass-through) — reuse the
-            // original ctx and skip the per-keystroke clone.
             _ => ctx,
         };
 

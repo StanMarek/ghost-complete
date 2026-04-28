@@ -72,11 +72,7 @@ struct SourceFingerprint {
 
 #[derive(Serialize, Deserialize)]
 struct CachedAliases {
-    /// Schema version. Older caches without this field deserialise to 0
-    /// via `serde(default)` and are rejected by [`load_alias_cache`] —
-    /// which protects us when the v1 `HashMap<String, String>` shape
-    /// would otherwise silently land in this v2 `HashMap<String, Vec<String>>`
-    /// field as an empty-vec map.
+    /// Bump on incompatible CachedAliases shape changes; mismatch forces regeneration.
     #[serde(default)]
     format_version: u32,
     /// Maps each watched source file (by basename) to its fingerprint at
@@ -293,14 +289,7 @@ impl AliasStore {
         Self::default()
     }
 
-    /// Look up an alias and return the full resolved token vector. Returns
-    /// `None` if the alias isn't known *or* if the background loader hasn't
-    /// filled the store yet.
-    ///
-    /// Multi-word aliases (`alias gco='git checkout'`) return every token —
-    /// callers that only need the head command should index `[0]` (and
-    /// usually want [`crate::alias_expand::expand_alias_for_spec`] instead,
-    /// which handles cycles, depth caps, and recursive aliases-of-aliases).
+    /// Returns the full token vector for `name`, or None if absent or loader still pending.
     pub fn get(&self, name: &str) -> Option<Vec<String>> {
         let guard = self.inner.read().unwrap_or_else(|e| e.into_inner());
         guard.get(name).cloned()
@@ -333,28 +322,7 @@ impl AliasStore {
     }
 }
 
-/// Parse shell alias definitions into a map from alias name to the full
-/// resolved token vector.
-///
-/// Supports the output format of `alias` in zsh/bash:
-/// - zsh: `name=value` or `name='value'`
-/// - bash: `alias name='value'` or `alias name="value"`
-///
-/// Stores the entire resolved value as a token vector so callers (e.g.
-/// [`crate::alias_expand::expand_alias_for_spec`]) can walk multi-word
-/// aliases like `gco='git checkout'` into the correct subcommand subtree
-/// rather than dropping every token after the first.
-///
-/// The value is tokenised with [`shlex::split`] so quoted segments and
-/// escaped spaces survive intact (`commit='git commit -m "wip commit"'`
-/// → `["git", "commit", "-m", "wip commit"]`). When `shlex` rejects the
-/// value (typically an unbalanced quote in a malformed user config) we
-/// fall back to `split_whitespace`, keeping **every** whitespace-separated
-/// token rather than dropping the line — a single corrupt entry should
-/// not silently strip the rest of the user's aliases.
-///
-/// Note: bash function-style aliases (`function name() { ... }`) are not
-/// recognised; only the `alias name=value` form is parsed.
+/// Parse zsh/bash `alias` output into name -> token-vector pairs; full tokens preserved via shlex.
 pub fn parse_aliases(output: &str) -> HashMap<String, Vec<String>> {
     let mut map = HashMap::new();
 
@@ -561,6 +529,32 @@ alias ll='ls -la'
         let output = "empty=\n";
         let aliases = parse_aliases(output);
         assert!(!aliases.contains_key("empty"));
+    }
+
+    #[test]
+    fn test_parse_empty_quoted_value_skipped() {
+        let output = "alias x=''\nalias y=\"\"\nalias z=' '\n";
+        let aliases = parse_aliases(output);
+        assert!(!aliases.contains_key("x"));
+        assert!(!aliases.contains_key("y"));
+        assert!(!aliases.contains_key("z"));
+    }
+
+    #[test]
+    fn test_parse_quoted_value_with_padding_trimmed() {
+        let output = "alias k=' kubectl '\n";
+        let aliases = parse_aliases(output);
+        assert_eq!(aliases.get("k"), Some(&token_vec(&["kubectl"])));
+    }
+
+    #[test]
+    fn test_parse_keeps_dollar_var_as_literal_token() {
+        let output = "k='kubectl --context $CTX'\n";
+        let aliases = parse_aliases(output);
+        assert_eq!(
+            aliases.get("k"),
+            Some(&token_vec(&["kubectl", "--context", "$CTX"]))
+        );
     }
 
     #[test]
@@ -955,11 +949,7 @@ alias ll='ls -la'
 
     #[test]
     fn alias_cache_rejects_old_format_version() {
-        // A cache file written by a pre-v2 binary (no `format_version`
-        // field, or one set to anything other than CURRENT_ALIAS_CACHE_VERSION)
-        // must be rejected so we don't silently deserialise the old
-        // `HashMap<String, String>` shape into the new
-        // `HashMap<String, Vec<String>>` field as an empty-vec map.
+        // Pre-v2 cache (no format_version) must be rejected — silent deserialise would land empty Vecs.
         let home = tempfile::tempdir().unwrap();
         std::fs::write(home.path().join(".zshrc"), b"# empty\n").unwrap();
         let cache_path = home.path().join("aliases-cache.json");
