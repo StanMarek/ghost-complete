@@ -1072,4 +1072,176 @@ mod tests {
         p.process_bytes(b"\x1b[?6n");
         assert_eq!(p.state().cpr_queue_len(), 0);
     }
+
+    // -- OSC 7772 buffer reporting (secure framing) --
+    //
+    // These tests own the canonical encoding contract. `encode_for_test`
+    // is the spec the production zsh emitter MUST match byte-for-byte.
+    // The decoder under test (`percent_decode_buffer`) MUST invert it
+    // exactly. Any divergence between encoder allow-list and decoder
+    // semantics shows up here first.
+
+    /// Encode a byte slice for OSC 7772 transport. The allow-list mirrors
+    /// `_gc_urlencode_buffer` in `shell/ghost-complete.zsh`:
+    ///   unreserved bytes:  `[A-Za-z0-9._~/-]` and ` ` (literal space)
+    ///   everything else  → `%XX` (uppercase hex)
+    /// In particular `;`, `\x07`, `\x1B`, `%`, `\\`, `\x00`, control bytes,
+    /// `0x7F`, and `0x80`–`0xFF` are all encoded.
+    fn encode_for_test(input: &[u8]) -> Vec<u8> {
+        const HEX: &[u8; 16] = b"0123456789ABCDEF";
+        let mut out = Vec::with_capacity(input.len());
+        for &b in input {
+            let safe = matches!(b,
+                b'a'..=b'z'
+                    | b'A'..=b'Z'
+                    | b'0'..=b'9'
+                    | b'.' | b'_' | b'~' | b'/' | b'-' | b' '
+            );
+            if safe {
+                out.push(b);
+            } else {
+                out.push(b'%');
+                out.push(HEX[(b >> 4) as usize]);
+                out.push(HEX[(b & 0x0F) as usize]);
+            }
+        }
+        out
+    }
+
+    /// Wrap an already-encoded payload in the OSC 7772 envelope.
+    fn build_osc7772(buffer: &[u8], cursor_chars: usize) -> Vec<u8> {
+        let mut env = Vec::with_capacity(buffer.len() * 3 + 16);
+        env.extend_from_slice(b"\x1b]7772;");
+        env.extend_from_slice(cursor_chars.to_string().as_bytes());
+        env.push(b';');
+        env.extend_from_slice(&encode_for_test(buffer));
+        env.push(0x07);
+        env
+    }
+
+    fn assert_roundtrips(buffer: &str) {
+        let mut p = make_parser();
+        let cursor = buffer.chars().count();
+        p.process_bytes(&build_osc7772(buffer.as_bytes(), cursor));
+        assert_eq!(p.state().command_buffer(), Some(buffer));
+        assert_eq!(p.state().buffer_cursor(), cursor);
+    }
+
+    #[test]
+    fn osc7772_roundtrips_semicolon() {
+        assert_roundtrips("if true; then");
+    }
+
+    #[test]
+    fn osc7772_roundtrips_bel() {
+        assert_roundtrips("x\x07y");
+    }
+
+    #[test]
+    fn osc7772_roundtrips_esc() {
+        assert_roundtrips("\x1b[31m");
+    }
+
+    #[test]
+    fn osc7772_roundtrips_nul() {
+        assert_roundtrips("a\x00b");
+    }
+
+    #[test]
+    fn osc7772_roundtrips_embedded_st() {
+        assert_roundtrips("foo\x1b\\bar");
+    }
+
+    #[test]
+    fn osc7772_roundtrips_long_8k() {
+        // Deterministic 8 KiB ASCII pattern that exercises every byte the
+        // emitter must encode (`;`, `%`, `\\`, control bytes) plus the
+        // allowed unreserved alphabet. `cycle()` keeps the test offline
+        // and reproducible without pulling a PRNG dependency.
+        let pattern: &[u8] = b"a;b\\c%d e/f.g_h~i-j0 1\x07 \x1b2.3_4-5/6~7 8 9";
+        let buf: Vec<u8> = pattern.iter().cycle().take(8192).copied().collect();
+        let s = std::str::from_utf8(&buf).expect("ASCII fixture is valid UTF-8");
+        assert_roundtrips(s);
+    }
+
+    #[test]
+    fn osc7772_roundtrips_utf8_cjk() {
+        assert_roundtrips("日本語");
+    }
+
+    #[test]
+    fn osc7772_roundtrips_empty() {
+        let mut p = make_parser();
+        p.process_bytes(&build_osc7772(b"", 0));
+        assert_eq!(p.state().command_buffer(), Some(""));
+        assert_eq!(p.state().buffer_cursor(), 0);
+    }
+
+    #[test]
+    fn osc7772_roundtrips_already_encoded_alphabet() {
+        // The user typed the literal characters `abc%20def`. The encoder
+        // must encode `%` as `%25` so the decoder yields back `abc%20def`,
+        // not `abc def`. This pins "the decoder runs exactly once."
+        assert_roundtrips("abc%20def");
+    }
+
+    #[test]
+    fn osc7772_rejects_invalid_percent_escape() {
+        let mut p = make_parser();
+        // Establish a known-good prior buffer state.
+        p.process_bytes(&build_osc7772(b"prior", 5));
+        assert_eq!(p.state().command_buffer(), Some("prior"));
+        // `%zz` has invalid hex digits — the whole frame must be rejected.
+        p.process_bytes(b"\x1b]7772;3;ab%zz\x07");
+        assert_eq!(
+            p.state().command_buffer(),
+            Some("prior"),
+            "invalid percent escape must leave state untouched"
+        );
+        assert_eq!(p.state().buffer_cursor(), 5);
+    }
+
+    #[test]
+    fn osc7772_rejects_truncated_percent() {
+        let mut p = make_parser();
+        p.process_bytes(&build_osc7772(b"prior", 5));
+        p.process_bytes(b"\x1b]7772;2;ab%\x07");
+        assert_eq!(p.state().command_buffer(), Some("prior"));
+        assert_eq!(p.state().buffer_cursor(), 5);
+    }
+
+    #[test]
+    fn osc7772_rejects_invalid_utf8_after_decode() {
+        let mut p = make_parser();
+        p.process_bytes(&build_osc7772(b"prior", 5));
+        // Bytes 0xFF 0xFE 0x80 are decoded successfully but are not valid
+        // UTF-8. Mirror the legacy 7770 path: silently drop, no replace
+        // characters, no buffer mutation.
+        p.process_bytes(b"\x1b]7772;3;%FF%FE%80\x07");
+        assert_eq!(p.state().command_buffer(), Some("prior"));
+        assert_eq!(p.state().buffer_cursor(), 5);
+    }
+
+    #[test]
+    fn osc7772_security_no_nested_osc7_dispatch() {
+        // Defense in depth: a buffer whose decoded value LOOKS like an
+        // OSC 7 (`\e]7;file:///etc/passwd\a`) must NOT update CWD. The
+        // decoded bytes go straight into `set_command_buffer`; they never
+        // re-enter the VTE state machine.
+        let mut p = make_parser();
+        assert_eq!(p.state().cwd(), None);
+        let smuggled = b"\x1b]7;file:///etc/passwd\x07";
+        let cursor = std::str::from_utf8(smuggled).unwrap().chars().count();
+        p.process_bytes(&build_osc7772(smuggled, cursor));
+        assert_eq!(
+            p.state().cwd(),
+            None,
+            "OSC 7772 payload must not re-enter the VTE state machine"
+        );
+        // The buffer itself reconstructs byte-for-byte.
+        assert_eq!(
+            p.state().command_buffer(),
+            Some(std::str::from_utf8(smuggled).unwrap())
+        );
+    }
 }
