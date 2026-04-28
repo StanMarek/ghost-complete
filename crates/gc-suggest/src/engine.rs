@@ -2468,6 +2468,8 @@ mod tests {
         );
     }
 
+    // Depends on specs/git.json: archive subcommand, --format option, suggestions: [tar, zip].
+    // If this test breaks, check whether the spec was modified before suspecting the engine.
     #[test]
     fn git_archive_format_returns_tar_zip() {
         let engine = make_engine();
@@ -2495,6 +2497,8 @@ mod tests {
         assert!(texts.contains(&"zip"), "expected `zip` in {texts:?}");
     }
 
+    // Depends on specs/tar.json: `c` subcommand, --atime-preserve option, suggestions: [replace, system].
+    // If this test breaks, check whether the spec was modified before suspecting the engine.
     #[test]
     fn tar_atime_preserve_returns_replace_system() {
         let engine = make_engine();
@@ -2561,6 +2565,13 @@ mod tests {
         assert!(
             texts.contains(&"HEAD"),
             "static suggestion `HEAD` must surface alongside the git_branches generator: {texts:?}"
+        );
+        assert!(
+            results
+                .git_generators
+                .contains(&crate::git::GitQueryKind::Branches),
+            "git_branches generator must be dispatched alongside static suggestions: {:?}",
+            results.git_generators
         );
     }
 }
