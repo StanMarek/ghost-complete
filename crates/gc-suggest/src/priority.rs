@@ -72,6 +72,10 @@ mod tests {
             SuggestionKind::Directory.base_priority() > SuggestionKind::FilePath.base_priority()
         );
         assert!(SuggestionKind::FilePath.base_priority() > SuggestionKind::History.base_priority());
+        assert!(
+            SuggestionKind::Subcommand.base_priority() > SuggestionKind::EnumValue.base_priority()
+        );
+        assert!(SuggestionKind::EnumValue.base_priority() > SuggestionKind::Flag.base_priority());
     }
 
     #[test]
@@ -108,6 +112,7 @@ mod tests {
             SuggestionKind::Directory,
             SuggestionKind::FilePath,
             SuggestionKind::History,
+            SuggestionKind::EnumValue,
         ] {
             let p = k.base_priority().get();
             assert!(p <= 100, "{k:?} base priority {p} out of range");
