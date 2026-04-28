@@ -330,6 +330,12 @@ impl SuggestionEntry {
             }
         }
     }
+
+    /// Returns true if the spec author explicitly marked this entry as hidden.
+    /// Plain strings have no hidden field and therefore are never hidden.
+    fn is_hidden(&self) -> bool {
+        matches!(self, SuggestionEntry::Object(o) if o.hidden)
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -882,6 +888,11 @@ fn validate_arg_generators(arg_spec: &mut ArgSpec, spec_name: &str, warnings: &m
             warnings.push(format!(
                 "suggestion in {spec_name} has empty name; dropping"
             ));
+            return false;
+        }
+        if entry.is_hidden() {
+            // Silent drop — `hidden: true` is the spec author's explicit signal
+            // to suppress this entry.  No warning needed.
             return false;
         }
         true
@@ -2382,5 +2393,31 @@ mod tests {
                 "warning should contain the spec name 'x', got: {w}"
             );
         }
+    }
+
+    #[test]
+    fn hidden_suggestion_is_dropped_at_load_time() {
+        let json = r#"{
+            "name": "x",
+            "args": {
+                "name": "y",
+                "suggestions": [
+                    {"name": "visible"},
+                    {"name": "hush", "hidden": true},
+                    "plain-also-visible"
+                ]
+            }
+        }"#;
+        let mut spec = parse_spec_checked_and_sanitized(json).unwrap();
+        let _warnings = validate_spec_generators(&mut spec);
+        let names: Vec<&str> = spec.args[0]
+            .suggestions
+            .iter()
+            .map(|e| match e {
+                SuggestionEntry::Plain(s) => s.as_str(),
+                SuggestionEntry::Object(o) => o.name[0].as_str(),
+            })
+            .collect();
+        assert_eq!(names, vec!["visible", "plain-also-visible"]);
     }
 }
