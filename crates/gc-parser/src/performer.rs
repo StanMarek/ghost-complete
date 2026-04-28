@@ -248,9 +248,7 @@ impl Perform for TerminalState {
                 let decoded = match percent_decode_buffer(params[2]) {
                     Some(bytes) => bytes,
                     None => {
-                        tracing::warn!(
-                            "OSC 7772 — malformed percent escape in payload, skipping"
-                        );
+                        tracing::warn!("OSC 7772 — malformed percent escape in payload, skipping");
                         return;
                     }
                 };
@@ -1055,10 +1053,7 @@ mod tests {
 
     #[test]
     fn percent_decode_buffer_no_encoding() {
-        assert_eq!(
-            percent_decode_buffer(b"abc xyz"),
-            Some(b"abc xyz".to_vec())
-        );
+        assert_eq!(percent_decode_buffer(b"abc xyz"), Some(b"abc xyz".to_vec()));
     }
 
     #[test]

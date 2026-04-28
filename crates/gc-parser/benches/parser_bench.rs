@@ -114,24 +114,19 @@ fn osc7772_decode_benchmarks(c: &mut Criterion) {
     // sprinkling of `;`, `|`, `&`, etc. Use a deterministic pattern so
     // bench runs are comparable across machines and revisions.
     let pattern: &[u8] = b"echo a; ls -la | grep -v test && cd /tmp ";
-    let make_buffer = |size: usize| -> Vec<u8> {
-        pattern.iter().cycle().take(size).copied().collect()
-    };
+    let make_buffer =
+        |size: usize| -> Vec<u8> { pattern.iter().cycle().take(size).copied().collect() };
 
     let mut group = c.benchmark_group("osc7772_decode");
     for &size in &[100usize, 1024, 8 * 1024] {
         let envelope = build_osc7772_envelope(&make_buffer(size));
         group.throughput(Throughput::Bytes(envelope.len() as u64));
-        group.bench_with_input(
-            BenchmarkId::from_parameter(size),
-            &envelope,
-            |b, env| {
-                b.iter(|| {
-                    let mut parser = TerminalParser::new(24, 80);
-                    parser.process_bytes(env);
-                });
-            },
-        );
+        group.bench_with_input(BenchmarkId::from_parameter(size), &envelope, |b, env| {
+            b.iter(|| {
+                let mut parser = TerminalParser::new(24, 80);
+                parser.process_bytes(env);
+            });
+        });
     }
     group.finish();
 }
