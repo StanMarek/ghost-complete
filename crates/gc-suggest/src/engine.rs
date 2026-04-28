@@ -2494,4 +2494,32 @@ mod tests {
         assert!(texts.contains(&"tar"), "expected `tar` in {texts:?}");
         assert!(texts.contains(&"zip"), "expected `zip` in {texts:?}");
     }
+
+    #[test]
+    fn tar_atime_preserve_returns_replace_system() {
+        let engine = make_engine();
+        // --atime-preserve lives under `tar c` (the create subcommand).
+        let ctx = CommandContext {
+            command: Some("tar".into()),
+            args: vec!["c".into(), "--atime-preserve".into()],
+            current_word: String::new(),
+            word_index: 3,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: Some("--atime-preserve".into()),
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: QuoteState::None,
+            is_first_segment: true,
+        };
+        let results = engine
+            .suggest_sync(&ctx, Path::new("/tmp"), "tar c --atime-preserve ")
+            .unwrap();
+        let texts: Vec<&str> = results.iter().map(|s| s.text.as_str()).collect();
+        assert!(
+            texts.contains(&"replace"),
+            "expected `replace` in {texts:?}"
+        );
+        assert!(texts.contains(&"system"), "expected `system` in {texts:?}");
+    }
 }
