@@ -43,6 +43,7 @@ use crate::types::Suggestion;
 
 pub mod ansible_doc;
 pub mod arduino_cli;
+pub mod local_project;
 pub mod macos_defaults;
 pub mod mamba;
 pub mod multipass;
