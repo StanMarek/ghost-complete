@@ -261,7 +261,7 @@ Script generators can cache their results to avoid re-executing slow commands on
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `ttl_seconds` | integer | none | How long (in seconds) to cache results before re-executing |
-| `cache_by_directory` | boolean | `false` | Key the cache by the current working directory. Enable this for commands whose output depends on CWD (e.g., `kubectl` with context, `make` targets) |
+| `cache_by_directory` | boolean | `false` | Key the cache by the current working directory. Enable this for script commands whose output depends on CWD (for example, a project-local tool invocation) |
 
 When `cache_by_directory` is `false`, the cache key is the generator's script command alone. When `true`, the CWD is appended to the key so that switching directories produces fresh results.
 

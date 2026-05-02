@@ -19,6 +19,23 @@ use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 /// §"What Name to Give Your Makefile". The first existing file wins;
 /// later files at the same level are ignored even if present.
 const MAKEFILE_NAMES: &[&str] = &["GNUmakefile", "makefile", "Makefile"];
+const SPECIAL_MAKE_TARGETS: &[&str] = &[
+    ".PHONY",
+    ".SUFFIXES",
+    ".DEFAULT",
+    ".PRECIOUS",
+    ".INTERMEDIATE",
+    ".SECONDARY",
+    ".SECONDEXPANSION",
+    ".DELETE_ON_ERROR",
+    ".IGNORE",
+    ".LOW_RESOLUTION_TIME",
+    ".SILENT",
+    ".EXPORT_ALL_VARIABLES",
+    ".NOTPARALLEL",
+    ".ONESHELL",
+    ".POSIX",
+];
 
 static MAKEFILE_CACHE: LazyLock<MtimeCache<Vec<String>>> = LazyLock::new(MtimeCache::new);
 
@@ -49,7 +66,7 @@ pub(crate) fn parse_makefile_targets(bytes: &[u8]) -> Vec<String> {
             continue;
         }
         let trimmed = line.trim_start();
-        if trimmed.is_empty() || trimmed.starts_with('#') || trimmed.starts_with('.') {
+        if trimmed.is_empty() || trimmed.starts_with('#') {
             filtered += 1;
             continue;
         }
@@ -86,7 +103,7 @@ pub(crate) fn parse_makefile_targets(bytes: &[u8]) -> Vec<String> {
 
         for name in lhs.split_whitespace() {
             if name.is_empty()
-                || name.starts_with('.')
+                || is_special_make_target(name)
                 || name.contains("$(")
                 || name.contains("${")
                 || name.contains('%')
@@ -101,6 +118,10 @@ pub(crate) fn parse_makefile_targets(bytes: &[u8]) -> Vec<String> {
 
     tracing::debug!(targets = out.len(), filtered, "makefile parse complete");
     out
+}
+
+fn is_special_make_target(name: &str) -> bool {
+    SPECIAL_MAKE_TARGETS.contains(&name)
 }
 
 /// Yield logical lines, joining `\<newline>` continuations into a
@@ -219,6 +240,12 @@ mod tests {
     fn phony_meta_targets_filtered_out() {
         let src = b".PHONY: install clean\ninstall:\n\tcp\n";
         assert_eq!(parse_makefile_targets(src), vec!["install"]);
+    }
+
+    #[test]
+    fn dot_prefixed_targets_are_not_meta_targets() {
+        let src = b".env:\n\tcp sample .env\n.PHONY: clean\nclean:\n\trm -rf target\n";
+        assert_eq!(parse_makefile_targets(src), vec![".env", "clean"]);
     }
 
     #[test]

@@ -537,7 +537,7 @@ fn line_scan_has_workspace(text: &str) -> bool {
         let trimmed = line.trim_start();
         if let Some(rest) = trimmed.strip_prefix('[') {
             let rest = rest.trim_start();
-            if let Some(rest) = rest.strip_prefix("workspace") {
+            if let Some(rest) = strip_workspace_key_prefix(rest) {
                 // Must be `[workspace]`, `[workspace.foo]`,
                 // `[workspace ]`, or `[ workspace ]` — not
                 // `[workspaceextended]`.
@@ -548,7 +548,7 @@ fn line_scan_has_workspace(text: &str) -> bool {
                     return true;
                 }
             }
-        } else if let Some(rest) = trimmed.strip_prefix("workspace") {
+        } else if let Some(rest) = strip_workspace_key_prefix(trimmed) {
             // Top-level dotted or inline table forms. Whitespace after
             // `workspace` covers valid `workspace . members = ...` and
             // `workspace = { ... }`; the TOML parse below rejects any
@@ -562,6 +562,19 @@ fn line_scan_has_workspace(text: &str) -> bool {
         }
     }
     false
+}
+
+fn strip_workspace_key_prefix(s: &str) -> Option<&str> {
+    if let Some(rest) = s.strip_prefix("workspace") {
+        return Some(rest);
+    }
+    if let Some(rest) = s.strip_prefix("\"workspace\"") {
+        return Some(rest);
+    }
+    if let Some(rest) = s.strip_prefix("'workspace'") {
+        return Some(rest);
+    }
+    None
 }
 
 /// Parse a workspace root and resolve member names, recording every
@@ -1414,6 +1427,24 @@ mod tests {
         std::fs::write(
             tmp.path().join("Cargo.toml"),
             "workspace.members = [\"a\", \"b\"]\n",
+        )
+        .unwrap();
+        write_member(tmp.path(), "a", "alpha");
+        write_member(tmp.path(), "b", "beta");
+
+        let suggestions = CargoWorkspaceMembers::generate_with_root(&tmp.path().join("a"))
+            .await
+            .unwrap();
+        let names: Vec<&str> = suggestions.iter().map(|s| s.text.as_str()).collect();
+        assert_eq!(names, vec!["alpha", "beta"]);
+    }
+
+    #[tokio::test]
+    async fn ancestor_walk_finds_quoted_workspace_header_above_member_crate() {
+        let tmp = TempDir::new().unwrap();
+        std::fs::write(
+            tmp.path().join("Cargo.toml"),
+            "[\"workspace\"]\nmembers = [\"a\", \"b\"]\n",
         )
         .unwrap();
         write_member(tmp.path(), "a", "alpha");

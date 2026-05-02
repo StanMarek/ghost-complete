@@ -93,8 +93,8 @@ provider migrations that work at the same layer.
 ### Positive
 
 - **Demo cases land.** `make <TAB>` lists targets; `npm run <TAB>` lists
-  `package.json#scripts` keys; `cargo run -p <TAB>` (and every
-  `-p`-bearing subcommand) lists workspace members.
+  `package.json#scripts` keys; `cargo run -p <TAB>` and the cargo package
+  flags patched in `specs/cargo.json` list workspace members.
 - **No JS runtime dependency.** The three providers ship as pure Rust
   parsers. The deferred JS-runtime initiative remains independently
   scopable.

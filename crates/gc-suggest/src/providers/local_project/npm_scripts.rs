@@ -52,10 +52,13 @@ pub(crate) fn parse_npm_scripts(bytes: &[u8]) -> Vec<NpmScriptEntry> {
         .scripts
         .into_iter()
         .filter_map(|(name, value)| match value {
-            serde_json::Value::String(cmd) => Some(NpmScriptEntry {
-                name,
-                command: Some(truncate_chars(&cmd)),
-            }),
+            serde_json::Value::String(cmd) if !name.is_empty() => {
+                Some(NpmScriptEntry {
+                    name,
+                    command: Some(truncate_chars(&cmd)),
+                })
+            }
+            serde_json::Value::String(_) => None,
             _ => {
                 tracing::warn!(
                     script = %name,
@@ -158,6 +161,13 @@ mod tests {
         let json = br#"{"scripts": {"x": 42, "y": "echo y", "z": null}}"#;
         let scripts = parse_npm_scripts(json);
         assert_eq!(scripts, vec![entry("y", "echo y")]);
+    }
+
+    #[test]
+    fn empty_script_name_is_skipped() {
+        let json = br#"{"scripts": {"": "echo bad", "ok": "echo ok"}}"#;
+        let scripts = parse_npm_scripts(json);
+        assert_eq!(scripts, vec![entry("ok", "echo ok")]);
     }
 
     #[test]
