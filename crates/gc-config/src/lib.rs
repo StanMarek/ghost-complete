@@ -97,9 +97,7 @@ impl Default for TriggerConfig {
 pub struct PopupConfig {
     pub max_visible: usize,
     pub borders: bool,
-    /// How long terminal Empty/Error feedback remains visible before the
-    /// popup auto-dismisses. `0` disables auto-dismiss. Clamped to
-    /// `[0, 10000]` during normalization. Default: 1200 ms.
+    /// Empty/Error feedback dismiss delay (ms); 0 disables. Clamped to [0, 10000]. Default 1200.
     pub feedback_dismiss_ms: u16,
     /// Whether Loading feedback animates with a spinner. Narrow popups still
     /// fall back to a static ellipsis. Default: true.

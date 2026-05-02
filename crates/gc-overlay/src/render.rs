@@ -488,7 +488,7 @@ fn render_feedback_only_popup(
 ) -> PopupLayout {
     let border_pad: u16 = if theme.borders { 2 } else { 0 };
     let effective_max_w = max_width.min(screen_cols).max(min_width);
-    let width = min_width.clamp(min_width, effective_max_w);
+    let width = min_width.min(effective_max_w);
     let base_height = 1 + border_pad;
     let space_below = screen_rows.saturating_sub(cursor_row.saturating_add(1));
     let new_deficit = base_height.saturating_sub(space_below);
@@ -581,7 +581,7 @@ pub fn render_indicator_row(
     theme: &PopupTheme,
     feedback: FeedbackKind,
 ) {
-    if layout.height == 0 || !feedback.reserves_row() {
+    if layout.height <= u16::from(theme.borders) || !feedback.reserves_row() {
         return;
     }
     let content_width = layout

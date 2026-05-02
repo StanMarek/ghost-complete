@@ -626,10 +626,7 @@ impl SuggestionEngine {
         Ok(fuzzy::rank(query, all, MAX_DYNAMIC_CANDIDATES))
     }
 
-    /// Resolve a single git query kind asynchronously. The per-kind variant
-    /// of [`Self::resolve_git`]: surfaces the underlying error to the caller
-    /// instead of swallowing it into an empty vec, so the handler's async
-    /// feedback layer can report which specific git generator failed.
+    /// Per-kind variant of [`Self::resolve_git`] that surfaces errors instead of swallowing.
     pub async fn resolve_git_kind(
         &self,
         kind: git::GitQueryKind,
@@ -643,10 +640,7 @@ impl SuggestionEngine {
         Ok(fuzzy::rank(query, suggestions, MAX_DYNAMIC_CANDIDATES))
     }
 
-    /// Resolve a single native provider kind asynchronously. The per-kind
-    /// variant of [`Self::resolve_providers`]: surfaces the underlying error
-    /// to the caller instead of logging-and-swallowing, so the handler's
-    /// async feedback layer can report which specific provider failed.
+    /// Per-kind variant of [`Self::resolve_providers`] that surfaces errors instead of logging-and-swallowing.
     pub async fn resolve_provider_kind(
         &self,
         kind: ProviderKind,
@@ -658,7 +652,10 @@ impl SuggestionEngine {
                 cwd = %ctx.cwd.display(),
                 "provider cwd is relative; skipping provider resolution"
             );
-            return Ok(Vec::new());
+            return Err(anyhow::anyhow!(
+                "provider cwd is relative: {}",
+                ctx.cwd.display()
+            ));
         }
         let suggestions = providers::resolve(kind, ctx).await?;
         if query.is_empty() {

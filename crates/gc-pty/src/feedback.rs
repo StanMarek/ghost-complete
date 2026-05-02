@@ -62,10 +62,7 @@ impl AsyncFeedback {
         )
     }
 
-    /// Decide the terminal feedback variant from the disconnect-time outcome
-    /// without cloning the loaded suggestions vec. Callers pass only the
-    /// boolean of whether any non-empty Loaded results survived, plus the
-    /// failed/empty_count tallies — the loaded vec stays where it is.
+    /// Borrow-only variant of [`Self::terminal_from_aggregation`] — avoids cloning the loaded vec.
     pub fn terminal_for_outcome(
         loaded_non_empty: bool,
         failed: &[String],

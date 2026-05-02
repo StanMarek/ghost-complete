@@ -228,10 +228,7 @@ pub struct InputHandler {
     feedback_tick_notify: Arc<Notify>,
     feedback: AsyncFeedback,
     feedback_dismiss_ms: u16,
-    /// Per-batch error/empty tallies that arrived in non-final mpsc batches.
-    /// Drained into the terminal-aggregation call when the dynamic channel
-    /// disconnects, so an Error or Empty message read in an early batch is
-    /// not lost when the next batch contains no Loaded results.
+    /// Carries non-final-batch error/empty counts to the disconnect-time terminal computation.
     pending_failed: Vec<String>,
     pending_empty_count: usize,
     /// Command context snapshot captured when generators were spawned.
@@ -865,6 +862,8 @@ impl InputHandler {
         self.dynamic_rx = None;
         self.dynamic_ctx = None;
         self.feedback = AsyncFeedback::Idle;
+        self.pending_failed.clear();
+        self.pending_empty_count = 0;
 
         self.buffer_generation = self.buffer_generation.wrapping_add(1);
 
@@ -991,6 +990,8 @@ impl InputHandler {
         self.dynamic_rx = None;
         self.dynamic_ctx = None;
         self.feedback = AsyncFeedback::Idle;
+        self.pending_failed.clear();
+        self.pending_empty_count = 0;
         self.buffer_generation = self.buffer_generation.wrapping_add(1);
 
         let result = match self.engine.suggest_sync(&ctx, &cwd, &buffer) {
@@ -1120,9 +1121,6 @@ impl InputHandler {
             self.dynamic_task = None;
         }
         let aggregation = AsyncFeedback::aggregate(messages);
-        // Roll the per-batch failed/empty into self.pending_* so a non-final
-        // batch's error reports survive to the disconnect-time terminal feedback
-        // computation.
         self.pending_failed.extend(aggregation.failed);
         self.pending_empty_count += aggregation.empty_count;
         if aggregation.loaded.is_empty() {
@@ -1188,6 +1186,8 @@ impl InputHandler {
                 self.dynamic_ctx = None;
                 self.dynamic_task = None;
                 self.feedback = AsyncFeedback::Idle;
+                self.pending_failed.clear();
+                self.pending_empty_count = 0;
                 if self.visible {
                     self.render(parser, stdout);
                 }
@@ -1296,11 +1296,7 @@ impl InputHandler {
                 current_token: ctx.current_word.clone(),
             });
 
-            // Resolve script generators, git kinds, and provider kinds
-            // concurrently. Each git/provider kind is dispatched as its own
-            // per-kind helper so a per-kind error or empty result surfaces
-            // as its own DynamicResult and the ProviderTag carries the
-            // actual kind that produced it.
+            // Per-kind dispatch so each git/provider failure surfaces with its own ProviderTag.
             let git_engine = Arc::clone(&engine);
             let git_cwd = cwd.clone();
             let git_query = ctx.current_word.clone();
@@ -1515,9 +1511,6 @@ impl InputHandler {
         }
 
         let aggregation = AsyncFeedback::aggregate(messages);
-        // Roll the per-batch failed/empty into self.pending_* so a non-final
-        // batch's error reports survive to the disconnect-time terminal feedback
-        // computation.
         self.pending_failed.extend(aggregation.failed);
         self.pending_empty_count += aggregation.empty_count;
 
@@ -1796,23 +1789,18 @@ impl InputHandler {
         if since.elapsed() < std::time::Duration::from_millis(self.feedback_dismiss_ms as u64) {
             return false;
         }
-        // PartialError means some providers succeeded — the popup currently
-        // shows real merged suggestions plus an indicator row. Demote to Idle
-        // and clear just the indicator row so the suggestions stay visible.
+        // PartialError + suggestions present: drop only the indicator row, not the popup.
         if matches!(self.feedback, AsyncFeedback::PartialError { .. })
             && !self.suggestions.is_empty()
         {
             self.feedback = AsyncFeedback::Idle;
             if let Some(mut layout) = self.last_layout.clone() {
-                // Clear the indicator row: it sits at
-                // start_row + height - 1 - borders. Replace it with spaces
-                // and shrink the cached layout height by one so subsequent
-                // dismiss/clear_popup calls don't miss-target a row.
                 if layout.height > 0 {
-                    let indicator_row =
-                        layout.start_row + layout.height - 1 - u16::from(self.theme.borders);
-                    let mut buf = Vec::with_capacity(layout.width as usize + 16);
+                    let borders = self.theme.borders;
+                    let indicator_row = layout.start_row + layout.height - 1 - u16::from(borders);
+                    let mut buf = Vec::with_capacity(layout.width as usize * 4 + 64);
                     buf.extend_from_slice(b"\x1b[s"); // save cursor
+                                                      // Clear the indicator row.
                     let _ = write!(
                         &mut buf,
                         "\x1b[{};{}H",
@@ -1820,9 +1808,41 @@ impl InputHandler {
                         layout.start_col + 1
                     );
                     buf.extend(std::iter::repeat_n(b' ', layout.width as usize));
+                    if borders {
+                        // The bottom border was displaced one row below the indicator
+                        // (render.rs draws it at loading_row + 1). Clear that displaced
+                        // row and redraw the border at the indicator row so the popup
+                        // remains a closed box and a later clear_popup catches every
+                        // painted row.
+                        let displaced_border_row = layout.start_row + layout.height - 1;
+                        let _ = write!(
+                            &mut buf,
+                            "\x1b[{};{}H",
+                            displaced_border_row + 1,
+                            layout.start_col + 1
+                        );
+                        buf.extend(std::iter::repeat_n(b' ', layout.width as usize));
+                        let _ = write!(
+                            &mut buf,
+                            "\x1b[{};{}H",
+                            indicator_row + 1,
+                            layout.start_col + 1
+                        );
+                        if !self.theme.border_on.is_empty() {
+                            buf.extend_from_slice(&self.theme.border_on);
+                        }
+                        buf.extend_from_slice("╰".as_bytes());
+                        let content_width = layout.width.saturating_sub(2);
+                        for _ in 0..content_width {
+                            buf.extend_from_slice("─".as_bytes());
+                        }
+                        buf.extend_from_slice("╯".as_bytes());
+                        buf.extend_from_slice(b"\x1b[0m");
+                    }
                     buf.extend_from_slice(b"\x1b[u"); // restore cursor
                     let _ = stdout.write_all(&buf);
                     let _ = stdout.flush();
+                    // Shrink cached height so a later dismiss/clear_popup targets the right row.
                     layout.height -= 1;
                     self.last_layout = Some(layout);
                 }
@@ -3635,10 +3655,7 @@ mod tests {
 
     #[test]
     fn test_clear_expired_feedback_partial_error_with_suggestions_demotes_to_idle() {
-        // Regression: when feedback is PartialError and the popup currently
-        // has merged suggestions, expiring the feedback must NOT dismiss the
-        // popup. The suggestions are real user-visible state — drop only the
-        // indicator row and demote feedback to Idle.
+        // Regression: PartialError expiry with merged suggestions must keep popup visible.
         let mut handler = make_visible_handler(vec![Suggestion {
             text: "main".into(),
             kind: SuggestionKind::GitBranch,
@@ -3654,6 +3671,193 @@ mod tests {
         assert!(handler.visible, "popup must stay visible");
         assert_eq!(handler.suggestions.len(), 1, "suggestions must survive");
         assert!(matches!(handler.feedback, AsyncFeedback::Idle));
+    }
+
+    #[test]
+    fn test_clear_expired_feedback_bordered_partial_error_paints_displaced_border_row() {
+        // Regression: with a bordered theme the indicator row REPLACES the
+        // would-be bottom border and the bottom border is displaced one row
+        // below. After demote-to-Idle, the cached layout shrinks by one.
+        // clear_expired_feedback must clear that displaced border row AND
+        // redraw a new bottom border at the shrunk-bottom position so the
+        // popup is a closed box and a later clear_popup catches every
+        // painted row.
+        let mut handler = make_visible_handler(vec![Suggestion {
+            text: "main".into(),
+            kind: SuggestionKind::GitBranch,
+            ..Default::default()
+        }])
+        .with_feedback_dismiss_ms(1200);
+        handler.theme = PopupTheme {
+            borders: true,
+            ..PopupTheme::default()
+        };
+        // Simulate the layout that render_popup returns for a bordered popup
+        // with a feedback indicator: start_row = 5, height = original 3
+        // (top_border + 1 content + bottom_border) + 1 loading_extra = 4.
+        // Painted rows are start_row..start_row+height = 5..9 (rows 5,6,7,8).
+        handler.last_layout = Some(PopupLayout {
+            start_row: 5,
+            start_col: 10,
+            width: 20,
+            height: 4,
+            scroll_deficit: 0,
+        });
+        handler.feedback = AsyncFeedback::PartialError {
+            failed: vec!["git script".into()],
+            since: std::time::Instant::now() - std::time::Duration::from_millis(2000),
+        };
+
+        let mut buf: Vec<u8> = Vec::new();
+        assert!(handler.clear_expired_feedback(&mut buf));
+        assert!(matches!(handler.feedback, AsyncFeedback::Idle));
+
+        let painted = String::from_utf8_lossy(&buf).into_owned();
+        // Cursor moves to the indicator row (start_row + height - 2 = 7,
+        // 1-based = 8) and to the displaced bottom-border row (start_row +
+        // height - 1 = 8, 1-based = 9). Both rows must be addressed.
+        assert!(
+            painted.contains("\x1b[8;11H"),
+            "indicator row must be addressed: {painted:?}"
+        );
+        assert!(
+            painted.contains("\x1b[9;11H"),
+            "displaced bottom-border row must be cleared: {painted:?}"
+        );
+        // A new bottom border must be drawn at the shrunk-bottom position.
+        assert!(
+            painted.contains('╰') && painted.contains('╯'),
+            "bottom border must be redrawn at the new position: {painted:?}"
+        );
+
+        // The cached layout shrinks by one. A subsequent clear_popup must
+        // erase rows 5..8 — covering the new bottom border row at row 7
+        // (1-based row 8). The displaced row at start_row+old_height-1
+        // (= row 8, 1-based 9) was already wiped above and is now outside
+        // the shrunk layout, which is the correct invariant.
+        let shrunk = handler.last_layout.clone().expect("layout retained");
+        assert_eq!(shrunk.height, 3);
+        let mut clear_buf: Vec<u8> = Vec::new();
+        clear_popup(&mut clear_buf, &shrunk, &handler.terminal_profile);
+        let clear_text = String::from_utf8_lossy(&clear_buf).into_owned();
+        // Rows 5,6,7 must be addressed by clear_popup (1-based 6,7,8).
+        for row_1based in [6_u16, 7, 8] {
+            let needle = format!("\x1b[{row_1based};11H");
+            assert!(
+                clear_text.contains(&needle),
+                "clear_popup must address row {row_1based}: {clear_text:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_pending_failed_accumulates_across_two_try_merge_dynamic_calls() {
+        // Cross-batch accumulation: an Error in batch 1 must survive into
+        // the disconnect-time terminal feedback computed in batch 2.
+        let mut handler = make_visible_handler(vec![Suggestion {
+            text: "--flag".into(),
+            kind: SuggestionKind::Flag,
+            source: SuggestionSource::Spec,
+            ..Default::default()
+        }]);
+        let base_ctx = gc_buffer::parse_command_context("", 0);
+        handler.dynamic_ctx = Some(DynamicCtxSnapshot::capture(&base_ctx, false));
+        handler.feedback = AsyncFeedback::Loading {
+            spawned_at: std::time::Instant::now(),
+        };
+
+        let (tx, rx) = mpsc::channel::<DynamicResult>(2);
+        // Batch 1: send Error only, do NOT drop tx — channel is still open.
+        tx.try_send(DynamicResult::Error {
+            provider: ProviderTag::Script("npm".into()),
+            message: "oops".into(),
+        })
+        .unwrap();
+        handler.dynamic_rx = Some(rx);
+
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        handler.try_merge_dynamic(&parser, &mut buf);
+
+        // After batch 1: pending_failed has the npm error, feedback still Loading.
+        assert_eq!(handler.pending_failed.len(), 1);
+        assert!(handler.feedback.is_loading());
+
+        // Batch 2: send Loaded then drop tx so the channel disconnects.
+        tx.try_send(DynamicResult::Loaded {
+            provider: ProviderTag::Git(gc_suggest::git::GitQueryKind::Branches),
+            suggestions: vec![Suggestion {
+                text: "main".into(),
+                kind: SuggestionKind::GitBranch,
+                source: SuggestionSource::Git,
+                ..Default::default()
+            }],
+        })
+        .unwrap();
+        drop(tx);
+        handler.try_merge_dynamic(&parser, &mut buf);
+
+        // After batch 2 + disconnect: PartialError with the npm error from
+        // batch 1 must have survived.
+        match handler.feedback_kind() {
+            AsyncFeedback::PartialError { failed, .. } => {
+                assert_eq!(failed.len(), 1, "batch-1 error must survive batch-2");
+            }
+            other => panic!("expected PartialError feedback, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_pending_empty_count_accumulates_across_two_try_merge_dynamic_calls() {
+        // Symmetric variant of the cross-batch accumulation test, for empty.
+        let mut handler = make_visible_handler(vec![Suggestion {
+            text: "--flag".into(),
+            kind: SuggestionKind::Flag,
+            source: SuggestionSource::Spec,
+            ..Default::default()
+        }]);
+        let base_ctx = gc_buffer::parse_command_context("", 0);
+        handler.dynamic_ctx = Some(DynamicCtxSnapshot::capture(&base_ctx, false));
+        handler.feedback = AsyncFeedback::Loading {
+            spawned_at: std::time::Instant::now(),
+        };
+
+        let (tx, rx) = mpsc::channel::<DynamicResult>(2);
+        // Batch 1: Empty only, channel still open.
+        tx.try_send(DynamicResult::Empty {
+            provider: ProviderTag::Script("npm".into()),
+        })
+        .unwrap();
+        handler.dynamic_rx = Some(rx);
+
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        handler.try_merge_dynamic(&parser, &mut buf);
+
+        assert_eq!(handler.pending_empty_count, 1);
+        assert!(handler.feedback.is_loading());
+
+        // Batch 2: Loaded then drop tx.
+        tx.try_send(DynamicResult::Loaded {
+            provider: ProviderTag::Git(gc_suggest::git::GitQueryKind::Branches),
+            suggestions: vec![Suggestion {
+                text: "main".into(),
+                kind: SuggestionKind::GitBranch,
+                source: SuggestionSource::Git,
+                ..Default::default()
+            }],
+        })
+        .unwrap();
+        drop(tx);
+        handler.try_merge_dynamic(&parser, &mut buf);
+
+        // After disconnect with both Loaded results AND a batch-1 empty:
+        // terminal_for_outcome with had_results=true + no failed but empty>0
+        // resolves to Idle (suggestions came through). We assert the empty
+        // was OBSERVED by the terminal computation by checking the pending
+        // counters were drained at disconnect.
+        assert_eq!(handler.pending_empty_count, 0, "drained on disconnect");
+        assert_eq!(handler.pending_failed.len(), 0, "no errors accumulated");
     }
 
     // --- try_merge_dynamic disconnect branches ---
