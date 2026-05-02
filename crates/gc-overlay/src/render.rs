@@ -397,8 +397,7 @@ pub fn render_popup(
         }
     }
 
-    // Render feedback indicator row when async generators are in flight or
-    // just completed without ordinary suggestions.
+    // Indicator row: drawn while generators run or after they end with no suggestions.
     let loading_extra = if feedback.reserves_row() {
         let loading_row = bottom_border_row.unwrap_or(layout.start_row + layout.height);
         if loading_row < screen_rows {

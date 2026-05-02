@@ -874,8 +874,6 @@ impl InputHandler {
                 self.suggestions = result.suggestions;
                 self.overlay.reset();
                 self.visible = true;
-                self.render_at(stdout, cursor_row, cursor_col, screen_rows, screen_cols);
-                self.last_trigger_fingerprint = Some(fingerprint);
                 self.spawn_generators(
                     result.script_generators,
                     result.git_generators,
@@ -883,6 +881,8 @@ impl InputHandler {
                     &ctx,
                     &cwd,
                 );
+                self.render_at(stdout, cursor_row, cursor_col, screen_rows, screen_cols);
+                self.last_trigger_fingerprint = Some(fingerprint);
             }
             Ok(result) => {
                 let has_async = !result.script_generators.is_empty()
@@ -1809,11 +1809,6 @@ impl InputHandler {
                     );
                     buf.extend(std::iter::repeat_n(b' ', layout.width as usize));
                     if borders {
-                        // The bottom border was displaced one row below the indicator
-                        // (render.rs draws it at loading_row + 1). Clear that displaced
-                        // row and redraw the border at the indicator row so the popup
-                        // remains a closed box and a later clear_popup catches every
-                        // painted row.
                         let displaced_border_row = layout.start_row + layout.height - 1;
                         let _ = write!(
                             &mut buf,
@@ -3520,6 +3515,47 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_trigger_static_with_async_reserves_indicator_row_in_cached_layout() {
+        let specs_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../specs");
+        if !specs_dir.exists() {
+            return;
+        }
+        let engine = SuggestionEngine::new(&[specs_dir]).unwrap();
+        let mut handler = make_handler();
+        handler.engine = Arc::new(engine);
+
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        {
+            let mut p = parser.lock().unwrap();
+            p.state_mut()
+                .predict_command_buffer("git checkout ".to_string(), 13);
+        }
+
+        let mut stdout = Vec::new();
+        handler.trigger(&parser, &mut stdout);
+
+        let layout = handler
+            .last_layout
+            .clone()
+            .expect("trigger must paint a layout when static suggestions are present");
+        assert!(
+            handler.feedback.is_loading(),
+            "spawn_generators must run before render_at so feedback=Loading at paint time"
+        );
+        let visible_count = handler.suggestions.len().min(handler.max_visible) as u16;
+        assert!(
+            visible_count >= 1,
+            "git checkout must yield static suggestions"
+        );
+        assert_eq!(
+            layout.height,
+            visible_count + 1,
+            "cached layout must reserve the indicator row (visible={visible_count}, height={})",
+            layout.height,
+        );
+    }
+
+    #[tokio::test]
     async fn test_abort_dynamic_task_and_clear_ctx_clears_both_fields() {
         let mut handler = make_handler();
         handler.dynamic_task = Some(tokio::spawn(async {
@@ -3675,13 +3711,6 @@ mod tests {
 
     #[test]
     fn test_clear_expired_feedback_bordered_partial_error_paints_displaced_border_row() {
-        // Regression: with a bordered theme the indicator row REPLACES the
-        // would-be bottom border and the bottom border is displaced one row
-        // below. After demote-to-Idle, the cached layout shrinks by one.
-        // clear_expired_feedback must clear that displaced border row AND
-        // redraw a new bottom border at the shrunk-bottom position so the
-        // popup is a closed box and a later clear_popup catches every
-        // painted row.
         let mut handler = make_visible_handler(vec![Suggestion {
             text: "main".into(),
             kind: SuggestionKind::GitBranch,
@@ -3692,10 +3721,6 @@ mod tests {
             borders: true,
             ..PopupTheme::default()
         };
-        // Simulate the layout that render_popup returns for a bordered popup
-        // with a feedback indicator: start_row = 5, height = original 3
-        // (top_border + 1 content + bottom_border) + 1 loading_extra = 4.
-        // Painted rows are start_row..start_row+height = 5..9 (rows 5,6,7,8).
         handler.last_layout = Some(PopupLayout {
             start_row: 5,
             start_col: 10,
@@ -3713,9 +3738,6 @@ mod tests {
         assert!(matches!(handler.feedback, AsyncFeedback::Idle));
 
         let painted = String::from_utf8_lossy(&buf).into_owned();
-        // Cursor moves to the indicator row (start_row + height - 2 = 7,
-        // 1-based = 8) and to the displaced bottom-border row (start_row +
-        // height - 1 = 8, 1-based = 9). Both rows must be addressed.
         assert!(
             painted.contains("\x1b[8;11H"),
             "indicator row must be addressed: {painted:?}"
@@ -3730,11 +3752,6 @@ mod tests {
             "bottom border must be redrawn at the new position: {painted:?}"
         );
 
-        // The cached layout shrinks by one. A subsequent clear_popup must
-        // erase rows 5..8 — covering the new bottom border row at row 7
-        // (1-based row 8). The displaced row at start_row+old_height-1
-        // (= row 8, 1-based 9) was already wiped above and is now outside
-        // the shrunk layout, which is the correct invariant.
         let shrunk = handler.last_layout.clone().expect("layout retained");
         assert_eq!(shrunk.height, 3);
         let mut clear_buf: Vec<u8> = Vec::new();
@@ -3851,11 +3868,6 @@ mod tests {
         drop(tx);
         handler.try_merge_dynamic(&parser, &mut buf);
 
-        // After disconnect with both Loaded results AND a batch-1 empty:
-        // terminal_for_outcome with had_results=true + no failed but empty>0
-        // resolves to Idle (suggestions came through). We assert the empty
-        // was OBSERVED by the terminal computation by checking the pending
-        // counters were drained at disconnect.
         assert_eq!(handler.pending_empty_count, 0, "drained on disconnect");
         assert_eq!(handler.pending_failed.len(), 0, "no errors accumulated");
     }

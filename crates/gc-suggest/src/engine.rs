@@ -2088,6 +2088,27 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_resolve_provider_kind_relative_cwd_returns_err() {
+        let engine = make_engine();
+        let ctx = crate::providers::ProviderCtx::new_for_test(
+            PathBuf::from("relative/path"),
+            Arc::new(std::collections::HashMap::new()),
+            String::new(),
+        );
+
+        let result = engine
+            .resolve_provider_kind(ProviderKind::CargoWorkspaceMembers, &ctx, "")
+            .await;
+
+        let err = result.expect_err("relative cwd must surface an error to the caller");
+        let msg = err.to_string();
+        assert!(
+            msg.contains("relative") && msg.contains("relative/path"),
+            "error must name both the cause and the offending path, got {msg:?}"
+        );
+    }
+
+    #[tokio::test]
     async fn test_resolve_providers_empty_slice() {
         // An empty `kinds` slice must no-op cleanly — empty Vec and no
         // panic — for both the empty-query and non-empty-query paths.

@@ -99,11 +99,9 @@ pub struct PopupConfig {
     pub borders: bool,
     /// Empty/Error feedback dismiss delay (ms); 0 disables. Clamped to [0, 10000]. Default 1200.
     pub feedback_dismiss_ms: u16,
-    /// Whether Loading feedback animates with a spinner. Narrow popups still
-    /// fall back to a static ellipsis. Default: true.
+    /// Animate Loading feedback with a spinner; narrow popups fall back to ellipsis. Default true.
     pub spinner: bool,
-    /// Whether provider names are shown in error feedback. Default: false to
-    /// avoid leaking command/provider names on shared screens.
+    /// Show provider names in error feedback; default false to avoid leaking on shared screens.
     pub show_provider_errors: bool,
     /// Maximum time (ms) the popup will block waiting for a higher-priority
     /// async generator before painting whatever sync results we have. Set
