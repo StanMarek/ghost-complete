@@ -373,7 +373,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 // locking stdout for the entire loop (which would deadlock
                 // with Task B's stdout writes).
                 let mut render_buf = Vec::new();
-                let forward = {
+                let (forward, render_epoch) = {
                     let mut h = match handler_for_stdin.lock() {
                         Ok(h) => h,
                         Err(e) => {
@@ -381,13 +381,11 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                             break 'stdin;
                         }
                     };
-                    h.process_key(key, &parser_for_stdin, &mut render_buf)
+                    let forward = h.process_key(key, &parser_for_stdin, &mut render_buf);
+                    (forward, h.output_epoch())
                 };
-                // Briefly lock stdout to flush any popup rendering
                 if !render_buf.is_empty() {
-                    let mut stdout = std::io::stdout().lock();
-                    let _ = stdout.write_all(&render_buf);
-                    let _ = stdout.flush();
+                    let _ = write_overlay_if_current(&handler_for_stdin, render_epoch, &render_buf);
                 }
                 if !forward.is_empty() {
                     if pty_writer.write_all(&forward).is_err() {
@@ -418,7 +416,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
             };
 
             // Feed bytes through the VT parser to track terminal state
-            let needs_cpr = {
+            let (needs_cpr, display_dirty, viewport_scrolls) = {
                 let mut p = match parser_for_stdout.lock() {
                     Ok(p) => p,
                     Err(e) => {
@@ -427,7 +425,12 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                     }
                 };
                 p.process_bytes(&buf[..n]);
-                p.state_mut().take_cursor_sync_requested()
+                let state = p.state_mut();
+                (
+                    state.take_cursor_sync_requested(),
+                    state.take_display_dirty(),
+                    state.take_viewport_scroll_count(),
+                )
             };
 
             // Lock ordering: take the parser lock to enqueue Ours, drop
@@ -454,16 +457,34 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
             // forward our response to the PTY.
             let send_cpr = cpr_token.is_some();
 
+            let mut cleanup = Vec::new();
+            if display_dirty || viewport_scrolls > 0 {
+                match handler_for_stdout.lock() {
+                    Ok(mut h) => {
+                        h.handle_terminal_output(&mut cleanup, display_dirty, viewport_scrolls);
+                    }
+                    Err(e) => {
+                        tracing::warn!(
+                            "handler mutex poisoned before terminal output cleanup: {e}"
+                        );
+                        break;
+                    }
+                }
+            }
+
             let write_result: std::io::Result<()> = {
                 let mut stdout = std::io::stdout().lock();
-                stdout.write_all(&buf[..n]).and_then(|()| {
-                    if send_cpr {
-                        tracing::debug!("sending CPR request (CSI 6n)");
-                        stdout.write_all(b"\x1b[6n").and_then(|()| stdout.flush())
-                    } else {
-                        stdout.flush()
-                    }
-                })
+                stdout
+                    .write_all(&cleanup)
+                    .and_then(|()| stdout.write_all(&buf[..n]))
+                    .and_then(|()| {
+                        if send_cpr {
+                            tracing::debug!("sending CPR request (CSI 6n)");
+                            stdout.write_all(b"\x1b[6n").and_then(|()| stdout.flush())
+                        } else {
+                            stdout.flush()
+                        }
+                    })
             };
 
             if let Err(e) = write_result {
@@ -525,7 +546,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
 
             if buffer_dirty {
                 let mut render_buf = Vec::new();
-                {
+                let render_epoch = {
                     let mut h = match handler_for_stdout.lock() {
                         Ok(h) => h,
                         Err(e) => {
@@ -544,11 +565,11 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                     {
                         debounce_notify_b.notify_one();
                     }
-                }
+                    h.output_epoch()
+                };
                 if !render_buf.is_empty() {
-                    let mut stdout = std::io::stdout().lock();
-                    let _ = stdout.write_all(&render_buf);
-                    let _ = stdout.flush();
+                    let _ =
+                        write_overlay_if_current(&handler_for_stdout, render_epoch, &render_buf);
                 }
             }
 
@@ -565,7 +586,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
 
             if cwd_dirty {
                 let mut render_buf = Vec::new();
-                {
+                let render_epoch = {
                     let mut h = match handler_for_stdout.lock() {
                         Ok(h) => h,
                         Err(e) => {
@@ -576,18 +597,18 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                     if h.auto_trigger_enabled() {
                         h.trigger(&parser_for_stdout, &mut render_buf);
                     }
-                }
+                    h.output_epoch()
+                };
                 if !render_buf.is_empty() {
-                    let mut stdout = std::io::stdout().lock();
-                    let _ = stdout.write_all(&render_buf);
-                    let _ = stdout.flush();
+                    let _ =
+                        write_overlay_if_current(&handler_for_stdout, render_epoch, &render_buf);
                 }
             }
 
             // Poll for dynamic (script generator) results — non-blocking.
             {
                 let mut render_buf = Vec::new();
-                {
+                let render_epoch = {
                     let mut h = match handler_for_stdout.lock() {
                         Ok(h) => h,
                         Err(e) => {
@@ -596,11 +617,11 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                         }
                     };
                     h.try_merge_dynamic(&parser_for_stdout, &mut render_buf);
-                }
+                    h.output_epoch()
+                };
                 if !render_buf.is_empty() {
-                    let mut stdout = std::io::stdout().lock();
-                    let _ = stdout.write_all(&render_buf);
-                    let _ = stdout.flush();
+                    let _ =
+                        write_overlay_if_current(&handler_for_stdout, render_epoch, &render_buf);
                 }
             }
         }
@@ -650,23 +671,25 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                                 tracing::warn!("parser mutex poisoned on SIGWINCH: {e}");
                             }
                         }
-                        // Re-render popup if visible — buffer output under the
-                        // handler lock, then write to stdout after releasing it.
-                        // This avoids holding handler+stdout simultaneously (the
-                        // same pattern every other code path uses).
+                        // Re-render popup if visible, then write through the
+                        // epoch gate so stale resize paints cannot land after
+                        // newer shell output invalidated popup ownership.
                         let mut render_buf = Vec::new();
-                        match handler.lock() {
+                        let render_epoch = match handler.lock() {
                             Ok(mut h) => {
                                 h.handle_resize(&parser, &mut render_buf);
+                                Some(h.output_epoch())
                             }
                             Err(e) => {
                                 tracing::warn!("handler mutex poisoned on SIGWINCH: {e}");
+                                None
                             }
-                        }
+                        };
                         if !render_buf.is_empty() {
-                            let mut stdout = std::io::stdout().lock();
-                            let _ = stdout.write_all(&render_buf);
-                            let _ = stdout.flush();
+                            let Some(render_epoch) = render_epoch else {
+                                continue;
+                            };
+                            let _ = write_overlay_if_current(&handler, render_epoch, &render_buf);
                         }
                     }
                     Err(e) => {
@@ -791,6 +814,38 @@ fn poll_until(
     }
 }
 
+fn write_overlay_if_current(
+    handler: &Arc<Mutex<InputHandler>>,
+    epoch: u64,
+    render_buf: &[u8],
+) -> bool {
+    if render_buf.is_empty() {
+        return true;
+    }
+
+    let h = match handler.lock() {
+        Ok(h) => h,
+        Err(e) => {
+            tracing::warn!("overlay write skipped (handler lock poisoned): {e}");
+            return false;
+        }
+    };
+    if h.output_epoch() != epoch {
+        tracing::trace!(
+            render_epoch = epoch,
+            current_epoch = h.output_epoch(),
+            "dropping stale overlay render"
+        );
+        return false;
+    }
+
+    let mut stdout = std::io::stdout().lock();
+    stdout
+        .write_all(render_buf)
+        .and_then(|()| stdout.flush())
+        .is_ok()
+}
+
 /// Debounce loop: waits for buffer-change notifications, resets a timer on each
 /// new notification, and fires suggestions once the timer expires (typing pause).
 async fn debounce_loop(
@@ -819,7 +874,7 @@ async fn debounce_loop(
         // render_block_ms > 0, we get back a `NeedsBlock` variant carrying
         // the channel receiver and sync geometry.
         let mut render_buf = Vec::new();
-        let prepared = {
+        let (prepared, render_epoch) = {
             let mut h = match handler.lock() {
                 Ok(h) => h,
                 Err(e) => {
@@ -830,12 +885,11 @@ async fn debounce_loop(
             if h.is_debounce_suppressed() || !h.auto_trigger_enabled() {
                 continue;
             }
-            h.prepare_trigger_with_block(&parser, &mut render_buf)
+            let prepared = h.prepare_trigger_with_block(&parser, &mut render_buf);
+            (prepared, h.output_epoch())
         };
         if !render_buf.is_empty() {
-            let mut stdout = std::io::stdout().lock();
-            let _ = stdout.write_all(&render_buf);
-            let _ = stdout.flush();
+            let _ = write_overlay_if_current(&handler, render_epoch, &render_buf);
         }
 
         // Phase 2 (only when blocking): await the generator outside the lock,
@@ -888,7 +942,7 @@ async fn debounce_loop(
             };
 
             let mut render_buf2 = Vec::new();
-            {
+            let render_epoch2 = {
                 let mut h = match handler.lock() {
                     Ok(h) => h,
                     Err(e) => {
@@ -912,11 +966,10 @@ async fn debounce_loop(
                     fingerprint,
                     &current_word,
                 );
-            }
+                h.output_epoch()
+            };
             if !render_buf2.is_empty() {
-                let mut stdout = std::io::stdout().lock();
-                let _ = stdout.write_all(&render_buf2);
-                let _ = stdout.flush();
+                let _ = write_overlay_if_current(&handler, render_epoch2, &render_buf2);
             }
         }
     }
@@ -933,7 +986,7 @@ async fn dynamic_merge_loop(
     loop {
         notify.notified().await;
         let mut render_buf = Vec::new();
-        {
+        let render_epoch = {
             let mut h = match handler.lock() {
                 Ok(h) => h,
                 Err(e) => {
@@ -942,11 +995,10 @@ async fn dynamic_merge_loop(
                 }
             };
             h.try_merge_dynamic(&parser, &mut render_buf);
-        }
+            h.output_epoch()
+        };
         if !render_buf.is_empty() {
-            let mut stdout = std::io::stdout().lock();
-            let _ = stdout.write_all(&render_buf);
-            let _ = stdout.flush();
+            let _ = write_overlay_if_current(&handler, render_epoch, &render_buf);
         }
     }
 }
@@ -960,7 +1012,7 @@ async fn feedback_tick_loop(notify: Arc<Notify>, handler: Arc<Mutex<InputHandler
                 tokio::time::sleep(Duration::from_millis(next_ms)).await;
             }
             let mut render_buf: Vec<u8> = Vec::new();
-            let keep_running = {
+            let (keep_running, render_epoch) = {
                 let mut h = match handler.lock() {
                     Ok(h) => h,
                     Err(e) => {
@@ -968,7 +1020,7 @@ async fn feedback_tick_loop(notify: Arc<Notify>, handler: Arc<Mutex<InputHandler
                         break;
                     }
                 };
-                if h.feedback_kind().is_loading() {
+                let keep_running = if h.feedback_kind().is_loading() {
                     h.render_indicator_only(&mut render_buf);
                     next_ms = 80;
                     true
@@ -978,16 +1030,13 @@ async fn feedback_tick_loop(notify: Arc<Notify>, handler: Arc<Mutex<InputHandler
                 } else {
                     next_ms = 200;
                     h.feedback_kind().since().is_some()
-                }
+                };
+                (keep_running, h.output_epoch())
             };
-            if !render_buf.is_empty() {
-                let mut stdout = std::io::stdout().lock();
-                if stdout.write_all(&render_buf).is_err() {
-                    break;
-                }
-                if stdout.flush().is_err() {
-                    break;
-                }
+            if !render_buf.is_empty()
+                && !write_overlay_if_current(&handler, render_epoch, &render_buf)
+            {
+                break;
             }
             if !keep_running {
                 break;

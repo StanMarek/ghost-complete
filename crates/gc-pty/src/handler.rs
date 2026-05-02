@@ -8,7 +8,10 @@ use gc_overlay::types::{
     OverlayState, PopupLayout, DEFAULT_MAX_POPUP_WIDTH, DEFAULT_MAX_VISIBLE,
     DEFAULT_MIN_POPUP_WIDTH,
 };
-use gc_overlay::{clear_popup, render_indicator_row, render_popup, FeedbackKind, PopupTheme};
+use gc_overlay::{
+    clear_popup, popup_additional_scroll_deficit, render_indicator_row, render_popup, FeedbackKind,
+    PopupTheme,
+};
 use gc_parser::TerminalParser;
 use gc_suggest::{Suggestion, SuggestionEngine};
 use gc_terminal::TerminalProfile;
@@ -271,6 +274,10 @@ pub struct InputHandler {
     /// painting sync-only results. 0 disables bounded blocking (paint immediately).
     /// Set from `config.popup.render_block_ms` during the builder phase.
     render_block_ms: u64,
+    /// Monotonic stamp for overlay-owned bytes. Proxy tasks stamp render
+    /// buffers with this value and drop them if shell output advances it before
+    /// the buffer reaches stdout.
+    output_epoch: u64,
 }
 
 impl InputHandler {
@@ -304,6 +311,7 @@ impl InputHandler {
             buffer_generation: 0,
             spawned_generation: 0,
             render_block_ms: 80,
+            output_epoch: 0,
         })
     }
 
@@ -431,8 +439,9 @@ impl InputHandler {
         // debounce timer set trigger_requested but trigger() hasn't fired yet).
         if self.auto_trigger && !auto_trigger {
             if self.visible {
-                if let Some(ref layout) = self.last_layout {
-                    clear_popup(&mut cleanup, layout, &self.terminal_profile);
+                if let Some(layout) = self.last_layout.clone() {
+                    self.bump_output_epoch();
+                    clear_popup(&mut cleanup, &layout, &self.terminal_profile);
                 }
                 self.visible = false;
                 self.suggestions.clear();
@@ -510,6 +519,11 @@ impl InputHandler {
     #[doc(hidden)]
     pub fn feedback_kind(&self) -> &AsyncFeedback {
         &self.feedback
+    }
+
+    #[doc(hidden)]
+    pub fn output_epoch(&self) -> u64 {
+        self.output_epoch
     }
 
     /// Returns the current suggestions slice (read-only).
@@ -658,6 +672,7 @@ impl InputHandler {
             }
             KeyEvent::Printable(_) | KeyEvent::Backspace => {
                 let forward = key_to_bytes(key);
+                self.teardown_popup(stdout, true);
                 // Defer re-trigger to Task B after shell updates buffer
                 self.trigger_requested = true;
                 forward
@@ -1132,12 +1147,12 @@ impl InputHandler {
         rx_after_recv: Option<mpsc::Receiver<DynamicResult>>,
         rx_on_timeout: Option<mpsc::Receiver<DynamicResult>>,
         sync_suggestions: Vec<Suggestion>,
-        cursor_row: u16,
-        cursor_col: u16,
-        screen_rows: u16,
-        screen_cols: u16,
+        _cursor_row: u16,
+        _cursor_col: u16,
+        _screen_rows: u16,
+        _screen_cols: u16,
         fingerprint: (u64, usize),
-        current_word: &str,
+        _current_word: &str,
     ) {
         let was_timeout = rx_on_timeout.is_some();
         if let Some(rx) = rx_on_timeout {
@@ -1276,14 +1291,10 @@ impl InputHandler {
         if disconnected {
             self.dynamic_ctx = None;
         }
-        // Render against the live cursor/screen geometry: when the buffer
-        // drifted (live_word differs from spawn-time current_word) the
-        // captured cursor row is no longer where the prompt sits.
-        if live_word == current_word {
-            self.render_at(stdout, cursor_row, cursor_col, screen_rows, screen_cols);
-        } else {
-            self.render(parser, stdout);
-        }
+        // Render against live cursor/screen geometry. The logical word can be
+        // unchanged while shell output, wrapping, or viewport scroll moved the
+        // visual cursor since the bounded-block trigger captured its geometry.
+        self.render(parser, stdout);
         self.last_trigger_fingerprint = Some(fingerprint);
     }
 
@@ -1718,12 +1729,27 @@ impl InputHandler {
         // For Synchronized strategy, DECSET 2026 markers handle this at the
         // terminal level so separate writes are fine.
         let mut buf = Vec::new();
-
-        if let Some(ref layout) = self.last_layout {
-            clear_popup(&mut buf, layout, &self.terminal_profile);
-        }
+        self.bump_output_epoch();
 
         let feedback = self.current_feedback_kind();
+        let additional_scroll = popup_additional_scroll_deficit(
+            &self.suggestions,
+            cursor_row,
+            screen_rows,
+            screen_cols,
+            self.max_visible,
+            DEFAULT_MIN_POPUP_WIDTH,
+            &self.theme,
+            self.scroll_deficit,
+            &feedback,
+        );
+
+        if additional_scroll == 0 {
+            if let Some(ref layout) = self.last_layout {
+                clear_popup(&mut buf, layout, &self.terminal_profile);
+            }
+        }
+
         let layout = render_popup(
             &mut buf,
             &self.suggestions,
@@ -1783,6 +1809,7 @@ impl InputHandler {
         };
         let feedback = self.current_feedback_kind();
         let mut buf = Vec::new();
+        self.bump_output_epoch();
         render_indicator_row(&mut buf, &layout, &self.theme, feedback);
         let _ = stdout.write_all(&buf);
         let _ = stdout.flush();
@@ -1811,6 +1838,7 @@ impl InputHandler {
                     let borders = self.theme.borders;
                     let indicator_row = layout.start_row + layout.height - 1 - u16::from(borders);
                     let mut buf = Vec::with_capacity(layout.width as usize * 4 + 64);
+                    self.bump_output_epoch();
                     buf.extend_from_slice(b"\x1b[s"); // save cursor
                     let _ = write!(
                         &mut buf,
@@ -1860,10 +1888,37 @@ impl InputHandler {
         true
     }
 
+    pub fn handle_terminal_output(
+        &mut self,
+        stdout: &mut dyn Write,
+        display_dirty: bool,
+        viewport_scrolls: u16,
+    ) {
+        if viewport_scrolls > 0 {
+            self.bump_output_epoch();
+            self.scroll_deficit = self.scroll_deficit.saturating_add(viewport_scrolls);
+            self.last_trigger_fingerprint = None;
+        }
+
+        if display_dirty
+            && (self.visible
+                || self.last_layout.is_some()
+                || !matches!(self.feedback, AsyncFeedback::Idle))
+        {
+            self.bump_output_epoch();
+            self.teardown_popup(stdout, true);
+        }
+    }
+
     fn dismiss(&mut self, stdout: &mut dyn Write) {
-        if let Some(ref layout) = self.last_layout {
+        self.teardown_popup(stdout, false);
+    }
+
+    fn teardown_popup(&mut self, stdout: &mut dyn Write, preserve_trigger_request: bool) {
+        if let Some(layout) = self.last_layout.clone() {
             let mut buf = Vec::new();
-            clear_popup(&mut buf, layout, &self.terminal_profile);
+            self.bump_output_epoch();
+            clear_popup(&mut buf, &layout, &self.terminal_profile);
             let _ = stdout.write_all(&buf);
             let _ = stdout.flush();
         }
@@ -1871,7 +1926,9 @@ impl InputHandler {
         self.suggestions.clear();
         self.overlay.reset();
         self.last_layout = None;
-        self.trigger_requested = false;
+        if !preserve_trigger_request {
+            self.trigger_requested = false;
+        }
         self.debounce_suppressed = false;
         if let Some(handle) = self.dynamic_task.take() {
             handle.abort();
@@ -1885,6 +1942,10 @@ impl InputHandler {
         // ESC-then-retrigger on the same buffer) runs a fresh suggest_sync
         // instead of short-circuiting.
         self.last_trigger_fingerprint = None;
+    }
+
+    fn bump_output_epoch(&mut self) {
+        self.output_epoch = self.output_epoch.wrapping_add(1);
     }
 
     /// Compute the accept bytes for the currently-selected suggestion using
@@ -2735,6 +2796,7 @@ mod tests {
             buffer_generation: 0,
             spawned_generation: 0,
             render_block_ms: 0,
+            output_epoch: 0,
         }
     }
 
@@ -3156,6 +3218,43 @@ mod tests {
         let mut buf = Vec::new();
         handler.process_key(&KeyEvent::Printable(' '), &parser, &mut buf);
         assert!(handler.has_pending_trigger());
+    }
+
+    #[test]
+    fn test_visible_printable_clears_popup_before_forwarding() {
+        let mut handler = make_visible_handler(numbered_suggestions(3));
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+
+        let result = handler.process_key(&KeyEvent::Printable('a'), &parser, &mut buf);
+
+        assert_eq!(result, b"a");
+        assert!(!handler.visible);
+        assert!(handler.last_layout.is_none());
+        assert!(handler.has_pending_trigger());
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            output.contains("\x1b[6;1H"),
+            "clear must be emitted before forwarding printable key: {output:?}"
+        );
+    }
+
+    #[test]
+    fn test_visible_backspace_clears_popup_before_forwarding() {
+        let mut handler = make_visible_handler(numbered_suggestions(3));
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+
+        let result = handler.process_key(&KeyEvent::Backspace, &parser, &mut buf);
+
+        assert_eq!(result, vec![0x7f]);
+        assert!(!handler.visible);
+        assert!(handler.last_layout.is_none());
+        assert!(handler.has_pending_trigger());
+        assert!(
+            !buf.is_empty(),
+            "backspace should clear the visible popup first"
+        );
     }
 
     #[test]
@@ -3725,6 +3824,152 @@ mod tests {
         // Clear via typing
         handler.process_key(&KeyEvent::Printable('a'), &parser, &mut buf);
         assert!(!handler.is_debounce_suppressed());
+    }
+
+    #[test]
+    fn test_terminal_output_dismisses_owned_popup_before_shell_bytes() {
+        let mut handler = make_visible_handler(numbered_suggestions(3));
+        let mut buf = Vec::new();
+
+        handler.handle_terminal_output(&mut buf, true, 0);
+
+        assert!(!handler.visible);
+        assert!(handler.last_layout.is_none());
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            output.contains("\x1b[6;1H"),
+            "terminal output cleanup should clear the owned popup: {output:?}"
+        );
+    }
+
+    #[test]
+    fn test_terminal_output_preserves_pending_trigger() {
+        let mut handler = make_visible_handler(numbered_suggestions(3));
+        handler.trigger_requested = true;
+        let mut buf = Vec::new();
+        let before_epoch = handler.output_epoch();
+
+        handler.handle_terminal_output(&mut buf, true, 0);
+
+        assert!(handler.has_pending_trigger());
+        assert!(!handler.visible);
+        assert!(handler.last_layout.is_none());
+        assert!(handler.output_epoch() > before_epoch);
+    }
+
+    #[test]
+    fn test_terminal_output_clears_feedback_only_layout_when_not_visible() {
+        let mut handler = make_handler();
+        handler.feedback = AsyncFeedback::Loading {
+            spawned_at: std::time::Instant::now(),
+        };
+        handler.last_layout = Some(PopupLayout {
+            start_row: 5,
+            start_col: 0,
+            width: 20,
+            height: 1,
+            scroll_deficit: 0,
+        });
+        let mut buf = Vec::new();
+
+        handler.handle_terminal_output(&mut buf, true, 0);
+
+        assert!(!buf.is_empty());
+        assert!(handler.last_layout.is_none());
+        assert!(matches!(handler.feedback, AsyncFeedback::Idle));
+    }
+
+    #[test]
+    fn test_terminal_scroll_extends_scroll_deficit_without_requiring_visible_popup() {
+        let mut handler = make_handler();
+        handler.scroll_deficit = 3;
+        let mut buf = Vec::new();
+
+        handler.handle_terminal_output(&mut buf, false, 2);
+
+        assert!(buf.is_empty());
+        assert_eq!(handler.scroll_deficit, 5);
+    }
+
+    #[test]
+    fn test_render_at_skips_old_clear_when_new_render_scrolls() {
+        let mut handler = make_visible_handler(numbered_suggestions(8));
+        handler.scroll_deficit = 4;
+        handler.last_layout = Some(PopupLayout {
+            start_row: 19,
+            start_col: 70,
+            width: 10,
+            height: 2,
+            scroll_deficit: 4,
+        });
+        let mut buf = Vec::new();
+
+        handler.render_at(&mut buf, 22, 0, 24, 80);
+
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            !output.contains("\x1b[20;71H"),
+            "stale clear at old popup coordinates must be skipped before viewport scroll: {output:?}"
+        );
+        assert!(
+            output.contains("\x1b[24;1H"),
+            "new render should still scroll from the bottom row: {output:?}"
+        );
+    }
+
+    #[test]
+    fn test_render_at_bumps_output_epoch_for_proxy_stale_write_gate() {
+        let mut handler = make_visible_handler(numbered_suggestions(3));
+        let before_epoch = handler.output_epoch();
+        let mut buf = Vec::new();
+
+        handler.render_at(&mut buf, 5, 0, 24, 80);
+
+        assert!(!buf.is_empty());
+        assert!(handler.output_epoch() > before_epoch);
+    }
+
+    #[test]
+    fn test_apply_block_result_uses_live_geometry_when_word_unchanged() {
+        let mut handler = make_handler();
+        handler.prime_dynamic_ctx_for_buffer("git checkout main", 17);
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        {
+            let mut p = parser.lock().unwrap();
+            p.process_bytes(b"\x1b[11;1H");
+            p.state_mut()
+                .predict_command_buffer("git checkout main".to_string(), 17);
+        }
+        let mut buf = Vec::new();
+
+        handler.apply_block_result(
+            &parser,
+            &mut buf,
+            Some(DynamicResult::Loaded {
+                provider: ProviderTag::Git(gc_suggest::git::GitQueryKind::Branches),
+                suggestions: vec![Suggestion {
+                    text: "main".into(),
+                    kind: SuggestionKind::GitBranch,
+                    source: SuggestionSource::Git,
+                    ..Default::default()
+                }],
+            }),
+            None,
+            None,
+            Vec::new(),
+            0,
+            0,
+            24,
+            80,
+            (0, 0),
+            "main",
+        );
+
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            output.contains("\x1b[12;1H"),
+            "async block merge must render at live cursor row, not spawn-time row: {output:?}"
+        );
     }
 
     #[test]

@@ -46,7 +46,24 @@ impl Perform for TerminalState {
         if ignore {
             return;
         }
-        // Blanket-discard any CSI sequence carrying intermediate bytes.
+        // Handle the narrow private-mode subset that affects tracked cursor
+        // geometry before the blanket intermediate discard below.
+        if intermediates == b"?" {
+            match action {
+                'h' | 'l' => {
+                    let enabled = action == 'h';
+                    for subparams in params.iter() {
+                        if subparams.first().copied() == Some(7) {
+                            self.set_autowrap(enabled);
+                        }
+                    }
+                }
+                _ => {}
+            }
+            return;
+        }
+
+        // Blanket-discard any other CSI sequence carrying intermediate bytes.
         // Examples: `CSI ? 25 h` (DECSET show cursor, intermediate `?`),
         // `CSI ! p` (DECSTR soft reset, intermediate `!`), `CSI > c` (DA2).
         // None of these affect the subset of state we track (cursor
@@ -103,9 +120,9 @@ impl Perform for TerminalState {
                 }
             }
             // SU — scroll up: content scrolls, cursor does NOT move
-            'S' => {}
+            'S' => self.scroll_up(csi_param(params, 0, 1)),
             // SD — scroll down: content scrolls, cursor does NOT move
-            'T' => {}
+            'T' => self.scroll_down(csi_param(params, 0, 1)),
             // ANSI save/restore cursor (SCO sequences)
             's' => self.save_cursor(),
             'u' => self.restore_cursor(),
@@ -519,8 +536,10 @@ mod tests {
     fn test_line_wrap() {
         let mut p = TerminalParser::new(24, 5);
         p.process_bytes(b"abcde");
-        // After 5 chars in a 5-col terminal, should wrap to next line
-        assert_eq!(p.state().cursor_position(), (1, 0));
+        // xterm-style autowrap is pending after filling the last column.
+        assert_eq!(p.state().cursor_position(), (0, 4));
+        p.process_bytes(b"f");
+        assert_eq!(p.state().cursor_position(), (1, 1));
     }
 
     #[test]
@@ -598,9 +617,11 @@ mod tests {
     fn test_print_cjk_exact_fit_no_early_wrap() {
         let mut p = TerminalParser::new(24, 4);
         // 2 CJK chars (2 cols each) in 4-col terminal — exact fit
-        // '日' cols 0-1, '本' cols 2-3, cursor wraps to (1, 0)
+        // '日' cols 0-1, '本' cols 2-3, cursor remains pending at col 3.
         p.process_bytes("日本".as_bytes());
-        assert_eq!(p.state().cursor_position(), (1, 0));
+        assert_eq!(p.state().cursor_position(), (0, 3));
+        p.process_bytes(b"x");
+        assert_eq!(p.state().cursor_position(), (1, 1));
     }
 
     #[test]
@@ -689,6 +710,63 @@ mod tests {
         p.process_bytes(b"\x1b[10;15H"); // row 10, col 15
         p.process_bytes(b"\x1b[3F"); // CPL: up 3, col 0
         assert_eq!(p.state().cursor_position(), (6, 0));
+    }
+
+    #[test]
+    fn test_private_decawm_reset_disables_autowrap() {
+        let mut p = TerminalParser::new(3, 3);
+
+        p.process_bytes(b"\x1b[?7l");
+        p.process_bytes(b"abcd");
+
+        assert_eq!(p.state().cursor_position(), (0, 2));
+        assert_eq!(p.state().viewport_scroll_count(), 0);
+    }
+
+    #[test]
+    fn test_csi_su_tracks_scroll_without_moving_cursor() {
+        let mut p = make_parser();
+        p.process_bytes(b"\x1b[3;1H");
+        p.process_bytes(b"\x1b[2S");
+
+        assert_eq!(p.state().cursor_position(), (2, 0));
+        assert_eq!(p.state_mut().take_viewport_scroll_count(), 2);
+    }
+
+    #[test]
+    fn test_csi_sd_keeps_cursor_and_moves_prompt_row_down() {
+        let mut p = make_parser();
+        p.process_bytes(b"\x1b[3;1H");
+        p.process_bytes(b"\x1b]7771;A\x07");
+        let _ = p.state_mut().take_cursor_sync_requested();
+
+        p.process_bytes(b"\x1b[2T");
+
+        assert_eq!(p.state().cursor_position(), (2, 0));
+        assert_eq!(p.state().prompt_row(), Some(4));
+        assert!(p.state_mut().take_display_dirty());
+    }
+
+    #[test]
+    fn test_printable_marks_display_dirty_but_osc7772_does_not() {
+        let mut p = make_parser();
+
+        p.process_bytes(b"\x1b]7772;0;\x07");
+        assert!(!p.state_mut().take_display_dirty());
+
+        p.process_bytes(b"a");
+        assert!(p.state_mut().take_display_dirty());
+        assert!(!p.state_mut().take_display_dirty());
+    }
+
+    #[test]
+    fn test_cursor_movement_marks_display_dirty() {
+        let mut p = make_parser();
+
+        p.process_bytes(b"\x1b[10;1H");
+
+        assert!(p.state_mut().take_display_dirty());
+        assert!(!p.state_mut().take_display_dirty());
     }
 
     #[test]

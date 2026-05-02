@@ -187,7 +187,11 @@ fn test_popup_renders_and_dismisses_on_git_trigger() {
     // The shell executes printf, emits the raw bytes to stdout, gc-parser
     // consumes them and sets command_buffer = "git " with cursor = 4.
     // The buffer_dirty flag causes Task B to auto-fire trigger().
-    proc.send_line(r"printf '\033]7770;4;git \007'");
+    //
+    // Keep the shell command blocked after the OSC write. If the command
+    // exits immediately, the shell prints a new prompt, and the proxy now
+    // correctly tears down the popup before forwarding that prompt output.
+    proc.send_line(r"printf '\033]7770;4;git \007'; read _ghost_popup_hold");
 
     // Wait for the popup render. The overlay's first emitted byte sequence
     // is DECSC (`\x1b7` = save cursor). Seeing it after mark_before_trigger
@@ -251,6 +255,10 @@ fn test_popup_renders_and_dismisses_on_git_trigger() {
             String::from_utf8_lossy(since_esc),
         );
     }
+
+    // Release the blocking `read` used to keep shell output from racing the
+    // visible-popup dismissal path.
+    proc.send_line("");
 
     proc.exit_with_code(0);
 }

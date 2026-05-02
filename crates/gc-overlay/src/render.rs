@@ -71,6 +71,47 @@ impl FeedbackKind {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
+pub fn popup_additional_scroll_deficit(
+    suggestions: &[Suggestion],
+    cursor_row: u16,
+    screen_rows: u16,
+    screen_cols: u16,
+    max_visible: usize,
+    min_width: u16,
+    theme: &PopupTheme,
+    prior_deficit: u16,
+    feedback: &FeedbackKind,
+) -> u16 {
+    if suggestions.is_empty() && !feedback.reserves_row() {
+        return 0;
+    }
+    if screen_cols < min_width {
+        return 0;
+    }
+
+    let border_pad: u16 = if theme.borders { 2 } else { 0 };
+    let adj_cursor_row = cursor_row.saturating_sub(prior_deficit);
+
+    if suggestions.is_empty() {
+        let base_height = 1 + border_pad;
+        let space_below = screen_rows.saturating_sub(adj_cursor_row.saturating_add(1));
+        return base_height.saturating_sub(space_below);
+    }
+
+    let min_screen = 1 + border_pad;
+    if screen_rows <= min_screen {
+        return 0;
+    }
+
+    let effective_max = max_visible.min((screen_rows - 1 - border_pad) as usize);
+    let space_below = screen_rows.saturating_sub(adj_cursor_row.saturating_add(1));
+    let visible_count = suggestions.len().min(effective_max) as u16;
+    let loading_extra_deficit: u16 = if feedback.reserves_row() { 1 } else { 0 };
+    let total_height_needed = visible_count + border_pad + loading_extra_deficit;
+    total_height_needed.saturating_sub(space_below)
+}
+
 const SPINNER_FRAMES: [&str; 10] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 
 /// Parse a space-separated style string into a combined ANSI SGR sequence.
@@ -162,7 +203,7 @@ pub fn render_popup(
             start_col: 0,
             width: 0,
             height: 0,
-            scroll_deficit: 0,
+            scroll_deficit: prior_deficit,
         };
     }
 
@@ -174,7 +215,7 @@ pub fn render_popup(
             start_col: 0,
             width: 0,
             height: 0,
-            scroll_deficit: 0,
+            scroll_deficit: prior_deficit,
         };
     }
 
@@ -211,7 +252,7 @@ pub fn render_popup(
             start_col: 0,
             width: 0,
             height: 0,
-            scroll_deficit: 0,
+            scroll_deficit: prior_deficit,
         };
     };
 
@@ -489,9 +530,10 @@ fn render_feedback_only_popup(
     let effective_max_w = max_width.min(screen_cols).max(min_width);
     let width = min_width.min(effective_max_w);
     let base_height = 1 + border_pad;
-    let space_below = screen_rows.saturating_sub(cursor_row.saturating_add(1));
+    let adj_cursor_row = cursor_row.saturating_sub(prior_deficit);
+    let space_below = screen_rows.saturating_sub(adj_cursor_row.saturating_add(1));
     let new_deficit = base_height.saturating_sub(space_below);
-    let total_deficit = prior_deficit + new_deficit;
+    let total_deficit = prior_deficit.saturating_add(new_deficit);
     let final_cursor_row = cursor_row.saturating_sub(total_deficit);
     let start_row = final_cursor_row + 1;
     let start_col = if cursor_col + width > screen_cols {
@@ -685,7 +727,7 @@ fn truncate_to_display_cols(text: &str, max_cols: usize) -> (String, usize) {
 
 /// Clear the popup area by overwriting with spaces.
 pub fn clear_popup(buf: &mut Vec<u8>, layout: &PopupLayout, profile: &TerminalProfile) {
-    if layout.height == 0 {
+    if layout.height == 0 || layout.width == 0 {
         return;
     }
 
@@ -1379,6 +1421,32 @@ mod tests {
         );
     }
 
+    #[test]
+    fn test_render_empty_no_feedback_preserves_prior_deficit() {
+        let mut buf = Vec::new();
+        let state = OverlayState::new();
+        let layout = render_popup(
+            &mut buf,
+            &[],
+            &state,
+            22,
+            0,
+            24,
+            80,
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &bordered_theme(),
+            4,
+            FeedbackKind::None,
+            &ghostty_profile(),
+        );
+
+        assert!(buf.is_empty());
+        assert_eq!(layout.height, 0);
+        assert_eq!(layout.scroll_deficit, 4);
+    }
+
     // --- parse_style tests ---
 
     #[test]
@@ -1525,6 +1593,36 @@ mod tests {
         );
         assert_eq!(layout.scroll_deficit, 4); // carries forward
         assert_eq!(layout.start_row, 19);
+    }
+
+    #[test]
+    fn test_feedback_only_prior_deficit_prevents_rescroll() {
+        let mut buf = Vec::new();
+        let state = OverlayState::new();
+
+        let layout = render_popup(
+            &mut buf,
+            &[],
+            &state,
+            22,
+            0,
+            24,
+            80,
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &bordered_theme(),
+            2,
+            FeedbackKind::Loading { frame: 0 },
+            &ghostty_profile(),
+        );
+
+        assert!(
+            !buf.contains(&b'\n'),
+            "feedback-only render must account for prior deficit instead of scrolling again"
+        );
+        assert_eq!(layout.scroll_deficit, 2);
+        assert_eq!(layout.start_row, 21);
     }
 
     #[test]
