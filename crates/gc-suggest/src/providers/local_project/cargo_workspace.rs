@@ -9,9 +9,9 @@
 //! brace expansion, regex) is logged-and-skipped — the user can `cd
 //! <crate-dir>` and run `cargo run` bare as a workaround.
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 use std::io::ErrorKind;
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 use std::sync::{LazyLock, Mutex};
 use std::time::SystemTime;
 
@@ -36,6 +36,14 @@ struct CargoTomlMin {
     package: Option<PackageMin>,
     #[serde(default)]
     workspace: Option<WorkspaceMin>,
+    #[serde(default)]
+    dependencies: DependencyTable,
+    #[serde(default, rename = "dev-dependencies")]
+    dev_dependencies: DependencyTable,
+    #[serde(default, rename = "build-dependencies")]
+    build_dependencies: DependencyTable,
+    #[serde(default)]
+    target: BTreeMap<String, TargetMin>,
 }
 
 #[derive(Deserialize, Clone)]
@@ -78,6 +86,37 @@ struct WorkspaceMin {
     exclude: Vec<String>,
 }
 
+type DependencyTable = BTreeMap<String, DependencyMin>;
+
+struct DependencyMin {
+    path: Option<String>,
+}
+
+impl<'de> Deserialize<'de> for DependencyMin {
+    fn deserialize<D>(d: D) -> std::result::Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value = toml::Value::deserialize(d)?;
+        let path = value
+            .as_table()
+            .and_then(|table| table.get("path"))
+            .and_then(toml::Value::as_str)
+            .map(str::to_owned);
+        Ok(Self { path })
+    }
+}
+
+#[derive(Deserialize, Default)]
+struct TargetMin {
+    #[serde(default)]
+    dependencies: DependencyTable,
+    #[serde(default, rename = "dev-dependencies")]
+    dev_dependencies: DependencyTable,
+    #[serde(default, rename = "build-dependencies")]
+    build_dependencies: DependencyTable,
+}
+
 /// Validated Cargo package name, mirroring `cargo`'s own grammar in
 /// `cargo-util-schemas::restricted_names::validate_package_name`:
 /// first char is `_` or any Unicode `XID_Start` (leading ASCII digits
@@ -116,6 +155,11 @@ impl From<CargoPackageName> for String {
 struct MemberInfo {
     name: CargoPackageName,
     description: Option<String>,
+}
+
+struct MemberManifestInfo {
+    info: MemberInfo,
+    path_dependencies: Vec<PathBuf>,
 }
 
 /// One probe of a path involved in workspace resolution. Each probe
@@ -472,20 +516,28 @@ fn has_workspace_section(path: &Path) -> bool {
     }
 }
 
-/// Cheap line-scan: is there a line whose first non-whitespace is
-/// `[workspace` followed by `]`, `.`, or whitespace? This eliminates
-/// the vast majority of `[workspace`-free files without paying the
-/// TOML parser cost. False positives (commented-out, triple-quoted
-/// strings) are caught by the secondary TOML parse in the caller.
+/// Cheap line-scan: is there a line whose first non-whitespace is `[`
+/// followed by optional whitespace and then `workspace` followed by
+/// `]`, `.`, or whitespace? This eliminates the vast majority of
+/// `[workspace`-free files without paying the TOML parser cost. False
+/// positives (commented-out, triple-quoted strings) are caught by the
+/// secondary TOML parse in the caller.
 fn line_scan_has_workspace(text: &str) -> bool {
     for line in text.lines() {
         let trimmed = line.trim_start();
-        if let Some(rest) = trimmed.strip_prefix("[workspace") {
-            // Must be `[workspace]`, `[workspace.foo]`, or
-            // `[workspace ]` — not `[workspaceextended]`.
-            match rest.chars().next() {
-                Some(']') | Some('.') | Some(' ') | Some('\t') => return true,
-                _ => continue,
+        let Some(rest) = trimmed.strip_prefix('[') else {
+            continue;
+        };
+        let rest = rest.trim_start();
+        if let Some(rest) = rest.strip_prefix("workspace") {
+            // Must be `[workspace]`, `[workspace.foo]`,
+            // `[workspace ]`, or `[ workspace ]` — not
+            // `[workspaceextended]`.
+            if matches!(
+                rest.chars().next(),
+                Some(']') | Some('.') | Some(' ') | Some('\t')
+            ) {
+                return true;
             }
         }
     }
@@ -544,29 +596,63 @@ fn resolve_workspace(manifest: &CargoManifestPath) -> ResolvedRoot {
         }
     };
 
+    let root_path_dependencies = collect_local_path_dependencies(root_dir, &parsed);
     let CargoTomlMin {
-        mut package,
-        workspace,
+        package, workspace, ..
     } = parsed;
 
     if let Some(ws) = workspace {
-        let exclude_set: std::collections::HashSet<PathBuf> =
-            ws.exclude.iter().map(|p| root_dir.join(p)).collect();
+        let normalized_root_dir = normalize_path(root_dir);
+        let exclude_set: HashSet<PathBuf> = ws
+            .exclude
+            .iter()
+            .map(|p| normalize_path(root_dir.join(p)))
+            .collect();
 
         let mut members: Vec<MemberInfo> = Vec::new();
-        if let Some(info) = package.take().and_then(MemberInfo::from_package) {
+        let mut scanned_member_dirs: HashSet<PathBuf> = HashSet::new();
+        let mut path_dependency_queue: VecDeque<PathBuf> = VecDeque::new();
+
+        if let Some(info) = package.and_then(MemberInfo::from_package) {
             push_unique_member(&mut members, info);
+            scanned_member_dirs.insert(normalized_root_dir.clone());
+            path_dependency_queue.extend(root_path_dependencies);
         }
+
         for pattern in &ws.members {
-            for member_path in expand_member_pattern(root_dir, pattern, &mut resolved) {
-                if exclude_set.contains(&member_path) {
+            for expanded in expand_member_pattern(root_dir, pattern, &mut resolved) {
+                let member_path = normalize_path(&expanded.path);
+                if member_is_excluded(expanded.origin, &member_path, &exclude_set) {
                     continue;
                 }
-                if let Some(info) = read_member_info(&member_path, &mut resolved) {
-                    push_unique_member(&mut members, info);
+                if !scanned_member_dirs.insert(member_path.clone()) {
+                    continue;
+                }
+                if let Some(member) = read_member_manifest(&member_path, &mut resolved) {
+                    push_unique_member(&mut members, member.info);
+                    path_dependency_queue.extend(member.path_dependencies);
                 }
             }
         }
+
+        while let Some(member_path) = path_dependency_queue.pop_front() {
+            let member_path = normalize_path(&member_path);
+            if !path_is_under(&member_path, &normalized_root_dir)
+                || member_is_excluded(
+                    MemberOrigin::ImplicitPathDependency,
+                    &member_path,
+                    &exclude_set,
+                )
+                || !scanned_member_dirs.insert(member_path.clone())
+            {
+                continue;
+            }
+            if let Some(member) = read_member_manifest(&member_path, &mut resolved) {
+                push_unique_member(&mut members, member.info);
+                path_dependency_queue.extend(member.path_dependencies);
+            }
+        }
+
         if members.is_empty() && !ws.members.is_empty() {
             tracing::warn!(
                 root = %root_dir.display(),
@@ -589,6 +675,82 @@ fn resolve_workspace(manifest: &CargoManifestPath) -> ResolvedRoot {
     resolved
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum MemberOrigin {
+    Literal,
+    Glob,
+    ImplicitPathDependency,
+}
+
+struct ExpandedMember {
+    path: PathBuf,
+    origin: MemberOrigin,
+}
+
+fn member_is_excluded(
+    origin: MemberOrigin,
+    member_path: &Path,
+    exclude_set: &HashSet<PathBuf>,
+) -> bool {
+    matches!(
+        origin,
+        MemberOrigin::Glob | MemberOrigin::ImplicitPathDependency
+    ) && exclude_set.contains(member_path)
+}
+
+fn collect_local_path_dependencies(manifest_dir: &Path, parsed: &CargoTomlMin) -> Vec<PathBuf> {
+    let mut paths = Vec::new();
+    collect_dependency_table(manifest_dir, &parsed.dependencies, &mut paths);
+    collect_dependency_table(manifest_dir, &parsed.dev_dependencies, &mut paths);
+    collect_dependency_table(manifest_dir, &parsed.build_dependencies, &mut paths);
+    for target in parsed.target.values() {
+        collect_dependency_table(manifest_dir, &target.dependencies, &mut paths);
+        collect_dependency_table(manifest_dir, &target.dev_dependencies, &mut paths);
+        collect_dependency_table(manifest_dir, &target.build_dependencies, &mut paths);
+    }
+    paths
+}
+
+fn collect_dependency_table(
+    manifest_dir: &Path,
+    dependencies: &DependencyTable,
+    out: &mut Vec<PathBuf>,
+) {
+    for dependency in dependencies.values() {
+        if let Some(path) = &dependency.path {
+            out.push(manifest_dir.join(path));
+        }
+    }
+}
+
+fn path_is_under(path: &Path, root: &Path) -> bool {
+    let path = normalize_path(path);
+    let root = normalize_path(root);
+    path == root || path.starts_with(root)
+}
+
+fn normalize_path(path: impl AsRef<Path>) -> PathBuf {
+    let mut normalized = PathBuf::new();
+    for component in path.as_ref().components() {
+        match component {
+            Component::CurDir => {}
+            Component::ParentDir => match normalized.components().next_back() {
+                Some(Component::Normal(_)) => {
+                    normalized.pop();
+                }
+                Some(Component::RootDir) | Some(Component::Prefix(_)) => {}
+                Some(Component::ParentDir) | Some(Component::CurDir) | None => {
+                    normalized.push(component.as_os_str());
+                }
+            },
+            Component::Prefix(_) | Component::RootDir | Component::Normal(_) => {
+                normalized.push(component.as_os_str());
+            }
+        }
+    }
+    normalized
+}
+
 fn push_unique_member(members: &mut Vec<MemberInfo>, member: MemberInfo) {
     if !members.iter().any(|existing| existing.name == member.name) {
         members.push(member);
@@ -604,7 +766,7 @@ fn expand_member_pattern(
     root_dir: &Path,
     pattern: &str,
     resolved: &mut ResolvedRoot,
-) -> Vec<PathBuf> {
+) -> Vec<ExpandedMember> {
     if let Some(prefix) = pattern.strip_suffix("/*") {
         let prefix_dir = root_dir.join(prefix);
         // Probe the prefix dir even when it doesn't exist — a later
@@ -647,11 +809,14 @@ fn expand_member_pattern(
                 let child_manifest = p.join("Cargo.toml");
                 resolved.record(&child_manifest, probe_state(&child_manifest));
                 if child_manifest.is_file() {
-                    out.push(p);
+                    out.push(ExpandedMember {
+                        path: normalize_path(p),
+                        origin: MemberOrigin::Glob,
+                    });
                 }
             }
         }
-        out.sort();
+        out.sort_by(|a, b| a.path.cmp(&b.path));
         return out;
     }
 
@@ -672,13 +837,19 @@ fn expand_member_pattern(
     // than serving the cached empty member list forever.
     resolved.record(&manifest, probe_state(&manifest));
     if manifest.is_file() {
-        vec![dir]
+        vec![ExpandedMember {
+            path: normalize_path(dir),
+            origin: MemberOrigin::Literal,
+        }]
     } else {
         Vec::new()
     }
 }
 
-fn read_member_info(member_dir: &Path, resolved: &mut ResolvedRoot) -> Option<MemberInfo> {
+fn read_member_manifest(
+    member_dir: &Path,
+    resolved: &mut ResolvedRoot,
+) -> Option<MemberManifestInfo> {
     let manifest = member_dir.join("Cargo.toml");
     // Note: `expand_member_pattern` already stamped this manifest
     // (positively, since we only call `read_member_info` for paths it
@@ -726,6 +897,7 @@ fn read_member_info(member_dir: &Path, resolved: &mut ResolvedRoot) -> Option<Me
             return None;
         }
     };
+    let path_dependencies = collect_local_path_dependencies(member_dir, &parsed);
     let pkg = parsed.package?;
     let info = MemberInfo::from_package(pkg);
     if info.is_none() {
@@ -735,7 +907,10 @@ fn read_member_info(member_dir: &Path, resolved: &mut ResolvedRoot) -> Option<Me
             "workspace member has no `package.name`; skipping",
         );
     }
-    info
+    info.map(|info| MemberManifestInfo {
+        info,
+        path_dependencies,
+    })
 }
 
 impl MemberInfo {
@@ -886,6 +1061,63 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn workspace_root_package_path_dependency_is_implicit_member() {
+        let tmp = TempDir::new().unwrap();
+        std::fs::write(
+            tmp.path().join("Cargo.toml"),
+            "[package]\nname = \"rootpkg\"\nversion = \"0.1.0\"\n[dependencies]\ndep = { path = \"dep\" }\n[workspace]\nresolver = \"2\"\n",
+        )
+        .unwrap();
+        write_member(tmp.path(), "dep", "dep");
+
+        let suggestions = CargoWorkspaceMembers::generate_with_root(tmp.path())
+            .await
+            .unwrap();
+        let names: Vec<&str> = suggestions.iter().map(|s| s.text.as_str()).collect();
+        assert_eq!(names, vec!["rootpkg", "dep"]);
+    }
+
+    #[tokio::test]
+    async fn workspace_path_dependencies_expand_to_fixed_point() {
+        let tmp = TempDir::new().unwrap();
+        std::fs::write(
+            tmp.path().join("Cargo.toml"),
+            "[workspace]\nmembers = [\"app\"]\n",
+        )
+        .unwrap();
+
+        let app_dir = tmp.path().join("app");
+        std::fs::create_dir_all(&app_dir).unwrap();
+        std::fs::write(
+            app_dir.join("Cargo.toml"),
+            "[package]\nname = \"app\"\nversion = \"0.1.0\"\n[dependencies]\nlib = { path = \"../lib\" }\n[dev-dependencies]\ndevlib = { path = \"../devlib\" }\n[build-dependencies]\nbuildlib = { path = \"../buildlib\" }\n[target.'cfg(unix)'.dependencies]\nunixlib = { path = \"../unixlib\" }\n",
+        )
+        .unwrap();
+
+        let lib_dir = tmp.path().join("lib");
+        std::fs::create_dir_all(&lib_dir).unwrap();
+        std::fs::write(
+            lib_dir.join("Cargo.toml"),
+            "[package]\nname = \"lib\"\nversion = \"0.1.0\"\n[dependencies]\nutil = { path = \"../util\" }\n",
+        )
+        .unwrap();
+        write_member(tmp.path(), "buildlib", "buildlib");
+        write_member(tmp.path(), "devlib", "devlib");
+        write_member(tmp.path(), "unixlib", "unixlib");
+        write_member(tmp.path(), "util", "util");
+
+        let suggestions = CargoWorkspaceMembers::generate_with_root(tmp.path())
+            .await
+            .unwrap();
+        let mut names: Vec<&str> = suggestions.iter().map(|s| s.text.as_str()).collect();
+        names.sort();
+        assert_eq!(
+            names,
+            vec!["app", "buildlib", "devlib", "lib", "unixlib", "util"]
+        );
+    }
+
+    #[tokio::test]
     async fn workspace_root_package_listed_as_dot_is_deduped() {
         let tmp = TempDir::new().unwrap();
         std::fs::write(
@@ -956,11 +1188,11 @@ mod tests {
         assert_eq!(names, vec!["keep"]);
     }
 
-    /// Regression for pr-test-analyzer-2: literal `members = [...]`
-    /// excluded by literal `exclude = [...]` must drop just that
-    /// member. Previously only the glob exclude path was tested.
+    /// Cargo gives explicit literal `members = [...]` precedence over
+    /// `exclude = [...]`; exclude only filters glob-expanded and
+    /// implicit path-dependency members.
     #[tokio::test]
-    async fn literal_exclude_drops_literal_member() {
+    async fn literal_member_survives_matching_exclude() {
         let tmp = TempDir::new().unwrap();
         std::fs::write(
             tmp.path().join("Cargo.toml"),
@@ -974,7 +1206,7 @@ mod tests {
             .await
             .unwrap();
         let names: Vec<&str> = suggestions.iter().map(|s| s.text.as_str()).collect();
-        assert_eq!(names, vec!["alpha"]);
+        assert_eq!(names, vec!["alpha", "beta"]);
     }
 
     /// Regression for pr-test-analyzer-2: excluding a member that
@@ -1055,6 +1287,24 @@ mod tests {
             .unwrap();
         let names: Vec<&str> = suggestions.iter().map(|s| s.text.as_str()).collect();
         assert_eq!(names, vec!["alpha"]);
+    }
+
+    #[tokio::test]
+    async fn ancestor_walk_finds_spaced_workspace_header_above_member_crate() {
+        let tmp = TempDir::new().unwrap();
+        std::fs::write(
+            tmp.path().join("Cargo.toml"),
+            "[ workspace ]\nmembers = [\"a\", \"b\"]\n",
+        )
+        .unwrap();
+        write_member(tmp.path(), "a", "alpha");
+        write_member(tmp.path(), "b", "beta");
+
+        let suggestions = CargoWorkspaceMembers::generate_with_root(&tmp.path().join("a"))
+            .await
+            .unwrap();
+        let names: Vec<&str> = suggestions.iter().map(|s| s.text.as_str()).collect();
+        assert_eq!(names, vec!["alpha", "beta"]);
     }
 
     #[tokio::test]
@@ -1436,6 +1686,7 @@ mod tests {
     fn line_scan_detects_workspace_section() {
         assert!(line_scan_has_workspace("[workspace]\n"));
         assert!(line_scan_has_workspace("  [workspace]\n"));
+        assert!(line_scan_has_workspace("[ workspace ]\n"));
         assert!(line_scan_has_workspace("[workspace.package]\nfoo = 1\n"));
         assert!(line_scan_has_workspace(
             "[package]\nname=\"a\"\n[workspace]\n"

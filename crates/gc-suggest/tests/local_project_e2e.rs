@@ -5,17 +5,16 @@
 //! tempdir, and asserts the expected suggestions surface with the
 //! correct `kind` + `source`.
 //!
-//! The full spec-routing path (`{"type": "..."}` in a JSON spec →
-//! `ProviderKind` → dispatcher) is covered by
-//! `test_resolve_spec_routes_known_provider_to_provider_generators` in
-//! `crates/gc-suggest/src/specs.rs` for every registered provider
-//! string. These tests cover the runtime dispatcher half of that
-//! contract for the three new local-project providers specifically.
+//! The provider dispatcher and the workspace specs are both covered here:
+//! direct `resolve_providers` tests pin the runtime provider behavior, while
+//! `suggest_sync` tests below pin the committed `specs/*.json` routing that
+//! enqueues those providers for user-facing command lines.
 
 use std::collections::HashMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+use gc_buffer::parse_command_context;
 use gc_suggest::commands::CommandsProvider;
 use gc_suggest::history::HistoryProvider;
 use gc_suggest::providers::{ProviderCtx, ProviderKind};
@@ -31,11 +30,65 @@ fn engine() -> SuggestionEngine {
     SuggestionEngine::with_providers(spec_store, history, commands)
 }
 
+fn workspace_spec_dir() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../specs")
+}
+
+fn engine_with_workspace_specs() -> SuggestionEngine {
+    let spec_store = SpecStore::load_from_dir(&workspace_spec_dir())
+        .unwrap()
+        .store;
+    let history = HistoryProvider::from_entries(vec![]);
+    let commands = CommandsProvider::from_list(vec![]);
+    SuggestionEngine::with_providers(spec_store, history, commands)
+}
+
 fn ctx_for(cwd: &Path) -> ProviderCtx {
     ProviderCtx {
         cwd: cwd.to_path_buf(),
         env: Arc::new(HashMap::new()),
         current_token: String::new(),
+    }
+}
+
+fn command_ctx(buffer: &str) -> gc_buffer::CommandContext {
+    parse_command_context(buffer, buffer.chars().count())
+}
+
+fn assert_workspace_spec_routes_provider(buffer: &str, expected: ProviderKind) {
+    let tmp = TempDir::new().unwrap();
+    let engine = engine_with_workspace_specs();
+    let ctx = command_ctx(buffer);
+    let result = engine.suggest_sync(&ctx, tmp.path(), buffer).unwrap();
+
+    assert_eq!(
+        result.provider_generators,
+        vec![expected],
+        "{buffer:?} must enqueue {expected:?} through workspace specs; got {:?}",
+        result.provider_generators
+    );
+    assert!(
+        result.script_generators.is_empty(),
+        "{buffer:?} must route to provider_generators, not script_generators"
+    );
+    assert!(
+        result.git_generators.is_empty(),
+        "{buffer:?} must route to provider_generators, not native git generators"
+    );
+}
+
+#[test]
+fn suggest_sync_routes_workspace_specs_to_local_project_providers() {
+    for (buffer, expected) in [
+        ("make ", ProviderKind::MakefileTargets),
+        ("npm run ", ProviderKind::NpmScripts),
+        ("cargo run -p ", ProviderKind::CargoWorkspaceMembers),
+        (
+            "cargo build --package ",
+            ProviderKind::CargoWorkspaceMembers,
+        ),
+    ] {
+        assert_workspace_spec_routes_provider(buffer, expected);
     }
 }
 
