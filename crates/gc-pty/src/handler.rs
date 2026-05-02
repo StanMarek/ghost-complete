@@ -1604,49 +1604,9 @@ impl InputHandler {
             let extras = merge_dedup_against(&self.suggestions, dynamic_results);
             self.suggestions.extend(extras);
             let merged = std::mem::take(&mut self.suggestions);
-            // Merge-time rank: when the user has a non-empty query, filter
-            // the pool to matches sorted by relevance and cap at
-            // `max_visible * 5` (generous headroom over what's rendered).
-            //
-            // When the spawn-time query is empty (user triggered on space
-            // then hasn't typed yet), `fuzzy::rank("", pool, N)` takes the
-            // empty-query fast path in `gc_suggest::fuzzy::rank` which
-            // sorts by kind priority and then alphabetically, then
-            // truncates to N. For single-kind dynamic pools (e.g. git
-            // branches from `resolve_git`), kind priority is uniform, so
-            // the effective result is "first N branches alphabetically"
-            // — dropping any candidate past alphabetic position ~50. A
-            // branch named `zzz-hotfix-critical` in a 5000-branch monorepo
-            // would be silently evicted at merge time, and the subsequent
-            // keystroke-driven re-rank could never recover it because the
-            // full pool is gone.
-            //
-            // Instead, when merging with an empty query, keep the full
-            // pool untruncated. The render path slices
-            // `&suggestions[scroll_offset..scroll_offset + content_height]`
-            // where `content_height` is capped by the visible viewport,
-            // so a large `self.suggestions` is cheap to render — only the
-            // on-screen window is formatted per frame. The next keystroke
-            // that arrives with a non-empty query will trigger a fresh
-            // `suggest_sync` cycle; any retained-but-not-yet-merged
-            // dynamic pool is bounded upstream by
-            // `gc_suggest::engine::MAX_DYNAMIC_CANDIDATES` (1000 for
-            // non-empty spawns; for empty spawns the engine also leaves
-            // it unbounded and relies on realistic provider sizes —
-            // typically <5k items; nucleo handles 10k in <1ms per the
-            // CLAUDE.md perf target).
-            //
-            // Option B future mitigation (not needed yet): stash the raw
-            // untruncated pool in a separate field (e.g. `dynamic_raw`)
-            // and re-rank from it on every keystroke. That eliminates
-            // the pathological-provider case entirely. Deferred until a
-            // real-world report of a >10k-item provider.
+            // Empty query: keep the full pool untruncated so a non-empty re-rank can still recover late candidates.
             self.suggestions = if current_word.is_empty() {
-                // Sort by kind priority so dynamic arrivals (git branches,
-                // tags, remotes — effective priorities 80/75/70) land above
-                // any sync residuals (flags=30, files=20, history=10).
-                // Without this, the extend above leaves branches glued to
-                // the tail of the sync pool on `git checkout <TAB>`.
+                // Re-sort so higher-priority dynamic arrivals outrank residual sync items.
                 let mut m = merged;
                 m.sort_by(|a, b| {
                     gc_suggest::priority::effective(b)
