@@ -112,9 +112,21 @@ pub enum ProviderKind {
     /// `arduino-cli board list --format json`, projecting `port.address`
     /// out of each entry that has at least one matching board.
     ArduinoCliPorts,
+    /// Workspace member package names from the nearest ancestor
+    /// `Cargo.toml`. Falls back to the single `package.name` when the
+    /// manifest has no `[workspace]` table — keeps `cargo run -p
+    /// <NAME>` completing in single-package crates.
+    CargoWorkspaceMembers,
     /// `defaults domains`, splitting the single-line comma-separated
     /// output into individual macOS preference domain identifiers.
     DefaultsDomains,
+    /// Targets parsed from the nearest ancestor
+    /// `GNUmakefile`/`makefile`/`Makefile`. Hand-parsed (no `make -qp`
+    /// shellout). Filters meta targets, pattern rules, and
+    /// variable-expanded targets — see
+    /// [`local_project::makefile::parse_makefile_targets`] for the
+    /// full filter set.
+    MakefileTargets,
     /// `conda env list`, projecting the first whitespace-delimited
     /// token of each data row (the env name). Used by the mamba spec,
     /// which wraps conda's CLI.
@@ -122,6 +134,11 @@ pub enum ProviderKind {
     /// `multipass list --format=json`, projecting the `name` field of
     /// each entry in the top-level `list` array.
     MultipassList,
+    /// Keys of the `scripts` object in the nearest ancestor
+    /// `package.json`. Description is the script value, truncated to
+    /// 120 characters. Does not honour `package.json#fig.scripts`
+    /// overrides — that's a v2 concern.
+    NpmScripts,
     /// Multipass instances excluding rows in the `Deleted` state.
     MultipassListNotDeleted,
     /// Multipass instances only in the `Deleted` state.
@@ -151,13 +168,16 @@ pub fn kind_from_type_str(type_str: &str) -> Option<ProviderKind> {
         "ansible_doc_modules" => Some(ProviderKind::AnsibleDocModules),
         "arduino_cli_boards" => Some(ProviderKind::ArduinoCliBoards),
         "arduino_cli_ports" => Some(ProviderKind::ArduinoCliPorts),
+        "cargo_workspace_members" => Some(ProviderKind::CargoWorkspaceMembers),
         "defaults_domains" => Some(ProviderKind::DefaultsDomains),
+        "makefile_targets" => Some(ProviderKind::MakefileTargets),
         "mamba_envs" => Some(ProviderKind::MambaEnvs),
         "multipass_list" => Some(ProviderKind::MultipassList),
         "multipass_list_not_deleted" => Some(ProviderKind::MultipassListNotDeleted),
         "multipass_list_deleted" => Some(ProviderKind::MultipassListDeleted),
         "multipass_list_running" => Some(ProviderKind::MultipassListRunning),
         "multipass_list_stopped" => Some(ProviderKind::MultipassListStopped),
+        "npm_scripts" => Some(ProviderKind::NpmScripts),
         "pandoc_input_formats" => Some(ProviderKind::PandocInputFormats),
         "pandoc_output_formats" => Some(ProviderKind::PandocOutputFormats),
         _ => None,
@@ -171,7 +191,15 @@ pub async fn resolve(kind: ProviderKind, ctx: &ProviderCtx) -> Result<Vec<Sugges
         ProviderKind::AnsibleDocModules => ansible_doc::AnsibleDocModules.generate(ctx).await,
         ProviderKind::ArduinoCliBoards => arduino_cli::ArduinoCliBoards.generate(ctx).await,
         ProviderKind::ArduinoCliPorts => arduino_cli::ArduinoCliPorts.generate(ctx).await,
+        ProviderKind::CargoWorkspaceMembers => {
+            local_project::cargo_workspace::CargoWorkspaceMembers
+                .generate(ctx)
+                .await
+        }
         ProviderKind::DefaultsDomains => macos_defaults::DefaultsDomains.generate(ctx).await,
+        ProviderKind::MakefileTargets => {
+            local_project::makefile::MakefileTargets.generate(ctx).await
+        }
         ProviderKind::MambaEnvs => mamba::MambaEnvs.generate(ctx).await,
         ProviderKind::MultipassList => multipass::MultipassList.generate(ctx).await,
         ProviderKind::MultipassListNotDeleted => {
@@ -194,6 +222,7 @@ pub async fn resolve(kind: ProviderKind, ctx: &ProviderCtx) -> Result<Vec<Sugges
                 .generate_with_filter(ctx, multipass::MultipassInstanceFilter::Stopped)
                 .await
         }
+        ProviderKind::NpmScripts => local_project::npm_scripts::NpmScripts.generate(ctx).await,
         ProviderKind::PandocInputFormats => pandoc::PandocInputFormats.generate(ctx).await,
         ProviderKind::PandocOutputFormats => pandoc::PandocOutputFormats.generate(ctx).await,
     }
@@ -234,8 +263,20 @@ mod tests {
             Some(ProviderKind::ArduinoCliPorts)
         );
         assert_eq!(
+            kind_from_type_str("cargo_workspace_members"),
+            Some(ProviderKind::CargoWorkspaceMembers)
+        );
+        assert_eq!(
             kind_from_type_str("defaults_domains"),
             Some(ProviderKind::DefaultsDomains)
+        );
+        assert_eq!(
+            kind_from_type_str("makefile_targets"),
+            Some(ProviderKind::MakefileTargets)
+        );
+        assert_eq!(
+            kind_from_type_str("npm_scripts"),
+            Some(ProviderKind::NpmScripts)
         );
         assert_eq!(
             kind_from_type_str("mamba_envs"),
