@@ -33,6 +33,7 @@ impl OverlayState {
     }
 
     pub fn move_down(&mut self, total_items: usize, max_visible: usize) {
+        let max_visible = max_visible.max(1);
         match self.selected {
             None if total_items > 0 => {
                 self.selected = Some(0);
@@ -46,11 +47,92 @@ impl OverlayState {
             }
             _ => {}
         }
+        self.keep_selected_visible(max_visible);
+    }
+
+    pub fn move_page_up(&mut self, max_visible: usize) {
+        let max_visible = max_visible.max(1);
+        match self.selected {
+            Some(0) => {
+                self.selected = None;
+                self.scroll_offset = 0;
+            }
+            Some(n) => {
+                let new = n.saturating_sub(max_visible);
+                self.selected = Some(new);
+                self.scroll_offset = self.scroll_offset.min(new);
+            }
+            None => {}
+        }
+        self.keep_selected_visible(max_visible);
+    }
+
+    pub fn move_page_down(&mut self, total_items: usize, max_visible: usize) {
+        let max_visible = max_visible.max(1);
+        if total_items == 0 {
+            self.reset();
+            return;
+        }
+
+        match self.selected {
+            None if total_items > 0 => {
+                self.selected = Some(0);
+            }
+            None => {}
+            Some(n) => {
+                let last = total_items - 1;
+                let new = n.saturating_add(max_visible).min(last);
+
+                self.selected = Some(new);
+                if new >= self.scroll_offset + max_visible {
+                    self.scroll_offset = new + 1 - max_visible;
+                }
+                self.scroll_offset = self
+                    .scroll_offset
+                    .min(total_items.saturating_sub(max_visible));
+            }
+        }
+        self.keep_selected_visible(max_visible);
+    }
+
+    pub fn move_home(&mut self, total_items: usize) {
+        if total_items == 0 {
+            return;
+        }
+
+        self.selected = Some(0);
+        self.scroll_offset = 0;
+    }
+
+    pub fn move_end(&mut self, total_items: usize, max_visible: usize) {
+        let max_visible = max_visible.max(1);
+        let Some(last) = total_items.checked_sub(1) else {
+            return;
+        };
+
+        self.selected = Some(last);
+        self.scroll_offset = total_items.saturating_sub(max_visible);
+        self.keep_selected_visible(max_visible);
     }
 
     pub fn reset(&mut self) {
         self.selected = None;
         self.scroll_offset = 0;
+    }
+
+    fn keep_selected_visible(&mut self, visible_count: usize) {
+        let Some(selected) = self.selected else {
+            return;
+        };
+
+        if selected < self.scroll_offset {
+            self.scroll_offset = selected;
+        } else if selected >= self.scroll_offset.saturating_add(visible_count) {
+            self.scroll_offset = selected + 1 - visible_count;
+        }
+
+        debug_assert!(self.scroll_offset <= selected);
+        debug_assert!(selected < self.scroll_offset.saturating_add(visible_count));
     }
 }
 
@@ -154,6 +236,200 @@ mod tests {
         state.move_up();
         assert_eq!(state.selected, Some(4));
         assert_eq!(state.scroll_offset, 4);
+    }
+
+    #[test]
+    fn test_page_up_from_none_is_noop() {
+        let mut state = OverlayState::new();
+        state.move_page_up(DEFAULT_MAX_VISIBLE);
+        assert_eq!(state.selected, None);
+        assert_eq!(state.scroll_offset, 0);
+    }
+
+    #[test]
+    fn test_page_up_below_max_visible_clamps_to_zero() {
+        let mut state = OverlayState::new();
+        state.selected = Some(3);
+        state.scroll_offset = 1;
+        state.move_page_up(DEFAULT_MAX_VISIBLE);
+        assert_eq!(state.selected, Some(0));
+        assert_eq!(state.scroll_offset, 0);
+    }
+
+    #[test]
+    fn test_page_up_at_zero_deselects() {
+        let mut state = OverlayState::new();
+        state.selected = Some(0);
+        state.scroll_offset = 5;
+        state.move_page_up(DEFAULT_MAX_VISIBLE);
+        assert_eq!(state.selected, None);
+        assert_eq!(state.scroll_offset, 0);
+    }
+
+    #[test]
+    fn test_page_up_full_page_step() {
+        let mut state = OverlayState::new();
+        state.selected = Some(15);
+        state.scroll_offset = 6;
+        state.move_page_up(DEFAULT_MAX_VISIBLE);
+        assert_eq!(state.selected, Some(5));
+        assert_eq!(state.scroll_offset, 5);
+    }
+
+    #[test]
+    fn test_page_up_keeps_invariant() {
+        let mut state = OverlayState::new();
+        state.selected = Some(25);
+        state.scroll_offset = 16;
+        state.move_page_up(DEFAULT_MAX_VISIBLE);
+        let selected = state.selected.unwrap();
+        assert!(state.scroll_offset <= selected);
+        assert!(selected < state.scroll_offset + DEFAULT_MAX_VISIBLE);
+    }
+
+    #[test]
+    fn test_page_down_from_none_selects_zero() {
+        let mut state = OverlayState::new();
+        state.move_page_down(50, DEFAULT_MAX_VISIBLE);
+        assert_eq!(state.selected, Some(0));
+        assert_eq!(state.scroll_offset, 0);
+    }
+
+    #[test]
+    fn test_page_down_empty_list_is_noop() {
+        let mut state = OverlayState::new();
+        state.move_page_down(0, DEFAULT_MAX_VISIBLE);
+        assert_eq!(state.selected, None);
+        assert_eq!(state.scroll_offset, 0);
+    }
+
+    #[test]
+    fn test_page_down_empty_list_clears_stale_state() {
+        let mut state = OverlayState::new();
+        state.selected = Some(4);
+        state.scroll_offset = 2;
+        state.move_page_down(0, DEFAULT_MAX_VISIBLE);
+        assert_eq!(state.selected, None);
+        assert_eq!(state.scroll_offset, 0);
+    }
+
+    #[test]
+    fn test_page_down_clamps_at_last() {
+        let mut state = OverlayState::new();
+        state.selected = Some(48);
+        state.scroll_offset = 40;
+        state.move_page_down(50, DEFAULT_MAX_VISIBLE);
+        assert_eq!(state.selected, Some(49));
+        assert_eq!(state.scroll_offset, 40);
+    }
+
+    #[test]
+    fn test_page_down_at_last_is_noop() {
+        let mut state = OverlayState::new();
+        state.selected = Some(49);
+        state.scroll_offset = 40;
+        state.move_page_down(50, DEFAULT_MAX_VISIBLE);
+        assert_eq!(state.selected, Some(49));
+        assert_eq!(state.scroll_offset, 40);
+    }
+
+    #[test]
+    fn test_page_down_at_last_after_viewport_shrink_keeps_selected_visible() {
+        let mut state = OverlayState::new();
+        state.selected = Some(49);
+        state.scroll_offset = 40;
+        state.move_page_down(50, 5);
+        assert_eq!(state.selected, Some(49));
+        assert_eq!(state.scroll_offset, 45);
+    }
+
+    #[test]
+    fn test_page_down_full_step_scrolls_viewport() {
+        let mut state = OverlayState::new();
+        state.selected = Some(5);
+        state.scroll_offset = 0;
+        state.move_page_down(100, DEFAULT_MAX_VISIBLE);
+        assert_eq!(state.selected, Some(15));
+        assert_eq!(state.scroll_offset, 6);
+    }
+
+    #[test]
+    fn test_page_down_short_list_no_viewport_change() {
+        let mut state = OverlayState::new();
+        state.selected = Some(2);
+        state.move_page_down(5, DEFAULT_MAX_VISIBLE);
+        assert_eq!(state.selected, Some(4));
+        assert_eq!(state.scroll_offset, 0);
+    }
+
+    #[test]
+    fn test_page_down_keeps_invariant() {
+        let mut state = OverlayState::new();
+        state.selected = Some(25);
+        state.scroll_offset = 16;
+        state.move_page_down(100, DEFAULT_MAX_VISIBLE);
+        let selected = state.selected.unwrap();
+        assert!(state.scroll_offset <= selected);
+        assert!(selected < state.scroll_offset + DEFAULT_MAX_VISIBLE);
+    }
+
+    #[test]
+    fn test_home_empty_list_is_noop() {
+        let mut state = OverlayState::new();
+        state.move_home(0);
+        assert_eq!(state.selected, None);
+        assert_eq!(state.scroll_offset, 0);
+    }
+
+    #[test]
+    fn test_home_from_none_selects_zero() {
+        let mut state = OverlayState::new();
+        state.move_home(50);
+        assert_eq!(state.selected, Some(0));
+        assert_eq!(state.scroll_offset, 0);
+    }
+
+    #[test]
+    fn test_home_from_middle_resets_scroll() {
+        let mut state = OverlayState::new();
+        state.selected = Some(20);
+        state.scroll_offset = 11;
+        state.move_home(50);
+        assert_eq!(state.selected, Some(0));
+        assert_eq!(state.scroll_offset, 0);
+    }
+
+    #[test]
+    fn test_end_empty_list_is_noop() {
+        let mut state = OverlayState::new();
+        state.move_end(0, DEFAULT_MAX_VISIBLE);
+        assert_eq!(state.selected, None);
+        assert_eq!(state.scroll_offset, 0);
+    }
+
+    #[test]
+    fn test_end_from_none_selects_last() {
+        let mut state = OverlayState::new();
+        state.move_end(50, DEFAULT_MAX_VISIBLE);
+        assert_eq!(state.selected, Some(49));
+        assert_eq!(state.scroll_offset, 40);
+    }
+
+    #[test]
+    fn test_end_short_list_no_scroll() {
+        let mut state = OverlayState::new();
+        state.move_end(5, DEFAULT_MAX_VISIBLE);
+        assert_eq!(state.selected, Some(4));
+        assert_eq!(state.scroll_offset, 0);
+    }
+
+    #[test]
+    fn test_end_keeps_invariant() {
+        let mut state = OverlayState::new();
+        state.move_end(50, DEFAULT_MAX_VISIBLE);
+        let selected = state.selected.unwrap();
+        assert!(state.scroll_offset <= selected);
+        assert!(selected < state.scroll_offset + DEFAULT_MAX_VISIBLE);
     }
 
     #[test]

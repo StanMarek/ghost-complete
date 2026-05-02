@@ -1,7 +1,8 @@
 /// Minimal key event parser for raw terminal stdin bytes.
 ///
-/// Parses known sequences (arrows, Tab, Enter, Escape, Ctrl+Space, Ctrl+/,
-/// Ctrl+A through Ctrl+Z) and passes through everything else as Raw bytes.
+/// Parses known sequences (arrows, PageUp/PageDown, Home/End, Tab, Enter, Escape,
+/// Ctrl+Space, Ctrl+/, Ctrl+A through Ctrl+Z) and passes through everything else
+/// as Raw bytes.
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum KeyEvent {
@@ -12,6 +13,16 @@ pub enum KeyEvent {
     ArrowDown,
     ArrowLeft,
     ArrowRight,
+    PageUp,
+    PageDown,
+    Home,
+    HomeCsiTilde,
+    HomeCsi7Tilde,
+    HomeSs3,
+    End,
+    EndCsiTilde,
+    EndCsi8Tilde,
+    EndSs3,
     CtrlSpace,
     CtrlSlash,
     Ctrl(char),
@@ -73,6 +84,38 @@ pub fn parse_keys(buf: &[u8]) -> Vec<KeyEvent> {
                             events.push(KeyEvent::ArrowLeft);
                             i += 3;
                         }
+                        b'H' => {
+                            events.push(KeyEvent::Home);
+                            i += 3;
+                        }
+                        b'F' => {
+                            events.push(KeyEvent::End);
+                            i += 3;
+                        }
+                        b'1' if i + 3 < buf.len() && buf[i + 3] == b'~' => {
+                            events.push(KeyEvent::HomeCsiTilde);
+                            i += 4;
+                        }
+                        b'4' if i + 3 < buf.len() && buf[i + 3] == b'~' => {
+                            events.push(KeyEvent::EndCsiTilde);
+                            i += 4;
+                        }
+                        b'5' if i + 3 < buf.len() && buf[i + 3] == b'~' => {
+                            events.push(KeyEvent::PageUp);
+                            i += 4;
+                        }
+                        b'6' if i + 3 < buf.len() && buf[i + 3] == b'~' => {
+                            events.push(KeyEvent::PageDown);
+                            i += 4;
+                        }
+                        b'7' if i + 3 < buf.len() && buf[i + 3] == b'~' => {
+                            events.push(KeyEvent::HomeCsi7Tilde);
+                            i += 4;
+                        }
+                        b'8' if i + 3 < buf.len() && buf[i + 3] == b'~' => {
+                            events.push(KeyEvent::EndCsi8Tilde);
+                            i += 4;
+                        }
                         _ => {
                             // Unknown CSI — find end and pass through as Raw
                             let start = i;
@@ -115,6 +158,14 @@ pub fn parse_keys(buf: &[u8]) -> Vec<KeyEvent> {
                             events.push(KeyEvent::ArrowLeft);
                             i += 3;
                         }
+                        b'H' => {
+                            events.push(KeyEvent::HomeSs3);
+                            i += 3;
+                        }
+                        b'F' => {
+                            events.push(KeyEvent::EndSs3);
+                            i += 3;
+                        }
                         _ => {
                             events.push(KeyEvent::Raw(buf[i..i + 3].to_vec()));
                             i += 3;
@@ -154,6 +205,48 @@ pub fn parse_keys(buf: &[u8]) -> Vec<KeyEvent> {
     }
 
     events
+}
+
+#[derive(Debug, Default)]
+pub struct KeyParser {
+    pending: Vec<u8>,
+}
+
+impl KeyParser {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn parse(&mut self, buf: &[u8]) -> Vec<KeyEvent> {
+        let mut combined = Vec::with_capacity(self.pending.len() + buf.len());
+        combined.extend_from_slice(&self.pending);
+        combined.extend_from_slice(buf);
+        self.pending.clear();
+
+        if let Some(start) = incomplete_escape_suffix_start(&combined) {
+            self.pending.extend_from_slice(&combined[start..]);
+            parse_keys(&combined[..start])
+        } else {
+            parse_keys(&combined)
+        }
+    }
+}
+
+fn incomplete_escape_suffix_start(buf: &[u8]) -> Option<usize> {
+    let esc = buf.iter().rposition(|&b| b == 0x1B)?;
+    let suffix = &buf[esc..];
+
+    match suffix {
+        [0x1B, b'['] | [0x1B, b'O'] => Some(esc),
+        [0x1B, b'[', rest @ ..] => {
+            if rest.iter().all(|b| *b < 0x40) {
+                Some(esc)
+            } else {
+                None
+            }
+        }
+        _ => None,
+    }
 }
 
 /// Parse a CPR parameter slice like b"15;1" into (row, col).
@@ -216,9 +309,51 @@ mod tests {
     }
 
     #[test]
+    fn test_page_up_csi_tilde() {
+        assert_eq!(parse_keys(b"\x1B[5~"), vec![KeyEvent::PageUp]);
+    }
+
+    #[test]
+    fn test_page_down_csi_tilde() {
+        assert_eq!(parse_keys(b"\x1B[6~"), vec![KeyEvent::PageDown]);
+    }
+
+    #[test]
+    fn test_home_csi_letter() {
+        assert_eq!(parse_keys(b"\x1B[H"), vec![KeyEvent::Home]);
+    }
+
+    #[test]
+    fn test_end_csi_letter() {
+        assert_eq!(parse_keys(b"\x1B[F"), vec![KeyEvent::End]);
+    }
+
+    #[test]
+    fn test_home_csi_tilde_synonym() {
+        assert_eq!(parse_keys(b"\x1B[1~"), vec![KeyEvent::HomeCsiTilde]);
+        assert_eq!(parse_keys(b"\x1B[7~"), vec![KeyEvent::HomeCsi7Tilde]);
+    }
+
+    #[test]
+    fn test_end_csi_tilde_synonym() {
+        assert_eq!(parse_keys(b"\x1B[4~"), vec![KeyEvent::EndCsiTilde]);
+        assert_eq!(parse_keys(b"\x1B[8~"), vec![KeyEvent::EndCsi8Tilde]);
+    }
+
+    #[test]
     fn test_arrow_keys_ss3() {
         assert_eq!(parse_keys(b"\x1BOA"), vec![KeyEvent::ArrowUp]);
         assert_eq!(parse_keys(b"\x1BOB"), vec![KeyEvent::ArrowDown]);
+    }
+
+    #[test]
+    fn test_home_ss3() {
+        assert_eq!(parse_keys(b"\x1BOH"), vec![KeyEvent::HomeSs3]);
+    }
+
+    #[test]
+    fn test_end_ss3() {
+        assert_eq!(parse_keys(b"\x1BOF"), vec![KeyEvent::EndSs3]);
     }
 
     #[test]
@@ -237,6 +372,41 @@ mod tests {
             KeyEvent::Raw(bytes) => assert_eq!(bytes, raw),
             other => panic!("expected Raw, got {:?}", other),
         }
+    }
+
+    #[test]
+    fn test_paged_then_typed() {
+        assert_eq!(
+            parse_keys(b"\x1B[5~a"),
+            vec![KeyEvent::PageUp, KeyEvent::Printable('a')]
+        );
+    }
+
+    #[test]
+    fn test_stateful_parser_buffers_split_page_up() {
+        let mut parser = KeyParser::new();
+
+        assert!(parser.parse(b"\x1B[5").is_empty());
+        assert_eq!(parser.parse(b"~"), vec![KeyEvent::PageUp]);
+    }
+
+    #[test]
+    fn test_stateful_parser_buffers_split_ss3_home() {
+        let mut parser = KeyParser::new();
+
+        assert!(parser.parse(b"\x1BO").is_empty());
+        assert_eq!(parser.parse(b"H"), vec![KeyEvent::HomeSs3]);
+    }
+
+    #[test]
+    fn test_stateful_parser_keeps_complete_prefix_before_split_sequence() {
+        let mut parser = KeyParser::new();
+
+        assert_eq!(parser.parse(b"a\x1B[6"), vec![KeyEvent::Printable('a')]);
+        assert_eq!(
+            parser.parse(b"~b"),
+            vec![KeyEvent::PageDown, KeyEvent::Printable('b')]
+        );
     }
 
     #[test]

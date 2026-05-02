@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Popup navigation: PageUp, PageDown, Home, and End jump by page or to the
+  ends while the popup is visible.
 - Local-project completion providers for `make` targets, `npm run` scripts,
   and `cargo -p` workspace members. Pure Rust file parsers — no JS runtime,
   no `make`/`npm`/`cargo` shellout — with mtime-keyed caching (with
