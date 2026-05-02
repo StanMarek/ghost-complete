@@ -55,18 +55,32 @@ struct MemberInfo {
     description: Option<String>,
 }
 
-/// One file or directory whose `(mtime, size)` is part of the cache
-/// validity contract. Files contribute both `mtime` and `size`; for
-/// directories (the glob prefix dirs that drive workspace member
-/// expansion) we set `size: None` and check `mtime` only — adding or
-/// removing a child crate bumps the parent dir's mtime on every
-/// platform we ship on.
+/// One probe of a path involved in workspace resolution. Each probe
+/// records what was at that path at sample time, including the
+/// negative case (`Missing`). Files contribute both `mtime` and
+/// `size`; directories (glob prefix dirs that drive member expansion)
+/// contribute `mtime` only — adding or removing a direct child bumps
+/// the parent dir's mtime on every platform we ship on.
+///
+/// Recording the negative case is what catches the "user added the
+/// first crate to a previously-empty workspace" class: the literal
+/// member dir / its `Cargo.toml` was Missing at first resolve, so
+/// transitioning to a real File invalidates the cache instead of
+/// serving the cached empty member list.
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct Stamp {
     path: PathBuf,
-    mtime: SystemTime,
-    /// `None` for directories; `Some(len)` for regular files.
-    size: Option<u64>,
+    state: StampState,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum StampState {
+    /// Path did not exist when probed.
+    Missing,
+    /// Regular file at probe time.
+    File { mtime: SystemTime, size: u64 },
+    /// Directory at probe time.
+    Dir { mtime: SystemTime },
 }
 
 #[derive(Clone)]
@@ -113,25 +127,35 @@ impl CargoCache {
 }
 
 fn stamp_still_matches(stamp: &Stamp) -> bool {
-    let Ok(meta) = std::fs::metadata(&stamp.path) else {
-        return false;
-    };
-    if meta.modified().unwrap_or(SystemTime::UNIX_EPOCH) != stamp.mtime {
-        return false;
-    }
-    match stamp.size {
-        Some(expected) => meta.is_file() && meta.len() == expected,
-        None => meta.is_dir(),
+    probe_state(&stamp.path) == stamp.state
+}
+
+fn probe_state(path: &Path) -> StampState {
+    match std::fs::metadata(path) {
+        Ok(meta) if meta.is_file() => StampState::File {
+            mtime: meta.modified().unwrap_or(SystemTime::UNIX_EPOCH),
+            size: meta.len(),
+        },
+        Ok(meta) if meta.is_dir() => StampState::Dir {
+            mtime: meta.modified().unwrap_or(SystemTime::UNIX_EPOCH),
+        },
+        // Anything else (symlink-to-nothing, special file, IO error)
+        // is folded into Missing — the validity question is binary
+        // ("does the workspace look the same?") and recording odd file
+        // types as their own variant would proliferate without
+        // improving the answer.
+        _ => StampState::Missing,
     }
 }
 
-fn stamp_for(path: &Path, is_dir: bool) -> Option<Stamp> {
-    let meta = std::fs::metadata(path).ok()?;
-    Some(Stamp {
+/// Record the current state of `path` (including the negative
+/// `Missing` case) so the cache can detect both "this file changed"
+/// AND "this file didn't exist before but does now" on the next call.
+fn stamp_path(path: &Path) -> Stamp {
+    Stamp {
         path: path.to_path_buf(),
-        mtime: meta.modified().unwrap_or(SystemTime::UNIX_EPOCH),
-        size: if is_dir { None } else { Some(meta.len()) },
-    })
+        state: probe_state(path),
+    }
 }
 
 static CARGO_CACHE: LazyLock<CargoCache> = LazyLock::new(CargoCache::new);
@@ -186,9 +210,9 @@ fn has_workspace_section(path: &Path) -> bool {
 /// matches.
 fn resolve_workspace(manifest: &Path, root_dir: &Path) -> ResolvedRoot {
     let mut stamps: Vec<Stamp> = Vec::new();
-    if let Some(s) = stamp_for(manifest, false) {
-        stamps.push(s);
-    }
+    // Always probe — even Missing is a stamp the cache needs so that a
+    // later `cargo new` (creating the manifest) invalidates correctly.
+    stamps.push(stamp_path(manifest));
 
     let bytes = match std::fs::read(manifest) {
         Ok(b) => b,
@@ -262,9 +286,9 @@ fn resolve_workspace(manifest: &Path, root_dir: &Path) -> ResolvedRoot {
 fn expand_member_pattern(root_dir: &Path, pattern: &str, stamps: &mut Vec<Stamp>) -> Vec<PathBuf> {
     if let Some(prefix) = pattern.strip_suffix("/*") {
         let prefix_dir = root_dir.join(prefix);
-        if let Some(s) = stamp_for(&prefix_dir, true) {
-            stamps.push(s);
-        }
+        // Probe the prefix dir even when it doesn't exist — a later
+        // `mkdir crates && cargo new crates/foo` should invalidate.
+        stamps.push(stamp_path(&prefix_dir));
         let entries = match std::fs::read_dir(&prefix_dir) {
             Ok(e) => e,
             Err(e) => {
@@ -280,8 +304,16 @@ fn expand_member_pattern(root_dir: &Path, pattern: &str, stamps: &mut Vec<Stamp>
         let mut out = Vec::new();
         for entry in entries.flatten() {
             let p = entry.path();
-            if p.is_dir() && p.join("Cargo.toml").is_file() {
-                out.push(p);
+            if p.is_dir() {
+                // Probe the candidate child dir's `Cargo.toml` whether
+                // it exists or not — a child dir that exists today
+                // without a manifest, then gains one tomorrow, must
+                // invalidate the cached "no member found here" result.
+                let child_manifest = p.join("Cargo.toml");
+                stamps.push(stamp_path(&child_manifest));
+                if child_manifest.is_file() {
+                    out.push(p);
+                }
             }
         }
         out.sort();
@@ -297,7 +329,13 @@ fn expand_member_pattern(root_dir: &Path, pattern: &str, stamps: &mut Vec<Stamp>
     }
 
     let dir = root_dir.join(pattern);
-    if dir.join("Cargo.toml").is_file() {
+    let manifest = dir.join("Cargo.toml");
+    // Probe the literal member's `Cargo.toml` whether it exists or
+    // not, so the "user adds the first crate to a previously-empty
+    // workspace" path invalidates on the manifest's appearance rather
+    // than serving the cached empty member list forever.
+    stamps.push(stamp_path(&manifest));
+    if manifest.is_file() {
         vec![dir]
     } else {
         Vec::new()
@@ -306,9 +344,12 @@ fn expand_member_pattern(root_dir: &Path, pattern: &str, stamps: &mut Vec<Stamp>
 
 fn read_member_info(member_dir: &Path, stamps: &mut Vec<Stamp>) -> Option<MemberInfo> {
     let manifest = member_dir.join("Cargo.toml");
-    if let Some(s) = stamp_for(&manifest, false) {
-        stamps.push(s);
-    }
+    // Note: `expand_member_pattern` already stamped this manifest
+    // (positively, since we only call `read_member_info` for paths it
+    // confirmed are files). We re-stamp here to guard against the
+    // narrow race where the file vanishes between expansion and read
+    // — keeping the stamp set authoritative for what we observed.
+    stamps.push(stamp_path(&manifest));
     let bytes = std::fs::read(&manifest).ok()?;
     let text = std::str::from_utf8(&bytes).ok()?;
     let parsed: CargoTomlMin = toml::from_str(text).ok()?;
@@ -650,6 +691,102 @@ mod tests {
         let mut second_names: Vec<&str> = second.iter().map(|s| s.text.as_str()).collect();
         second_names.sort();
         assert_eq!(second_names, vec!["one", "two"]);
+    }
+
+    /// Regression for the second stale-cache class flagged in code
+    /// review: the workspace declares `members = ["a"]` but `a/`
+    /// doesn't exist yet. First call returns no members. The user then
+    /// runs `cargo new a`. Without probing the literal member's
+    /// `Cargo.toml` even when it's Missing, the cache would serve the
+    /// empty list forever — the workspace root manifest never changed,
+    /// and there's no member-file stamp to compare against.
+    #[tokio::test]
+    async fn literal_member_appearing_invalidates_empty_cache() {
+        let tmp = TempDir::new().unwrap();
+        std::fs::write(
+            tmp.path().join("Cargo.toml"),
+            "[workspace]\nmembers = [\"a\"]\n",
+        )
+        .unwrap();
+        // First call: no `a/Cargo.toml` exists.
+        let first = CargoWorkspaceMembers::generate_with_root(tmp.path())
+            .await
+            .unwrap();
+        assert!(first.is_empty(), "expected no members before crate created");
+
+        // User creates the crate.
+        write_member(tmp.path(), "a", "alpha");
+
+        let second = CargoWorkspaceMembers::generate_with_root(tmp.path())
+            .await
+            .unwrap();
+        let names: Vec<&str> = second.iter().map(|s| s.text.as_str()).collect();
+        assert_eq!(names, vec!["alpha"]);
+    }
+
+    /// Regression for a sibling case under glob expansion: a child
+    /// directory of `crates/` exists but has no `Cargo.toml` yet
+    /// (perhaps half-set-up). On first resolve the directory has no
+    /// member to enumerate; on second resolve the user has dropped a
+    /// `Cargo.toml` into the child dir. Must invalidate.
+    #[tokio::test]
+    async fn cargo_toml_added_to_existing_glob_child_invalidates() {
+        let tmp = TempDir::new().unwrap();
+        std::fs::write(
+            tmp.path().join("Cargo.toml"),
+            "[workspace]\nmembers = [\"crates/*\"]\n",
+        )
+        .unwrap();
+        let half_setup = tmp.path().join("crates").join("foo");
+        std::fs::create_dir_all(&half_setup).unwrap();
+
+        let first = CargoWorkspaceMembers::generate_with_root(tmp.path())
+            .await
+            .unwrap();
+        assert!(
+            first.is_empty(),
+            "child dir without Cargo.toml is not a member"
+        );
+
+        // User finishes setting up the crate.
+        std::fs::write(
+            half_setup.join("Cargo.toml"),
+            "[package]\nname = \"foo\"\nversion = \"0.1.0\"\n",
+        )
+        .unwrap();
+
+        let second = CargoWorkspaceMembers::generate_with_root(tmp.path())
+            .await
+            .unwrap();
+        let names: Vec<&str> = second.iter().map(|s| s.text.as_str()).collect();
+        assert_eq!(names, vec!["foo"]);
+    }
+
+    /// Regression for the glob-prefix-doesn't-exist-yet case. Workspace
+    /// declares `members = ["crates/*"]` but `crates/` itself doesn't
+    /// exist at first resolve time. First call produces nothing; user
+    /// then `mkdir crates && cargo new crates/foo`. The cache must
+    /// invalidate when the prefix transitions from Missing to Dir.
+    #[tokio::test]
+    async fn glob_prefix_dir_appearing_invalidates_empty_cache() {
+        let tmp = TempDir::new().unwrap();
+        std::fs::write(
+            tmp.path().join("Cargo.toml"),
+            "[workspace]\nmembers = [\"crates/*\"]\n",
+        )
+        .unwrap();
+        let first = CargoWorkspaceMembers::generate_with_root(tmp.path())
+            .await
+            .unwrap();
+        assert!(first.is_empty());
+
+        write_member(tmp.path(), "crates/foo", "foo");
+
+        let second = CargoWorkspaceMembers::generate_with_root(tmp.path())
+            .await
+            .unwrap();
+        let names: Vec<&str> = second.iter().map(|s| s.text.as_str()).collect();
+        assert_eq!(names, vec!["foo"]);
     }
 
     /// Sanity check: when nothing on disk has changed, the second call
