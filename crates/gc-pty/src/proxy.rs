@@ -156,6 +156,12 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
             .context("invalid theme.selected style")?,
         description_on: parse_style(&resolved_theme.description)
             .context("invalid theme.description style")?,
+        feedback_loading_on: parse_style(&resolved_theme.feedback_loading)
+            .context("invalid theme.feedback_loading style")?,
+        feedback_empty_on: parse_style(&resolved_theme.feedback_empty)
+            .context("invalid theme.feedback_empty style")?,
+        feedback_error_on: parse_style(&resolved_theme.feedback_error)
+            .context("invalid theme.feedback_error style")?,
         match_highlight_on: parse_style(&resolved_theme.match_highlight)
             .context("invalid theme.match_highlight style")?,
         item_text_on: parse_style(&resolved_theme.item_text)
@@ -164,6 +170,8 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
             .context("invalid theme.scrollbar style")?,
         border_on: parse_style(&resolved_theme.border).context("invalid theme.border style")?,
         borders: config.popup.borders,
+        spinner: config.popup.spinner,
+        show_provider_errors: config.popup.show_provider_errors,
     };
 
     // Initialize suggestion handler with config
@@ -179,6 +187,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
         h.with_keybindings(keybindings)
             .with_theme(theme)
             .with_popup_config(config.popup.max_visible)
+            .with_feedback_dismiss_ms(config.popup.feedback_dismiss_ms)
             .with_trigger_chars(&config.trigger.auto_chars)
             .with_auto_trigger(config.trigger.auto_trigger)
             .with_render_block_ms(config.popup.render_block_ms as u64)
@@ -241,6 +250,21 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     let parser_for_merge = Arc::clone(&parser);
     let merge_handle = tokio::spawn(async move {
         dynamic_merge_loop(dynamic_notify, handler_for_merge, parser_for_merge).await;
+    });
+
+    let feedback_notify = {
+        let h = match handler.lock() {
+            Ok(h) => h,
+            Err(e) => {
+                tracing::warn!("handler mutex poisoned during feedback setup: {e}");
+                anyhow::bail!("handler mutex poisoned during feedback setup — cannot start proxy");
+            }
+        };
+        h.feedback_tick_notify()
+    };
+    let handler_for_feedback = Arc::clone(&handler);
+    let feedback_handle = tokio::spawn(async move {
+        feedback_tick_loop(feedback_notify, handler_for_feedback).await;
     });
 
     // Channel to signal that one of the I/O tasks has finished
@@ -656,6 +680,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     stdin_handle.abort();
     stdout_handle.abort();
     merge_handle.abort();
+    feedback_handle.abort();
     if let Some(h) = debounce_handle {
         h.abort();
     }
@@ -834,14 +859,14 @@ async fn debounce_loop(
             // 3. New keystroke arrives (debounce notify) → abort the wait entirely.
             //    The outer debounce loop will re-fire trigger for the new buffer
             //    and overwrite `dynamic_rx` anyway, so we simply drop rx here.
-            let (maybe_async, rx_on_timeout) = tokio::select! {
+            let (maybe_async, rx_after_recv, rx_on_timeout) = tokio::select! {
                 maybe_result = rx.recv() => {
                     // Generator completed within the window (or sent empty).
-                    (maybe_result, None)
+                    (maybe_result, Some(rx), None)
                 }
                 _ = tokio::time::sleep(timeout_dur) => {
                     // Timeout: restore rx so dynamic_merge_loop can merge later.
-                    (None, Some(rx))
+                    (None, None, Some(rx))
                 }
                 _ = notify.notified() => {
                     // Keystroke supersedes. Abort the orphaned generator
@@ -876,6 +901,7 @@ async fn debounce_loop(
                     &parser,
                     &mut render_buf2,
                     maybe_async,
+                    rx_after_recv,
                     rx_on_timeout,
                     sync_suggestions,
                     cursor_row,
@@ -920,6 +946,51 @@ async fn dynamic_merge_loop(
             let mut stdout = std::io::stdout().lock();
             let _ = stdout.write_all(&render_buf);
             let _ = stdout.flush();
+        }
+    }
+}
+
+async fn feedback_tick_loop(notify: Arc<Notify>, handler: Arc<Mutex<InputHandler>>) {
+    loop {
+        notify.notified().await;
+        let mut next_ms: u64 = 0;
+        loop {
+            if next_ms > 0 {
+                tokio::time::sleep(Duration::from_millis(next_ms)).await;
+            }
+            let mut render_buf: Vec<u8> = Vec::new();
+            let keep_running = {
+                let mut h = match handler.lock() {
+                    Ok(h) => h,
+                    Err(e) => {
+                        tracing::warn!("feedback tick skipped (handler lock poisoned): {e}");
+                        break;
+                    }
+                };
+                if h.feedback_kind().is_loading() {
+                    h.render_indicator_only(&mut render_buf);
+                    next_ms = 80;
+                    true
+                } else if h.clear_expired_feedback(&mut render_buf) {
+                    next_ms = 200;
+                    false
+                } else {
+                    next_ms = 200;
+                    h.feedback_kind().since().is_some()
+                }
+            };
+            if !render_buf.is_empty() {
+                let mut stdout = std::io::stdout().lock();
+                if stdout.write_all(&render_buf).is_err() {
+                    break;
+                }
+                if stdout.flush().is_err() {
+                    break;
+                }
+            }
+            if !keep_running {
+                break;
+            }
         }
     }
 }

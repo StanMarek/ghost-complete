@@ -626,6 +626,44 @@ impl SuggestionEngine {
         Ok(fuzzy::rank(query, all, MAX_DYNAMIC_CANDIDATES))
     }
 
+    /// Per-kind variant of [`Self::resolve_git`] that surfaces errors instead of swallowing.
+    pub async fn resolve_git_kind(
+        &self,
+        kind: git::GitQueryKind,
+        cwd: &Path,
+        query: &str,
+    ) -> Result<Vec<Suggestion>> {
+        let suggestions = git::git_suggestions(cwd, kind).await?;
+        if query.is_empty() {
+            return Ok(suggestions);
+        }
+        Ok(fuzzy::rank(query, suggestions, MAX_DYNAMIC_CANDIDATES))
+    }
+
+    /// Per-kind variant of [`Self::resolve_providers`] that surfaces errors instead of logging-and-swallowing.
+    pub async fn resolve_provider_kind(
+        &self,
+        kind: ProviderKind,
+        ctx: &ProviderCtx,
+        query: &str,
+    ) -> Result<Vec<Suggestion>> {
+        if !ctx.cwd.is_absolute() {
+            tracing::warn!(
+                cwd = %ctx.cwd.display(),
+                "provider cwd is relative; skipping provider resolution"
+            );
+            return Err(anyhow::anyhow!(
+                "provider cwd is relative: {}",
+                ctx.cwd.display()
+            ));
+        }
+        let suggestions = providers::resolve(kind, ctx).await?;
+        if query.is_empty() {
+            return Ok(suggestions);
+        }
+        Ok(fuzzy::rank(query, suggestions, MAX_DYNAMIC_CANDIDATES))
+    }
+
     /// Convenience method that resolves the spec and runs script generators.
     /// Prefer `run_generators` in the handler to avoid redundant spec resolution.
     pub async fn suggest_dynamic(
@@ -2046,6 +2084,27 @@ mod tests {
         assert!(
             results.is_empty(),
             "relative cwd must not resolve providers from process cwd, got {results:?}"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_resolve_provider_kind_relative_cwd_returns_err() {
+        let engine = make_engine();
+        let ctx = crate::providers::ProviderCtx::new_for_test(
+            PathBuf::from("relative/path"),
+            Arc::new(std::collections::HashMap::new()),
+            String::new(),
+        );
+
+        let result = engine
+            .resolve_provider_kind(ProviderKind::CargoWorkspaceMembers, &ctx, "")
+            .await;
+
+        let err = result.expect_err("relative cwd must surface an error to the caller");
+        let msg = err.to_string();
+        assert!(
+            msg.contains("relative") && msg.contains("relative/path"),
+            "error must name both the cause and the offending path, got {msg:?}"
         );
     }
 

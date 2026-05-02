@@ -149,7 +149,12 @@ pub fn spawn_config_watcher(
                 }
             };
 
-            let theme = match build_popup_theme(&resolved_theme, config.popup.borders) {
+            let theme = match build_popup_theme(
+                &resolved_theme,
+                config.popup.borders,
+                config.popup.spinner,
+                config.popup.show_provider_errors,
+            ) {
                 Ok(t) => t,
                 Err(e) => {
                     tracing::warn!("config reload failed (theme styles): {e}");
@@ -180,6 +185,7 @@ pub fn spawn_config_watcher(
                     keybindings,
                     &config.trigger.auto_chars,
                     config.popup.max_visible,
+                    config.popup.feedback_dismiss_ms,
                     config.trigger.auto_trigger,
                 )
             };
@@ -202,12 +208,23 @@ pub fn spawn_config_watcher(
 
 /// Build a `PopupTheme` from a [`gc_config::ResolvedTheme`] (preset merged
 /// with user overrides), parsing each style string.
-fn build_popup_theme(resolved: &gc_config::ResolvedTheme, borders: bool) -> Result<PopupTheme> {
+fn build_popup_theme(
+    resolved: &gc_config::ResolvedTheme,
+    borders: bool,
+    spinner: bool,
+    show_provider_errors: bool,
+) -> Result<PopupTheme> {
     Ok(PopupTheme {
         selected_on: parse_style(&resolved.selected)
             .map_err(|e| anyhow::anyhow!("invalid theme.selected: {e}"))?,
         description_on: parse_style(&resolved.description)
             .map_err(|e| anyhow::anyhow!("invalid theme.description: {e}"))?,
+        feedback_loading_on: parse_style(&resolved.feedback_loading)
+            .map_err(|e| anyhow::anyhow!("invalid theme.feedback_loading: {e}"))?,
+        feedback_empty_on: parse_style(&resolved.feedback_empty)
+            .map_err(|e| anyhow::anyhow!("invalid theme.feedback_empty: {e}"))?,
+        feedback_error_on: parse_style(&resolved.feedback_error)
+            .map_err(|e| anyhow::anyhow!("invalid theme.feedback_error: {e}"))?,
         match_highlight_on: parse_style(&resolved.match_highlight)
             .map_err(|e| anyhow::anyhow!("invalid theme.match_highlight: {e}"))?,
         item_text_on: parse_style(&resolved.item_text)
@@ -217,6 +234,8 @@ fn build_popup_theme(resolved: &gc_config::ResolvedTheme, borders: bool) -> Resu
         border_on: parse_style(&resolved.border)
             .map_err(|e| anyhow::anyhow!("invalid theme.border: {e}"))?,
         borders,
+        spinner,
+        show_provider_errors,
     })
 }
 
@@ -233,8 +252,11 @@ mod tests {
             item_text: String::new(),
             scrollbar: "dim".into(),
             border: "dim".into(),
+            feedback_loading: "dim".into(),
+            feedback_empty: "dim".into(),
+            feedback_error: "dim fg:#f38ba8".into(),
         };
-        let result = build_popup_theme(&resolved, true);
+        let result = build_popup_theme(&resolved, true, true, false);
         assert!(result.is_ok());
         assert!(result.unwrap().borders);
     }

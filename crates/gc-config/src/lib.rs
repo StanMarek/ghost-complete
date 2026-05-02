@@ -97,6 +97,12 @@ impl Default for TriggerConfig {
 pub struct PopupConfig {
     pub max_visible: usize,
     pub borders: bool,
+    /// Empty/Error feedback dismiss delay (ms); 0 disables. Clamped to [0, 10000]. Default 1200.
+    pub feedback_dismiss_ms: u16,
+    /// Animate Loading feedback with a spinner; narrow popups fall back to ellipsis. Default true.
+    pub spinner: bool,
+    /// Show provider names in error feedback; default false to avoid leaking on shared screens.
+    pub show_provider_errors: bool,
     /// Maximum time (ms) the popup will block waiting for a higher-priority
     /// async generator before painting whatever sync results we have. Set
     /// to `0` to disable blocking entirely (paint immediately, merge async
@@ -110,6 +116,9 @@ impl Default for PopupConfig {
         Self {
             max_visible: 10,
             borders: false,
+            feedback_dismiss_ms: 1200,
+            spinner: true,
+            show_provider_errors: false,
             render_block_ms: 80,
         }
     }
@@ -206,6 +215,12 @@ pub struct ThemeConfig {
     pub scrollbar: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub border: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub feedback_loading: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub feedback_empty: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub feedback_error: Option<String>,
 }
 
 /// Fully resolved theme — every field is a concrete style string (possibly
@@ -222,6 +237,9 @@ pub struct ResolvedTheme {
     pub item_text: String,
     pub scrollbar: String,
     pub border: String,
+    pub feedback_loading: String,
+    pub feedback_empty: String,
+    pub feedback_error: String,
 }
 
 impl ThemeConfig {
@@ -263,6 +281,9 @@ impl ThemeConfig {
         validate_opt_style("theme.item_text", self.item_text.as_deref())?;
         validate_opt_style("theme.scrollbar", self.scrollbar.as_deref())?;
         validate_opt_style("theme.border", self.border.as_deref())?;
+        validate_opt_style("theme.feedback_loading", self.feedback_loading.as_deref())?;
+        validate_opt_style("theme.feedback_empty", self.feedback_empty.as_deref())?;
+        validate_opt_style("theme.feedback_error", self.feedback_error.as_deref())?;
         Ok(())
     }
 
@@ -285,6 +306,12 @@ impl ThemeConfig {
             item_text: self.item_text.clone().unwrap_or(base.item_text),
             scrollbar: self.scrollbar.clone().unwrap_or(base.scrollbar),
             border: self.border.clone().unwrap_or(base.border),
+            feedback_loading: self
+                .feedback_loading
+                .clone()
+                .unwrap_or(base.feedback_loading),
+            feedback_empty: self.feedback_empty.clone().unwrap_or(base.feedback_empty),
+            feedback_error: self.feedback_error.clone().unwrap_or(base.feedback_error),
         })
     }
 }
@@ -352,6 +379,9 @@ fn preset_values(name: &str) -> Result<ResolvedTheme> {
             item_text: String::new(),
             scrollbar: "dim".into(),
             border: "dim".into(),
+            feedback_loading: "dim".into(),
+            feedback_empty: "dim".into(),
+            feedback_error: "dim fg:#f38ba8".into(),
         },
         "light" => ResolvedTheme {
             selected: "fg:#1e1e2e bg:#dce0e8 bold".into(),
@@ -360,6 +390,9 @@ fn preset_values(name: &str) -> Result<ResolvedTheme> {
             item_text: String::new(),
             scrollbar: "fg:#9ca0b0".into(),
             border: "fg:#9ca0b0".into(),
+            feedback_loading: "fg:#6c6f85".into(),
+            feedback_empty: "fg:#6c6f85".into(),
+            feedback_error: "dim fg:#d20f39".into(),
         },
         "catppuccin" => ResolvedTheme {
             selected: "fg:#cdd6f4 bg:#585b70 bold".into(),
@@ -368,6 +401,9 @@ fn preset_values(name: &str) -> Result<ResolvedTheme> {
             item_text: String::new(),
             scrollbar: "fg:#585b70".into(),
             border: "fg:#585b70".into(),
+            feedback_loading: "fg:#6c7086".into(),
+            feedback_empty: "fg:#6c7086".into(),
+            feedback_error: "dim fg:#f38ba8".into(),
         },
         "material-darker" => ResolvedTheme {
             selected: "fg:#eeffff bg:#424242 bold".into(),
@@ -376,6 +412,9 @@ fn preset_values(name: &str) -> Result<ResolvedTheme> {
             item_text: String::new(),
             scrollbar: "fg:#424242".into(),
             border: "fg:#424242".into(),
+            feedback_loading: "fg:#616161".into(),
+            feedback_empty: "fg:#616161".into(),
+            feedback_error: "dim fg:#ff5370".into(),
         },
         _ => bail!(
             "unknown theme preset: {:?} (valid: dark, light, catppuccin, material-darker)",
@@ -396,6 +435,7 @@ const MAX_VISIBLE_UPPER: usize = 50;
 const MAX_RESULTS_UPPER: usize = 10_000;
 const MAX_RESULTS_DEFAULT: usize = 50;
 const RENDER_BLOCK_MS_UPPER: u16 = 300;
+const FEEDBACK_DISMISS_MS_UPPER: u16 = 10_000;
 
 impl GhostConfig {
     /// Clamp config values to sane bounds, logging warnings when clamping.
@@ -443,6 +483,14 @@ impl GhostConfig {
                 RENDER_BLOCK_MS_UPPER,
             );
             self.popup.render_block_ms = RENDER_BLOCK_MS_UPPER;
+        }
+        if self.popup.feedback_dismiss_ms > FEEDBACK_DISMISS_MS_UPPER {
+            tracing::warn!(
+                "popup.feedback_dismiss_ms={} exceeds maximum {}, clamping",
+                self.popup.feedback_dismiss_ms,
+                FEEDBACK_DISMISS_MS_UPPER,
+            );
+            self.popup.feedback_dismiss_ms = FEEDBACK_DISMISS_MS_UPPER;
         }
     }
 
@@ -563,6 +611,9 @@ mod tests {
         assert_eq!(config.trigger.delay_ms, 150);
         assert!(config.trigger.auto_trigger);
         assert_eq!(config.popup.max_visible, 10);
+        assert_eq!(config.popup.feedback_dismiss_ms, 1200);
+        assert!(config.popup.spinner);
+        assert!(!config.popup.show_provider_errors);
         assert_eq!(config.suggest.max_results, 50);
         assert_eq!(config.suggest.max_history_results, 5);
         assert!(config.suggest.providers.commands);
@@ -583,6 +634,9 @@ mod tests {
         assert_eq!(config.theme.item_text, None);
         assert_eq!(config.theme.scrollbar, None);
         assert_eq!(config.theme.border, None);
+        assert_eq!(config.theme.feedback_loading, None);
+        assert_eq!(config.theme.feedback_empty, None);
+        assert_eq!(config.theme.feedback_error, None);
         assert!(!config.experimental.multi_terminal);
     }
 
@@ -701,10 +755,22 @@ selected = "bold fg:255"
 [theme]
 selected = "fg:255 bg:236"
 description = "dim underline"
+feedback_loading = "bold fg:#89b4fa"
+feedback_empty = "dim fg:244"
+feedback_error = "dim fg:#d20f39"
 "#;
         let config: GhostConfig = toml::from_str(toml_str).unwrap();
         assert_eq!(config.theme.selected.as_deref(), Some("fg:255 bg:236"));
         assert_eq!(config.theme.description.as_deref(), Some("dim underline"));
+        assert_eq!(
+            config.theme.feedback_loading.as_deref(),
+            Some("bold fg:#89b4fa")
+        );
+        assert_eq!(config.theme.feedback_empty.as_deref(), Some("dim fg:244"));
+        assert_eq!(
+            config.theme.feedback_error.as_deref(),
+            Some("dim fg:#d20f39")
+        );
     }
 
     #[test]
@@ -761,6 +827,44 @@ selected = ""
         assert_eq!(resolved.item_text, "");
         assert_eq!(resolved.scrollbar, "dim");
         assert_eq!(resolved.border, "dim");
+        assert_eq!(resolved.feedback_loading, "dim");
+        assert_eq!(resolved.feedback_empty, "dim");
+        assert_eq!(resolved.feedback_error, "dim fg:#f38ba8");
+    }
+
+    #[test]
+    fn test_feedback_theme_overrides_resolve_and_validate() {
+        let config = ThemeConfig {
+            feedback_loading: Some("bold fg:#89b4fa".into()),
+            feedback_empty: Some("dim".into()),
+            feedback_error: Some("fg:196".into()),
+            ..ThemeConfig::default()
+        };
+        config.validate().unwrap();
+        let resolved = config.resolve().unwrap();
+        assert_eq!(resolved.feedback_loading, "bold fg:#89b4fa");
+        assert_eq!(resolved.feedback_empty, "dim");
+        assert_eq!(resolved.feedback_error, "fg:196");
+    }
+
+    #[test]
+    fn test_feedback_theme_preset_defaults() {
+        let presets = [
+            ("dark", "dim fg:#f38ba8"),
+            ("light", "dim fg:#d20f39"),
+            ("catppuccin", "dim fg:#f38ba8"),
+            ("material-darker", "dim fg:#ff5370"),
+        ];
+        for (preset, error_style) in presets {
+            let config = ThemeConfig {
+                preset: preset.into(),
+                ..ThemeConfig::default()
+            };
+            let resolved = config.resolve().unwrap();
+            assert_eq!(resolved.feedback_loading, resolved.description);
+            assert_eq!(resolved.feedback_empty, resolved.description);
+            assert_eq!(resolved.feedback_error, error_style);
+        }
     }
 
     #[test]
@@ -1013,6 +1117,20 @@ max_visible = 5
     }
 
     #[test]
+    fn test_popup_feedback_knobs_parse_and_clamp() {
+        let mut tmp = tempfile::NamedTempFile::new().unwrap();
+        writeln!(
+            tmp,
+            "[popup]\nfeedback_dismiss_ms = 20000\nspinner = false\nshow_provider_errors = true"
+        )
+        .unwrap();
+        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        assert_eq!(config.popup.feedback_dismiss_ms, 10000);
+        assert!(!config.popup.spinner);
+        assert!(config.popup.show_provider_errors);
+    }
+
+    #[test]
     fn test_delay_ms_zero_is_allowed() {
         // delay_ms=0 disables the typing-pause debounce — still a valid
         // choice, so it must pass through untouched.
@@ -1020,6 +1138,14 @@ max_visible = 5
         writeln!(tmp, "[trigger]\ndelay_ms = 0").unwrap();
         let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
         assert_eq!(config.trigger.delay_ms, 0);
+    }
+
+    #[test]
+    fn test_feedback_dismiss_ms_zero_is_allowed() {
+        let mut tmp = tempfile::NamedTempFile::new().unwrap();
+        writeln!(tmp, "[popup]\nfeedback_dismiss_ms = 0").unwrap();
+        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        assert_eq!(config.popup.feedback_dismiss_ms, 0);
     }
 
     #[test]

@@ -14,11 +14,16 @@ use crate::util::display_text;
 pub struct PopupTheme {
     pub selected_on: Vec<u8>,
     pub description_on: Vec<u8>,
+    pub feedback_loading_on: Vec<u8>,
+    pub feedback_empty_on: Vec<u8>,
+    pub feedback_error_on: Vec<u8>,
     pub match_highlight_on: Vec<u8>,
     pub item_text_on: Vec<u8>,
     pub scrollbar_on: Vec<u8>,
     pub border_on: Vec<u8>,
     pub borders: bool,
+    pub spinner: bool,
+    pub show_provider_errors: bool,
 }
 
 impl Default for PopupTheme {
@@ -28,14 +33,45 @@ impl Default for PopupTheme {
         Self {
             selected_on: b"\x1b[7m".to_vec(),
             description_on: b"\x1b[2m".to_vec(),
+            feedback_loading_on: b"\x1b[2m".to_vec(),
+            feedback_empty_on: b"\x1b[2m".to_vec(),
+            feedback_error_on: b"\x1b[2;38;2;243;139;168m".to_vec(),
             match_highlight_on: b"\x1b[1m".to_vec(),
             item_text_on: vec![],
             scrollbar_on: b"\x1b[2m".to_vec(),
             border_on: b"\x1b[2m".to_vec(),
             borders: false,
+            spinner: true,
+            show_provider_errors: false,
         }
     }
 }
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum FeedbackKind {
+    None,
+    Loading { frame: u8 },
+    Empty,
+    Error { provider: String },
+    PartialError { providers: u8 },
+}
+
+impl FeedbackKind {
+    fn reserves_row(&self) -> bool {
+        !matches!(self, Self::None)
+    }
+
+    fn style<'a>(&self, theme: &'a PopupTheme) -> &'a [u8] {
+        match self {
+            Self::None => &[],
+            Self::Loading { .. } => &theme.feedback_loading_on,
+            Self::Empty => &theme.feedback_empty_on,
+            Self::Error { .. } | Self::PartialError { .. } => &theme.feedback_error_on,
+        }
+    }
+}
+
+const SPINNER_FRAMES: [&str; 10] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 
 /// Parse a space-separated style string into a combined ANSI SGR sequence.
 ///
@@ -117,10 +153,10 @@ pub fn render_popup(
     max_width: u16,
     theme: &PopupTheme,
     prior_deficit: u16,
-    loading: bool,
+    feedback: FeedbackKind,
     profile: &TerminalProfile,
 ) -> PopupLayout {
-    if suggestions.is_empty() {
+    if suggestions.is_empty() && !feedback.reserves_row() {
         return PopupLayout {
             start_row: 0,
             start_col: 0,
@@ -140,6 +176,22 @@ pub fn render_popup(
             height: 0,
             scroll_deficit: 0,
         };
+    }
+
+    if suggestions.is_empty() {
+        return render_feedback_only_popup(
+            buf,
+            cursor_row,
+            cursor_col,
+            screen_rows,
+            screen_cols,
+            min_width,
+            max_width,
+            theme,
+            prior_deficit,
+            feedback,
+            profile,
+        );
     }
 
     // Border padding: 2 rows/cols when borders enabled, 0 otherwise
@@ -166,18 +218,10 @@ pub fn render_popup(
     // Adjust cursor for prior scroll (parser doesn't know about our scrolling)
     let adj_cursor_row = cursor_row.saturating_sub(prior_deficit);
 
-    // Calculate how much more scrolling is needed.
-    //
-    // When `loading`, the loading indicator occupies exactly 1 extra row
-    // regardless of whether borders are enabled: in the bordered case the
-    // loading row overwrites what would have been the bottom border row and
-    // the bottom border is redrawn one row below, so the popup still grows
-    // by only 1 row beyond its base `layout.height`. The `loading_extra`
-    // value computed during rendering (lines ~336–388) matches this: it is
-    // `1` in every code path where the loading row actually fits.
+    // Indicator occupies exactly 1 row; bordered case shifts bottom border down by 1.
     let space_below = screen_rows.saturating_sub(adj_cursor_row.saturating_add(1));
     let visible_count = suggestions.len().min(effective_max) as u16;
-    let loading_extra_deficit: u16 = if loading { 1 } else { 0 };
+    let loading_extra_deficit: u16 = if feedback.reserves_row() { 1 } else { 0 };
     let total_height_needed = visible_count + border_pad + loading_extra_deficit;
     let new_deficit = total_height_needed.saturating_sub(space_below);
     let total_deficit = prior_deficit + new_deficit;
@@ -353,8 +397,8 @@ pub fn render_popup(
         }
     }
 
-    // Render loading indicator row when async generators are in flight
-    let loading_extra = if loading {
+    // Indicator row: drawn while generators run or after they end with no suggestions.
+    let loading_extra = if feedback.reserves_row() {
         let loading_row = bottom_border_row.unwrap_or(layout.start_row + layout.height);
         if loading_row < screen_rows {
             ansi::move_to(buf, loading_row, border_col);
@@ -365,13 +409,7 @@ pub fn render_popup(
                 buf.extend_from_slice("│".as_bytes());
                 ansi::reset(buf);
             }
-            buf.extend_from_slice(&theme.description_on);
-            let label = b"  ...";
-            let _ = buf.write_all(label);
-            let pad = (content_width as usize).saturating_sub(label.len());
-            for _ in 0..pad {
-                let _ = buf.write_all(b" ");
-            }
+            write_indicator_content(buf, content_width, theme, &feedback);
             ansi::reset(buf);
             if theme.borders {
                 if !theme.border_on.is_empty() {
@@ -431,6 +469,218 @@ pub fn render_popup(
         scroll_deficit: total_deficit,
         ..layout
     }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn render_feedback_only_popup(
+    buf: &mut Vec<u8>,
+    cursor_row: u16,
+    cursor_col: u16,
+    screen_rows: u16,
+    screen_cols: u16,
+    min_width: u16,
+    max_width: u16,
+    theme: &PopupTheme,
+    prior_deficit: u16,
+    feedback: FeedbackKind,
+    profile: &TerminalProfile,
+) -> PopupLayout {
+    let border_pad: u16 = if theme.borders { 2 } else { 0 };
+    let effective_max_w = max_width.min(screen_cols).max(min_width);
+    let width = min_width.min(effective_max_w);
+    let base_height = 1 + border_pad;
+    let space_below = screen_rows.saturating_sub(cursor_row.saturating_add(1));
+    let new_deficit = base_height.saturating_sub(space_below);
+    let total_deficit = prior_deficit + new_deficit;
+    let final_cursor_row = cursor_row.saturating_sub(total_deficit);
+    let start_row = final_cursor_row + 1;
+    let start_col = if cursor_col + width > screen_cols {
+        screen_cols.saturating_sub(width)
+    } else {
+        cursor_col
+    };
+    let content_width = width.saturating_sub(border_pad);
+    let use_sync = matches!(
+        profile.render_strategy(),
+        gc_terminal::RenderStrategy::Synchronized
+    );
+
+    if use_sync {
+        ansi::begin_sync(buf);
+    }
+    if new_deficit > 0 {
+        ansi::move_to(buf, screen_rows - 1, 0);
+        for _ in 0..new_deficit {
+            buf.push(b'\n');
+        }
+        ansi::move_to(buf, final_cursor_row, cursor_col);
+    }
+    ansi::save_cursor(buf);
+
+    if theme.borders {
+        ansi::move_to(buf, start_row, start_col);
+        if !theme.border_on.is_empty() {
+            buf.extend_from_slice(&theme.border_on);
+        }
+        buf.extend_from_slice("╭".as_bytes());
+        for _ in 0..content_width {
+            buf.extend_from_slice("─".as_bytes());
+        }
+        buf.extend_from_slice("╮".as_bytes());
+        ansi::reset(buf);
+    }
+
+    let content_row = start_row + u16::from(theme.borders);
+    ansi::move_to(buf, content_row, start_col);
+    if theme.borders {
+        if !theme.border_on.is_empty() {
+            buf.extend_from_slice(&theme.border_on);
+        }
+        buf.extend_from_slice("│".as_bytes());
+        ansi::reset(buf);
+    }
+    write_indicator_content(buf, content_width, theme, &feedback);
+    ansi::reset(buf);
+    if theme.borders {
+        if !theme.border_on.is_empty() {
+            buf.extend_from_slice(&theme.border_on);
+        }
+        buf.extend_from_slice("│".as_bytes());
+        ansi::reset(buf);
+
+        ansi::move_to(buf, content_row + 1, start_col);
+        if !theme.border_on.is_empty() {
+            buf.extend_from_slice(&theme.border_on);
+        }
+        buf.extend_from_slice("╰".as_bytes());
+        for _ in 0..content_width {
+            buf.extend_from_slice("─".as_bytes());
+        }
+        buf.extend_from_slice("╯".as_bytes());
+        ansi::reset(buf);
+    }
+
+    ansi::restore_cursor(buf);
+    if use_sync {
+        ansi::end_sync(buf);
+    }
+
+    PopupLayout {
+        start_row,
+        start_col,
+        width,
+        height: base_height,
+        scroll_deficit: total_deficit,
+    }
+}
+
+pub fn render_indicator_row(
+    buf: &mut Vec<u8>,
+    layout: &PopupLayout,
+    theme: &PopupTheme,
+    feedback: FeedbackKind,
+) {
+    if layout.height <= u16::from(theme.borders) || !feedback.reserves_row() {
+        return;
+    }
+    let content_width = layout
+        .width
+        .saturating_sub(if theme.borders { 2 } else { 0 });
+    let row = layout.start_row + layout.height - 1 - u16::from(theme.borders);
+    ansi::save_cursor(buf);
+    ansi::move_to(buf, row, layout.start_col);
+    if theme.borders {
+        if !theme.border_on.is_empty() {
+            buf.extend_from_slice(&theme.border_on);
+        }
+        buf.extend_from_slice("│".as_bytes());
+        ansi::reset(buf);
+    }
+    write_indicator_content(buf, content_width, theme, &feedback);
+    ansi::reset(buf);
+    if theme.borders {
+        if !theme.border_on.is_empty() {
+            buf.extend_from_slice(&theme.border_on);
+        }
+        buf.extend_from_slice("│".as_bytes());
+        ansi::reset(buf);
+    }
+    ansi::restore_cursor(buf);
+}
+
+fn write_indicator_content(
+    buf: &mut Vec<u8>,
+    content_width: u16,
+    theme: &PopupTheme,
+    feedback: &FeedbackKind,
+) {
+    let label = indicator_label(feedback, content_width, theme.spinner);
+    let style = feedback.style(theme);
+    if !style.is_empty() {
+        buf.extend_from_slice(style);
+    }
+    let max_cols = content_width as usize;
+    let label_cols = display_cols(&label);
+    let label_cols = if label_cols <= max_cols {
+        let _ = buf.write_all(label.as_bytes());
+        label_cols
+    } else {
+        let (label, label_cols) = truncate_to_display_cols(&label, max_cols);
+        let _ = buf.write_all(label.as_bytes());
+        label_cols
+    };
+    let pad = (content_width as usize).saturating_sub(label_cols);
+    write_padding(buf, pad);
+}
+
+fn indicator_label(feedback: &FeedbackKind, content_width: u16, spinner: bool) -> String {
+    match feedback {
+        FeedbackKind::None => String::new(),
+        FeedbackKind::Loading { frame } => {
+            let glyph = if spinner && content_width >= 25 {
+                SPINNER_FRAMES[*frame as usize % SPINNER_FRAMES.len()]
+            } else {
+                "…"
+            };
+            format!(" {glyph} Loading")
+        }
+        FeedbackKind::Empty => "  (no matches)".to_string(),
+        FeedbackKind::Error { provider } if provider.is_empty() => {
+            "  ! provider failed".to_string()
+        }
+        FeedbackKind::Error { provider } => {
+            format!("  ! failed: {}", sanitize_display_text(provider))
+        }
+        FeedbackKind::PartialError { providers } => {
+            if *providers == 1 {
+                "  ! 1 provider failed".to_string()
+            } else {
+                format!("  ! {providers} providers failed")
+            }
+        }
+    }
+}
+
+fn display_cols(text: &str) -> usize {
+    if text.is_ascii() {
+        text.len()
+    } else {
+        unicode_width::UnicodeWidthStr::width(text)
+    }
+}
+
+fn truncate_to_display_cols(text: &str, max_cols: usize) -> (String, usize) {
+    let mut out = String::new();
+    let mut cols = 0;
+    for ch in text.chars() {
+        let width = unicode_width::UnicodeWidthChar::width(ch).unwrap_or(0);
+        if cols + width > max_cols {
+            break;
+        }
+        out.push(ch);
+        cols += width;
+    }
+    (out, cols)
 }
 
 /// Clear the popup area by overwriting with spaces.
@@ -785,7 +1035,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &bordered_theme(),
             0,
-            false,
+            FeedbackKind::None,
             &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
@@ -814,7 +1064,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &bordered_theme(),
             0,
-            false,
+            FeedbackKind::None,
             &iterm2_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
@@ -871,7 +1121,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &bordered_theme(),
             0,
-            false,
+            FeedbackKind::None,
             &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
@@ -897,7 +1147,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &bordered_theme(),
             0,
-            false,
+            FeedbackKind::None,
             &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
@@ -927,7 +1177,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &bordered_theme(),
             0,
-            false,
+            FeedbackKind::None,
             &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
@@ -1086,7 +1336,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &bordered_theme(),
             0,
-            false,
+            FeedbackKind::None,
             &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
@@ -1119,7 +1369,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &bordered_theme(),
             0,
-            false,
+            FeedbackKind::None,
             &ghostty_profile(),
         );
         assert_eq!(layout.height, 0);
@@ -1197,7 +1447,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &bordered_theme(),
             0,
-            false,
+            FeedbackKind::None,
             &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
@@ -1234,7 +1484,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &bordered_theme(),
             0,
-            false,
+            FeedbackKind::None,
             &ghostty_profile(),
         );
         // No newlines means no scrolling occurred (popup uses CUP, not newlines)
@@ -1265,7 +1515,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &bordered_theme(),
             4,
-            false,
+            FeedbackKind::None,
             &ghostty_profile(),
         );
         // No newlines means no scrolling occurred (popup uses CUP, not newlines)
@@ -1296,7 +1546,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &bordered_theme(),
             0,
-            false,
+            FeedbackKind::None,
             &ghostty_profile(),
         );
         assert_eq!(layout1.scroll_deficit, 4);
@@ -1320,7 +1570,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &bordered_theme(),
             4, // prior_deficit from first render
-            false,
+            FeedbackKind::None,
             &ghostty_profile(),
         );
         let output2 = String::from_utf8_lossy(&buf2);
@@ -1352,7 +1602,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &bordered_theme(),
             0,
-            false,
+            FeedbackKind::None,
             &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
@@ -1388,7 +1638,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &bordered_theme(),
             0,
-            false,
+            FeedbackKind::None,
             &ghostty_profile(),
         );
         // capped to screen_rows - 1 - 2(borders) = 3 content + 2 borders = 5
@@ -1424,7 +1674,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &bordered_theme(),
             0,
-            false,
+            FeedbackKind::None,
             &ghostty_profile(),
         );
         // final_cursor = 0, start_row = 1
@@ -1499,7 +1749,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &theme,
             0,
-            false,
+            FeedbackKind::None,
             &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
@@ -1537,7 +1787,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &theme,
             0,
-            false,
+            FeedbackKind::None,
             &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
@@ -1567,7 +1817,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &theme,
             0,
-            false,
+            FeedbackKind::None,
             &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
@@ -1731,7 +1981,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &bordered_theme(),
             0,
-            false,
+            FeedbackKind::None,
             &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
@@ -1759,7 +2009,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &bordered_theme(),
             0,
-            false,
+            FeedbackKind::None,
             &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
@@ -1797,7 +2047,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &bordered_theme(),
             0,
-            false,
+            FeedbackKind::None,
             &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
@@ -1827,7 +2077,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &bordered_theme(),
             0,
-            false,
+            FeedbackKind::None,
             &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
@@ -1858,7 +2108,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &bordered_theme(),
             0,
-            false,
+            FeedbackKind::None,
             &ghostty_profile(),
         );
 
@@ -1876,7 +2126,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &bordered_theme(),
             0,
-            false,
+            FeedbackKind::None,
             &ghostty_profile(),
         );
 
@@ -1912,7 +2162,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &theme,
             0,
-            false,
+            FeedbackKind::None,
             &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
@@ -1940,13 +2190,13 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &bordered_theme(),
             0,
-            true,
+            FeedbackKind::Loading { frame: 0 },
             &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
         assert!(
-            output.contains("..."),
-            "loading=true should produce '...' indicator: {output}"
+            output.contains("Loading"),
+            "loading feedback should produce indicator label: {output}"
         );
         // Height: 3 content + 2 borders + 1 loading extra (loading displaces bottom border,
         // which moves down 1 row, netting 1 extra row beyond layout.height) = 6
@@ -1954,6 +2204,195 @@ mod tests {
             layout.height, 6,
             "loading should increase height by 1 beyond base layout"
         );
+    }
+
+    #[test]
+    fn test_feedback_loading_shows_spinner_frame() {
+        let mut buf = Vec::new();
+        let suggestions = make_suggestions();
+        let state = OverlayState::new();
+        render_popup(
+            &mut buf,
+            &suggestions,
+            &state,
+            5,
+            0,
+            24,
+            80,
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &PopupTheme::default(),
+            0,
+            FeedbackKind::Loading { frame: 0 },
+            &ghostty_profile(),
+        );
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            output.contains('⠋'),
+            "loading feedback should show spinner: {output}"
+        );
+        assert!(
+            output.contains("Loading"),
+            "loading feedback should include label: {output}"
+        );
+    }
+
+    #[test]
+    fn test_loading_label_uses_ellipsis_when_spinner_disabled() {
+        let mut buf = Vec::new();
+        let layout = PopupLayout {
+            start_row: 5,
+            start_col: 0,
+            width: 60,
+            height: 4,
+            scroll_deficit: 0,
+        };
+        let theme = PopupTheme {
+            spinner: false,
+            ..PopupTheme::default()
+        };
+        render_indicator_row(
+            &mut buf,
+            &layout,
+            &theme,
+            FeedbackKind::Loading { frame: 0 },
+        );
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            output.contains('…'),
+            "spinner=false should fall back to ellipsis: {output}"
+        );
+        assert!(
+            !output.contains('⠋'),
+            "spinner=false must not render spinner glyph: {output}"
+        );
+        assert!(
+            output.contains("Loading"),
+            "loading feedback should include label: {output}"
+        );
+    }
+
+    #[test]
+    fn test_loading_label_uses_ellipsis_when_content_width_narrow() {
+        let mut buf = Vec::new();
+        let layout = PopupLayout {
+            start_row: 5,
+            start_col: 0,
+            width: 24,
+            height: 4,
+            scroll_deficit: 0,
+        };
+        render_indicator_row(
+            &mut buf,
+            &layout,
+            &PopupTheme::default(),
+            FeedbackKind::Loading { frame: 0 },
+        );
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            output.contains('…'),
+            "narrow content_width should fall back to ellipsis: {output}"
+        );
+        assert!(
+            !output.contains('⠋'),
+            "narrow content_width must not render spinner glyph: {output}"
+        );
+    }
+
+    #[test]
+    fn test_feedback_empty_and_error_labels() {
+        let mut empty_buf = Vec::new();
+        let state = OverlayState::new();
+        render_popup(
+            &mut empty_buf,
+            &[],
+            &state,
+            5,
+            0,
+            24,
+            80,
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &PopupTheme::default(),
+            0,
+            FeedbackKind::Empty,
+            &ghostty_profile(),
+        );
+        assert!(String::from_utf8_lossy(&empty_buf).contains("(no matches)"));
+
+        let mut error_buf = Vec::new();
+        render_popup(
+            &mut error_buf,
+            &[],
+            &state,
+            5,
+            0,
+            24,
+            80,
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &PopupTheme::default(),
+            0,
+            FeedbackKind::Error {
+                provider: "git".into(),
+            },
+            &ghostty_profile(),
+        );
+        assert!(String::from_utf8_lossy(&error_buf).contains("failed: git"));
+    }
+
+    #[test]
+    fn test_render_indicator_row_is_small() {
+        let mut buf = Vec::new();
+        let layout = PopupLayout {
+            start_row: 5,
+            start_col: 0,
+            width: 60,
+            height: 4,
+            scroll_deficit: 0,
+        };
+        render_indicator_row(
+            &mut buf,
+            &layout,
+            &PopupTheme::default(),
+            FeedbackKind::PartialError { providers: 1 },
+        );
+        assert!(
+            buf.len() <= 200,
+            "indicator repaint too large: {}",
+            buf.len()
+        );
+        assert!(String::from_utf8_lossy(&buf).contains("1 provider failed"));
+    }
+
+    #[test]
+    fn test_feedback_label_clips_to_content_width() {
+        let (label, cols) = truncate_to_display_cols("  ! failed: very-long-provider-name", 18);
+
+        assert_eq!(cols, 18);
+        assert_eq!(label, "  ! failed: very-l");
+
+        let mut buf = Vec::new();
+        let layout = PopupLayout {
+            start_row: 5,
+            start_col: 0,
+            width: 20,
+            height: 4,
+            scroll_deficit: 0,
+        };
+        render_indicator_row(
+            &mut buf,
+            &layout,
+            &bordered_theme(),
+            FeedbackKind::Error {
+                provider: "very-long-provider-name".into(),
+            },
+        );
+        let output = String::from_utf8_lossy(&buf);
+        assert!(!output.contains("provider-name"));
     }
 
     #[test]
@@ -1974,7 +2413,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &bordered_theme(),
             0,
-            false,
+            FeedbackKind::None,
             &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
@@ -2004,7 +2443,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &bordered_theme(),
             0,
-            false,
+            FeedbackKind::None,
             &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
@@ -2039,7 +2478,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &PopupTheme::default(), // borders: false
             0,
-            false,
+            FeedbackKind::None,
             &ghostty_profile(),
         );
         let output = String::from_utf8_lossy(&buf);
@@ -2074,7 +2513,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &PopupTheme::default(),
             0,
-            false,
+            FeedbackKind::None,
             &ghostty_profile(),
         );
         // 3 content rows, no border padding
@@ -2140,7 +2579,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &PopupTheme::default(), // borders: false
             0,
-            true,
+            FeedbackKind::Loading { frame: 0 },
             &ghostty_profile(),
         );
         // 3 content + 1 loading row, no borders
@@ -2175,7 +2614,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &bordered_theme(),
             0,
-            true,
+            FeedbackKind::Loading { frame: 0 },
             &ghostty_profile(),
         );
         // total_height_needed = 3 content + 2 borders + 1 loading_extra_deficit = 6
@@ -2323,7 +2762,7 @@ mod tests {
             DEFAULT_MAX_POPUP_WIDTH,
             &bordered_theme(),
             0,
-            false,
+            FeedbackKind::None,
             &ghostty_profile(),
         );
         assert!(

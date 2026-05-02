@@ -28,6 +28,9 @@ const DEFAULT_CONFIG_TOML: &str = "\
 # [popup]
 # max_visible = 10
 # borders = false  # Set to true to enable rounded borders around the popup
+# feedback_dismiss_ms = 1200  # Empty/error feedback auto-dismiss delay; 0 disables
+# spinner = true  # Animate async Loading feedback in wide popups
+# show_provider_errors = false  # Set true to show provider names in error feedback
 
 # [suggest]
 # max_results = 50
@@ -56,6 +59,9 @@ const DEFAULT_CONFIG_TOML: &str = "\
 # item_text = \"\"
 # scrollbar = \"dim\"
 # border = \"dim\"
+# feedback_loading = \"dim\"
+# feedback_empty = \"dim\"
+# feedback_error = \"dim fg:#f38ba8\"
 
 # [experimental]
 # multi_terminal = false  # Set to true to enable unsupported/unknown terminals

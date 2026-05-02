@@ -31,11 +31,17 @@ Controls the popup appearance.
 |-------|------|---------|-------------|
 | `max_visible` | integer | `10` | Maximum number of suggestions shown at once |
 | `borders` | bool | `false` | Draw a border around the popup |
+| `feedback_dismiss_ms` | integer | `1200` | Milliseconds to keep Empty/Error feedback visible. Set to `0` to disable auto-dismiss. Values above `10000` are clamped. |
+| `spinner` | bool | `true` | Animate Loading feedback when the popup is wide enough |
+| `show_provider_errors` | bool | `false` | Show provider names in error feedback. Disabled by default for shared-screen privacy. |
 
 ```toml
 [popup]
 max_visible = 10
 borders = false
+feedback_dismiss_ms = 1200
+spinner = true
+show_provider_errors = false
 ```
 
 Popup width is calculated automatically from suggestion content, clamped between 20 and 60 columns.
@@ -134,24 +140,28 @@ Customize popup colors and styles. Values are space-separated SGR token strings.
 | `item_text` | string | (from preset) | Style for non-selected item text |
 | `scrollbar` | string | (from preset) | Style for the scrollbar track |
 | `border` | string | (from preset) | Style for the popup border |
+| `feedback_loading` | string | (from preset) | Style for Loading feedback |
+| `feedback_empty` | string | (from preset) | Style for Empty feedback |
+| `feedback_error` | string | (from preset) | Style for provider Error feedback |
 
 ```toml
 [theme]
 preset = "catppuccin"
 # Override individual fields from the preset:
 match_highlight = "underline"
+feedback_error = "dim fg:#d20f39"
 ```
 
 #### Presets
 
-| Preset | Selected | Description | Match Highlight | Item Text | Scrollbar | Border |
-|--------|----------|-------------|-----------------|-----------|-----------|--------|
-| `dark` | `reverse` | `dim` | `bold` | *(none)* | `dim` | `dim` |
-| `light` | `fg:#1e1e2e bg:#dce0e8 bold` | `fg:#6c6f85` | `fg:#d20f39 bold` | *(none)* | `fg:#9ca0b0` | `fg:#9ca0b0` |
-| `catppuccin` | `fg:#cdd6f4 bg:#585b70 bold` | `fg:#6c7086` | `fg:#f9e2af bold` | *(none)* | `fg:#585b70` | `fg:#585b70` |
-| `material-darker` | `fg:#eeffff bg:#424242 bold` | `fg:#616161` | `fg:#ffcb6b bold` | *(none)* | `fg:#424242` | `fg:#424242` |
+| Preset | Selected | Description | Match Highlight | Item Text | Scrollbar | Border | Feedback Error |
+|--------|----------|-------------|-----------------|-----------|-----------|--------|----------------|
+| `dark` | `reverse` | `dim` | `bold` | *(none)* | `dim` | `dim` | `dim fg:#f38ba8` |
+| `light` | `fg:#1e1e2e bg:#dce0e8 bold` | `fg:#6c6f85` | `fg:#d20f39 bold` | *(none)* | `fg:#9ca0b0` | `fg:#9ca0b0` | `dim fg:#d20f39` |
+| `catppuccin` | `fg:#cdd6f4 bg:#585b70 bold` | `fg:#6c7086` | `fg:#f9e2af bold` | *(none)* | `fg:#585b70` | `fg:#585b70` | `dim fg:#f38ba8` |
+| `material-darker` | `fg:#eeffff bg:#424242 bold` | `fg:#616161` | `fg:#ffcb6b bold` | *(none)* | `fg:#424242` | `fg:#424242` | `dim fg:#ff5370` |
 
-All presets leave `item_text` unstyled (default terminal foreground). Override it to colorize non-selected items.
+All presets leave `item_text` unstyled (default terminal foreground). `feedback_loading` and `feedback_empty` inherit `description` by default. Override `item_text` to colorize non-selected items.
 
 #### Style String Syntax
 
@@ -321,7 +331,7 @@ match_highlight = "underline"
 | `[trigger]` | `auto_chars` | Yes |
 | `[trigger]` | `delay_ms` | No |
 | `[trigger]` | `auto_trigger` | Yes |
-| `[popup]` | `max_visible` | Yes |
+| `[popup]` | `max_visible`, `borders`, `feedback_dismiss_ms`, `spinner`, `show_provider_errors` | Yes |
 | `[suggest]` | All fields | No |
 | `[suggest.providers]` | All fields | No |
 | `[paths]` | All fields | No |

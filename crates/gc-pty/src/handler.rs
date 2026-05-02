@@ -8,12 +8,14 @@ use gc_overlay::types::{
     OverlayState, PopupLayout, DEFAULT_MAX_POPUP_WIDTH, DEFAULT_MAX_VISIBLE,
     DEFAULT_MIN_POPUP_WIDTH,
 };
-use gc_overlay::{clear_popup, render_popup, PopupTheme};
+use gc_overlay::{clear_popup, render_indicator_row, render_popup, FeedbackKind, PopupTheme};
 use gc_parser::TerminalParser;
 use gc_suggest::{Suggestion, SuggestionEngine};
 use gc_terminal::TerminalProfile;
 use tokio::sync::{mpsc, Notify};
 
+use crate::dynamic_result::{DynamicResult, ProviderTag};
+use crate::feedback::AsyncFeedback;
 use crate::input::KeyEvent;
 
 /// Resolved keybindings — each action maps to a concrete `KeyEvent`.
@@ -182,7 +184,7 @@ pub enum TriggerPrepared {
     /// `apply_block_result` under the handler lock.
     NeedsBlock {
         /// Receiver to `await` for the async generator's results.
-        rx: mpsc::Receiver<Vec<Suggestion>>,
+        rx: mpsc::Receiver<DynamicResult>,
         /// Sync-only suggestions already painted. Used for merging.
         sync_suggestions: Vec<Suggestion>,
         /// Maximum wait duration.
@@ -220,9 +222,14 @@ pub struct InputHandler {
     /// Populated via [`InputHandler::with_suggest_config`] during builder
     /// phase, defaulting to [`DEFAULT_GENERATOR_TIMEOUT_MS`] when unset.
     generator_timeout_ms: u64,
-    dynamic_rx: Option<mpsc::Receiver<Vec<Suggestion>>>,
+    dynamic_rx: Option<mpsc::Receiver<DynamicResult>>,
     dynamic_task: Option<tokio::task::JoinHandle<()>>,
     dynamic_notify: Arc<Notify>,
+    feedback_tick_notify: Arc<Notify>,
+    feedback: AsyncFeedback,
+    feedback_dismiss_ms: u16,
+    pending_failed: Vec<String>,
+    pending_empty_count: usize,
     /// Command context snapshot captured when generators were spawned.
     /// Consulted by `check_merge_staleness` (called from both
     /// `try_merge_dynamic` and `apply_block_result`) to drop stale results
@@ -285,6 +292,11 @@ impl InputHandler {
             dynamic_rx: None,
             dynamic_task: None,
             dynamic_notify: Arc::new(Notify::new()),
+            feedback_tick_notify: Arc::new(Notify::new()),
+            feedback: AsyncFeedback::Idle,
+            feedback_dismiss_ms: 1200,
+            pending_failed: Vec::new(),
+            pending_empty_count: 0,
             dynamic_ctx: None,
             terminal_profile,
             scroll_deficit: 0,
@@ -299,8 +311,17 @@ impl InputHandler {
         Arc::clone(&self.dynamic_notify)
     }
 
+    pub fn feedback_tick_notify(&self) -> Arc<Notify> {
+        Arc::clone(&self.feedback_tick_notify)
+    }
+
     pub fn with_popup_config(mut self, max_visible: usize) -> Self {
         self.max_visible = max_visible;
+        self
+    }
+
+    pub fn with_feedback_dismiss_ms(mut self, ms: u16) -> Self {
+        self.feedback_dismiss_ms = ms;
         self
     }
 
@@ -399,6 +420,7 @@ impl InputHandler {
         keybindings: Keybindings,
         trigger_chars: &[char],
         max_visible: usize,
+        feedback_dismiss_ms: u16,
         auto_trigger: bool,
     ) -> Vec<u8> {
         let mut cleanup = Vec::new();
@@ -422,6 +444,9 @@ impl InputHandler {
             }
             self.dynamic_rx = None;
             self.dynamic_ctx = None;
+            self.feedback = AsyncFeedback::Idle;
+            self.pending_failed.clear();
+            self.pending_empty_count = 0;
             self.trigger_requested = false;
         }
 
@@ -429,6 +454,7 @@ impl InputHandler {
         self.keybindings = keybindings;
         self.trigger_chars = trigger_chars.to_vec();
         self.max_visible = max_visible;
+        self.feedback_dismiss_ms = feedback_dismiss_ms;
         self.auto_trigger = auto_trigger;
 
         cleanup
@@ -459,7 +485,7 @@ impl InputHandler {
     /// allows `dynamic_merge_loop` to pick up the result when the generator
     /// eventually completes.
     #[doc(hidden)]
-    pub fn restore_dynamic_rx(&mut self, rx: mpsc::Receiver<Vec<Suggestion>>) {
+    pub fn restore_dynamic_rx(&mut self, rx: mpsc::Receiver<DynamicResult>) {
         self.dynamic_rx = Some(rx);
     }
 
@@ -477,8 +503,13 @@ impl InputHandler {
 
     /// Takes the `dynamic_rx` channel out of the handler, leaving `None`.
     #[doc(hidden)]
-    pub fn take_dynamic_rx(&mut self) -> Option<mpsc::Receiver<Vec<Suggestion>>> {
+    pub fn take_dynamic_rx(&mut self) -> Option<mpsc::Receiver<DynamicResult>> {
         self.dynamic_rx.take()
+    }
+
+    #[doc(hidden)]
+    pub fn feedback_kind(&self) -> &AsyncFeedback {
+        &self.feedback
     }
 
     /// Returns the current suggestions slice (read-only).
@@ -829,6 +860,9 @@ impl InputHandler {
         }
         self.dynamic_rx = None;
         self.dynamic_ctx = None;
+        self.feedback = AsyncFeedback::Idle;
+        self.pending_failed.clear();
+        self.pending_empty_count = 0;
 
         self.buffer_generation = self.buffer_generation.wrapping_add(1);
 
@@ -839,8 +873,6 @@ impl InputHandler {
                 self.suggestions = result.suggestions;
                 self.overlay.reset();
                 self.visible = true;
-                self.render_at(stdout, cursor_row, cursor_col, screen_rows, screen_cols);
-                self.last_trigger_fingerprint = Some(fingerprint);
                 self.spawn_generators(
                     result.script_generators,
                     result.git_generators,
@@ -848,6 +880,8 @@ impl InputHandler {
                     &ctx,
                     &cwd,
                 );
+                self.render_at(stdout, cursor_row, cursor_col, screen_rows, screen_cols);
+                self.last_trigger_fingerprint = Some(fingerprint);
             }
             Ok(result) => {
                 let has_async = !result.script_generators.is_empty()
@@ -954,6 +988,9 @@ impl InputHandler {
         }
         self.dynamic_rx = None;
         self.dynamic_ctx = None;
+        self.feedback = AsyncFeedback::Idle;
+        self.pending_failed.clear();
+        self.pending_empty_count = 0;
         self.buffer_generation = self.buffer_generation.wrapping_add(1);
 
         let result = match self.engine.suggest_sync(&ctx, &cwd, &buffer) {
@@ -1033,18 +1070,14 @@ impl InputHandler {
 
     /// Apply the result of the bounded-block window after the debounce loop
     /// awaited the async generator outside the mutex lock.
-    ///
-    /// `maybe_async` is `Some(Vec<Suggestion>)` if the generator completed
-    /// within the window, or `None` if the timeout fired (in which case the
-    /// caller should restore `rx` via `rx_on_timeout` so `dynamic_merge_loop`
-    /// can deliver the late result).
     #[allow(clippy::too_many_arguments)] // all args are genuinely independent
     pub fn apply_block_result(
         &mut self,
         parser: &Arc<Mutex<TerminalParser>>,
         stdout: &mut Vec<u8>,
-        maybe_async: Option<Vec<Suggestion>>,
-        rx_on_timeout: Option<mpsc::Receiver<Vec<Suggestion>>>,
+        maybe_async: Option<DynamicResult>,
+        rx_after_recv: Option<mpsc::Receiver<DynamicResult>>,
+        rx_on_timeout: Option<mpsc::Receiver<DynamicResult>>,
         sync_suggestions: Vec<Suggestion>,
         cursor_row: u16,
         cursor_col: u16,
@@ -1065,25 +1098,80 @@ impl InputHandler {
             return;
         }
 
-        // Generator finished (sent results, sent empty, or disconnected).
-        // Cleanup the task handle now; `check_merge_staleness` clears
-        // `dynamic_ctx` after it consults it, so leave that alone here.
-        self.dynamic_task = None;
-
-        let async_results = match maybe_async {
-            Some(items) if !items.is_empty() => items,
-            _ => {
-                // Generator returned nothing. Clear ctx and repaint to clear
-                // the loading indicator (mirrors try_merge_dynamic's
-                // Disconnected arm).
-                self.dynamic_ctx = None;
-                if self.visible {
-                    self.render(parser, stdout);
+        let mut messages = maybe_async.into_iter().collect::<Vec<_>>();
+        let mut disconnected = rx_after_recv.is_none();
+        if let Some(mut rx) = rx_after_recv {
+            loop {
+                match rx.try_recv() {
+                    Ok(message) => messages.push(message),
+                    Err(mpsc::error::TryRecvError::Empty) => {
+                        self.dynamic_rx = Some(rx);
+                        break;
+                    }
+                    Err(mpsc::error::TryRecvError::Disconnected) => {
+                        disconnected = true;
+                        break;
+                    }
                 }
-                self.last_trigger_fingerprint = Some(fingerprint);
-                return;
             }
+        }
+        if disconnected {
+            self.dynamic_rx = None;
+            self.dynamic_task = None;
+        }
+        let aggregation = AsyncFeedback::aggregate(messages);
+        self.pending_failed.extend(aggregation.failed);
+        self.pending_empty_count += aggregation.empty_count;
+        if aggregation.loaded.is_empty() {
+            if disconnected {
+                self.dynamic_ctx = None;
+            }
+            let now = std::time::Instant::now();
+            self.feedback = if !disconnected {
+                self.feedback.clone()
+            } else if !self.pending_failed.is_empty() && !sync_suggestions.is_empty() {
+                AsyncFeedback::PartialError {
+                    failed: std::mem::take(&mut self.pending_failed),
+                    since: now,
+                }
+            } else if self.pending_empty_count > 0 && !sync_suggestions.is_empty() {
+                AsyncFeedback::Idle
+            } else {
+                AsyncFeedback::terminal_for_outcome(
+                    false,
+                    &self.pending_failed,
+                    self.pending_empty_count,
+                    now,
+                )
+            };
+            if disconnected {
+                self.pending_failed.clear();
+                self.pending_empty_count = 0;
+            }
+            self.feedback_tick_notify.notify_one();
+            if self.visible || self.feedback.is_terminal() || self.feedback.is_loading() {
+                self.render(parser, stdout);
+            }
+            self.last_trigger_fingerprint = Some(fingerprint);
+            return;
+        }
+        let async_results = aggregation.loaded;
+        let now = std::time::Instant::now();
+        self.feedback = if disconnected {
+            AsyncFeedback::terminal_for_outcome(
+                !async_results.is_empty(),
+                &self.pending_failed,
+                self.pending_empty_count,
+                now,
+            )
+        } else {
+            self.feedback.clone()
         };
+        if disconnected {
+            self.pending_failed.clear();
+            self.pending_empty_count = 0;
+        }
+        self.feedback_tick_notify.notify_one();
 
         // Re-check that the buffer hasn't drifted while we were awaiting
         // the generator. The captured `cursor_row` / `cursor_col` /
@@ -1093,6 +1181,12 @@ impl InputHandler {
         let live_word = match self.check_merge_staleness(parser) {
             MergeFreshness::Fresh { current_word } => current_word,
             MergeFreshness::Stale => {
+                self.dynamic_rx = None;
+                self.dynamic_ctx = None;
+                self.dynamic_task = None;
+                self.feedback = AsyncFeedback::Idle;
+                self.pending_failed.clear();
+                self.pending_empty_count = 0;
                 if self.visible {
                     self.render(parser, stdout);
                 }
@@ -1126,6 +1220,9 @@ impl InputHandler {
         self.suggestions = all;
         self.overlay.reset();
         self.visible = true;
+        if disconnected {
+            self.dynamic_ctx = None;
+        }
         // Render against the live cursor/screen geometry: when the buffer
         // drifted (live_word differs from spawn-time current_word) the
         // captured cursor row is no longer where the prompt sits.
@@ -1171,16 +1268,20 @@ impl InputHandler {
         });
         self.dynamic_ctx = Some(DynamicCtxSnapshot::capture(ctx, uses_current_word));
         self.spawned_generation = self.buffer_generation;
-        let (tx, rx) = mpsc::channel::<Vec<Suggestion>>(1);
+        let (tx, rx) = mpsc::channel::<DynamicResult>(8);
         self.dynamic_rx = Some(rx);
+        self.feedback = AsyncFeedback::Loading {
+            spawned_at: std::time::Instant::now(),
+        };
+        self.pending_failed.clear();
+        self.pending_empty_count = 0;
+        self.feedback_tick_notify.notify_one();
         let engine = Arc::clone(&self.engine);
         let ctx = ctx.clone();
         let cwd = cwd.to_path_buf();
         let timeout = self.generator_timeout_ms;
         let notify = Arc::clone(&self.dynamic_notify);
         let handle = tokio::spawn(async move {
-            let mut all_results = Vec::new();
-
             // Build ProviderCtx once — the env snapshot is shared across
             // every provider in this resolution pass. Skip the
             // `std::env::vars().collect()` walk when no provider is
@@ -1188,34 +1289,108 @@ impl InputHandler {
             // every keystroke, and no current provider reads `ctx.env`,
             // so the collected map would be dead weight on the hot path.
             let env = Arc::new(build_env_snapshot(!provider_generators.is_empty()));
-            let provider_ctx = gc_suggest::providers::ProviderCtx {
+            let provider_ctx = Arc::new(gc_suggest::providers::ProviderCtx {
                 cwd: cwd.clone(),
                 env,
                 current_token: ctx.current_word.clone(),
-            };
+            });
 
-            // Run script generators, git generators, and providers concurrently.
-            let (script_res, git_res, provider_res) = tokio::join!(
+            // Per-kind dispatch so each git/provider failure surfaces with its own ProviderTag.
+            let git_engine = Arc::clone(&engine);
+            let git_cwd = cwd.clone();
+            let git_query = ctx.current_word.clone();
+            let git_kinds = git_generators.clone();
+            let git_fut = async move {
+                let mut out = Vec::with_capacity(git_kinds.len());
+                for kind in git_kinds {
+                    let res = git_engine
+                        .resolve_git_kind(kind, &git_cwd, &git_query)
+                        .await;
+                    out.push((kind, res));
+                }
+                out
+            };
+            let provider_engine = Arc::clone(&engine);
+            let provider_query = ctx.current_word.clone();
+            let provider_kinds = provider_generators.clone();
+            let provider_ctx_for_fut = Arc::clone(&provider_ctx);
+            let provider_fut = async move {
+                let mut out = Vec::with_capacity(provider_kinds.len());
+                for kind in provider_kinds {
+                    let res = provider_engine
+                        .resolve_provider_kind(kind, &provider_ctx_for_fut, &provider_query)
+                        .await;
+                    out.push((kind, res));
+                }
+                out
+            };
+            let (script_res, git_results, provider_results) = tokio::join!(
                 engine.run_generators(&script_generators, &ctx, &cwd, timeout),
-                engine.resolve_git(&git_generators, &cwd, &ctx.current_word),
-                engine.resolve_providers(&provider_generators, &provider_ctx, &ctx.current_word,),
+                git_fut,
+                provider_fut,
             );
 
-            match script_res {
-                Ok(results) => all_results.extend(results),
-                Err(e) => tracing::warn!("dynamic suggestions failed: {e}"),
-            }
-            match git_res {
-                Ok(results) => all_results.extend(results),
-                Err(e) => tracing::warn!("git suggestions failed: {e}"),
-            }
-            match provider_res {
-                Ok(results) => all_results.extend(results),
-                Err(e) => tracing::warn!("provider suggestions failed: {e}"),
+            if !script_generators.is_empty() {
+                let provider = ProviderTag::Script(ctx.command.clone().unwrap_or_default());
+                let message = match script_res {
+                    Ok(results) if results.is_empty() => DynamicResult::Empty { provider },
+                    Ok(results) => DynamicResult::Loaded {
+                        provider,
+                        suggestions: results,
+                    },
+                    Err(e) => {
+                        tracing::warn!("dynamic suggestions failed: {e}");
+                        DynamicResult::Error {
+                            provider,
+                            message: e.to_string(),
+                        }
+                    }
+                };
+                if tx.send(message).await.is_err() {
+                    return;
+                }
             }
 
-            if !all_results.is_empty() {
-                let _ = tx.send(all_results).await;
+            for (kind, result) in git_results {
+                let provider = ProviderTag::Git(kind);
+                let message = match result {
+                    Ok(results) if results.is_empty() => DynamicResult::Empty { provider },
+                    Ok(results) => DynamicResult::Loaded {
+                        provider,
+                        suggestions: results,
+                    },
+                    Err(e) => {
+                        tracing::warn!("git suggestions failed ({kind:?}): {e}");
+                        DynamicResult::Error {
+                            provider,
+                            message: e.to_string(),
+                        }
+                    }
+                };
+                if tx.send(message).await.is_err() {
+                    return;
+                }
+            }
+
+            for (kind, result) in provider_results {
+                let provider = ProviderTag::Provider(kind);
+                let message = match result {
+                    Ok(results) if results.is_empty() => DynamicResult::Empty { provider },
+                    Ok(results) => DynamicResult::Loaded {
+                        provider,
+                        suggestions: results,
+                    },
+                    Err(e) => {
+                        tracing::warn!("provider suggestions failed ({kind:?}): {e}");
+                        DynamicResult::Error {
+                            provider,
+                            message: e.to_string(),
+                        }
+                    }
+                };
+                if tx.send(message).await.is_err() {
+                    return;
+                }
             }
             // Drop tx BEFORE notifying so Task E sees Disconnected on
             // the first try_recv after wake. Otherwise on a multi-threaded
@@ -1271,7 +1446,6 @@ impl InputHandler {
             Some(spawned) => spawned.is_stale_against(&current_ctx),
             None => true,
         };
-        self.dynamic_ctx = None;
         if stale {
             return MergeFreshness::Stale;
         }
@@ -1285,13 +1459,116 @@ impl InputHandler {
         parser: &Arc<Mutex<TerminalParser>>,
         stdout: &mut dyn Write,
     ) -> bool {
-        let rx = match self.dynamic_rx.as_mut() {
-            Some(rx) => rx,
-            None => return false,
-        };
+        let mut messages = Vec::new();
+        let mut disconnected = false;
+        {
+            let rx = match self.dynamic_rx.as_mut() {
+                Some(rx) => rx,
+                None => return false,
+            };
+            loop {
+                match rx.try_recv() {
+                    Ok(message) => messages.push(message),
+                    Err(mpsc::error::TryRecvError::Empty) => break,
+                    Err(mpsc::error::TryRecvError::Disconnected) => {
+                        disconnected = true;
+                        break;
+                    }
+                }
+            }
+        }
 
-        match rx.try_recv() {
-            Ok(dynamic_results) => {
+        if messages.is_empty() {
+            if disconnected {
+                self.dynamic_rx = None;
+                self.dynamic_ctx = None;
+                self.dynamic_task = None;
+                let now = std::time::Instant::now();
+                self.feedback = if !self.pending_failed.is_empty() && !self.suggestions.is_empty() {
+                    AsyncFeedback::PartialError {
+                        failed: std::mem::take(&mut self.pending_failed),
+                        since: now,
+                    }
+                } else if self.pending_empty_count > 0 && !self.suggestions.is_empty() {
+                    AsyncFeedback::Idle
+                } else {
+                    AsyncFeedback::terminal_for_outcome(
+                        false,
+                        &self.pending_failed,
+                        self.pending_empty_count,
+                        now,
+                    )
+                };
+                self.pending_failed.clear();
+                self.pending_empty_count = 0;
+                self.feedback_tick_notify.notify_one();
+                if self.visible {
+                    self.render(parser, stdout);
+                }
+            }
+            return false;
+        }
+
+        let aggregation = AsyncFeedback::aggregate(messages);
+        self.pending_failed.extend(aggregation.failed);
+        self.pending_empty_count += aggregation.empty_count;
+
+        if disconnected {
+            self.dynamic_rx = None;
+            self.dynamic_task = None;
+        }
+
+        if aggregation.loaded.is_empty() {
+            if disconnected {
+                self.dynamic_ctx = None;
+            }
+            let now = std::time::Instant::now();
+            self.feedback = if !disconnected {
+                self.feedback.clone()
+            } else if !self.pending_failed.is_empty() && !self.suggestions.is_empty() {
+                AsyncFeedback::PartialError {
+                    failed: std::mem::take(&mut self.pending_failed),
+                    since: now,
+                }
+            } else if self.pending_empty_count > 0 && !self.suggestions.is_empty() {
+                AsyncFeedback::Idle
+            } else {
+                AsyncFeedback::terminal_for_outcome(
+                    false,
+                    &self.pending_failed,
+                    self.pending_empty_count,
+                    now,
+                )
+            };
+            if disconnected {
+                self.pending_failed.clear();
+                self.pending_empty_count = 0;
+            }
+            self.feedback_tick_notify.notify_one();
+            self.render(parser, stdout);
+            return !matches!(self.feedback, AsyncFeedback::Idle);
+        }
+
+        {
+            let dynamic_results = aggregation.loaded;
+            let now = std::time::Instant::now();
+            let previous_feedback = self.feedback.clone();
+            self.feedback = if disconnected {
+                AsyncFeedback::terminal_for_outcome(
+                    !dynamic_results.is_empty(),
+                    &self.pending_failed,
+                    self.pending_empty_count,
+                    now,
+                )
+            } else {
+                previous_feedback
+            };
+            if disconnected {
+                self.pending_failed.clear();
+                self.pending_empty_count = 0;
+            }
+            self.feedback_tick_notify.notify_one();
+            if disconnected {
                 self.dynamic_rx = None;
                 // The generator task has completed (it sent its results and
                 // dropped tx). The JoinHandle is now a no-op for `.abort()`
@@ -1299,120 +1576,58 @@ impl InputHandler {
                 // on an already-completed handle for their orphan-task
                 // cleanup guarantees.
                 self.dynamic_task = None;
-                // Note: `spawn_generators` only sends when the result is
-                // non-empty, so the empty-Ok case is unreachable in
-                // production. The "all generators returned empty" path is
-                // handled by the Disconnected arm below (tx is dropped
-                // without sending). See the regression test
-                // `test_try_merge_dynamic_disconnected_rerenders_to_clear_loading`.
-                let current_word = match self.check_merge_staleness(parser) {
-                    MergeFreshness::Fresh { current_word } => current_word,
-                    MergeFreshness::Stale => {
-                        // Don't merge. If the popup is visible from the
-                        // mixed static+async path, static suggestions stay
-                        // but we must repaint so the loading indicator
-                        // clears (same reasoning as the empty-results
-                        // branch above). If not visible (async-only path),
-                        // nothing happens.
-                        if self.visible {
-                            self.render(parser, stdout);
-                        }
-                        return false;
+            }
+            let current_word = match self.check_merge_staleness(parser) {
+                MergeFreshness::Fresh { current_word } => current_word,
+                MergeFreshness::Stale => {
+                    self.dynamic_rx = None;
+                    self.dynamic_ctx = None;
+                    self.dynamic_task = None;
+                    self.feedback = AsyncFeedback::Idle;
+                    self.pending_failed.clear();
+                    self.pending_empty_count = 0;
+                    if self.visible {
+                        self.render(parser, stdout);
                     }
-                    MergeFreshness::PoisonedLock => return false,
-                };
-
-                // Activate popup if it wasn't visible yet (async-only path:
-                // no static suggestions, generators produced the results).
-                if !self.visible {
-                    self.visible = true;
-                    self.overlay.reset();
+                    return false;
                 }
+                MergeFreshness::PoisonedLock => return false,
+            };
 
-                let extras = merge_dedup_against(&self.suggestions, dynamic_results);
-                self.suggestions.extend(extras);
-                let merged = std::mem::take(&mut self.suggestions);
-                // Merge-time rank: when the user has a non-empty query, filter
-                // the pool to matches sorted by relevance and cap at
-                // `max_visible * 5` (generous headroom over what's rendered).
-                //
-                // When the spawn-time query is empty (user triggered on space
-                // then hasn't typed yet), `fuzzy::rank("", pool, N)` takes the
-                // empty-query fast path in `gc_suggest::fuzzy::rank` which
-                // sorts by kind priority and then alphabetically, then
-                // truncates to N. For single-kind dynamic pools (e.g. git
-                // branches from `resolve_git`), kind priority is uniform, so
-                // the effective result is "first N branches alphabetically"
-                // — dropping any candidate past alphabetic position ~50. A
-                // branch named `zzz-hotfix-critical` in a 5000-branch monorepo
-                // would be silently evicted at merge time, and the subsequent
-                // keystroke-driven re-rank could never recover it because the
-                // full pool is gone.
-                //
-                // Instead, when merging with an empty query, keep the full
-                // pool untruncated. The render path slices
-                // `&suggestions[scroll_offset..scroll_offset + content_height]`
-                // where `content_height` is capped by the visible viewport,
-                // so a large `self.suggestions` is cheap to render — only the
-                // on-screen window is formatted per frame. The next keystroke
-                // that arrives with a non-empty query will trigger a fresh
-                // `suggest_sync` cycle; any retained-but-not-yet-merged
-                // dynamic pool is bounded upstream by
-                // `gc_suggest::engine::MAX_DYNAMIC_CANDIDATES` (1000 for
-                // non-empty spawns; for empty spawns the engine also leaves
-                // it unbounded and relies on realistic provider sizes —
-                // typically <5k items; nucleo handles 10k in <1ms per the
-                // CLAUDE.md perf target).
-                //
-                // Option B future mitigation (not needed yet): stash the raw
-                // untruncated pool in a separate field (e.g. `dynamic_raw`)
-                // and re-rank from it on every keystroke. That eliminates
-                // the pathological-provider case entirely. Deferred until a
-                // real-world report of a >10k-item provider.
-                self.suggestions = if current_word.is_empty() {
-                    // Sort by kind priority so dynamic arrivals (git branches,
-                    // tags, remotes — effective priorities 80/75/70) land above
-                    // any sync residuals (flags=30, files=20, history=10).
-                    // Without this, the extend above leaves branches glued to
-                    // the tail of the sync pool on `git checkout <TAB>`.
-                    let mut m = merged;
-                    m.sort_by(|a, b| {
-                        gc_suggest::priority::effective(b)
-                            .cmp(&gc_suggest::priority::effective(a))
-                            .then_with(|| a.text.cmp(&b.text))
-                    });
-                    m
-                } else {
-                    gc_suggest::fuzzy::rank(&current_word, merged, self.max_visible * 5)
-                };
-
-                if self.suggestions.is_empty() {
-                    self.dismiss(stdout);
-                    return true;
-                }
-
-                self.render(parser, stdout);
-                true
+            // Activate popup if it wasn't visible yet (async-only path:
+            // no static suggestions, generators produced the results).
+            if !self.visible {
+                self.visible = true;
+                self.overlay.reset();
             }
-            Err(mpsc::error::TryRecvError::Empty) => false,
-            Err(mpsc::error::TryRecvError::Disconnected) => {
-                // Generator task exited without sending (e.g. all
-                // generators returned empty, or the task was aborted).
-                // Clear dynamic_rx AND repaint so the loading indicator
-                // goes away — otherwise on an idle shell the spinner
-                // stays visually stuck forever.
-                // Also clear dynamic_task: the task is already done (tx
-                // dropped), so its JoinHandle is effectively a no-op for
-                // `.abort()`. Leaving it Some would make dismiss()/trigger()'s
-                // abort calls look meaningful when they're not.
-                self.dynamic_rx = None;
+
+            let extras = merge_dedup_against(&self.suggestions, dynamic_results);
+            self.suggestions.extend(extras);
+            let merged = std::mem::take(&mut self.suggestions);
+            // Empty query: keep the full pool untruncated so a non-empty re-rank can still recover late candidates.
+            self.suggestions = if current_word.is_empty() {
+                // Re-sort so higher-priority dynamic arrivals outrank residual sync items.
+                let mut m = merged;
+                m.sort_by(|a, b| {
+                    gc_suggest::priority::effective(b)
+                        .cmp(&gc_suggest::priority::effective(a))
+                        .then_with(|| a.text.cmp(&b.text))
+                });
+                m
+            } else {
+                gc_suggest::fuzzy::rank(&current_word, merged, self.max_visible * 5)
+            };
+
+            if self.suggestions.is_empty() {
+                self.dismiss(stdout);
+                return true;
+            }
+            if disconnected {
                 self.dynamic_ctx = None;
-                self.dynamic_task = None;
-                if self.visible {
-                    self.render(parser, stdout);
-                }
-                false
             }
+
+            self.render(parser, stdout);
+            true
         }
     }
 
@@ -1455,7 +1670,7 @@ impl InputHandler {
             clear_popup(&mut buf, layout, &self.terminal_profile);
         }
 
-        let loading = self.dynamic_rx.is_some();
+        let feedback = self.current_feedback_kind();
         let layout = render_popup(
             &mut buf,
             &self.suggestions,
@@ -1469,13 +1684,127 @@ impl InputHandler {
             DEFAULT_MAX_POPUP_WIDTH,
             &self.theme,
             self.scroll_deficit,
-            loading,
+            feedback,
             &self.terminal_profile,
         );
         let _ = stdout.write_all(&buf);
         let _ = stdout.flush();
         self.scroll_deficit = layout.scroll_deficit;
         self.last_layout = Some(layout);
+    }
+
+    fn current_feedback_kind(&self) -> FeedbackKind {
+        match &self.feedback {
+            AsyncFeedback::Idle => FeedbackKind::None,
+            AsyncFeedback::Loading { spawned_at } => {
+                let elapsed_ms = spawned_at.elapsed().as_millis() as u64;
+                FeedbackKind::Loading {
+                    frame: ((elapsed_ms / 80) % 10) as u8,
+                }
+            }
+            AsyncFeedback::Empty { .. } => FeedbackKind::Empty,
+            AsyncFeedback::Error { failed, .. } => {
+                if failed.len() > 1 {
+                    FeedbackKind::PartialError {
+                        providers: failed.len().min(u8::MAX as usize) as u8,
+                    }
+                } else {
+                    FeedbackKind::Error {
+                        provider: if self.theme.show_provider_errors {
+                            failed.first().cloned().unwrap_or_default()
+                        } else {
+                            String::new()
+                        },
+                    }
+                }
+            }
+            AsyncFeedback::PartialError { failed, .. } => FeedbackKind::PartialError {
+                providers: failed.len().min(u8::MAX as usize) as u8,
+            },
+        }
+    }
+
+    pub fn render_indicator_only(&mut self, stdout: &mut dyn Write) {
+        let Some(layout) = self.last_layout.clone() else {
+            return;
+        };
+        let feedback = self.current_feedback_kind();
+        let mut buf = Vec::new();
+        render_indicator_row(&mut buf, &layout, &self.theme, feedback);
+        let _ = stdout.write_all(&buf);
+        let _ = stdout.flush();
+    }
+
+    pub fn clear_expired_feedback(&mut self, stdout: &mut dyn Write) -> bool {
+        if self.feedback_dismiss_ms == 0 {
+            return false;
+        }
+        if !self.feedback.is_terminal() {
+            return false;
+        }
+        let Some(since) = self.feedback.since() else {
+            return false;
+        };
+        if since.elapsed() < std::time::Duration::from_millis(self.feedback_dismiss_ms as u64) {
+            return false;
+        }
+        // PartialError + suggestions present: drop only the indicator row, not the popup.
+        if matches!(self.feedback, AsyncFeedback::PartialError { .. })
+            && !self.suggestions.is_empty()
+        {
+            self.feedback = AsyncFeedback::Idle;
+            if let Some(mut layout) = self.last_layout.clone() {
+                if layout.height > 0 {
+                    let borders = self.theme.borders;
+                    let indicator_row = layout.start_row + layout.height - 1 - u16::from(borders);
+                    let mut buf = Vec::with_capacity(layout.width as usize * 4 + 64);
+                    buf.extend_from_slice(b"\x1b[s"); // save cursor
+                    let _ = write!(
+                        &mut buf,
+                        "\x1b[{};{}H",
+                        indicator_row + 1,
+                        layout.start_col + 1
+                    );
+                    buf.extend(std::iter::repeat_n(b' ', layout.width as usize));
+                    if borders {
+                        let displaced_border_row = layout.start_row + layout.height - 1;
+                        let _ = write!(
+                            &mut buf,
+                            "\x1b[{};{}H",
+                            displaced_border_row + 1,
+                            layout.start_col + 1
+                        );
+                        buf.extend(std::iter::repeat_n(b' ', layout.width as usize));
+                        let _ = write!(
+                            &mut buf,
+                            "\x1b[{};{}H",
+                            indicator_row + 1,
+                            layout.start_col + 1
+                        );
+                        if !self.theme.border_on.is_empty() {
+                            buf.extend_from_slice(&self.theme.border_on);
+                        }
+                        buf.extend_from_slice("╰".as_bytes());
+                        let content_width = layout.width.saturating_sub(2);
+                        for _ in 0..content_width {
+                            buf.extend_from_slice("─".as_bytes());
+                        }
+                        buf.extend_from_slice("╯".as_bytes());
+                        buf.extend_from_slice(b"\x1b[0m");
+                    }
+                    buf.extend_from_slice(b"\x1b[u"); // restore cursor
+                    let _ = stdout.write_all(&buf);
+                    let _ = stdout.flush();
+                    // Shrink cached height so a later dismiss/clear_popup targets the right row.
+                    layout.height -= 1;
+                    self.last_layout = Some(layout);
+                }
+            }
+            return true;
+        }
+        self.feedback = AsyncFeedback::Idle;
+        self.dismiss(stdout);
+        true
     }
 
     fn dismiss(&mut self, stdout: &mut dyn Write) {
@@ -1496,6 +1825,9 @@ impl InputHandler {
         }
         self.dynamic_rx = None;
         self.dynamic_ctx = None;
+        self.feedback = AsyncFeedback::Idle;
+        self.pending_failed.clear();
+        self.pending_empty_count = 0;
         // Invalidate the idempotency guard so the next trigger (e.g. after
         // ESC-then-retrigger on the same buffer) runs a fresh suggest_sync
         // instead of short-circuiting.
@@ -1610,6 +1942,9 @@ impl InputHandler {
         if let Some(handle) = self.dynamic_task.take() {
             handle.abort();
         }
+        self.feedback = AsyncFeedback::Idle;
+        self.pending_failed.clear();
+        self.pending_empty_count = 0;
     }
 
     /// Abort any in-flight dynamic generator task and clear the spawn-time
@@ -1622,6 +1957,10 @@ impl InputHandler {
             handle.abort();
         }
         self.dynamic_ctx = None;
+        self.dynamic_rx = None;
+        self.feedback = AsyncFeedback::Idle;
+        self.pending_failed.clear();
+        self.pending_empty_count = 0;
     }
 
     /// Flush unsaved frecency records to disk. Call on proxy shutdown.
@@ -1850,21 +2189,24 @@ mod tests {
         let base_ctx = gc_buffer::parse_command_context("", 0);
         handler.dynamic_ctx = Some(DynamicCtxSnapshot::capture(&base_ctx, false));
 
-        let (tx, rx) = mpsc::channel::<Vec<Suggestion>>(1);
-        tx.try_send(vec![
-            Suggestion {
-                text: "main".to_string(),
-                kind: SuggestionKind::GitBranch,
-                source: SuggestionSource::Git,
-                ..Default::default()
-            },
-            Suggestion {
-                text: "v1.0".to_string(),
-                kind: SuggestionKind::GitTag,
-                source: SuggestionSource::Git,
-                ..Default::default()
-            },
-        ])
+        let (tx, rx) = mpsc::channel::<DynamicResult>(1);
+        tx.try_send(DynamicResult::Loaded {
+            provider: ProviderTag::Git(gc_suggest::git::GitQueryKind::Branches),
+            suggestions: vec![
+                Suggestion {
+                    text: "main".to_string(),
+                    kind: SuggestionKind::GitBranch,
+                    source: SuggestionSource::Git,
+                    ..Default::default()
+                },
+                Suggestion {
+                    text: "v1.0".to_string(),
+                    kind: SuggestionKind::GitTag,
+                    source: SuggestionSource::Git,
+                    ..Default::default()
+                },
+            ],
+        })
         .unwrap();
         drop(tx);
         handler.dynamic_rx = Some(rx);
@@ -1908,21 +2250,24 @@ mod tests {
         let base_ctx = gc_buffer::parse_command_context("", 0);
         handler.dynamic_ctx = Some(DynamicCtxSnapshot::capture(&base_ctx, false));
 
-        let (tx, rx) = mpsc::channel::<Vec<Suggestion>>(1);
-        tx.try_send(vec![
-            Suggestion {
-                text: "zeta".to_string(),
-                kind: SuggestionKind::GitBranch,
-                source: SuggestionSource::Git,
-                ..Default::default()
-            },
-            Suggestion {
-                text: "alpha".to_string(),
-                kind: SuggestionKind::GitBranch,
-                source: SuggestionSource::Git,
-                ..Default::default()
-            },
-        ])
+        let (tx, rx) = mpsc::channel::<DynamicResult>(1);
+        tx.try_send(DynamicResult::Loaded {
+            provider: ProviderTag::Git(gc_suggest::git::GitQueryKind::Branches),
+            suggestions: vec![
+                Suggestion {
+                    text: "zeta".to_string(),
+                    kind: SuggestionKind::GitBranch,
+                    source: SuggestionSource::Git,
+                    ..Default::default()
+                },
+                Suggestion {
+                    text: "alpha".to_string(),
+                    kind: SuggestionKind::GitBranch,
+                    source: SuggestionSource::Git,
+                    ..Default::default()
+                },
+            ],
+        })
         .unwrap();
         drop(tx);
         handler.dynamic_rx = Some(rx);
@@ -1951,6 +2296,68 @@ mod tests {
     }
 
     #[test]
+    fn test_try_merge_dynamic_keeps_open_receiver_for_later_batches() {
+        let mut handler = make_visible_handler(Vec::new());
+        let base_ctx = gc_buffer::parse_command_context("", 0);
+        handler.dynamic_ctx = Some(DynamicCtxSnapshot::capture(&base_ctx, false));
+        handler.spawned_generation = handler.buffer_generation;
+
+        let (tx, rx) = mpsc::channel::<DynamicResult>(2);
+        tx.try_send(DynamicResult::Loaded {
+            provider: ProviderTag::Git(gc_suggest::git::GitQueryKind::Branches),
+            suggestions: vec![Suggestion {
+                text: "main".to_string(),
+                kind: SuggestionKind::GitBranch,
+                source: SuggestionSource::Git,
+                ..Default::default()
+            }],
+        })
+        .unwrap();
+        handler.dynamic_rx = Some(rx);
+
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        assert!(handler.try_merge_dynamic(&parser, &mut buf));
+        assert!(
+            handler.dynamic_rx.is_some(),
+            "open receiver must stay installed for later dynamic batches"
+        );
+        assert!(
+            handler.dynamic_ctx.is_some(),
+            "fresh context must survive until the dynamic channel disconnects"
+        );
+
+        tx.try_send(DynamicResult::Loaded {
+            provider: ProviderTag::Git(gc_suggest::git::GitQueryKind::Tags),
+            suggestions: vec![Suggestion {
+                text: "v1.0".to_string(),
+                kind: SuggestionKind::GitTag,
+                source: SuggestionSource::Git,
+                ..Default::default()
+            }],
+        })
+        .unwrap();
+        drop(tx);
+
+        let mut buf = Vec::new();
+        assert!(handler.try_merge_dynamic(&parser, &mut buf));
+        let texts: Vec<&str> = handler
+            .suggestions
+            .iter()
+            .map(|s| s.text.as_str())
+            .collect();
+        assert_eq!(texts, vec!["main", "v1.0"]);
+        assert!(
+            handler.dynamic_rx.is_none(),
+            "receiver should clear after the final disconnected batch"
+        );
+        assert!(
+            handler.dynamic_ctx.is_none(),
+            "context should clear after the final disconnected batch"
+        );
+    }
+
+    #[test]
     fn test_try_merge_dynamic_disconnected_rerenders_to_clear_loading() {
         // Regression: when the dynamic channel disconnects (generator task
         // finished without sending, or was aborted), `try_merge_dynamic`
@@ -1967,7 +2374,7 @@ mod tests {
 
         // Closed receiver: drop tx immediately so try_recv returns
         // Disconnected on the first call.
-        let (tx, rx) = mpsc::channel::<Vec<Suggestion>>(1);
+        let (tx, rx) = mpsc::channel::<DynamicResult>(1);
         drop(tx);
         handler.dynamic_rx = Some(rx);
 
@@ -2217,6 +2624,11 @@ mod tests {
             dynamic_rx: None,
             dynamic_task: None,
             dynamic_notify: Arc::new(Notify::new()),
+            feedback_tick_notify: Arc::new(Notify::new()),
+            feedback: AsyncFeedback::Idle,
+            feedback_dismiss_ms: 1200,
+            pending_failed: Vec::new(),
+            pending_empty_count: 0,
             dynamic_ctx: None,
             terminal_profile: TerminalProfile::for_ghostty(),
             scroll_deficit: 0,
@@ -2579,14 +2991,26 @@ mod tests {
         let new_theme = PopupTheme {
             selected_on: vec![0x1B, b'[', b'1', b'm'],
             description_on: vec![0x1B, b'[', b'2', b'm'],
+            feedback_loading_on: vec![0x1B, b'[', b'2', b'm'],
+            feedback_empty_on: vec![0x1B, b'[', b'2', b'm'],
+            feedback_error_on: vec![0x1B, b'[', b'3', b'1', b'm'],
             match_highlight_on: vec![0x1B, b'[', b'4', b'm'],
             item_text_on: vec![],
             scrollbar_on: vec![0x1B, b'[', b'2', b'm'],
             border_on: vec![0x1B, b'[', b'2', b'm'],
             borders: true,
+            spinner: true,
+            show_provider_errors: false,
         };
 
-        handler.update_config(new_theme, Keybindings::default(), &[' ', '/'], 15, true);
+        handler.update_config(
+            new_theme,
+            Keybindings::default(),
+            &[' ', '/'],
+            15,
+            1200,
+            true,
+        );
 
         assert_eq!(handler.theme.selected_on, vec![0x1B, b'[', b'1', b'm']);
         assert_eq!(handler.theme.description_on, vec![0x1B, b'[', b'2', b'm']);
@@ -2605,7 +3029,14 @@ mod tests {
             trigger: KeyEvent::Tab,
         };
 
-        handler.update_config(PopupTheme::default(), new_kb.clone(), &[' ', '/'], 10, true);
+        handler.update_config(
+            PopupTheme::default(),
+            new_kb.clone(),
+            &[' ', '/'],
+            10,
+            1200,
+            true,
+        );
 
         assert_eq!(handler.keybindings, new_kb);
     }
@@ -2619,6 +3050,7 @@ mod tests {
             Keybindings::default(),
             &['@', '#'],
             20,
+            1200,
             true,
         );
 
@@ -2634,6 +3066,7 @@ mod tests {
             Keybindings::default(),
             &['@', '#', '!'],
             10,
+            1200,
             true,
         );
 
@@ -2685,6 +3118,7 @@ mod tests {
             Keybindings::default(),
             &[' ', '/', '-', '.'],
             10,
+            1200,
             false,
         );
 
@@ -2706,6 +3140,7 @@ mod tests {
             Keybindings::default(),
             &[' ', '/', '-', '.'],
             10,
+            1200,
             false,
         );
 
@@ -2733,6 +3168,7 @@ mod tests {
             Keybindings::default(),
             &[' ', '/', '-', '.'],
             10,
+            1200,
             false,
         );
 
@@ -2761,6 +3197,7 @@ mod tests {
             Keybindings::default(),
             &[' ', '/', '-', '.'],
             10,
+            1200,
             true,
         );
 
@@ -2964,7 +3401,7 @@ mod tests {
         }]);
 
         // Populate dynamic state as if generators were in flight.
-        let (_tx, rx) = mpsc::channel::<Vec<Suggestion>>(1);
+        let (_tx, rx) = mpsc::channel::<DynamicResult>(1);
         handler.dynamic_rx = Some(rx);
         handler.dynamic_ctx = Some(DynamicCtxSnapshot::capture(
             &ctx("git", &["checkout"], None, 2, ""),
@@ -3010,7 +3447,7 @@ mod tests {
 
         // Populate in-flight dynamic state mimicking a prior trigger that
         // spawned generators against a different command.
-        let (_tx, rx) = mpsc::channel::<Vec<Suggestion>>(1);
+        let (_tx, rx) = mpsc::channel::<DynamicResult>(1);
         handler.dynamic_rx = Some(rx);
         handler.dynamic_ctx = Some(DynamicCtxSnapshot::capture(
             &ctx("old-cmd", &[], None, 0, ""),
@@ -3033,6 +3470,47 @@ mod tests {
                 "trigger() must clear or replace stale dynamic_ctx"
             );
         }
+    }
+
+    #[tokio::test]
+    async fn test_trigger_static_with_async_reserves_indicator_row_in_cached_layout() {
+        let specs_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../specs");
+        if !specs_dir.exists() {
+            return;
+        }
+        let engine = SuggestionEngine::new(&[specs_dir]).unwrap();
+        let mut handler = make_handler();
+        handler.engine = Arc::new(engine);
+
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        {
+            let mut p = parser.lock().unwrap();
+            p.state_mut()
+                .predict_command_buffer("git checkout ".to_string(), 13);
+        }
+
+        let mut stdout = Vec::new();
+        handler.trigger(&parser, &mut stdout);
+
+        let layout = handler
+            .last_layout
+            .clone()
+            .expect("trigger must paint a layout when static suggestions are present");
+        assert!(
+            handler.feedback.is_loading(),
+            "spawn_generators must run before render_at so feedback=Loading at paint time"
+        );
+        let visible_count = handler.suggestions.len().min(handler.max_visible) as u16;
+        assert!(
+            visible_count >= 1,
+            "git checkout must yield static suggestions"
+        );
+        assert_eq!(
+            layout.height,
+            visible_count + 1,
+            "cached layout must reserve the indicator row (visible={visible_count}, height={})",
+            layout.height,
+        );
     }
 
     #[tokio::test]
@@ -3110,5 +3588,406 @@ mod tests {
         let kept = merge_dedup_against(&[], incoming);
         let texts: Vec<&str> = kept.iter().map(|s| s.text.as_str()).collect();
         assert_eq!(texts, vec!["main", "dev"]);
+    }
+
+    // --- clear_expired_feedback state machine ---
+
+    #[test]
+    fn test_clear_expired_feedback_returns_false_when_idle() {
+        let mut handler = make_visible_handler(Vec::new()).with_feedback_dismiss_ms(1200);
+        handler.feedback = AsyncFeedback::Idle;
+        let mut buf: Vec<u8> = Vec::new();
+        assert!(!handler.clear_expired_feedback(&mut buf));
+        assert!(buf.is_empty());
+    }
+
+    #[test]
+    fn test_clear_expired_feedback_returns_false_when_loading() {
+        let mut handler = make_visible_handler(Vec::new()).with_feedback_dismiss_ms(1200);
+        handler.feedback = AsyncFeedback::Loading {
+            spawned_at: std::time::Instant::now(),
+        };
+        let mut buf: Vec<u8> = Vec::new();
+        assert!(!handler.clear_expired_feedback(&mut buf));
+        assert!(buf.is_empty());
+    }
+
+    #[test]
+    fn test_clear_expired_feedback_returns_false_when_dismiss_disabled() {
+        let mut handler = make_visible_handler(Vec::new()).with_feedback_dismiss_ms(0);
+        handler.feedback = AsyncFeedback::Empty {
+            since: std::time::Instant::now() - std::time::Duration::from_secs(10),
+        };
+        let mut buf: Vec<u8> = Vec::new();
+        assert!(!handler.clear_expired_feedback(&mut buf));
+        assert!(buf.is_empty());
+    }
+
+    #[test]
+    fn test_clear_expired_feedback_returns_false_when_not_yet_expired() {
+        let mut handler = make_visible_handler(Vec::new()).with_feedback_dismiss_ms(10_000);
+        handler.feedback = AsyncFeedback::Empty {
+            since: std::time::Instant::now(),
+        };
+        let mut buf: Vec<u8> = Vec::new();
+        assert!(!handler.clear_expired_feedback(&mut buf));
+        assert!(handler.visible);
+        assert!(buf.is_empty());
+    }
+
+    #[test]
+    fn test_clear_expired_feedback_dismisses_on_expired_empty() {
+        let mut handler = make_visible_handler(Vec::new()).with_feedback_dismiss_ms(1200);
+        handler.feedback = AsyncFeedback::Empty {
+            since: std::time::Instant::now() - std::time::Duration::from_millis(2000),
+        };
+        let mut buf: Vec<u8> = Vec::new();
+        assert!(handler.clear_expired_feedback(&mut buf));
+        assert!(!handler.visible);
+        assert!(matches!(handler.feedback, AsyncFeedback::Idle));
+    }
+
+    #[test]
+    fn test_clear_expired_feedback_partial_error_with_suggestions_demotes_to_idle() {
+        // Regression: PartialError expiry with merged suggestions must keep popup visible.
+        let mut handler = make_visible_handler(vec![Suggestion {
+            text: "main".into(),
+            kind: SuggestionKind::GitBranch,
+            ..Default::default()
+        }])
+        .with_feedback_dismiss_ms(1200);
+        handler.feedback = AsyncFeedback::PartialError {
+            failed: vec!["git script".into()],
+            since: std::time::Instant::now() - std::time::Duration::from_millis(2000),
+        };
+        let mut buf: Vec<u8> = Vec::new();
+        assert!(handler.clear_expired_feedback(&mut buf));
+        assert!(handler.visible, "popup must stay visible");
+        assert_eq!(handler.suggestions.len(), 1, "suggestions must survive");
+        assert!(matches!(handler.feedback, AsyncFeedback::Idle));
+    }
+
+    #[test]
+    fn test_clear_expired_feedback_bordered_partial_error_paints_displaced_border_row() {
+        let mut handler = make_visible_handler(vec![Suggestion {
+            text: "main".into(),
+            kind: SuggestionKind::GitBranch,
+            ..Default::default()
+        }])
+        .with_feedback_dismiss_ms(1200);
+        handler.theme = PopupTheme {
+            borders: true,
+            ..PopupTheme::default()
+        };
+        handler.last_layout = Some(PopupLayout {
+            start_row: 5,
+            start_col: 10,
+            width: 20,
+            height: 4,
+            scroll_deficit: 0,
+        });
+        handler.feedback = AsyncFeedback::PartialError {
+            failed: vec!["git script".into()],
+            since: std::time::Instant::now() - std::time::Duration::from_millis(2000),
+        };
+
+        let mut buf: Vec<u8> = Vec::new();
+        assert!(handler.clear_expired_feedback(&mut buf));
+        assert!(matches!(handler.feedback, AsyncFeedback::Idle));
+
+        let painted = String::from_utf8_lossy(&buf).into_owned();
+        assert!(
+            painted.contains("\x1b[8;11H"),
+            "indicator row must be addressed: {painted:?}"
+        );
+        assert!(
+            painted.contains("\x1b[9;11H"),
+            "displaced bottom-border row must be cleared: {painted:?}"
+        );
+        // A new bottom border must be drawn at the shrunk-bottom position.
+        assert!(
+            painted.contains('╰') && painted.contains('╯'),
+            "bottom border must be redrawn at the new position: {painted:?}"
+        );
+
+        let shrunk = handler.last_layout.clone().expect("layout retained");
+        assert_eq!(shrunk.height, 3);
+        let mut clear_buf: Vec<u8> = Vec::new();
+        clear_popup(&mut clear_buf, &shrunk, &handler.terminal_profile);
+        let clear_text = String::from_utf8_lossy(&clear_buf).into_owned();
+        // Rows 5,6,7 must be addressed by clear_popup (1-based 6,7,8).
+        for row_1based in [6_u16, 7, 8] {
+            let needle = format!("\x1b[{row_1based};11H");
+            assert!(
+                clear_text.contains(&needle),
+                "clear_popup must address row {row_1based}: {clear_text:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_pending_failed_accumulates_across_two_try_merge_dynamic_calls() {
+        // Cross-batch accumulation: an Error in batch 1 must survive into
+        // the disconnect-time terminal feedback computed in batch 2.
+        let mut handler = make_visible_handler(vec![Suggestion {
+            text: "--flag".into(),
+            kind: SuggestionKind::Flag,
+            source: SuggestionSource::Spec,
+            ..Default::default()
+        }]);
+        let base_ctx = gc_buffer::parse_command_context("", 0);
+        handler.dynamic_ctx = Some(DynamicCtxSnapshot::capture(&base_ctx, false));
+        handler.feedback = AsyncFeedback::Loading {
+            spawned_at: std::time::Instant::now(),
+        };
+
+        let (tx, rx) = mpsc::channel::<DynamicResult>(2);
+        // Batch 1: send Error only, do NOT drop tx — channel is still open.
+        tx.try_send(DynamicResult::Error {
+            provider: ProviderTag::Script("npm".into()),
+            message: "oops".into(),
+        })
+        .unwrap();
+        handler.dynamic_rx = Some(rx);
+
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        handler.try_merge_dynamic(&parser, &mut buf);
+
+        // After batch 1: pending_failed has the npm error, feedback still Loading.
+        assert_eq!(handler.pending_failed.len(), 1);
+        assert!(handler.feedback.is_loading());
+
+        // Batch 2: send Loaded then drop tx so the channel disconnects.
+        tx.try_send(DynamicResult::Loaded {
+            provider: ProviderTag::Git(gc_suggest::git::GitQueryKind::Branches),
+            suggestions: vec![Suggestion {
+                text: "main".into(),
+                kind: SuggestionKind::GitBranch,
+                source: SuggestionSource::Git,
+                ..Default::default()
+            }],
+        })
+        .unwrap();
+        drop(tx);
+        handler.try_merge_dynamic(&parser, &mut buf);
+
+        // After batch 2 + disconnect: PartialError with the npm error from
+        // batch 1 must have survived.
+        match handler.feedback_kind() {
+            AsyncFeedback::PartialError { failed, .. } => {
+                assert_eq!(failed.len(), 1, "batch-1 error must survive batch-2");
+            }
+            other => panic!("expected PartialError feedback, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_pending_empty_count_accumulates_across_two_try_merge_dynamic_calls() {
+        // Symmetric variant of the cross-batch accumulation test, for empty.
+        let mut handler = make_visible_handler(vec![Suggestion {
+            text: "--flag".into(),
+            kind: SuggestionKind::Flag,
+            source: SuggestionSource::Spec,
+            ..Default::default()
+        }]);
+        let base_ctx = gc_buffer::parse_command_context("", 0);
+        handler.dynamic_ctx = Some(DynamicCtxSnapshot::capture(&base_ctx, false));
+        handler.feedback = AsyncFeedback::Loading {
+            spawned_at: std::time::Instant::now(),
+        };
+
+        let (tx, rx) = mpsc::channel::<DynamicResult>(2);
+        // Batch 1: Empty only, channel still open.
+        tx.try_send(DynamicResult::Empty {
+            provider: ProviderTag::Script("npm".into()),
+        })
+        .unwrap();
+        handler.dynamic_rx = Some(rx);
+
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        handler.try_merge_dynamic(&parser, &mut buf);
+
+        assert_eq!(handler.pending_empty_count, 1);
+        assert!(handler.feedback.is_loading());
+
+        // Batch 2: Loaded then drop tx.
+        tx.try_send(DynamicResult::Loaded {
+            provider: ProviderTag::Git(gc_suggest::git::GitQueryKind::Branches),
+            suggestions: vec![Suggestion {
+                text: "main".into(),
+                kind: SuggestionKind::GitBranch,
+                source: SuggestionSource::Git,
+                ..Default::default()
+            }],
+        })
+        .unwrap();
+        drop(tx);
+        handler.try_merge_dynamic(&parser, &mut buf);
+
+        assert_eq!(handler.pending_empty_count, 0, "drained on disconnect");
+        assert_eq!(handler.pending_failed.len(), 0, "no errors accumulated");
+    }
+
+    // --- try_merge_dynamic disconnect branches ---
+
+    #[test]
+    fn test_try_merge_dynamic_error_only_disconnect_yields_error() {
+        let mut handler = make_visible_handler(Vec::new());
+        let base_ctx = gc_buffer::parse_command_context("", 0);
+        handler.dynamic_ctx = Some(DynamicCtxSnapshot::capture(&base_ctx, false));
+
+        let (tx, rx) = mpsc::channel::<DynamicResult>(1);
+        tx.try_send(DynamicResult::Error {
+            provider: ProviderTag::Git(gc_suggest::git::GitQueryKind::Branches),
+            message: "boom".into(),
+        })
+        .unwrap();
+        drop(tx);
+        handler.dynamic_rx = Some(rx);
+
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        handler.try_merge_dynamic(&parser, &mut buf);
+
+        match handler.feedback_kind() {
+            AsyncFeedback::Error { failed, .. } => {
+                assert_eq!(failed.len(), 1, "single failed provider expected");
+            }
+            other => panic!("expected Error feedback, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_try_merge_dynamic_partial_error_with_static_present() {
+        // Pre-seed a static suggestion, then deliver one Loaded + one Error
+        // with a final disconnect. PartialError must result.
+        let mut handler = make_visible_handler(vec![Suggestion {
+            text: "--flag".into(),
+            kind: SuggestionKind::Flag,
+            source: SuggestionSource::Spec,
+            ..Default::default()
+        }]);
+        let base_ctx = gc_buffer::parse_command_context("", 0);
+        handler.dynamic_ctx = Some(DynamicCtxSnapshot::capture(&base_ctx, false));
+
+        let (tx, rx) = mpsc::channel::<DynamicResult>(2);
+        tx.try_send(DynamicResult::Loaded {
+            provider: ProviderTag::Git(gc_suggest::git::GitQueryKind::Branches),
+            suggestions: vec![Suggestion {
+                text: "main".into(),
+                kind: SuggestionKind::GitBranch,
+                source: SuggestionSource::Git,
+                ..Default::default()
+            }],
+        })
+        .unwrap();
+        tx.try_send(DynamicResult::Error {
+            provider: ProviderTag::Script("npm".into()),
+            message: "oops".into(),
+        })
+        .unwrap();
+        drop(tx);
+        handler.dynamic_rx = Some(rx);
+
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        handler.try_merge_dynamic(&parser, &mut buf);
+
+        match handler.feedback_kind() {
+            AsyncFeedback::PartialError { failed, .. } => {
+                assert_eq!(failed.len(), 1);
+            }
+            other => panic!("expected PartialError feedback, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_try_merge_dynamic_empty_only_with_no_static_yields_empty() {
+        let mut handler = make_visible_handler(Vec::new());
+        let base_ctx = gc_buffer::parse_command_context("", 0);
+        handler.dynamic_ctx = Some(DynamicCtxSnapshot::capture(&base_ctx, false));
+
+        let (tx, rx) = mpsc::channel::<DynamicResult>(1);
+        tx.try_send(DynamicResult::Empty {
+            provider: ProviderTag::Git(gc_suggest::git::GitQueryKind::Branches),
+        })
+        .unwrap();
+        drop(tx);
+        handler.dynamic_rx = Some(rx);
+
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        handler.try_merge_dynamic(&parser, &mut buf);
+
+        assert!(matches!(
+            handler.feedback_kind(),
+            AsyncFeedback::Empty { .. }
+        ));
+    }
+
+    // --- current_feedback_kind redaction and Error → PartialError fallthrough ---
+
+    #[test]
+    fn test_current_feedback_kind_redacts_provider_when_disabled() {
+        let mut handler = make_handler();
+        handler.theme.show_provider_errors = false;
+        handler.feedback = AsyncFeedback::Error {
+            failed: vec!["git script".into()],
+            since: std::time::Instant::now(),
+        };
+        match handler.current_feedback_kind() {
+            gc_overlay::FeedbackKind::Error { provider } => {
+                assert_eq!(provider, "", "provider must be redacted");
+            }
+            other => panic!("expected Error, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_current_feedback_kind_surfaces_provider_when_enabled() {
+        let mut handler = make_handler();
+        handler.theme.show_provider_errors = true;
+        handler.feedback = AsyncFeedback::Error {
+            failed: vec!["git script".into()],
+            since: std::time::Instant::now(),
+        };
+        match handler.current_feedback_kind() {
+            gc_overlay::FeedbackKind::Error { provider } => {
+                assert_eq!(provider, "git script");
+            }
+            other => panic!("expected Error, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_current_feedback_kind_multi_failed_falls_through_to_partial_error() {
+        let mut handler = make_handler();
+        handler.feedback = AsyncFeedback::Error {
+            failed: vec!["a".into(), "b".into(), "c".into()],
+            since: std::time::Instant::now(),
+        };
+        match handler.current_feedback_kind() {
+            gc_overlay::FeedbackKind::PartialError { providers } => {
+                assert_eq!(providers, 3);
+            }
+            other => panic!("expected PartialError, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_current_feedback_kind_partial_error_clamps_at_u8_max() {
+        let mut handler = make_handler();
+        handler.feedback = AsyncFeedback::PartialError {
+            failed: (0..300).map(|i| format!("p{i}")).collect(),
+            since: std::time::Instant::now(),
+        };
+        match handler.current_feedback_kind() {
+            gc_overlay::FeedbackKind::PartialError { providers } => {
+                assert_eq!(providers, u8::MAX);
+            }
+            other => panic!("expected PartialError, got {other:?}"),
+        }
     }
 }

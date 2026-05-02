@@ -162,6 +162,9 @@ fn check_theme(config: &gc_config::GhostConfig) -> CheckResult {
         ("item_text", &resolved.item_text),
         ("scrollbar", &resolved.scrollbar),
         ("border", &resolved.border),
+        ("feedback_loading", &resolved.feedback_loading),
+        ("feedback_empty", &resolved.feedback_empty),
+        ("feedback_error", &resolved.feedback_error),
     ];
 
     let mut errors = Vec::new();

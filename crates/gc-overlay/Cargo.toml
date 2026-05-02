@@ -16,3 +16,8 @@ unicode-width = "0.2.2"
 [dev-dependencies]
 # Enables the `TerminalProfile::for_*()` fixture constructors for tests only.
 gc-terminal = { path = "../gc-terminal", features = ["test-utils"] }
+criterion = { version = "0.8", features = ["html_reports"] }
+
+[[bench]]
+name = "feedback_render"
+harness = false
