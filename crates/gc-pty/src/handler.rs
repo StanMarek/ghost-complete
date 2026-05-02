@@ -228,7 +228,6 @@ pub struct InputHandler {
     feedback_tick_notify: Arc<Notify>,
     feedback: AsyncFeedback,
     feedback_dismiss_ms: u16,
-    /// Carries non-final-batch error/empty counts to the disconnect-time terminal computation.
     pending_failed: Vec<String>,
     pending_empty_count: usize,
     /// Command context snapshot captured when generators were spawned.
@@ -1800,7 +1799,6 @@ impl InputHandler {
                     let indicator_row = layout.start_row + layout.height - 1 - u16::from(borders);
                     let mut buf = Vec::with_capacity(layout.width as usize * 4 + 64);
                     buf.extend_from_slice(b"\x1b[s"); // save cursor
-                                                      // Clear the indicator row.
                     let _ = write!(
                         &mut buf,
                         "\x1b[{};{}H",
