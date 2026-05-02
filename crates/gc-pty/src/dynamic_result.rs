@@ -13,7 +13,7 @@ pub enum DynamicResult {
     },
     Error {
         provider: ProviderTag,
-        kind: ErrorKind,
+        message: String,
     },
 }
 
@@ -22,15 +22,6 @@ pub enum ProviderTag {
     Script(String),
     Git(GitQueryKind),
     Provider(ProviderKind),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ErrorKind {
-    Timeout,
-    SpawnFailed,
-    NonZeroExit(i32),
-    Parse(String),
-    Runtime(String),
 }
 
 impl fmt::Display for ProviderTag {

@@ -218,15 +218,7 @@ pub fn render_popup(
     // Adjust cursor for prior scroll (parser doesn't know about our scrolling)
     let adj_cursor_row = cursor_row.saturating_sub(prior_deficit);
 
-    // Calculate how much more scrolling is needed.
-    //
-    // When feedback is visible, the indicator occupies exactly 1 extra row
-    // regardless of whether borders are enabled: in the bordered case the
-    // loading row overwrites what would have been the bottom border row and
-    // the bottom border is redrawn one row below, so the popup still grows
-    // by only 1 row beyond its base `layout.height`. The `loading_extra`
-    // value computed during rendering (lines ~336–388) matches this: it is
-    // `1` in every code path where the loading row actually fits.
+    // Indicator occupies exactly 1 row; bordered case shifts bottom border down by 1.
     let space_below = screen_rows.saturating_sub(adj_cursor_row.saturating_add(1));
     let visible_count = suggestions.len().min(effective_max) as u16;
     let loading_extra_deficit: u16 = if feedback.reserves_row() { 1 } else { 0 };
@@ -2244,6 +2236,68 @@ mod tests {
         assert!(
             output.contains("Loading"),
             "loading feedback should include label: {output}"
+        );
+    }
+
+    #[test]
+    fn test_loading_label_uses_ellipsis_when_spinner_disabled() {
+        let mut buf = Vec::new();
+        let layout = PopupLayout {
+            start_row: 5,
+            start_col: 0,
+            width: 60,
+            height: 4,
+            scroll_deficit: 0,
+        };
+        let theme = PopupTheme {
+            spinner: false,
+            ..PopupTheme::default()
+        };
+        render_indicator_row(
+            &mut buf,
+            &layout,
+            &theme,
+            FeedbackKind::Loading { frame: 0 },
+        );
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            output.contains('…'),
+            "spinner=false should fall back to ellipsis: {output}"
+        );
+        assert!(
+            !output.contains('⠋'),
+            "spinner=false must not render spinner glyph: {output}"
+        );
+        assert!(
+            output.contains("Loading"),
+            "loading feedback should include label: {output}"
+        );
+    }
+
+    #[test]
+    fn test_loading_label_uses_ellipsis_when_content_width_narrow() {
+        let mut buf = Vec::new();
+        let layout = PopupLayout {
+            start_row: 5,
+            start_col: 0,
+            width: 24,
+            height: 4,
+            scroll_deficit: 0,
+        };
+        render_indicator_row(
+            &mut buf,
+            &layout,
+            &PopupTheme::default(),
+            FeedbackKind::Loading { frame: 0 },
+        );
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            output.contains('…'),
+            "narrow content_width should fall back to ellipsis: {output}"
+        );
+        assert!(
+            !output.contains('⠋'),
+            "narrow content_width must not render spinner glyph: {output}"
         );
     }
 

@@ -44,7 +44,8 @@ impl AsyncFeedback {
                     }
                 }
                 DynamicResult::Empty { .. } => aggregation.empty_count += 1,
-                DynamicResult::Error { provider, .. } => {
+                DynamicResult::Error { provider, message } => {
+                    tracing::warn!(provider = %provider, "dynamic provider failed: {message}");
                     aggregation.failed.push(provider.to_string())
                 }
             }
@@ -53,17 +54,35 @@ impl AsyncFeedback {
     }
 
     pub fn terminal_from_aggregation(aggregation: &DynamicAggregation, now: Instant) -> Self {
-        if !aggregation.loaded.is_empty() && !aggregation.failed.is_empty() {
+        Self::terminal_for_outcome(
+            !aggregation.loaded.is_empty(),
+            &aggregation.failed,
+            aggregation.empty_count,
+            now,
+        )
+    }
+
+    /// Decide the terminal feedback variant from the disconnect-time outcome
+    /// without cloning the loaded suggestions vec. Callers pass only the
+    /// boolean of whether any non-empty Loaded results survived, plus the
+    /// failed/empty_count tallies — the loaded vec stays where it is.
+    pub fn terminal_for_outcome(
+        loaded_non_empty: bool,
+        failed: &[String],
+        empty_count: usize,
+        now: Instant,
+    ) -> Self {
+        if loaded_non_empty && !failed.is_empty() {
             Self::PartialError {
-                failed: aggregation.failed.clone(),
+                failed: failed.to_vec(),
                 since: now,
             }
-        } else if !aggregation.failed.is_empty() {
+        } else if !failed.is_empty() {
             Self::Error {
-                failed: aggregation.failed.clone(),
+                failed: failed.to_vec(),
                 since: now,
             }
-        } else if aggregation.loaded.is_empty() && aggregation.empty_count > 0 {
+        } else if !loaded_non_empty && empty_count > 0 {
             Self::Empty { since: now }
         } else {
             Self::Idle
@@ -94,7 +113,7 @@ impl AsyncFeedback {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::dynamic_result::{ErrorKind, ProviderTag};
+    use crate::dynamic_result::ProviderTag;
     use gc_suggest::{git::GitQueryKind, SuggestionKind};
 
     fn suggestion(text: &str) -> Suggestion {
@@ -117,7 +136,7 @@ mod tests {
             },
             DynamicResult::Error {
                 provider: ProviderTag::Script("git".into()),
-                kind: ErrorKind::Runtime("boom".into()),
+                message: "boom".into(),
             },
         ]);
         assert_eq!(aggregation.loaded.len(), 1);
@@ -136,6 +155,48 @@ mod tests {
         assert!(matches!(
             AsyncFeedback::terminal_from_aggregation(&aggregation, now),
             AsyncFeedback::PartialError { .. }
+        ));
+    }
+
+    #[test]
+    fn terminal_feedback_failed_only_is_error() {
+        let now = Instant::now();
+        let aggregation = DynamicAggregation {
+            loaded: Vec::new(),
+            empty_count: 0,
+            failed: vec!["git branches".into()],
+        };
+        assert!(matches!(
+            AsyncFeedback::terminal_from_aggregation(&aggregation, now),
+            AsyncFeedback::Error { .. }
+        ));
+    }
+
+    #[test]
+    fn terminal_feedback_empty_only_is_empty() {
+        let now = Instant::now();
+        let aggregation = DynamicAggregation {
+            loaded: Vec::new(),
+            empty_count: 1,
+            failed: Vec::new(),
+        };
+        assert!(matches!(
+            AsyncFeedback::terminal_from_aggregation(&aggregation, now),
+            AsyncFeedback::Empty { .. }
+        ));
+    }
+
+    #[test]
+    fn terminal_feedback_all_loaded_is_idle() {
+        let now = Instant::now();
+        let aggregation = DynamicAggregation {
+            loaded: vec![suggestion("main")],
+            empty_count: 0,
+            failed: Vec::new(),
+        };
+        assert!(matches!(
+            AsyncFeedback::terminal_from_aggregation(&aggregation, now),
+            AsyncFeedback::Idle
         ));
     }
 }

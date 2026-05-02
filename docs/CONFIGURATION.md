@@ -331,7 +331,7 @@ match_highlight = "underline"
 | `[trigger]` | `auto_chars` | Yes |
 | `[trigger]` | `delay_ms` | No |
 | `[trigger]` | `auto_trigger` | Yes |
-| `[popup]` | `max_visible` | Yes |
+| `[popup]` | `max_visible`, `borders`, `feedback_dismiss_ms`, `spinner`, `show_provider_errors` | Yes |
 | `[suggest]` | All fields | No |
 | `[suggest.providers]` | All fields | No |
 | `[paths]` | All fields | No |

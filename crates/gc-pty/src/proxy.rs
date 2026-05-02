@@ -953,12 +953,13 @@ async fn dynamic_merge_loop(
 async fn feedback_tick_loop(notify: Arc<Notify>, handler: Arc<Mutex<InputHandler>>) {
     loop {
         notify.notified().await;
-        let mut interval = tokio::time::interval(Duration::from_millis(80));
-        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+        let mut next_ms: u64 = 0;
         loop {
-            interval.tick().await;
-            let mut stdout = std::io::stdout().lock();
-            let (keep_running, next_ms) = {
+            if next_ms > 0 {
+                tokio::time::sleep(Duration::from_millis(next_ms)).await;
+            }
+            let mut render_buf: Vec<u8> = Vec::new();
+            let keep_running = {
                 let mut h = match handler.lock() {
                     Ok(h) => h,
                     Err(e) => {
@@ -967,20 +968,29 @@ async fn feedback_tick_loop(notify: Arc<Notify>, handler: Arc<Mutex<InputHandler
                     }
                 };
                 if h.feedback_kind().is_loading() {
-                    h.render_indicator_only(&mut stdout);
-                    (true, 80)
-                } else if h.clear_expired_feedback(&mut stdout) {
-                    (false, 200)
+                    h.render_indicator_only(&mut render_buf);
+                    next_ms = 80;
+                    true
+                } else if h.clear_expired_feedback(&mut render_buf) {
+                    next_ms = 200;
+                    false
                 } else {
-                    (h.feedback_kind().since().is_some(), 200)
+                    next_ms = 200;
+                    h.feedback_kind().since().is_some()
                 }
             };
-            let _ = stdout.flush();
+            if !render_buf.is_empty() {
+                let mut stdout = std::io::stdout().lock();
+                if stdout.write_all(&render_buf).is_err() {
+                    break;
+                }
+                if stdout.flush().is_err() {
+                    break;
+                }
+            }
             if !keep_running {
                 break;
             }
-            interval = tokio::time::interval(Duration::from_millis(next_ms));
-            interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
         }
     }
 }

@@ -1145,6 +1145,16 @@ max_visible = 5
     }
 
     #[test]
+    fn test_feedback_dismiss_ms_zero_is_allowed() {
+        // feedback_dismiss_ms=0 disables auto-dismiss of the feedback popup —
+        // still a valid choice, so it must pass through untouched.
+        let mut tmp = tempfile::NamedTempFile::new().unwrap();
+        writeln!(tmp, "[popup]\nfeedback_dismiss_ms = 0").unwrap();
+        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        assert_eq!(config.popup.feedback_dismiss_ms, 0);
+    }
+
+    #[test]
     fn test_diff_unknown_keys_flat_top_level() {
         let loose: toml::Value = toml::from_str("known = 1\nbogus = 2").unwrap();
         let strict: toml::Value = toml::from_str("known = 1").unwrap();

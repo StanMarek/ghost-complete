@@ -14,8 +14,8 @@ use gc_suggest::{Suggestion, SuggestionEngine};
 use gc_terminal::TerminalProfile;
 use tokio::sync::{mpsc, Notify};
 
-use crate::dynamic_result::{DynamicResult, ErrorKind, ProviderTag};
-use crate::feedback::{AsyncFeedback, DynamicAggregation};
+use crate::dynamic_result::{DynamicResult, ProviderTag};
+use crate::feedback::AsyncFeedback;
 use crate::input::KeyEvent;
 
 /// Resolved keybindings — each action maps to a concrete `KeyEvent`.
@@ -228,6 +228,12 @@ pub struct InputHandler {
     feedback_tick_notify: Arc<Notify>,
     feedback: AsyncFeedback,
     feedback_dismiss_ms: u16,
+    /// Per-batch error/empty tallies that arrived in non-final mpsc batches.
+    /// Drained into the terminal-aggregation call when the dynamic channel
+    /// disconnects, so an Error or Empty message read in an early batch is
+    /// not lost when the next batch contains no Loaded results.
+    pending_failed: Vec<String>,
+    pending_empty_count: usize,
     /// Command context snapshot captured when generators were spawned.
     /// Consulted by `check_merge_staleness` (called from both
     /// `try_merge_dynamic` and `apply_block_result`) to drop stale results
@@ -293,6 +299,8 @@ impl InputHandler {
             feedback_tick_notify: Arc::new(Notify::new()),
             feedback: AsyncFeedback::Idle,
             feedback_dismiss_ms: 1200,
+            pending_failed: Vec::new(),
+            pending_empty_count: 0,
             dynamic_ctx: None,
             terminal_profile,
             scroll_deficit: 0,
@@ -441,6 +449,8 @@ impl InputHandler {
             self.dynamic_rx = None;
             self.dynamic_ctx = None;
             self.feedback = AsyncFeedback::Idle;
+            self.pending_failed.clear();
+            self.pending_empty_count = 0;
             self.trigger_requested = false;
         }
 
@@ -1060,11 +1070,6 @@ impl InputHandler {
 
     /// Apply the result of the bounded-block window after the debounce loop
     /// awaited the async generator outside the mutex lock.
-    ///
-    /// `maybe_async` is `Some(DynamicResult)` if the generator completed
-    /// within the window, or `None` if the timeout fired (in which case the
-    /// caller should restore `rx` via `rx_on_timeout` so `dynamic_merge_loop`
-    /// can deliver the late result).
     #[allow(clippy::too_many_arguments)] // all args are genuinely independent
     pub fn apply_block_result(
         &mut self,
@@ -1115,6 +1120,11 @@ impl InputHandler {
             self.dynamic_task = None;
         }
         let aggregation = AsyncFeedback::aggregate(messages);
+        // Roll the per-batch failed/empty into self.pending_* so a non-final
+        // batch's error reports survive to the disconnect-time terminal feedback
+        // computation.
+        self.pending_failed.extend(aggregation.failed);
+        self.pending_empty_count += aggregation.empty_count;
         if aggregation.loaded.is_empty() {
             if disconnected {
                 self.dynamic_ctx = None;
@@ -1122,16 +1132,25 @@ impl InputHandler {
             let now = std::time::Instant::now();
             self.feedback = if !disconnected {
                 self.feedback.clone()
-            } else if !aggregation.failed.is_empty() && !sync_suggestions.is_empty() {
+            } else if !self.pending_failed.is_empty() && !sync_suggestions.is_empty() {
                 AsyncFeedback::PartialError {
-                    failed: aggregation.failed.clone(),
+                    failed: std::mem::take(&mut self.pending_failed),
                     since: now,
                 }
-            } else if aggregation.empty_count > 0 && !sync_suggestions.is_empty() {
+            } else if self.pending_empty_count > 0 && !sync_suggestions.is_empty() {
                 AsyncFeedback::Idle
             } else {
-                AsyncFeedback::terminal_from_aggregation(&aggregation, now)
+                AsyncFeedback::terminal_for_outcome(
+                    false,
+                    &self.pending_failed,
+                    self.pending_empty_count,
+                    now,
+                )
             };
+            if disconnected {
+                self.pending_failed.clear();
+                self.pending_empty_count = 0;
+            }
             self.feedback_tick_notify.notify_one();
             if self.visible || self.feedback.is_terminal() || self.feedback.is_loading() {
                 self.render(parser, stdout);
@@ -1142,17 +1161,19 @@ impl InputHandler {
         let async_results = aggregation.loaded;
         let now = std::time::Instant::now();
         self.feedback = if disconnected {
-            AsyncFeedback::terminal_from_aggregation(
-                &DynamicAggregation {
-                    loaded: async_results.clone(),
-                    empty_count: aggregation.empty_count,
-                    failed: aggregation.failed.clone(),
-                },
+            AsyncFeedback::terminal_for_outcome(
+                !async_results.is_empty(),
+                &self.pending_failed,
+                self.pending_empty_count,
                 now,
             )
         } else {
             self.feedback.clone()
         };
+        if disconnected {
+            self.pending_failed.clear();
+            self.pending_empty_count = 0;
+        }
         self.feedback_tick_notify.notify_one();
 
         // Re-check that the buffer hasn't drifted while we were awaiting
@@ -1253,6 +1274,8 @@ impl InputHandler {
         self.feedback = AsyncFeedback::Loading {
             spawned_at: std::time::Instant::now(),
         };
+        self.pending_failed.clear();
+        self.pending_empty_count = 0;
         self.feedback_tick_notify.notify_one();
         let engine = Arc::clone(&self.engine);
         let ctx = ctx.clone();
@@ -1267,92 +1290,111 @@ impl InputHandler {
             // every keystroke, and no current provider reads `ctx.env`,
             // so the collected map would be dead weight on the hot path.
             let env = Arc::new(build_env_snapshot(!provider_generators.is_empty()));
-            let provider_ctx = gc_suggest::providers::ProviderCtx {
+            let provider_ctx = Arc::new(gc_suggest::providers::ProviderCtx {
                 cwd: cwd.clone(),
                 env,
                 current_token: ctx.current_word.clone(),
-            };
+            });
 
-            // Run script generators, git generators, and providers concurrently.
-            let (script_res, git_res, provider_res) = tokio::join!(
+            // Resolve script generators, git kinds, and provider kinds
+            // concurrently. Each git/provider kind is dispatched as its own
+            // per-kind helper so a per-kind error or empty result surfaces
+            // as its own DynamicResult and the ProviderTag carries the
+            // actual kind that produced it.
+            let git_engine = Arc::clone(&engine);
+            let git_cwd = cwd.clone();
+            let git_query = ctx.current_word.clone();
+            let git_kinds = git_generators.clone();
+            let git_fut = async move {
+                let mut out = Vec::with_capacity(git_kinds.len());
+                for kind in git_kinds {
+                    let res = git_engine
+                        .resolve_git_kind(kind, &git_cwd, &git_query)
+                        .await;
+                    out.push((kind, res));
+                }
+                out
+            };
+            let provider_engine = Arc::clone(&engine);
+            let provider_query = ctx.current_word.clone();
+            let provider_kinds = provider_generators.clone();
+            let provider_ctx_for_fut = Arc::clone(&provider_ctx);
+            let provider_fut = async move {
+                let mut out = Vec::with_capacity(provider_kinds.len());
+                for kind in provider_kinds {
+                    let res = provider_engine
+                        .resolve_provider_kind(kind, &provider_ctx_for_fut, &provider_query)
+                        .await;
+                    out.push((kind, res));
+                }
+                out
+            };
+            let (script_res, git_results, provider_results) = tokio::join!(
                 engine.run_generators(&script_generators, &ctx, &cwd, timeout),
-                engine.resolve_git(&git_generators, &cwd, &ctx.current_word),
-                engine.resolve_providers(&provider_generators, &provider_ctx, &ctx.current_word,),
+                git_fut,
+                provider_fut,
             );
 
             if !script_generators.is_empty() {
                 let provider = ProviderTag::Script(ctx.command.clone().unwrap_or_default());
-                match script_res {
-                    Ok(results) if results.is_empty() => {
-                        let _ = tx.send(DynamicResult::Empty { provider }).await;
-                    }
-                    Ok(results) => {
-                        let _ = tx
-                            .send(DynamicResult::Loaded {
-                                provider,
-                                suggestions: results,
-                            })
-                            .await;
-                    }
+                let message = match script_res {
+                    Ok(results) if results.is_empty() => DynamicResult::Empty { provider },
+                    Ok(results) => DynamicResult::Loaded {
+                        provider,
+                        suggestions: results,
+                    },
                     Err(e) => {
                         tracing::warn!("dynamic suggestions failed: {e}");
-                        let _ = tx
-                            .send(DynamicResult::Error {
-                                provider,
-                                kind: ErrorKind::Runtime(e.to_string()),
-                            })
-                            .await;
+                        DynamicResult::Error {
+                            provider,
+                            message: e.to_string(),
+                        }
                     }
+                };
+                if tx.send(message).await.is_err() {
+                    return;
                 }
             }
-            if !git_generators.is_empty() {
-                let provider = ProviderTag::Git(git_generators[0]);
-                match git_res {
-                    Ok(results) if results.is_empty() => {
-                        let _ = tx.send(DynamicResult::Empty { provider }).await;
-                    }
-                    Ok(results) => {
-                        let _ = tx
-                            .send(DynamicResult::Loaded {
-                                provider,
-                                suggestions: results,
-                            })
-                            .await;
-                    }
+
+            for (kind, result) in git_results {
+                let provider = ProviderTag::Git(kind);
+                let message = match result {
+                    Ok(results) if results.is_empty() => DynamicResult::Empty { provider },
+                    Ok(results) => DynamicResult::Loaded {
+                        provider,
+                        suggestions: results,
+                    },
                     Err(e) => {
-                        tracing::warn!("git suggestions failed: {e}");
-                        let _ = tx
-                            .send(DynamicResult::Error {
-                                provider,
-                                kind: ErrorKind::Runtime(e.to_string()),
-                            })
-                            .await;
+                        tracing::warn!("git suggestions failed ({kind:?}): {e}");
+                        DynamicResult::Error {
+                            provider,
+                            message: e.to_string(),
+                        }
                     }
+                };
+                if tx.send(message).await.is_err() {
+                    return;
                 }
             }
-            if !provider_generators.is_empty() {
-                let provider = ProviderTag::Provider(provider_generators[0]);
-                match provider_res {
-                    Ok(results) if results.is_empty() => {
-                        let _ = tx.send(DynamicResult::Empty { provider }).await;
-                    }
-                    Ok(results) => {
-                        let _ = tx
-                            .send(DynamicResult::Loaded {
-                                provider,
-                                suggestions: results,
-                            })
-                            .await;
-                    }
+
+            for (kind, result) in provider_results {
+                let provider = ProviderTag::Provider(kind);
+                let message = match result {
+                    Ok(results) if results.is_empty() => DynamicResult::Empty { provider },
+                    Ok(results) => DynamicResult::Loaded {
+                        provider,
+                        suggestions: results,
+                    },
                     Err(e) => {
-                        tracing::warn!("provider suggestions failed: {e}");
-                        let _ = tx
-                            .send(DynamicResult::Error {
-                                provider,
-                                kind: ErrorKind::Runtime(e.to_string()),
-                            })
-                            .await;
+                        tracing::warn!("provider suggestions failed ({kind:?}): {e}");
+                        DynamicResult::Error {
+                            provider,
+                            message: e.to_string(),
+                        }
                     }
+                };
+                if tx.send(message).await.is_err() {
+                    return;
                 }
             }
             // Drop tx BEFORE notifying so Task E sees Disconnected on
@@ -1446,7 +1488,25 @@ impl InputHandler {
                 self.dynamic_rx = None;
                 self.dynamic_ctx = None;
                 self.dynamic_task = None;
-                self.feedback = AsyncFeedback::Idle;
+                let now = std::time::Instant::now();
+                self.feedback = if !self.pending_failed.is_empty() && !self.suggestions.is_empty() {
+                    AsyncFeedback::PartialError {
+                        failed: std::mem::take(&mut self.pending_failed),
+                        since: now,
+                    }
+                } else if self.pending_empty_count > 0 && !self.suggestions.is_empty() {
+                    AsyncFeedback::Idle
+                } else {
+                    AsyncFeedback::terminal_for_outcome(
+                        false,
+                        &self.pending_failed,
+                        self.pending_empty_count,
+                        now,
+                    )
+                };
+                self.pending_failed.clear();
+                self.pending_empty_count = 0;
+                self.feedback_tick_notify.notify_one();
                 if self.visible {
                     self.render(parser, stdout);
                 }
@@ -1455,6 +1515,11 @@ impl InputHandler {
         }
 
         let aggregation = AsyncFeedback::aggregate(messages);
+        // Roll the per-batch failed/empty into self.pending_* so a non-final
+        // batch's error reports survive to the disconnect-time terminal feedback
+        // computation.
+        self.pending_failed.extend(aggregation.failed);
+        self.pending_empty_count += aggregation.empty_count;
 
         if disconnected {
             self.dynamic_rx = None;
@@ -1468,18 +1533,25 @@ impl InputHandler {
             let now = std::time::Instant::now();
             self.feedback = if !disconnected {
                 self.feedback.clone()
-            } else if !aggregation.failed.is_empty() && !self.suggestions.is_empty() {
+            } else if !self.pending_failed.is_empty() && !self.suggestions.is_empty() {
                 AsyncFeedback::PartialError {
-                    failed: aggregation.failed.clone(),
+                    failed: std::mem::take(&mut self.pending_failed),
                     since: now,
                 }
-            } else if aggregation.empty_count > 0 && !self.suggestions.is_empty() {
+            } else if self.pending_empty_count > 0 && !self.suggestions.is_empty() {
                 AsyncFeedback::Idle
-            } else if !aggregation.failed.is_empty() || aggregation.empty_count > 0 {
-                AsyncFeedback::terminal_from_aggregation(&aggregation, now)
             } else {
-                AsyncFeedback::Idle
+                AsyncFeedback::terminal_for_outcome(
+                    false,
+                    &self.pending_failed,
+                    self.pending_empty_count,
+                    now,
+                )
             };
+            if disconnected {
+                self.pending_failed.clear();
+                self.pending_empty_count = 0;
+            }
             self.feedback_tick_notify.notify_one();
             self.render(parser, stdout);
             return !matches!(self.feedback, AsyncFeedback::Idle);
@@ -1490,17 +1562,19 @@ impl InputHandler {
             let now = std::time::Instant::now();
             let previous_feedback = self.feedback.clone();
             self.feedback = if disconnected {
-                AsyncFeedback::terminal_from_aggregation(
-                    &DynamicAggregation {
-                        loaded: dynamic_results.clone(),
-                        empty_count: aggregation.empty_count,
-                        failed: aggregation.failed.clone(),
-                    },
+                AsyncFeedback::terminal_for_outcome(
+                    !dynamic_results.is_empty(),
+                    &self.pending_failed,
+                    self.pending_empty_count,
                     now,
                 )
             } else {
                 previous_feedback
             };
+            if disconnected {
+                self.pending_failed.clear();
+                self.pending_empty_count = 0;
+            }
             self.feedback_tick_notify.notify_one();
             if disconnected {
                 self.dynamic_rx = None;
@@ -1511,25 +1585,15 @@ impl InputHandler {
                 // cleanup guarantees.
                 self.dynamic_task = None;
             }
-            // Note: `spawn_generators` only sends when the result is
-            // non-empty, so the empty-Ok case is unreachable in
-            // production. The "all generators returned empty" path is
-            // handled by the Disconnected arm below (tx is dropped
-            // without sending). See the regression test
-            // `test_try_merge_dynamic_disconnected_rerenders_to_clear_loading`.
             let current_word = match self.check_merge_staleness(parser) {
                 MergeFreshness::Fresh { current_word } => current_word,
                 MergeFreshness::Stale => {
-                    // Don't merge. If the popup is visible from the
-                    // mixed static+async path, static suggestions stay
-                    // but we must repaint so the loading indicator
-                    // clears (same reasoning as the empty-results
-                    // branch above). If not visible (async-only path),
-                    // nothing happens.
                     self.dynamic_rx = None;
                     self.dynamic_ctx = None;
                     self.dynamic_task = None;
                     self.feedback = AsyncFeedback::Idle;
+                    self.pending_failed.clear();
+                    self.pending_empty_count = 0;
                     if self.visible {
                         self.render(parser, stdout);
                     }
@@ -1687,13 +1751,21 @@ impl InputHandler {
                 }
             }
             AsyncFeedback::Empty { .. } => FeedbackKind::Empty,
-            AsyncFeedback::Error { failed, .. } => FeedbackKind::Error {
-                provider: if self.theme.show_provider_errors {
-                    failed.first().cloned().unwrap_or_default()
+            AsyncFeedback::Error { failed, .. } => {
+                if failed.len() > 1 {
+                    FeedbackKind::PartialError {
+                        providers: failed.len().min(u8::MAX as usize) as u8,
+                    }
                 } else {
-                    String::new()
-                },
-            },
+                    FeedbackKind::Error {
+                        provider: if self.theme.show_provider_errors {
+                            failed.first().cloned().unwrap_or_default()
+                        } else {
+                            String::new()
+                        },
+                    }
+                }
+            }
             AsyncFeedback::PartialError { failed, .. } => FeedbackKind::PartialError {
                 providers: failed.len().min(u8::MAX as usize) as u8,
             },
@@ -1724,6 +1796,39 @@ impl InputHandler {
         if since.elapsed() < std::time::Duration::from_millis(self.feedback_dismiss_ms as u64) {
             return false;
         }
+        // PartialError means some providers succeeded — the popup currently
+        // shows real merged suggestions plus an indicator row. Demote to Idle
+        // and clear just the indicator row so the suggestions stay visible.
+        if matches!(self.feedback, AsyncFeedback::PartialError { .. })
+            && !self.suggestions.is_empty()
+        {
+            self.feedback = AsyncFeedback::Idle;
+            if let Some(mut layout) = self.last_layout.clone() {
+                // Clear the indicator row: it sits at
+                // start_row + height - 1 - borders. Replace it with spaces
+                // and shrink the cached layout height by one so subsequent
+                // dismiss/clear_popup calls don't miss-target a row.
+                if layout.height > 0 {
+                    let indicator_row =
+                        layout.start_row + layout.height - 1 - u16::from(self.theme.borders);
+                    let mut buf = Vec::with_capacity(layout.width as usize + 16);
+                    buf.extend_from_slice(b"\x1b[s"); // save cursor
+                    let _ = write!(
+                        &mut buf,
+                        "\x1b[{};{}H",
+                        indicator_row + 1,
+                        layout.start_col + 1
+                    );
+                    buf.extend(std::iter::repeat_n(b' ', layout.width as usize));
+                    buf.extend_from_slice(b"\x1b[u"); // restore cursor
+                    let _ = stdout.write_all(&buf);
+                    let _ = stdout.flush();
+                    layout.height -= 1;
+                    self.last_layout = Some(layout);
+                }
+            }
+            return true;
+        }
         self.feedback = AsyncFeedback::Idle;
         self.dismiss(stdout);
         true
@@ -1748,6 +1853,8 @@ impl InputHandler {
         self.dynamic_rx = None;
         self.dynamic_ctx = None;
         self.feedback = AsyncFeedback::Idle;
+        self.pending_failed.clear();
+        self.pending_empty_count = 0;
         // Invalidate the idempotency guard so the next trigger (e.g. after
         // ESC-then-retrigger on the same buffer) runs a fresh suggest_sync
         // instead of short-circuiting.
@@ -1863,6 +1970,8 @@ impl InputHandler {
             handle.abort();
         }
         self.feedback = AsyncFeedback::Idle;
+        self.pending_failed.clear();
+        self.pending_empty_count = 0;
     }
 
     /// Abort any in-flight dynamic generator task and clear the spawn-time
@@ -1877,6 +1986,8 @@ impl InputHandler {
         self.dynamic_ctx = None;
         self.dynamic_rx = None;
         self.feedback = AsyncFeedback::Idle;
+        self.pending_failed.clear();
+        self.pending_empty_count = 0;
     }
 
     /// Flush unsaved frecency records to disk. Call on proxy shutdown.
@@ -2543,6 +2654,8 @@ mod tests {
             feedback_tick_notify: Arc::new(Notify::new()),
             feedback: AsyncFeedback::Idle,
             feedback_dismiss_ms: 1200,
+            pending_failed: Vec::new(),
+            pending_empty_count: 0,
             dynamic_ctx: None,
             terminal_profile: TerminalProfile::for_ghostty(),
             scroll_deficit: 0,
@@ -3461,5 +3574,246 @@ mod tests {
         let kept = merge_dedup_against(&[], incoming);
         let texts: Vec<&str> = kept.iter().map(|s| s.text.as_str()).collect();
         assert_eq!(texts, vec!["main", "dev"]);
+    }
+
+    // --- clear_expired_feedback state machine ---
+
+    #[test]
+    fn test_clear_expired_feedback_returns_false_when_idle() {
+        let mut handler = make_visible_handler(Vec::new()).with_feedback_dismiss_ms(1200);
+        handler.feedback = AsyncFeedback::Idle;
+        let mut buf: Vec<u8> = Vec::new();
+        assert!(!handler.clear_expired_feedback(&mut buf));
+        assert!(buf.is_empty());
+    }
+
+    #[test]
+    fn test_clear_expired_feedback_returns_false_when_loading() {
+        let mut handler = make_visible_handler(Vec::new()).with_feedback_dismiss_ms(1200);
+        handler.feedback = AsyncFeedback::Loading {
+            spawned_at: std::time::Instant::now(),
+        };
+        let mut buf: Vec<u8> = Vec::new();
+        assert!(!handler.clear_expired_feedback(&mut buf));
+        assert!(buf.is_empty());
+    }
+
+    #[test]
+    fn test_clear_expired_feedback_returns_false_when_dismiss_disabled() {
+        let mut handler = make_visible_handler(Vec::new()).with_feedback_dismiss_ms(0);
+        handler.feedback = AsyncFeedback::Empty {
+            since: std::time::Instant::now() - std::time::Duration::from_secs(10),
+        };
+        let mut buf: Vec<u8> = Vec::new();
+        assert!(!handler.clear_expired_feedback(&mut buf));
+        assert!(buf.is_empty());
+    }
+
+    #[test]
+    fn test_clear_expired_feedback_returns_false_when_not_yet_expired() {
+        let mut handler = make_visible_handler(Vec::new()).with_feedback_dismiss_ms(10_000);
+        handler.feedback = AsyncFeedback::Empty {
+            since: std::time::Instant::now(),
+        };
+        let mut buf: Vec<u8> = Vec::new();
+        assert!(!handler.clear_expired_feedback(&mut buf));
+        assert!(handler.visible);
+        assert!(buf.is_empty());
+    }
+
+    #[test]
+    fn test_clear_expired_feedback_dismisses_on_expired_empty() {
+        let mut handler = make_visible_handler(Vec::new()).with_feedback_dismiss_ms(1200);
+        handler.feedback = AsyncFeedback::Empty {
+            since: std::time::Instant::now() - std::time::Duration::from_millis(2000),
+        };
+        let mut buf: Vec<u8> = Vec::new();
+        assert!(handler.clear_expired_feedback(&mut buf));
+        assert!(!handler.visible);
+        assert!(matches!(handler.feedback, AsyncFeedback::Idle));
+    }
+
+    #[test]
+    fn test_clear_expired_feedback_partial_error_with_suggestions_demotes_to_idle() {
+        // Regression: when feedback is PartialError and the popup currently
+        // has merged suggestions, expiring the feedback must NOT dismiss the
+        // popup. The suggestions are real user-visible state — drop only the
+        // indicator row and demote feedback to Idle.
+        let mut handler = make_visible_handler(vec![Suggestion {
+            text: "main".into(),
+            kind: SuggestionKind::GitBranch,
+            ..Default::default()
+        }])
+        .with_feedback_dismiss_ms(1200);
+        handler.feedback = AsyncFeedback::PartialError {
+            failed: vec!["git script".into()],
+            since: std::time::Instant::now() - std::time::Duration::from_millis(2000),
+        };
+        let mut buf: Vec<u8> = Vec::new();
+        assert!(handler.clear_expired_feedback(&mut buf));
+        assert!(handler.visible, "popup must stay visible");
+        assert_eq!(handler.suggestions.len(), 1, "suggestions must survive");
+        assert!(matches!(handler.feedback, AsyncFeedback::Idle));
+    }
+
+    // --- try_merge_dynamic disconnect branches ---
+
+    #[test]
+    fn test_try_merge_dynamic_error_only_disconnect_yields_error() {
+        let mut handler = make_visible_handler(Vec::new());
+        let base_ctx = gc_buffer::parse_command_context("", 0);
+        handler.dynamic_ctx = Some(DynamicCtxSnapshot::capture(&base_ctx, false));
+
+        let (tx, rx) = mpsc::channel::<DynamicResult>(1);
+        tx.try_send(DynamicResult::Error {
+            provider: ProviderTag::Git(gc_suggest::git::GitQueryKind::Branches),
+            message: "boom".into(),
+        })
+        .unwrap();
+        drop(tx);
+        handler.dynamic_rx = Some(rx);
+
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        handler.try_merge_dynamic(&parser, &mut buf);
+
+        match handler.feedback_kind() {
+            AsyncFeedback::Error { failed, .. } => {
+                assert_eq!(failed.len(), 1, "single failed provider expected");
+            }
+            other => panic!("expected Error feedback, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_try_merge_dynamic_partial_error_with_static_present() {
+        // Pre-seed a static suggestion, then deliver one Loaded + one Error
+        // with a final disconnect. PartialError must result.
+        let mut handler = make_visible_handler(vec![Suggestion {
+            text: "--flag".into(),
+            kind: SuggestionKind::Flag,
+            source: SuggestionSource::Spec,
+            ..Default::default()
+        }]);
+        let base_ctx = gc_buffer::parse_command_context("", 0);
+        handler.dynamic_ctx = Some(DynamicCtxSnapshot::capture(&base_ctx, false));
+
+        let (tx, rx) = mpsc::channel::<DynamicResult>(2);
+        tx.try_send(DynamicResult::Loaded {
+            provider: ProviderTag::Git(gc_suggest::git::GitQueryKind::Branches),
+            suggestions: vec![Suggestion {
+                text: "main".into(),
+                kind: SuggestionKind::GitBranch,
+                source: SuggestionSource::Git,
+                ..Default::default()
+            }],
+        })
+        .unwrap();
+        tx.try_send(DynamicResult::Error {
+            provider: ProviderTag::Script("npm".into()),
+            message: "oops".into(),
+        })
+        .unwrap();
+        drop(tx);
+        handler.dynamic_rx = Some(rx);
+
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        handler.try_merge_dynamic(&parser, &mut buf);
+
+        match handler.feedback_kind() {
+            AsyncFeedback::PartialError { failed, .. } => {
+                assert_eq!(failed.len(), 1);
+            }
+            other => panic!("expected PartialError feedback, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_try_merge_dynamic_empty_only_with_no_static_yields_empty() {
+        let mut handler = make_visible_handler(Vec::new());
+        let base_ctx = gc_buffer::parse_command_context("", 0);
+        handler.dynamic_ctx = Some(DynamicCtxSnapshot::capture(&base_ctx, false));
+
+        let (tx, rx) = mpsc::channel::<DynamicResult>(1);
+        tx.try_send(DynamicResult::Empty {
+            provider: ProviderTag::Git(gc_suggest::git::GitQueryKind::Branches),
+        })
+        .unwrap();
+        drop(tx);
+        handler.dynamic_rx = Some(rx);
+
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        handler.try_merge_dynamic(&parser, &mut buf);
+
+        assert!(matches!(
+            handler.feedback_kind(),
+            AsyncFeedback::Empty { .. }
+        ));
+    }
+
+    // --- current_feedback_kind redaction and Error → PartialError fallthrough ---
+
+    #[test]
+    fn test_current_feedback_kind_redacts_provider_when_disabled() {
+        let mut handler = make_handler();
+        handler.theme.show_provider_errors = false;
+        handler.feedback = AsyncFeedback::Error {
+            failed: vec!["git script".into()],
+            since: std::time::Instant::now(),
+        };
+        match handler.current_feedback_kind() {
+            gc_overlay::FeedbackKind::Error { provider } => {
+                assert_eq!(provider, "", "provider must be redacted");
+            }
+            other => panic!("expected Error, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_current_feedback_kind_surfaces_provider_when_enabled() {
+        let mut handler = make_handler();
+        handler.theme.show_provider_errors = true;
+        handler.feedback = AsyncFeedback::Error {
+            failed: vec!["git script".into()],
+            since: std::time::Instant::now(),
+        };
+        match handler.current_feedback_kind() {
+            gc_overlay::FeedbackKind::Error { provider } => {
+                assert_eq!(provider, "git script");
+            }
+            other => panic!("expected Error, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_current_feedback_kind_multi_failed_falls_through_to_partial_error() {
+        let mut handler = make_handler();
+        handler.feedback = AsyncFeedback::Error {
+            failed: vec!["a".into(), "b".into(), "c".into()],
+            since: std::time::Instant::now(),
+        };
+        match handler.current_feedback_kind() {
+            gc_overlay::FeedbackKind::PartialError { providers } => {
+                assert_eq!(providers, 3);
+            }
+            other => panic!("expected PartialError, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_current_feedback_kind_partial_error_clamps_at_u8_max() {
+        let mut handler = make_handler();
+        handler.feedback = AsyncFeedback::PartialError {
+            failed: (0..300).map(|i| format!("p{i}")).collect(),
+            since: std::time::Instant::now(),
+        };
+        match handler.current_feedback_kind() {
+            gc_overlay::FeedbackKind::PartialError { providers } => {
+                assert_eq!(providers, u8::MAX);
+            }
+            other => panic!("expected PartialError, got {other:?}"),
+        }
     }
 }

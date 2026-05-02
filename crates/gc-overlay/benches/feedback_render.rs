@@ -17,13 +17,32 @@ fn feedback_render(c: &mut Criterion) {
             let mut buf = Vec::with_capacity(128);
             render_indicator_row(
                 &mut buf,
-                &layout,
-                &theme,
-                FeedbackKind::Loading { frame: 3 },
+                black_box(&layout),
+                black_box(&theme),
+                black_box(FeedbackKind::Loading { frame: 3 }),
             );
             black_box(buf);
         });
     });
+
+    c.bench_function(
+        "feedback_render/indicator_row_width_60_varying_frame",
+        |b| {
+            let mut frame: u8 = 0;
+            b.iter(|| {
+                let mut buf = Vec::with_capacity(128);
+                let f = black_box(frame);
+                render_indicator_row(
+                    &mut buf,
+                    black_box(&layout),
+                    black_box(&theme),
+                    black_box(FeedbackKind::Loading { frame: f }),
+                );
+                black_box(buf);
+                frame = frame.wrapping_add(1);
+            });
+        },
+    );
 }
 
 criterion_group!(benches, feedback_render);

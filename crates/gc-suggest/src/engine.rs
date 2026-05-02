@@ -626,6 +626,47 @@ impl SuggestionEngine {
         Ok(fuzzy::rank(query, all, MAX_DYNAMIC_CANDIDATES))
     }
 
+    /// Resolve a single git query kind asynchronously. The per-kind variant
+    /// of [`Self::resolve_git`]: surfaces the underlying error to the caller
+    /// instead of swallowing it into an empty vec, so the handler's async
+    /// feedback layer can report which specific git generator failed.
+    pub async fn resolve_git_kind(
+        &self,
+        kind: git::GitQueryKind,
+        cwd: &Path,
+        query: &str,
+    ) -> Result<Vec<Suggestion>> {
+        let suggestions = git::git_suggestions(cwd, kind).await?;
+        if query.is_empty() {
+            return Ok(suggestions);
+        }
+        Ok(fuzzy::rank(query, suggestions, MAX_DYNAMIC_CANDIDATES))
+    }
+
+    /// Resolve a single native provider kind asynchronously. The per-kind
+    /// variant of [`Self::resolve_providers`]: surfaces the underlying error
+    /// to the caller instead of logging-and-swallowing, so the handler's
+    /// async feedback layer can report which specific provider failed.
+    pub async fn resolve_provider_kind(
+        &self,
+        kind: ProviderKind,
+        ctx: &ProviderCtx,
+        query: &str,
+    ) -> Result<Vec<Suggestion>> {
+        if !ctx.cwd.is_absolute() {
+            tracing::warn!(
+                cwd = %ctx.cwd.display(),
+                "provider cwd is relative; skipping provider resolution"
+            );
+            return Ok(Vec::new());
+        }
+        let suggestions = providers::resolve(kind, ctx).await?;
+        if query.is_empty() {
+            return Ok(suggestions);
+        }
+        Ok(fuzzy::rank(query, suggestions, MAX_DYNAMIC_CANDIDATES))
+    }
+
     /// Convenience method that resolves the spec and runs script generators.
     /// Prefer `run_generators` in the handler to avoid redundant spec resolution.
     pub async fn suggest_dynamic(
