@@ -207,6 +207,48 @@ pub fn parse_keys(buf: &[u8]) -> Vec<KeyEvent> {
     events
 }
 
+#[derive(Debug, Default)]
+pub struct KeyParser {
+    pending: Vec<u8>,
+}
+
+impl KeyParser {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn parse(&mut self, buf: &[u8]) -> Vec<KeyEvent> {
+        let mut combined = Vec::with_capacity(self.pending.len() + buf.len());
+        combined.extend_from_slice(&self.pending);
+        combined.extend_from_slice(buf);
+        self.pending.clear();
+
+        if let Some(start) = incomplete_escape_suffix_start(&combined) {
+            self.pending.extend_from_slice(&combined[start..]);
+            parse_keys(&combined[..start])
+        } else {
+            parse_keys(&combined)
+        }
+    }
+}
+
+fn incomplete_escape_suffix_start(buf: &[u8]) -> Option<usize> {
+    let esc = buf.iter().rposition(|&b| b == 0x1B)?;
+    let suffix = &buf[esc..];
+
+    match suffix {
+        [0x1B, b'['] | [0x1B, b'O'] => Some(esc),
+        [0x1B, b'[', rest @ ..] => {
+            if rest.iter().all(|b| *b < 0x40) {
+                Some(esc)
+            } else {
+                None
+            }
+        }
+        _ => None,
+    }
+}
+
 /// Parse a CPR parameter slice like b"15;1" into (row, col).
 /// Returns None if the format doesn't match.
 fn parse_cpr(params: &[u8]) -> Option<(u16, u16)> {
@@ -337,6 +379,33 @@ mod tests {
         assert_eq!(
             parse_keys(b"\x1B[5~a"),
             vec![KeyEvent::PageUp, KeyEvent::Printable('a')]
+        );
+    }
+
+    #[test]
+    fn test_stateful_parser_buffers_split_page_up() {
+        let mut parser = KeyParser::new();
+
+        assert!(parser.parse(b"\x1B[5").is_empty());
+        assert_eq!(parser.parse(b"~"), vec![KeyEvent::PageUp]);
+    }
+
+    #[test]
+    fn test_stateful_parser_buffers_split_ss3_home() {
+        let mut parser = KeyParser::new();
+
+        assert!(parser.parse(b"\x1BO").is_empty());
+        assert_eq!(parser.parse(b"H"), vec![KeyEvent::HomeSs3]);
+    }
+
+    #[test]
+    fn test_stateful_parser_keeps_complete_prefix_before_split_sequence() {
+        let mut parser = KeyParser::new();
+
+        assert_eq!(parser.parse(b"a\x1B[6"), vec![KeyEvent::Printable('a')]);
+        assert_eq!(
+            parser.parse(b"~b"),
+            vec![KeyEvent::PageDown, KeyEvent::Printable('b')]
         );
     }
 

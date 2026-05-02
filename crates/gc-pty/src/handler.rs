@@ -650,7 +650,7 @@ impl InputHandler {
             _ => {}
         }
 
-        // Structural keys — not configurable
+        // Remaining structural keys/default visible-popup handling.
         match key {
             KeyEvent::ArrowLeft | KeyEvent::ArrowRight => {
                 self.dismiss(stdout);
@@ -2862,6 +2862,40 @@ mod tests {
     }
 
     #[test]
+    fn test_page_down_uses_configured_height_when_borderless_popup_suppressed() {
+        let mut handler = make_visible_handler(numbered_suggestions(50));
+        handler.overlay.selected = Some(5);
+        handler.overlay.scroll_offset = 0;
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(1, 80)));
+        let mut buf = Vec::new();
+
+        let result = handler.process_key(&KeyEvent::PageDown, &parser, &mut buf);
+
+        assert!(result.is_empty());
+        assert!(handler.visible);
+        assert_eq!(handler.overlay.selected, Some(15));
+        assert_eq!(handler.overlay.scroll_offset, 6);
+    }
+
+    #[test]
+    fn test_end_uses_configured_height_when_bordered_popup_suppressed() {
+        let mut handler = make_visible_handler(numbered_suggestions(50));
+        handler.theme = PopupTheme {
+            borders: true,
+            ..PopupTheme::default()
+        };
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(3, 80)));
+        let mut buf = Vec::new();
+
+        let result = handler.process_key(&KeyEvent::End, &parser, &mut buf);
+
+        assert!(result.is_empty());
+        assert!(handler.visible);
+        assert_eq!(handler.overlay.selected, Some(49));
+        assert_eq!(handler.overlay.scroll_offset, 40);
+    }
+
+    #[test]
     fn test_page_up_when_visible_retreats_selection() {
         let mut handler = make_visible_handler(numbered_suggestions(50));
         handler.overlay.selected = Some(15);
@@ -2912,6 +2946,28 @@ mod tests {
         let result = handler.process_key(&KeyEvent::PageDown, &parser, &mut buf);
 
         assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_split_page_up_sequence_is_buffered_until_visible_popup_can_intercept() {
+        let mut key_parser = crate::input::KeyParser::new();
+        let mut handler = make_visible_handler(numbered_suggestions(50));
+        handler.overlay.selected = Some(15);
+        handler.overlay.scroll_offset = 6;
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+
+        let first_keys = key_parser.parse(b"\x1B[5");
+        assert!(first_keys.is_empty());
+        assert!(handler.visible);
+
+        let second_keys = key_parser.parse(b"~");
+        assert_eq!(second_keys, vec![KeyEvent::PageUp]);
+        let result = handler.process_key(&second_keys[0], &parser, &mut buf);
+
+        assert!(result.is_empty());
+        assert!(handler.visible);
+        assert_eq!(handler.overlay.selected, Some(5));
     }
 
     #[test]
@@ -3003,6 +3059,50 @@ mod tests {
         assert!(end_handler.visible);
         assert_eq!(end_handler.overlay.selected, Some(49));
         assert_eq!(end_handler.overlay.scroll_offset, 40);
+    }
+
+    #[test]
+    fn test_visible_home_variants_jump_to_zero() {
+        for key in [
+            KeyEvent::Home,
+            KeyEvent::HomeCsiTilde,
+            KeyEvent::HomeCsi7Tilde,
+            KeyEvent::HomeSs3,
+        ] {
+            let mut handler = make_visible_handler(numbered_suggestions(50));
+            handler.overlay.selected = Some(20);
+            handler.overlay.scroll_offset = 11;
+            let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+            let mut buf = Vec::new();
+
+            let result = handler.process_key(&key, &parser, &mut buf);
+
+            assert!(result.is_empty(), "{key:?} should be intercepted");
+            assert!(handler.visible, "{key:?} should not dismiss popup");
+            assert_eq!(handler.overlay.selected, Some(0), "{key:?}");
+            assert_eq!(handler.overlay.scroll_offset, 0, "{key:?}");
+        }
+    }
+
+    #[test]
+    fn test_visible_end_variants_jump_to_last() {
+        for key in [
+            KeyEvent::End,
+            KeyEvent::EndCsiTilde,
+            KeyEvent::EndCsi8Tilde,
+            KeyEvent::EndSs3,
+        ] {
+            let mut handler = make_visible_handler(numbered_suggestions(50));
+            let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+            let mut buf = Vec::new();
+
+            let result = handler.process_key(&key, &parser, &mut buf);
+
+            assert!(result.is_empty(), "{key:?} should be intercepted");
+            assert!(handler.visible, "{key:?} should not dismiss popup");
+            assert_eq!(handler.overlay.selected, Some(49), "{key:?}");
+            assert_eq!(handler.overlay.scroll_offset, 40, "{key:?}");
+        }
     }
 
     #[test]

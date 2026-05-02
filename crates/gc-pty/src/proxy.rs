@@ -14,7 +14,7 @@ use gc_suggest::spec_dirs::resolve_spec_dirs;
 
 use crate::config_watch::spawn_config_watcher;
 use crate::handler::{InputHandler, Keybindings, TriggerPrepared};
-use crate::input::parse_keys;
+use crate::input::KeyParser;
 use crate::resize::{get_terminal_size, resize_pty};
 use crate::spawn::{spawn_shell, SpawnedShell};
 
@@ -278,6 +278,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     let stdin_handle = tokio::task::spawn_blocking(move || {
         let mut stdin = std::io::stdin().lock();
         let mut buf = [0u8; 4096];
+        let mut key_parser = KeyParser::new();
         'stdin: loop {
             let n = match stdin.read(&mut buf) {
                 Ok(0) => break, // EOF
@@ -286,7 +287,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 Err(_) => break,
             };
 
-            let keys = parse_keys(&buf[..n]);
+            let keys = key_parser.parse(&buf[..n]);
             for key in &keys {
                 // CPR (Cursor Position Report) responses arrive here
                 // from the real terminal. If we sent the request, consume

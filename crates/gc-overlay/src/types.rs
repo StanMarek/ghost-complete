@@ -69,19 +69,19 @@ impl OverlayState {
 
     pub fn move_page_down(&mut self, total_items: usize, max_visible: usize) {
         let max_visible = max_visible.max(1);
+        if total_items == 0 {
+            self.reset();
+            return;
+        }
+
         match self.selected {
             None if total_items > 0 => {
                 self.selected = Some(0);
             }
             None => {}
             Some(n) => {
-                let Some(last) = total_items.checked_sub(1) else {
-                    return;
-                };
+                let last = total_items - 1;
                 let new = n.saturating_add(max_visible).min(last);
-                if new == n {
-                    return;
-                }
 
                 self.selected = Some(new);
                 if new >= self.scroll_offset + max_visible {
@@ -304,6 +304,16 @@ mod tests {
     }
 
     #[test]
+    fn test_page_down_empty_list_clears_stale_state() {
+        let mut state = OverlayState::new();
+        state.selected = Some(4);
+        state.scroll_offset = 2;
+        state.move_page_down(0, DEFAULT_MAX_VISIBLE);
+        assert_eq!(state.selected, None);
+        assert_eq!(state.scroll_offset, 0);
+    }
+
+    #[test]
     fn test_page_down_clamps_at_last() {
         let mut state = OverlayState::new();
         state.selected = Some(48);
@@ -321,6 +331,16 @@ mod tests {
         state.move_page_down(50, DEFAULT_MAX_VISIBLE);
         assert_eq!(state.selected, Some(49));
         assert_eq!(state.scroll_offset, 40);
+    }
+
+    #[test]
+    fn test_page_down_at_last_after_viewport_shrink_keeps_selected_visible() {
+        let mut state = OverlayState::new();
+        state.selected = Some(49);
+        state.scroll_offset = 40;
+        state.move_page_down(50, 5);
+        assert_eq!(state.selected, Some(49));
+        assert_eq!(state.scroll_offset, 45);
     }
 
     #[test]
