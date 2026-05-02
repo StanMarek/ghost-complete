@@ -13,9 +13,23 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
+use gc_pty::dynamic_result::{DynamicResult, ProviderTag};
 use gc_pty::handler::InputHandler;
 use gc_suggest::types::{Suggestion, SuggestionKind, SuggestionSource};
 use tokio::sync::mpsc;
+
+fn loaded(items: Vec<Suggestion>) -> DynamicResult {
+    DynamicResult::Loaded {
+        provider: ProviderTag::Git(gc_suggest::git::GitQueryKind::Branches),
+        suggestions: items,
+    }
+}
+
+fn empty_result() -> DynamicResult {
+    DynamicResult::Empty {
+        provider: ProviderTag::Git(gc_suggest::git::GitQueryKind::Branches),
+    }
+}
 
 // NOTE: gc_terminal::TerminalProfile::for_ghostty() is only available in
 // dev/test builds via the "test-utils" feature (declared in gc-pty's
@@ -55,13 +69,13 @@ fn make_handler_with_delayed_rx(
     // Prime dynamic_ctx so the staleness check in try_merge_dynamic passes.
     handler.prime_dynamic_ctx_for_empty_buffer();
 
-    let (tx, rx) = mpsc::channel::<Vec<Suggestion>>(1);
+    let (tx, rx) = mpsc::channel::<DynamicResult>(1);
     handler.restore_dynamic_rx(rx);
 
     // Spawn a task that sends async_items after `delay`.
     let sender = tokio::spawn(async move {
         tokio::time::sleep(delay).await;
-        let _ = tx.send(async_items).await;
+        let _ = tx.send(loaded(async_items)).await;
     });
 
     (handler, sender)
@@ -118,7 +132,7 @@ async fn fast_async_arrives_before_block_window() {
     let timeout_dur = Duration::from_millis(80);
 
     // Mirror what debounce_loop does in Phase 2.
-    let (maybe_async, rx_on_timeout): (Option<Vec<Suggestion>>, Option<mpsc::Receiver<_>>) = {
+    let (maybe_async, rx_on_timeout): (Option<DynamicResult>, Option<mpsc::Receiver<_>>) = {
         let mut rx = rx;
         tokio::select! {
             maybe_result = rx.recv() => (maybe_result, None),
@@ -140,7 +154,12 @@ async fn fast_async_arrives_before_block_window() {
     );
 
     let async_results = maybe_async.unwrap();
-    assert_eq!(async_results.len(), 2, "expected 2 branch suggestions");
+    match &async_results {
+        DynamicResult::Loaded { suggestions, .. } => {
+            assert_eq!(suggestions.len(), 2, "expected 2 branch suggestions")
+        }
+        other => panic!("expected loaded result, got {other:?}"),
+    }
 
     // Now call apply_block_result.
     let parser = make_parser();
@@ -149,6 +168,7 @@ async fn fast_async_arrives_before_block_window() {
         &parser,
         &mut render_buf,
         Some(async_results),
+        None,
         None,
         sync_suggestions.clone(),
         0,
@@ -187,6 +207,70 @@ async fn fast_async_arrives_before_block_window() {
     sender_task.await.unwrap();
 }
 
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn block_result_keeps_receiver_when_more_batches_may_arrive() {
+    let mut handler = make_test_handler(80);
+    handler.set_buffer_generation(1);
+    handler.set_spawned_generation(1);
+    handler.prime_dynamic_ctx_for_empty_buffer();
+
+    let (tx, mut rx) = mpsc::channel::<DynamicResult>(2);
+    tx.send(loaded(vec![branch_suggestion("main")]))
+        .await
+        .unwrap();
+    let first = rx.recv().await.expect("first dynamic batch");
+
+    let parser = make_parser();
+    let mut render_buf = Vec::new();
+    handler.apply_block_result(
+        &parser,
+        &mut render_buf,
+        Some(first),
+        Some(rx),
+        None,
+        vec![flag_suggestion("--verbose")],
+        0,
+        0,
+        24,
+        80,
+        (0, 0),
+        "",
+    );
+
+    assert!(
+        handler.has_dynamic_rx(),
+        "open receiver must be restored after a partial bounded-block batch"
+    );
+    assert!(
+        handler
+            .current_suggestions()
+            .iter()
+            .any(|s| s.text == "main"),
+        "first batch should still merge immediately"
+    );
+
+    tx.send(loaded(vec![branch_suggestion("dev")]))
+        .await
+        .unwrap();
+    drop(tx);
+    let mut render_buf = Vec::new();
+    assert!(handler.try_merge_dynamic(&parser, &mut render_buf));
+
+    let texts: Vec<&str> = handler
+        .current_suggestions()
+        .iter()
+        .map(|s| s.text.as_str())
+        .collect();
+    assert!(
+        texts.contains(&"main") && texts.contains(&"dev"),
+        "later dynamic batches must not be lost: {texts:?}"
+    );
+    assert!(
+        !handler.has_dynamic_rx(),
+        "receiver clears once the final batch disconnects"
+    );
+}
+
 // ── Test 2 ───────────────────────────────────────────────────────────────────
 
 /// Generator returns at 200 ms; render_block_ms = 80 ms.
@@ -207,7 +291,7 @@ async fn slow_async_falls_through_then_merges_on_arrival() {
     let start = Instant::now();
     let timeout_dur = Duration::from_millis(80);
 
-    let (maybe_async, rx_on_timeout): (Option<Vec<Suggestion>>, Option<mpsc::Receiver<_>>) = {
+    let (maybe_async, rx_on_timeout): (Option<DynamicResult>, Option<mpsc::Receiver<_>>) = {
         let mut rx = rx;
         tokio::select! {
             maybe_result = rx.recv() => (maybe_result, None),
@@ -241,6 +325,7 @@ async fn slow_async_falls_through_then_merges_on_arrival() {
         &parser,
         &mut render_buf,
         None, // timeout: no async results
+        None,
         rx_restored,
         sync_suggestions,
         0,
@@ -415,7 +500,8 @@ async fn fast_async_with_typed_query_refilters_pool() {
     handler.apply_block_result(
         &parser,
         &mut render_buf,
-        Some(async_items),
+        Some(loaded(async_items)),
+        None,
         None,
         sync_suggestions,
         0,
@@ -474,7 +560,8 @@ async fn empty_async_result_clears_loading_state() {
     handler.apply_block_result(
         &parser,
         &mut render_buf,
-        Some(Vec::new()),
+        Some(empty_result()),
+        None,
         None,
         Vec::new(),
         0,
@@ -617,7 +704,8 @@ async fn stale_async_result_dropped_when_buffer_drifted() {
     handler.apply_block_result(
         &parser,
         &mut render_buf,
-        Some(vec![branch_suggestion("main")]),
+        Some(loaded(vec![branch_suggestion("main")])),
+        None,
         None,
         Vec::new(),
         0,
@@ -668,7 +756,8 @@ async fn stale_generation_drops_async_result() {
     handler.apply_block_result(
         &parser,
         &mut render_buf,
-        Some(vec![branch_suggestion("main")]),
+        Some(loaded(vec![branch_suggestion("main")])),
+        None,
         None,
         Vec::new(),
         0,

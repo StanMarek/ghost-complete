@@ -105,6 +105,30 @@ pub fn all_fields() -> Vec<FieldMeta> {
             reload: ReloadBehavior::Live,
             help: "Draw box-drawing borders around the popup",
         },
+        FieldMeta {
+            section: "popup",
+            key: "feedback_dismiss_ms",
+            field_type: FieldType::U64,
+            default: "1200",
+            reload: ReloadBehavior::Live,
+            help: "Milliseconds before Empty/Error feedback auto-dismisses",
+        },
+        FieldMeta {
+            section: "popup",
+            key: "spinner",
+            field_type: FieldType::Bool,
+            default: "true",
+            reload: ReloadBehavior::Live,
+            help: "Animate async Loading feedback",
+        },
+        FieldMeta {
+            section: "popup",
+            key: "show_provider_errors",
+            field_type: FieldType::Bool,
+            default: "false",
+            reload: ReloadBehavior::Live,
+            help: "Show provider names in error feedback",
+        },
         // suggest
         FieldMeta {
             section: "suggest",
@@ -268,6 +292,30 @@ pub fn all_fields() -> Vec<FieldMeta> {
             default: "",
             reload: ReloadBehavior::Live,
             help: "Style for popup borders",
+        },
+        FieldMeta {
+            section: "theme",
+            key: "feedback_loading",
+            field_type: FieldType::StyleString,
+            default: "",
+            reload: ReloadBehavior::Live,
+            help: "Style for Loading feedback",
+        },
+        FieldMeta {
+            section: "theme",
+            key: "feedback_empty",
+            field_type: FieldType::StyleString,
+            default: "",
+            reload: ReloadBehavior::Live,
+            help: "Style for Empty feedback",
+        },
+        FieldMeta {
+            section: "theme",
+            key: "feedback_error",
+            field_type: FieldType::StyleString,
+            default: "",
+            reload: ReloadBehavior::Live,
+            help: "Style for provider Error feedback",
         },
         // paths
         FieldMeta {

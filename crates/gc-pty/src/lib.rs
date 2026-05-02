@@ -5,6 +5,8 @@
 //! for popup navigation.
 
 mod config_watch;
+pub mod dynamic_result;
+pub mod feedback;
 pub mod handler;
 pub mod input;
 mod proxy;
