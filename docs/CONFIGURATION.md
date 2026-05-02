@@ -321,6 +321,7 @@ match_highlight = "underline"
 - **Config hot-reload:** Some fields are applied live without restarting your shell. Others require a shell restart. See the table below.
 - **Nerd Font icons:** The popup gutter uses Nerd Font icons. If your terminal font doesn't include Nerd Font patches, you'll see placeholder characters. Use a [Nerd Font](https://www.nerdfonts.com/) for the best experience.
 - **History control:** Use `max_history_results` (not `providers.history`) to control history. Set to `0` to disable history entirely.
+- **Popup navigation:** PageUp, PageDown, Home, and End navigate the popup when it is visible and are forwarded to the shell when it is hidden. These structural keys are not user-configurable.
 
 ### Hot-Reload Behavior
 

@@ -621,6 +621,32 @@ impl InputHandler {
             return Vec::new();
         }
 
+        match key {
+            KeyEvent::PageUp => {
+                self.overlay.move_page_up(self.max_visible);
+                self.render(parser, stdout);
+                return Vec::new();
+            }
+            KeyEvent::PageDown => {
+                self.overlay
+                    .move_page_down(self.suggestions.len(), self.max_visible);
+                self.render(parser, stdout);
+                return Vec::new();
+            }
+            KeyEvent::Home => {
+                self.overlay.move_home(self.suggestions.len());
+                self.render(parser, stdout);
+                return Vec::new();
+            }
+            KeyEvent::End => {
+                self.overlay
+                    .move_end(self.suggestions.len(), self.max_visible);
+                self.render(parser, stdout);
+                return Vec::new();
+            }
+            _ => {}
+        }
+
         // Structural keys — not configurable
         match key {
             KeyEvent::ArrowLeft | KeyEvent::ArrowRight => {
@@ -2055,6 +2081,10 @@ pub fn key_to_bytes(key: &KeyEvent) -> Vec<u8> {
         KeyEvent::ArrowDown => vec![0x1B, b'[', b'B'],
         KeyEvent::ArrowRight => vec![0x1B, b'[', b'C'],
         KeyEvent::ArrowLeft => vec![0x1B, b'[', b'D'],
+        KeyEvent::PageUp => vec![0x1B, b'[', b'5', b'~'],
+        KeyEvent::PageDown => vec![0x1B, b'[', b'6', b'~'],
+        KeyEvent::Home => vec![0x1B, b'[', b'H'],
+        KeyEvent::End => vec![0x1B, b'[', b'F'],
         KeyEvent::CtrlSpace => vec![0x00],
         KeyEvent::CtrlSlash => vec![0x1F],
         KeyEvent::Backspace => vec![0x7F],
@@ -2117,6 +2147,26 @@ mod tests {
     }
 
     #[test]
+    fn test_key_to_bytes_page_up_round_trip() {
+        assert_eq!(key_to_bytes(&KeyEvent::PageUp), b"\x1B[5~");
+    }
+
+    #[test]
+    fn test_key_to_bytes_page_down_round_trip() {
+        assert_eq!(key_to_bytes(&KeyEvent::PageDown), b"\x1B[6~");
+    }
+
+    #[test]
+    fn test_key_to_bytes_home_round_trip() {
+        assert_eq!(key_to_bytes(&KeyEvent::Home), b"\x1B[H");
+    }
+
+    #[test]
+    fn test_key_to_bytes_end_round_trip() {
+        assert_eq!(key_to_bytes(&KeyEvent::End), b"\x1B[F");
+    }
+
+    #[test]
     fn test_key_to_bytes_printable() {
         assert_eq!(key_to_bytes(&KeyEvent::Printable('x')), vec![b'x']);
     }
@@ -2137,6 +2187,10 @@ mod tests {
             KeyEvent::ArrowDown,
             KeyEvent::ArrowLeft,
             KeyEvent::ArrowRight,
+            KeyEvent::PageUp,
+            KeyEvent::PageDown,
+            KeyEvent::Home,
+            KeyEvent::End,
             KeyEvent::CtrlSpace,
             KeyEvent::CtrlSlash,
             KeyEvent::Backspace,
@@ -2654,11 +2708,170 @@ mod tests {
         h
     }
 
+    fn numbered_suggestions(count: usize) -> Vec<Suggestion> {
+        (0..count)
+            .map(|n| Suggestion {
+                text: format!("item-{n}"),
+                kind: SuggestionKind::Command,
+                source: SuggestionSource::Spec,
+                ..Default::default()
+            })
+            .collect()
+    }
+
     /// Test builder: visible handler with a single selected suggestion.
     fn make_selected_handler(suggestion: Suggestion) -> InputHandler {
         let mut h = make_visible_handler(vec![suggestion]);
         h.overlay.selected = Some(0);
         h
+    }
+
+    #[test]
+    fn test_page_down_when_visible_advances_selection() {
+        let mut handler = make_visible_handler(numbered_suggestions(50));
+        handler.overlay.selected = Some(5);
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+
+        let result = handler.process_key(&KeyEvent::PageDown, &parser, &mut buf);
+
+        assert!(result.is_empty());
+        assert_eq!(handler.overlay.selected, Some(15));
+    }
+
+    #[test]
+    fn test_page_up_when_visible_retreats_selection() {
+        let mut handler = make_visible_handler(numbered_suggestions(50));
+        handler.overlay.selected = Some(15);
+        handler.overlay.scroll_offset = 6;
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+
+        let result = handler.process_key(&KeyEvent::PageUp, &parser, &mut buf);
+
+        assert!(result.is_empty());
+        assert_eq!(handler.overlay.selected, Some(5));
+    }
+
+    #[test]
+    fn test_home_when_visible_jumps_to_zero() {
+        let mut handler = make_visible_handler(numbered_suggestions(50));
+        handler.overlay.selected = Some(20);
+        handler.overlay.scroll_offset = 11;
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+
+        let result = handler.process_key(&KeyEvent::Home, &parser, &mut buf);
+
+        assert!(result.is_empty());
+        assert_eq!(handler.overlay.selected, Some(0));
+        assert_eq!(handler.overlay.scroll_offset, 0);
+    }
+
+    #[test]
+    fn test_end_when_visible_jumps_to_last() {
+        let mut handler = make_visible_handler(numbered_suggestions(50));
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+
+        let result = handler.process_key(&KeyEvent::End, &parser, &mut buf);
+
+        assert!(result.is_empty());
+        assert_eq!(handler.overlay.selected, Some(49));
+        assert_eq!(handler.overlay.scroll_offset, 40);
+    }
+
+    #[test]
+    fn test_page_down_intercepted_when_visible_returns_empty_bytes() {
+        let mut handler = make_visible_handler(numbered_suggestions(50));
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+
+        let result = handler.process_key(&KeyEvent::PageDown, &parser, &mut buf);
+
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_page_down_when_hidden_forwards_bytes() {
+        let mut handler = make_handler();
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+
+        let result = handler.process_key(&KeyEvent::PageDown, &parser, &mut buf);
+
+        assert_eq!(result, b"\x1B[6~");
+    }
+
+    #[test]
+    fn test_page_up_when_hidden_forwards_bytes() {
+        let mut handler = make_handler();
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+
+        let result = handler.process_key(&KeyEvent::PageUp, &parser, &mut buf);
+
+        assert_eq!(result, b"\x1B[5~");
+    }
+
+    #[test]
+    fn test_home_when_hidden_forwards_bytes() {
+        let mut handler = make_handler();
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+
+        let result = handler.process_key(&KeyEvent::Home, &parser, &mut buf);
+
+        assert_eq!(result, b"\x1B[H");
+    }
+
+    #[test]
+    fn test_end_when_hidden_forwards_bytes() {
+        let mut handler = make_handler();
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+
+        let result = handler.process_key(&KeyEvent::End, &parser, &mut buf);
+
+        assert_eq!(result, b"\x1B[F");
+    }
+
+    #[test]
+    fn test_page_navigation_does_not_dismiss_popup() {
+        for key in [
+            KeyEvent::PageUp,
+            KeyEvent::PageDown,
+            KeyEvent::Home,
+            KeyEvent::End,
+        ] {
+            let mut handler = make_visible_handler(numbered_suggestions(50));
+            handler.overlay.selected = Some(5);
+            let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+            let mut buf = Vec::new();
+
+            handler.process_key(&key, &parser, &mut buf);
+
+            assert!(handler.visible, "{key:?} should not dismiss popup");
+        }
+    }
+
+    #[test]
+    fn test_page_down_then_accept_uses_new_selection() {
+        let mut handler = make_visible_handler(numbered_suggestions(50));
+        handler.overlay.selected = Some(5);
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+
+        let page_result = handler.process_key(&KeyEvent::PageDown, &parser, &mut buf);
+        assert!(page_result.is_empty());
+
+        let accept_result = handler.process_key(&KeyEvent::Tab, &parser, &mut buf);
+        let accepted = String::from_utf8_lossy(&accept_result);
+
+        assert!(
+            accepted.contains("item-15"),
+            "expected accept to use paged selection, got {accepted:?}"
+        );
     }
 
     #[test]

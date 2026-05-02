@@ -12,6 +12,10 @@ pub enum KeyEvent {
     ArrowDown,
     ArrowLeft,
     ArrowRight,
+    PageUp,
+    PageDown,
+    Home,
+    End,
     CtrlSpace,
     CtrlSlash,
     Ctrl(char),
@@ -73,6 +77,30 @@ pub fn parse_keys(buf: &[u8]) -> Vec<KeyEvent> {
                             events.push(KeyEvent::ArrowLeft);
                             i += 3;
                         }
+                        b'H' => {
+                            events.push(KeyEvent::Home);
+                            i += 3;
+                        }
+                        b'F' => {
+                            events.push(KeyEvent::End);
+                            i += 3;
+                        }
+                        b'1' if i + 3 < buf.len() && buf[i + 3] == b'~' => {
+                            events.push(KeyEvent::Home);
+                            i += 4;
+                        }
+                        b'4' if i + 3 < buf.len() && buf[i + 3] == b'~' => {
+                            events.push(KeyEvent::End);
+                            i += 4;
+                        }
+                        b'5' if i + 3 < buf.len() && buf[i + 3] == b'~' => {
+                            events.push(KeyEvent::PageUp);
+                            i += 4;
+                        }
+                        b'6' if i + 3 < buf.len() && buf[i + 3] == b'~' => {
+                            events.push(KeyEvent::PageDown);
+                            i += 4;
+                        }
                         _ => {
                             // Unknown CSI — find end and pass through as Raw
                             let start = i;
@@ -113,6 +141,14 @@ pub fn parse_keys(buf: &[u8]) -> Vec<KeyEvent> {
                         }
                         b'D' => {
                             events.push(KeyEvent::ArrowLeft);
+                            i += 3;
+                        }
+                        b'H' => {
+                            events.push(KeyEvent::Home);
+                            i += 3;
+                        }
+                        b'F' => {
+                            events.push(KeyEvent::End);
                             i += 3;
                         }
                         _ => {
@@ -216,9 +252,49 @@ mod tests {
     }
 
     #[test]
+    fn test_page_up_csi_tilde() {
+        assert_eq!(parse_keys(b"\x1B[5~"), vec![KeyEvent::PageUp]);
+    }
+
+    #[test]
+    fn test_page_down_csi_tilde() {
+        assert_eq!(parse_keys(b"\x1B[6~"), vec![KeyEvent::PageDown]);
+    }
+
+    #[test]
+    fn test_home_csi_letter() {
+        assert_eq!(parse_keys(b"\x1B[H"), vec![KeyEvent::Home]);
+    }
+
+    #[test]
+    fn test_end_csi_letter() {
+        assert_eq!(parse_keys(b"\x1B[F"), vec![KeyEvent::End]);
+    }
+
+    #[test]
+    fn test_home_csi_tilde_synonym() {
+        assert_eq!(parse_keys(b"\x1B[1~"), vec![KeyEvent::Home]);
+    }
+
+    #[test]
+    fn test_end_csi_tilde_synonym() {
+        assert_eq!(parse_keys(b"\x1B[4~"), vec![KeyEvent::End]);
+    }
+
+    #[test]
     fn test_arrow_keys_ss3() {
         assert_eq!(parse_keys(b"\x1BOA"), vec![KeyEvent::ArrowUp]);
         assert_eq!(parse_keys(b"\x1BOB"), vec![KeyEvent::ArrowDown]);
+    }
+
+    #[test]
+    fn test_home_ss3() {
+        assert_eq!(parse_keys(b"\x1BOH"), vec![KeyEvent::Home]);
+    }
+
+    #[test]
+    fn test_end_ss3() {
+        assert_eq!(parse_keys(b"\x1BOF"), vec![KeyEvent::End]);
     }
 
     #[test]
@@ -237,6 +313,14 @@ mod tests {
             KeyEvent::Raw(bytes) => assert_eq!(bytes, raw),
             other => panic!("expected Raw, got {:?}", other),
         }
+    }
+
+    #[test]
+    fn test_paged_then_typed() {
+        assert_eq!(
+            parse_keys(b"\x1B[5~a"),
+            vec![KeyEvent::PageUp, KeyEvent::Printable('a')]
+        );
     }
 
     #[test]
