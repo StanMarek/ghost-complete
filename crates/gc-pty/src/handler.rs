@@ -633,12 +633,12 @@ impl InputHandler {
                 self.render(parser, stdout);
                 return Vec::new();
             }
-            KeyEvent::Home => {
+            KeyEvent::Home | KeyEvent::HomeCsiTilde | KeyEvent::HomeSs3 => {
                 self.overlay.move_home(self.suggestions.len());
                 self.render(parser, stdout);
                 return Vec::new();
             }
-            KeyEvent::End => {
+            KeyEvent::End | KeyEvent::EndCsiTilde | KeyEvent::EndSs3 => {
                 self.overlay
                     .move_end(self.suggestions.len(), self.max_visible);
                 self.render(parser, stdout);
@@ -2084,7 +2084,11 @@ pub fn key_to_bytes(key: &KeyEvent) -> Vec<u8> {
         KeyEvent::PageUp => vec![0x1B, b'[', b'5', b'~'],
         KeyEvent::PageDown => vec![0x1B, b'[', b'6', b'~'],
         KeyEvent::Home => vec![0x1B, b'[', b'H'],
+        KeyEvent::HomeCsiTilde => vec![0x1B, b'[', b'1', b'~'],
+        KeyEvent::HomeSs3 => vec![0x1B, b'O', b'H'],
         KeyEvent::End => vec![0x1B, b'[', b'F'],
+        KeyEvent::EndCsiTilde => vec![0x1B, b'[', b'4', b'~'],
+        KeyEvent::EndSs3 => vec![0x1B, b'O', b'F'],
         KeyEvent::CtrlSpace => vec![0x00],
         KeyEvent::CtrlSlash => vec![0x1F],
         KeyEvent::Backspace => vec![0x7F],
@@ -2159,11 +2163,15 @@ mod tests {
     #[test]
     fn test_key_to_bytes_home_round_trip() {
         assert_eq!(key_to_bytes(&KeyEvent::Home), b"\x1B[H");
+        assert_eq!(key_to_bytes(&KeyEvent::HomeCsiTilde), b"\x1B[1~");
+        assert_eq!(key_to_bytes(&KeyEvent::HomeSs3), b"\x1BOH");
     }
 
     #[test]
     fn test_key_to_bytes_end_round_trip() {
         assert_eq!(key_to_bytes(&KeyEvent::End), b"\x1B[F");
+        assert_eq!(key_to_bytes(&KeyEvent::EndCsiTilde), b"\x1B[4~");
+        assert_eq!(key_to_bytes(&KeyEvent::EndSs3), b"\x1BOF");
     }
 
     #[test]
@@ -2190,7 +2198,11 @@ mod tests {
             KeyEvent::PageUp,
             KeyEvent::PageDown,
             KeyEvent::Home,
+            KeyEvent::HomeCsiTilde,
+            KeyEvent::HomeSs3,
             KeyEvent::End,
+            KeyEvent::EndCsiTilde,
+            KeyEvent::EndSs3,
             KeyEvent::CtrlSpace,
             KeyEvent::CtrlSlash,
             KeyEvent::Backspace,
@@ -2837,12 +2849,32 @@ mod tests {
     }
 
     #[test]
+    fn test_hidden_home_end_alternate_encodings_forward_verbatim() {
+        for raw in [b"\x1B[1~".as_slice(), b"\x1B[4~", b"\x1BOH", b"\x1BOF"] {
+            let events = crate::input::parse_keys(raw);
+            assert_eq!(events.len(), 1, "expected one parsed event for {raw:?}");
+
+            let mut handler = make_handler();
+            let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+            let mut buf = Vec::new();
+
+            let result = handler.process_key(&events[0], &parser, &mut buf);
+
+            assert_eq!(result, raw, "hidden popup must forward {raw:?} unchanged");
+        }
+    }
+
+    #[test]
     fn test_page_navigation_does_not_dismiss_popup() {
         for key in [
             KeyEvent::PageUp,
             KeyEvent::PageDown,
             KeyEvent::Home,
+            KeyEvent::HomeCsiTilde,
+            KeyEvent::HomeSs3,
             KeyEvent::End,
+            KeyEvent::EndCsiTilde,
+            KeyEvent::EndSs3,
         ] {
             let mut handler = make_visible_handler(numbered_suggestions(50));
             handler.overlay.selected = Some(5);

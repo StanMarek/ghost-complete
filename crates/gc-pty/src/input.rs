@@ -1,7 +1,8 @@
 /// Minimal key event parser for raw terminal stdin bytes.
 ///
-/// Parses known sequences (arrows, Tab, Enter, Escape, Ctrl+Space, Ctrl+/,
-/// Ctrl+A through Ctrl+Z) and passes through everything else as Raw bytes.
+/// Parses known sequences (arrows, PageUp/PageDown, Home/End, Tab, Enter, Escape,
+/// Ctrl+Space, Ctrl+/, Ctrl+A through Ctrl+Z) and passes through everything else
+/// as Raw bytes.
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum KeyEvent {
@@ -15,7 +16,11 @@ pub enum KeyEvent {
     PageUp,
     PageDown,
     Home,
+    HomeCsiTilde,
+    HomeSs3,
     End,
+    EndCsiTilde,
+    EndSs3,
     CtrlSpace,
     CtrlSlash,
     Ctrl(char),
@@ -86,11 +91,11 @@ pub fn parse_keys(buf: &[u8]) -> Vec<KeyEvent> {
                             i += 3;
                         }
                         b'1' if i + 3 < buf.len() && buf[i + 3] == b'~' => {
-                            events.push(KeyEvent::Home);
+                            events.push(KeyEvent::HomeCsiTilde);
                             i += 4;
                         }
                         b'4' if i + 3 < buf.len() && buf[i + 3] == b'~' => {
-                            events.push(KeyEvent::End);
+                            events.push(KeyEvent::EndCsiTilde);
                             i += 4;
                         }
                         b'5' if i + 3 < buf.len() && buf[i + 3] == b'~' => {
@@ -144,11 +149,11 @@ pub fn parse_keys(buf: &[u8]) -> Vec<KeyEvent> {
                             i += 3;
                         }
                         b'H' => {
-                            events.push(KeyEvent::Home);
+                            events.push(KeyEvent::HomeSs3);
                             i += 3;
                         }
                         b'F' => {
-                            events.push(KeyEvent::End);
+                            events.push(KeyEvent::EndSs3);
                             i += 3;
                         }
                         _ => {
@@ -273,12 +278,12 @@ mod tests {
 
     #[test]
     fn test_home_csi_tilde_synonym() {
-        assert_eq!(parse_keys(b"\x1B[1~"), vec![KeyEvent::Home]);
+        assert_eq!(parse_keys(b"\x1B[1~"), vec![KeyEvent::HomeCsiTilde]);
     }
 
     #[test]
     fn test_end_csi_tilde_synonym() {
-        assert_eq!(parse_keys(b"\x1B[4~"), vec![KeyEvent::End]);
+        assert_eq!(parse_keys(b"\x1B[4~"), vec![KeyEvent::EndCsiTilde]);
     }
 
     #[test]
@@ -289,12 +294,12 @@ mod tests {
 
     #[test]
     fn test_home_ss3() {
-        assert_eq!(parse_keys(b"\x1BOH"), vec![KeyEvent::Home]);
+        assert_eq!(parse_keys(b"\x1BOH"), vec![KeyEvent::HomeSs3]);
     }
 
     #[test]
     fn test_end_ss3() {
-        assert_eq!(parse_keys(b"\x1BOF"), vec![KeyEvent::End]);
+        assert_eq!(parse_keys(b"\x1BOF"), vec![KeyEvent::EndSs3]);
     }
 
     #[test]
