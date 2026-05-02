@@ -9,19 +9,26 @@
 //! brace expansion, regex) is logged-and-skipped — the user can `cd
 //! <crate-dir>` and run `cargo run` bare as a workaround.
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
+use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 use std::sync::{LazyLock, Mutex};
 use std::time::SystemTime;
 
 use anyhow::Result;
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer};
 
 use super::MAX_ANCESTOR_WALK;
 use crate::providers::{Provider, ProviderCtx};
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 
 const MAX_DESCRIPTION_CHARS: usize = 120;
+
+/// Hard cap on cached workspace resolutions. Mirrors `MAX_CACHE_ENTRIES`
+/// in `mod.rs`; duplicated rather than shared because `CargoCache` keys
+/// off a stamp set rather than (mtime, size) so it can't reuse
+/// `MtimeCache` directly.
+const MAX_CARGO_CACHE_ENTRIES: usize = 64;
 
 #[derive(Deserialize)]
 struct CargoTomlMin {
@@ -35,10 +42,32 @@ struct CargoTomlMin {
 struct PackageMin {
     #[serde(default)]
     name: Option<String>,
-    #[serde(default)]
+    /// Tolerate `version = "x"` (string) AND `version.workspace = true`
+    /// (table). The latter is Cargo's workspace-inheritance form and
+    /// resolves to `None` here — we don't re-resolve from
+    /// `[workspace.package]` (out of scope) but we MUST not let serde
+    /// reject the entire member manifest because of it.
+    #[serde(default, deserialize_with = "string_or_inherited")]
     version: Option<String>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "string_or_inherited")]
     description: Option<String>,
+}
+
+/// Accept either a TOML string or any non-string shape (table, bool,
+/// array). Non-string shapes — including the `{ workspace = true }`
+/// inheritance table — collapse to `None` so the parent struct still
+/// deserializes. Without this, a single `version.workspace = true`
+/// member would silently disappear from `cargo run -p <TAB>` because
+/// the whole `toml::from_str::<CargoTomlMin>` call would fail.
+fn string_or_inherited<'de, D>(d: D) -> std::result::Result<Option<String>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let v = toml::Value::deserialize(d)?;
+    Ok(match v {
+        toml::Value::String(s) => Some(s),
+        _ => None,
+    })
 }
 
 #[derive(Deserialize, Default)]
@@ -49,38 +78,72 @@ struct WorkspaceMin {
     exclude: Vec<String>,
 }
 
+/// Validated Cargo package name. The Cargo CLI accepts names matching
+/// `^[a-zA-Z][a-zA-Z0-9_-]*$`; rejecting anything else upstream
+/// guarantees the suggestion text we hand back to `cargo run -p` will
+/// be accepted.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct CargoPackageName(String);
+
+impl CargoPackageName {
+    pub(crate) fn try_from(s: &str) -> Option<Self> {
+        let mut chars = s.chars();
+        match chars.next() {
+            Some(c) if c.is_ascii_alphabetic() => {}
+            _ => return None,
+        }
+        if !chars.all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-') {
+            return None;
+        }
+        Some(Self(s.to_string()))
+    }
+}
+
+impl From<CargoPackageName> for String {
+    fn from(v: CargoPackageName) -> Self {
+        v.0
+    }
+}
+
 #[derive(Clone, Debug)]
 struct MemberInfo {
-    name: String,
+    name: CargoPackageName,
     description: Option<String>,
 }
 
 /// One probe of a path involved in workspace resolution. Each probe
 /// records what was at that path at sample time, including the
-/// negative case (`Missing`). Files contribute both `mtime` and
-/// `size`; directories (glob prefix dirs that drive member expansion)
-/// contribute `mtime` only — adding or removing a direct child bumps
-/// the parent dir's mtime on every platform we ship on.
+/// negative case (`AbsentOrUnreadable`). Files contribute both `mtime`
+/// and `size`; directories (glob prefix dirs that drive member
+/// expansion) contribute `mtime` only — adding or removing a direct
+/// child bumps the parent dir's mtime on every platform we ship on.
 ///
 /// Recording the negative case is what catches the "user added the
 /// first crate to a previously-empty workspace" class: the literal
-/// member dir / its `Cargo.toml` was Missing at first resolve, so
-/// transitioning to a real File invalidates the cache instead of
-/// serving the cached empty member list.
-#[derive(Clone, Debug, PartialEq, Eq)]
-struct Stamp {
-    path: PathBuf,
-    state: StampState,
-}
-
+/// member dir / its `Cargo.toml` was AbsentOrUnreadable at first
+/// resolve, so transitioning to a real File invalidates the cache
+/// instead of serving the cached empty member list.
+///
+/// `mtime` is `Option<SystemTime>` so a platform that doesn't expose
+/// modified-time (some FUSE/NFS mounts; bare `tar -x` of a zero-mtime
+/// archive) doesn't get folded into a real `SystemTime::UNIX_EPOCH`
+/// value that would compare equal across probes and wedge the cache
+/// into a permanent hit. `None == None` is treated as a MISS in
+/// `stamp_matches`.
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum StampState {
-    /// Path did not exist when probed.
-    Missing,
+    /// Path didn't exist at probe time, OR metadata read failed for
+    /// any other reason (PermissionDenied, transient EIO, etc.). The
+    /// validity question is binary so all non-success outcomes fold
+    /// here; the warn log in `probe_state` distinguishes the cause.
+    AbsentOrUnreadable,
     /// Regular file at probe time.
-    File { mtime: SystemTime, size: u64 },
+    File {
+        mtime: Option<SystemTime>,
+        size: u64,
+    },
     /// Directory at probe time.
-    Dir { mtime: SystemTime },
+    Dir { mtime: Option<SystemTime> },
 }
 
 #[derive(Clone)]
@@ -92,69 +155,229 @@ struct ResolvedRoot {
     /// crates appearing under a glob-expanded prefix — neither of
     /// which mutate the workspace root `Cargo.toml` itself, so
     /// keying off the root alone would silently return stale data.
-    stamps: Vec<Stamp>,
+    ///
+    /// `BTreeMap` (rather than `Vec<Stamp>`) deduplicates
+    /// double-stamping (e.g. `expand_member_pattern` and
+    /// `read_member_info` both stamp the member's `Cargo.toml`) and
+    /// gives deterministic test iteration.
+    stamps: BTreeMap<PathBuf, StampState>,
+}
+
+impl ResolvedRoot {
+    fn new() -> Self {
+        Self {
+            members: Vec::new(),
+            stamps: BTreeMap::new(),
+        }
+    }
+
+    /// Insert a stamp; if the path is already recorded, assert the
+    /// state agrees. Disagreement is a programmer error — two
+    /// codepaths probed the same path at different times and saw
+    /// different things, which would silently corrupt the validity
+    /// check. Falls back to overwriting in release builds (warn
+    /// instead of panic) so a real-world race doesn't crash the user.
+    fn record(&mut self, path: &Path, state: StampState) {
+        match self.stamps.get(path) {
+            Some(existing) if existing == &state => {}
+            Some(existing) => {
+                tracing::warn!(
+                    path = %path.display(),
+                    existing = ?existing,
+                    new = ?state,
+                    error_id = "cargo.workspace.stamp_conflict",
+                    "stamp conflict; overwriting with later observation"
+                );
+                self.stamps.insert(path.to_path_buf(), state);
+            }
+            None => {
+                self.stamps.insert(path.to_path_buf(), state);
+            }
+        }
+    }
+}
+
+struct CargoCacheEntry {
+    resolved: ResolvedRoot,
+    /// Insertion sequence — used for FIFO-on-insert eviction (mirrors
+    /// `MtimeCache`'s `seq` field). Cache hits don't bump this.
+    seq: u64,
 }
 
 /// Per-process cache for cargo workspace resolution. Distinct from the
 /// shared `MtimeCache` because validity here depends on a list of
 /// stamps rather than a single (mtime, size) pair on the keyed file.
+///
+/// Capped at `MAX_CARGO_CACHE_ENTRIES` (64) with FIFO-on-insert
+/// eviction, matching `MtimeCache` so a long-lived shell that `cd`s
+/// through many distinct cargo projects doesn't grow this cache
+/// without bound.
 struct CargoCache {
-    inner: Mutex<HashMap<PathBuf, ResolvedRoot>>,
+    inner: Mutex<CargoCacheInner>,
+}
+
+struct CargoCacheInner {
+    entries: HashMap<PathBuf, CargoCacheEntry>,
+    next_seq: u64,
 }
 
 impl CargoCache {
     fn new() -> Self {
         Self {
-            inner: Mutex::new(HashMap::new()),
+            inner: Mutex::new(CargoCacheInner {
+                entries: HashMap::new(),
+                next_seq: 0,
+            }),
         }
     }
 
     fn get(&self, manifest: &Path) -> Option<ResolvedRoot> {
-        let guard = self.inner.lock().ok()?;
-        let entry = guard.get(manifest)?.clone();
-        if entry.stamps.iter().all(stamp_still_matches) {
-            Some(entry)
+        let guard = match self.inner.lock() {
+            Ok(g) => g,
+            Err(poisoned) => {
+                tracing::error!(
+                    error_id = "cargo.workspace.cache_poisoned",
+                    "CargoCache mutex poisoned; recovering"
+                );
+                poisoned.into_inner()
+            }
+        };
+        let entry = guard.entries.get(manifest)?;
+        if entry
+            .resolved
+            .stamps
+            .iter()
+            .all(|(p, s)| stamp_matches(p, s))
+        {
+            Some(entry.resolved.clone())
         } else {
             None
         }
     }
 
     fn store(&self, manifest: PathBuf, resolved: ResolvedRoot) {
-        if let Ok(mut guard) = self.inner.lock() {
-            guard.insert(manifest, resolved);
+        let mut guard = match self.inner.lock() {
+            Ok(g) => g,
+            Err(poisoned) => {
+                tracing::error!(
+                    error_id = "cargo.workspace.cache_poisoned",
+                    "CargoCache mutex poisoned; recovering"
+                );
+                poisoned.into_inner()
+            }
+        };
+
+        let seq = guard.next_seq;
+        guard.next_seq = guard.next_seq.wrapping_add(1);
+
+        if !guard.entries.contains_key(&manifest) && guard.entries.len() >= MAX_CARGO_CACHE_ENTRIES
+        {
+            if let Some(victim) = guard
+                .entries
+                .iter()
+                .min_by_key(|(_, e)| e.seq)
+                .map(|(p, _)| p.clone())
+            {
+                guard.entries.remove(&victim);
+            }
+        }
+
+        guard
+            .entries
+            .insert(manifest, CargoCacheEntry { resolved, seq });
+    }
+
+    #[cfg(test)]
+    fn clear(&self) {
+        if let Ok(mut g) = self.inner.lock() {
+            g.entries.clear();
+        }
+    }
+
+    #[cfg(test)]
+    fn len(&self) -> usize {
+        match self.inner.lock() {
+            Ok(g) => g.entries.len(),
+            Err(p) => p.into_inner().entries.len(),
         }
     }
 }
 
-fn stamp_still_matches(stamp: &Stamp) -> bool {
-    probe_state(&stamp.path) == stamp.state
+/// Compare a stored stamp against the current filesystem state. A
+/// `None` mtime on either side counts as a MISS — see the
+/// `StampState` doc comment for why.
+fn stamp_matches(path: &Path, stored: &StampState) -> bool {
+    let current = probe_state(path);
+    match (stored, &current) {
+        (StampState::AbsentOrUnreadable, StampState::AbsentOrUnreadable) => true,
+        (
+            StampState::File {
+                mtime: Some(a),
+                size: sa,
+            },
+            StampState::File {
+                mtime: Some(b),
+                size: sb,
+            },
+        ) => a == b && sa == sb,
+        (StampState::Dir { mtime: Some(a) }, StampState::Dir { mtime: Some(b) }) => a == b,
+        // Any None mtime, or any variant mismatch, is a miss.
+        _ => false,
+    }
 }
 
 fn probe_state(path: &Path) -> StampState {
     match std::fs::metadata(path) {
         Ok(meta) if meta.is_file() => StampState::File {
-            mtime: meta.modified().unwrap_or(SystemTime::UNIX_EPOCH),
+            mtime: meta.modified().ok(),
             size: meta.len(),
         },
         Ok(meta) if meta.is_dir() => StampState::Dir {
-            mtime: meta.modified().unwrap_or(SystemTime::UNIX_EPOCH),
+            mtime: meta.modified().ok(),
         },
-        // Anything else (symlink-to-nothing, special file, IO error)
-        // is folded into Missing — the validity question is binary
-        // ("does the workspace look the same?") and recording odd file
-        // types as their own variant would proliferate without
-        // improving the answer.
-        _ => StampState::Missing,
+        // Symlink-to-nothing, special file, etc. — treat as absent for
+        // validity purposes.
+        Ok(_) => StampState::AbsentOrUnreadable,
+        Err(e) => {
+            if e.kind() != ErrorKind::NotFound {
+                tracing::warn!(
+                    path = %path.display(),
+                    error = %e,
+                    error_id = "cargo.workspace.probe_io",
+                    "workspace probe IO error; treating as absent"
+                );
+            }
+            StampState::AbsentOrUnreadable
+        }
     }
 }
 
-/// Record the current state of `path` (including the negative
-/// `Missing` case) so the cache can detect both "this file changed"
-/// AND "this file didn't exist before but does now" on the next call.
-fn stamp_path(path: &Path) -> Stamp {
-    Stamp {
-        path: path.to_path_buf(),
-        state: probe_state(path),
+/// A `Cargo.toml` file path. The newtype enforces that
+/// `find_cargo_root`'s caller can't accidentally pass a directory
+/// where a manifest is expected, and centralises the parent-dir
+/// derivation so `resolve_workspace` doesn't take two `&Path` args
+/// that could be transposed.
+#[derive(Clone, Debug)]
+pub(crate) struct CargoManifestPath(PathBuf);
+
+impl CargoManifestPath {
+    pub(crate) fn new(p: PathBuf) -> Option<Self> {
+        if p.is_file() {
+            Some(Self(p))
+        } else {
+            None
+        }
+    }
+
+    pub(crate) fn dir(&self) -> &Path {
+        // Safe: `new` only constructs from a `is_file()` path, which
+        // by definition has a parent. Falls back to "." if the
+        // platform somehow returns None (root file?).
+        self.0.parent().unwrap_or_else(|| Path::new("."))
+    }
+
+    pub(crate) fn as_path(&self) -> &Path {
+        &self.0
     }
 }
 
@@ -164,18 +387,18 @@ static CARGO_CACHE: LazyLock<CargoCache> = LazyLock::new(CargoCache::new);
 /// a `[workspace]` table; if none is found, return the nearest
 /// `Cargo.toml` so the single-package fallback can still emit the one
 /// package name.
-pub(crate) fn find_cargo_root(start: &Path) -> Option<PathBuf> {
-    let mut nearest: Option<PathBuf> = None;
+pub(crate) fn find_cargo_root(start: &Path) -> Option<CargoManifestPath> {
+    let mut nearest: Option<CargoManifestPath> = None;
     let mut current = Some(start);
     for _ in 0..MAX_ANCESTOR_WALK {
         let Some(dir) = current else { break };
         let candidate = dir.join("Cargo.toml");
-        if candidate.is_file() {
-            if has_workspace_section(&candidate) {
-                return Some(candidate);
+        if let Some(manifest) = CargoManifestPath::new(candidate) {
+            if has_workspace_section(manifest.as_path()) {
+                return Some(manifest);
             }
             if nearest.is_none() {
-                nearest = Some(candidate);
+                nearest = Some(manifest);
             }
         }
         current = dir.parent();
@@ -184,23 +407,82 @@ pub(crate) fn find_cargo_root(start: &Path) -> Option<PathBuf> {
 }
 
 /// Cheap check: does this `Cargo.toml` declare a `[workspace]` table?
-/// We parse the file rather than string-grepping so we don't false-fire
-/// on `[workspace]` appearing inside a triple-quoted dependency
-/// description or comment.
+///
+/// Two-stage:
+/// 1. Line-scan for `^\s*\[workspace\b` — a few microseconds vs the
+///    dozens-to-hundreds for a full TOML parse on a 50KB+ workspace
+///    root manifest. This runs on every keystroke trigger via
+///    `find_cargo_root`, so the cost matters.
+/// 2. If the cheap check matches, fall back to a real TOML parse to
+///    eliminate false positives from commented-out lines or
+///    triple-quoted dependency descriptions that contain
+///    `[workspace`.
 fn has_workspace_section(path: &Path) -> bool {
-    let Ok(bytes) = std::fs::read(path) else {
-        return false;
+    let bytes = match std::fs::read(path) {
+        Ok(b) => b,
+        Err(e) if e.kind() == ErrorKind::NotFound => return false,
+        Err(e) => {
+            tracing::warn!(
+                path = %path.display(),
+                error = %e,
+                error_id = "cargo.workspace.probe_read",
+                "Cargo.toml unreadable while probing for [workspace]"
+            );
+            return false;
+        }
     };
-    let Ok(text) = std::str::from_utf8(&bytes) else {
-        return false;
+    let text = match std::str::from_utf8(&bytes) {
+        Ok(t) => t,
+        Err(e) => {
+            tracing::warn!(
+                path = %path.display(),
+                error = %e,
+                error_id = "cargo.workspace.probe_utf8",
+                "Cargo.toml not valid UTF-8 while probing for [workspace]"
+            );
+            return false;
+        }
     };
-    matches!(
-        toml::from_str::<CargoTomlMin>(text),
+
+    if !line_scan_has_workspace(text) {
+        return false;
+    }
+
+    match toml::from_str::<CargoTomlMin>(text) {
         Ok(CargoTomlMin {
-            workspace: Some(_),
-            ..
-        })
-    )
+            workspace: Some(_), ..
+        }) => true,
+        Ok(_) => false,
+        Err(e) => {
+            tracing::warn!(
+                path = %path.display(),
+                error = %e,
+                error_id = "cargo.workspace.probe_toml",
+                "Cargo.toml parse failed while probing for [workspace]"
+            );
+            false
+        }
+    }
+}
+
+/// Cheap line-scan: is there a line whose first non-whitespace is
+/// `[workspace` followed by `]`, `.`, or whitespace? This eliminates
+/// the vast majority of `[workspace`-free files without paying the
+/// TOML parser cost. False positives (commented-out, triple-quoted
+/// strings) are caught by the secondary TOML parse in the caller.
+fn line_scan_has_workspace(text: &str) -> bool {
+    for line in text.lines() {
+        let trimmed = line.trim_start();
+        if let Some(rest) = trimmed.strip_prefix("[workspace") {
+            // Must be `[workspace]`, `[workspace.foo]`, or
+            // `[workspace ]` — not `[workspaceextended]`.
+            match rest.chars().next() {
+                Some(']') | Some('.') | Some(' ') | Some('\t') => return true,
+                _ => continue,
+            }
+        }
+    }
+    false
 }
 
 /// Parse a workspace root and resolve member names, recording every
@@ -208,40 +490,50 @@ fn has_workspace_section(path: &Path) -> bool {
 /// returned `ResolvedRoot.stamps` is the cache validity contract — a
 /// later cache hit is only valid if every recorded stamp still
 /// matches.
-fn resolve_workspace(manifest: &Path, root_dir: &Path) -> ResolvedRoot {
-    let mut stamps: Vec<Stamp> = Vec::new();
-    // Always probe — even Missing is a stamp the cache needs so that a
-    // later `cargo new` (creating the manifest) invalidates correctly.
-    stamps.push(stamp_path(manifest));
+fn resolve_workspace(manifest: &CargoManifestPath) -> ResolvedRoot {
+    let root_dir = manifest.dir();
+    let manifest_path = manifest.as_path();
 
-    let bytes = match std::fs::read(manifest) {
+    let mut resolved = ResolvedRoot::new();
+    // Always probe — even AbsentOrUnreadable is a stamp the cache
+    // needs so that a later `cargo new` (creating the manifest)
+    // invalidates correctly.
+    resolved.record(manifest_path, probe_state(manifest_path));
+
+    let bytes = match std::fs::read(manifest_path) {
         Ok(b) => b,
         Err(e) => {
             tracing::warn!(
                 root = %root_dir.display(),
                 error = %e,
+                error_id = "cargo.workspace.read",
                 "Cargo.toml read failed",
             );
-            return ResolvedRoot {
-                members: Vec::new(),
-                stamps,
-            };
+            return resolved;
         }
     };
-    let parsed: CargoTomlMin = match std::str::from_utf8(&bytes)
-        .ok()
-        .and_then(|s| toml::from_str::<CargoTomlMin>(s).ok())
-    {
-        Some(p) => p,
-        None => {
+    let text = match std::str::from_utf8(&bytes) {
+        Ok(t) => t,
+        Err(e) => {
             tracing::warn!(
                 root = %root_dir.display(),
+                error = %e,
+                error_id = "cargo.workspace.utf8",
+                "Cargo.toml not valid UTF-8",
+            );
+            return resolved;
+        }
+    };
+    let parsed: CargoTomlMin = match toml::from_str(text) {
+        Ok(p) => p,
+        Err(e) => {
+            tracing::warn!(
+                root = %root_dir.display(),
+                error = %e,
+                error_id = "cargo.workspace.toml_parse",
                 "Cargo.toml parse failed",
             );
-            return ResolvedRoot {
-                members: Vec::new(),
-                stamps,
-            };
+            return resolved;
         }
     };
 
@@ -251,58 +543,80 @@ fn resolve_workspace(manifest: &Path, root_dir: &Path) -> ResolvedRoot {
 
         let mut members: Vec<MemberInfo> = Vec::new();
         for pattern in &ws.members {
-            for member_path in expand_member_pattern(root_dir, pattern, &mut stamps) {
+            for member_path in expand_member_pattern(root_dir, pattern, &mut resolved) {
                 if exclude_set.contains(&member_path) {
                     continue;
                 }
-                if let Some(info) = read_member_info(&member_path, &mut stamps) {
+                if let Some(info) = read_member_info(&member_path, &mut resolved) {
                     members.push(info);
                 }
             }
         }
-        return ResolvedRoot { members, stamps };
+        if members.is_empty() && !ws.members.is_empty() {
+            tracing::warn!(
+                root = %root_dir.display(),
+                patterns = ?ws.members,
+                error_id = "cargo.workspace.empty_members",
+                "workspace declared members but none resolved to crates with package.name"
+            );
+        }
+        resolved.members = members;
+        return resolved;
     }
 
     if let Some(pkg) = parsed.package {
         if let Some(info) = MemberInfo::from_package(pkg) {
-            return ResolvedRoot {
-                members: vec![info],
-                stamps,
-            };
+            resolved.members = vec![info];
+            return resolved;
         }
     }
 
-    ResolvedRoot {
-        members: Vec::new(),
-        stamps,
-    }
+    resolved
 }
 
 /// Expand one entry of `[workspace].members` into one or more concrete
 /// member directory paths (each containing a `Cargo.toml`). The
-/// glob-prefix directory's mtime is recorded into `stamps` so that
+/// glob-prefix directory's mtime is recorded into `resolved` so that
 /// adding or removing a child crate invalidates the cache, even when
 /// no `Cargo.toml` content changes.
-fn expand_member_pattern(root_dir: &Path, pattern: &str, stamps: &mut Vec<Stamp>) -> Vec<PathBuf> {
+fn expand_member_pattern(
+    root_dir: &Path,
+    pattern: &str,
+    resolved: &mut ResolvedRoot,
+) -> Vec<PathBuf> {
     if let Some(prefix) = pattern.strip_suffix("/*") {
         let prefix_dir = root_dir.join(prefix);
         // Probe the prefix dir even when it doesn't exist — a later
         // `mkdir crates && cargo new crates/foo` should invalidate.
-        stamps.push(stamp_path(&prefix_dir));
+        resolved.record(&prefix_dir, probe_state(&prefix_dir));
         let entries = match std::fs::read_dir(&prefix_dir) {
             Ok(e) => e,
+            Err(e) if e.kind() == ErrorKind::NotFound => return Vec::new(),
             Err(e) => {
                 tracing::warn!(
                     pattern = %pattern,
                     prefix = %prefix_dir.display(),
                     error = %e,
+                    error_id = "cargo.workspace.glob_read_dir",
                     "workspace glob: read_dir failed; skipping",
                 );
                 return Vec::new();
             }
         };
         let mut out = Vec::new();
-        for entry in entries.flatten() {
+        for entry in entries {
+            let entry = match entry {
+                Ok(e) => e,
+                Err(e) => {
+                    tracing::warn!(
+                        prefix = %prefix_dir.display(),
+                        error = %e,
+                        error_id = "cargo.workspace.glob_entry",
+                        "workspace glob: read_dir entry failed; skipping",
+                    );
+                    continue;
+                }
+            };
             let p = entry.path();
             if p.is_dir() {
                 // Probe the candidate child dir's `Cargo.toml` whether
@@ -310,7 +624,7 @@ fn expand_member_pattern(root_dir: &Path, pattern: &str, stamps: &mut Vec<Stamp>
                 // without a manifest, then gains one tomorrow, must
                 // invalidate the cached "no member found here" result.
                 let child_manifest = p.join("Cargo.toml");
-                stamps.push(stamp_path(&child_manifest));
+                resolved.record(&child_manifest, probe_state(&child_manifest));
                 if child_manifest.is_file() {
                     out.push(p);
                 }
@@ -323,6 +637,7 @@ fn expand_member_pattern(root_dir: &Path, pattern: &str, stamps: &mut Vec<Stamp>
     if pattern.contains('*') || pattern.contains('?') || pattern.contains('[') {
         tracing::warn!(
             pattern = %pattern,
+            error_id = "cargo.workspace.unsupported_glob",
             "workspace glob: unsupported pattern; only literal paths and `prefix/*` are recognized",
         );
         return Vec::new();
@@ -334,7 +649,7 @@ fn expand_member_pattern(root_dir: &Path, pattern: &str, stamps: &mut Vec<Stamp>
     // not, so the "user adds the first crate to a previously-empty
     // workspace" path invalidates on the manifest's appearance rather
     // than serving the cached empty member list forever.
-    stamps.push(stamp_path(&manifest));
+    resolved.record(&manifest, probe_state(&manifest));
     if manifest.is_file() {
         vec![dir]
     } else {
@@ -342,22 +657,60 @@ fn expand_member_pattern(root_dir: &Path, pattern: &str, stamps: &mut Vec<Stamp>
     }
 }
 
-fn read_member_info(member_dir: &Path, stamps: &mut Vec<Stamp>) -> Option<MemberInfo> {
+fn read_member_info(member_dir: &Path, resolved: &mut ResolvedRoot) -> Option<MemberInfo> {
     let manifest = member_dir.join("Cargo.toml");
     // Note: `expand_member_pattern` already stamped this manifest
     // (positively, since we only call `read_member_info` for paths it
     // confirmed are files). We re-stamp here to guard against the
     // narrow race where the file vanishes between expansion and read
     // — keeping the stamp set authoritative for what we observed.
-    stamps.push(stamp_path(&manifest));
-    let bytes = std::fs::read(&manifest).ok()?;
-    let text = std::str::from_utf8(&bytes).ok()?;
-    let parsed: CargoTomlMin = toml::from_str(text).ok()?;
+    // `record` deduplicates if the state agrees.
+    resolved.record(&manifest, probe_state(&manifest));
+
+    let bytes = match std::fs::read(&manifest) {
+        Ok(b) => b,
+        Err(e) => {
+            if e.kind() != ErrorKind::NotFound {
+                tracing::warn!(
+                    manifest = %manifest.display(),
+                    error = %e,
+                    error_id = "cargo.workspace.member_io",
+                    "workspace member read failed; skipping"
+                );
+            }
+            return None;
+        }
+    };
+    let text = match std::str::from_utf8(&bytes) {
+        Ok(t) => t,
+        Err(e) => {
+            tracing::warn!(
+                manifest = %manifest.display(),
+                error = %e,
+                error_id = "cargo.workspace.member_utf8",
+                "workspace member not valid UTF-8; skipping"
+            );
+            return None;
+        }
+    };
+    let parsed: CargoTomlMin = match toml::from_str(text) {
+        Ok(p) => p,
+        Err(e) => {
+            tracing::warn!(
+                manifest = %manifest.display(),
+                error = %e,
+                error_id = "cargo.workspace.member_toml",
+                "workspace member parse failed; skipping"
+            );
+            return None;
+        }
+    };
     let pkg = parsed.package?;
     let info = MemberInfo::from_package(pkg);
     if info.is_none() {
         tracing::warn!(
             manifest = %manifest.display(),
+            error_id = "cargo.workspace.member_no_name",
             "workspace member has no `package.name`; skipping",
         );
     }
@@ -366,7 +719,8 @@ fn read_member_info(member_dir: &Path, stamps: &mut Vec<Stamp>) -> Option<Member
 
 impl MemberInfo {
     fn from_package(pkg: PackageMin) -> Option<Self> {
-        let name = pkg.name?;
+        let raw_name = pkg.name?;
+        let name = CargoPackageName::try_from(&raw_name)?;
         let description = match (pkg.version, pkg.description) {
             (Some(v), Some(d)) => Some(truncate_chars(&format!("{v} — {d}"))),
             (Some(v), None) => Some(format!("v{v}")),
@@ -403,15 +757,11 @@ impl CargoWorkspaceMembers {
         let Some(manifest) = find_cargo_root(root) else {
             return Ok(Vec::new());
         };
-        let manifest_dir = manifest
-            .parent()
-            .map(Path::to_path_buf)
-            .unwrap_or_else(|| PathBuf::from("."));
-        let resolved = match CARGO_CACHE.get(&manifest) {
+        let resolved = match CARGO_CACHE.get(manifest.as_path()) {
             Some(r) => r,
             None => {
-                let r = resolve_workspace(&manifest, &manifest_dir);
-                CARGO_CACHE.store(manifest.clone(), r.clone());
+                let r = resolve_workspace(&manifest);
+                CARGO_CACHE.store(manifest.as_path().to_path_buf(), r.clone());
                 r
             }
         };
@@ -419,7 +769,7 @@ impl CargoWorkspaceMembers {
             .members
             .into_iter()
             .map(|m| Suggestion {
-                text: m.name,
+                text: m.name.into(),
                 description: m.description,
                 kind: SuggestionKind::ProviderValue,
                 source: SuggestionSource::Provider,
@@ -519,6 +869,47 @@ mod tests {
         assert_eq!(names, vec!["keep"]);
     }
 
+    /// Regression for pr-test-analyzer-2: literal `members = [...]`
+    /// excluded by literal `exclude = [...]` must drop just that
+    /// member. Previously only the glob exclude path was tested.
+    #[tokio::test]
+    async fn literal_exclude_drops_literal_member() {
+        let tmp = TempDir::new().unwrap();
+        std::fs::write(
+            tmp.path().join("Cargo.toml"),
+            "[workspace]\nmembers = [\"a\", \"b\"]\nexclude = [\"b\"]\n",
+        )
+        .unwrap();
+        write_member(tmp.path(), "a", "alpha");
+        write_member(tmp.path(), "b", "beta");
+
+        let suggestions = CargoWorkspaceMembers::generate_with_root(tmp.path())
+            .await
+            .unwrap();
+        let names: Vec<&str> = suggestions.iter().map(|s| s.text.as_str()).collect();
+        assert_eq!(names, vec!["alpha"]);
+    }
+
+    /// Regression for pr-test-analyzer-2: excluding a member that
+    /// doesn't exist on disk must be a no-op — present members
+    /// unaffected, no panic.
+    #[tokio::test]
+    async fn exclude_of_nonexistent_member_is_noop() {
+        let tmp = TempDir::new().unwrap();
+        std::fs::write(
+            tmp.path().join("Cargo.toml"),
+            "[workspace]\nmembers = [\"a\"]\nexclude = [\"ghost\"]\n",
+        )
+        .unwrap();
+        write_member(tmp.path(), "a", "alpha");
+
+        let suggestions = CargoWorkspaceMembers::generate_with_root(tmp.path())
+            .await
+            .unwrap();
+        let names: Vec<&str> = suggestions.iter().map(|s| s.text.as_str()).collect();
+        assert_eq!(names, vec!["alpha"]);
+    }
+
     #[tokio::test]
     async fn member_without_package_name_skipped() {
         let tmp = TempDir::new().unwrap();
@@ -596,6 +987,25 @@ mod tests {
         assert!(desc.ends_with('…'));
     }
 
+    /// Regression for pr-test-analyzer-10: multi-byte char truncation
+    /// in cargo descriptions mirrors npm's UTF-8 boundary test.
+    #[tokio::test]
+    async fn truncation_respects_utf8_char_boundaries() {
+        let tmp = TempDir::new().unwrap();
+        let crab = "\u{1F980}".repeat(200);
+        std::fs::write(
+            tmp.path().join("Cargo.toml"),
+            format!("[package]\nname = \"big\"\ndescription = \"{crab}\"\n"),
+        )
+        .unwrap();
+        let suggestions = CargoWorkspaceMembers::generate_with_root(tmp.path())
+            .await
+            .unwrap();
+        let desc = suggestions[0].description.as_ref().unwrap();
+        assert_eq!(desc.chars().count(), MAX_DESCRIPTION_CHARS);
+        assert!(desc.ends_with('…'));
+    }
+
     #[tokio::test]
     async fn unsupported_glob_pattern_logged_and_skipped() {
         let tmp = TempDir::new().unwrap();
@@ -607,6 +1017,35 @@ mod tests {
         write_member(tmp.path(), "a", "alpha");
         // The unsupported `**` pattern is silently skipped; literal `a`
         // still resolves.
+        let suggestions = CargoWorkspaceMembers::generate_with_root(tmp.path())
+            .await
+            .unwrap();
+        let names: Vec<&str> = suggestions.iter().map(|s| s.text.as_str()).collect();
+        assert_eq!(names, vec!["alpha"]);
+    }
+
+    /// Regression for code-reviewer-1: workspace inheritance
+    /// (`version.workspace = true`, `description.workspace = true`)
+    /// must NOT collapse the entire member-manifest deserialization.
+    /// Previously the whole `toml::from_str::<CargoTomlMin>` call
+    /// failed because `Option<String>` rejected the inheritance
+    /// table, dropping the member silently from `cargo run -p <TAB>`.
+    #[tokio::test]
+    async fn member_with_workspace_inheritance_still_surfaces_name() {
+        let tmp = TempDir::new().unwrap();
+        std::fs::write(
+            tmp.path().join("Cargo.toml"),
+            "[workspace]\nmembers = [\"a\"]\n[workspace.package]\nversion = \"0.1.0\"\n",
+        )
+        .unwrap();
+        let dir = tmp.path().join("a");
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(
+            dir.join("Cargo.toml"),
+            "[package]\nname = \"alpha\"\nversion.workspace = true\ndescription.workspace = true\n",
+        )
+        .unwrap();
+
         let suggestions = CargoWorkspaceMembers::generate_with_root(tmp.path())
             .await
             .unwrap();
@@ -693,13 +1132,49 @@ mod tests {
         assert_eq!(second_names, vec!["one", "two"]);
     }
 
+    /// Regression for pr-test-analyzer-4: a tracked member crate that
+    /// gets DELETED must invalidate the cache so subsequent calls drop
+    /// it from the suggestion list.
+    #[tokio::test]
+    async fn deleted_member_under_glob_invalidates_cache() {
+        let tmp = TempDir::new().unwrap();
+        std::fs::write(
+            tmp.path().join("Cargo.toml"),
+            "[workspace]\nmembers = [\"crates/*\"]\n",
+        )
+        .unwrap();
+        write_member(tmp.path(), "crates/one", "one");
+        write_member(tmp.path(), "crates/two", "two");
+        let first = CargoWorkspaceMembers::generate_with_root(tmp.path())
+            .await
+            .unwrap();
+        let mut first_names: Vec<&str> = first.iter().map(|s| s.text.as_str()).collect();
+        first_names.sort();
+        assert_eq!(first_names, vec!["one", "two"]);
+
+        std::fs::remove_dir_all(tmp.path().join("crates").join("two")).unwrap();
+        // Force the prefix dir mtime forward in case the platform
+        // debounces same-second updates.
+        let prefix = tmp.path().join("crates");
+        let future = SystemTime::now() + std::time::Duration::from_secs(120);
+        let ft = filetime::FileTime::from_system_time(future);
+        filetime::set_file_mtime(&prefix, ft).unwrap();
+
+        let second = CargoWorkspaceMembers::generate_with_root(tmp.path())
+            .await
+            .unwrap();
+        let names: Vec<&str> = second.iter().map(|s| s.text.as_str()).collect();
+        assert_eq!(names, vec!["one"]);
+    }
+
     /// Regression for the second stale-cache class flagged in code
     /// review: the workspace declares `members = ["a"]` but `a/`
     /// doesn't exist yet. First call returns no members. The user then
     /// runs `cargo new a`. Without probing the literal member's
-    /// `Cargo.toml` even when it's Missing, the cache would serve the
-    /// empty list forever — the workspace root manifest never changed,
-    /// and there's no member-file stamp to compare against.
+    /// `Cargo.toml` even when it's AbsentOrUnreadable, the cache would
+    /// serve the empty list forever — the workspace root manifest
+    /// never changed, and there's no member-file stamp to compare
+    /// against.
     #[tokio::test]
     async fn literal_member_appearing_invalidates_empty_cache() {
         let tmp = TempDir::new().unwrap();
@@ -766,7 +1241,8 @@ mod tests {
     /// declares `members = ["crates/*"]` but `crates/` itself doesn't
     /// exist at first resolve time. First call produces nothing; user
     /// then `mkdir crates && cargo new crates/foo`. The cache must
-    /// invalidate when the prefix transitions from Missing to Dir.
+    /// invalidate when the prefix transitions from AbsentOrUnreadable
+    /// to Dir.
     #[tokio::test]
     async fn glob_prefix_dir_appearing_invalidates_empty_cache() {
         let tmp = TempDir::new().unwrap();
@@ -787,6 +1263,39 @@ mod tests {
             .unwrap();
         let names: Vec<&str> = second.iter().map(|s| s.text.as_str()).collect();
         assert_eq!(names, vec!["foo"]);
+    }
+
+    /// Regression for pr-test-analyzer-5: malformed `Cargo.toml` at
+    /// the workspace root must (a) not panic, (b) return Ok(empty),
+    /// and (c) not poison the cache — fixing the file should surface
+    /// real members on the next call.
+    #[tokio::test]
+    async fn malformed_workspace_root_returns_empty_then_recovers() {
+        let tmp = TempDir::new().unwrap();
+        // Truncated/invalid TOML.
+        std::fs::write(tmp.path().join("Cargo.toml"), "[workspace\nmembers = [\n").unwrap();
+        let first = CargoWorkspaceMembers::generate_with_root(tmp.path())
+            .await
+            .unwrap();
+        assert!(first.is_empty(), "malformed TOML must yield empty Vec");
+
+        // Repair the manifest and add a real member, bumping mtime
+        // to invalidate the cached "empty" result.
+        std::fs::write(
+            tmp.path().join("Cargo.toml"),
+            "[workspace]\nmembers = [\"a\"]\n",
+        )
+        .unwrap();
+        write_member(tmp.path(), "a", "alpha");
+        let future = SystemTime::now() + std::time::Duration::from_secs(120);
+        let ft = filetime::FileTime::from_system_time(future);
+        filetime::set_file_mtime(tmp.path().join("Cargo.toml"), ft).unwrap();
+
+        let second = CargoWorkspaceMembers::generate_with_root(tmp.path())
+            .await
+            .unwrap();
+        let names: Vec<&str> = second.iter().map(|s| s.text.as_str()).collect();
+        assert_eq!(names, vec!["alpha"]);
     }
 
     /// Sanity check: when nothing on disk has changed, the second call
@@ -814,5 +1323,54 @@ mod tests {
         let first_names: Vec<&str> = first.iter().map(|s| s.text.as_str()).collect();
         let second_names: Vec<&str> = second.iter().map(|s| s.text.as_str()).collect();
         assert_eq!(first_names, second_names);
+    }
+
+    #[test]
+    fn cargo_package_name_validates_cargo_regex() {
+        assert!(CargoPackageName::try_from("alpha").is_some());
+        assert!(CargoPackageName::try_from("alpha_beta-1").is_some());
+        assert!(CargoPackageName::try_from("a").is_some());
+        // Leading digit rejected.
+        assert!(CargoPackageName::try_from("1alpha").is_none());
+        // Empty rejected.
+        assert!(CargoPackageName::try_from("").is_none());
+        // Disallowed chars rejected.
+        assert!(CargoPackageName::try_from("alpha:beta").is_none());
+        assert!(CargoPackageName::try_from("alpha/beta").is_none());
+    }
+
+    #[test]
+    fn line_scan_detects_workspace_section() {
+        assert!(line_scan_has_workspace("[workspace]\n"));
+        assert!(line_scan_has_workspace("  [workspace]\n"));
+        assert!(line_scan_has_workspace("[workspace.package]\nfoo = 1\n"));
+        assert!(line_scan_has_workspace(
+            "[package]\nname=\"a\"\n[workspace]\n"
+        ));
+        assert!(!line_scan_has_workspace("[workspaceextended]\n"));
+        assert!(!line_scan_has_workspace("[package]\nname=\"a\"\n"));
+        assert!(!line_scan_has_workspace(""));
+    }
+
+    #[test]
+    fn cargo_cache_evicts_oldest_at_capacity() {
+        let cache = CargoCache::new();
+        cache.clear();
+        for i in 0..MAX_CARGO_CACHE_ENTRIES {
+            cache.store(
+                PathBuf::from(format!("/cargo-cache-test/{i}/Cargo.toml")),
+                ResolvedRoot::new(),
+            );
+        }
+        assert_eq!(cache.len(), MAX_CARGO_CACHE_ENTRIES);
+        cache.store(
+            PathBuf::from("/cargo-cache-test/extra/Cargo.toml"),
+            ResolvedRoot::new(),
+        );
+        assert_eq!(
+            cache.len(),
+            MAX_CARGO_CACHE_ENTRIES,
+            "insert past capacity must evict exactly one"
+        );
     }
 }

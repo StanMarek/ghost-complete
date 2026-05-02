@@ -26,19 +26,20 @@ struct PackageJsonMin {
     scripts: serde_json::Map<String, serde_json::Value>,
 }
 
-/// `(script_name, optional_truncated_description)`. The pair shape lives
-/// in a dedicated alias because clippy's `type_complexity` lint fires on
-/// `Vec<(String, Option<String>)>` inside a `LazyLock<MtimeCache<…>>`,
-/// and the alias also reads better at provider call sites.
-type ScriptEntry = (String, Option<String>);
+/// One entry in `package.json#scripts`. Field-named so the cache and
+/// `Suggestion` build site can't accidentally swap name and command.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct NpmScriptEntry {
+    pub name: String,
+    pub command: Option<String>,
+}
 
-static NPM_CACHE: LazyLock<MtimeCache<Vec<ScriptEntry>>> = LazyLock::new(MtimeCache::new);
+static NPM_CACHE: LazyLock<MtimeCache<Vec<NpmScriptEntry>>> = LazyLock::new(MtimeCache::new);
 
-/// Parse `package.json` bytes and yield `(script_name,
-/// truncated_description)` pairs in source order. Non-string script
-/// values are dropped (npm itself rejects them at runtime, so they're
-/// noise).
-pub(crate) fn parse_npm_scripts(bytes: &[u8]) -> Vec<ScriptEntry> {
+/// Parse `package.json` bytes and yield `NpmScriptEntry` values in
+/// source order. Non-string script values are dropped (npm itself
+/// rejects them at runtime) but logged so a malformed entry surfaces.
+pub(crate) fn parse_npm_scripts(bytes: &[u8]) -> Vec<NpmScriptEntry> {
     let parsed: PackageJsonMin = match serde_json::from_slice(bytes) {
         Ok(p) => p,
         Err(e) => {
@@ -51,8 +52,17 @@ pub(crate) fn parse_npm_scripts(bytes: &[u8]) -> Vec<ScriptEntry> {
         .scripts
         .into_iter()
         .filter_map(|(name, value)| match value {
-            serde_json::Value::String(cmd) => Some((name, Some(truncate_chars(&cmd)))),
-            _ => None,
+            serde_json::Value::String(cmd) => Some(NpmScriptEntry {
+                name,
+                command: Some(truncate_chars(&cmd)),
+            }),
+            _ => {
+                tracing::warn!(
+                    script = %name,
+                    "package.json scripts.{name} is not a string; npm run will reject it too — skipping"
+                );
+                None
+            }
         })
         .collect()
 }
@@ -103,9 +113,9 @@ impl NpmScripts {
         };
         Ok(scripts
             .into_iter()
-            .map(|(name, description)| Suggestion {
-                text: name,
-                description,
+            .map(|entry| Suggestion {
+                text: entry.name,
+                description: entry.command,
                 kind: SuggestionKind::ProviderValue,
                 source: SuggestionSource::Provider,
                 ..Default::default()
@@ -119,17 +129,18 @@ mod tests {
     use super::*;
     use tempfile::TempDir;
 
+    fn entry(name: &str, cmd: &str) -> NpmScriptEntry {
+        NpmScriptEntry {
+            name: name.to_string(),
+            command: Some(cmd.to_string()),
+        }
+    }
+
     #[test]
     fn happy_path_two_scripts() {
         let json = br#"{"scripts": {"build": "tsc", "test": "jest"}}"#;
         let scripts = parse_npm_scripts(json);
-        assert_eq!(
-            scripts,
-            vec![
-                ("build".to_string(), Some("tsc".to_string())),
-                ("test".to_string(), Some("jest".to_string())),
-            ]
-        );
+        assert_eq!(scripts, vec![entry("build", "tsc"), entry("test", "jest")]);
     }
 
     #[test]
@@ -146,7 +157,27 @@ mod tests {
     fn non_string_values_skipped() {
         let json = br#"{"scripts": {"x": 42, "y": "echo y", "z": null}}"#;
         let scripts = parse_npm_scripts(json);
-        assert_eq!(scripts, vec![("y".to_string(), Some("echo y".to_string()))]);
+        assert_eq!(scripts, vec![entry("y", "echo y")]);
+    }
+
+    #[test]
+    fn scripts_field_as_string_returns_empty() {
+        // `"scripts": "oops"` — the deserialize fails because we expect
+        // a Map; the warn-and-empty path must surface no panic.
+        assert!(parse_npm_scripts(br#"{"scripts": "oops"}"#).is_empty());
+    }
+
+    #[test]
+    fn scripts_field_as_null_returns_empty() {
+        // `"scripts": null` is the default value via `#[serde(default)]`
+        // — the Map deserializer doesn't accept null directly, so we
+        // assert no-panic + empty rather than asserting which arm wins.
+        assert!(parse_npm_scripts(br#"{"scripts": null}"#).is_empty());
+    }
+
+    #[test]
+    fn scripts_field_as_array_returns_empty() {
+        assert!(parse_npm_scripts(br#"{"scripts": ["start"]}"#).is_empty());
     }
 
     #[test]
@@ -154,7 +185,7 @@ mod tests {
         let long = "a".repeat(200);
         let json = format!(r#"{{"scripts": {{"big": "{long}"}}}}"#);
         let scripts = parse_npm_scripts(json.as_bytes());
-        let desc = scripts[0].1.as_ref().unwrap();
+        let desc = scripts[0].command.as_ref().unwrap();
         assert_eq!(
             desc.chars().count(),
             MAX_DESCRIPTION_CHARS,
@@ -169,17 +200,22 @@ mod tests {
         let s = "🦀".repeat(200);
         let json = format!(r#"{{"scripts": {{"crab": "{s}"}}}}"#);
         let scripts = parse_npm_scripts(json.as_bytes());
-        let desc = scripts[0].1.as_ref().unwrap();
+        let desc = scripts[0].command.as_ref().unwrap();
         assert_eq!(desc.chars().count(), MAX_DESCRIPTION_CHARS);
     }
 
     #[test]
     fn insertion_order_preserved() {
-        // serde_json::Map preserves insertion order with the
-        // `preserve_order` feature OFF too because it's a BTreeMap-free
-        // wrapper that stores entries in input order. Lock this in.
+        // serde_json::Map preserves insertion order ONLY because
+        // crates/gc-suggest/Cargo.toml enables the `preserve_order`
+        // feature on serde_json — without it, Map is a BTreeMap alias
+        // and would sort alphabetically. Locking that contract in here
+        // so a future feature-flag flip surfaces as a test failure.
         let json = br#"{"scripts": {"z": "1", "a": "2", "m": "3", "c": "4", "b": "5"}}"#;
-        let names: Vec<String> = parse_npm_scripts(json).into_iter().map(|t| t.0).collect();
+        let names: Vec<String> = parse_npm_scripts(json)
+            .into_iter()
+            .map(|e| e.name)
+            .collect();
         assert_eq!(names, vec!["z", "a", "m", "c", "b"]);
     }
 

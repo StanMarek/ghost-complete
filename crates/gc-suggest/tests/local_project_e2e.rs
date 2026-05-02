@@ -154,6 +154,43 @@ async fn missing_files_yield_empty_suggestions_without_panic() {
 }
 
 #[tokio::test]
+async fn makefile_targets_invalidate_when_file_changes() {
+    // End-to-end coverage for the cache-invalidation path through
+    // MakefileTargets specifically — the underlying MtimeCache has unit
+    // tests with a counter, but a subtle bug between the cache and the
+    // provider's `parse_makefile_targets` call could silently serve a
+    // stale target list. This test pins the provider's actual output.
+    let tmp = TempDir::new().unwrap();
+    let mf = tmp.path().join("Makefile");
+    std::fs::write(&mf, b"build:\n\ttouch x\n").unwrap();
+
+    let engine = engine();
+    let ctx = ctx_for(tmp.path());
+
+    let first = engine
+        .resolve_providers(&[ProviderKind::MakefileTargets], &ctx, "")
+        .await
+        .unwrap();
+    let texts: Vec<&str> = first.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(texts, vec!["build"]);
+
+    std::fs::write(&mf, b"build:\n\ttouch x\ntest:\n\tcargo test\n").unwrap();
+    // Bump mtime forward so the (mtime, size) probe definitely sees a
+    // change even on filesystems with coarse mtime granularity.
+    let future = std::time::SystemTime::now() + std::time::Duration::from_secs(120);
+    let ft = filetime::FileTime::from_system_time(future);
+    filetime::set_file_mtime(&mf, ft).unwrap();
+
+    let second = engine
+        .resolve_providers(&[ProviderKind::MakefileTargets], &ctx, "")
+        .await
+        .unwrap();
+    let texts: Vec<&str> = second.iter().map(|s| s.text.as_str()).collect();
+    assert!(texts.contains(&"build"));
+    assert!(texts.contains(&"test"));
+}
+
+#[tokio::test]
 async fn fuzzy_query_filters_provider_output() {
     let tmp = TempDir::new().unwrap();
     std::fs::write(

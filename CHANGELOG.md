@@ -11,10 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Local-project completion providers for `make` targets, `npm run` scripts,
   and `cargo -p` workspace members. Pure Rust file parsers — no JS runtime,
-  no `make`/`npm`/`cargo` shellout — with mtime-keyed caching. Closes the
-  empty-popup whiff for the most-screenshotted `make <TAB>` / `npm run <TAB>`
-  / `cargo run -p <TAB>` demos. New native generator types
-  `makefile_targets`, `npm_scripts`, `cargo_workspace_members`. See
+  no `make`/`npm`/`cargo` shellout — with mtime-keyed caching (with
+  directory-mtime + missing-path stamps for cargo workspace globs so newly
+  created crates invalidate cleanly). Closes the empty-popup whiff for the
+  most-screenshotted `make <TAB>` / `npm run <TAB>` / `cargo run -p <TAB>`
+  demos. New native generator types `makefile_targets`, `npm_scripts`,
+  `cargo_workspace_members`. See
   [ADR 0005](docs/adr/0005-local-project-providers.md).
 - Surface static `args.suggestions` from completion specs as runtime
   candidates. New `SuggestionKind::EnumValue` (base priority 65) ranks them

@@ -27,7 +27,7 @@ const REPO_ROOT = resolve(__dirname, '..', '..', '..');
 /** Recognizers — each takes a generator object, returns the replacement
  *  generator if it matches, otherwise null. Order matters only when two
  *  recognizers might both fire (none today). */
-const RECOGNIZERS = {
+export const RECOGNIZERS = {
   make: [
     (g) => {
       if (!g.requires_js) return null;
@@ -62,7 +62,7 @@ const RECOGNIZERS = {
   ],
 };
 
-function rewriteGenerators(node, recognizers, stats) {
+export function rewriteGenerators(node, recognizers, stats) {
   if (!node || typeof node !== 'object') return;
   if (Array.isArray(node)) {
     for (const child of node) rewriteGenerators(child, recognizers, stats);
@@ -83,7 +83,7 @@ function rewriteGenerators(node, recognizers, stats) {
   for (const value of Object.values(node)) rewriteGenerators(value, recognizers, stats);
 }
 
-async function patchSpec(specName) {
+export async function patchSpec(specName) {
   const path = resolve(REPO_ROOT, 'specs', `${specName}.json`);
   const original = await readFile(path, 'utf8');
   const spec = JSON.parse(original);
@@ -98,6 +98,22 @@ async function patchSpec(specName) {
   console.log(`${specName}: rewrote ${stats.rewrites} generators`);
 }
 
-await patchSpec('make');
-await patchSpec('npm');
-await patchSpec('cargo');
+// CLI entry-point: only run when invoked directly (not when imported by tests).
+// Each spec is patched in its own try/catch so a failure in one doesn't
+// leave the disk in a partially-rewritten state with no diagnostic for
+// the others. We still exit non-zero if any patch failed.
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const specs = ['make', 'npm', 'cargo'];
+  let failures = 0;
+  for (const spec of specs) {
+    try {
+      await patchSpec(spec);
+    } catch (err) {
+      failures++;
+      console.error(`${spec}: patch failed — ${err.message}`);
+    }
+  }
+  if (failures > 0) {
+    process.exitCode = 1;
+  }
+}

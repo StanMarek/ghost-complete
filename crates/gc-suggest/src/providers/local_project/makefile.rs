@@ -26,15 +26,27 @@ static MAKEFILE_CACHE: LazyLock<MtimeCache<Vec<String>>> = LazyLock::new(MtimeCa
 /// Extract target names from raw `Makefile` bytes. Returns suggestion
 /// strings in source order, deduped on insertion.
 ///
-/// Errors are absorbed: invalid UTF-8 is decoded lossily; lines we
-/// can't classify are silently skipped. Returning an empty `Vec` is the
-/// only failure mode the cache layer needs to handle.
+/// Errors are absorbed: invalid UTF-8 is decoded lossily after a
+/// one-time warn; lines we can't classify are silently skipped.
+/// Returning an empty `Vec` is the only failure mode the cache layer
+/// needs to handle.
 pub(crate) fn parse_makefile_targets(bytes: &[u8]) -> Vec<String> {
-    let text = String::from_utf8_lossy(bytes);
+    let text = match std::str::from_utf8(bytes) {
+        Ok(s) => std::borrow::Cow::Borrowed(s),
+        Err(e) => {
+            tracing::warn!(
+                error = %e,
+                "makefile: invalid UTF-8 in input; falling back to lossy decode (target names with replacement chars may surface)"
+            );
+            String::from_utf8_lossy(bytes)
+        }
+    };
     let mut out: Vec<String> = Vec::new();
+    let mut filtered: usize = 0;
 
     for line in logical_lines(&text) {
         if line.starts_with('\t') || line.starts_with('#') {
+            filtered += 1;
             continue;
         }
         let trimmed = line.trim_start();
@@ -45,23 +57,37 @@ pub(crate) fn parse_makefile_targets(bytes: &[u8]) -> Vec<String> {
             || trimmed.contains("${")
             || trimmed.contains('%')
         {
+            filtered += 1;
             continue;
         }
 
-        // Find the rule-defining colon. Skip `:=` / `::=` / `:?=` /
-        // `:+=` (assignment forms) and double-colon rules (`::`)
-        // already covered because we still split on the FIRST colon and
-        // the LHS is the target list.
+        // Skip GNU/POSIX assignment forms by peeking past the first
+        // colon. The relevant operators are `=`, `:=`, `::=`, `?=`,
+        // `+=`, `!=`. The first colon's RHS char tells us:
+        //   `=`        → `:=` (simple assignment) — skip.
+        //   `:` + `=`  → `::=` (POSIX simple) — skip.
+        // `?=`/`+=`/`!=` have no leading colon and never reach this
+        // arm. `=` alone (recursive `VAR = value`) bypasses this whole
+        // branch since there's no colon.
         let Some(colon_idx) = trimmed.find(':') else {
             continue;
         };
-        let after = trimmed[colon_idx + 1..].chars().next();
-        if matches!(after, Some('=')) {
-            continue;
+        let mut rest = trimmed[colon_idx + 1..].chars();
+        match rest.next() {
+            Some('=') => {
+                filtered += 1;
+                continue;
+            }
+            Some(':') if rest.next() == Some('=') => {
+                filtered += 1;
+                continue;
+            }
+            _ => {}
         }
 
         let lhs = trimmed[..colon_idx].trim();
         if lhs.is_empty() {
+            filtered += 1;
             continue;
         }
 
@@ -75,6 +101,7 @@ pub(crate) fn parse_makefile_targets(bytes: &[u8]) -> Vec<String> {
         }
     }
 
+    tracing::debug!(targets = out.len(), filtered, "makefile parse complete");
     out
 }
 
@@ -233,6 +260,26 @@ mod tests {
         // `:=` and `?=` are assignments, not target rules.
         let src = b"CC := gcc\nFLAGS ?= -O2\nbuild:\n\t$(CC)\n";
         assert_eq!(parse_makefile_targets(src), vec!["build"]);
+    }
+
+    #[test]
+    fn posix_double_colon_assignment_skipped() {
+        // POSIX `::=` (simple assignment) must not be misclassified as
+        // a target named `CC`.
+        let src = b"CC ::= gcc\nbuild:\n\t$(CC)\n";
+        assert_eq!(parse_makefile_targets(src), vec!["build"]);
+    }
+
+    #[test]
+    fn crlf_line_endings_are_handled() {
+        let src = b"build:\r\n\tcc\r\ntest:\r\n\tcargo test\r\n";
+        assert_eq!(parse_makefile_targets(src), vec!["build", "test"]);
+    }
+
+    #[test]
+    fn crlf_with_backslash_continuation_joins() {
+        let src = b"all: \\\r\n\tdep\r\n\tcc -o all\r\n";
+        assert_eq!(parse_makefile_targets(src), vec!["all"]);
     }
 
     #[test]

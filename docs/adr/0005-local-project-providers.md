@@ -47,6 +47,13 @@ with `(mtime, size)` invalidation — no TTL, since hand-edited project
 files are the only invalidation signal that matters and mtime captures
 it. Hard cap of 64 entries per provider; LRU-evicted on insert.
 
+Cargo's workspace resolution needed more than a single `(mtime, size)`
+pair on the root manifest (member files and glob-prefix directories
+also drive validity, plus missing-path probes for newly-created
+crates), so `CargoWorkspaceMembers` ships its own `CargoCache` with a
+list of per-path `Stamp`s; only `MakefileTargets` and `NpmScripts`
+share the simpler `MtimeCache<T>` described above.
+
 **Hookup:** option (c) — extend the converter (`native-map.js`) and
 introduce new provider type strings. The converter rewrites matching
 `requires_js` generators into bare `{ "type": "<name>" }` entries.
@@ -114,9 +121,10 @@ provider migrations that work at the same layer.
   and trailing `prefix/*` are supported; anything more exotic
   (`crates/**/leaf`, brace expansion) is logged-and-skipped. The user
   can `cd <crate-dir>` and run the bare command as a workaround.
-- **One new workspace dep (`toml = "0.8"`).** ~150 KB compiled,
-  already pulled in transitively by the existing `toml_edit`
-  dependency, so adding it directly is effectively free.
+- **One new workspace dep (`toml = "0.8"`).** The `toml` crate is
+  built on top of `toml_edit` (which we already pull in for the
+  config-edit subcommand), so the additional compile cost is limited
+  to `toml`'s thin `Deserialize` layer — effectively free.
 - **`serde_json` `preserve_order` feature is now on.** Required for
   the `npm_scripts` provider to emit script keys in `package.json`
   source order rather than alphabetical (BTreeMap default). Switches

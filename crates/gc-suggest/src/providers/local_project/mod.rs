@@ -39,10 +39,15 @@ pub(crate) const MAX_ANCESTOR_WALK: usize = 32;
 
 #[derive(Clone)]
 struct CacheEntry<T> {
-    mtime: SystemTime,
+    /// `None` means `metadata.modified()` failed (rare — some FUSE/
+    /// network mounts). Equality of `None == None` must NOT count as
+    /// a hit; the `get_or_insert_with` probe short-circuits on `None`.
+    mtime: Option<SystemTime>,
     size: u64,
-    /// Insertion sequence — used for LRU-on-insert eviction.
-    seq: u64,
+    /// Insertion sequence — used for FIFO eviction at capacity. Cache
+    /// hits do not refresh this value (true LRU would require a write
+    /// lock on every read).
+    inserted_at_seq: u64,
     value: T,
 }
 
@@ -57,10 +62,10 @@ struct CacheEntry<T> {
 /// extractor is called against fresh bytes and the result replaces the
 /// stale entry.
 ///
-/// LRU eviction: when a new key is inserted and the cache is at
-/// capacity, the entry with the lowest `seq` is dropped. This is O(N)
-/// over a 64-entry cap — fine, since insertion only happens on cold
-/// reads (which are already paying file IO cost).
+/// FIFO eviction: when a new key is inserted and the cache is at
+/// capacity, the entry with the lowest `inserted_at_seq` is dropped.
+/// This is O(N) over a 64-entry cap — fine, since insertion only
+/// happens on cold reads (which are already paying file IO cost).
 pub(crate) struct MtimeCache<T: Clone> {
     inner: Mutex<MtimeCacheInner<T>>,
 }
@@ -108,15 +113,39 @@ impl<T: Clone> MtimeCache<T> {
                 return None;
             }
         };
-        let mtime = metadata.modified().unwrap_or(SystemTime::UNIX_EPOCH);
+        let mtime = match metadata.modified() {
+            Ok(t) => Some(t),
+            Err(e) => {
+                tracing::warn!(
+                    path = %path.display(),
+                    error = %e,
+                    "local-project provider: file metadata has no mtime; cache validity downgraded — re-reading on every call"
+                );
+                None
+            }
+        };
         let size = metadata.len();
 
-        if let Ok(guard) = self.inner.lock() {
+        // `mtime == None` short-circuits the cache: we never compare
+        // None == None as a hit, so the extractor always runs and the
+        // value is returned without storing a stale-prone entry.
+        if let Some(probe_mtime) = mtime {
+            let guard = match self.inner.lock() {
+                Ok(g) => g,
+                Err(poisoned) => {
+                    tracing::error!(
+                        path = %path.display(),
+                        "local-project provider: mtime cache mutex poisoned (read path); recovering"
+                    );
+                    poisoned.into_inner()
+                }
+            };
             if let Some(entry) = guard.entries.get(path) {
-                if entry.mtime == mtime && entry.size == size {
+                if entry.mtime == Some(probe_mtime) && entry.size == size {
                     return Some(entry.value.clone());
                 }
             }
+            drop(guard);
         }
 
         let bytes = match std::fs::read(path) {
@@ -132,38 +161,53 @@ impl<T: Clone> MtimeCache<T> {
         };
         let value = extractor(&bytes);
 
-        if let Ok(mut guard) = self.inner.lock() {
-            let seq = guard.next_seq;
-            guard.next_seq = guard.next_seq.wrapping_add(1);
-
-            if !guard.entries.contains_key(path) && guard.entries.len() >= MAX_CACHE_ENTRIES {
-                if let Some(victim) = guard
-                    .entries
-                    .iter()
-                    .min_by_key(|(_, e)| e.seq)
-                    .map(|(p, _)| p.clone())
-                {
-                    guard.entries.remove(&victim);
-                }
-            }
-
-            guard.entries.insert(
-                path.to_path_buf(),
-                CacheEntry {
-                    mtime,
-                    size,
-                    seq,
-                    value: value.clone(),
-                },
-            );
+        if mtime.is_none() {
+            return Some(value);
         }
+
+        let mut guard = match self.inner.lock() {
+            Ok(g) => g,
+            Err(poisoned) => {
+                tracing::error!(
+                    path = %path.display(),
+                    "local-project provider: mtime cache mutex poisoned (write path); recovering"
+                );
+                poisoned.into_inner()
+            }
+        };
+        let inserted_at_seq = guard.next_seq;
+        guard.next_seq = guard.next_seq.wrapping_add(1);
+
+        if !guard.entries.contains_key(path) && guard.entries.len() >= MAX_CACHE_ENTRIES {
+            if let Some(victim) = guard
+                .entries
+                .iter()
+                .min_by_key(|(_, e)| e.inserted_at_seq)
+                .map(|(p, _)| p.clone())
+            {
+                guard.entries.remove(&victim);
+            }
+        }
+
+        guard.entries.insert(
+            path.to_path_buf(),
+            CacheEntry {
+                mtime,
+                size,
+                inserted_at_seq,
+                value: value.clone(),
+            },
+        );
 
         Some(value)
     }
 
     #[cfg(test)]
     pub(crate) fn len(&self) -> usize {
-        self.inner.lock().map(|g| g.entries.len()).unwrap_or(0)
+        match self.inner.lock() {
+            Ok(g) => g.entries.len(),
+            Err(poisoned) => poisoned.into_inner().entries.len(),
+        }
     }
 }
 
@@ -291,5 +335,75 @@ mod tests {
         let cache: MtimeCache<usize> = MtimeCache::new();
         let result = cache.get_or_insert_with(&tmp.path().join("nope.txt"), |b| b.len());
         assert!(result.is_none());
+    }
+
+    #[test]
+    fn deletion_then_recreate_drops_stale_value() {
+        // Cache hit, then file removed: next call returns None
+        // (metadata read fails). Recreating with new bytes must trigger
+        // the extractor and surface the new value, not the stale one.
+        let tmp = TempDir::new().unwrap();
+        let path = write_file(tmp.path(), "data.txt", b"hello");
+        let cache: MtimeCache<usize> = MtimeCache::new();
+
+        let runs = std::sync::Mutex::new(0usize);
+        let extractor = |b: &[u8]| {
+            *runs.lock().unwrap() += 1;
+            b.len()
+        };
+
+        let v1 = cache.get_or_insert_with(&path, extractor).unwrap();
+        assert_eq!(v1, 5);
+
+        std::fs::remove_file(&path).unwrap();
+        let after_delete = cache.get_or_insert_with(&path, extractor);
+        assert!(after_delete.is_none(), "deletion must surface as None");
+
+        let path = write_file(tmp.path(), "data.txt", b"hello world!");
+        let v2 = cache.get_or_insert_with(&path, extractor).unwrap();
+        assert_eq!(v2, 12, "must extract fresh value, not return stale 5");
+        assert_eq!(
+            *runs.lock().unwrap(),
+            2,
+            "extractor must run for the original write and the recreated file"
+        );
+    }
+
+    #[test]
+    fn fifo_eviction_does_not_promote_on_hit() {
+        // Cache is FIFO-on-insert, not true LRU: hitting an entry in
+        // the middle of the cache does NOT refresh its position, so it
+        // is still the oldest by inserted_at_seq and gets evicted when
+        // a new key arrives at capacity.
+        let tmp = TempDir::new().unwrap();
+        let cache: MtimeCache<usize> = MtimeCache::new();
+
+        let mut paths = Vec::new();
+        for i in 0..MAX_CACHE_ENTRIES {
+            let p = write_file(tmp.path(), &format!("f{i}.txt"), b"x");
+            cache.get_or_insert_with(&p, |b| b.len()).unwrap();
+            paths.push(p);
+        }
+        assert_eq!(cache.len(), MAX_CACHE_ENTRIES);
+
+        // Touch the oldest entry — a hit, no re-insert.
+        cache.get_or_insert_with(&paths[0], |b| b.len()).unwrap();
+
+        // Insert a new key. Under true LRU paths[0] would survive;
+        // under FIFO it is the victim.
+        let extra = write_file(tmp.path(), "extra.txt", b"x");
+        cache.get_or_insert_with(&extra, |b| b.len()).unwrap();
+
+        let runs = std::sync::Mutex::new(0usize);
+        let extractor = |b: &[u8]| {
+            *runs.lock().unwrap() += 1;
+            b.len()
+        };
+        cache.get_or_insert_with(&paths[0], extractor).unwrap();
+        assert_eq!(
+            *runs.lock().unwrap(),
+            1,
+            "FIFO: a hit does not promote, so paths[0] must still have been evicted"
+        );
     }
 }
