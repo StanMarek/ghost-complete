@@ -17,9 +17,11 @@ pub enum KeyEvent {
     PageDown,
     Home,
     HomeCsiTilde,
+    HomeCsi7Tilde,
     HomeSs3,
     End,
     EndCsiTilde,
+    EndCsi8Tilde,
     EndSs3,
     CtrlSpace,
     CtrlSlash,
@@ -104,6 +106,14 @@ pub fn parse_keys(buf: &[u8]) -> Vec<KeyEvent> {
                         }
                         b'6' if i + 3 < buf.len() && buf[i + 3] == b'~' => {
                             events.push(KeyEvent::PageDown);
+                            i += 4;
+                        }
+                        b'7' if i + 3 < buf.len() && buf[i + 3] == b'~' => {
+                            events.push(KeyEvent::HomeCsi7Tilde);
+                            i += 4;
+                        }
+                        b'8' if i + 3 < buf.len() && buf[i + 3] == b'~' => {
+                            events.push(KeyEvent::EndCsi8Tilde);
                             i += 4;
                         }
                         _ => {
@@ -279,11 +289,13 @@ mod tests {
     #[test]
     fn test_home_csi_tilde_synonym() {
         assert_eq!(parse_keys(b"\x1B[1~"), vec![KeyEvent::HomeCsiTilde]);
+        assert_eq!(parse_keys(b"\x1B[7~"), vec![KeyEvent::HomeCsi7Tilde]);
     }
 
     #[test]
     fn test_end_csi_tilde_synonym() {
         assert_eq!(parse_keys(b"\x1B[4~"), vec![KeyEvent::EndCsiTilde]);
+        assert_eq!(parse_keys(b"\x1B[8~"), vec![KeyEvent::EndCsi8Tilde]);
     }
 
     #[test]

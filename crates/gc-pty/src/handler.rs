@@ -634,12 +634,15 @@ impl InputHandler {
                 self.render(parser, stdout);
                 return Vec::new();
             }
-            KeyEvent::Home | KeyEvent::HomeCsiTilde | KeyEvent::HomeSs3 => {
+            KeyEvent::Home
+            | KeyEvent::HomeCsiTilde
+            | KeyEvent::HomeCsi7Tilde
+            | KeyEvent::HomeSs3 => {
                 self.overlay.move_home(self.suggestions.len());
                 self.render(parser, stdout);
                 return Vec::new();
             }
-            KeyEvent::End | KeyEvent::EndCsiTilde | KeyEvent::EndSs3 => {
+            KeyEvent::End | KeyEvent::EndCsiTilde | KeyEvent::EndCsi8Tilde | KeyEvent::EndSs3 => {
                 self.overlay.move_end(self.suggestions.len(), visible_rows);
                 self.render(parser, stdout);
                 return Vec::new();
@@ -2109,9 +2112,11 @@ pub fn key_to_bytes(key: &KeyEvent) -> Vec<u8> {
         KeyEvent::PageDown => vec![0x1B, b'[', b'6', b'~'],
         KeyEvent::Home => vec![0x1B, b'[', b'H'],
         KeyEvent::HomeCsiTilde => vec![0x1B, b'[', b'1', b'~'],
+        KeyEvent::HomeCsi7Tilde => vec![0x1B, b'[', b'7', b'~'],
         KeyEvent::HomeSs3 => vec![0x1B, b'O', b'H'],
         KeyEvent::End => vec![0x1B, b'[', b'F'],
         KeyEvent::EndCsiTilde => vec![0x1B, b'[', b'4', b'~'],
+        KeyEvent::EndCsi8Tilde => vec![0x1B, b'[', b'8', b'~'],
         KeyEvent::EndSs3 => vec![0x1B, b'O', b'F'],
         KeyEvent::CtrlSpace => vec![0x00],
         KeyEvent::CtrlSlash => vec![0x1F],
@@ -2188,6 +2193,7 @@ mod tests {
     fn test_key_to_bytes_home_round_trip() {
         assert_eq!(key_to_bytes(&KeyEvent::Home), b"\x1B[H");
         assert_eq!(key_to_bytes(&KeyEvent::HomeCsiTilde), b"\x1B[1~");
+        assert_eq!(key_to_bytes(&KeyEvent::HomeCsi7Tilde), b"\x1B[7~");
         assert_eq!(key_to_bytes(&KeyEvent::HomeSs3), b"\x1BOH");
     }
 
@@ -2195,6 +2201,7 @@ mod tests {
     fn test_key_to_bytes_end_round_trip() {
         assert_eq!(key_to_bytes(&KeyEvent::End), b"\x1B[F");
         assert_eq!(key_to_bytes(&KeyEvent::EndCsiTilde), b"\x1B[4~");
+        assert_eq!(key_to_bytes(&KeyEvent::EndCsi8Tilde), b"\x1B[8~");
         assert_eq!(key_to_bytes(&KeyEvent::EndSs3), b"\x1BOF");
     }
 
@@ -2223,9 +2230,11 @@ mod tests {
             KeyEvent::PageDown,
             KeyEvent::Home,
             KeyEvent::HomeCsiTilde,
+            KeyEvent::HomeCsi7Tilde,
             KeyEvent::HomeSs3,
             KeyEvent::End,
             KeyEvent::EndCsiTilde,
+            KeyEvent::EndCsi8Tilde,
             KeyEvent::EndSs3,
             KeyEvent::CtrlSpace,
             KeyEvent::CtrlSlash,
@@ -2801,6 +2810,58 @@ mod tests {
     }
 
     #[test]
+    fn test_page_up_uses_effective_popup_height_on_short_terminal() {
+        let mut handler = make_visible_handler(numbered_suggestions(50));
+        handler.overlay.selected = Some(8);
+        handler.overlay.scroll_offset = 6;
+        handler.last_layout = Some(PopupLayout {
+            start_row: 1,
+            start_col: 0,
+            width: 20,
+            height: 3,
+            scroll_deficit: 0,
+        });
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(4, 80)));
+        let mut buf = Vec::new();
+
+        let result = handler.process_key(&KeyEvent::PageUp, &parser, &mut buf);
+
+        assert!(result.is_empty());
+        assert_eq!(handler.overlay.selected, Some(5));
+        assert_eq!(handler.overlay.scroll_offset, 5);
+        let selected = handler.overlay.selected.unwrap();
+        assert!(handler.overlay.scroll_offset <= selected);
+        assert!(selected < handler.overlay.scroll_offset + 3);
+    }
+
+    #[test]
+    fn test_end_uses_effective_popup_height_with_bordered_short_terminal() {
+        let mut handler = make_visible_handler(numbered_suggestions(50));
+        handler.theme = PopupTheme {
+            borders: true,
+            ..PopupTheme::default()
+        };
+        handler.last_layout = Some(PopupLayout {
+            start_row: 1,
+            start_col: 0,
+            width: 20,
+            height: 5,
+            scroll_deficit: 0,
+        });
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(6, 80)));
+        let mut buf = Vec::new();
+
+        let result = handler.process_key(&KeyEvent::End, &parser, &mut buf);
+
+        assert!(result.is_empty());
+        assert_eq!(handler.overlay.selected, Some(49));
+        assert_eq!(handler.overlay.scroll_offset, 47);
+        let selected = handler.overlay.selected.unwrap();
+        assert!(handler.overlay.scroll_offset <= selected);
+        assert!(selected < handler.overlay.scroll_offset + 3);
+    }
+
+    #[test]
     fn test_page_up_when_visible_retreats_selection() {
         let mut handler = make_visible_handler(numbered_suggestions(50));
         handler.overlay.selected = Some(15);
@@ -2899,7 +2960,14 @@ mod tests {
 
     #[test]
     fn test_hidden_home_end_alternate_encodings_forward_verbatim() {
-        for raw in [b"\x1B[1~".as_slice(), b"\x1B[4~", b"\x1BOH", b"\x1BOF"] {
+        for raw in [
+            b"\x1B[1~".as_slice(),
+            b"\x1B[4~",
+            b"\x1B[7~",
+            b"\x1B[8~",
+            b"\x1BOH",
+            b"\x1BOF",
+        ] {
             let events = crate::input::parse_keys(raw);
             assert_eq!(events.len(), 1, "expected one parsed event for {raw:?}");
 
@@ -2914,15 +2982,41 @@ mod tests {
     }
 
     #[test]
+    fn test_visible_home_end_csi_7_8_tilde_navigate() {
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+
+        let mut home_handler = make_visible_handler(numbered_suggestions(50));
+        home_handler.overlay.selected = Some(20);
+        home_handler.overlay.scroll_offset = 11;
+        let home_result = home_handler.process_key(&KeyEvent::HomeCsi7Tilde, &parser, &mut buf);
+
+        assert!(home_result.is_empty());
+        assert!(home_handler.visible);
+        assert_eq!(home_handler.overlay.selected, Some(0));
+        assert_eq!(home_handler.overlay.scroll_offset, 0);
+
+        let mut end_handler = make_visible_handler(numbered_suggestions(50));
+        let end_result = end_handler.process_key(&KeyEvent::EndCsi8Tilde, &parser, &mut buf);
+
+        assert!(end_result.is_empty());
+        assert!(end_handler.visible);
+        assert_eq!(end_handler.overlay.selected, Some(49));
+        assert_eq!(end_handler.overlay.scroll_offset, 40);
+    }
+
+    #[test]
     fn test_page_navigation_does_not_dismiss_popup() {
         for key in [
             KeyEvent::PageUp,
             KeyEvent::PageDown,
             KeyEvent::Home,
             KeyEvent::HomeCsiTilde,
+            KeyEvent::HomeCsi7Tilde,
             KeyEvent::HomeSs3,
             KeyEvent::End,
             KeyEvent::EndCsiTilde,
+            KeyEvent::EndCsi8Tilde,
             KeyEvent::EndSs3,
         ] {
             let mut handler = make_visible_handler(numbered_suggestions(50));
