@@ -270,7 +270,7 @@ function processGenerator(gen, specName) {
   if (gen.script && Array.isArray(gen.script)) {
     const nativeGen = matchNativeGenerator(specName, gen.script, gen._postProcessSource);
     if (nativeGen) {
-      // Native generator takes priority — emit type-only generator
+      // Native generator takes priority — emit native type plus optional cache
       const result = { ...nativeGen };
       if (gen.cache) result.cache = gen.cache;
       return result;

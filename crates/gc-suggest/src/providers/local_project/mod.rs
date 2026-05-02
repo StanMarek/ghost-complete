@@ -6,15 +6,20 @@
 //!
 //! ### Pattern
 //!
-//! Each provider follows the same shape:
+//! `MakefileTargets` and `NpmScripts` follow the shared `MtimeCache`
+//! shape:
 //! 1. Walk up to 32 ancestors of `ctx.cwd` to find the relevant file.
 //! 2. Look the path up in a module-private [`MtimeCache`].
 //! 3. On miss: read bytes, parse, store, return.
 //! 4. On hit: return the cached value.
 //!
-//! No subprocesses, no filesystem watchers — `(mtime, size)` is the
-//! invalidation signal. The cache is process-local; a cold
-//! `ghost-complete` restart starts empty. See
+//! `CargoWorkspaceMembers` also walks ancestors, but uses its own
+//! `CargoCache`: cache hits require every recorded per-path stamp
+//! (root/member manifests, glob-prefix dirs, and missing-path probes)
+//! to still match the live filesystem.
+//!
+//! No subprocesses, no filesystem watchers. The caches are
+//! process-local; a cold `ghost-complete` restart starts empty. See
 //! `docs/PROVIDERS.md` §Local-project providers for the rationale.
 
 pub mod cargo_workspace;
@@ -26,10 +31,10 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::time::SystemTime;
 
-/// Hard cap on cached entries per provider. These files are tiny (10–
-/// 200 KB parsed) so 64 × 3 providers ≈ 2 MB worst case. The cap exists
-/// to keep memory bounded if a user `cd`s through many distinct
-/// projects in a single session.
+/// Hard cap on cached entries per `MtimeCache`-backed provider. These
+/// files are tiny (10–200 KB parsed), and cargo's separate `CargoCache`
+/// has the same 64-entry cap. The cap exists to keep memory bounded if
+/// a user `cd`s through many distinct projects in a single session.
 const MAX_CACHE_ENTRIES: usize = 64;
 
 /// Maximum ancestor levels to walk when discovering a project file.
@@ -52,9 +57,9 @@ struct CacheEntry<T> {
 }
 
 /// Cache keyed by absolute file path with `(mtime, size)` invalidation.
-/// Each provider owns one `MtimeCache<T>` where `T` is the parsed shape
-/// it cares about (e.g. `Vec<String>` for makefile targets, a custom
-/// struct for cargo workspace metadata).
+/// Each `MtimeCache`-backed provider owns one `MtimeCache<T>` where
+/// `T` is the parsed shape it cares about (e.g. `Vec<String>` for
+/// makefile targets).
 ///
 /// On every `get_or_insert_with`, the file's `metadata` is read first.
 /// If `(mtime, size)` matches the cached entry, the cached value is

@@ -8,7 +8,8 @@
 //!   environment, current token).
 //! - `ProviderKind` is a closed-for-this-crate enum listing every
 //!   registered provider. Adding a new provider means adding one
-//!   variant + one `kind_from_type_str` arm + one `resolve` arm.
+//!   variant + one `ProviderKind::ALL` entry + one
+//!   `ProviderKind::type_str()` arm + one `resolve` arm.
 //! - `kind_from_type_str` is the string→kind dispatcher wired up from
 //!   spec loading. Specs reference providers via `{"type": "<name>"}`
 //!   exactly like the existing `git_branches` / `filepaths` native
@@ -62,8 +63,8 @@ pub mod pandoc;
 /// callers (engine, gc-pty, provider unit tests); a future refactor
 /// may downgrade them to `pub(crate)` once those call sites migrate.
 /// While direct construction remains possible,
-/// `SuggestionEngine::resolve_providers` also enforces the invariant at
-/// the provider dispatch boundary.
+/// [`resolve`] also enforces the invariant at the provider dispatch
+/// boundary.
 pub struct ProviderCtx {
     /// Working directory the shell was in when the completion trigger
     /// fired. Providers that shell out to external tools pass this as
@@ -151,8 +152,8 @@ impl ProviderCtx {
 /// desugars it into the required impl-trait signature.
 pub trait Provider: Send + Sync {
     /// Stable identifier for this provider. Must match the `"type"`
-    /// string used in JSON specs and the arm added to
-    /// `kind_from_type_str` so dispatch is total.
+    /// string used in JSON specs and the corresponding
+    /// [`ProviderKind::type_str`] result so dispatch is total.
     fn name(&self) -> &'static str;
 
     /// Produce suggestions for the given context.
@@ -172,8 +173,9 @@ pub trait Provider: Send + Sync {
 /// production variant is listed below — but marked `#[non_exhaustive]`
 /// so downstream crates cannot rely on exhaustive matches and we can
 /// add a provider without breaking them on a patch release. Adding a
-/// variant requires matching arms in `kind_from_type_str` and
-/// `resolve`; both are dispatched from `SuggestionEngine`.
+/// variant requires adding it to [`ProviderKind::ALL`],
+/// [`ProviderKind::type_str`], and [`resolve`]; these are dispatched
+/// from `SuggestionEngine`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum ProviderKind {
@@ -234,7 +236,8 @@ impl ProviderKind {
     /// Every registered provider variant in declaration order. The
     /// single source of truth for the variant set used by
     /// [`kind_from_type_str`] (string→kind dispatch). Adding a variant
-    /// to `ProviderKind` requires adding it here AND to [`resolve`];
+    /// to `ProviderKind` requires adding it here, to [`Self::type_str`],
+    /// AND to [`resolve`];
     /// the test `test_kind_from_type_str_known_providers` pins the
     /// string contract for each entry.
     pub const ALL: &'static [ProviderKind] = &[
@@ -291,8 +294,8 @@ impl ProviderKind {
 /// `provider_generators` instead of the script path. Iterates
 /// [`ProviderKind::ALL`] and matches against [`ProviderKind::type_str`]
 /// so adding a new provider only requires a new variant, an `ALL`
-/// entry, and a `type_str` arm— there is no separate string→kind table to keep
-/// in sync.
+/// entry, and a `type_str` arm — there is no separate string→kind table
+/// to keep in sync.
 pub fn kind_from_type_str(type_str: &str) -> Option<ProviderKind> {
     ProviderKind::ALL
         .iter()
@@ -301,8 +304,19 @@ pub fn kind_from_type_str(type_str: &str) -> Option<ProviderKind> {
 }
 
 /// Dispatch a single provider kind against `ctx`. The engine iterates
-/// the slice of kinds from a `SpecResolution` and awaits each.
+/// the slice of kinds from a `SpecResolution` and awaits each. Rejects
+/// relative cwd values at the shared provider boundary so direct
+/// callers cannot bypass [`ProviderCtx::new`] and accidentally make
+/// local-project providers walk ancestors from the process cwd.
 pub async fn resolve(kind: ProviderKind, ctx: &ProviderCtx) -> Result<Vec<Suggestion>> {
+    if !ctx.cwd.is_absolute() {
+        tracing::warn!(
+            cwd = %ctx.cwd.display(),
+            "provider cwd is relative; skipping provider resolution"
+        );
+        return Ok(Vec::new());
+    }
+
     match kind {
         ProviderKind::AnsibleDocModules => ansible_doc::AnsibleDocModules.generate(ctx).await,
         ProviderKind::ArduinoCliBoards => arduino_cli::ArduinoCliBoards.generate(ctx).await,
@@ -350,7 +364,7 @@ mod tests {
 
     #[test]
     fn test_kind_from_type_str_unknown_returns_none() {
-        // Exercises the catchall arm of the string→kind dispatcher. Any
+        // Exercises the unknown-provider path of the string→kind dispatcher. Any
         // string that is NOT a registered provider must return None so
         // `collect_generators` falls through to the existing unknown-type
         // warn path rather than incorrectly routing the generator to the
@@ -478,6 +492,32 @@ mod tests {
             Ok(_) => panic!("relative cwd should be rejected"),
             Err(CtxError::RelativeCwd(p)) => assert_eq!(p, PathBuf::from("relative/dir")),
         }
+    }
+
+    #[tokio::test]
+    async fn test_resolve_rejects_relative_cwd_before_local_project_provider() {
+        // A relative cwd would make local-project provider ancestor walks
+        // consult the ghost-complete process cwd. The provider dispatch
+        // boundary must reject it before any provider can read manifests
+        // from the wrong project.
+        assert!(
+            std::env::current_dir()
+                .unwrap()
+                .join("Cargo.toml")
+                .is_file(),
+            "test requires the process cwd to contain a Cargo.toml"
+        );
+        let ctx =
+            ProviderCtx::new_for_test(PathBuf::from("."), Arc::new(HashMap::new()), String::new());
+
+        let results = resolve(ProviderKind::CargoWorkspaceMembers, &ctx)
+            .await
+            .unwrap();
+
+        assert!(
+            results.is_empty(),
+            "relative cwd must not resolve providers from process cwd, got {results:?}"
+        );
     }
 
     #[test]

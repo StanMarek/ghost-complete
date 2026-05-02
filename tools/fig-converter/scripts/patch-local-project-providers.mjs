@@ -11,10 +11,11 @@
  * This script does a minimal surgical pass instead: walk the existing
  * spec files, find generators that match a known requires_js pattern
  * for one of our new local-project providers, and replace each with
- * the type-only `{ type: "..." }` form. Every other field — including
- * priorities — survives untouched. Run once after the converter +
- * provider code lands; the same path will handle future
- * local-project-provider additions.
+ * the native `{ type: "..." }` form plus optional `cache`. Other spec
+ * data outside the replaced generator — including hand-curated
+ * priorities elsewhere in the file — survives untouched. Run once
+ * after the converter + provider code lands; the same path will handle
+ * future local-project-provider additions.
  */
 
 import { readFile, writeFile } from 'node:fs/promises';

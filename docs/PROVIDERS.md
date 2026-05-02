@@ -1,6 +1,6 @@
 # Native Providers
 
-Phase 3A introduced a native-provider pipeline in `gc-suggest` that replaces a subset of Fig specs' `requires_js` generators with async Rust code. Providers eliminate the JS runtime dependency for commands whose completion source is a well-behaved subprocess (stable output, no auth, no pagination, no file parsing).
+Phase 3A introduced a native-provider pipeline in `gc-suggest` that replaces a subset of Fig specs' `requires_js` generators with async Rust code. Providers eliminate the JS runtime dependency for commands whose completion source is either a well-behaved subprocess (stable output, no auth, no pagination, no file parsing) or a local project file that can be parsed directly.
 
 Reference implementation: [`crates/gc-suggest/src/providers/arduino_cli.rs`](../crates/gc-suggest/src/providers/arduino_cli.rs) — mirrors the full pattern (subprocess runner, pure extractor, test-injection binary override).
 
@@ -19,7 +19,8 @@ Reference implementation: [`crates/gc-suggest/src/providers/arduino_cli.rs`](../
 3. **Register.** In `crates/gc-suggest/src/providers/mod.rs`:
    - `pub mod x;`
    - Add a variant to `ProviderKind`.
-   - Add the string→kind arm in `kind_from_type_str`.
+   - Add the variant to `ProviderKind::ALL`.
+   - Add the string mapping in `ProviderKind::type_str()`.
    - Add the dispatcher arm in `resolve`.
 
 4. **Test.** Pure-function tests for the extractor (happy path, empty input, malformed input, missing-field filtering). One subprocess-failure test using `run_x_with_binary(tmp.path(), "/nonexistent/x")` — never mutate `$PATH`.
@@ -33,7 +34,7 @@ Reference implementation: [`crates/gc-suggest/src/providers/arduino_cli.rs`](../
 A subset of providers do not shell out at all — they parse a project file in the user's CWD ancestry. Reference implementation: [`crates/gc-suggest/src/providers/local_project/`](../crates/gc-suggest/src/providers/local_project/) (UX-5). Same `Provider` trait as the subprocess providers, with two pattern differences:
 
 1. **Ancestor walk for file discovery.** Each provider walks up to 32 ancestors of `ctx.cwd` to find its file (`Makefile` / `package.json` / `Cargo.toml`). The walk is bounded to defuse pathological symlink loops.
-2. **`MtimeCache<T>` invalidation, no TTL.** A module-private cache keyed by absolute file path with `(mtime, size)` invalidation. Cached entries remain valid forever until the source file changes — a hand-edit to `Makefile` is picked up on the next keystroke. LRU-evicted at 64 entries per provider as a hard cap (these files are tiny, so the cap is generous in practice).
+2. **Provider-private caching, no TTL.** `MakefileTargets` and `NpmScripts` use module-private `MtimeCache<T>` instances keyed by absolute file path with `(mtime, size)` invalidation. Cached entries remain valid until the source file changes — a hand-edit to `Makefile` is picked up on the next keystroke. They are FIFO-evicted at 64 entries per provider as a hard cap. `CargoWorkspaceMembers` uses a separate `CargoCache` with per-path stamps for the root manifest, member manifests, glob-prefix directories, and missing-path probes; a hit is valid only when every recorded stamp still matches.
 
 ### v1 providers
 
@@ -61,7 +62,7 @@ Skip the local-project pattern (and use a script provider or stay with `requires
 
 1. Create `crates/gc-suggest/src/providers/local_project/<source>.rs` mirroring `makefile.rs` / `npm_scripts.rs` / `cargo_workspace.rs`. Export a `pub struct <Source>;` implementing `Provider`, plus a `pub(crate) async fn generate_with_root(root: &Path)` test seam.
 2. Add the module declaration in `local_project/mod.rs`.
-3. Add the variant + dispatcher arms in `providers/mod.rs` (same as for subprocess providers).
+3. Add the `ProviderKind` variant, `ProviderKind::ALL` entry, `ProviderKind::type_str()` arm, and `resolve` dispatcher arm in `providers/mod.rs` (same as for subprocess providers).
 4. Hook up the converter in `tools/fig-converter/src/native-map.js`. For script-array shapes use `NATIVE_GENERATOR_MAP` or `SPEC_SCOPED_MAP`; for `_custom` / `_scriptFunction` (where there is no `script` array), extend `matchNativeFromJsSource` with a regex on the JS source.
 5. Run `npm --prefix tools/fig-converter test` and `cargo test -p gc-suggest`.
 
@@ -69,7 +70,7 @@ If the upstream specs you're rewriting carry hand-curated `priority` fields that
 
 ## Caching
 
-Providers currently bypass the `CacheConfig` layer on `GeneratorSpec`. That config (`ttl_seconds`, `cache_by_directory`) applies only to script-based generators. If a provider's underlying subprocess is expensive enough to warrant caching, add it inside the provider itself — either a module-level `Mutex<LruCache<PathBuf, (Instant, T)>>` or a `tokio::sync::OnceCell` guarded by timestamp. Local-project providers use the shared `MtimeCache<T>` defined in `local_project/mod.rs`. Keep cache logic private to the provider module; don't reach into `gc-suggest::cache`. If you find yourself wanting shared caching across providers, that's a signal to design a dedicated provider-level cache API in a follow-up phase.
+Providers currently bypass the `CacheConfig` layer on `GeneratorSpec`. That config (`ttl_seconds`, `cache_by_directory`) applies only to script-based generators. If a provider's underlying subprocess is expensive enough to warrant caching, add it inside the provider itself — either a module-level `Mutex<LruCache<PathBuf, (Instant, T)>>` or a `tokio::sync::OnceCell` guarded by timestamp. For local-project providers, `MakefileTargets` and `NpmScripts` use the shared `MtimeCache<T>` helper defined in `local_project/mod.rs`, while `CargoWorkspaceMembers` uses its own `CargoCache` with per-path stamps. Keep cache logic private to the provider module; don't reach into `gc-suggest::cache`. If you find yourself wanting shared caching across providers, that's a signal to design a dedicated provider-level cache API in a follow-up phase.
 
 ## Converter eligibility
 

@@ -84,12 +84,15 @@ struct WorkspaceMin {
     members: Vec<String>,
     #[serde(default)]
     exclude: Vec<String>,
+    #[serde(default)]
+    dependencies: DependencyTable,
 }
 
 type DependencyTable = BTreeMap<String, DependencyMin>;
 
 struct DependencyMin {
     path: Option<String>,
+    workspace: bool,
 }
 
 impl<'de> Deserialize<'de> for DependencyMin {
@@ -103,7 +106,12 @@ impl<'de> Deserialize<'de> for DependencyMin {
             .and_then(|table| table.get("path"))
             .and_then(toml::Value::as_str)
             .map(str::to_owned);
-        Ok(Self { path })
+        let workspace = value
+            .as_table()
+            .and_then(|table| table.get("workspace"))
+            .and_then(toml::Value::as_bool)
+            .unwrap_or(false);
+        Ok(Self { path, workspace })
     }
 }
 
@@ -457,12 +465,13 @@ pub(crate) fn find_cargo_root(start: &Path) -> Option<CargoManifestPath> {
     nearest
 }
 
-/// Cheap check: does this `Cargo.toml` declare a `[workspace]` table?
+/// Cheap check: does this `Cargo.toml` declare a workspace table?
 ///
 /// Two-stage:
-/// 1. Line-scan for `^\s*\[workspace\b` — a few microseconds vs the
-///    dozens-to-hundreds for a full TOML parse on a 50KB+ workspace
-///    root manifest. This runs on every keystroke trigger via
+/// 1. Line-scan for bracketed `[workspace...]` tables or top-level
+///    dotted/inline workspace keys — a few microseconds vs the
+///    dozens-to-hundreds for a full TOML parse on a 50KB+ workspace root
+///    manifest. This runs on every keystroke trigger via
 ///    `find_cargo_root`, so the cost matters.
 /// 2. If the cheap check matches, fall back to a real TOML parse to
 ///    eliminate false positives from commented-out lines or
@@ -516,26 +525,37 @@ fn has_workspace_section(path: &Path) -> bool {
     }
 }
 
-/// Cheap line-scan: is there a line whose first non-whitespace is `[`
-/// followed by optional whitespace and then `workspace` followed by
-/// `]`, `.`, or whitespace? This eliminates the vast majority of
-/// `[workspace`-free files without paying the TOML parser cost. False
-/// positives (commented-out, triple-quoted strings) are caught by the
-/// secondary TOML parse in the caller.
+/// Cheap line-scan: is there a line whose first non-whitespace declares
+/// a workspace table (`[workspace]`, `[workspace.foo]`) or a top-level
+/// workspace key (`workspace.members = ...`, `workspace = { ... }`)?
+/// This eliminates the vast majority of workspace-free files without
+/// paying the TOML parser cost. False positives (commented-out,
+/// triple-quoted strings) are caught by the secondary TOML parse in the
+/// caller.
 fn line_scan_has_workspace(text: &str) -> bool {
     for line in text.lines() {
         let trimmed = line.trim_start();
-        let Some(rest) = trimmed.strip_prefix('[') else {
-            continue;
-        };
-        let rest = rest.trim_start();
-        if let Some(rest) = rest.strip_prefix("workspace") {
-            // Must be `[workspace]`, `[workspace.foo]`,
-            // `[workspace ]`, or `[ workspace ]` — not
-            // `[workspaceextended]`.
+        if let Some(rest) = trimmed.strip_prefix('[') {
+            let rest = rest.trim_start();
+            if let Some(rest) = rest.strip_prefix("workspace") {
+                // Must be `[workspace]`, `[workspace.foo]`,
+                // `[workspace ]`, or `[ workspace ]` — not
+                // `[workspaceextended]`.
+                if matches!(
+                    rest.chars().next(),
+                    Some(']') | Some('.') | Some(' ') | Some('\t')
+                ) {
+                    return true;
+                }
+            }
+        } else if let Some(rest) = trimmed.strip_prefix("workspace") {
+            // Top-level dotted or inline table forms. Whitespace after
+            // `workspace` covers valid `workspace . members = ...` and
+            // `workspace = { ... }`; the TOML parse below rejects any
+            // false positives.
             if matches!(
                 rest.chars().next(),
-                Some(']') | Some('.') | Some(' ') | Some('\t')
+                Some('.') | Some('=') | Some(' ') | Some('\t')
             ) {
                 return true;
             }
@@ -596,7 +616,9 @@ fn resolve_workspace(manifest: &CargoManifestPath) -> ResolvedRoot {
         }
     };
 
-    let root_path_dependencies = collect_local_path_dependencies(root_dir, &parsed);
+    let root_path_dependencies = parsed.workspace.as_ref().map_or_else(Vec::new, |ws| {
+        collect_local_path_dependencies(root_dir, &parsed, Some((root_dir, &ws.dependencies)))
+    });
     let CargoTomlMin {
         package, workspace, ..
     } = parsed;
@@ -628,7 +650,9 @@ fn resolve_workspace(manifest: &CargoManifestPath) -> ResolvedRoot {
                 if !scanned_member_dirs.insert(member_path.clone()) {
                     continue;
                 }
-                if let Some(member) = read_member_manifest(&member_path, &mut resolved) {
+                if let Some(member) =
+                    read_member_manifest(&member_path, &mut resolved, root_dir, &ws.dependencies)
+                {
                     push_unique_member(&mut members, member.info);
                     path_dependency_queue.extend(member.path_dependencies);
                 }
@@ -647,7 +671,9 @@ fn resolve_workspace(manifest: &CargoManifestPath) -> ResolvedRoot {
             {
                 continue;
             }
-            if let Some(member) = read_member_manifest(&member_path, &mut resolved) {
+            if let Some(member) =
+                read_member_manifest(&member_path, &mut resolved, root_dir, &ws.dependencies)
+            {
                 push_unique_member(&mut members, member.info);
                 path_dependency_queue.extend(member.path_dependencies);
             }
@@ -698,27 +724,71 @@ fn member_is_excluded(
     ) && exclude_set.contains(member_path)
 }
 
-fn collect_local_path_dependencies(manifest_dir: &Path, parsed: &CargoTomlMin) -> Vec<PathBuf> {
+fn collect_local_path_dependencies(
+    manifest_dir: &Path,
+    parsed: &CargoTomlMin,
+    workspace_root: Option<(&Path, &DependencyTable)>,
+) -> Vec<PathBuf> {
     let mut paths = Vec::new();
-    collect_dependency_table(manifest_dir, &parsed.dependencies, &mut paths);
-    collect_dependency_table(manifest_dir, &parsed.dev_dependencies, &mut paths);
-    collect_dependency_table(manifest_dir, &parsed.build_dependencies, &mut paths);
+    collect_dependency_table(
+        manifest_dir,
+        workspace_root,
+        &parsed.dependencies,
+        &mut paths,
+    );
+    collect_dependency_table(
+        manifest_dir,
+        workspace_root,
+        &parsed.dev_dependencies,
+        &mut paths,
+    );
+    collect_dependency_table(
+        manifest_dir,
+        workspace_root,
+        &parsed.build_dependencies,
+        &mut paths,
+    );
     for target in parsed.target.values() {
-        collect_dependency_table(manifest_dir, &target.dependencies, &mut paths);
-        collect_dependency_table(manifest_dir, &target.dev_dependencies, &mut paths);
-        collect_dependency_table(manifest_dir, &target.build_dependencies, &mut paths);
+        collect_dependency_table(
+            manifest_dir,
+            workspace_root,
+            &target.dependencies,
+            &mut paths,
+        );
+        collect_dependency_table(
+            manifest_dir,
+            workspace_root,
+            &target.dev_dependencies,
+            &mut paths,
+        );
+        collect_dependency_table(
+            manifest_dir,
+            workspace_root,
+            &target.build_dependencies,
+            &mut paths,
+        );
     }
     paths
 }
 
 fn collect_dependency_table(
     manifest_dir: &Path,
+    workspace_root: Option<(&Path, &DependencyTable)>,
     dependencies: &DependencyTable,
     out: &mut Vec<PathBuf>,
 ) {
-    for dependency in dependencies.values() {
+    for (name, dependency) in dependencies {
         if let Some(path) = &dependency.path {
             out.push(manifest_dir.join(path));
+        } else if dependency.workspace {
+            if let Some((workspace_dir, workspace_dependencies)) = workspace_root {
+                if let Some(path) = workspace_dependencies
+                    .get(name)
+                    .and_then(|dependency| dependency.path.as_ref())
+                {
+                    out.push(workspace_dir.join(path));
+                }
+            }
         }
     }
 }
@@ -849,6 +919,8 @@ fn expand_member_pattern(
 fn read_member_manifest(
     member_dir: &Path,
     resolved: &mut ResolvedRoot,
+    workspace_dir: &Path,
+    workspace_dependencies: &DependencyTable,
 ) -> Option<MemberManifestInfo> {
     let manifest = member_dir.join("Cargo.toml");
     // Note: `expand_member_pattern` already stamped this manifest
@@ -897,7 +969,11 @@ fn read_member_manifest(
             return None;
         }
     };
-    let path_dependencies = collect_local_path_dependencies(member_dir, &parsed);
+    let path_dependencies = collect_local_path_dependencies(
+        member_dir,
+        &parsed,
+        Some((workspace_dir, workspace_dependencies)),
+    );
     let pkg = parsed.package?;
     let info = MemberInfo::from_package(pkg);
     if info.is_none() {
@@ -1118,6 +1194,31 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn workspace_inherited_path_dependency_is_implicit_member() {
+        let tmp = TempDir::new().unwrap();
+        std::fs::write(
+            tmp.path().join("Cargo.toml"),
+            "[workspace]\nmembers = [\"app\"]\n[workspace.dependencies]\nutil = { path = \"util\" }\n",
+        )
+        .unwrap();
+
+        let app_dir = tmp.path().join("app");
+        std::fs::create_dir_all(&app_dir).unwrap();
+        std::fs::write(
+            app_dir.join("Cargo.toml"),
+            "[package]\nname = \"app\"\nversion = \"0.1.0\"\n[dependencies]\nutil.workspace = true\n",
+        )
+        .unwrap();
+        write_member(tmp.path(), "util", "util");
+
+        let suggestions = CargoWorkspaceMembers::generate_with_root(tmp.path())
+            .await
+            .unwrap();
+        let names: Vec<&str> = suggestions.iter().map(|s| s.text.as_str()).collect();
+        assert_eq!(names, vec!["app", "util"]);
+    }
+
+    #[tokio::test]
     async fn workspace_root_package_listed_as_dot_is_deduped() {
         let tmp = TempDir::new().unwrap();
         std::fs::write(
@@ -1295,6 +1396,24 @@ mod tests {
         std::fs::write(
             tmp.path().join("Cargo.toml"),
             "[ workspace ]\nmembers = [\"a\", \"b\"]\n",
+        )
+        .unwrap();
+        write_member(tmp.path(), "a", "alpha");
+        write_member(tmp.path(), "b", "beta");
+
+        let suggestions = CargoWorkspaceMembers::generate_with_root(&tmp.path().join("a"))
+            .await
+            .unwrap();
+        let names: Vec<&str> = suggestions.iter().map(|s| s.text.as_str()).collect();
+        assert_eq!(names, vec!["alpha", "beta"]);
+    }
+
+    #[tokio::test]
+    async fn ancestor_walk_finds_dotted_workspace_members_above_member_crate() {
+        let tmp = TempDir::new().unwrap();
+        std::fs::write(
+            tmp.path().join("Cargo.toml"),
+            "workspace.members = [\"a\", \"b\"]\n",
         )
         .unwrap();
         write_member(tmp.path(), "a", "alpha");
@@ -1688,6 +1807,7 @@ mod tests {
         assert!(line_scan_has_workspace("  [workspace]\n"));
         assert!(line_scan_has_workspace("[ workspace ]\n"));
         assert!(line_scan_has_workspace("[workspace.package]\nfoo = 1\n"));
+        assert!(line_scan_has_workspace("workspace.members = [\"a\"]\n"));
         assert!(line_scan_has_workspace(
             "[package]\nname=\"a\"\n[workspace]\n"
         ));

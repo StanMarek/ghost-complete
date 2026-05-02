@@ -4,8 +4,7 @@
 //! optional dependencies) is fully covered. Things we deliberately
 //! drop: targets gated by variable expansion (`$(BUILD_DIR)`), pattern
 //! rules (`%.o: %.c`), and meta targets (`.PHONY:`, `.SUFFIXES:`, …).
-//! Anything we miss falls through to the spec's filesystem fallback at
-//! suggestion-merge time.
+//! Anything we miss is simply omitted from this provider's results.
 
 use std::path::{Path, PathBuf};
 use std::sync::LazyLock;

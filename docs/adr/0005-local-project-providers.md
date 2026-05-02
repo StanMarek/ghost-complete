@@ -40,12 +40,16 @@ Implement three providers under
 - `NpmScripts` (type string `npm_scripts`)
 - `CargoWorkspaceMembers` (type string `cargo_workspace_members`)
 
-Each is registered in `ProviderKind` + `kind_from_type_str` + the
-async dispatcher in `providers/mod.rs` exactly like every other
-provider. They share an `MtimeCache<T>` keyed by absolute file path
-with `(mtime, size)` invalidation — no TTL, since hand-edited project
-files are the only invalidation signal that matters and mtime captures
-it. Hard cap of 64 entries per provider; LRU-evicted on insert.
+Each is registered as a `ProviderKind` variant, included in
+`ProviderKind::ALL`, mapped by `ProviderKind::type_str()`, and handled
+by the async dispatcher in `providers/mod.rs` exactly like every other
+provider.
+
+`MakefileTargets` and `NpmScripts` share an `MtimeCache<T>` keyed by
+absolute file path with `(mtime, size)` invalidation — no TTL, since
+hand-edited project files are the only invalidation signal that
+matters and mtime captures it. Hard cap of 64 entries per provider;
+FIFO-evicted on insert.
 
 Cargo's workspace resolution needed more than a single `(mtime, size)`
 pair on the root manifest (member files and glob-prefix directories
@@ -56,7 +60,8 @@ share the simpler `MtimeCache<T>` described above.
 
 **Hookup:** option (c) — extend the converter (`native-map.js`) and
 introduce new provider type strings. The converter rewrites matching
-`requires_js` generators into bare `{ "type": "<name>" }` entries.
+`requires_js` generators into native `{ "type": "<name>" }` entries,
+preserving an upstream `cache` field when one is present.
 
 Three options were considered for hookup:
 
@@ -106,17 +111,17 @@ provider migrations that work at the same layer.
 - **Strip-on-rewrite contract.** The converter drops `requires_js`,
   `js_source`, `script`, and `script_template` whenever a generator is
   routed to a native provider, so converted specs carry only the
-  type-only form. Pinned by tests in `tools/fig-converter/src/index.test.js`.
+  native provider type plus optional `cache`. Pinned by tests in
+  `tools/fig-converter/src/index.test.js`.
 
 ### Negative
 
 - **Hand-parsed Makefile misses edge cases.** Computed includes,
   recursive variable expansion, and pattern rules with computed
   prerequisites are out of scope. The 95% case (a flat target list)
-  is fully covered; anything we miss falls through to the spec's
-  filesystem fallback at suggestion-merge time. Documented in
-  `crates/gc-suggest/src/providers/local_project/makefile.rs`'s module
-  docstring.
+  is fully covered; missed targets are omitted from the
+  `makefile_targets` provider result. The current make spec does not
+  request an additional filesystem provider for the target arg.
 - **Workspace glob expansion is deliberately narrow.** Literal paths
   and trailing `prefix/*` are supported; anything more exotic
   (`crates/**/leaf`, brace expansion) is logged-and-skipped. The user
@@ -160,15 +165,16 @@ provider migrations that work at the same layer.
   and the cache only warms after the first paint. The hand-parse is
   tens of milliseconds faster cold and adds no transitive deps.
 - **Ship one provider (cargo) first, defer make and npm.** Rejected.
-  All three share the `MtimeCache<T>` and the converter wiring; the
-  marginal cost of shipping all three together is one provider file
-  each. Splitting them across PRs would just move review work into
-  the future.
+  All three share the local-project-provider shape and converter
+  wiring; make and npm share `MtimeCache<T>`, while cargo's
+  `CargoCache` handles workspace stamp invalidation. The marginal cost
+  of shipping all three together is one provider file each. Splitting
+  them across PRs would just move review work into the future.
 
 ## References
 
-- `crates/gc-suggest/src/providers/local_project/mod.rs` — shared
-  `MtimeCache<T>`
+- `crates/gc-suggest/src/providers/local_project/mod.rs` —
+  `MtimeCache<T>` for make/npm
 - `crates/gc-suggest/src/providers/local_project/makefile.rs` —
   Makefile parser + provider
 - `crates/gc-suggest/src/providers/local_project/npm_scripts.rs` —
