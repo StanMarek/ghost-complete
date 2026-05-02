@@ -12,7 +12,7 @@ use std::sync::LazyLock;
 
 use anyhow::Result;
 
-use super::{MAX_ANCESTOR_WALK, MtimeCache};
+use super::{MtimeCache, MAX_ANCESTOR_WALK};
 use crate::providers::{Provider, ProviderCtx};
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 

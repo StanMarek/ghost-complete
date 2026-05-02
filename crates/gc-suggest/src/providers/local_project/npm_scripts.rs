@@ -12,7 +12,7 @@ use std::sync::LazyLock;
 use anyhow::Result;
 use serde::Deserialize;
 
-use super::{MAX_ANCESTOR_WALK, MtimeCache};
+use super::{MtimeCache, MAX_ANCESTOR_WALK};
 use crate::providers::{Provider, ProviderCtx};
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 
@@ -26,14 +26,19 @@ struct PackageJsonMin {
     scripts: serde_json::Map<String, serde_json::Value>,
 }
 
-static NPM_CACHE: LazyLock<MtimeCache<Vec<(String, Option<String>)>>> =
-    LazyLock::new(MtimeCache::new);
+/// `(script_name, optional_truncated_description)`. The pair shape lives
+/// in a dedicated alias because clippy's `type_complexity` lint fires on
+/// `Vec<(String, Option<String>)>` inside a `LazyLock<MtimeCache<…>>`,
+/// and the alias also reads better at provider call sites.
+type ScriptEntry = (String, Option<String>);
+
+static NPM_CACHE: LazyLock<MtimeCache<Vec<ScriptEntry>>> = LazyLock::new(MtimeCache::new);
 
 /// Parse `package.json` bytes and yield `(script_name,
 /// truncated_description)` pairs in source order. Non-string script
 /// values are dropped (npm itself rejects them at runtime, so they're
 /// noise).
-pub(crate) fn parse_npm_scripts(bytes: &[u8]) -> Vec<(String, Option<String>)> {
+pub(crate) fn parse_npm_scripts(bytes: &[u8]) -> Vec<ScriptEntry> {
     let parsed: PackageJsonMin = match serde_json::from_slice(bytes) {
         Ok(p) => p,
         Err(e) => {

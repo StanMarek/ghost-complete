@@ -15,7 +15,7 @@ use std::sync::LazyLock;
 use anyhow::Result;
 use serde::Deserialize;
 
-use super::{MAX_ANCESTOR_WALK, MtimeCache};
+use super::{MtimeCache, MAX_ANCESTOR_WALK};
 use crate::providers::{Provider, ProviderCtx};
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 
@@ -100,7 +100,10 @@ fn has_workspace_section(path: &Path) -> bool {
     };
     matches!(
         toml::from_str::<CargoTomlMin>(text),
-        Ok(CargoTomlMin { workspace: Some(_), .. })
+        Ok(CargoTomlMin {
+            workspace: Some(_),
+            ..
+        })
     )
 }
 
@@ -126,11 +129,8 @@ fn resolve_workspace(root_dir: &Path, bytes: &[u8]) -> ResolvedRoot {
     };
 
     if let Some(ws) = parsed.workspace {
-        let exclude_set: std::collections::HashSet<PathBuf> = ws
-            .exclude
-            .iter()
-            .map(|p| root_dir.join(p))
-            .collect();
+        let exclude_set: std::collections::HashSet<PathBuf> =
+            ws.exclude.iter().map(|p| root_dir.join(p)).collect();
 
         let mut members: Vec<MemberInfo> = Vec::new();
         for pattern in &ws.members {
@@ -262,8 +262,8 @@ impl CargoWorkspaceMembers {
             .parent()
             .map(Path::to_path_buf)
             .unwrap_or_else(|| PathBuf::from("."));
-        let Some(resolved) =
-            CARGO_CACHE.get_or_insert_with(&manifest, |bytes| resolve_workspace(&manifest_dir, bytes))
+        let Some(resolved) = CARGO_CACHE
+            .get_or_insert_with(&manifest, |bytes| resolve_workspace(&manifest_dir, bytes))
         else {
             return Ok(Vec::new());
         };
@@ -309,7 +309,10 @@ mod tests {
             .unwrap();
         assert_eq!(suggestions.len(), 1);
         assert_eq!(suggestions[0].text, "solo");
-        assert_eq!(suggestions[0].description.as_deref(), Some("0.2.0 — a crate"));
+        assert_eq!(
+            suggestions[0].description.as_deref(),
+            Some("0.2.0 — a crate")
+        );
     }
 
     #[tokio::test]
