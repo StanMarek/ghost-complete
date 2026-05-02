@@ -27,6 +27,25 @@ function npmMatchingGenerator() {
 function cargoMatchingGenerator() {
   return {
     script: ['cargo', 'metadata', '--format-version', '1', '--no-deps'],
+    js_source: 'e=>JSON.parse(e).packages.map(a=>({icon:"pkg",name:a.name,description:a.version}))',
+    priority: 80,
+    cache: { ttl_seconds: 30 },
+  };
+}
+
+function cargoFullMetadataPackageGenerator() {
+  return {
+    script: ['cargo', 'metadata', '--format-version', '1'],
+    js_source: 'e=>JSON.parse(e).packages.map(a=>({name:a.name,description:a.description}))',
+    priority: 80,
+    cache: { ttl_seconds: 30 },
+  };
+}
+
+function cargoDependencyGenerator() {
+  return {
+    script: ['cargo', 'metadata', '--format-version', '1'],
+    js_source: 'e=>{let t=JSON.parse(e),i=le(t).flatMap(n=>n.dependencies).map(n=>({name:n.name,description:n.req}));return[...new Map(i.map(n=>[n.name,n])).values()]}',
     priority: 80,
     cache: { ttl_seconds: 30 },
   };
@@ -209,6 +228,26 @@ describe('rewriteGenerators — pass-through for non-matching generators', () =>
     const stats = { rewrites: 0 };
     rewriteGenerators(spec, RECOGNIZERS.cargo, stats);
     assert.equal(stats.rewrites, 0);
+  });
+
+  it('cargo recognizer does not rewrite dependency-graph package generators', () => {
+    const original = cargoFullMetadataPackageGenerator();
+    const spec = { args: { generators: [original] } };
+    const stats = { rewrites: 0 };
+    rewriteGenerators(spec, RECOGNIZERS.cargo, stats);
+
+    assert.equal(stats.rewrites, 0);
+    assert.equal(spec.args.generators[0], original);
+  });
+
+  it('cargo recognizer does not rewrite dependency-list generators', () => {
+    const original = cargoDependencyGenerator();
+    const spec = { args: { generators: [original] } };
+    const stats = { rewrites: 0 };
+    rewriteGenerators(spec, RECOGNIZERS.cargo, stats);
+
+    assert.equal(stats.rewrites, 0);
+    assert.equal(spec.args.generators[0], original);
   });
 });
 

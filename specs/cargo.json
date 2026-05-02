@@ -6679,7 +6679,14 @@
             "isVariadic": true,
             "generators": [
               {
-                "type": "cargo_workspace_members"
+                "script": [
+                  "cargo",
+                  "metadata",
+                  "--format-version",
+                  "1"
+                ],
+                "requires_js": true,
+                "js_source": "e=>JSON.parse(e).packages.map(a=>({name:a.name,description:a.description}))"
               }
             ]
           }
@@ -6693,7 +6700,14 @@
             "name": "prune",
             "generators": [
               {
-                "type": "cargo_workspace_members"
+                "script": [
+                  "cargo",
+                  "metadata",
+                  "--format-version",
+                  "1"
+                ],
+                "requires_js": true,
+                "js_source": "e=>JSON.parse(e).packages.map(a=>({name:a.name,description:a.description}))"
               }
             ]
           }
@@ -7058,7 +7072,14 @@
             "isVariadic": true,
             "generators": [
               {
-                "type": "cargo_workspace_members"
+                "script": [
+                  "cargo",
+                  "metadata",
+                  "--format-version",
+                  "1"
+                ],
+                "requires_js": true,
+                "js_source": "e=>JSON.parse(e).packages.map(a=>({name:a.name,description:a.description}))"
               }
             ]
           }
@@ -8133,7 +8154,14 @@
         "isVariadic": true,
         "generators": [
           {
-            "type": "cargo_workspace_members"
+            "script": [
+              "cargo",
+              "metadata",
+              "--format-version",
+              "1"
+            ],
+            "requires_js": true,
+            "js_source": "e=>{let t=JSON.parse(e),i=le(t).flatMap(n=>n.dependencies).map(n=>({name:n.name,description:n.req}));return[...new Map(i.map(n=>[n.name,n])).values()]}"
           }
         ]
       },

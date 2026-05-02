@@ -61,6 +61,9 @@ pub mod pandoc;
 /// remain `pub` for backwards compatibility with existing in-tree
 /// callers (engine, gc-pty, provider unit tests); a future refactor
 /// may downgrade them to `pub(crate)` once those call sites migrate.
+/// While direct construction remains possible,
+/// `SuggestionEngine::resolve_providers` also enforces the invariant at
+/// the provider dispatch boundary.
 pub struct ProviderCtx {
     /// Working directory the shell was in when the completion trigger
     /// fired. Providers that shell out to external tools pass this as

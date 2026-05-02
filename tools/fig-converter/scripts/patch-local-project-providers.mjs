@@ -24,6 +24,15 @@ import { dirname, resolve } from 'node:path';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, '..', '..', '..');
 
+function isCargoWorkspaceMembersGenerator(g) {
+  if (!Array.isArray(g.script)) return false;
+  if (g.script[0] !== 'cargo' || g.script[1] !== 'metadata') return false;
+  if (!g.script.includes('--no-deps')) return false;
+  if (typeof g.js_source !== 'string') return false;
+  if (/\.dependencies\b/.test(g.js_source)) return false;
+  return /JSON\.parse[\s\S]*\.packages[\s\S]*\.map\s*\(/.test(g.js_source);
+}
+
 /** Recognizers — each takes a generator object, returns the replacement
  *  generator if it matches, otherwise null. Order matters only when two
  *  recognizers might both fire (none today). */
@@ -53,8 +62,7 @@ export const RECOGNIZERS = {
   ],
   cargo: [
     (g) => {
-      if (!Array.isArray(g.script)) return null;
-      if (g.script[0] !== 'cargo' || g.script[1] !== 'metadata') return null;
+      if (!isCargoWorkspaceMembersGenerator(g)) return null;
       const out = { type: 'cargo_workspace_members' };
       if (g.cache) out.cache = g.cache;
       return out;

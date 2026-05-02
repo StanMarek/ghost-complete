@@ -19,11 +19,6 @@ const NATIVE_GENERATOR_MAP = {
   'pandoc --list-input-formats': { type: 'pandoc_input_formats' },
   'pandoc --list-output-formats': { type: 'pandoc_output_formats' },
   'ansible-doc --list': { type: 'ansible_doc_modules' },
-  // `cargo metadata --format-version 1 --no-deps` is the canonical
-  // workspace-listing script across all `cargo run -p` / `cargo build
-  // -p` / `cargo test -p` arg positions in the upstream fig spec. The
-  // first two tokens (`cargo metadata`) match every variant.
-  'cargo metadata': { type: 'cargo_workspace_members' },
 };
 
 /**
@@ -90,6 +85,20 @@ function deriveKey(scriptArgv) {
 }
 
 /**
+ * Cargo uses `cargo metadata` for multiple package-spec domains. Only the
+ * `--no-deps` package projection is a workspace-member list; metadata calls
+ * without `--no-deps` include the full dependency graph and must stay JS-backed.
+ */
+function isCargoWorkspaceMembersGenerator(scriptArgv, postProcessSource) {
+  if (!Array.isArray(scriptArgv)) return false;
+  if (scriptArgv[0] !== 'cargo' || scriptArgv[1] !== 'metadata') return false;
+  if (!scriptArgv.includes('--no-deps')) return false;
+  if (typeof postProcessSource !== 'string') return false;
+  if (/\.dependencies\b/.test(postProcessSource)) return false;
+  return /JSON\.parse[\s\S]*\.packages[\s\S]*\.map\s*\(/.test(postProcessSource);
+}
+
+/**
  * Check if a script command matches a native Ghost Complete generator.
  *
  * @param {string} specName - The spec name (used for spec-scoped mappings and arduino disambiguation)
@@ -102,6 +111,16 @@ function deriveKey(scriptArgv) {
 export function matchNativeGenerator(specName, scriptArgv, postProcessSource) {
   const key = deriveKey(scriptArgv);
   if (key === null) return null;
+
+  if (key === 'cargo metadata') {
+    if (
+      specName === 'cargo'
+      && isCargoWorkspaceMembersGenerator(scriptArgv, postProcessSource)
+    ) {
+      return { type: 'cargo_workspace_members' };
+    }
+    return null;
+  }
 
   // arduino-cli: boards vs ports share the same key, disambiguated by postProcess.
   if (key === 'arduino-cli board' && typeof postProcessSource === 'string') {

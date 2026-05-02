@@ -6,6 +6,8 @@ import { matchNativeFromJsSource, matchNativeGenerator } from './native-map.js';
 // pre-regen output). Used as fixtures for the arduino-cli disambiguation tests.
 const ARDUINO_FQBN_POSTPROCESS = "t=>{try{return JSON.parse(t).filter(i=>i.matching_boards).map(i=>({name:i.matching_boards[0].fqbn,description:`${i.matching_boards[0].name} on port ${i.port.address}`}))}catch{return[]}}";
 const ARDUINO_PORT_POSTPROCESS = "t=>{try{return JSON.parse(t).filter(i=>i.matching_boards).map(i=>({name:i.port.address,description:`${i.matching_boards[0].name} port connection`}))}catch{return[]}}";
+const CARGO_WORKSPACE_POSTPROCESS = 'e=>JSON.parse(e).packages.map(a=>({icon:"pkg",name:a.name,description:a.version}))';
+const CARGO_DEPENDENCY_POSTPROCESS = 'e=>{let t=JSON.parse(e),i=le(t).flatMap(n=>n.dependencies).map(n=>({name:n.name,description:n.req}));return[...new Map(i.map(n=>[n.name,n])).values()]}';
 
 describe('matchNativeGenerator', () => {
   it('maps git branch to git_branches', () => {
@@ -167,18 +169,45 @@ describe('matchNativeGenerator', () => {
     );
   });
 
-  it('maps cargo metadata to cargo_workspace_members for any cargo subcommand', () => {
-    // The upstream fig spec uses the same `cargo metadata` script across
-    // every `-p` arg position (`cargo run -p`, `cargo build -p`, etc.).
-    // The two-token derive matches every variant.
+  it('maps cargo metadata to cargo_workspace_members for no-deps package projections', () => {
     assert.deepStrictEqual(
-      matchNativeGenerator('cargo', ['cargo', 'metadata', '--format-version', '1', '--no-deps']),
+      matchNativeGenerator(
+        'cargo',
+        ['cargo', 'metadata', '--format-version', '1', '--no-deps'],
+        CARGO_WORKSPACE_POSTPROCESS,
+      ),
       { type: 'cargo_workspace_members' },
     );
-    // Also matches the bare form just in case any future variant drops the flags.
+  });
+
+  it('does not map cargo metadata dependency-graph generators to workspace members', () => {
+    assert.deepStrictEqual(
+      matchNativeGenerator(
+        'cargo',
+        ['cargo', 'metadata', '--format-version', '1'],
+        CARGO_WORKSPACE_POSTPROCESS,
+      ),
+      null,
+    );
+    assert.deepStrictEqual(
+      matchNativeGenerator(
+        'cargo',
+        ['cargo', 'metadata', '--format-version', '1'],
+        CARGO_DEPENDENCY_POSTPROCESS,
+      ),
+      null,
+    );
+    assert.deepStrictEqual(
+      matchNativeGenerator(
+        'cargo',
+        ['cargo', 'metadata', '--format-version', '1', '--no-deps'],
+        CARGO_DEPENDENCY_POSTPROCESS,
+      ),
+      null,
+    );
     assert.deepStrictEqual(
       matchNativeGenerator('cargo', ['cargo', 'metadata']),
-      { type: 'cargo_workspace_members' },
+      null,
     );
   });
 

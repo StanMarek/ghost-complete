@@ -82,17 +82,16 @@ struct WorkspaceMin {
 /// `cargo-util-schemas::restricted_names::validate_package_name`:
 /// first char is `_` or any Unicode `XID_Start` (leading ASCII digits
 /// are rejected, matching current Cargo); remaining chars are `-` or
-/// any Unicode `XID_Continue`; the bare `_` is reserved. Stricter
-/// crates.io-only rejections (Windows reserved filenames, Rust
-/// keywords) are intentionally NOT enforced here — `cargo run -p` is
-/// happy to invoke any locally-named workspace member that satisfies
-/// the manifest grammar.
+/// any Unicode `XID_Continue`. Stricter crates.io-only rejections
+/// (Windows reserved filenames, Rust keywords) are intentionally NOT
+/// enforced here — `cargo run -p` is happy to invoke any locally-named
+/// workspace member that satisfies the manifest grammar.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct CargoPackageName(String);
 
 impl CargoPackageName {
     pub(crate) fn new(s: String) -> Option<Self> {
-        if s.is_empty() || s == "_" {
+        if s.is_empty() {
             return None;
         }
         let mut chars = s.chars();
@@ -545,18 +544,26 @@ fn resolve_workspace(manifest: &CargoManifestPath) -> ResolvedRoot {
         }
     };
 
-    if let Some(ws) = parsed.workspace {
+    let CargoTomlMin {
+        mut package,
+        workspace,
+    } = parsed;
+
+    if let Some(ws) = workspace {
         let exclude_set: std::collections::HashSet<PathBuf> =
             ws.exclude.iter().map(|p| root_dir.join(p)).collect();
 
         let mut members: Vec<MemberInfo> = Vec::new();
+        if let Some(info) = package.take().and_then(MemberInfo::from_package) {
+            push_unique_member(&mut members, info);
+        }
         for pattern in &ws.members {
             for member_path in expand_member_pattern(root_dir, pattern, &mut resolved) {
                 if exclude_set.contains(&member_path) {
                     continue;
                 }
                 if let Some(info) = read_member_info(&member_path, &mut resolved) {
-                    members.push(info);
+                    push_unique_member(&mut members, info);
                 }
             }
         }
@@ -572,7 +579,7 @@ fn resolve_workspace(manifest: &CargoManifestPath) -> ResolvedRoot {
         return resolved;
     }
 
-    if let Some(pkg) = parsed.package {
+    if let Some(pkg) = package {
         if let Some(info) = MemberInfo::from_package(pkg) {
             resolved.members = vec![info];
             return resolved;
@@ -580,6 +587,12 @@ fn resolve_workspace(manifest: &CargoManifestPath) -> ResolvedRoot {
     }
 
     resolved
+}
+
+fn push_unique_member(members: &mut Vec<MemberInfo>, member: MemberInfo) {
+    if !members.iter().any(|existing| existing.name == member.name) {
+        members.push(member);
+    }
 }
 
 /// Expand one entry of `[workspace].members` into one or more concrete
@@ -837,6 +850,72 @@ mod tests {
             .unwrap();
         let names: Vec<&str> = suggestions.iter().map(|s| s.text.as_str()).collect();
         assert_eq!(names, vec!["alpha", "beta"]);
+    }
+
+    #[tokio::test]
+    async fn workspace_root_package_without_members_is_suggested() {
+        let tmp = TempDir::new().unwrap();
+        std::fs::write(
+            tmp.path().join("Cargo.toml"),
+            "[package]\nname = \"rootpkg\"\nversion = \"0.1.0\"\n[workspace]\nresolver = \"2\"\n",
+        )
+        .unwrap();
+
+        let suggestions = CargoWorkspaceMembers::generate_with_root(tmp.path())
+            .await
+            .unwrap();
+        let names: Vec<&str> = suggestions.iter().map(|s| s.text.as_str()).collect();
+        assert_eq!(names, vec!["rootpkg"]);
+    }
+
+    #[tokio::test]
+    async fn workspace_root_package_with_child_member_is_suggested() {
+        let tmp = TempDir::new().unwrap();
+        std::fs::write(
+            tmp.path().join("Cargo.toml"),
+            "[package]\nname = \"rootpkg\"\nversion = \"0.1.0\"\n[workspace]\nmembers = [\"a\"]\n",
+        )
+        .unwrap();
+        write_member(tmp.path(), "a", "alpha");
+
+        let suggestions = CargoWorkspaceMembers::generate_with_root(tmp.path())
+            .await
+            .unwrap();
+        let names: Vec<&str> = suggestions.iter().map(|s| s.text.as_str()).collect();
+        assert_eq!(names, vec!["rootpkg", "alpha"]);
+    }
+
+    #[tokio::test]
+    async fn workspace_root_package_listed_as_dot_is_deduped() {
+        let tmp = TempDir::new().unwrap();
+        std::fs::write(
+            tmp.path().join("Cargo.toml"),
+            "[package]\nname = \"rootpkg\"\nversion = \"0.1.0\"\n[workspace]\nmembers = [\".\"]\n",
+        )
+        .unwrap();
+
+        let suggestions = CargoWorkspaceMembers::generate_with_root(tmp.path())
+            .await
+            .unwrap();
+        let names: Vec<&str> = suggestions.iter().map(|s| s.text.as_str()).collect();
+        assert_eq!(names, vec!["rootpkg"]);
+    }
+
+    #[tokio::test]
+    async fn workspace_member_named_underscore_is_suggested() {
+        let tmp = TempDir::new().unwrap();
+        std::fs::write(
+            tmp.path().join("Cargo.toml"),
+            "[workspace]\nmembers = [\"underscore\"]\n",
+        )
+        .unwrap();
+        write_member(tmp.path(), "underscore", "_");
+
+        let suggestions = CargoWorkspaceMembers::generate_with_root(tmp.path())
+            .await
+            .unwrap();
+        let names: Vec<&str> = suggestions.iter().map(|s| s.text.as_str()).collect();
+        assert_eq!(names, vec!["_"]);
     }
 
     #[tokio::test]
@@ -1339,11 +1418,11 @@ mod tests {
         assert!(CargoPackageName::new("alpha".into()).is_some());
         assert!(CargoPackageName::new("alpha_beta-1".into()).is_some());
         assert!(CargoPackageName::new("_internal".into()).is_some());
+        assert!(CargoPackageName::new("_".into()).is_some());
         assert!(CargoPackageName::new("foo7".into()).is_some());
         assert!(CargoPackageName::new("κ_crate".into()).is_some());
         // Reject what Cargo rejects.
         assert!(CargoPackageName::new(String::new()).is_none());
-        assert!(CargoPackageName::new("_".into()).is_none());
         assert!(CargoPackageName::new("-foo".into()).is_none());
         assert!(CargoPackageName::new("7zip".into()).is_none());
         assert!(CargoPackageName::new("1password-cli".into()).is_none());

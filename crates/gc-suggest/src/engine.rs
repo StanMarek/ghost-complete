@@ -604,6 +604,13 @@ impl SuggestionEngine {
         if kinds.is_empty() {
             return Ok(Vec::new());
         }
+        if !ctx.cwd.is_absolute() {
+            tracing::warn!(
+                cwd = %ctx.cwd.display(),
+                "provider cwd is relative; skipping provider resolution"
+            );
+            return Ok(Vec::new());
+        }
         let mut all = Vec::new();
         for &kind in kinds {
             match providers::resolve(kind, ctx).await {
@@ -2011,6 +2018,34 @@ mod tests {
         assert_eq!(
             results.git_generators[0],
             crate::git::GitQueryKind::Branches,
+        );
+    }
+
+    #[tokio::test]
+    async fn test_resolve_providers_relative_cwd_returns_empty() {
+        // A relative cwd would make local-project provider ancestor walks
+        // consult the ghost-complete process cwd. The provider dispatch
+        // boundary must reject it before any provider can read manifests
+        // from the wrong project.
+        assert!(
+            Path::new(".").join("Cargo.toml").is_file(),
+            "test requires the process cwd to contain a Cargo.toml"
+        );
+        let engine = make_engine();
+        let ctx = crate::providers::ProviderCtx::new_for_test(
+            PathBuf::from("."),
+            Arc::new(std::collections::HashMap::new()),
+            String::new(),
+        );
+
+        let results = engine
+            .resolve_providers(&[ProviderKind::CargoWorkspaceMembers], &ctx, "")
+            .await
+            .unwrap();
+
+        assert!(
+            results.is_empty(),
+            "relative cwd must not resolve providers from process cwd, got {results:?}"
         );
     }
 

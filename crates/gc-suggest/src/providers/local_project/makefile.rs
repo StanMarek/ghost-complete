@@ -50,13 +50,7 @@ pub(crate) fn parse_makefile_targets(bytes: &[u8]) -> Vec<String> {
             continue;
         }
         let trimmed = line.trim_start();
-        if trimmed.is_empty()
-            || trimmed.starts_with('#')
-            || trimmed.starts_with('.')
-            || trimmed.contains("$(")
-            || trimmed.contains("${")
-            || trimmed.contains('%')
-        {
+        if trimmed.is_empty() || trimmed.starts_with('#') || trimmed.starts_with('.') {
             filtered += 1;
             continue;
         }
@@ -92,7 +86,12 @@ pub(crate) fn parse_makefile_targets(bytes: &[u8]) -> Vec<String> {
         }
 
         for name in lhs.split_whitespace() {
-            if name.is_empty() || name.starts_with('.') || name.contains('%') {
+            if name.is_empty()
+                || name.starts_with('.')
+                || name.contains("$(")
+                || name.contains("${")
+                || name.contains('%')
+            {
                 continue;
             }
             if !out.iter().any(|t| t == name) {
@@ -232,6 +231,12 @@ mod tests {
     #[test]
     fn variable_expanded_target_filtered_out() {
         let src = b"clean: $(BUILD_DIR)\n\trm -rf\nbuild:\n\tcc\n";
+        assert_eq!(parse_makefile_targets(src), vec!["clean", "build"]);
+    }
+
+    #[test]
+    fn computed_lhs_target_filtered_out() {
+        let src = b"$(BUILD_DIR):\n\tmkdir -p $(BUILD_DIR)\nbuild:\n\tcc\n";
         assert_eq!(parse_makefile_targets(src), vec!["build"]);
     }
 
