@@ -78,19 +78,28 @@ struct WorkspaceMin {
     exclude: Vec<String>,
 }
 
-/// Type-marker newtype for a Cargo package name read from a `Cargo.toml`
-/// `[package].name`. We do NOT re-validate the name against Cargo's own
-/// rules — Cargo's accepted grammar is broader than any short regex
-/// (Unicode XID start, leading digits, leading `_`, etc.), and any name
-/// we read here already passed Cargo's own parse upstream. The newtype
-/// exists to stop accidental swaps with sibling provider name strings
-/// (npm scripts, Make targets) at compile time.
+/// Validated Cargo package name, mirroring `cargo`'s own grammar in
+/// `restricted_names::validate_package_name`: first char is an ASCII
+/// digit, `_`, or any Unicode `XID_Start`; remaining chars are `-` or
+/// any Unicode `XID_Continue`; the bare `_` is reserved. Stricter
+/// crates.io-only rejections (Windows reserved filenames, Rust
+/// keywords) are intentionally NOT enforced here — `cargo run -p` is
+/// happy to invoke any locally-named workspace member that satisfies
+/// the manifest grammar.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct CargoPackageName(String);
 
 impl CargoPackageName {
     pub(crate) fn new(s: String) -> Option<Self> {
-        if s.is_empty() {
+        if s.is_empty() || s == "_" {
+            return None;
+        }
+        let mut chars = s.chars();
+        let first = chars.next()?;
+        if !(first.is_ascii_digit() || first == '_' || unicode_ident::is_xid_start(first)) {
+            return None;
+        }
+        if !chars.all(|c| c == '-' || unicode_ident::is_xid_continue(c)) {
             return None;
         }
         Some(Self(s))
@@ -1324,13 +1333,22 @@ mod tests {
     }
 
     #[test]
-    fn cargo_package_name_accepts_anything_nonempty() {
+    fn cargo_package_name_mirrors_cargo_grammar() {
+        // Accept what Cargo accepts.
         assert!(CargoPackageName::new("alpha".into()).is_some());
         assert!(CargoPackageName::new("alpha_beta-1".into()).is_some());
         assert!(CargoPackageName::new("_internal".into()).is_some());
         assert!(CargoPackageName::new("7zip".into()).is_some());
-        assert!(CargoPackageName::new("krate-α".into()).is_some());
+        assert!(CargoPackageName::new("1password-cli".into()).is_some());
+        assert!(CargoPackageName::new("κ_crate".into()).is_some());
+        // Reject what Cargo rejects.
         assert!(CargoPackageName::new(String::new()).is_none());
+        assert!(CargoPackageName::new("_".into()).is_none());
+        assert!(CargoPackageName::new("-foo".into()).is_none());
+        assert!(CargoPackageName::new("foo bar".into()).is_none());
+        assert!(CargoPackageName::new("foo:bar".into()).is_none());
+        assert!(CargoPackageName::new("foo/bar".into()).is_none());
+        assert!(CargoPackageName::new("foo\nbar".into()).is_none());
     }
 
     #[test]
