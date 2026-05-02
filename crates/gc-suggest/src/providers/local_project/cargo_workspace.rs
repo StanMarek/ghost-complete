@@ -79,8 +79,9 @@ struct WorkspaceMin {
 }
 
 /// Validated Cargo package name, mirroring `cargo`'s own grammar in
-/// `restricted_names::validate_package_name`: first char is an ASCII
-/// digit, `_`, or any Unicode `XID_Start`; remaining chars are `-` or
+/// `cargo-util-schemas::restricted_names::validate_package_name`:
+/// first char is `_` or any Unicode `XID_Start` (leading ASCII digits
+/// are rejected, matching current Cargo); remaining chars are `-` or
 /// any Unicode `XID_Continue`; the bare `_` is reserved. Stricter
 /// crates.io-only rejections (Windows reserved filenames, Rust
 /// keywords) are intentionally NOT enforced here — `cargo run -p` is
@@ -96,7 +97,7 @@ impl CargoPackageName {
         }
         let mut chars = s.chars();
         let first = chars.next()?;
-        if !(first.is_ascii_digit() || first == '_' || unicode_ident::is_xid_start(first)) {
+        if !(first == '_' || unicode_ident::is_xid_start(first)) {
             return None;
         }
         if !chars.all(|c| c == '-' || unicode_ident::is_xid_continue(c)) {
@@ -1338,13 +1339,14 @@ mod tests {
         assert!(CargoPackageName::new("alpha".into()).is_some());
         assert!(CargoPackageName::new("alpha_beta-1".into()).is_some());
         assert!(CargoPackageName::new("_internal".into()).is_some());
-        assert!(CargoPackageName::new("7zip".into()).is_some());
-        assert!(CargoPackageName::new("1password-cli".into()).is_some());
+        assert!(CargoPackageName::new("foo7".into()).is_some());
         assert!(CargoPackageName::new("κ_crate".into()).is_some());
         // Reject what Cargo rejects.
         assert!(CargoPackageName::new(String::new()).is_none());
         assert!(CargoPackageName::new("_".into()).is_none());
         assert!(CargoPackageName::new("-foo".into()).is_none());
+        assert!(CargoPackageName::new("7zip".into()).is_none());
+        assert!(CargoPackageName::new("1password-cli".into()).is_none());
         assert!(CargoPackageName::new("foo bar".into()).is_none());
         assert!(CargoPackageName::new("foo:bar".into()).is_none());
         assert!(CargoPackageName::new("foo/bar".into()).is_none());
