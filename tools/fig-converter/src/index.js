@@ -38,7 +38,7 @@ import { parseArgs } from 'node:util';
 import { spawn } from 'node:child_process';
 import { convertSpec } from './static-converter.js';
 import { matchPostProcess } from './post-process-matcher.js';
-import { matchNativeGenerator } from './native-map.js';
+import { matchNativeFromJsSource, matchNativeGenerator } from './native-map.js';
 
 const BUILD_DIR = join(
   import.meta.dirname,
@@ -229,15 +229,38 @@ function walkGenerators(obj, callback) {
 function processGenerator(gen, specName) {
   if (!gen || typeof gen !== 'object') return gen;
 
-  // Case: custom async generator → requires_js
+  // Case: custom async generator — try a native rewrite first, then
+  // fall back to requires_js. This is the seam that catches the
+  // upstream `make` generators (they're `custom: async (f, a) => ...`
+  // bodies that shell out to `make -qp` plus a Makefile parse), so
+  // there is no `script` array to key on at all. The strip-on-rewrite
+  // contract holds: a successful native match returns the bare native
+  // gen (plus optional cache), dropping `_custom`, `_customSource`,
+  // `requires_js`, `js_source`, `script`, and `script_template` along
+  // with every other internal marker.
   if (gen._custom) {
+    const native = matchNativeFromJsSource(specName, gen._customSource);
+    if (native) {
+      const result = { ...native };
+      if (gen.cache) result.cache = gen.cache;
+      return result;
+    }
     const result = { requires_js: true };
     if (gen._customSource) result.js_source = gen._customSource;
     return result;
   }
 
-  // Case: script is a function → requires_js
+  // Case: script is a function — same native-first / requires_js
+  // fallback as `_custom`. Currently no native maps fire here, but
+  // the seam is symmetric so a future spec migration can reuse it
+  // without re-plumbing.
   if (gen._scriptFunction) {
+    const native = matchNativeFromJsSource(specName, gen._scriptSource);
+    if (native) {
+      const result = { ...native };
+      if (gen.cache) result.cache = gen.cache;
+      return result;
+    }
     const result = { requires_js: true };
     if (gen._scriptSource) result.js_source = gen._scriptSource;
     return result;
@@ -247,7 +270,7 @@ function processGenerator(gen, specName) {
   if (gen.script && Array.isArray(gen.script)) {
     const nativeGen = matchNativeGenerator(specName, gen.script, gen._postProcessSource);
     if (nativeGen) {
-      // Native generator takes priority — emit type-only generator
+      // Native generator takes priority — emit native type plus optional cache
       const result = { ...nativeGen };
       if (gen.cache) result.cache = gen.cache;
       return result;

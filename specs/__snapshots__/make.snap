@@ -2,8 +2,7 @@
   "args": {
     "generators": [
       {
-        "js_source": "async(f,a)=>{let{stdout:m}=await a({command:\"bash\",args:[\"-c\",\"make -qp | awk -F':' '/^[a-zA-Z0-9][^$#\\\\/\\\\t=]*:([^=]|$)/ {split($1,A,/ /);for(i in A)print A[i]}' | sort -u\"]}),t=new Map;for(let e of m.split(`\n`))e!==\"Makefile\"&&t.set(e,{name:e.trim(),description:\"Make target\",icon:\"\\u{1F3AF}\",priority:80});let{stdout:c}=await a({command:\"cat\",args:[\"Makefile\",\"makefile\"]}),d=c.matchAll(/((?:^#.*\\n)*)(?:^\\.[A-Z_]+:.*\\n)*(^\\S*?):.*?(?:\\s#+[ \\t]*(.+))?$/gm),l=new Set([\".PHONY\",\".SUFFIXES\",\".DEFAULT\",\".PRECIOUS\",\".INTERMEDIATE\",\".SECONDARY\",\".SECONDEXPANSION\",\".DELETE_ON_ERROR\",\".IGNORE\",\".LOW_RESOLUTION_TIME\",\".SILENT\",\".EXPORT_ALL_VARIABLES\",\".NOTPARALLEL\",\".ONESHELL\",\".POSIX\"]);for(let e of d){let[u,r,i,o]=e;if(l.has(i)||/\\$\\(.+?\\)/.test(i))continue;let s=i.trim(),p=o?o.trim():r?r.replace(/^#+\\s*/gm,\"\").trim():\"Make target\";t.set(s,{name:s,description:p,icon:\"\\u{1F3AF}\",priority:80})}return[...t.values()]}",
-        "requires_js": true
+        "type": "makefile_targets"
       }
     ],
     "name": "target"
@@ -18,8 +17,7 @@
         {
           "generators": [
             {
-              "js_source": "async(f,a)=>{let{stdout:m}=await a({command:\"bash\",args:[\"-c\",\"make -qp | awk -F':' '/^[a-zA-Z0-9][^$#\\\\/\\\\t=]*:([^=]|$)/ {split($1,A,/ /);for(i in A)print A[i]}' | sort -u\"]}),t=new Map;for(let e of m.split(`\n`))e!==\"Makefile\"&&t.set(e,{name:e.trim(),description:\"Make target\",icon:\"\\u{1F3AF}\",priority:80});let{stdout:c}=await a({command:\"cat\",args:[\"Makefile\",\"makefile\"]}),d=c.matchAll(/((?:^#.*\\n)*)(?:^\\.[A-Z_]+:.*\\n)*(^\\S*?):.*?(?:\\s#+[ \\t]*(.+))?$/gm),l=new Set([\".PHONY\",\".SUFFIXES\",\".DEFAULT\",\".PRECIOUS\",\".INTERMEDIATE\",\".SECONDARY\",\".SECONDEXPANSION\",\".DELETE_ON_ERROR\",\".IGNORE\",\".LOW_RESOLUTION_TIME\",\".SILENT\",\".EXPORT_ALL_VARIABLES\",\".NOTPARALLEL\",\".ONESHELL\",\".POSIX\"]);for(let e of d){let[u,r,i,o]=e;if(l.has(i)||/\\$\\(.+?\\)/.test(i))continue;let s=i.trim(),p=o?o.trim():r?r.replace(/^#+\\s*/gm,\"\").trim():\"Make target\";t.set(s,{name:s,description:p,icon:\"\\u{1F3AF}\",priority:80})}return[...t.values()]}",
-              "requires_js": true
+              "type": "makefile_targets"
             }
           ],
           "name": "target"
@@ -58,8 +56,7 @@
       "args": {
         "generators": [
           {
-            "js_source": "async(f,a)=>{let{stdout:m}=await a({command:\"bash\",args:[\"-c\",\"make -qp | awk -F':' '/^[a-zA-Z0-9][^$#\\\\/\\\\t=]*:([^=]|$)/ {split($1,A,/ /);for(i in A)print A[i]}' | sort -u\"]}),t=new Map;for(let e of m.split(`\n`))e!==\"Makefile\"&&t.set(e,{name:e.trim(),description:\"Make target\",icon:\"\\u{1F3AF}\",priority:80});let{stdout:c}=await a({command:\"cat\",args:[\"Makefile\",\"makefile\"]}),d=c.matchAll(/((?:^#.*\\n)*)(?:^\\.[A-Z_]+:.*\\n)*(^\\S*?):.*?(?:\\s#+[ \\t]*(.+))?$/gm),l=new Set([\".PHONY\",\".SUFFIXES\",\".DEFAULT\",\".PRECIOUS\",\".INTERMEDIATE\",\".SECONDARY\",\".SECONDEXPANSION\",\".DELETE_ON_ERROR\",\".IGNORE\",\".LOW_RESOLUTION_TIME\",\".SILENT\",\".EXPORT_ALL_VARIABLES\",\".NOTPARALLEL\",\".ONESHELL\",\".POSIX\"]);for(let e of d){let[u,r,i,o]=e;if(l.has(i)||/\\$\\(.+?\\)/.test(i))continue;let s=i.trim(),p=o?o.trim():r?r.replace(/^#+\\s*/gm,\"\").trim():\"Make target\";t.set(s,{name:s,description:p,icon:\"\\u{1F3AF}\",priority:80})}return[...t.values()]}",
-            "requires_js": true
+            "type": "makefile_targets"
           }
         ],
         "name": "target"
@@ -74,8 +71,7 @@
       "args": {
         "generators": [
           {
-            "js_source": "async(f,a)=>{let{stdout:m}=await a({command:\"bash\",args:[\"-c\",\"make -qp | awk -F':' '/^[a-zA-Z0-9][^$#\\\\/\\\\t=]*:([^=]|$)/ {split($1,A,/ /);for(i in A)print A[i]}' | sort -u\"]}),t=new Map;for(let e of m.split(`\n`))e!==\"Makefile\"&&t.set(e,{name:e.trim(),description:\"Make target\",icon:\"\\u{1F3AF}\",priority:80});let{stdout:c}=await a({command:\"cat\",args:[\"Makefile\",\"makefile\"]}),d=c.matchAll(/((?:^#.*\\n)*)(?:^\\.[A-Z_]+:.*\\n)*(^\\S*?):.*?(?:\\s#+[ \\t]*(.+))?$/gm),l=new Set([\".PHONY\",\".SUFFIXES\",\".DEFAULT\",\".PRECIOUS\",\".INTERMEDIATE\",\".SECONDARY\",\".SECONDEXPANSION\",\".DELETE_ON_ERROR\",\".IGNORE\",\".LOW_RESOLUTION_TIME\",\".SILENT\",\".EXPORT_ALL_VARIABLES\",\".NOTPARALLEL\",\".ONESHELL\",\".POSIX\"]);for(let e of d){let[u,r,i,o]=e;if(l.has(i)||/\\$\\(.+?\\)/.test(i))continue;let s=i.trim(),p=o?o.trim():r?r.replace(/^#+\\s*/gm,\"\").trim():\"Make target\";t.set(s,{name:s,description:p,icon:\"\\u{1F3AF}\",priority:80})}return[...t.values()]}",
-            "requires_js": true
+            "type": "makefile_targets"
           }
         ],
         "name": "target"

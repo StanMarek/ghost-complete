@@ -100,6 +100,140 @@ describe('convertSingleSpec', () => {
       // brew has no git-like generators, so nativeGenerators should be 0
       assert.equal(stats.nativeGenerators, 0, 'brew should have 0 native generators');
     });
+
+    it('rewrites only workspace-member cargo metadata generators to cargo_workspace_members', async () => {
+      const result = await convertSingleSpec('cargo');
+      assert.ok(result);
+
+      function subcommand(name) {
+        const sub = result.spec.subcommands.find((s) => s.name === name);
+        assert.ok(sub, `expected cargo ${name} subcommand`);
+        return sub;
+      }
+      function option(command, name) {
+        const opt = command.options.find((o) => (
+          Array.isArray(o.name) ? o.name.includes(name) : o.name === name
+        ));
+        assert.ok(opt, `expected ${command.name} ${name} option`);
+        return opt;
+      }
+      function firstGenerator(argOwner, label) {
+        const gens = argOwner.args?.generators ?? argOwner.generators;
+        assert.ok(Array.isArray(gens) && gens.length > 0, `expected generator for ${label}`);
+        return gens[0];
+      }
+
+      const tree = subcommand('tree');
+      assert.deepStrictEqual(
+        firstGenerator(option(tree, '--package'), 'tree --package'),
+        { type: 'cargo_workspace_members' },
+      );
+      assert.deepStrictEqual(
+        firstGenerator(option(tree, '--exclude'), 'tree --exclude'),
+        { type: 'cargo_workspace_members' },
+      );
+
+      const invert = firstGenerator(option(tree, '--invert'), 'tree --invert');
+      assert.equal(invert.type, undefined, 'tree --invert must not use workspace members');
+      assert.equal(invert.requires_js, true);
+      assert.deepStrictEqual(invert.script, ['cargo', 'metadata', '--format-version', '1']);
+      assert.match(invert.js_source, /JSON\.parse\(e\)\.packages\.map/);
+
+      const prune = firstGenerator(option(tree, '--prune'), 'tree --prune');
+      assert.equal(prune.type, undefined, 'tree --prune must not use workspace members');
+      assert.equal(prune.requires_js, true);
+      assert.deepStrictEqual(prune.script, ['cargo', 'metadata', '--format-version', '1']);
+      assert.match(prune.js_source, /JSON\.parse\(e\)\.packages\.map/);
+
+      const updatePackage = firstGenerator(option(subcommand('update'), '--package'), 'update --package');
+      assert.equal(updatePackage.type, undefined, 'update --package must not use workspace members');
+      assert.equal(updatePackage.requires_js, true);
+      assert.deepStrictEqual(updatePackage.script, ['cargo', 'metadata', '--format-version', '1']);
+      assert.match(updatePackage.js_source, /JSON\.parse\(e\)\.packages\.map/);
+
+      const remove = subcommand('remove');
+      assert.deepStrictEqual(
+        firstGenerator(option(remove, '--package'), 'remove --package'),
+        { type: 'cargo_workspace_members' },
+      );
+
+      const removeDep = firstGenerator(remove, 'remove DEP_ID');
+      assert.equal(removeDep.type, undefined, 'remove DEP_ID must not use workspace members');
+      assert.equal(removeDep.requires_js, true);
+      assert.match(removeDep.js_source, /\.dependencies/);
+    });
+
+    it('rewrites make generators to makefile_targets and strips requires_js / js_source / script', async () => {
+      // The strip-on-rewrite contract: a generator routed to a native
+      // provider must drop every legacy field (`requires_js`, `js_source`,
+      // `script`, `script_template`). If the contract regresses, the spec
+      // file would carry both the new `type` AND the dead JS source —
+      // wasting binary size and leaving a trap for anyone reading the
+      // spec to find the actual implementation.
+      const result = await convertSingleSpec('make');
+      assert.ok(result);
+      let nativeCount = 0;
+      function walk(obj) {
+        if (!obj || typeof obj !== 'object') return;
+        if (obj.generators && Array.isArray(obj.generators)) {
+          for (const gen of obj.generators) {
+            if (gen.type === 'makefile_targets') {
+              nativeCount++;
+              assert.equal(gen.requires_js, undefined, 'makefile_targets generator must not carry requires_js');
+              assert.equal(gen.js_source, undefined, 'makefile_targets generator must not carry js_source');
+              assert.equal(gen.script, undefined, 'makefile_targets generator must not carry script');
+              assert.equal(gen.script_template, undefined, 'makefile_targets generator must not carry script_template');
+            }
+          }
+        }
+        if (obj.subcommands) for (const s of obj.subcommands) walk(s);
+        if (obj.options) for (const o of obj.options) {
+          if (o.args) {
+            const args = Array.isArray(o.args) ? o.args : [o.args];
+            for (const a of args) walk(a);
+          }
+        }
+        if (obj.args) {
+          const args = Array.isArray(obj.args) ? obj.args : [obj.args];
+          for (const a of args) walk(a);
+        }
+      }
+      walk(result.spec);
+      assert.ok(nativeCount > 0, `expected ≥1 makefile_targets generator, got ${nativeCount}`);
+    });
+
+    it('rewrites npm bash-c generators to npm_scripts and strips legacy fields', async () => {
+      const result = await convertSingleSpec('npm');
+      assert.ok(result);
+      let nativeCount = 0;
+      function walk(obj) {
+        if (!obj || typeof obj !== 'object') return;
+        if (obj.generators && Array.isArray(obj.generators)) {
+          for (const gen of obj.generators) {
+            if (gen.type === 'npm_scripts') {
+              nativeCount++;
+              assert.equal(gen.requires_js, undefined, 'npm_scripts generator must not carry requires_js');
+              assert.equal(gen.js_source, undefined, 'npm_scripts generator must not carry js_source');
+              assert.equal(gen.script, undefined, 'npm_scripts generator must not carry script');
+              assert.equal(gen.script_template, undefined, 'npm_scripts generator must not carry script_template');
+            }
+          }
+        }
+        if (obj.subcommands) for (const s of obj.subcommands) walk(s);
+        if (obj.options) for (const o of obj.options) {
+          if (o.args) {
+            const args = Array.isArray(o.args) ? o.args : [o.args];
+            for (const a of args) walk(a);
+          }
+        }
+        if (obj.args) {
+          const args = Array.isArray(obj.args) ? obj.args : [obj.args];
+          for (const a of args) walk(a);
+        }
+      }
+      walk(result.spec);
+      assert.ok(nativeCount > 0, `expected ≥1 npm_scripts generator, got ${nativeCount}`);
+    });
   });
 
   describe('generator processing', () => {

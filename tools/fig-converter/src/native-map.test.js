@@ -1,11 +1,13 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { matchNativeGenerator } from './native-map.js';
+import { matchNativeFromJsSource, matchNativeGenerator } from './native-map.js';
 
 // Real postProcess JS source strings taken from specs/arduino-cli.json (the
 // pre-regen output). Used as fixtures for the arduino-cli disambiguation tests.
 const ARDUINO_FQBN_POSTPROCESS = "t=>{try{return JSON.parse(t).filter(i=>i.matching_boards).map(i=>({name:i.matching_boards[0].fqbn,description:`${i.matching_boards[0].name} on port ${i.port.address}`}))}catch{return[]}}";
 const ARDUINO_PORT_POSTPROCESS = "t=>{try{return JSON.parse(t).filter(i=>i.matching_boards).map(i=>({name:i.port.address,description:`${i.matching_boards[0].name} port connection`}))}catch{return[]}}";
+const CARGO_WORKSPACE_POSTPROCESS = 'e=>JSON.parse(e).packages.map(a=>({icon:"pkg",name:a.name,description:a.version}))';
+const CARGO_DEPENDENCY_POSTPROCESS = 'e=>{let t=JSON.parse(e),i=le(t).flatMap(n=>n.dependencies).map(n=>({name:n.name,description:n.req}));return[...new Map(i.map(n=>[n.name,n])).values()]}';
 
 describe('matchNativeGenerator', () => {
   it('maps git branch to git_branches', () => {
@@ -163,6 +165,123 @@ describe('matchNativeGenerator', () => {
     // to use a literal argv element of that name, we must NOT skip over it.
     assert.equal(
       matchNativeGenerator('other', ['other', '--no-optional-locks', 'branch']),
+      null,
+    );
+  });
+
+  it('maps cargo metadata to cargo_workspace_members for no-deps package projections', () => {
+    assert.deepStrictEqual(
+      matchNativeGenerator(
+        'cargo',
+        ['cargo', 'metadata', '--format-version', '1', '--no-deps'],
+        CARGO_WORKSPACE_POSTPROCESS,
+      ),
+      { type: 'cargo_workspace_members' },
+    );
+  });
+
+  it('does not map cargo metadata dependency-graph generators to workspace members', () => {
+    assert.deepStrictEqual(
+      matchNativeGenerator(
+        'cargo',
+        ['cargo', 'metadata', '--format-version', '1'],
+        CARGO_WORKSPACE_POSTPROCESS,
+      ),
+      null,
+    );
+    assert.deepStrictEqual(
+      matchNativeGenerator(
+        'cargo',
+        ['cargo', 'metadata', '--format-version', '1'],
+        CARGO_DEPENDENCY_POSTPROCESS,
+      ),
+      null,
+    );
+    assert.deepStrictEqual(
+      matchNativeGenerator(
+        'cargo',
+        ['cargo', 'metadata', '--format-version', '1', '--no-deps'],
+        CARGO_DEPENDENCY_POSTPROCESS,
+      ),
+      null,
+    );
+    assert.deepStrictEqual(
+      matchNativeGenerator('cargo', ['cargo', 'metadata']),
+      null,
+    );
+  });
+
+  it('maps npm bash-c with package.json post-process to npm_scripts', () => {
+    // Real-world post-process snippet copied from the pre-regen npm spec
+    // — projects `package.json#scripts` into Fig suggestions.
+    const npmPostProcess = 'function(n,[s]){let c=JSON.parse(n),p=c.scripts;return Object.entries(p)}';
+    assert.deepStrictEqual(
+      matchNativeGenerator(
+        'npm',
+        ['bash', '-c', "until [[ -f package.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat package.json"],
+        npmPostProcess,
+      ),
+      { type: 'npm_scripts' },
+    );
+  });
+
+  it('does not map npm bash-c when post-process does not look like the package.json scripts shape', () => {
+    // No post-process at all, or one that doesn't read package.json#scripts —
+    // we MUST NOT route to npm_scripts (the bash invocation might be unrelated).
+    assert.equal(
+      matchNativeGenerator(
+        'npm',
+        ['bash', '-c', 'echo hello'],
+      ),
+      null,
+    );
+    assert.equal(
+      matchNativeGenerator(
+        'npm',
+        ['bash', '-c', 'curl https://example.com'],
+        'function(t){return t.split("\\n")}',
+      ),
+      null,
+    );
+  });
+
+  it('does not map bash-c for non-npm specs even when post-process matches', () => {
+    const npmShape = 'function(n){let c=JSON.parse(n);return c.scripts}';
+    assert.equal(
+      matchNativeGenerator('yarn', ['bash', '-c', 'cat package.json'], npmShape),
+      null,
+    );
+  });
+});
+
+describe('matchNativeFromJsSource', () => {
+  it('maps make `make -qp` JS source to makefile_targets', () => {
+    // Upstream make.json's generators are `script: () => "make -qp ..."`,
+    // i.e. they have no `script` array — the entire generator is a JS
+    // function. The stringified function source is what we match on.
+    const makeJsSource = 'async(f,a)=>{let{stdout:m}=await a({command:"bash",args:["-c","make -qp | awk -F\':\' \'/^[a-zA-Z0-9]/{print $1}\'"]})';
+    assert.deepStrictEqual(
+      matchNativeFromJsSource('make', makeJsSource),
+      { type: 'makefile_targets' },
+    );
+  });
+
+  it('does not map non-make specs even with the same JS shape', () => {
+    const makeJsSource = 'something with make -qp embedded';
+    assert.equal(matchNativeFromJsSource('git', makeJsSource), null);
+  });
+
+  it('returns null for empty/non-string input', () => {
+    assert.equal(matchNativeFromJsSource('make', null), null);
+    assert.equal(matchNativeFromJsSource('make', undefined), null);
+    assert.equal(matchNativeFromJsSource('make', ''), null);
+  });
+
+  it('does not map make sources that do not invoke make -qp', () => {
+    // Only the recognized `make -qp` invocation is safe to rewrite —
+    // other make generators may have unrelated semantics.
+    assert.equal(
+      matchNativeFromJsSource('make', 'function(){return ["always"]}'),
       null,
     );
   });

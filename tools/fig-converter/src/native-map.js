@@ -32,6 +32,20 @@ const SPEC_SCOPED_MAP = {
   mamba: {
     'conda env': { type: 'mamba_envs' },
   },
+  // `npm run <TAB>`'s upstream generator is a `bash -c` wrapper that
+  // walks up to the nearest `package.json`, then hands the file body
+  // to a JS post-processor that projects `scripts` keys. The `bash -c`
+  // key is too generic to live in `NATIVE_GENERATOR_MAP` (it would
+  // false-match every shell-out spec), so it lives here gated by the
+  // spec name AND a post-process-source regex confirming we're really
+  // looking at the package.json scripts extractor — not some unrelated
+  // bash invocation that happens to share the prefix.
+  npm: {
+    'bash -c': {
+      type: 'npm_scripts',
+      requirePostProcessMatch: /JSON\.parse[\s\S]*\.scripts/,
+    },
+  },
 };
 
 /**
@@ -71,6 +85,20 @@ function deriveKey(scriptArgv) {
 }
 
 /**
+ * Cargo uses `cargo metadata` for multiple package-spec domains. Only the
+ * `--no-deps` package projection is a workspace-member list; metadata calls
+ * without `--no-deps` include the full dependency graph and must stay JS-backed.
+ */
+function isCargoWorkspaceMembersGenerator(scriptArgv, postProcessSource) {
+  if (!Array.isArray(scriptArgv)) return false;
+  if (scriptArgv[0] !== 'cargo' || scriptArgv[1] !== 'metadata') return false;
+  if (!scriptArgv.includes('--no-deps')) return false;
+  if (typeof postProcessSource !== 'string') return false;
+  if (/\.dependencies\b/.test(postProcessSource)) return false;
+  return /JSON\.parse[\s\S]*\.packages[\s\S]*\.map\s*\(/.test(postProcessSource);
+}
+
+/**
  * Check if a script command matches a native Ghost Complete generator.
  *
  * @param {string} specName - The spec name (used for spec-scoped mappings and arduino disambiguation)
@@ -83,6 +111,16 @@ function deriveKey(scriptArgv) {
 export function matchNativeGenerator(specName, scriptArgv, postProcessSource) {
   const key = deriveKey(scriptArgv);
   if (key === null) return null;
+
+  if (key === 'cargo metadata') {
+    if (
+      specName === 'cargo'
+      && isCargoWorkspaceMembersGenerator(scriptArgv, postProcessSource)
+    ) {
+      return { type: 'cargo_workspace_members' };
+    }
+    return null;
+  }
 
   // arduino-cli: boards vs ports share the same key, disambiguated by postProcess.
   if (key === 'arduino-cli board' && typeof postProcessSource === 'string') {
@@ -107,7 +145,46 @@ export function matchNativeGenerator(specName, scriptArgv, postProcessSource) {
 
   // Spec-scoped lookup (overrides global for specific specs).
   const scoped = SPEC_SCOPED_MAP[specName];
-  if (scoped && scoped[key]) return scoped[key];
+  if (scoped && scoped[key]) {
+    const entry = scoped[key];
+    // Optional post-process-source predicate: when set, the entry only
+    // matches if the post-process JS actually reads what we expect.
+    // Prevents false-firing on `bash -c` for unrelated specs.
+    if (entry.requirePostProcessMatch) {
+      if (
+        typeof postProcessSource !== 'string'
+        || !entry.requirePostProcessMatch.test(postProcessSource)
+      ) {
+        return null;
+      }
+      const { requirePostProcessMatch, ...rest } = entry;
+      return rest;
+    }
+    return entry;
+  }
 
   return NATIVE_GENERATOR_MAP[key] || null;
+}
+
+/**
+ * Maps `_scriptFunction` generators (where the upstream fig spec used
+ * `script: () => "..."`) to a native provider by inspecting the
+ * stringified JS source. Used for the cases where there is no
+ * `script` array to key on at all — the entire generator was a JS
+ * function in the source.
+ *
+ * Currently handles `make`'s `make -qp | awk ...` shape, which is the
+ * only `_scriptFunction` upstream generator that has a known native
+ * Rust replacement.
+ *
+ * @param {string} specName - The spec name (e.g., 'make').
+ * @param {string} jsSource - Stringified JS function from `_scriptSource`.
+ * @returns {object|null} Native generator spec or null.
+ */
+export function matchNativeFromJsSource(specName, jsSource) {
+  if (typeof jsSource !== 'string' || jsSource.length === 0) return null;
+  if (specName === 'make' && /make\s+-qp/.test(jsSource)) {
+    return { type: 'makefile_targets' };
+  }
+  return null;
 }
