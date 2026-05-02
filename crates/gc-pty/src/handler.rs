@@ -586,6 +586,8 @@ impl InputHandler {
         parser: &Arc<Mutex<TerminalParser>>,
         stdout: &mut dyn Write,
     ) -> Vec<u8> {
+        let visible_rows = self.effective_navigation_visible_rows(parser);
+
         // Configurable actions checked first via if-chain
         if key == &self.keybindings.navigate_up {
             self.overlay.move_up();
@@ -593,8 +595,7 @@ impl InputHandler {
             return Vec::new();
         }
         if key == &self.keybindings.navigate_down {
-            self.overlay
-                .move_down(self.suggestions.len(), self.max_visible);
+            self.overlay.move_down(self.suggestions.len(), visible_rows);
             self.render(parser, stdout);
             return Vec::new();
         }
@@ -623,13 +624,13 @@ impl InputHandler {
 
         match key {
             KeyEvent::PageUp => {
-                self.overlay.move_page_up(self.max_visible);
+                self.overlay.move_page_up(visible_rows);
                 self.render(parser, stdout);
                 return Vec::new();
             }
             KeyEvent::PageDown => {
                 self.overlay
-                    .move_page_down(self.suggestions.len(), self.max_visible);
+                    .move_page_down(self.suggestions.len(), visible_rows);
                 self.render(parser, stdout);
                 return Vec::new();
             }
@@ -639,8 +640,7 @@ impl InputHandler {
                 return Vec::new();
             }
             KeyEvent::End | KeyEvent::EndCsiTilde | KeyEvent::EndSs3 => {
-                self.overlay
-                    .move_end(self.suggestions.len(), self.max_visible);
+                self.overlay.move_end(self.suggestions.len(), visible_rows);
                 self.render(parser, stdout);
                 return Vec::new();
             }
@@ -663,6 +663,30 @@ impl InputHandler {
                 self.dismiss(stdout);
                 key_to_bytes(key)
             }
+        }
+    }
+
+    fn effective_navigation_visible_rows(&self, parser: &Arc<Mutex<TerminalParser>>) -> usize {
+        let border_pad: u16 = if self.theme.borders { 2 } else { 0 };
+        let min_screen = 1 + border_pad;
+
+        let screen_rows = match parser.lock() {
+            Ok(p) => p.state().screen_dimensions().0,
+            Err(e) => {
+                tracing::warn!(
+                    "parser mutex poisoned while computing popup navigation height: {e} — \
+                     using configured max_visible"
+                );
+                return self.max_visible.max(1);
+            }
+        };
+
+        if screen_rows > min_screen {
+            self.max_visible
+                .min((screen_rows - 1 - border_pad) as usize)
+                .max(1)
+        } else {
+            self.max_visible.max(1)
         }
     }
 
@@ -2749,6 +2773,31 @@ mod tests {
 
         assert!(result.is_empty());
         assert_eq!(handler.overlay.selected, Some(15));
+    }
+
+    #[test]
+    fn test_page_down_uses_effective_popup_height_on_short_terminal() {
+        let mut handler = make_visible_handler(numbered_suggestions(50));
+        handler.overlay.selected = Some(5);
+        handler.overlay.scroll_offset = 0;
+        handler.last_layout = Some(PopupLayout {
+            start_row: 1,
+            start_col: 0,
+            width: 20,
+            height: 3,
+            scroll_deficit: 0,
+        });
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(4, 80)));
+        let mut buf = Vec::new();
+
+        let result = handler.process_key(&KeyEvent::PageDown, &parser, &mut buf);
+
+        assert!(result.is_empty());
+        assert_eq!(handler.overlay.selected, Some(8));
+        assert_eq!(handler.overlay.scroll_offset, 6);
+        let selected = handler.overlay.selected.unwrap();
+        assert!(handler.overlay.scroll_offset <= selected);
+        assert!(selected < handler.overlay.scroll_offset + 3);
     }
 
     #[test]

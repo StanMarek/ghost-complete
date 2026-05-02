@@ -33,6 +33,7 @@ impl OverlayState {
     }
 
     pub fn move_down(&mut self, total_items: usize, max_visible: usize) {
+        let max_visible = max_visible.max(1);
         match self.selected {
             None if total_items > 0 => {
                 self.selected = Some(0);
@@ -46,9 +47,11 @@ impl OverlayState {
             }
             _ => {}
         }
+        self.keep_selected_visible(max_visible);
     }
 
     pub fn move_page_up(&mut self, max_visible: usize) {
+        let max_visible = max_visible.max(1);
         match self.selected {
             Some(0) => {
                 self.selected = None;
@@ -61,9 +64,11 @@ impl OverlayState {
             }
             None => {}
         }
+        self.keep_selected_visible(max_visible);
     }
 
     pub fn move_page_down(&mut self, total_items: usize, max_visible: usize) {
+        let max_visible = max_visible.max(1);
         match self.selected {
             None if total_items > 0 => {
                 self.selected = Some(0);
@@ -87,6 +92,7 @@ impl OverlayState {
                     .min(total_items.saturating_sub(max_visible));
             }
         }
+        self.keep_selected_visible(max_visible);
     }
 
     pub fn move_home(&mut self, total_items: usize) {
@@ -99,17 +105,34 @@ impl OverlayState {
     }
 
     pub fn move_end(&mut self, total_items: usize, max_visible: usize) {
+        let max_visible = max_visible.max(1);
         let Some(last) = total_items.checked_sub(1) else {
             return;
         };
 
         self.selected = Some(last);
         self.scroll_offset = total_items.saturating_sub(max_visible);
+        self.keep_selected_visible(max_visible);
     }
 
     pub fn reset(&mut self) {
         self.selected = None;
         self.scroll_offset = 0;
+    }
+
+    fn keep_selected_visible(&mut self, visible_count: usize) {
+        let Some(selected) = self.selected else {
+            return;
+        };
+
+        if selected < self.scroll_offset {
+            self.scroll_offset = selected;
+        } else if selected >= self.scroll_offset.saturating_add(visible_count) {
+            self.scroll_offset = selected + 1 - visible_count;
+        }
+
+        debug_assert!(self.scroll_offset <= selected);
+        debug_assert!(selected < self.scroll_offset.saturating_add(visible_count));
     }
 }
 
