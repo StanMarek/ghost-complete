@@ -157,6 +157,9 @@ Built-in generators that run natively without spawning external processes:
 | `git_remotes` | Git remote names |
 | `git_tags` | Git tag names |
 | `git_files` | Tracked files in the git repo |
+| `makefile_targets` | Targets parsed from the nearest ancestor `GNUmakefile`/`makefile`/`Makefile` (no `make` shellout). Filters meta targets, pattern rules, and variable-expanded targets. |
+| `npm_scripts` | Keys of `scripts` in the nearest ancestor `package.json`; description is the script value (truncated to 120 chars). |
+| `cargo_workspace_members` | Workspace member package names from the nearest ancestor `Cargo.toml`; falls back to the single `package.name` when no `[workspace]` table is present. |
 
 #### Script generators
 
