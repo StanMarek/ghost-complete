@@ -78,24 +78,22 @@ struct WorkspaceMin {
     exclude: Vec<String>,
 }
 
-/// Validated Cargo package name. The Cargo CLI accepts names matching
-/// `^[a-zA-Z][a-zA-Z0-9_-]*$`; rejecting anything else upstream
-/// guarantees the suggestion text we hand back to `cargo run -p` will
-/// be accepted.
+/// Type-marker newtype for a Cargo package name read from a `Cargo.toml`
+/// `[package].name`. We do NOT re-validate the name against Cargo's own
+/// rules — Cargo's accepted grammar is broader than any short regex
+/// (Unicode XID start, leading digits, leading `_`, etc.), and any name
+/// we read here already passed Cargo's own parse upstream. The newtype
+/// exists to stop accidental swaps with sibling provider name strings
+/// (npm scripts, Make targets) at compile time.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct CargoPackageName(String);
 
 impl CargoPackageName {
-    pub(crate) fn try_from(s: &str) -> Option<Self> {
-        let mut chars = s.chars();
-        match chars.next() {
-            Some(c) if c.is_ascii_alphabetic() => {}
-            _ => return None,
-        }
-        if !chars.all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-') {
+    pub(crate) fn new(s: String) -> Option<Self> {
+        if s.is_empty() {
             return None;
         }
-        Some(Self(s.to_string()))
+        Some(Self(s))
     }
 }
 
@@ -720,7 +718,7 @@ fn read_member_info(member_dir: &Path, resolved: &mut ResolvedRoot) -> Option<Me
 impl MemberInfo {
     fn from_package(pkg: PackageMin) -> Option<Self> {
         let raw_name = pkg.name?;
-        let name = CargoPackageName::try_from(&raw_name)?;
+        let name = CargoPackageName::new(raw_name)?;
         let description = match (pkg.version, pkg.description) {
             (Some(v), Some(d)) => Some(truncate_chars(&format!("{v} — {d}"))),
             (Some(v), None) => Some(format!("v{v}")),
@@ -1326,17 +1324,13 @@ mod tests {
     }
 
     #[test]
-    fn cargo_package_name_validates_cargo_regex() {
-        assert!(CargoPackageName::try_from("alpha").is_some());
-        assert!(CargoPackageName::try_from("alpha_beta-1").is_some());
-        assert!(CargoPackageName::try_from("a").is_some());
-        // Leading digit rejected.
-        assert!(CargoPackageName::try_from("1alpha").is_none());
-        // Empty rejected.
-        assert!(CargoPackageName::try_from("").is_none());
-        // Disallowed chars rejected.
-        assert!(CargoPackageName::try_from("alpha:beta").is_none());
-        assert!(CargoPackageName::try_from("alpha/beta").is_none());
+    fn cargo_package_name_accepts_anything_nonempty() {
+        assert!(CargoPackageName::new("alpha".into()).is_some());
+        assert!(CargoPackageName::new("alpha_beta-1".into()).is_some());
+        assert!(CargoPackageName::new("_internal".into()).is_some());
+        assert!(CargoPackageName::new("7zip".into()).is_some());
+        assert!(CargoPackageName::new("krate-α".into()).is_some());
+        assert!(CargoPackageName::new(String::new()).is_none());
     }
 
     #[test]
