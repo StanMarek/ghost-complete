@@ -295,7 +295,7 @@ jobs:
       # dist-manifest.json, .sha256 checksums, .sh/.rb installers, and any
       # other non-binary metadata that would inflate the attestation count.
       - name: Attest release artifacts (SLSA build provenance)
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: |
             artifacts/*.tar.gz
