@@ -64,15 +64,12 @@ impl Perform for TerminalState {
         }
 
         // Blanket-discard remaining unsupported CSI sequences carrying
-        // intermediate/private-prefix bytes. Examples: `CSI ! p` (DECSTR
-        // soft reset, intermediate `!`), `CSI > c` (DA2).
-        // None of these affect the subset of state we track (cursor
-        // position, screen dimensions, prompt/cwd bookkeeping), so the
-        // cleanest handling is to ignore them entirely. This is a
-        // deliberate narrowing of the state machine, not an oversight —
-        // if a future feature ever needs to honor a specific
-        // `CSI <intermediate> <final>` sequence, it MUST pattern-match on
-        // the intermediate BEFORE this early return runs, not after.
+        // intermediate/private-prefix bytes, such as `CSI > c` (DA2).
+        // This is a deliberate narrowing of the state machine, not an
+        // assertion that every sequence is side-effect free. If a future
+        // feature needs to honor a specific `CSI <intermediate> <final>`
+        // sequence, it MUST pattern-match on the intermediate BEFORE this
+        // early return runs, not after.
         if !intermediates.is_empty() {
             return;
         }
@@ -115,10 +112,20 @@ impl Perform for TerminalState {
             // ED — erase in display
             'J' => {
                 let mode = csi_param(params, 0, 0);
-                if mode == 2 || mode == 3 {
-                    self.set_cursor(0, 0);
-                }
+                self.erase_display(mode);
             }
+            // EL — erase in line
+            'K' => self.mark_display_changed(),
+            // ICH — insert character
+            '@' => self.mark_display_changed(),
+            // IL — insert line
+            'L' => self.mark_display_changed(),
+            // DL — delete line
+            'M' => self.mark_display_changed(),
+            // DCH — delete character
+            'P' => self.mark_display_changed(),
+            // ECH — erase character
+            'X' => self.mark_display_changed(),
             // SU — scroll up: content scrolls, cursor does NOT move
             'S' => self.scroll_up(csi_param(params, 0, 1)),
             // SD — scroll down: content scrolls, cursor does NOT move
@@ -802,6 +809,102 @@ mod tests {
         p.process_bytes(b"\x1b[10;15H"); // move cursor
         p.process_bytes(b"\x1b[2J"); // ED mode 2: clear screen
         assert_eq!(p.state().cursor_position(), (0, 0));
+    }
+
+    #[test]
+    fn test_csi_ed_all_modes_mark_display_dirty() {
+        for sequence in [
+            b"\x1b[J".as_slice(),
+            b"\x1b[0J",
+            b"\x1b[1J",
+            b"\x1b[2J",
+            b"\x1b[3J",
+        ] {
+            let mut p = make_parser();
+            p.process_bytes(b"\x1b[10;15H");
+            assert!(p.state_mut().take_display_dirty());
+
+            p.process_bytes(sequence);
+
+            assert!(
+                p.state_mut().take_display_dirty(),
+                "{sequence:?} should dirty display"
+            );
+            assert!(
+                !p.state_mut().take_display_dirty(),
+                "{sequence:?} dirty flag should be one-shot"
+            );
+        }
+    }
+
+    #[test]
+    fn test_csi_el_all_modes_mark_display_dirty_without_moving_cursor() {
+        for sequence in [b"\x1b[K".as_slice(), b"\x1b[0K", b"\x1b[1K", b"\x1b[2K"] {
+            let mut p = make_parser();
+            p.process_bytes(b"\x1b[10;15H");
+            assert!(p.state_mut().take_display_dirty());
+
+            p.process_bytes(sequence);
+
+            assert_eq!(p.state().cursor_position(), (9, 14));
+            assert!(
+                p.state_mut().take_display_dirty(),
+                "{sequence:?} should dirty display"
+            );
+            assert!(
+                !p.state_mut().take_display_dirty(),
+                "{sequence:?} dirty flag should be one-shot"
+            );
+        }
+    }
+
+    #[test]
+    fn test_csi_insert_delete_and_erase_chars_mark_display_dirty_without_moving_cursor() {
+        for sequence in [
+            b"\x1b[@".as_slice(),
+            b"\x1b[4@",
+            b"\x1b[P",
+            b"\x1b[4P",
+            b"\x1b[X",
+            b"\x1b[4X",
+        ] {
+            let mut p = make_parser();
+            p.process_bytes(b"\x1b[10;15H");
+            assert!(p.state_mut().take_display_dirty());
+
+            p.process_bytes(sequence);
+
+            assert_eq!(p.state().cursor_position(), (9, 14));
+            assert!(
+                p.state_mut().take_display_dirty(),
+                "{sequence:?} should dirty display"
+            );
+            assert!(
+                !p.state_mut().take_display_dirty(),
+                "{sequence:?} dirty flag should be one-shot"
+            );
+        }
+    }
+
+    #[test]
+    fn test_csi_insert_and_delete_lines_mark_display_dirty_without_moving_cursor() {
+        for sequence in [b"\x1b[L".as_slice(), b"\x1b[4L", b"\x1b[M", b"\x1b[4M"] {
+            let mut p = make_parser();
+            p.process_bytes(b"\x1b[10;15H");
+            assert!(p.state_mut().take_display_dirty());
+
+            p.process_bytes(sequence);
+
+            assert_eq!(p.state().cursor_position(), (9, 14));
+            assert!(
+                p.state_mut().take_display_dirty(),
+                "{sequence:?} should dirty display"
+            );
+            assert!(
+                !p.state_mut().take_display_dirty(),
+                "{sequence:?} dirty flag should be one-shot"
+            );
+        }
     }
 
     // -- Cursor save/restore --

@@ -177,9 +177,10 @@ pub fn parse_style(style_str: &str) -> Result<Vec<u8>> {
 /// Render a popup into a byte buffer. Returns the layout used for positioning
 /// (needed later for cleanup).
 ///
-/// `prior_deficit` is the scroll deficit from a previous render in the same
-/// popup session (e.g., during tab-cycling). It prevents re-scrolling by
-/// accounting for viewport shifts that the parser doesn't know about.
+/// `prior_deficit` is accumulated overlay-owned viewport scroll from previous
+/// renders, possibly across dismiss/re-trigger cycles until a CPR sync or
+/// resize invalidates it. It prevents re-scrolling by accounting for viewport
+/// shifts that the parser doesn't know about.
 #[allow(clippy::too_many_arguments)]
 pub fn render_popup(
     buf: &mut Vec<u8>,

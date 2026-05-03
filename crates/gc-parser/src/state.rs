@@ -392,6 +392,17 @@ impl TerminalState {
         self.clamp_cursor_row();
     }
 
+    pub(crate) fn erase_display(&mut self, mode: u16) {
+        self.mark_display_dirty();
+        if mode == 2 || mode == 3 {
+            self.set_cursor(0, 0);
+        }
+    }
+
+    pub(crate) fn mark_display_changed(&mut self) {
+        self.mark_display_dirty();
+    }
+
     pub(crate) fn carriage_return(&mut self) {
         self.mark_display_dirty();
         self.pending_wrap = false;

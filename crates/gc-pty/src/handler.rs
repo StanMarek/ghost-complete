@@ -175,15 +175,24 @@ enum MergeFreshness {
 pub(crate) struct OverlayRenderToken(u64);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct OverlayCleanupToken(u64);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct OverlayWriteTicket {
     pub(crate) epoch: u64,
     pub(crate) render_token: Option<OverlayRenderToken>,
+    pub(crate) cleanup_token: Option<OverlayCleanupToken>,
 }
 
 #[derive(Debug, Clone)]
 struct PendingOverlayRender {
     token: OverlayRenderToken,
     layout: PopupLayout,
+}
+
+#[derive(Debug, Clone)]
+struct PendingOverlayCleanup {
+    token: OverlayCleanupToken,
 }
 
 /// Result of `InputHandler::prepare_trigger_with_block`.
@@ -300,6 +309,10 @@ pub struct InputHandler {
     /// Layout/scroll state for the latest render buffer. Committed only after
     /// the proxy writes that exact buffer to stdout.
     pending_overlay_render: Option<PendingOverlayRender>,
+    /// Monotonic token source for popup cleanup buffers staged by teardown.
+    overlay_cleanup_generation: u64,
+    /// Pending acknowledgement for cleanup bytes that clear `last_layout`.
+    pending_overlay_cleanup: Option<PendingOverlayCleanup>,
 }
 
 impl InputHandler {
@@ -336,6 +349,8 @@ impl InputHandler {
             output_epoch: 0,
             overlay_render_generation: 0,
             pending_overlay_render: None,
+            overlay_cleanup_generation: 0,
+            pending_overlay_cleanup: None,
         })
     }
 
@@ -558,21 +573,33 @@ impl InputHandler {
                 .pending_overlay_render
                 .as_ref()
                 .map(|pending| pending.token),
+            cleanup_token: self
+                .pending_overlay_cleanup
+                .as_ref()
+                .map(|pending| pending.token),
         }
     }
 
     pub(crate) fn commit_overlay_write(&mut self, ticket: OverlayWriteTicket) {
-        let Some(token) = ticket.render_token else {
-            return;
-        };
-        let Some(pending) = self
-            .pending_overlay_render
-            .take_if(|pending| pending.token == token)
-        else {
-            return;
-        };
-        self.overlay_scroll_deficit = pending.layout.scroll_deficit;
-        self.last_layout = Some(pending.layout);
+        if let Some(token) = ticket.render_token {
+            if let Some(pending) = self
+                .pending_overlay_render
+                .take_if(|pending| pending.token == token)
+            {
+                self.overlay_scroll_deficit = pending.layout.scroll_deficit;
+                self.last_layout = Some(pending.layout);
+            }
+        }
+
+        if let Some(token) = ticket.cleanup_token {
+            if self
+                .pending_overlay_cleanup
+                .take_if(|pending| pending.token == token)
+                .is_some()
+            {
+                self.last_layout = None;
+            }
+        }
     }
 
     #[cfg(test)]
@@ -584,6 +611,16 @@ impl InputHandler {
         &mut self,
         ticket: OverlayWriteTicket,
     ) {
+        if let Some(token) = ticket.cleanup_token {
+            if self
+                .pending_overlay_cleanup
+                .take_if(|pending| pending.token == token)
+                .is_some()
+            {
+                return;
+            }
+        }
+
         let Some(token) = ticket.render_token else {
             return;
         };
@@ -593,6 +630,7 @@ impl InputHandler {
         if pending.token != token {
             return;
         }
+
         self.pending_overlay_render = None;
         self.visible = false;
         self.suggestions.clear();
@@ -1858,6 +1896,7 @@ impl InputHandler {
         let _ = stdout.write_all(&buf);
         let _ = stdout.flush();
         self.overlay_render_generation = self.overlay_render_generation.wrapping_add(1);
+        self.pending_overlay_cleanup = None;
         self.pending_overlay_render = Some(PendingOverlayRender {
             token: OverlayRenderToken(self.overlay_render_generation),
             layout,
@@ -2001,6 +2040,8 @@ impl InputHandler {
         {
             self.bump_output_epoch();
             self.teardown_popup(stdout, true);
+            let cleanup_ticket = self.overlay_write_ticket();
+            self.commit_overlay_write(cleanup_ticket);
         }
     }
 
@@ -2015,12 +2056,17 @@ impl InputHandler {
             clear_popup(&mut buf, &layout, &self.terminal_profile);
             let _ = stdout.write_all(&buf);
             let _ = stdout.flush();
+            self.overlay_cleanup_generation = self.overlay_cleanup_generation.wrapping_add(1);
+            self.pending_overlay_cleanup = Some(PendingOverlayCleanup {
+                token: OverlayCleanupToken(self.overlay_cleanup_generation),
+            });
+        } else {
+            self.pending_overlay_cleanup = None;
         }
         self.pending_overlay_render = None;
         self.visible = false;
         self.suggestions.clear();
         self.overlay.reset();
-        self.last_layout = None;
         if !preserve_trigger_request {
             self.trigger_requested = false;
         }
@@ -2779,6 +2825,10 @@ mod tests {
 
         assert!(!handler.visible);
         assert!(handler.suggestions.is_empty());
+        assert!(handler.last_layout.is_some());
+        let cleanup_ticket = handler.overlay_write_ticket();
+        assert!(cleanup_ticket.cleanup_token.is_some());
+        handler.commit_overlay_write(cleanup_ticket);
         assert!(handler.last_layout.is_none());
         assert!(!stdout_buf.is_empty());
     }
@@ -2894,6 +2944,8 @@ mod tests {
             output_epoch: 0,
             overlay_render_generation: 0,
             pending_overlay_render: None,
+            overlay_cleanup_generation: 0,
+            pending_overlay_cleanup: None,
         }
     }
 
@@ -3327,13 +3379,17 @@ mod tests {
 
         assert_eq!(result, b"a");
         assert!(!handler.visible);
-        assert!(handler.last_layout.is_none());
+        assert!(handler.last_layout.is_some());
         assert!(handler.has_pending_trigger());
         let output = String::from_utf8_lossy(&buf);
         assert!(
             output.contains("\x1b[6;1H"),
             "clear must be emitted before forwarding printable key: {output:?}"
         );
+        let cleanup_ticket = handler.overlay_write_ticket();
+        assert!(cleanup_ticket.cleanup_token.is_some());
+        handler.commit_overlay_write(cleanup_ticket);
+        assert!(handler.last_layout.is_none());
     }
 
     #[test]
@@ -3346,12 +3402,16 @@ mod tests {
 
         assert_eq!(result, vec![0x7f]);
         assert!(!handler.visible);
-        assert!(handler.last_layout.is_none());
+        assert!(handler.last_layout.is_some());
         assert!(handler.has_pending_trigger());
         assert!(
             !buf.is_empty(),
             "backspace should clear the visible popup first"
         );
+        let cleanup_ticket = handler.overlay_write_ticket();
+        assert!(cleanup_ticket.cleanup_token.is_some());
+        handler.commit_overlay_write(cleanup_ticket);
+        assert!(handler.last_layout.is_none());
     }
 
     #[test]

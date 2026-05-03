@@ -1384,6 +1384,66 @@ mod tests {
         );
     }
 
+    #[test]
+    fn write_overlay_if_current_lets_shell_cleanup_supersede_stale_teardown_cleanup() {
+        let handler = Arc::new(Mutex::new(
+            InputHandler::new(&[], gc_terminal::TerminalProfile::for_ghostty()).expect("handler"),
+        ));
+        let parser = parser_with_buffer("git ");
+
+        {
+            let mut h = handler.lock().expect("handler");
+            let mut initial_buf = Vec::new();
+            h.trigger(&parser, &mut initial_buf);
+            assert!(
+                !initial_buf.is_empty(),
+                "setup: trigger should render popup"
+            );
+            let initial_ticket = h.overlay_write_ticket();
+            h.commit_overlay_write(initial_ticket);
+            assert!(
+                h.has_overlay_ownership(),
+                "setup: committed popup should own a layout"
+            );
+        }
+
+        let (cleanup_ticket, cleanup_buf) = {
+            let mut h = handler.lock().expect("handler");
+            let mut cleanup_buf = Vec::new();
+            let forward = h.process_key(&KeyEvent::Printable('x'), &parser, &mut cleanup_buf);
+            assert_eq!(forward, b"x");
+            assert!(
+                !cleanup_buf.is_empty(),
+                "setup: typing into a visible popup should stage cleanup bytes"
+            );
+            assert!(
+                h.has_overlay_ownership(),
+                "staged teardown cleanup must keep layout ownership until the cleanup is written"
+            );
+            (h.overlay_write_ticket(), cleanup_buf)
+        };
+
+        {
+            let mut h = handler.lock().expect("handler");
+            let mut shell_cleanup = Vec::new();
+            h.handle_terminal_output(&mut shell_cleanup, true, 0);
+            assert!(
+                !shell_cleanup.is_empty(),
+                "shell output racing the pending teardown must clear the still-owned layout"
+            );
+            assert_ne!(h.output_epoch(), cleanup_ticket.epoch);
+        }
+
+        let outcome = write_overlay_if_current(&handler, cleanup_ticket, &cleanup_buf)
+            .expect("stale cleanup should not be an I/O error");
+
+        assert_eq!(outcome, OverlayWriteOutcome::Stale);
+        assert!(
+            !handler.lock().expect("handler").has_overlay_ownership(),
+            "shell-output cleanup should have superseded the stale teardown cleanup"
+        );
+    }
+
     struct SpawnedTestChild {
         child: Box<dyn portable_pty::Child + Send + Sync>,
         // Held so the slave side of the PTY stays open — dropping the master
