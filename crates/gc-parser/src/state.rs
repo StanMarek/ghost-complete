@@ -25,6 +25,15 @@ struct CprEntry {
     enqueued_at: Instant,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct CursorSnapshot {
+    row: u16,
+    col: u16,
+    screen_cols: u16,
+    pending_wrap: bool,
+    autowrap: bool,
+}
+
 /// Tracks terminal state derived from the VT escape sequence stream.
 ///
 /// Maintains cursor position, screen dimensions, prompt boundaries (OSC 133),
@@ -36,8 +45,12 @@ pub struct TerminalState {
     cursor_col: u16,
     screen_rows: u16,
     screen_cols: u16,
-    saved_cursor: Option<(u16, u16)>,
+    saved_cursor: Option<CursorSnapshot>,
     prompt_row: Option<u16>,
+    autowrap: bool,
+    pending_wrap: bool,
+    display_dirty: bool,
+    viewport_scroll_count: u16,
     cwd: Option<PathBuf>,
     in_prompt: bool,
     command_buffer: Option<String>,
@@ -76,6 +89,10 @@ impl TerminalState {
             screen_cols: cols.max(1),
             saved_cursor: None,
             prompt_row: None,
+            autowrap: true,
+            pending_wrap: false,
+            display_dirty: false,
+            viewport_scroll_count: 0,
             cwd: None,
             in_prompt: false,
             command_buffer: None,
@@ -107,6 +124,7 @@ impl TerminalState {
     pub fn update_dimensions(&mut self, rows: u16, cols: u16) {
         self.screen_rows = rows.max(1);
         self.screen_cols = cols.max(1);
+        self.pending_wrap = false;
         self.clamp_cursor();
     }
 
@@ -120,6 +138,10 @@ impl TerminalState {
 
     pub fn prompt_row(&self) -> Option<u16> {
         self.prompt_row
+    }
+
+    pub fn viewport_scroll_count(&self) -> u16 {
+        self.viewport_scroll_count
     }
 
     pub fn cwd(&self) -> Option<&PathBuf> {
@@ -154,6 +176,18 @@ impl TerminalState {
         dirty
     }
 
+    pub fn take_display_dirty(&mut self) -> bool {
+        let dirty = self.display_dirty;
+        self.display_dirty = false;
+        dirty
+    }
+
+    pub fn take_viewport_scroll_count(&mut self) -> u16 {
+        let count = self.viewport_scroll_count;
+        self.viewport_scroll_count = 0;
+        count
+    }
+
     /// Returns true if a CPR (Cursor Position Report) sync was requested
     /// since the last check, and clears the flag atomically.
     pub fn take_cursor_sync_requested(&mut self) -> bool {
@@ -179,6 +213,7 @@ impl TerminalState {
     pub fn set_cursor_from_report(&mut self, row_1: u16, col_1: u16) {
         self.cursor_row = row_1.saturating_sub(1);
         self.cursor_col = col_1.saturating_sub(1);
+        self.pending_wrap = false;
         self.clamp_cursor();
         self.cpr_synced = true;
     }
@@ -268,79 +303,135 @@ impl TerminalState {
     // -- mutation helpers used by Perform impl --
 
     pub(crate) fn set_cursor(&mut self, row: u16, col: u16) {
+        self.mark_display_dirty();
+        self.pending_wrap = false;
         self.cursor_row = row;
         self.cursor_col = col;
         self.clamp_cursor();
     }
 
     pub(crate) fn advance_col(&mut self, n: u16) {
-        if self.screen_cols > 0 {
-            // Wide character (n > 1) doesn't fit in remaining columns —
-            // real terminals wrap to the next line before placing it,
-            // leaving the partial column blank.
-            if n > 1 && self.cursor_col + n > self.screen_cols {
-                self.cursor_row = self.cursor_row.saturating_add(1);
-                self.cursor_col = if n < self.screen_cols { n } else { 0 };
-            } else {
-                self.cursor_col = self.cursor_col.saturating_add(n);
-                if self.cursor_col >= self.screen_cols {
-                    self.cursor_row = self
-                        .cursor_row
-                        .saturating_add(self.cursor_col / self.screen_cols);
-                    self.cursor_col %= self.screen_cols;
-                }
-            }
-            // Wrapping past the bottom row means the terminal scrolled.
-            self.clamp_cursor_row();
-        } else {
+        self.mark_display_dirty();
+        if n == 0 {
+            return;
+        }
+
+        if self.screen_cols == 0 {
             self.cursor_col = self.cursor_col.saturating_add(n);
+            return;
+        }
+
+        if !self.autowrap {
+            self.pending_wrap = false;
+            self.cursor_col = self
+                .cursor_col
+                .saturating_add(n)
+                .min(self.screen_cols.saturating_sub(1));
+            return;
+        }
+
+        if self.pending_wrap {
+            self.wrap_to_next_line();
+        }
+        self.pending_wrap = false;
+
+        let next_col = self.cursor_col.saturating_add(n);
+        if next_col < self.screen_cols {
+            self.cursor_col = next_col;
+        } else if next_col == self.screen_cols {
+            self.cursor_col = self.screen_cols - 1;
+            self.pending_wrap = true;
+        } else {
+            self.wrap_to_next_line();
+            if n < self.screen_cols {
+                self.cursor_col = n;
+            } else {
+                self.cursor_col = self.screen_cols - 1;
+                self.pending_wrap = true;
+            }
         }
     }
 
     pub(crate) fn move_up(&mut self, n: u16) {
+        self.mark_display_dirty();
+        self.pending_wrap = false;
         self.cursor_row = self.cursor_row.saturating_sub(n);
     }
 
     pub(crate) fn move_down(&mut self, n: u16) {
+        self.mark_display_dirty();
+        self.pending_wrap = false;
         self.cursor_row = self.cursor_row.saturating_add(n);
         self.clamp_cursor_row();
     }
 
     pub(crate) fn move_forward(&mut self, n: u16) {
+        self.mark_display_dirty();
+        self.pending_wrap = false;
         self.cursor_col = self.cursor_col.saturating_add(n);
         self.clamp_cursor_col();
     }
 
     pub(crate) fn move_back(&mut self, n: u16) {
+        self.mark_display_dirty();
+        self.pending_wrap = false;
         self.cursor_col = self.cursor_col.saturating_sub(n);
     }
 
     pub(crate) fn set_col(&mut self, col: u16) {
+        self.mark_display_dirty();
+        self.pending_wrap = false;
         self.cursor_col = col;
         self.clamp_cursor_col();
     }
 
     pub(crate) fn set_row(&mut self, row: u16) {
+        self.mark_display_dirty();
+        self.pending_wrap = false;
         self.cursor_row = row;
         self.clamp_cursor_row();
     }
 
+    pub(crate) fn erase_display(&mut self, mode: u16) {
+        self.mark_display_dirty();
+        if mode == 2 || mode == 3 {
+            self.set_cursor(0, 0);
+        }
+    }
+
+    pub(crate) fn mark_display_changed(&mut self) {
+        self.mark_display_dirty();
+    }
+
     pub(crate) fn carriage_return(&mut self) {
+        self.mark_display_dirty();
+        self.pending_wrap = false;
         self.cursor_col = 0;
     }
 
     pub(crate) fn line_feed(&mut self) {
-        self.cursor_row = self.cursor_row.saturating_add(1);
-        // At the bottom of the screen, a real terminal scrolls rather than
-        // moving the cursor past the last row.
-        self.clamp_cursor_row();
+        self.mark_display_dirty();
+        self.pending_wrap = false;
+        if self.cursor_row + 1 >= self.screen_rows {
+            self.record_viewport_scroll(1);
+            self.cursor_row = self.screen_rows.saturating_sub(1);
+        } else {
+            self.cursor_row = self.cursor_row.saturating_add(1);
+        }
     }
 
     pub(crate) fn backspace(&mut self) {
+        self.mark_display_dirty();
+        self.pending_wrap = false;
         self.cursor_col = self.cursor_col.saturating_sub(1);
     }
 
     pub(crate) fn tab(&mut self) {
+        self.mark_display_dirty();
+        if self.pending_wrap {
+            self.wrap_to_next_line();
+            self.pending_wrap = false;
+        }
         // Next tab stop: round up to next multiple of 8.
         // Saturating arithmetic prevents u16 overflow, and the max()
         // ensures monotonicity — tab never moves the cursor backward.
@@ -350,18 +441,32 @@ impl TerminalState {
     }
 
     pub(crate) fn save_cursor(&mut self) {
-        self.saved_cursor = Some((self.cursor_row, self.cursor_col));
+        self.saved_cursor = Some(CursorSnapshot {
+            row: self.cursor_row,
+            col: self.cursor_col,
+            screen_cols: self.screen_cols,
+            pending_wrap: self.pending_wrap,
+            autowrap: self.autowrap,
+        });
     }
 
     pub(crate) fn restore_cursor(&mut self) {
-        if let Some((row, col)) = self.saved_cursor {
-            self.cursor_row = row;
-            self.cursor_col = col;
+        self.mark_display_dirty();
+        if let Some(snapshot) = self.saved_cursor {
+            self.cursor_row = snapshot.row;
+            self.cursor_col = snapshot.col;
+            self.autowrap = snapshot.autowrap;
             self.clamp_cursor();
+            self.pending_wrap = snapshot.pending_wrap
+                && snapshot.autowrap
+                && snapshot.screen_cols == self.screen_cols
+                && self.cursor_col + 1 == self.screen_cols;
         }
     }
 
     pub(crate) fn reverse_index(&mut self) {
+        self.mark_display_dirty();
+        self.pending_wrap = false;
         self.cursor_row = self.cursor_row.saturating_sub(1);
     }
 
@@ -392,6 +497,28 @@ impl TerminalState {
         self.buffer_cursor = 0;
     }
 
+    pub(crate) fn set_autowrap(&mut self, enabled: bool) {
+        self.autowrap = enabled;
+        if !enabled {
+            self.pending_wrap = false;
+        }
+    }
+
+    pub(crate) fn scroll_up(&mut self, rows: u16) {
+        self.mark_display_dirty();
+        self.pending_wrap = false;
+        self.record_viewport_scroll(rows);
+    }
+
+    pub(crate) fn scroll_down(&mut self, rows: u16) {
+        self.mark_display_dirty();
+        self.pending_wrap = false;
+        if let Some(row) = self.prompt_row {
+            let next = row.saturating_add(rows);
+            self.prompt_row = (next < self.screen_rows).then_some(next);
+        }
+    }
+
     pub(crate) fn cursor_row(&self) -> u16 {
         self.cursor_row
     }
@@ -410,6 +537,30 @@ impl TerminalState {
     fn clamp_cursor_col(&mut self) {
         if self.screen_cols > 0 {
             self.cursor_col = self.cursor_col.min(self.screen_cols - 1);
+        }
+    }
+
+    fn mark_display_dirty(&mut self) {
+        self.display_dirty = true;
+    }
+
+    fn wrap_to_next_line(&mut self) {
+        self.cursor_col = 0;
+        if self.cursor_row + 1 >= self.screen_rows {
+            self.record_viewport_scroll(1);
+            self.cursor_row = self.screen_rows.saturating_sub(1);
+        } else {
+            self.cursor_row = self.cursor_row.saturating_add(1);
+        }
+    }
+
+    fn record_viewport_scroll(&mut self, rows: u16) {
+        if rows == 0 {
+            return;
+        }
+        self.viewport_scroll_count = self.viewport_scroll_count.saturating_add(rows);
+        if let Some(row) = self.prompt_row {
+            self.prompt_row = row.checked_sub(rows);
         }
     }
 }
@@ -473,6 +624,44 @@ mod tests {
     }
 
     #[test]
+    fn restore_cursor_restores_autowrap_and_pending_wrap() {
+        let mut state = TerminalState::new(3, 3);
+        state.set_cursor(0, 2);
+        state.advance_col(1);
+        assert_eq!(state.cursor_position(), (0, 2));
+        assert!(state.pending_wrap);
+        assert!(state.autowrap);
+
+        state.save_cursor();
+        state.set_autowrap(false);
+        state.set_cursor(1, 0);
+
+        state.restore_cursor();
+        assert_eq!(state.cursor_position(), (0, 2));
+        assert!(state.pending_wrap);
+        assert!(state.autowrap);
+
+        state.advance_col(1);
+        assert_eq!(state.cursor_position(), (1, 1));
+    }
+
+    #[test]
+    fn restore_cursor_clears_pending_wrap_when_resize_invalidates_last_column() {
+        let mut state = TerminalState::new(3, 3);
+        state.set_cursor(0, 2);
+        state.advance_col(1);
+        assert_eq!(state.cursor_position(), (0, 2));
+        assert!(state.pending_wrap);
+
+        state.save_cursor();
+        state.update_dimensions(3, 5);
+        state.restore_cursor();
+
+        state.advance_col(1);
+        assert_eq!(state.cursor_position(), (0, 3));
+    }
+
+    #[test]
     fn tab_saturating_at_u16_max() {
         let mut state = TerminalState::new(24, 80);
         let before = u16::MAX - 2;
@@ -518,6 +707,51 @@ mod tests {
         let (rows, cols) = state.screen_dimensions();
         assert_eq!(rows, 1);
         assert_eq!(cols, 1);
+    }
+
+    #[test]
+    fn line_feed_at_bottom_records_scroll_and_moves_prompt_row() {
+        let mut state = TerminalState::new(3, 10);
+        state.set_cursor(2, 0);
+        state.set_prompt_row(1);
+
+        state.line_feed();
+
+        assert_eq!(state.cursor_position(), (2, 0));
+        assert_eq!(state.prompt_row(), Some(0));
+        assert_eq!(state.take_viewport_scroll_count(), 1);
+        assert_eq!(state.take_viewport_scroll_count(), 0);
+    }
+
+    #[test]
+    fn printing_last_column_defers_autowrap_until_next_printable() {
+        let mut state = TerminalState::new(3, 3);
+
+        state.advance_col(1);
+        state.advance_col(1);
+        state.advance_col(1);
+
+        assert_eq!(state.cursor_position(), (0, 2));
+        assert_eq!(state.take_viewport_scroll_count(), 0);
+
+        state.advance_col(1);
+
+        assert_eq!(state.cursor_position(), (1, 1));
+    }
+
+    #[test]
+    fn pending_autowrap_at_bottom_records_scroll_on_next_printable() {
+        let mut state = TerminalState::new(2, 3);
+        state.set_cursor(1, 2);
+
+        state.advance_col(1);
+        assert_eq!(state.cursor_position(), (1, 2));
+        assert_eq!(state.take_viewport_scroll_count(), 0);
+
+        state.advance_col(1);
+
+        assert_eq!(state.cursor_position(), (1, 1));
+        assert_eq!(state.take_viewport_scroll_count(), 1);
     }
 
     #[test]

@@ -4,6 +4,15 @@ use harness::GhostProcess;
 use std::thread;
 use std::time::Duration;
 
+fn find_subslice(haystack: &[u8], needle: &[u8]) -> Option<usize> {
+    if needle.is_empty() {
+        return Some(0);
+    }
+    haystack
+        .windows(needle.len())
+        .position(|window| window == needle)
+}
+
 #[test]
 fn test_echo_passthrough() {
     let mut proc = GhostProcess::spawn();
@@ -187,7 +196,11 @@ fn test_popup_renders_and_dismisses_on_git_trigger() {
     // The shell executes printf, emits the raw bytes to stdout, gc-parser
     // consumes them and sets command_buffer = "git " with cursor = 4.
     // The buffer_dirty flag causes Task B to auto-fire trigger().
-    proc.send_line(r"printf '\033]7770;4;git \007'");
+    //
+    // Keep the shell command blocked after the OSC write. If the command
+    // exits immediately, the shell prints a new prompt, and the proxy now
+    // correctly tears down the popup before forwarding that prompt output.
+    proc.send_line(r"printf '\033]7770;4;git \007'; read _ghost_popup_hold");
 
     // Wait for the popup render. The overlay's first emitted byte sequence
     // is DECSC (`\x1b7` = save cursor). Seeing it after mark_before_trigger
@@ -251,6 +264,72 @@ fn test_popup_renders_and_dismisses_on_git_trigger() {
             String::from_utf8_lossy(since_esc),
         );
     }
+
+    // Release the blocking `read` used to keep shell output from racing the
+    // visible-popup dismissal path.
+    proc.send_line("");
+
+    proc.exit_with_code(0);
+}
+
+#[test]
+fn test_popup_is_cleared_before_later_shell_output() {
+    let mut proc = GhostProcess::spawn();
+
+    proc.send_line("PS1='smoke_prompt_repaint_marker '");
+    proc.expect_output("smoke_prompt_repaint_marker");
+
+    let mark_before_trigger = proc.output_len();
+    proc.send_line(r"printf '\033]7770;4;git \007'; read _gc_smoke_gate");
+
+    let popup_rendered =
+        proc.wait_for_bytes_after(b"\x1b7", mark_before_trigger, Duration::from_secs(5));
+    if !popup_rendered {
+        let snapshot = proc.output_snapshot();
+        let since_trigger = &snapshot[mark_before_trigger..];
+        panic!(
+            "Popup did not render before prompt repaint.\n\
+             Bytes since trigger mark ({} bytes, lossy UTF-8):\n{:?}",
+            since_trigger.len(),
+            String::from_utf8_lossy(since_trigger),
+        );
+    }
+
+    let mark_after_popup = proc.output_len();
+    let marker = b"smoke_prompt_repaint_marker";
+    proc.send_line("");
+    let marker_seen = proc.wait_for_bytes_after(marker, mark_after_popup, Duration::from_secs(5));
+    if !marker_seen {
+        let snapshot = proc.output_snapshot();
+        let since_popup = &snapshot[mark_after_popup..];
+        panic!(
+            "Shell repaint marker did not arrive after popup render.\n\
+             Bytes since popup mark ({} bytes, lossy UTF-8):\n{:?}",
+            since_popup.len(),
+            String::from_utf8_lossy(since_popup),
+        );
+    }
+
+    let snapshot = proc.output_snapshot();
+    let since_popup = &snapshot[mark_after_popup..];
+    let marker_pos = find_subslice(since_popup, marker).expect("marker position");
+    let before_marker = &since_popup[..marker_pos];
+    assert!(
+        find_subslice(before_marker, b"\x1b8").is_some(),
+        "popup cleanup must finish before later shell output is forwarded. \
+         Bytes before marker ({} bytes, lossy UTF-8):\n{:?}",
+        before_marker.len(),
+        String::from_utf8_lossy(before_marker),
+    );
+
+    let after_marker = &since_popup[marker_pos + marker.len()..];
+    assert!(
+        find_subslice(after_marker, b"\x1b7").is_none(),
+        "no stale popup render should follow shell repaint output. \
+         Bytes after marker ({} bytes, lossy UTF-8):\n{:?}",
+        after_marker.len(),
+        String::from_utf8_lossy(after_marker),
+    );
 
     proc.exit_with_code(0);
 }

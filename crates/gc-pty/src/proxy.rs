@@ -13,7 +13,7 @@ use gc_overlay::{parse_style, PopupTheme};
 use gc_suggest::spec_dirs::resolve_spec_dirs;
 
 use crate::config_watch::spawn_config_watcher;
-use crate::handler::{InputHandler, Keybindings, TriggerPrepared};
+use crate::handler::{InputHandler, Keybindings, OverlayWriteTicket, TriggerPrepared};
 use crate::input::KeyParser;
 use crate::resize::{get_terminal_size, resize_pty};
 use crate::spawn::{spawn_shell, SpawnedShell};
@@ -327,14 +327,76 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                                 );
                                 state.set_cursor_from_report(r, c);
                             } else {
-                                let (screen_rows, screen_cols) = state.screen_dimensions();
-                                tracing::warn!(
-                                    row = r,
-                                    col = c,
-                                    screen_rows,
-                                    screen_cols,
-                                    "CPR coordinates out of screen bounds — ignoring"
-                                );
+                                // Cached screen dimensions are stale (e.g. a
+                                // SIGWINCH was missed or the proxy was
+                                // launched into a tty whose size later
+                                // changed without a kernel notification).
+                                // Re-query the real terminal size and update
+                                // the parser, then re-validate. If the new
+                                // size accommodates the report, accept it
+                                // and let the deficit reset on the next
+                                // trigger. Otherwise drop the stale deficit
+                                // anyway — accumulating it under a wrong
+                                // size makes the popup drift further with
+                                // every render.
+                                let (old_rows, old_cols) = state.screen_dimensions();
+                                let recovered = match get_terminal_size() {
+                                    Ok(size) if (size.rows, size.cols) != (old_rows, old_cols) => {
+                                        state.update_dimensions(size.rows, size.cols);
+                                        // Only the parser dimensions are
+                                        // updated here — `master` lives in
+                                        // the outer task and the PTY-resize
+                                        // path is owned by the SIGWINCH
+                                        // handler. Updating the parser is
+                                        // sufficient to unblock CPR
+                                        // validation and stop the popup
+                                        // from drifting; the shell-side
+                                        // PTY size will reconcile on the
+                                        // next real SIGWINCH. The next
+                                        // popup render that uses the new
+                                        // dimensions only writes through
+                                        // the terminal (not the PTY), so
+                                        // there is no hard correctness
+                                        // dependency on the PTY size for
+                                        // this branch.
+                                        tracing::warn!(
+                                            old_rows,
+                                            old_cols,
+                                            new_rows = size.rows,
+                                            new_cols = size.cols,
+                                            "CPR row/col exceeded cached screen — re-queried \
+                                             terminal size and updated parser dimensions"
+                                        );
+                                        if state.validate_cpr_coordinates(r, c) {
+                                            state.set_cursor_from_report(r, c);
+                                            true
+                                        } else {
+                                            false
+                                        }
+                                    }
+                                    Ok(_) => false,
+                                    Err(e) => {
+                                        tracing::warn!(
+                                            "failed to re-query terminal size on CPR mismatch: {e}"
+                                        );
+                                        false
+                                    }
+                                };
+                                if !recovered {
+                                    let (screen_rows, screen_cols) = state.screen_dimensions();
+                                    tracing::warn!(
+                                        row = r,
+                                        col = c,
+                                        screen_rows,
+                                        screen_cols,
+                                        "CPR coordinates out of screen bounds — dropping \
+                                         stale overlay scroll deficit defensively"
+                                    );
+                                    drop(p);
+                                    if let Ok(mut h) = handler_for_stdin.lock() {
+                                        h.invalidate_overlay_scroll_deficit();
+                                    }
+                                }
                             }
                         }
                         CprAction::ForwardToPty(r, c) => {
@@ -344,11 +406,14 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                                 "CPR response — forwarding to PTY (shell)"
                             );
                             let cpr = format!("\x1b[{r};{c}R");
-                            if pty_writer.write_all(cpr.as_bytes()).is_err() {
-                                return;
-                            }
-                            if pty_writer.flush().is_err() {
-                                return;
+                            if write_pty_or_shutdown(
+                                pty_writer.as_mut(),
+                                cpr.as_bytes(),
+                                "forward shell CPR response",
+                            )
+                            .is_err()
+                            {
+                                break 'stdin;
                             }
                         }
                         CprAction::DropEmpty(r, c) => {
@@ -358,11 +423,14 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                                 "CPR response with empty queue — forwarding defensively"
                             );
                             let cpr = format!("\x1b[{r};{c}R");
-                            if pty_writer.write_all(cpr.as_bytes()).is_err() {
-                                return;
-                            }
-                            if pty_writer.flush().is_err() {
-                                return;
+                            if write_pty_or_shutdown(
+                                pty_writer.as_mut(),
+                                cpr.as_bytes(),
+                                "forward defensive CPR response",
+                            )
+                            .is_err()
+                            {
+                                break 'stdin;
                             }
                         }
                     }
@@ -373,7 +441,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 // locking stdout for the entire loop (which would deadlock
                 // with Task B's stdout writes).
                 let mut render_buf = Vec::new();
-                let forward = {
+                let (forward, render_ticket) = {
                     let mut h = match handler_for_stdin.lock() {
                         Ok(h) => h,
                         Err(e) => {
@@ -381,21 +449,26 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                             break 'stdin;
                         }
                     };
-                    h.process_key(key, &parser_for_stdin, &mut render_buf)
+                    let forward = h.process_key(key, &parser_for_stdin, &mut render_buf);
+                    (forward, h.overlay_write_ticket())
                 };
-                // Briefly lock stdout to flush any popup rendering
                 if !render_buf.is_empty() {
-                    let mut stdout = std::io::stdout().lock();
-                    let _ = stdout.write_all(&render_buf);
-                    let _ = stdout.flush();
+                    if let Err(e) =
+                        write_overlay_if_current(&handler_for_stdin, render_ticket, &render_buf)
+                    {
+                        tracing::debug!("Task A overlay write/flush failed: {e}");
+                        break 'stdin;
+                    }
                 }
-                if !forward.is_empty() {
-                    if pty_writer.write_all(&forward).is_err() {
-                        return;
-                    }
-                    if pty_writer.flush().is_err() {
-                        return;
-                    }
+                if !forward.is_empty()
+                    && write_pty_or_shutdown(
+                        pty_writer.as_mut(),
+                        &forward,
+                        "forward terminal input",
+                    )
+                    .is_err()
+                {
+                    break 'stdin;
                 }
             }
         }
@@ -418,7 +491,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
             };
 
             // Feed bytes through the VT parser to track terminal state
-            let needs_cpr = {
+            let (needs_cpr, display_dirty, viewport_scrolls) = {
                 let mut p = match parser_for_stdout.lock() {
                     Ok(p) => p,
                     Err(e) => {
@@ -427,7 +500,12 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                     }
                 };
                 p.process_bytes(&buf[..n]);
-                p.state_mut().take_cursor_sync_requested()
+                let state = p.state_mut();
+                (
+                    state.take_cursor_sync_requested(),
+                    state.take_display_dirty(),
+                    state.take_viewport_scroll_count(),
+                )
             };
 
             // Lock ordering: take the parser lock to enqueue Ours, drop
@@ -454,16 +532,34 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
             // forward our response to the PTY.
             let send_cpr = cpr_token.is_some();
 
+            let mut cleanup = Vec::new();
+            if display_dirty || viewport_scrolls > 0 {
+                match handler_for_stdout.lock() {
+                    Ok(mut h) => {
+                        h.handle_terminal_output(&mut cleanup, display_dirty, viewport_scrolls);
+                    }
+                    Err(e) => {
+                        tracing::warn!(
+                            "handler mutex poisoned before terminal output cleanup: {e}"
+                        );
+                        break;
+                    }
+                }
+            }
+
             let write_result: std::io::Result<()> = {
                 let mut stdout = std::io::stdout().lock();
-                stdout.write_all(&buf[..n]).and_then(|()| {
-                    if send_cpr {
-                        tracing::debug!("sending CPR request (CSI 6n)");
-                        stdout.write_all(b"\x1b[6n").and_then(|()| stdout.flush())
-                    } else {
-                        stdout.flush()
-                    }
-                })
+                stdout
+                    .write_all(&cleanup)
+                    .and_then(|()| stdout.write_all(&buf[..n]))
+                    .and_then(|()| {
+                        if send_cpr {
+                            tracing::debug!("sending CPR request (CSI 6n)");
+                            stdout.write_all(b"\x1b[6n").and_then(|()| stdout.flush())
+                        } else {
+                            stdout.flush()
+                        }
+                    })
             };
 
             if let Err(e) = write_result {
@@ -525,7 +621,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
 
             if buffer_dirty {
                 let mut render_buf = Vec::new();
-                {
+                let render_ticket = {
                     let mut h = match handler_for_stdout.lock() {
                         Ok(h) => h,
                         Err(e) => {
@@ -544,11 +640,15 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                     {
                         debounce_notify_b.notify_one();
                     }
-                }
+                    h.overlay_write_ticket()
+                };
                 if !render_buf.is_empty() {
-                    let mut stdout = std::io::stdout().lock();
-                    let _ = stdout.write_all(&render_buf);
-                    let _ = stdout.flush();
+                    if let Err(e) =
+                        write_overlay_if_current(&handler_for_stdout, render_ticket, &render_buf)
+                    {
+                        tracing::debug!("Task B overlay write/flush failed: {e}");
+                        break;
+                    }
                 }
             }
 
@@ -565,7 +665,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
 
             if cwd_dirty {
                 let mut render_buf = Vec::new();
-                {
+                let render_ticket = {
                     let mut h = match handler_for_stdout.lock() {
                         Ok(h) => h,
                         Err(e) => {
@@ -576,18 +676,22 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                     if h.auto_trigger_enabled() {
                         h.trigger(&parser_for_stdout, &mut render_buf);
                     }
-                }
+                    h.overlay_write_ticket()
+                };
                 if !render_buf.is_empty() {
-                    let mut stdout = std::io::stdout().lock();
-                    let _ = stdout.write_all(&render_buf);
-                    let _ = stdout.flush();
+                    if let Err(e) =
+                        write_overlay_if_current(&handler_for_stdout, render_ticket, &render_buf)
+                    {
+                        tracing::debug!("Task B overlay write/flush failed: {e}");
+                        break;
+                    }
                 }
             }
 
             // Poll for dynamic (script generator) results — non-blocking.
             {
                 let mut render_buf = Vec::new();
-                {
+                let render_ticket = {
                     let mut h = match handler_for_stdout.lock() {
                         Ok(h) => h,
                         Err(e) => {
@@ -596,11 +700,15 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                         }
                     };
                     h.try_merge_dynamic(&parser_for_stdout, &mut render_buf);
-                }
+                    h.overlay_write_ticket()
+                };
                 if !render_buf.is_empty() {
-                    let mut stdout = std::io::stdout().lock();
-                    let _ = stdout.write_all(&render_buf);
-                    let _ = stdout.flush();
+                    if let Err(e) =
+                        write_overlay_if_current(&handler_for_stdout, render_ticket, &render_buf)
+                    {
+                        tracing::debug!("Task B overlay write/flush failed: {e}");
+                        break;
+                    }
                 }
             }
         }
@@ -650,23 +758,30 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                                 tracing::warn!("parser mutex poisoned on SIGWINCH: {e}");
                             }
                         }
-                        // Re-render popup if visible — buffer output under the
-                        // handler lock, then write to stdout after releasing it.
-                        // This avoids holding handler+stdout simultaneously (the
-                        // same pattern every other code path uses).
+                        // Dismiss popup if visible, then write cleanup through
+                        // the epoch gate so stale resize cleanup cannot land
+                        // after newer shell output invalidated popup ownership.
                         let mut render_buf = Vec::new();
-                        match handler.lock() {
+                        let render_ticket = match handler.lock() {
                             Ok(mut h) => {
                                 h.handle_resize(&parser, &mut render_buf);
+                                Some(h.overlay_write_ticket())
                             }
                             Err(e) => {
                                 tracing::warn!("handler mutex poisoned on SIGWINCH: {e}");
+                                None
                             }
-                        }
+                        };
                         if !render_buf.is_empty() {
-                            let mut stdout = std::io::stdout().lock();
-                            let _ = stdout.write_all(&render_buf);
-                            let _ = stdout.flush();
+                            let Some(render_ticket) = render_ticket else {
+                                continue;
+                            };
+                            if let Err(e) =
+                                write_overlay_if_current(&handler, render_ticket, &render_buf)
+                            {
+                                tracing::debug!("signal overlay write/flush failed: {e}");
+                                break;
+                            }
                         }
                     }
                     Err(e) => {
@@ -791,6 +906,72 @@ fn poll_until(
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum OverlayWriteOutcome {
+    Empty,
+    Written,
+    Stale,
+}
+
+fn write_pty_or_shutdown(
+    pty_writer: &mut dyn Write,
+    bytes: &[u8],
+    operation: &'static str,
+) -> std::io::Result<()> {
+    pty_writer
+        .write_all(bytes)
+        .and_then(|()| pty_writer.flush())
+        .map_err(|e| {
+            tracing::debug!(operation, "PTY write/flush failed: {e}");
+            e
+        })
+}
+
+fn write_overlay_if_current(
+    handler: &Arc<Mutex<InputHandler>>,
+    ticket: OverlayWriteTicket,
+    render_buf: &[u8],
+) -> std::io::Result<OverlayWriteOutcome> {
+    if render_buf.is_empty() {
+        return Ok(OverlayWriteOutcome::Empty);
+    }
+
+    let mut h = match handler.lock() {
+        Ok(h) => h,
+        Err(e) => {
+            tracing::warn!("overlay write skipped (handler lock poisoned): {e}");
+            return Err(std::io::Error::other(format!(
+                "handler lock poisoned during overlay write: {e}"
+            )));
+        }
+    };
+    if h.output_epoch() != ticket.epoch {
+        tracing::trace!(
+            render_epoch = ticket.epoch,
+            current_epoch = h.output_epoch(),
+            "dropping stale overlay render"
+        );
+        h.discard_overlay_ownership_after_stale_write(ticket);
+        return Ok(OverlayWriteOutcome::Stale);
+    }
+
+    let mut stdout = std::io::stdout().lock();
+    let write_result = stdout.write_all(render_buf).and_then(|()| stdout.flush());
+
+    match write_result {
+        Ok(()) => {
+            h.commit_overlay_write(ticket);
+            drop(h);
+            Ok(OverlayWriteOutcome::Written)
+        }
+        Err(e) => {
+            drop(h);
+            tracing::debug!("overlay stdout write/flush failed: {e}");
+            Err(e)
+        }
+    }
+}
+
 /// Debounce loop: waits for buffer-change notifications, resets a timer on each
 /// new notification, and fires suggestions once the timer expires (typing pause).
 async fn debounce_loop(
@@ -819,7 +1000,7 @@ async fn debounce_loop(
         // render_block_ms > 0, we get back a `NeedsBlock` variant carrying
         // the channel receiver and sync geometry.
         let mut render_buf = Vec::new();
-        let prepared = {
+        let (prepared, render_ticket) = {
             let mut h = match handler.lock() {
                 Ok(h) => h,
                 Err(e) => {
@@ -830,12 +1011,14 @@ async fn debounce_loop(
             if h.is_debounce_suppressed() || !h.auto_trigger_enabled() {
                 continue;
             }
-            h.prepare_trigger_with_block(&parser, &mut render_buf)
+            let prepared = h.prepare_trigger_with_block(&parser, &mut render_buf);
+            (prepared, h.overlay_write_ticket())
         };
         if !render_buf.is_empty() {
-            let mut stdout = std::io::stdout().lock();
-            let _ = stdout.write_all(&render_buf);
-            let _ = stdout.flush();
+            if let Err(e) = write_overlay_if_current(&handler, render_ticket, &render_buf) {
+                tracing::debug!("debounce overlay write/flush failed: {e}");
+                break;
+            }
         }
 
         // Phase 2 (only when blocking): await the generator outside the lock,
@@ -888,7 +1071,7 @@ async fn debounce_loop(
             };
 
             let mut render_buf2 = Vec::new();
-            {
+            let render_ticket2 = {
                 let mut h = match handler.lock() {
                     Ok(h) => h,
                     Err(e) => {
@@ -912,11 +1095,13 @@ async fn debounce_loop(
                     fingerprint,
                     &current_word,
                 );
-            }
+                h.overlay_write_ticket()
+            };
             if !render_buf2.is_empty() {
-                let mut stdout = std::io::stdout().lock();
-                let _ = stdout.write_all(&render_buf2);
-                let _ = stdout.flush();
+                if let Err(e) = write_overlay_if_current(&handler, render_ticket2, &render_buf2) {
+                    tracing::debug!("debounce overlay write/flush failed: {e}");
+                    break;
+                }
             }
         }
     }
@@ -933,7 +1118,7 @@ async fn dynamic_merge_loop(
     loop {
         notify.notified().await;
         let mut render_buf = Vec::new();
-        {
+        let render_ticket = {
             let mut h = match handler.lock() {
                 Ok(h) => h,
                 Err(e) => {
@@ -942,11 +1127,13 @@ async fn dynamic_merge_loop(
                 }
             };
             h.try_merge_dynamic(&parser, &mut render_buf);
-        }
+            h.overlay_write_ticket()
+        };
         if !render_buf.is_empty() {
-            let mut stdout = std::io::stdout().lock();
-            let _ = stdout.write_all(&render_buf);
-            let _ = stdout.flush();
+            if let Err(e) = write_overlay_if_current(&handler, render_ticket, &render_buf) {
+                tracing::debug!("dynamic merge overlay write/flush failed: {e}");
+                break;
+            }
         }
     }
 }
@@ -960,7 +1147,7 @@ async fn feedback_tick_loop(notify: Arc<Notify>, handler: Arc<Mutex<InputHandler
                 tokio::time::sleep(Duration::from_millis(next_ms)).await;
             }
             let mut render_buf: Vec<u8> = Vec::new();
-            let keep_running = {
+            let (keep_running, render_ticket) = {
                 let mut h = match handler.lock() {
                     Ok(h) => h,
                     Err(e) => {
@@ -968,7 +1155,7 @@ async fn feedback_tick_loop(notify: Arc<Notify>, handler: Arc<Mutex<InputHandler
                         break;
                     }
                 };
-                if h.feedback_kind().is_loading() {
+                let keep_running = if h.feedback_kind().is_loading() {
                     h.render_indicator_only(&mut render_buf);
                     next_ms = 80;
                     true
@@ -978,15 +1165,17 @@ async fn feedback_tick_loop(notify: Arc<Notify>, handler: Arc<Mutex<InputHandler
                 } else {
                     next_ms = 200;
                     h.feedback_kind().since().is_some()
-                }
+                };
+                (keep_running, h.overlay_write_ticket())
             };
             if !render_buf.is_empty() {
-                let mut stdout = std::io::stdout().lock();
-                if stdout.write_all(&render_buf).is_err() {
-                    break;
-                }
-                if stdout.flush().is_err() {
-                    break;
+                match write_overlay_if_current(&handler, render_ticket, &render_buf) {
+                    Ok(OverlayWriteOutcome::Written | OverlayWriteOutcome::Empty) => {}
+                    Ok(OverlayWriteOutcome::Stale) => break,
+                    Err(e) => {
+                        tracing::debug!("feedback overlay write/flush failed: {e}");
+                        break;
+                    }
                 }
             }
             if !keep_running {
@@ -1031,6 +1220,7 @@ fn dispatch_cpr_response(state: &mut gc_parser::TerminalState, row: u16, col: u1
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyEvent;
     use gc_terminal::Terminal;
 
     #[test]
@@ -1077,6 +1267,14 @@ mod tests {
 
     fn make_state(rows: u16, cols: u16) -> TerminalParser {
         TerminalParser::new(rows, cols)
+    }
+
+    fn parser_with_buffer(buffer: &str) -> Arc<Mutex<TerminalParser>> {
+        let parser = Arc::new(Mutex::new(TerminalParser::new(24, 80)));
+        let cursor = buffer.chars().count();
+        let osc = format!("\x1b]7770;{cursor};{buffer}\x07");
+        parser.lock().unwrap().process_bytes(osc.as_bytes());
+        parser
     }
 
     #[test]
@@ -1155,6 +1353,157 @@ mod tests {
             CprAction::ForwardToPty(7, 3)
         );
         assert_eq!(p.state().cpr_queue_len(), 0);
+    }
+
+    #[test]
+    fn write_overlay_if_current_drops_stale_overlay_after_epoch_bump() {
+        let handler = Arc::new(Mutex::new(
+            InputHandler::new(&[], gc_terminal::TerminalProfile::for_ghostty()).expect("handler"),
+        ));
+        let stale_ticket = handler.lock().expect("handler").overlay_write_ticket();
+
+        {
+            let mut h = handler.lock().expect("handler");
+            h.handle_terminal_output(&mut Vec::new(), false, 1);
+            assert_ne!(h.output_epoch(), stale_ticket.epoch);
+        }
+
+        let outcome = write_overlay_if_current(&handler, stale_ticket, b"stale overlay bytes")
+            .expect("stale overlay should not be an I/O error");
+
+        assert_eq!(outcome, OverlayWriteOutcome::Stale);
+    }
+
+    #[test]
+    fn write_overlay_if_current_discards_owned_state_on_stale_write() {
+        let handler = Arc::new(Mutex::new(
+            InputHandler::new(&[], gc_terminal::TerminalProfile::for_ghostty()).expect("handler"),
+        ));
+        let parser = parser_with_buffer("git ");
+        let (stale_ticket, stale_buf) = {
+            let mut h = handler.lock().expect("handler");
+            let mut render_buf = Vec::new();
+            h.trigger(&parser, &mut render_buf);
+            assert!(!render_buf.is_empty(), "setup: trigger should render popup");
+            (h.overlay_write_ticket(), render_buf)
+        };
+
+        {
+            let mut h = handler.lock().expect("handler");
+            h.handle_terminal_output(&mut Vec::new(), false, 1);
+            assert_ne!(h.output_epoch(), stale_ticket.epoch);
+        }
+
+        let outcome = write_overlay_if_current(&handler, stale_ticket, &stale_buf)
+            .expect("stale overlay should not be an I/O error");
+
+        assert_eq!(outcome, OverlayWriteOutcome::Stale);
+        assert!(
+            !handler.lock().expect("handler").has_overlay_ownership(),
+            "handler must not keep ownership for overlay bytes that never reached stdout"
+        );
+    }
+
+    #[test]
+    fn write_overlay_if_current_preserves_newer_overlay_after_stale_render_race() {
+        let handler = Arc::new(Mutex::new(
+            InputHandler::new(&[], gc_terminal::TerminalProfile::for_ghostty()).expect("handler"),
+        ));
+        let parser = parser_with_buffer("git ");
+        let (stale_ticket, stale_buf) = {
+            let mut h = handler.lock().expect("handler");
+            let mut render_buf = Vec::new();
+            h.trigger(&parser, &mut render_buf);
+            assert!(
+                !render_buf.is_empty(),
+                "setup: first render should produce bytes"
+            );
+            (h.overlay_write_ticket(), render_buf)
+        };
+
+        {
+            let mut h = handler.lock().expect("handler");
+            let mut newer_buf = Vec::new();
+            h.process_key(&KeyEvent::ArrowDown, &parser, &mut newer_buf);
+            assert!(
+                !newer_buf.is_empty(),
+                "setup: newer repaint should produce bytes"
+            );
+            assert_ne!(h.output_epoch(), stale_ticket.epoch);
+            assert!(
+                h.has_overlay_ownership(),
+                "setup: newer overlay ownership should still be current"
+            );
+        }
+
+        let outcome = write_overlay_if_current(&handler, stale_ticket, &stale_buf)
+            .expect("stale overlay should not be an I/O error");
+
+        assert_eq!(outcome, OverlayWriteOutcome::Stale);
+        assert!(
+            handler.lock().expect("handler").has_overlay_ownership(),
+            "dropping an older stale render must not clear newer overlay ownership"
+        );
+    }
+
+    #[test]
+    fn write_overlay_if_current_lets_shell_cleanup_supersede_stale_teardown_cleanup() {
+        let handler = Arc::new(Mutex::new(
+            InputHandler::new(&[], gc_terminal::TerminalProfile::for_ghostty()).expect("handler"),
+        ));
+        let parser = parser_with_buffer("git ");
+
+        {
+            let mut h = handler.lock().expect("handler");
+            let mut initial_buf = Vec::new();
+            h.trigger(&parser, &mut initial_buf);
+            assert!(
+                !initial_buf.is_empty(),
+                "setup: trigger should render popup"
+            );
+            let initial_ticket = h.overlay_write_ticket();
+            h.commit_overlay_write(initial_ticket);
+            assert!(
+                h.has_overlay_ownership(),
+                "setup: committed popup should own a layout"
+            );
+        }
+
+        let (cleanup_ticket, cleanup_buf) = {
+            let mut h = handler.lock().expect("handler");
+            let mut cleanup_buf = Vec::new();
+            let forward = h.process_key(&KeyEvent::Printable('x'), &parser, &mut cleanup_buf);
+            assert_eq!(forward, b"x");
+            assert!(
+                !cleanup_buf.is_empty(),
+                "setup: typing into a visible popup should stage cleanup bytes"
+            );
+            assert!(
+                h.has_overlay_ownership(),
+                "staged teardown cleanup must keep layout ownership until the cleanup is written"
+            );
+            (h.overlay_write_ticket(), cleanup_buf)
+        };
+
+        {
+            let mut h = handler.lock().expect("handler");
+            let mut shell_cleanup = Vec::new();
+            h.handle_terminal_output(&mut shell_cleanup, true, 0);
+            assert!(
+                !shell_cleanup.is_empty(),
+                "shell output racing the pending teardown must clear the still-owned layout"
+            );
+            assert_ne!(h.output_epoch(), cleanup_ticket.epoch);
+        }
+
+        let outcome = write_overlay_if_current(&handler, cleanup_ticket, &cleanup_buf)
+            .expect("stale cleanup should not be an I/O error");
+
+        assert_eq!(outcome, OverlayWriteOutcome::Stale);
+        assert!(
+            !handler.lock().expect("handler").has_overlay_ownership(),
+            "shell-output cleanup should have superseded the stale teardown cleanup"
+        );
     }
 
     struct SpawnedTestChild {

@@ -8,7 +8,10 @@ use gc_overlay::types::{
     OverlayState, PopupLayout, DEFAULT_MAX_POPUP_WIDTH, DEFAULT_MAX_VISIBLE,
     DEFAULT_MIN_POPUP_WIDTH,
 };
-use gc_overlay::{clear_popup, render_indicator_row, render_popup, FeedbackKind, PopupTheme};
+use gc_overlay::{
+    clear_popup, popup_additional_scroll_deficit, render_indicator_row, render_popup, FeedbackKind,
+    PopupTheme,
+};
 use gc_parser::TerminalParser;
 use gc_suggest::{Suggestion, SuggestionEngine};
 use gc_terminal::TerminalProfile;
@@ -168,6 +171,30 @@ enum MergeFreshness {
     PoisonedLock,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct OverlayRenderToken(u64);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct OverlayCleanupToken(u64);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct OverlayWriteTicket {
+    pub(crate) epoch: u64,
+    pub(crate) render_token: Option<OverlayRenderToken>,
+    pub(crate) cleanup_token: Option<OverlayCleanupToken>,
+}
+
+#[derive(Debug, Clone)]
+struct PendingOverlayRender {
+    token: OverlayRenderToken,
+    layout: PopupLayout,
+}
+
+#[derive(Debug, Clone)]
+struct PendingOverlayCleanup {
+    token: OverlayCleanupToken,
+}
+
 /// Result of `InputHandler::prepare_trigger_with_block`.
 ///
 /// When a high-priority async generator is pending and `render_block_ms > 0`,
@@ -242,10 +269,12 @@ pub struct InputHandler {
     /// See `DynamicCtxSnapshot::capture` and `is_stale_against`.
     dynamic_ctx: Option<DynamicCtxSnapshot>,
     terminal_profile: TerminalProfile,
-    /// Accumulated viewport scroll from popup rendering. Persists across
-    /// dismiss/re-trigger cycles because viewport scroll is permanent.
-    /// Reset when a CPR sync corrects the parser's cursor position (new prompt).
-    scroll_deficit: u16,
+    /// Accumulated viewport scroll caused by popup rendering. Persists across
+    /// dismiss/re-trigger cycles because overlay-owned viewport scroll is permanent.
+    /// Parser-observed shell scrolls are already reflected in `TerminalState`
+    /// and must not be stored here. Reset when a CPR sync corrects the parser's
+    /// cursor position (new prompt).
+    overlay_scroll_deficit: u16,
     /// Fingerprint (buffer hash + cursor offset) of the last trigger that
     /// produced a visible popup. Used as an idempotency guard in the trigger
     /// paths (`InputHandler::trigger` and `prepare_trigger_with_block`/
@@ -271,6 +300,19 @@ pub struct InputHandler {
     /// painting sync-only results. 0 disables bounded blocking (paint immediately).
     /// Set from `config.popup.render_block_ms` during the builder phase.
     render_block_ms: u64,
+    /// Wrapping epoch stamp for overlay-owned bytes. Proxy tasks stamp render
+    /// buffers with this value and drop them if shell output advances it before
+    /// the buffer reaches stdout.
+    output_epoch: u64,
+    /// Monotonic token source for popup render buffers staged by `render_at`.
+    overlay_render_generation: u64,
+    /// Layout/scroll state for the latest render buffer. Committed only after
+    /// the proxy writes that exact buffer to stdout.
+    pending_overlay_render: Option<PendingOverlayRender>,
+    /// Monotonic token source for popup cleanup buffers staged by teardown.
+    overlay_cleanup_generation: u64,
+    /// Pending acknowledgement for cleanup bytes that clear `last_layout`.
+    pending_overlay_cleanup: Option<PendingOverlayCleanup>,
 }
 
 impl InputHandler {
@@ -299,11 +341,16 @@ impl InputHandler {
             pending_empty_count: 0,
             dynamic_ctx: None,
             terminal_profile,
-            scroll_deficit: 0,
+            overlay_scroll_deficit: 0,
             last_trigger_fingerprint: None,
             buffer_generation: 0,
             spawned_generation: 0,
             render_block_ms: 80,
+            output_epoch: 0,
+            overlay_render_generation: 0,
+            pending_overlay_render: None,
+            overlay_cleanup_generation: 0,
+            pending_overlay_cleanup: None,
         })
     }
 
@@ -431,13 +478,15 @@ impl InputHandler {
         // debounce timer set trigger_requested but trigger() hasn't fired yet).
         if self.auto_trigger && !auto_trigger {
             if self.visible {
-                if let Some(ref layout) = self.last_layout {
-                    clear_popup(&mut cleanup, layout, &self.terminal_profile);
+                if let Some(layout) = self.last_layout.clone() {
+                    self.bump_output_epoch();
+                    clear_popup(&mut cleanup, &layout, &self.terminal_profile);
                 }
                 self.visible = false;
                 self.suggestions.clear();
                 self.overlay.reset();
                 self.last_layout = None;
+                self.pending_overlay_render = None;
             }
             if let Some(handle) = self.dynamic_task.take() {
                 handle.abort();
@@ -510,6 +559,94 @@ impl InputHandler {
     #[doc(hidden)]
     pub fn feedback_kind(&self) -> &AsyncFeedback {
         &self.feedback
+    }
+
+    #[doc(hidden)]
+    pub fn output_epoch(&self) -> u64 {
+        self.output_epoch
+    }
+
+    pub(crate) fn overlay_write_ticket(&self) -> OverlayWriteTicket {
+        OverlayWriteTicket {
+            epoch: self.output_epoch,
+            render_token: self
+                .pending_overlay_render
+                .as_ref()
+                .map(|pending| pending.token),
+            cleanup_token: self
+                .pending_overlay_cleanup
+                .as_ref()
+                .map(|pending| pending.token),
+        }
+    }
+
+    pub(crate) fn commit_overlay_write(&mut self, ticket: OverlayWriteTicket) {
+        if let Some(token) = ticket.render_token {
+            if let Some(pending) = self
+                .pending_overlay_render
+                .take_if(|pending| pending.token == token)
+            {
+                self.overlay_scroll_deficit = pending.layout.scroll_deficit;
+                self.last_layout = Some(pending.layout);
+            }
+        }
+
+        if let Some(token) = ticket.cleanup_token {
+            if self
+                .pending_overlay_cleanup
+                .take_if(|pending| pending.token == token)
+                .is_some()
+            {
+                self.last_layout = None;
+            }
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn has_overlay_ownership(&self) -> bool {
+        self.visible || self.last_layout.is_some() || !matches!(self.feedback, AsyncFeedback::Idle)
+    }
+
+    pub(crate) fn discard_overlay_ownership_after_stale_write(
+        &mut self,
+        ticket: OverlayWriteTicket,
+    ) {
+        if let Some(token) = ticket.cleanup_token {
+            if self
+                .pending_overlay_cleanup
+                .take_if(|pending| pending.token == token)
+                .is_some()
+            {
+                return;
+            }
+        }
+
+        let Some(token) = ticket.render_token else {
+            return;
+        };
+        let Some(pending) = self.pending_overlay_render.as_ref() else {
+            return;
+        };
+        if pending.token != token {
+            return;
+        }
+
+        self.pending_overlay_render = None;
+        self.visible = false;
+        self.suggestions.clear();
+        self.overlay.reset();
+        self.last_layout = None;
+        self.debounce_suppressed = false;
+        if let Some(handle) = self.dynamic_task.take() {
+            handle.abort();
+        }
+        self.dynamic_rx = None;
+        self.dynamic_ctx = None;
+        self.feedback = AsyncFeedback::Idle;
+        self.pending_failed.clear();
+        self.pending_empty_count = 0;
+        self.last_trigger_fingerprint = None;
+        self.bump_output_epoch();
     }
 
     /// Returns the current suggestions slice (read-only).
@@ -658,6 +795,7 @@ impl InputHandler {
             }
             KeyEvent::Printable(_) | KeyEvent::Backspace => {
                 let forward = key_to_bytes(key);
+                self.teardown_popup(stdout, true);
                 // Defer re-trigger to Task B after shell updates buffer
                 self.trigger_requested = true;
                 forward
@@ -855,7 +993,7 @@ impl InputHandler {
                     // CPR sync means the parser's cursor_row now reflects reality,
                     // so any accumulated scroll deficit from prior renders is stale.
                     if p.state_mut().take_cpr_synced() {
-                        self.scroll_deficit = 0;
+                        self.overlay_scroll_deficit = 0;
                     }
                     let state = p.state();
                     let buffer = state.command_buffer().unwrap_or("").to_string();
@@ -996,7 +1134,7 @@ impl InputHandler {
             match parser.lock() {
                 Ok(mut p) => {
                     if p.state_mut().take_cpr_synced() {
-                        self.scroll_deficit = 0;
+                        self.overlay_scroll_deficit = 0;
                     }
                     let state = p.state();
                     let buffer = state.command_buffer().unwrap_or("").to_string();
@@ -1132,12 +1270,12 @@ impl InputHandler {
         rx_after_recv: Option<mpsc::Receiver<DynamicResult>>,
         rx_on_timeout: Option<mpsc::Receiver<DynamicResult>>,
         sync_suggestions: Vec<Suggestion>,
-        cursor_row: u16,
-        cursor_col: u16,
-        screen_rows: u16,
-        screen_cols: u16,
+        _cursor_row: u16,
+        _cursor_col: u16,
+        _screen_rows: u16,
+        _screen_cols: u16,
         fingerprint: (u64, usize),
-        current_word: &str,
+        _current_word: &str,
     ) {
         let was_timeout = rx_on_timeout.is_some();
         if let Some(rx) = rx_on_timeout {
@@ -1276,14 +1414,10 @@ impl InputHandler {
         if disconnected {
             self.dynamic_ctx = None;
         }
-        // Render against the live cursor/screen geometry: when the buffer
-        // drifted (live_word differs from spawn-time current_word) the
-        // captured cursor row is no longer where the prompt sits.
-        if live_word == current_word {
-            self.render_at(stdout, cursor_row, cursor_col, screen_rows, screen_cols);
-        } else {
-            self.render(parser, stdout);
-        }
+        // Render against live cursor/screen geometry. The logical word can be
+        // unchanged while shell output, wrapping, or viewport scroll moved the
+        // visual cursor since the bounded-block trigger captured its geometry.
+        self.render(parser, stdout);
         self.last_trigger_fingerprint = Some(fingerprint);
     }
 
@@ -1718,12 +1852,31 @@ impl InputHandler {
         // For Synchronized strategy, DECSET 2026 markers handle this at the
         // terminal level so separate writes are fine.
         let mut buf = Vec::new();
-
-        if let Some(ref layout) = self.last_layout {
-            clear_popup(&mut buf, layout, &self.terminal_profile);
-        }
+        self.bump_output_epoch();
 
         let feedback = self.current_feedback_kind();
+        let additional_scroll = popup_additional_scroll_deficit(
+            &self.suggestions,
+            cursor_row,
+            screen_rows,
+            screen_cols,
+            self.max_visible,
+            DEFAULT_MIN_POPUP_WIDTH,
+            &self.theme,
+            self.overlay_scroll_deficit,
+            &feedback,
+        );
+
+        let feedback_only_repaint_after_scroll = self.suggestions.is_empty()
+            && !matches!(&feedback, FeedbackKind::None)
+            && self.overlay_scroll_deficit > 0;
+
+        if additional_scroll == 0 && !feedback_only_repaint_after_scroll {
+            if let Some(ref layout) = self.last_layout {
+                clear_popup(&mut buf, layout, &self.terminal_profile);
+            }
+        }
+
         let layout = render_popup(
             &mut buf,
             &self.suggestions,
@@ -1736,14 +1889,18 @@ impl InputHandler {
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
             &self.theme,
-            self.scroll_deficit,
+            self.overlay_scroll_deficit,
             feedback,
             &self.terminal_profile,
         );
         let _ = stdout.write_all(&buf);
         let _ = stdout.flush();
-        self.scroll_deficit = layout.scroll_deficit;
-        self.last_layout = Some(layout);
+        self.overlay_render_generation = self.overlay_render_generation.wrapping_add(1);
+        self.pending_overlay_cleanup = None;
+        self.pending_overlay_render = Some(PendingOverlayRender {
+            token: OverlayRenderToken(self.overlay_render_generation),
+            layout,
+        });
     }
 
     fn current_feedback_kind(&self) -> FeedbackKind {
@@ -1783,6 +1940,7 @@ impl InputHandler {
         };
         let feedback = self.current_feedback_kind();
         let mut buf = Vec::new();
+        self.bump_output_epoch();
         render_indicator_row(&mut buf, &layout, &self.theme, feedback);
         let _ = stdout.write_all(&buf);
         let _ = stdout.flush();
@@ -1811,6 +1969,7 @@ impl InputHandler {
                     let borders = self.theme.borders;
                     let indicator_row = layout.start_row + layout.height - 1 - u16::from(borders);
                     let mut buf = Vec::with_capacity(layout.width as usize * 4 + 64);
+                    self.bump_output_epoch();
                     buf.extend_from_slice(b"\x1b[s"); // save cursor
                     let _ = write!(
                         &mut buf,
@@ -1860,18 +2019,77 @@ impl InputHandler {
         true
     }
 
+    pub fn handle_terminal_output(
+        &mut self,
+        stdout: &mut dyn Write,
+        display_dirty: bool,
+        viewport_scrolls: u16,
+    ) {
+        if display_dirty || viewport_scrolls > 0 {
+            self.bump_output_epoch();
+        }
+
+        if viewport_scrolls > 0 {
+            self.last_trigger_fingerprint = None;
+            // Shell-side viewport scrolls move the parser's cursor_row
+            // independently of any overlay-induced scrolling. The cached
+            // overlay_scroll_deficit was relative to the pre-scroll cursor
+            // position; once the parser tracks the new shell scrolls, the
+            // deficit no longer maps to anything meaningful. Drop it so the
+            // next popup recomputes from a clean state. The next CPR sync at
+            // a prompt boundary would do this anyway, but resetting eagerly
+            // avoids one frame of misposition between the scroll and the
+            // sync.
+            self.overlay_scroll_deficit = 0;
+        }
+
+        if display_dirty
+            && (self.visible
+                || self.last_layout.is_some()
+                || !matches!(self.feedback, AsyncFeedback::Idle))
+        {
+            self.bump_output_epoch();
+            self.teardown_popup(stdout, true);
+            let cleanup_ticket = self.overlay_write_ticket();
+            self.commit_overlay_write(cleanup_ticket);
+        }
+    }
+
+    /// Drop the cached overlay scroll deficit. Called from the proxy's CPR
+    /// dispatch when a response arrives whose coordinates we cannot reconcile
+    /// with our cached screen dimensions even after re-querying the terminal
+    /// size — at that point the deficit is meaningless and continuing to
+    /// accumulate it would push subsequent popups further off the actual
+    /// cursor row.
+    pub fn invalidate_overlay_scroll_deficit(&mut self) {
+        self.overlay_scroll_deficit = 0;
+    }
+
     fn dismiss(&mut self, stdout: &mut dyn Write) {
-        if let Some(ref layout) = self.last_layout {
+        self.teardown_popup(stdout, false);
+    }
+
+    fn teardown_popup(&mut self, stdout: &mut dyn Write, preserve_trigger_request: bool) {
+        if let Some(layout) = self.last_layout.clone() {
             let mut buf = Vec::new();
-            clear_popup(&mut buf, layout, &self.terminal_profile);
+            self.bump_output_epoch();
+            clear_popup(&mut buf, &layout, &self.terminal_profile);
             let _ = stdout.write_all(&buf);
             let _ = stdout.flush();
+            self.overlay_cleanup_generation = self.overlay_cleanup_generation.wrapping_add(1);
+            self.pending_overlay_cleanup = Some(PendingOverlayCleanup {
+                token: OverlayCleanupToken(self.overlay_cleanup_generation),
+            });
+        } else {
+            self.pending_overlay_cleanup = None;
         }
+        self.pending_overlay_render = None;
         self.visible = false;
         self.suggestions.clear();
         self.overlay.reset();
-        self.last_layout = None;
-        self.trigger_requested = false;
+        if !preserve_trigger_request {
+            self.trigger_requested = false;
+        }
         self.debounce_suppressed = false;
         if let Some(handle) = self.dynamic_task.take() {
             handle.abort();
@@ -1885,6 +2103,10 @@ impl InputHandler {
         // ESC-then-retrigger on the same buffer) runs a fresh suggest_sync
         // instead of short-circuiting.
         self.last_trigger_fingerprint = None;
+    }
+
+    fn bump_output_epoch(&mut self) {
+        self.output_epoch = self.output_epoch.wrapping_add(1);
     }
 
     /// Compute the accept bytes for the currently-selected suggestion using
@@ -1986,7 +2208,7 @@ impl InputHandler {
             self.dismiss(stdout);
         }
         // Screen dimensions changed — prior scroll deficit is meaningless.
-        self.scroll_deficit = 0;
+        self.overlay_scroll_deficit = 0;
     }
 
     /// Abort any in-flight dynamic generator task. Called during proxy
@@ -2623,6 +2845,10 @@ mod tests {
 
         assert!(!handler.visible);
         assert!(handler.suggestions.is_empty());
+        assert!(handler.last_layout.is_some());
+        let cleanup_ticket = handler.overlay_write_ticket();
+        assert!(cleanup_ticket.cleanup_token.is_some());
+        handler.commit_overlay_write(cleanup_ticket);
         assert!(handler.last_layout.is_none());
         assert!(!stdout_buf.is_empty());
     }
@@ -2730,11 +2956,16 @@ mod tests {
             pending_empty_count: 0,
             dynamic_ctx: None,
             terminal_profile: TerminalProfile::for_ghostty(),
-            scroll_deficit: 0,
+            overlay_scroll_deficit: 0,
             last_trigger_fingerprint: None,
             buffer_generation: 0,
             spawned_generation: 0,
             render_block_ms: 0,
+            output_epoch: 0,
+            overlay_render_generation: 0,
+            pending_overlay_render: None,
+            overlay_cleanup_generation: 0,
+            pending_overlay_cleanup: None,
         }
     }
 
@@ -3156,6 +3387,51 @@ mod tests {
         let mut buf = Vec::new();
         handler.process_key(&KeyEvent::Printable(' '), &parser, &mut buf);
         assert!(handler.has_pending_trigger());
+    }
+
+    #[test]
+    fn test_visible_printable_clears_popup_before_forwarding() {
+        let mut handler = make_visible_handler(numbered_suggestions(3));
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+
+        let result = handler.process_key(&KeyEvent::Printable('a'), &parser, &mut buf);
+
+        assert_eq!(result, b"a");
+        assert!(!handler.visible);
+        assert!(handler.last_layout.is_some());
+        assert!(handler.has_pending_trigger());
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            output.contains("\x1b[6;1H"),
+            "clear must be emitted before forwarding printable key: {output:?}"
+        );
+        let cleanup_ticket = handler.overlay_write_ticket();
+        assert!(cleanup_ticket.cleanup_token.is_some());
+        handler.commit_overlay_write(cleanup_ticket);
+        assert!(handler.last_layout.is_none());
+    }
+
+    #[test]
+    fn test_visible_backspace_clears_popup_before_forwarding() {
+        let mut handler = make_visible_handler(numbered_suggestions(3));
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+
+        let result = handler.process_key(&KeyEvent::Backspace, &parser, &mut buf);
+
+        assert_eq!(result, vec![0x7f]);
+        assert!(!handler.visible);
+        assert!(handler.last_layout.is_some());
+        assert!(handler.has_pending_trigger());
+        assert!(
+            !buf.is_empty(),
+            "backspace should clear the visible popup first"
+        );
+        let cleanup_ticket = handler.overlay_write_ticket();
+        assert!(cleanup_ticket.cleanup_token.is_some());
+        handler.commit_overlay_write(cleanup_ticket);
+        assert!(handler.last_layout.is_none());
     }
 
     #[test]
@@ -3728,6 +4004,265 @@ mod tests {
     }
 
     #[test]
+    fn test_terminal_output_dismisses_owned_popup_before_shell_bytes() {
+        let mut handler = make_visible_handler(numbered_suggestions(3));
+        let mut buf = Vec::new();
+
+        handler.handle_terminal_output(&mut buf, true, 0);
+
+        assert!(!handler.visible);
+        assert!(handler.last_layout.is_none());
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            output.contains("\x1b[6;1H"),
+            "terminal output cleanup should clear the owned popup: {output:?}"
+        );
+    }
+
+    #[test]
+    fn test_terminal_output_preserves_pending_trigger() {
+        let mut handler = make_visible_handler(numbered_suggestions(3));
+        handler.trigger_requested = true;
+        let mut buf = Vec::new();
+        let before_epoch = handler.output_epoch();
+
+        handler.handle_terminal_output(&mut buf, true, 0);
+
+        assert!(handler.has_pending_trigger());
+        assert!(!handler.visible);
+        assert!(handler.last_layout.is_none());
+        assert!(handler.output_epoch() > before_epoch);
+    }
+
+    #[test]
+    fn test_display_dirty_terminal_output_bumps_epoch_without_owned_popup() {
+        let mut handler = make_handler();
+        let before_epoch = handler.output_epoch();
+        let mut buf = Vec::new();
+
+        handler.handle_terminal_output(&mut buf, true, 0);
+
+        assert!(buf.is_empty());
+        assert!(
+            handler.output_epoch() > before_epoch,
+            "display-changing PTY output must invalidate pending overlay buffers"
+        );
+    }
+
+    #[test]
+    fn test_terminal_output_clears_feedback_only_layout_when_not_visible() {
+        let mut handler = make_handler();
+        handler.feedback = AsyncFeedback::Loading {
+            spawned_at: std::time::Instant::now(),
+        };
+        handler.last_layout = Some(PopupLayout {
+            start_row: 5,
+            start_col: 0,
+            width: 20,
+            height: 1,
+            scroll_deficit: 0,
+        });
+        let mut buf = Vec::new();
+
+        handler.handle_terminal_output(&mut buf, true, 0);
+
+        assert!(!buf.is_empty());
+        assert!(handler.last_layout.is_none());
+        assert!(matches!(handler.feedback, AsyncFeedback::Idle));
+    }
+
+    #[test]
+    fn test_terminal_scroll_resets_overlay_scroll_deficit_when_hidden() {
+        // Shell-side viewport scrolls move the parser's cursor independently
+        // of the overlay's bookkeeping. Once a shell scroll lands, the
+        // cached deficit no longer corresponds to any real cursor offset
+        // (parser saturates at the bottom while the real cursor advances),
+        // and carrying it forward causes the next popup to render above the
+        // actual cursor row — the bug captured in the
+        // `codex/fix-terminal-rendering-corruption` log evidence
+        // (`row=79 col=1 screen_rows=35`). Resetting eagerly is the
+        // recovery path; a real CPR sync at the next prompt boundary
+        // would do the same thing one frame later.
+        let mut handler = make_handler();
+        handler.overlay_scroll_deficit = 3;
+        let mut buf = Vec::new();
+
+        handler.handle_terminal_output(&mut buf, false, 2);
+
+        assert!(buf.is_empty());
+        assert_eq!(handler.overlay_scroll_deficit, 0);
+    }
+
+    #[test]
+    fn test_invalidate_overlay_scroll_deficit_clears_cached_value() {
+        let mut handler = make_handler();
+        handler.overlay_scroll_deficit = 7;
+        handler.invalidate_overlay_scroll_deficit();
+        assert_eq!(handler.overlay_scroll_deficit, 0);
+    }
+
+    #[test]
+    fn test_hidden_terminal_scroll_does_not_create_overlay_scroll_deficit() {
+        let mut handler = make_handler();
+        let mut buf = Vec::new();
+
+        handler.handle_terminal_output(&mut buf, false, 2);
+
+        assert!(buf.is_empty());
+        assert_eq!(handler.overlay_scroll_deficit, 0);
+    }
+
+    #[test]
+    fn test_render_at_skips_old_clear_when_new_render_scrolls() {
+        let mut handler = make_visible_handler(numbered_suggestions(8));
+        handler.overlay_scroll_deficit = 4;
+        handler.last_layout = Some(PopupLayout {
+            start_row: 19,
+            start_col: 70,
+            width: 10,
+            height: 2,
+            scroll_deficit: 4,
+        });
+        let mut buf = Vec::new();
+
+        handler.render_at(&mut buf, 22, 0, 24, 80);
+
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            !output.contains("\x1b[20;71H"),
+            "stale clear at old popup coordinates must be skipped before viewport scroll: {output:?}"
+        );
+        assert!(
+            output.contains("\x1b[24;1H"),
+            "new render should still scroll from the bottom row: {output:?}"
+        );
+    }
+
+    #[test]
+    fn test_render_at_skips_old_clear_when_feedback_only_render_scrolls() {
+        let mut handler = make_handler();
+        handler.overlay_scroll_deficit = 4;
+        handler.last_layout = Some(PopupLayout {
+            start_row: 19,
+            start_col: 70,
+            width: 10,
+            height: 1,
+            scroll_deficit: 4,
+        });
+        handler.feedback = AsyncFeedback::Loading {
+            spawned_at: std::time::Instant::now(),
+        };
+        let mut buf = Vec::new();
+
+        handler.render_at(&mut buf, 23, 0, 24, 80);
+        handler.commit_overlay_write(handler.overlay_write_ticket());
+
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            !output.contains("\x1b[20;71H"),
+            "stale feedback-only clear at old popup coordinates must be skipped: {output:?}"
+        );
+        assert_eq!(
+            handler
+                .last_layout
+                .as_ref()
+                .expect("feedback layout")
+                .scroll_deficit,
+            handler.overlay_scroll_deficit
+        );
+    }
+
+    #[test]
+    fn test_render_at_bumps_output_epoch_for_proxy_stale_write_gate() {
+        let mut handler = make_visible_handler(numbered_suggestions(3));
+        let before_epoch = handler.output_epoch();
+        let mut buf = Vec::new();
+
+        handler.render_at(&mut buf, 5, 0, 24, 80);
+
+        assert!(!buf.is_empty());
+        assert!(handler.output_epoch() > before_epoch);
+    }
+
+    #[test]
+    fn test_render_at_commits_layout_only_after_overlay_write_ack() {
+        let mut handler = make_visible_handler(numbered_suggestions(8));
+        handler.overlay_scroll_deficit = 4;
+        handler.last_layout = Some(PopupLayout {
+            start_row: 19,
+            start_col: 70,
+            width: 10,
+            height: 2,
+            scroll_deficit: 4,
+        });
+        let mut buf = Vec::new();
+
+        handler.render_at(&mut buf, 22, 0, 24, 80);
+
+        assert!(!buf.is_empty());
+        assert_eq!(
+            handler.overlay_scroll_deficit, 4,
+            "staged render must not commit scroll deficit before stdout write succeeds"
+        );
+        let layout = handler.last_layout.as_ref().expect("committed old layout");
+        assert_eq!(layout.start_row, 19);
+        assert_eq!(layout.start_col, 70);
+        assert_eq!(layout.scroll_deficit, 4);
+
+        handler.commit_overlay_write(handler.overlay_write_ticket());
+
+        let layout = handler.last_layout.as_ref().expect("committed new layout");
+        assert_eq!(handler.overlay_scroll_deficit, layout.scroll_deficit);
+        assert_ne!(
+            layout.start_col, 70,
+            "acknowledged render should replace the previous committed layout"
+        );
+    }
+
+    #[test]
+    fn test_apply_block_result_uses_live_geometry_when_word_unchanged() {
+        let mut handler = make_handler();
+        handler.prime_dynamic_ctx_for_buffer("git checkout main", 17);
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        {
+            let mut p = parser.lock().unwrap();
+            p.process_bytes(b"\x1b[11;1H");
+            p.state_mut()
+                .predict_command_buffer("git checkout main".to_string(), 17);
+        }
+        let mut buf = Vec::new();
+
+        handler.apply_block_result(
+            &parser,
+            &mut buf,
+            Some(DynamicResult::Loaded {
+                provider: ProviderTag::Git(gc_suggest::git::GitQueryKind::Branches),
+                suggestions: vec![Suggestion {
+                    text: "main".into(),
+                    kind: SuggestionKind::GitBranch,
+                    source: SuggestionSource::Git,
+                    ..Default::default()
+                }],
+            }),
+            None,
+            None,
+            Vec::new(),
+            0,
+            0,
+            24,
+            80,
+            (0, 0),
+            "main",
+        );
+
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            output.contains("\x1b[12;1H"),
+            "async block merge must render at live cursor row, not spawn-time row: {output:?}"
+        );
+    }
+
+    #[test]
     fn test_manual_trigger_clears_debounce_suppression() {
         let mut handler = make_handler();
         let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
@@ -3979,6 +4514,7 @@ mod tests {
 
         let mut stdout = Vec::new();
         handler.trigger(&parser, &mut stdout);
+        handler.commit_overlay_write(handler.overlay_write_ticket());
 
         let layout = handler
             .last_layout

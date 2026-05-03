@@ -46,16 +46,30 @@ impl Perform for TerminalState {
         if ignore {
             return;
         }
-        // Blanket-discard any CSI sequence carrying intermediate bytes.
-        // Examples: `CSI ? 25 h` (DECSET show cursor, intermediate `?`),
-        // `CSI ! p` (DECSTR soft reset, intermediate `!`), `CSI > c` (DA2).
-        // None of these affect the subset of state we track (cursor
-        // position, screen dimensions, prompt/cwd bookkeeping), so the
-        // cleanest handling is to ignore them entirely. This is a
-        // deliberate narrowing of the state machine, not an oversight —
-        // if a future feature ever needs to honor a specific
-        // `CSI <intermediate> <final>` sequence, it MUST pattern-match on
-        // the intermediate BEFORE this early return runs, not after.
+        // Handle the narrow private-mode subset that affects tracked cursor
+        // geometry before the blanket intermediate discard below.
+        if intermediates == b"?" {
+            match action {
+                'h' | 'l' => {
+                    let enabled = action == 'h';
+                    for subparams in params.iter() {
+                        if subparams.first().copied() == Some(7) {
+                            self.set_autowrap(enabled);
+                        }
+                    }
+                }
+                _ => {}
+            }
+            return;
+        }
+
+        // Blanket-discard remaining unsupported CSI sequences carrying
+        // intermediate/private-prefix bytes, such as `CSI > c` (DA2).
+        // This is a deliberate narrowing of the state machine, not an
+        // assertion that every sequence is side-effect free. If a future
+        // feature needs to honor a specific `CSI <intermediate> <final>`
+        // sequence, it MUST pattern-match on the intermediate BEFORE this
+        // early return runs, not after.
         if !intermediates.is_empty() {
             return;
         }
@@ -98,14 +112,24 @@ impl Perform for TerminalState {
             // ED — erase in display
             'J' => {
                 let mode = csi_param(params, 0, 0);
-                if mode == 2 || mode == 3 {
-                    self.set_cursor(0, 0);
-                }
+                self.erase_display(mode);
             }
+            // EL — erase in line
+            'K' => self.mark_display_changed(),
+            // ICH — insert character
+            '@' => self.mark_display_changed(),
+            // IL — insert line
+            'L' => self.mark_display_changed(),
+            // DL — delete line
+            'M' => self.mark_display_changed(),
+            // DCH — delete character
+            'P' => self.mark_display_changed(),
+            // ECH — erase character
+            'X' => self.mark_display_changed(),
             // SU — scroll up: content scrolls, cursor does NOT move
-            'S' => {}
+            'S' => self.scroll_up(csi_param(params, 0, 1)),
             // SD — scroll down: content scrolls, cursor does NOT move
-            'T' => {}
+            'T' => self.scroll_down(csi_param(params, 0, 1)),
             // ANSI save/restore cursor (SCO sequences)
             's' => self.save_cursor(),
             'u' => self.restore_cursor(),
@@ -115,10 +139,10 @@ impl Perform for TerminalState {
             // forwards the response back to the program inside the PTY
             // that asked for it. Other DSR variants (e.g. CSI 5n) do not
             // produce a CPR response and must NOT enqueue. The local
-            // intermediates guard is defensive: the blanket-discard
-            // above already drops sequences with intermediates, but
-            // scoping the check here keeps DEC private DSR (`CSI ? 6n`)
-            // safe even if the outer filter is ever relocated.
+            // intermediates guard is defensive: private `?` CSI sequences
+            // return through the private-mode guard above before ordinary
+            // DSR handling, and this arm should remain scoped to plain DSR
+            // even if surrounding filters move later.
             'n' if intermediates.is_empty() && csi_param(params, 0, 0) == 6 => {
                 self.enqueue_cpr(CprOwner::Shell);
             }
@@ -519,8 +543,10 @@ mod tests {
     fn test_line_wrap() {
         let mut p = TerminalParser::new(24, 5);
         p.process_bytes(b"abcde");
-        // After 5 chars in a 5-col terminal, should wrap to next line
-        assert_eq!(p.state().cursor_position(), (1, 0));
+        // xterm-style autowrap is pending after filling the last column.
+        assert_eq!(p.state().cursor_position(), (0, 4));
+        p.process_bytes(b"f");
+        assert_eq!(p.state().cursor_position(), (1, 1));
     }
 
     #[test]
@@ -598,9 +624,11 @@ mod tests {
     fn test_print_cjk_exact_fit_no_early_wrap() {
         let mut p = TerminalParser::new(24, 4);
         // 2 CJK chars (2 cols each) in 4-col terminal — exact fit
-        // '日' cols 0-1, '本' cols 2-3, cursor wraps to (1, 0)
+        // '日' cols 0-1, '本' cols 2-3, cursor remains pending at col 3.
         p.process_bytes("日本".as_bytes());
-        assert_eq!(p.state().cursor_position(), (1, 0));
+        assert_eq!(p.state().cursor_position(), (0, 3));
+        p.process_bytes(b"x");
+        assert_eq!(p.state().cursor_position(), (1, 1));
     }
 
     #[test]
@@ -692,11 +720,191 @@ mod tests {
     }
 
     #[test]
+    fn test_private_decawm_reset_disables_autowrap() {
+        let mut p = TerminalParser::new(3, 3);
+
+        p.process_bytes(b"\x1b[?7l");
+        p.process_bytes(b"abcd");
+
+        assert_eq!(p.state().cursor_position(), (0, 2));
+        assert_eq!(p.state().viewport_scroll_count(), 0);
+    }
+
+    #[test]
+    fn test_private_decawm_set_reenables_autowrap_after_reset() {
+        let mut p = TerminalParser::new(3, 3);
+
+        p.process_bytes(b"\x1b[?7l");
+        p.process_bytes(b"abc");
+        p.process_bytes(b"\x1b[?7h");
+        p.process_bytes(b"de");
+
+        assert_eq!(p.state().cursor_position(), (1, 1));
+    }
+
+    #[test]
+    fn test_private_decawm_honored_among_multiple_private_params() {
+        let mut p = TerminalParser::new(3, 3);
+
+        p.process_bytes(b"\x1b[?1;7l");
+        p.process_bytes(b"abcd");
+        assert_eq!(p.state().cursor_position(), (0, 2));
+
+        p.process_bytes(b"\x1b[1;1H");
+        p.process_bytes(b"\x1b[?1;7h");
+        p.process_bytes(b"abcde");
+
+        assert_eq!(p.state().cursor_position(), (1, 2));
+    }
+
+    #[test]
+    fn test_csi_su_tracks_scroll_without_moving_cursor() {
+        let mut p = make_parser();
+        p.process_bytes(b"\x1b[3;1H");
+        p.process_bytes(b"\x1b[2S");
+
+        assert_eq!(p.state().cursor_position(), (2, 0));
+        assert_eq!(p.state_mut().take_viewport_scroll_count(), 2);
+    }
+
+    #[test]
+    fn test_csi_sd_keeps_cursor_and_moves_prompt_row_down() {
+        let mut p = make_parser();
+        p.process_bytes(b"\x1b[3;1H");
+        p.process_bytes(b"\x1b]7771;A\x07");
+        let _ = p.state_mut().take_cursor_sync_requested();
+
+        p.process_bytes(b"\x1b[2T");
+
+        assert_eq!(p.state().cursor_position(), (2, 0));
+        assert_eq!(p.state().prompt_row(), Some(4));
+        assert!(p.state_mut().take_display_dirty());
+    }
+
+    #[test]
+    fn test_printable_marks_display_dirty_but_osc7772_does_not() {
+        let mut p = make_parser();
+
+        p.process_bytes(b"\x1b]7772;0;\x07");
+        assert!(!p.state_mut().take_display_dirty());
+
+        p.process_bytes(b"a");
+        assert!(p.state_mut().take_display_dirty());
+        assert!(!p.state_mut().take_display_dirty());
+    }
+
+    #[test]
+    fn test_cursor_movement_marks_display_dirty() {
+        let mut p = make_parser();
+
+        p.process_bytes(b"\x1b[10;1H");
+
+        assert!(p.state_mut().take_display_dirty());
+        assert!(!p.state_mut().take_display_dirty());
+    }
+
+    #[test]
     fn test_csi_ed_clear_screen() {
         let mut p = make_parser();
         p.process_bytes(b"\x1b[10;15H"); // move cursor
         p.process_bytes(b"\x1b[2J"); // ED mode 2: clear screen
         assert_eq!(p.state().cursor_position(), (0, 0));
+    }
+
+    #[test]
+    fn test_csi_ed_all_modes_mark_display_dirty() {
+        for sequence in [
+            b"\x1b[J".as_slice(),
+            b"\x1b[0J",
+            b"\x1b[1J",
+            b"\x1b[2J",
+            b"\x1b[3J",
+        ] {
+            let mut p = make_parser();
+            p.process_bytes(b"\x1b[10;15H");
+            assert!(p.state_mut().take_display_dirty());
+
+            p.process_bytes(sequence);
+
+            assert!(
+                p.state_mut().take_display_dirty(),
+                "{sequence:?} should dirty display"
+            );
+            assert!(
+                !p.state_mut().take_display_dirty(),
+                "{sequence:?} dirty flag should be one-shot"
+            );
+        }
+    }
+
+    #[test]
+    fn test_csi_el_all_modes_mark_display_dirty_without_moving_cursor() {
+        for sequence in [b"\x1b[K".as_slice(), b"\x1b[0K", b"\x1b[1K", b"\x1b[2K"] {
+            let mut p = make_parser();
+            p.process_bytes(b"\x1b[10;15H");
+            assert!(p.state_mut().take_display_dirty());
+
+            p.process_bytes(sequence);
+
+            assert_eq!(p.state().cursor_position(), (9, 14));
+            assert!(
+                p.state_mut().take_display_dirty(),
+                "{sequence:?} should dirty display"
+            );
+            assert!(
+                !p.state_mut().take_display_dirty(),
+                "{sequence:?} dirty flag should be one-shot"
+            );
+        }
+    }
+
+    #[test]
+    fn test_csi_insert_delete_and_erase_chars_mark_display_dirty_without_moving_cursor() {
+        for sequence in [
+            b"\x1b[@".as_slice(),
+            b"\x1b[4@",
+            b"\x1b[P",
+            b"\x1b[4P",
+            b"\x1b[X",
+            b"\x1b[4X",
+        ] {
+            let mut p = make_parser();
+            p.process_bytes(b"\x1b[10;15H");
+            assert!(p.state_mut().take_display_dirty());
+
+            p.process_bytes(sequence);
+
+            assert_eq!(p.state().cursor_position(), (9, 14));
+            assert!(
+                p.state_mut().take_display_dirty(),
+                "{sequence:?} should dirty display"
+            );
+            assert!(
+                !p.state_mut().take_display_dirty(),
+                "{sequence:?} dirty flag should be one-shot"
+            );
+        }
+    }
+
+    #[test]
+    fn test_csi_insert_and_delete_lines_mark_display_dirty_without_moving_cursor() {
+        for sequence in [b"\x1b[L".as_slice(), b"\x1b[4L", b"\x1b[M", b"\x1b[4M"] {
+            let mut p = make_parser();
+            p.process_bytes(b"\x1b[10;15H");
+            assert!(p.state_mut().take_display_dirty());
+
+            p.process_bytes(sequence);
+
+            assert_eq!(p.state().cursor_position(), (9, 14));
+            assert!(
+                p.state_mut().take_display_dirty(),
+                "{sequence:?} should dirty display"
+            );
+            assert!(
+                !p.state_mut().take_display_dirty(),
+                "{sequence:?} dirty flag should be one-shot"
+            );
+        }
     }
 
     // -- Cursor save/restore --
@@ -1213,9 +1421,9 @@ mod tests {
 
     #[test]
     fn csi_private_6n_does_not_enqueue() {
-        // CSI ? 6n is DEC private DSR — carries an intermediate byte `?`.
-        // The blanket-discard at the top of csi_dispatch drops it before
-        // the 'n' arm fires, so no Shell entry should be enqueued.
+        // CSI ? 6n is DEC private DSR. Private `?` CSI sequences return through
+        // the private-mode guard before ordinary DSR handling, so no Shell entry
+        // should be enqueued.
         let mut p = make_parser();
         p.process_bytes(b"\x1b[?6n");
         assert_eq!(p.state().cpr_queue_len(), 0);
